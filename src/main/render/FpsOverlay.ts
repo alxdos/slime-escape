@@ -12,7 +12,7 @@ export function createFpsOverlay(parent: HTMLElement): FpsOverlay {
   el.style.cssText = [
     'position:fixed',
     'top:8px',
-    'left:8px',
+    'right:8px',
     'padding:4px 8px',
     'font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace',
     'color:#cdd5e3',

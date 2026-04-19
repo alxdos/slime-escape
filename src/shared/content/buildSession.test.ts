@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildSessionDefinition } from './buildSession';
-import { TRAINING_TARGET } from './enemies';
-import { SANDBOX_PRESET, SANDBOX_WITH_COMBAT_PRESET } from './presets';
+import { SLIME_FAST, SLIME_TANK, TRAINING_TARGET } from './enemies';
+import { SANDBOX_PRESET, SANDBOX_WITH_COMBAT_PRESET, TRAINING_PRESET } from './presets';
 import { PISTOL } from './weapons';
 
 describe('buildSessionDefinition (sandbox)', () => {
@@ -87,5 +87,92 @@ describe('buildSessionDefinition (sandbox-with-combat)', () => {
     expect(pos.x).toBeLessThan(halfW);
     expect(pos.y).toBeGreaterThan(-halfH);
     expect(pos.y).toBeLessThan(halfH);
+  });
+});
+
+describe('buildSessionDefinition (training)', () => {
+  it('uses allEncountersComplete and playerDeath as run-end conditions', () => {
+    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
+
+    expect(session.winCondition.kind).toBe('allEncountersComplete');
+    expect(session.lossCondition.kind).toBe('playerDeath');
+  });
+
+  it('produces a wave1 -> break -> wave2 encounter sequence', () => {
+    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
+
+    expect(session.encounters).toHaveLength(3);
+    expect(session.encounters[0]?.type).toBe('wave');
+    expect(session.encounters[1]?.type).toBe('break');
+    expect(session.encounters[2]?.type).toBe('wave');
+  });
+
+  it('every wave is a wave-spawn-plan composed only of known archetypes', () => {
+    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
+    const knownIds = new Set([SLIME_FAST.id, SLIME_TANK.id]);
+
+    for (const encounter of session.encounters) {
+      if (encounter.type !== 'wave') continue;
+      const plan = encounter.spawnPlan;
+      if (plan.kind !== 'wave') throw new Error('expected wave spawn plan in a wave encounter');
+      expect(plan.spawnIntervalMs).toBeGreaterThan(0);
+      expect(plan.maxAlive).toBeGreaterThan(0);
+      for (const spawn of plan.spawns) {
+        expect(knownIds.has(spawn.archetypeId)).toBe(true);
+      }
+    }
+  });
+
+  it('waves shrink the zone, break expands it, and stitches without margin jumps', () => {
+    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
+    const [wave1, breakEnc, wave2] = session.encounters;
+    if (
+      wave1?.zoneBehavior.kind !== 'shrinkLinear' ||
+      breakEnc?.zoneBehavior.kind !== 'expandLinear' ||
+      wave2?.zoneBehavior.kind !== 'shrinkLinear'
+    ) {
+      throw new Error('expected shrink/expand/shrink zone behaviors');
+    }
+    expect(breakEnc.zoneBehavior.fromMargin).toBe(wave1.zoneBehavior.toMargin);
+    expect(wave2.zoneBehavior.fromMargin).toBe(breakEnc.zoneBehavior.toMargin);
+  });
+
+  it('wave shrink finishes within the minimum dispatch budget so margin reaches toMargin', () => {
+    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
+    for (const encounter of session.encounters) {
+      if (encounter.type !== 'wave') continue;
+      if (encounter.spawnPlan.kind !== 'wave') continue;
+      if (encounter.zoneBehavior.kind !== 'shrinkLinear') continue;
+      const minDispatchMs =
+        encounter.spawnPlan.spawns.length * encounter.spawnPlan.spawnIntervalMs;
+      expect(encounter.zoneBehavior.durationMs).toBeLessThanOrEqual(minDispatchMs);
+    }
+  });
+
+  it('break uses a timer transition rule', () => {
+    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
+    const breakEnc = session.encounters[1];
+
+    if (breakEnc?.transitionRules.kind !== 'timer') {
+      throw new Error('expected timer transition rule');
+    }
+    expect(breakEnc.transitionRules.durationMs).toBeGreaterThan(0);
+    expect(breakEnc.transitionRules.next).toBe('sequential');
+  });
+
+  it('waves use allEnemiesCleared as transition rule', () => {
+    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
+    for (const encounter of session.encounters) {
+      if (encounter.type !== 'wave') continue;
+      expect(encounter.transitionRules.kind).toBe('allEnemiesCleared');
+      expect(encounter.transitionRules.next).toBe('sequential');
+    }
+  });
+
+  it('exposes pistol loadout and a damageable training player', () => {
+    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
+
+    expect(session.loadout).toEqual({ primaryWeaponArchetypeId: PISTOL.id });
+    expect(session.player.maxHp).toBeGreaterThan(0);
   });
 });

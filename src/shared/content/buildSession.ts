@@ -10,8 +10,14 @@ import type {
 import { SIM_STEP_MS } from '../timing';
 
 import { SANDBOX_ARENA } from './arenas';
-import { ENEMY_ARCHETYPES, TRAINING_TARGET } from './enemies';
-import { SANDBOX_PLAYER } from './players';
+import {
+  ENEMY_ARCHETYPES,
+  SLIME_FAST,
+  SLIME_TANK,
+  TRAINING_TARGET,
+  validateEnemyRegistry
+} from './enemies';
+import { SANDBOX_PLAYER, TRAINING_PLAYER } from './players';
 import type { ModePreset } from './presets';
 import { PISTOL, WEAPON_ARCHETYPES } from './weapons';
 
@@ -29,8 +35,9 @@ export function buildSessionDefinition(
       return buildSandboxSession(options);
     case 'sandbox-with-combat':
       return buildSandboxWithCombatSession(options);
-    case 'campaign':
     case 'training':
+      return buildTrainingSession(options);
+    case 'campaign':
     case 'pistolOnly':
       throw new Error(`ModePreset '${preset.id}' is not implemented yet`);
     default:
@@ -39,6 +46,8 @@ export function buildSessionDefinition(
 }
 
 function buildSandboxSession(options: BuildOptions): SessionDefinition {
+  validateEnemyRegistry(ENEMY_ARCHETYPES, SANDBOX_PLAYER.radius);
+
   const encounter: EncounterDefinition = {
     id: 'sandbox-encounter',
     type: 'sandbox',
@@ -46,7 +55,7 @@ function buildSandboxSession(options: BuildOptions): SessionDefinition {
     zoneBehavior: { kind: 'disabled' },
     objectives: [],
     rewardRules: null,
-    transitionRules: { kind: 'never' },
+    transitionRules: { kind: 'never', next: 'sequential' },
     tuning: null
   };
 
@@ -66,6 +75,8 @@ function buildSandboxSession(options: BuildOptions): SessionDefinition {
 }
 
 function buildSandboxWithCombatSession(options: BuildOptions): SessionDefinition {
+  validateEnemyRegistry(ENEMY_ARCHETYPES, SANDBOX_PLAYER.radius);
+
   const targetSpawn: StaticSpawn = {
     archetypeId: TRAINING_TARGET.id,
     position: { x: 5, y: 0 }
@@ -80,7 +91,7 @@ function buildSandboxWithCombatSession(options: BuildOptions): SessionDefinition
     zoneBehavior: { kind: 'disabled' },
     objectives: [],
     rewardRules: null,
-    transitionRules: { kind: 'never' },
+    transitionRules: { kind: 'never', next: 'sequential' },
     tuning: null
   };
 
@@ -95,6 +106,88 @@ function buildSandboxWithCombatSession(options: BuildOptions): SessionDefinition
     encounters: [encounter],
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
+    uiMeta: null
+  };
+}
+
+function buildTrainingSession(options: BuildOptions): SessionDefinition {
+  validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.radius);
+  warnIfWeaponMayTunnel(PISTOL.id);
+
+  const wave1: EncounterDefinition = {
+    id: 'training-wave-1',
+    type: 'wave',
+    spawnPlan: {
+      kind: 'wave',
+      spawns: [
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id }
+      ],
+      spawnIntervalMs: 1500,
+      maxAlive: 4,
+      edgeMargin: 0.5
+    },
+    zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 4, durationMs: 8000 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+
+  const breakEncounter: EncounterDefinition = {
+    id: 'training-break',
+    type: 'break',
+    spawnPlan: { kind: 'empty' },
+    zoneBehavior: { kind: 'expandLinear', fromMargin: 4, toMargin: 0, durationMs: 2500 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+    tuning: null
+  };
+
+  const wave2: EncounterDefinition = {
+    id: 'training-wave-2',
+    type: 'wave',
+    spawnPlan: {
+      kind: 'wave',
+      spawns: [
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id }
+      ],
+      spawnIntervalMs: 1200,
+      maxAlive: 5,
+      edgeMargin: 0.5
+    },
+    zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 5, durationMs: 10000 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+
+  return {
+    id: options.id ?? 'training-session',
+    seed: options.seed,
+    arena: SANDBOX_ARENA,
+    player: TRAINING_PLAYER,
+    loadout: { primaryWeaponArchetypeId: PISTOL.id },
+    modifiers: [],
+    rules: null,
+    encounters: [wave1, breakEncounter, wave2],
+    winCondition: { kind: 'allEncountersComplete' },
+    lossCondition: { kind: 'playerDeath' },
     uiMeta: null
   };
 }

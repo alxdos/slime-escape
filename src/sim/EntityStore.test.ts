@@ -9,7 +9,8 @@ import {
 const SPEC = {
   position: { x: 1, y: 2 },
   radius: 0.5,
-  maxSpeed: 6
+  maxSpeed: 6,
+  maxHp: 1
 };
 
 const ENEMY_SPEC: EnemySpawnSpec = {
@@ -18,6 +19,12 @@ const ENEMY_SPEC: EnemySpawnSpec = {
   radius: 0.6,
   behavior: 'stationary',
   maxHp: 3,
+  maxSpeed: 0,
+  contactDamage: 0,
+  contactCooldownMs: 1,
+  knockbackBaseImpulse: 0,
+  knockbackVelocityScale: 0,
+  knockbackDurationMs: 1,
   color: 0xff7766
 };
 
@@ -49,7 +56,7 @@ describe('EntityStore', () => {
 
   it('makes the spawned position independent from the spec object', () => {
     const store = createEntityStore();
-    const spec = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6 };
+    const spec = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
     const player = store.spawnPlayer(spec);
 
     spec.position.x = 999;

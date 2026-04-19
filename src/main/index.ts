@@ -1,5 +1,6 @@
 import { buildSessionDefinition } from '../shared/content/buildSession';
-import { SANDBOX_WITH_COMBAT_PRESET } from '../shared/content/presets';
+import { TRAINING_PRESET } from '../shared/content/presets';
+import { log } from '../shared/log';
 import type { SessionDefinition } from '../shared/session';
 
 import { detectFeatures } from './featureDetection';
@@ -24,7 +25,13 @@ function makeSeed(): number {
 
 detectFeatures();
 
-const sim = createSimWorkerHost();
+const sim = createSimWorkerHost({
+  onEvent(event) {
+    if (event.kind === 'win' || event.kind === 'loss') {
+      handleRunEnd(event.kind, event.simTime);
+    }
+  }
+});
 const canvas = requireCanvas('#scene');
 const fps = createFpsOverlay(document.body);
 
@@ -35,7 +42,8 @@ let input: InputController | null = null;
 function startSession(): void {
   if (activeSession !== null) return;
 
-  const session = buildSessionDefinition(SANDBOX_WITH_COMBAT_PRESET, { seed: makeSeed() });
+  menu.setResult(null);
+  const session = buildSessionDefinition(TRAINING_PRESET, { seed: makeSeed() });
   activeSession = session;
   sim.startSession(session);
 
@@ -61,7 +69,7 @@ function startSession(): void {
   pause.hide();
 }
 
-function exitToMenu(): void {
+function tearDownClientSession(): void {
   const previousInput = input;
   input = null;
   if (previousInput !== null) {
@@ -74,9 +82,23 @@ function exitToMenu(): void {
   }
 
   activeSession = null;
-  sim.stopSession();
   pause.hide();
   menu.show();
+}
+
+function exitToMenu(): void {
+  if (activeSession === null) return;
+  tearDownClientSession();
+  sim.stopSession();
+}
+
+function handleRunEnd(kind: 'win' | 'loss', simTimeMs: number): void {
+  if (activeSession === null) return;
+  log.info(`run ended: ${kind}`, { simTimeMs });
+  // Sim has already torn down its own state via win/loss path; do not call
+  // sim.stopSession() to avoid the "no active session" warning.
+  tearDownClientSession();
+  menu.setResult(kind);
 }
 
 function pauseSession(): void {

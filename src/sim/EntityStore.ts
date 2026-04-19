@@ -1,3 +1,4 @@
+import type { EnemyBehavior } from '../shared/content/enemies';
 import type { PlayerSpawn, Vec2 } from '../shared/session';
 
 export type EntityId = number & { readonly __brand: 'EntityId' };
@@ -7,7 +8,17 @@ export type Player = {
   readonly kind: 'player';
   readonly radius: number;
   readonly maxSpeed: number;
+  readonly maxHp: number;
   position: { x: number; y: number };
+  velocity: { vx: number; vy: number };
+  hp: number;
+};
+
+export type KnockbackState = {
+  vx: number;
+  vy: number;
+  startSimMs: number;
+  endSimMs: number;
 };
 
 export type Enemy = {
@@ -15,11 +26,20 @@ export type Enemy = {
   readonly kind: 'enemy';
   readonly archetypeId: string;
   readonly radius: number;
-  readonly behavior: 'stationary';
+  readonly behavior: EnemyBehavior;
   readonly maxHp: number;
+  readonly maxSpeed: number;
+  readonly contactDamage: number;
+  readonly contactCooldownMs: number;
+  readonly knockbackBaseImpulse: number;
+  readonly knockbackVelocityScale: number;
+  readonly knockbackDurationMs: number;
   readonly color: number;
   position: { x: number; y: number };
+  velocity: { vx: number; vy: number };
   hp: number;
+  nextContactSimMs: number;
+  knockback: KnockbackState | null;
 };
 
 export type Projectile = {
@@ -38,8 +58,14 @@ export type EnemySpawnSpec = Readonly<{
   archetypeId: string;
   position: Vec2;
   radius: number;
-  behavior: 'stationary';
+  behavior: EnemyBehavior;
   maxHp: number;
+  maxSpeed: number;
+  contactDamage: number;
+  contactCooldownMs: number;
+  knockbackBaseImpulse: number;
+  knockbackVelocityScale: number;
+  knockbackDurationMs: number;
   color: number;
 }>;
 
@@ -66,6 +92,7 @@ export type EntityStore = Readonly<{
   projectileCount(): number;
   removeEnemy(id: EntityId): boolean;
   removeProjectile(id: EntityId): boolean;
+  removePlayer(): boolean;
   clear(): void;
 }>;
 
@@ -91,7 +118,10 @@ export function createEntityStore(): EntityStore {
         kind: 'player',
         radius: spec.radius,
         maxSpeed: spec.maxSpeed,
-        position: { x: spec.position.x, y: spec.position.y }
+        maxHp: spec.maxHp,
+        position: { x: spec.position.x, y: spec.position.y },
+        velocity: { vx: 0, vy: 0 },
+        hp: spec.maxHp
       };
       player = next;
       return next;
@@ -104,9 +134,18 @@ export function createEntityStore(): EntityStore {
         radius: spec.radius,
         behavior: spec.behavior,
         maxHp: spec.maxHp,
+        maxSpeed: spec.maxSpeed,
+        contactDamage: spec.contactDamage,
+        contactCooldownMs: spec.contactCooldownMs,
+        knockbackBaseImpulse: spec.knockbackBaseImpulse,
+        knockbackVelocityScale: spec.knockbackVelocityScale,
+        knockbackDurationMs: spec.knockbackDurationMs,
         color: spec.color,
         position: { x: spec.position.x, y: spec.position.y },
-        hp: spec.maxHp
+        velocity: { vx: 0, vy: 0 },
+        hp: spec.maxHp,
+        nextContactSimMs: 0,
+        knockback: null
       };
       enemies.set(next.id, next);
       return next;
@@ -152,6 +191,11 @@ export function createEntityStore(): EntityStore {
     },
     removeProjectile(id): boolean {
       return projectiles.delete(id);
+    },
+    removePlayer(): boolean {
+      if (player === null) return false;
+      player = null;
+      return true;
     },
     clear(): void {
       player = null;

@@ -1,3 +1,4 @@
+import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import { assertNever, type MainToSim, type SimToMain } from '../../shared/protocol';
 import type { SessionDefinition } from '../../shared/session';
@@ -21,7 +22,11 @@ export type SimWorkerHost = Readonly<{
   dispose(): void;
 }>;
 
-export function createSimWorkerHost(): SimWorkerHost {
+export type SimWorkerHostOptions = Readonly<{
+  onEvent?: (event: RuntimeEvent) => void;
+}>;
+
+export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWorkerHost {
   const worker = new Worker(new URL('../../sim/worker.ts', import.meta.url), {
     type: 'module',
     name: 'simulation'
@@ -54,8 +59,10 @@ export function createSimWorkerHost(): SimWorkerHost {
         pair.currReceivedAtMs = performance.now();
         return;
       case 'event':
+        options.onEvent?.(msg.event);
+        return;
       case 'telemetry':
-        // Story 002 has no consumer; HUD/audio (007/008) will subscribe later.
+        // HUD/audio (007/008) will subscribe later.
         return;
       default:
         assertNever(msg);

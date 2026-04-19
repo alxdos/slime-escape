@@ -11,6 +11,7 @@ import { createSimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
+import { createZoneSystem } from './ZoneSystem';
 
 const entities = createEntityStore();
 const exporter = createSnapshotExportSystem();
@@ -19,6 +20,7 @@ const spawn = createSpawnSystem();
 const combat = createCombatSystem();
 const healthDeath = createHealthDeathSystem();
 const spatialIndex = createSpatialIndex();
+const zone = createZoneSystem();
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);
@@ -31,7 +33,8 @@ function emitEvent(event: RuntimeEvent): void {
 const clock = createSimulationClock((_dtMs, simTimeMs) => {
   const session = sessionFlow.activeSession();
   if (session === null) return;
-  movement.tick(session.arena, entities, sessionFlow.inputState());
+  spawn.onTick(simTimeMs, entities);
+  movement.tick(session.arena, entities, sessionFlow.inputState(), simTimeMs);
   const intents = combat.tick(
     sessionFlow.inputState(),
     entities,
@@ -41,19 +44,32 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     emitEvent
   );
   healthDeath.tick(intents, entities, simTimeMs, emitEvent);
-  const snapshot = exporter.onTick(simTimeMs, entities);
+  sessionFlow.checkTransitions(simTimeMs);
+  zone.onTick();
+  const snapshot = exporter.onTick(simTimeMs, entities, {
+    encounter: sessionFlow.activeEncounter(),
+    zone: zone.zone(),
+    waveProgress: spawn.waveProgress()
+  });
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });
   }
 });
 
+healthDeath.registerHook((ctx) => {
+  if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
+  if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
+});
+
 const sessionFlow = createSessionFlowSystem({
   clock,
   emitEvent,
-  onSessionStart(session) {
+  waveProgress: () => spawn.waveProgress(),
+  onSessionStart(session, rng) {
     entities.clear();
     exporter.reset();
     combat.clear();
+    spawn.setRng(rng);
     const player = entities.spawnPlayer(session.player);
     if (session.loadout !== null) {
       combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
@@ -63,12 +79,17 @@ const sessionFlow = createSessionFlowSystem({
     entities.clear();
     exporter.reset();
     combat.clear();
+    spawn.setRng(null);
   },
   onEncounterStart(encounter) {
-    spawn.onEncounterStart(encounter, entities);
+    const session = sessionFlow.activeSession();
+    if (session === null) return;
+    spawn.onEncounterStart(encounter, entities, session.arena);
+    zone.onEncounterStart(encounter);
   },
   onEncounterEnd(encounter) {
     spawn.onEncounterEnd(encounter);
+    zone.onEncounterEnd(encounter);
   }
 });
 
