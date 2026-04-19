@@ -1,0 +1,23 @@
+{
+  "name": "slime-escape",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Top-down arena shooter where a human escapes a world of slimes",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.worker.json && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/three": "^0.184.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.8"
+  }
+}
