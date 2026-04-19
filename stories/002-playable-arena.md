@@ -35,12 +35,12 @@
 
 ## Tasks
 
-| ID | Task | Status | Note |
-|----|------|--------|------|
-| T1 | Заглушка `content library` и сборка `SessionDefinition` из `ModePreset` | planned | |
-| T2 | `SessionFlowSystem` старт/стоп + проброс в worker | planned | |
-| T3 | Input commands и `MovementSystem` для игрока | planned | |
-| T4 | Отрисовка игрока и арены поверх рендера из `001` | planned | |
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [ ] | Заглушка `content library` и сборка `SessionDefinition` из `ModePreset` | |
+| T2 | [ ] | `SessionFlowSystem` старт/стоп + проброс в worker | |
+| T3 | [ ] | Input commands и `MovementSystem` для игрока | |
+| T4 | [ ] | Отрисовка игрока и арены поверх рендера из `001` | |
 
 ## Related
 

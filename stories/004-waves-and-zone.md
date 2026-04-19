@@ -34,12 +34,12 @@
 
 ## Tasks
 
-| ID | Task | Status | Note |
-|----|------|--------|------|
-| T1 | `SpawnSystem` и формат `spawnPlan` | planned | |
-| T2 | Переходы encounter в `SessionFlowSystem` (wave/break) | planned | |
-| T3 | `ZoneSystem` линейное сжатие/расширение | planned | |
-| T4 | Win/loss conditions и завершение сессии | planned | |
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [ ] | `SpawnSystem` и формат `spawnPlan` | |
+| T2 | [ ] | Переходы encounter в `SessionFlowSystem` (wave/break) | |
+| T3 | [ ] | `ZoneSystem` линейное сжатие/расширение | |
+| T4 | [ ] | Win/loss conditions и завершение сессии | |
 
 ## Related
 

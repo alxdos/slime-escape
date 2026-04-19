@@ -35,17 +35,17 @@
 
 ## Tasks
 
-| ID | Task | Status | Note |
-|----|------|--------|------|
-| T1 | Зафиксировать `design/web-stack.md` (Vite + TS + npm, layout `src/main`/`src/sim`/`src/shared`, правила импортов) | done | plan: `design-web-stack` |
-| T2 | Зафиксировать `design/simulation-timing.md` (`SIM_HZ=60`, `SNAPSHOT_HZ=30`, правила интерполяции и pause/resume) | done | plan: `design-sim-timing` |
-| T3 | Обновить `design/README.md` Index и `Related` истории под новые решения | done | plan: `design-index` |
-| T4 | Скелет проекта (Vite + TS + npm, `index.html`, пустая `three.js` сцена в `main`, `featureDetection`, `src/shared/timing.ts` с константами) | done | plan: `scaffold` |
-| T5 | `simulation worker`: `SimulationClock` 60 Hz, world c testEntity, pause/resume, протокол в `src/shared` | done | plan: `sim-worker` |
-| T6 | `SnapshotExportSystem` 30 Hz и публикация снапшотов в main | done | plan: `snapshot-export` |
-| T7 | `Renderer`: буфер из 2 снапшотов, интерполяция позиции с задержкой `SNAPSHOT_INTERVAL_MS` | done | plan: `render-interp` |
-| T8 | `FpsOverlay` + hotkey `Space` для pause/resume + проверка acceptance | done | plan: `fps-pause` |
-| T9 | Перевести историю в `done`, обновить `stories/README.md`, добавить в корневой README секцию How to run | done | plan: `story-status` |
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [x] | Зафиксировать `design/web-stack.md` (Vite + TS + npm, layout `src/main`/`src/sim`/`src/shared`, правила импортов) | plan: `design-web-stack` |
+| T2 | [x] | Зафиксировать `design/simulation-timing.md` (`SIM_HZ=60`, `SNAPSHOT_HZ=30`, правила интерполяции и pause/resume) | plan: `design-sim-timing` |
+| T3 | [x] | Обновить `design/README.md` Index и `Related` истории под новые решения | plan: `design-index` |
+| T4 | [x] | Скелет проекта (Vite + TS + npm, `index.html`, пустая `three.js` сцена в `main`, `featureDetection`, `src/shared/timing.ts` с константами) | plan: `scaffold` |
+| T5 | [x] | `simulation worker`: `SimulationClock` 60 Hz, world c testEntity, pause/resume, протокол в `src/shared` | plan: `sim-worker` |
+| T6 | [x] | `SnapshotExportSystem` 30 Hz и публикация снапшотов в main | plan: `snapshot-export` |
+| T7 | [x] | `Renderer`: буфер из 2 снапшотов, интерполяция позиции с задержкой `SNAPSHOT_INTERVAL_MS` | plan: `render-interp` |
+| T8 | [x] | `FpsOverlay` + hotkey `Space` для pause/resume + проверка acceptance | plan: `fps-pause` |
+| T9 | [x] | Перевести историю в `done`, обновить `stories/README.md`, добавить в корневой README секцию How to run | plan: `story-status` |
 
 ## Related
 

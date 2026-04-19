@@ -31,11 +31,11 @@
 
 ## Tasks
 
-| ID | Task | Status | Note |
-|----|------|--------|------|
-| T1 | `drop table` в `content library` и death hook → спавн дропа | planned | |
-| T2 | `DropSystem` (жизненный цикл, таймаут) | planned | |
-| T3 | Подбор дропа и применение эффекта | planned | |
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [ ] | `drop table` в `content library` и death hook → спавн дропа | |
+| T2 | [ ] | `DropSystem` (жизненный цикл, таймаут) | |
+| T3 | [ ] | Подбор дропа и применение эффекта | |
 
 ## Related
 

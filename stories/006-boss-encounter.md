@@ -33,11 +33,11 @@
 
 ## Tasks
 
-| ID | Task | Status | Note |
-|----|------|--------|------|
-| T1 | Профиль босса и `EncounterDefinition` типа `boss` | planned | |
-| T2 | `BossPhaseSystem`: переходы фаз и атаки | planned | |
-| T3 | Отключение зоны и финальный win condition | planned | |
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [ ] | Профиль босса и `EncounterDefinition` типа `boss` | |
+| T2 | [ ] | `BossPhaseSystem`: переходы фаз и атаки | |
+| T3 | [ ] | Отключение зоны и финальный win condition | |
 
 ## Related
 

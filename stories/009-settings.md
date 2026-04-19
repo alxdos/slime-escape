@@ -41,11 +41,11 @@
 
 ## Tasks
 
-| ID | Task | Status | Note |
-|----|------|--------|------|
-| T1 | Settings store на `localStorage` + дефолты | planned | |
-| T2 | Экран настроек в меню и паузе, связка с громкостью | planned | |
-| T3 | Render scale policy и переинициализация target по пресету | planned | |
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [ ] | Settings store на `localStorage` + дефолты | |
+| T2 | [ ] | Экран настроек в меню и паузе, связка с громкостью | |
+| T3 | [ ] | Render scale policy и переинициализация target по пресету | |
 
 ## Related
 

@@ -34,12 +34,12 @@
 
 ## Tasks
 
-| ID | Task | Status | Note |
-|----|------|--------|------|
-| T1 | Feature detection и абстракция render backend | planned | |
-| T2 | Render worker через `OffscreenCanvas` | planned | |
-| T3 | Проброс render scale из `009` в render worker | planned | |
-| T4 | Замер FPS / frame-time и сравнение режимов | planned | |
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [ ] | Feature detection и абстракция render backend | |
+| T2 | [ ] | Render worker через `OffscreenCanvas` | |
+| T3 | [ ] | Проброс render scale из `009` в render worker | |
+| T4 | [ ] | Замер FPS / frame-time и сравнение режимов | |
 
 ## Related
 

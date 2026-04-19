@@ -33,12 +33,12 @@
 
 ## Tasks
 
-| ID | Task | Status | Note |
-|----|------|--------|------|
-| T1 | `SpatialIndex` под пули и врагов | planned | |
-| T2 | `CombatSystem`: выстрел, кулдаун, попадание, урон | planned | |
-| T3 | `HealthDeathSystem` + удаление сущностей | planned | |
-| T4 | Снапшоты пуль/врагов и базовая отрисовка | planned | |
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [ ] | `SpatialIndex` под пули и врагов | |
+| T2 | [ ] | `CombatSystem`: выстрел, кулдаун, попадание, урон | |
+| T3 | [ ] | `HealthDeathSystem` + удаление сущностей | |
+| T4 | [ ] | Снапшоты пуль/врагов и базовая отрисовка | |
 
 ## Related
 

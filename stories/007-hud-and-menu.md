@@ -33,11 +33,11 @@
 
 ## Tasks
 
-| ID | Task | Status | Note |
-|----|------|--------|------|
-| T1 | Экран выбора режима, builder `SessionDefinition` | planned | |
-| T2 | HUD: HP, таймер, волна, фаза босса | planned | |
-| T3 | Pause UI и экран результата | planned | |
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [ ] | Экран выбора режима, builder `SessionDefinition` | |
+| T2 | [ ] | HUD: HP, таймер, волна, фаза босса | |
+| T3 | [ ] | Pause UI и экран результата | |
 
 ## Related
 
