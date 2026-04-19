@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (формализация `Loadout`; вынос `spawnPlan` в `spawn-plan.md`; sandbox-encounter допускает `static`-план)
+- Updated: 2026-04-19 (добавлен bring-up preset `sandbox-with-combat`; формализация `Loadout`; вынос `spawnPlan` в `spawn-plan.md`; sandbox-encounter допускает `static`-план)
 
 ## Context
 
@@ -78,7 +78,9 @@
   - `campaign` - 3 волны, передышки, финальный босс;
   - `training` - волны без босса, состав задаётся снаружи;
   - `pistolOnly` - стартовая экипировка ограничена пистолетом;
-  - `sandbox` - один encounter типа `sandbox` без win/loss-условий, используется для bring-up историй и dev-режимов.
+  - `sandbox` - один encounter типа `sandbox` без win/loss-условий и без встроенного оружия (`loadout: null`), используется для bring-up историй, не требующих боевого стека;
+  - `sandbox-with-combat` - вариант sandbox, у которого есть `Loadout` (минимально — `{ primaryWeaponArchetypeId }`) и `spawnPlan: { kind: 'static' }` для bring-up боевых сущностей (например, тренировочной мишени из [../stories/003-combat-foundation.md](../stories/003-combat-foundation.md)). Соблюдает все правила sandbox-encounter ниже: `winCondition: none`, `lossCondition: none`, единственный способ выйти — внешний `stopSession`.
+- Список «Минимальных preset-режимов» расширяется по мере появления историй; новые preset-режимы фиксируются в этом файле и не вводятся «по месту» в `src/shared/content/**`. Удаление существующего preset-id оформляется через `superseded`/обновление этого файла.
 - Encounter типа `sandbox` имеет следующую минимальную форму:
   - `spawnPlan` — `{ kind: 'empty' }` или `{ kind: 'static' }` (см. [spawn-plan.md](spawn-plan.md)); другие `kind` (`'wave'`, `'boss'`, …) в sandbox-encounter запрещены, потому что подразумевают автоматические переходы и завершение, которые sandbox-семантика исключает.
   - `objectives` — пустой список или эквивалентный «целей нет».
