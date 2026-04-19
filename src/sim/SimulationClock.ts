@@ -34,8 +34,8 @@ export function createSimulationClock(onTick: ClockTick): SimulationClock {
     lagMs += now - lastWallMs;
     lastWallMs = now;
     while (lagMs >= SIM_STEP_MS) {
-      onTick(SIM_STEP_MS, simTimeMs);
       simTimeMs += SIM_STEP_MS;
+      onTick(SIM_STEP_MS, simTimeMs);
       lagMs -= SIM_STEP_MS;
     }
   }
