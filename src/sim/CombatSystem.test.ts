@@ -171,4 +171,14 @@ describe('CombatSystem', () => {
 
     expect(store.projectileCount()).toBe(0);
   });
+
+  it('setPlayerLoadout throws on unknown weapon archetypeId at session start', () => {
+    const store = createEntityStore();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+
+    expect(() =>
+      combat.setPlayerLoadout(player.id, { primaryWeaponArchetypeId: 'no-such-weapon' }, 0)
+    ).toThrow(/unknown weapon archetype/);
+  });
 });

@@ -1,7 +1,6 @@
 import { ENEMY_ARCHETYPES } from '../shared/content/enemies';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
-import { log } from '../shared/log';
 import type { ArenaConfig, Loadout, Vec2 } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
@@ -29,7 +28,7 @@ export type DamageIntent = Readonly<{
 }>;
 
 type ShooterWeapons = {
-  primary: { archetypeId: string; nextFireSimMs: number };
+  primary: { archetype: WeaponArchetype; nextFireSimMs: number };
 };
 
 export type CombatSystem = Readonly<{
@@ -53,18 +52,21 @@ export function createCombatSystem(
 
   return {
     setPlayerLoadout(playerId, loadout, simTimeMs): void {
+      const archetype = weaponRegistry[loadout.primaryWeaponArchetypeId];
+      if (archetype === undefined) {
+        throw new Error(
+          `unknown weapon archetype on session start: ${loadout.primaryWeaponArchetypeId}`
+        );
+      }
       shooterWeapons.set(playerId, {
-        primary: {
-          archetypeId: loadout.primaryWeaponArchetypeId,
-          nextFireSimMs: simTimeMs
-        }
+        primary: { archetype, nextFireSimMs: simTimeMs }
       });
     },
     clear(): void {
       shooterWeapons.clear();
     },
     tick(input, store, index, simTimeMs, arena, emit): ReadonlyArray<DamageIntent> {
-      runFiringDecisions(input, store, simTimeMs, weaponRegistry, shooterWeapons, emit);
+      runFiringDecisions(input, store, simTimeMs, shooterWeapons, emit);
       runProjectileMovement(store);
       runLifetimeCleanup(store, simTimeMs, arena);
       index.rebuild(store);
@@ -77,7 +79,6 @@ function runFiringDecisions(
   input: RuntimeInputState,
   store: EntityStore,
   simTimeMs: number,
-  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
   shooterWeapons: Map<EntityId, ShooterWeapons>,
   emit: (event: RuntimeEvent) => void
 ): void {
@@ -89,13 +90,7 @@ function runFiringDecisions(
   if (weapons === undefined) return;
   if (simTimeMs < weapons.primary.nextFireSimMs) return;
 
-  const archetype = weaponRegistry[weapons.primary.archetypeId];
-  if (archetype === undefined) {
-    log.warn('weapon archetype missing at fire time', {
-      archetypeId: weapons.primary.archetypeId
-    });
-    return;
-  }
+  const { archetype } = weapons.primary;
 
   const dx = input.aimWorld.x - player.position.x;
   const dy = input.aimWorld.y - player.position.y;
