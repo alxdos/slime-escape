@@ -40,12 +40,15 @@ describe('ZoneSystem', () => {
     expect(zone.zone()).toEqual({ mode: 'shrink', margin: 0 });
 
     zone.onTick();
+    expect(zone.zone().margin).toBeCloseTo(0, 10);
+
+    zone.onTick();
     expect(zone.zone().margin).toBeCloseTo(0.4, 10);
 
-    for (let i = 1; i < 5; i += 1) zone.onTick();
+    for (let i = 2; i < 6; i += 1) zone.onTick();
     expect(zone.zone().margin).toBeCloseTo(2, 10);
 
-    for (let i = 5; i < 10; i += 1) zone.onTick();
+    for (let i = 6; i < 11; i += 1) zone.onTick();
     expect(zone.zone().margin).toBeCloseTo(4, 10);
   });
 
@@ -59,6 +62,21 @@ describe('ZoneSystem', () => {
     expect(zone.zone()).toEqual({ mode: 'shrink', margin: 3 });
   });
 
+  it('first onTick after onEncounterStart leaves margin at fromMargin (consistent with elapsedMs=0)', () => {
+    const zone = createZoneSystem();
+    zone.onEncounterStart(
+      encounter({
+        kind: 'shrinkLinear',
+        fromMargin: 5,
+        toMargin: 0,
+        durationMs: SIM_STEP_MS * 8
+      })
+    );
+    expect(zone.zone()).toEqual({ mode: 'shrink', margin: 5 });
+    zone.onTick();
+    expect(zone.zone()).toEqual({ mode: 'shrink', margin: 5 });
+  });
+
   it("'expandLinear' interpolates from fromMargin (large) to toMargin (small)", () => {
     const zone = createZoneSystem();
     const durationMs = SIM_STEP_MS * 4;
@@ -66,6 +84,9 @@ describe('ZoneSystem', () => {
       encounter({ kind: 'expandLinear', fromMargin: 4, toMargin: 0, durationMs })
     );
     expect(zone.zone()).toEqual({ mode: 'expand', margin: 4 });
+
+    zone.onTick();
+    expect(zone.zone().margin).toBeCloseTo(4, 10);
 
     zone.onTick();
     expect(zone.zone().margin).toBeCloseTo(3, 10);
@@ -87,7 +108,7 @@ describe('ZoneSystem', () => {
         durationMs: SIM_STEP_MS * 4
       })
     );
-    for (let i = 0; i < 2; i += 1) zone.onTick();
+    for (let i = 0; i < 3; i += 1) zone.onTick();
     expect(zone.zone().margin).toBeGreaterThan(0);
 
     zone.onEncounterEnd(encounter({ kind: 'disabled' }));

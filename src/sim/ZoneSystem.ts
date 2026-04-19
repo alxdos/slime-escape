@@ -58,9 +58,15 @@ export function createZoneSystem(): ZoneSystem {
     },
     onTick(): void {
       if (state.mode === 'disabled') return;
-      state.elapsedMs += SIM_STEP_MS;
+      // Sample margin from the time already elapsed before advancing the
+      // counter. That way, a snapshot taken right after this tick still
+      // reflects EncounterSnapshot.elapsedMs (which the exporter computes
+      // as simTime - encounter.startSimMs); on the transition tick where
+      // encounter.elapsedMs is 0, margin stays at fromMargin instead of
+      // jumping forward by one step.
       const t = Math.min(1, Math.max(0, state.elapsedMs / state.durationMs));
       state.margin = state.fromMargin + (state.toMargin - state.fromMargin) * t;
+      state.elapsedMs += SIM_STEP_MS;
     },
     zone(): ZoneSnapshot {
       return { mode: state.mode, margin: state.margin };
