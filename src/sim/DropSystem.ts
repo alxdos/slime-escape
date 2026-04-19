@@ -123,10 +123,13 @@ function pickDropFromTable(
     if (roll < accumulated) {
       const archetype = dropRegistry[entry.archetypeId];
       if (archetype === undefined) {
-        log.error('drop table references unknown drop archetype at runtime', {
-          dropArchetypeId: entry.archetypeId
-        });
-        return null;
+        // design/drops.md and design/content-archetypes.md require unknown
+        // archetype ids to fail at session build, never at runtime; reaching
+        // here means the builder-side assert was bypassed.
+        throw new Error(
+          `drop table references unknown drop archetype at runtime: "${entry.archetypeId}" ` +
+            `(see design/drops.md and design/content-archetypes.md)`
+        );
       }
       return archetype;
     }

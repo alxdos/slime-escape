@@ -88,7 +88,8 @@ export function validateEnemyRegistry(
   for (const archetype of Object.values(registry)) {
     warnIfStationaryInvariantsBroken(archetype);
     warnIfEnemyMayTunnelThroughPlayer(archetype, playerRadius);
-    warnIfDropTableInvalid(archetype, dropRegistry);
+    warnIfDropTableInvalid(archetype);
+    assertDropTableArchetypesResolve(archetype, dropRegistry);
   }
 }
 
@@ -127,10 +128,7 @@ function warnIfEnemyMayTunnelThroughPlayer(
   }
 }
 
-function warnIfDropTableInvalid(
-  archetype: EnemyArchetype,
-  dropRegistry: Readonly<Record<string, DropArchetype>>
-): void {
+function warnIfDropTableInvalid(archetype: EnemyArchetype): void {
   let sum = 0;
   for (const entry of archetype.dropTable) {
     if (!(entry.chance >= 0 && entry.chance <= 1)) {
@@ -140,12 +138,6 @@ function warnIfDropTableInvalid(
         chance: entry.chance
       });
     }
-    if (dropRegistry[entry.archetypeId] === undefined) {
-      log.warn('drop table references unknown drop archetype per design/drops.md', {
-        enemyArchetypeId: archetype.id,
-        dropArchetypeId: entry.archetypeId
-      });
-    }
     sum += entry.chance;
   }
   if (sum > 1 + 1e-9) {
@@ -153,5 +145,19 @@ function warnIfDropTableInvalid(
       enemyArchetypeId: archetype.id,
       sum
     });
+  }
+}
+
+function assertDropTableArchetypesResolve(
+  archetype: EnemyArchetype,
+  dropRegistry: Readonly<Record<string, DropArchetype>>
+): void {
+  for (const entry of archetype.dropTable) {
+    if (dropRegistry[entry.archetypeId] === undefined) {
+      throw new Error(
+        `enemy archetype "${archetype.id}" drop table references unknown drop archetype ` +
+          `"${entry.archetypeId}" (see design/drops.md and design/content-archetypes.md)`
+      );
+    }
   }
 }

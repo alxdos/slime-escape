@@ -198,7 +198,9 @@ export function createEntityStore(): EntityStore {
         kind: 'drop',
         archetypeId: spec.archetypeId,
         radius: spec.radius,
-        effect: spec.effect,
+        // design/drops.md: effect is copied at spawn so a live drop is
+        // independent from later mutations of the source archetype.
+        effect: structuredClone(spec.effect),
         color: spec.color,
         expireAtSimMs: spec.expireAtSimMs,
         position: { x: spec.position.x, y: spec.position.y }
