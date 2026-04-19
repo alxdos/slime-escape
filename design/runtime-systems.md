@@ -40,9 +40,9 @@
 - Отдельный физический движок не использовать; коллизии и overlap-проверки остаются кастомными и 2D-ориентированными.
 - Все системы должны быть управляемы через `SessionDefinition` и runtime state, а не через прямые условные ветки по названию режима.
 - Границы ответственности систем:
-  - `SessionFlowSystem` решает, какой encounter активен, когда run завершается и какие session-level events публикуются;
+  - `SessionFlowSystem` решает, какой encounter активен, когда run завершается и какие session-level events публикуются; владеет lifecycle сессии (см. ниже);
   - `SpawnSystem` только исполняет `spawnPlan` и не принимает решений о победе или поражении;
-  - `MovementSystem` меняет позиции и базовую кинематику, но не применяет урон;
+  - `MovementSystem` меняет позиции и базовую кинематику, но не применяет урон; владеет инвариантом «сущность не выходит за границы арены» ([arena-and-coordinates.md](arena-and-coordinates.md)) и читает границы из активного `SessionDefinition.arena`, а не из глобальной константы;
   - `CombatSystem` создаёт выстрелы, вычисляет попадания и формирует damage intents;
   - `HealthDeathSystem` единственный слой, который применяет финальную потерю HP, фиксирует смерть и удаляет сущности;
   - `DropSystem` реагирует на death hooks и управляет только жизненным циклом дропа;
@@ -59,6 +59,13 @@
   - `DropSystem` - spawn/pickup/expire;
   - `BossPhaseSystem` - phase change.
 - `SnapshotExportSystem` не создаёт новую gameplay-логику; он только агрегирует уже рассчитанное состояние и нужные HUD-поля.
+- Lifecycle симуляции относительно сессии:
+  - `simulation worker` создаётся один раз при старте приложения и переиспользуется между сессиями ([thread-model.md](thread-model.md)); `stopSession` не приводит к `worker.terminate()`.
+  - `SimulationClock` стартует в режиме **idle**: пока нет активной сессии, он не продвигает `simTime` и не вызывает обновление систем. В idle-режиме pump может выполняться, но его единственное действие — стабилизировать аккумулятор и не «копить» wall-clock-время. Никаких снапшотов и runtime events в idle не публикуется.
+  - При получении `startSession` `SessionFlowSystem` инициализирует `runtime state` из `SessionDefinition`, активирует первый encounter и переводит `SimulationClock` в **running**. С этого момента системы тикают по обычному update order.
+  - При получении `stopSession` `SessionFlowSystem` сбрасывает `runtime state` (включая входной state из [input-commands.md](input-commands.md)) и возвращает `SimulationClock` в idle. После этого приходящие input commands отбрасываются с warning через единый log-модуль.
+  - `pause`/`resume` действуют только когда сессия активна; `pause` без активной сессии — no-op с warning. Семантика `pause`/`resume` для running-состояния не меняется и описана в [simulation-timing.md](simulation-timing.md).
+  - `SessionFlowSystem` обязан публиковать runtime events lifecycle: `sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`, и при наличии — `win`/`loss`. Конкретный набор полей этих events фиксируется по мере появления потребителей (HUD из 007, audio из 008); до этого допускается публиковать минимальную форму `{ kind, simTime }`. При `winCondition`/`lossCondition` категории `none` ([session-definition.md](session-definition.md)) `win`/`loss` события не генерируются автоматически.
 
 ## Consequences
 
@@ -74,3 +81,6 @@
 - [../docs/BOSS.md](../docs/BOSS.md)
 - [thread-model.md](thread-model.md)
 - [session-definition.md](session-definition.md)
+- [simulation-timing.md](simulation-timing.md)
+- [arena-and-coordinates.md](arena-and-coordinates.md)
+- [input-commands.md](input-commands.md)

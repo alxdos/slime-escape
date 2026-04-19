@@ -33,11 +33,11 @@
 - Рендер не принимает gameplay-решения и не изменяет authoritative state.
 - Связь между `main thread` и `simulation worker` строить на командах, снапшотах и runtime events.
 - Минимальный контракт `main -> sim`:
-  - `startSession(SessionDefinition)`;
+  - `startSession(SessionDefinition)` — типизованный, поле `session` имеет полную форму из [session-definition.md](session-definition.md), а не `unknown`;
   - `stopSession`;
   - `pause`;
   - `resume`;
-  - input commands игрока;
+  - input commands игрока — типизованный union из [input-commands.md](input-commands.md);
   - опциональные debug commands.
 - Минимальный контракт `sim -> main/render`:
   - `state snapshot` с периодическим состоянием мира;
@@ -48,6 +48,8 @@
   - позиционные данные и ориентацию;
   - данные по зоне и текущему encounter;
   - агрегированные данные HUD уровня run: HP, прогресс волны, состояние босса.
+- Каждая сущность в снапшоте обязана нести стабильный дискриминатор `kind` (например `'player'`, и далее `'enemy'`, `'projectile'`, `'drop'` по мере появления систем). Рендер и HUD выбирают визуализацию по `kind`, а не по `id` или порядку в списке.
+- Immutable конфигурация сессии (включая `arena`) **не дублируется** в каждом снапшоте: `main` уже владеет `SessionDefinition`, потому что сам её собрал и передал в `startSession`. `Renderer` и UI читают `arena`, `player.position` и т.п. напрямую из этой `SessionDefinition`, а снапшоты несут только меняющееся state.
 - Runtime event используется для точечных фактов, которые не должны восстанавливать мир целиком. Минимально это:
   - выстрел;
   - попадание;
@@ -64,7 +66,8 @@
   - `main thread` создаёт `simulation worker` при старте приложения;
   - render backend инициализируется отдельно и может быть пересоздан без пересоздания симуляции;
   - завершение сессии не должно требовать полной перезагрузки страницы;
-  - смена render backend не должна менять контракт `simulation worker`.
+  - смена render backend не должна менять контракт `simulation worker`;
+  - один экземпляр `simulation worker` обслуживает всю жизнь приложения и переиспользуется между сессиями; `stopSession` не должен приводить к `worker.terminate()` и созданию нового worker. Полное состояние (`runtime state`, входной state, активная сессия) сбрасывается внутри worker по контракту `stopSession`.
 - Feature detection определяет доступные возможности платформы: `Worker`, `OffscreenCanvas`, ограничения браузера, базовые особенности canvas/render.
 - Render backend policy принимает решение, какой backend использовать на текущем запуске, с учётом support и практической надёжности.
 - Политика backend не должна предполагать, что `OffscreenCanvas` всегда быстрее. Ускоренный backend допустим только как preferred path там, где он поддерживается и не ломает корректность.
@@ -82,3 +85,5 @@
 - [session-definition.md](session-definition.md)
 - [runtime-systems.md](runtime-systems.md)
 - [content-boundaries.md](content-boundaries.md)
+- [input-commands.md](input-commands.md)
+- [arena-and-coordinates.md](arena-and-coordinates.md)

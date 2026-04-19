@@ -26,11 +26,15 @@
   - `src/main/**` — всё, что живёт в `main thread`: бутстрап, render, DOM/HUD, audio, feature detection, host-обёртки worker-ов.
   - `src/sim/**` — содержимое `simulation worker`: clock, runtime-системы, world, worker entry.
   - `src/shared/**` — типы и чистые утилиты, разрешённые в обоих контекстах: протокол сообщений, snapshot-типы, общие константы и математика.
+- Внутри `src/shared/**` зарезервированы две именованные подпапки с фиксированной ролью:
+  - `src/shared/content/**` — `content library` ([content-boundaries.md](content-boundaries.md)): архетипы врагов и оружия, профили босса, параметры арены, таблицы дропа, стандартные `ModePreset`, builder-функции `ModePreset + options → SessionDefinition`. Внутри только данные и чистые функции, без runtime state и без DOM/three.js.
+  - Остальные модули `src/shared/**` (протокол, snapshot, общие константы, математика) свободно соседствуют с `content/`.
 - Правила импортов между слоями:
   - `src/sim/**` не имеет права импортировать из `src/main/**`.
   - `src/shared/**` не имеет права импортировать из `src/main/**` или `src/sim/**`.
   - `src/main/**` может импортировать из `src/shared/**`; `src/sim/**` может импортировать из `src/shared/**`.
-  - Это даёт инвариант: `simulation worker` остаётся headless, общий контракт не утаскивает за собой DOM/three.js, и любой код в `src/shared/**` безопасен в любом контексте.
+  - Это даёт инвариант: `simulation worker` остаётся headless, общий контракт не утаскивает за собой DOM/three.js, и любой код в `src/shared/**` (включая `src/shared/content/**`) безопасен в любом контексте.
+- `content library` физически живёт в `src/shared/content/**`, потому что его читают и `main` (для сборки `SessionDefinition` в UI и настройки камеры/рендера под арену), и `sim` (для исполнения `spawnPlan`, чтения параметров арены и т.п.). Размещение в `src/main/**` или `src/sim/**` потребовало бы дублирования или нарушения направлений импортов.
 - Worker entry — единственный файл `src/sim/worker.ts`. Подключение из main:
   ```ts
   new Worker(new URL('../../sim/worker.ts', import.meta.url), { type: 'module' })
@@ -44,9 +48,11 @@
 - Контракт между потоками естественно ложится в `src/shared/**` и не зависит от выбранного render backend.
 - Миграция стека (Vite → другой бандлер, npm → pnpm) возможна без переписывания gameplay-кода, но требует синхронного обновления этого решения.
 - Истории не должны самостоятельно вводить новые корневые директории (`src/render`, `src/game` и т.п.) — расширения только внутри `main`, `sim`, `shared`.
+- Зарезервированные подпапки `src/shared/content/**` (и их аналоги, если будут добавлены) фиксируются именно здесь, чтобы не создавать новые контракты «по месту» в отдельных историях.
 
 ## Related
 
 - [thread-model.md](thread-model.md)
 - [content-boundaries.md](content-boundaries.md)
 - [simulation-timing.md](simulation-timing.md)
+- [session-definition.md](session-definition.md)
