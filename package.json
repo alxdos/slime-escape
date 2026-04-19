@@ -8,7 +8,9 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.json && tsc -p tsconfig.worker.json && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "license": "ISC",
   "dependencies": {
@@ -18,6 +20,7 @@
     "@types/node": "^25.6.0",
     "@types/three": "^0.184.0",
     "typescript": "^6.0.3",
-    "vite": "^8.0.8"
+    "vite": "^8.0.8",
+    "vitest": "^4.1.4"
   }
 }
