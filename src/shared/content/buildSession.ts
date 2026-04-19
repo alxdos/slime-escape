@@ -46,7 +46,7 @@ function buildSandboxSession(options: BuildOptions): SessionDefinition {
     zoneBehavior: { kind: 'disabled' },
     objectives: [],
     rewardRules: null,
-    transitionRules: { kind: 'never' },
+    transitionRules: { kind: 'never', next: 'sequential' },
     tuning: null
   };
 
@@ -80,7 +80,7 @@ function buildSandboxWithCombatSession(options: BuildOptions): SessionDefinition
     zoneBehavior: { kind: 'disabled' },
     objectives: [],
     rewardRules: null,
-    transitionRules: { kind: 'never' },
+    transitionRules: { kind: 'never', next: 'sequential' },
     tuning: null
   };
 

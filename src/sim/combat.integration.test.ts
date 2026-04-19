@@ -12,7 +12,7 @@ import { createRuntimeInputState } from './RuntimeInputState';
 import { createSpatialIndex } from './SpatialIndex';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
-const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6 };
+const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
 
 describe('combat integration (CombatSystem + HealthDeathSystem)', () => {
   it('chains hit -> damage -> death in a single sim tick', () => {

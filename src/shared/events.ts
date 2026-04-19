@@ -35,4 +35,6 @@ export type RuntimeEvent =
       archetypeId: string | null;
       x: number;
       y: number;
-    };
+    }
+  | { kind: 'win'; simTime: number }
+  | { kind: 'loss'; simTime: number };

@@ -12,7 +12,7 @@ const TICKS_PER_SNAPSHOT = Math.round(SNAPSHOT_INTERVAL_MS / SIM_STEP_MS);
 describe('SnapshotExportSystem', () => {
   it('emits the player entity with kind "player"', () => {
     const store = createEntityStore();
-    store.spawnPlayer({ position: { x: 3, y: -2 }, radius: 0.5, maxSpeed: 6 });
+    store.spawnPlayer({ position: { x: 3, y: -2 }, radius: 0.5, maxSpeed: 6, maxHp: 1 });
     const exporter = createSnapshotExportSystem();
 
     const snapshot = exporter.onTick(0, store);
@@ -37,7 +37,7 @@ describe('SnapshotExportSystem', () => {
 
   it('emits exactly once per TICKS_PER_SNAPSHOT', () => {
     const store = createEntityStore();
-    store.spawnPlayer({ position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6 });
+    store.spawnPlayer({ position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 });
     const exporter = createSnapshotExportSystem();
 
     let emitted = 0;
@@ -51,7 +51,7 @@ describe('SnapshotExportSystem', () => {
 
   it('reset() restores the cadence so the next call emits', () => {
     const store = createEntityStore();
-    store.spawnPlayer({ position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6 });
+    store.spawnPlayer({ position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 });
     const exporter = createSnapshotExportSystem();
 
     exporter.onTick(0, store);

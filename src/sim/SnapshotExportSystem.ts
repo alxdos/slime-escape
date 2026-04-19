@@ -24,7 +24,9 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           id: player.id,
           kind: 'player',
           x: player.position.x,
-          y: player.position.y
+          y: player.position.y,
+          hp: player.hp,
+          maxHp: player.maxHp
         });
       }
       for (const enemy of store.enemies()) {
@@ -48,7 +50,13 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           y: projectile.position.y
         });
       }
-      return { simTimeMs, entities };
+      return {
+        simTimeMs,
+        entities,
+        encounter: null,
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null
+      };
     },
     reset(): void {
       tickCount = 0;

@@ -18,7 +18,7 @@ function makeEncounter(plan: EncounterDefinition['spawnPlan']): EncounterDefinit
     zoneBehavior: { kind: 'disabled' },
     objectives: [],
     rewardRules: null,
-    transitionRules: { kind: 'never' },
+    transitionRules: { kind: 'never', next: 'sequential' },
     tuning: null
   };
 }
@@ -79,7 +79,7 @@ describe('SpawnSystem', () => {
   it('rejects unknown SpawnPlan.kind via assertNever', () => {
     const store = createEntityStore();
     const spawn = createSpawnSystem(REGISTRY);
-    const bogus = { kind: 'wave' } as unknown as EncounterDefinition['spawnPlan'];
+    const bogus = { kind: 'unknown-kind' } as unknown as EncounterDefinition['spawnPlan'];
 
     expect(() => spawn.onEncounterStart(makeEncounter(bogus), store)).toThrow(
       /unexpected value/

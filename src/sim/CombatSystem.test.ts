@@ -12,7 +12,7 @@ import { createRuntimeInputState, type RuntimeInputState } from './RuntimeInputS
 import { createSpatialIndex } from './SpatialIndex';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
-const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6 };
+const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
 
 function setupCombat() {
   const store = createEntityStore();

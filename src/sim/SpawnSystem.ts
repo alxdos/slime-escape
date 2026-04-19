@@ -34,6 +34,8 @@ function executePlan(
     case 'static':
       executeStatic(plan, store, enemyRegistry);
       return;
+    case 'wave':
+      throw new Error("SpawnPlan kind 'wave' is not implemented yet (story 004 T6)");
     default:
       assertNever(plan);
   }

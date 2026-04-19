@@ -1,3 +1,4 @@
+import type { EnemyBehavior } from '../shared/content/enemies';
 import type { PlayerSpawn, Vec2 } from '../shared/session';
 
 export type EntityId = number & { readonly __brand: 'EntityId' };
@@ -7,7 +8,9 @@ export type Player = {
   readonly kind: 'player';
   readonly radius: number;
   readonly maxSpeed: number;
+  readonly maxHp: number;
   position: { x: number; y: number };
+  hp: number;
 };
 
 export type Enemy = {
@@ -15,7 +18,7 @@ export type Enemy = {
   readonly kind: 'enemy';
   readonly archetypeId: string;
   readonly radius: number;
-  readonly behavior: 'stationary';
+  readonly behavior: EnemyBehavior;
   readonly maxHp: number;
   readonly color: number;
   position: { x: number; y: number };
@@ -38,7 +41,7 @@ export type EnemySpawnSpec = Readonly<{
   archetypeId: string;
   position: Vec2;
   radius: number;
-  behavior: 'stationary';
+  behavior: EnemyBehavior;
   maxHp: number;
   color: number;
 }>;
@@ -91,7 +94,9 @@ export function createEntityStore(): EntityStore {
         kind: 'player',
         radius: spec.radius,
         maxSpeed: spec.maxSpeed,
-        position: { x: spec.position.x, y: spec.position.y }
+        maxHp: spec.maxHp,
+        position: { x: spec.position.x, y: spec.position.y },
+        hp: spec.maxHp
       };
       player = next;
       return next;

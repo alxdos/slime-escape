@@ -8,7 +8,7 @@ import { createMovementSystem } from './MovementSystem';
 import { createRuntimeInputState } from './RuntimeInputState';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
-const PLAYER: PlayerSpawn = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6 };
+const PLAYER: PlayerSpawn = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 
 function setup(spec: PlayerSpawn = PLAYER) {
