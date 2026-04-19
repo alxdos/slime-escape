@@ -13,7 +13,23 @@ export type PlayerSpawn = Readonly<{
 
 export type EncounterType = 'wave' | 'break' | 'boss' | 'survivalTimer' | 'sandbox';
 
-export type SpawnPlan = { kind: 'empty' };
+export type EmptySpawnPlan = Readonly<{ kind: 'empty' }>;
+
+export type StaticSpawn = Readonly<{
+  archetypeId: string;
+  position: Vec2;
+}>;
+
+export type StaticSpawnPlan = Readonly<{
+  kind: 'static';
+  spawns: ReadonlyArray<StaticSpawn>;
+}>;
+
+export type SpawnPlan = EmptySpawnPlan | StaticSpawnPlan;
+
+export type Loadout = Readonly<{
+  primaryWeaponArchetypeId: string;
+}>;
 
 export type ZoneBehavior = { kind: 'disabled' };
 
@@ -51,7 +67,7 @@ export type SessionDefinition = Readonly<{
   seed: number;
   arena: ArenaConfig;
   player: PlayerSpawn;
-  loadout: null;
+  loadout: Loadout | null;
   modifiers: ReadonlyArray<Modifier>;
   rules: null;
   encounters: ReadonlyArray<EncounterDefinition>;

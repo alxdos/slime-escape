@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { TRAINING_TARGET } from '../shared/content/enemies';
+import { PISTOL } from '../shared/content/weapons';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../shared/timing';
 
 import { createEntityStore } from './EntityStore';
@@ -57,5 +59,63 @@ describe('SnapshotExportSystem', () => {
 
     exporter.reset();
     expect(exporter.onTick(SIM_STEP_MS, store)).not.toBeNull();
+  });
+
+  it('emits enemy with archetypeId/hp/maxHp and projectile with weaponArchetypeId/ownerKind', () => {
+    const store = createEntityStore();
+    store.spawnEnemy({
+      archetypeId: TRAINING_TARGET.id,
+      position: { x: 5, y: 0 },
+      radius: TRAINING_TARGET.radius,
+      behavior: 'stationary',
+      maxHp: TRAINING_TARGET.maxHp,
+      color: TRAINING_TARGET.color
+    });
+    store.spawnProjectile({
+      weaponArchetypeId: PISTOL.id,
+      ownerKind: 'player',
+      position: { x: 1, y: 0 },
+      velocity: { vx: 24, vy: 0 },
+      radius: PISTOL.projectileRadius,
+      damage: PISTOL.damage,
+      expireAtSimMs: 1000
+    });
+
+    const exporter = createSnapshotExportSystem();
+    const snapshot = exporter.onTick(0, store);
+
+    const enemy = snapshot?.entities.find((e) => e.kind === 'enemy');
+    expect(enemy).toBeDefined();
+    if (enemy?.kind !== 'enemy') throw new Error('expected enemy snapshot');
+    expect(enemy.archetypeId).toBe(TRAINING_TARGET.id);
+    expect(enemy.hp).toBe(TRAINING_TARGET.maxHp);
+    expect(enemy.maxHp).toBe(TRAINING_TARGET.maxHp);
+
+    const projectile = snapshot?.entities.find((e) => e.kind === 'projectile');
+    expect(projectile).toBeDefined();
+    if (projectile?.kind !== 'projectile') throw new Error('expected projectile snapshot');
+    expect(projectile.weaponArchetypeId).toBe(PISTOL.id);
+    expect(projectile.ownerKind).toBe('player');
+  });
+
+  it('omits removed entities (no tombstones in entities)', () => {
+    const store = createEntityStore();
+    const enemy = store.spawnEnemy({
+      archetypeId: TRAINING_TARGET.id,
+      position: { x: 0, y: 0 },
+      radius: TRAINING_TARGET.radius,
+      behavior: 'stationary',
+      maxHp: 1,
+      color: TRAINING_TARGET.color
+    });
+    const exporter = createSnapshotExportSystem();
+
+    expect(exporter.onTick(0, store)?.entities).toHaveLength(1);
+
+    store.removeEnemy(enemy.id);
+    exporter.reset();
+
+    const after = exporter.onTick(0, store);
+    expect(after?.entities).toHaveLength(0);
   });
 });

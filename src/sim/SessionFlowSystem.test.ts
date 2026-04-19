@@ -119,6 +119,31 @@ describe('SessionFlowSystem', () => {
     expect(clock.isPaused()).toBe(false);
   });
 
+  it('runs onEncounterStart before encounterStart event and onEncounterEnd after encounterEnd event', () => {
+    const clock = createFakeClock();
+    const trace: string[] = [];
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: (e) => trace.push(`event:${e.kind}`),
+      onEncounterStart: (encounter) => trace.push(`onEncounterStart:${encounter.id}`),
+      onEncounterEnd: (encounter) => trace.push(`onEncounterEnd:${encounter.id}`)
+    });
+    const session = buildSessionDefinition(SANDBOX_PRESET, { seed: 1 });
+    const encounterId = session.encounters[0]!.id;
+
+    flow.start(session);
+    flow.stop();
+
+    expect(trace).toEqual([
+      'event:sessionStart',
+      `onEncounterStart:${encounterId}`,
+      'event:encounterStart',
+      'event:encounterEnd',
+      `onEncounterEnd:${encounterId}`,
+      'event:sessionStop'
+    ]);
+  });
+
   it('runs onSessionStart and onSessionStop hooks once per transition', () => {
     const clock = createFakeClock();
     const onStart = vi.fn();
