@@ -31,7 +31,7 @@
 | Story | Status | Description | Tech |
 |-------|--------|-------------|------|
 | [001-engine-skeleton.md](001-engine-skeleton.md) | [x] | Открытая страница с плавно двигающимся тестовым объектом и FPS-индикатором; пауза/продолжение | Web-сборка, `three.js` в main, `simulation worker`, `SimulationClock`, протокол main↔sim, `SnapshotExportSystem`, интерполяция |
-| [002-playable-arena.md](002-playable-arena.md) | [/] | Запуск пустой арены из заглушки меню, управляемый персонаж, выход в меню | Заглушка `content library`, `ModePreset`→`SessionDefinition`, `SessionFlowSystem`, input commands, `MovementSystem` |
+| [002-playable-arena.md](002-playable-arena.md) | [x] | Запуск пустой арены из заглушки меню, управляемый персонаж, выход в меню | Заглушка `content library`, `ModePreset`→`SessionDefinition`, `SessionFlowSystem`, input commands, `MovementSystem` |
 | [003-combat-foundation.md](003-combat-foundation.md) | [ ] | Стрельба по тренировочной мишени, урон и смерть врага | Одно оружие, один враг, `CombatSystem`, `HealthDeathSystem`, `SpatialIndex` |
 | [004-waves-and-zone.md](004-waves-and-zone.md) | [ ] | Тренировочный режим из 1–2 волн с передышками, тёмная зона сжимается в волне и расширяется в передышке, win/loss | `SpawnSystem`, `EncounterDefinition` (wave/break), переходы encounter, `ZoneSystem` линейного сжатия |
 | [005-drops.md](005-drops.md) | [ ] | С убитых врагов выпадает дроп, игрок подбирает и видит эффект | `DropSystem`, drop tables, подбор по spatial overlap, death hooks |

@@ -7,11 +7,17 @@ export type SimulationClock = Readonly<{
   stop(): void;
   pause(): void;
   resume(): void;
+  toRunning(): void;
+  toIdle(): void;
   isPaused(): boolean;
+  isRunning(): boolean;
   simTimeMs(): number;
 }>;
 
+type Mode = 'idle' | 'running';
+
 export function createSimulationClock(onTick: ClockTick): SimulationClock {
+  let mode: Mode = 'idle';
   let paused = false;
   let simTimeMs = 0;
   let lastWallMs = 0;
@@ -20,7 +26,7 @@ export function createSimulationClock(onTick: ClockTick): SimulationClock {
 
   function pump(): void {
     const now = performance.now();
-    if (paused) {
+    if (mode === 'idle' || paused) {
       lastWallMs = now;
       lagMs = 0;
       return;
@@ -28,8 +34,8 @@ export function createSimulationClock(onTick: ClockTick): SimulationClock {
     lagMs += now - lastWallMs;
     lastWallMs = now;
     while (lagMs >= SIM_STEP_MS) {
-      onTick(SIM_STEP_MS, simTimeMs);
       simTimeMs += SIM_STEP_MS;
+      onTick(SIM_STEP_MS, simTimeMs);
       lagMs -= SIM_STEP_MS;
     }
   }
@@ -55,8 +61,27 @@ export function createSimulationClock(onTick: ClockTick): SimulationClock {
       lastWallMs = performance.now();
       lagMs = 0;
     },
+    toRunning(): void {
+      if (mode === 'running') return;
+      mode = 'running';
+      paused = false;
+      simTimeMs = 0;
+      lastWallMs = performance.now();
+      lagMs = 0;
+    },
+    toIdle(): void {
+      if (mode === 'idle') return;
+      mode = 'idle';
+      paused = false;
+      simTimeMs = 0;
+      lastWallMs = performance.now();
+      lagMs = 0;
+    },
     isPaused(): boolean {
       return paused;
+    },
+    isRunning(): boolean {
+      return mode === 'running';
     },
     simTimeMs(): number {
       return simTimeMs;

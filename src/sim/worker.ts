@@ -1,34 +1,67 @@
-import { createSimulationClock } from './SimulationClock';
-import { createWorld, updateWorld } from './world';
-import { createSnapshotExportSystem } from './SnapshotExportSystem';
+import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
 
-const world = createWorld();
+import { createEntityStore } from './EntityStore';
+import { createMovementSystem } from './MovementSystem';
+import { createSessionFlowSystem } from './SessionFlowSystem';
+import { createSimulationClock } from './SimulationClock';
+import { createSnapshotExportSystem } from './SnapshotExportSystem';
+
+const entities = createEntityStore();
 const exporter = createSnapshotExportSystem();
+const movement = createMovementSystem();
+
+function postToMain(msg: SimToMain): void {
+  self.postMessage(msg);
+}
 
 const clock = createSimulationClock((_dtMs, simTimeMs) => {
-  updateWorld(world, simTimeMs);
-  const snapshot = exporter.onTick(simTimeMs, world);
-  if (snapshot) {
-    const msg: SimToMain = { kind: 'snapshot', snapshot };
-    self.postMessage(msg);
+  const session = sessionFlow.activeSession();
+  if (session === null) return;
+  movement.tick(session.arena, entities, sessionFlow.inputState());
+  const snapshot = exporter.onTick(simTimeMs, entities);
+  if (snapshot !== null) {
+    postToMain({ kind: 'snapshot', snapshot });
+  }
+});
+
+const sessionFlow = createSessionFlowSystem({
+  clock,
+  emitEvent(event) {
+    postToMain({ kind: 'event', event });
+  },
+  onSessionStart(session) {
+    entities.clear();
+    exporter.reset();
+    entities.spawnPlayer(session.player);
+  },
+  onSessionStop() {
+    entities.clear();
+    exporter.reset();
   }
 });
 
 self.addEventListener('message', (event: MessageEvent<MainToSim>) => {
   const msg = event.data;
   switch (msg.kind) {
+    case 'startSession':
+      sessionFlow.start(msg.session);
+      return;
+    case 'stopSession':
+      sessionFlow.stop();
+      return;
     case 'pause':
-      clock.pause();
+      sessionFlow.pause();
       return;
     case 'resume':
-      clock.resume();
+      sessionFlow.resume();
       return;
-    case 'startSession':
-    case 'stopSession':
     case 'input':
+      sessionFlow.handleInput(msg.command);
+      return;
     case 'debug':
-      throw new Error(`MainToSim kind not implemented in story 001: ${msg.kind}`);
+      log.warn('debug command received but not implemented', { command: msg.command });
+      return;
     default:
       assertNever(msg);
   }

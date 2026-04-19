@@ -18,15 +18,23 @@
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         color: #e6e8ef;
       }
-      #scene {
-        display: block;
+      #app {
         width: 100vw;
         height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #scene {
+        display: block;
+        cursor: none;
       }
     </style>
   </head>
   <body>
-    <canvas id="scene"></canvas>
+    <div id="app">
+      <canvas id="scene"></canvas>
+    </div>
     <script type="module" src="/src/main/index.ts"></script>
   </body>
 </html>

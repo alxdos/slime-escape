@@ -1,30 +1,36 @@
+import type { EntitySnapshot, Snapshot } from '../shared/snapshot';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../shared/timing';
-import type { World } from './world';
-import type { Snapshot } from '../shared/snapshot';
+
+import type { EntityStore } from './EntityStore';
 
 const TICKS_PER_SNAPSHOT = Math.round(SNAPSHOT_INTERVAL_MS / SIM_STEP_MS);
 
 export type SnapshotExportSystem = Readonly<{
-  onTick(simTimeMs: number, world: World): Snapshot | null;
+  onTick(simTimeMs: number, store: EntityStore): Snapshot | null;
+  reset(): void;
 }>;
 
 export function createSnapshotExportSystem(): SnapshotExportSystem {
   let tickCount = 0;
   return {
-    onTick(simTimeMs, world): Snapshot | null {
+    onTick(simTimeMs, store): Snapshot | null {
       const shouldEmit = tickCount % TICKS_PER_SNAPSHOT === 0;
-      tickCount++;
+      tickCount += 1;
       if (!shouldEmit) return null;
-      return {
-        simTimeMs,
-        entities: [
-          {
-            id: world.testEntity.id,
-            x: world.testEntity.x,
-            y: world.testEntity.y
-          }
-        ]
-      };
+      const entities: EntitySnapshot[] = [];
+      const player = store.player();
+      if (player !== null) {
+        entities.push({
+          id: player.id,
+          kind: 'player',
+          x: player.position.x,
+          y: player.position.y
+        });
+      }
+      return { simTimeMs, entities };
+    },
+    reset(): void {
+      tickCount = 0;
     }
   };
 }

@@ -1,7 +1,14 @@
+import { buildSessionDefinition } from '../shared/content/buildSession';
+import { SANDBOX_PRESET } from '../shared/content/presets';
+import type { SessionDefinition } from '../shared/session';
+
 import { detectFeatures } from './featureDetection';
-import { createSimWorkerHost } from './sim/SimWorkerHost';
-import { createRenderer } from './render/Renderer';
+import { createInputController, type InputController } from './input/InputController';
 import { createFpsOverlay } from './render/FpsOverlay';
+import { createRenderer, type Renderer } from './render/Renderer';
+import { createSimWorkerHost } from './sim/SimWorkerHost';
+import { createMenuOverlay } from './ui/MenuOverlay';
+import { createPauseOverlay } from './ui/PauseOverlay';
 
 function requireCanvas(selector: string): HTMLCanvasElement {
   const el = document.querySelector<HTMLCanvasElement>(selector);
@@ -11,45 +18,134 @@ function requireCanvas(selector: string): HTMLCanvasElement {
   return el;
 }
 
+function makeSeed(): number {
+  return Math.floor(Math.random() * 0x7fffffff);
+}
+
 detectFeatures();
 
 const sim = createSimWorkerHost();
-
 const canvas = requireCanvas('#scene');
-
-const renderer = createRenderer({
-  canvas,
-  pixelRatio: Math.min(window.devicePixelRatio, 2),
-  width: canvas.clientWidth,
-  height: canvas.clientHeight,
-  getSnapshotPair: sim.snapshotPair
-});
-
 const fps = createFpsOverlay(document.body);
 
-window.addEventListener('resize', () => {
-  renderer.resize(canvas.clientWidth, canvas.clientHeight);
+let activeSession: SessionDefinition | null = null;
+let renderer: Renderer | null = null;
+let input: InputController | null = null;
+
+function startSession(): void {
+  if (activeSession !== null) return;
+
+  const session = buildSessionDefinition(SANDBOX_PRESET, { seed: makeSeed() });
+  activeSession = session;
+  sim.startSession(session);
+
+  renderer = createRenderer({
+    canvas,
+    pixelRatio: Math.min(window.devicePixelRatio, 2),
+    arena: session.arena,
+    player: session.player,
+    getSnapshotPair: sim.snapshotPair,
+    getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
+  });
+
+  input = createInputController({
+    canvas,
+    arena: session.arena,
+    pixelsPerWorldUnit: () => canvas.clientHeight / session.arena.height,
+    initialAim: session.player.position,
+    onCommand: sim.sendInput
+  });
+  input.start();
+
+  menu.hide();
+  pause.hide();
+}
+
+function exitToMenu(): void {
+  const previousInput = input;
+  input = null;
+  if (previousInput !== null) {
+    previousInput.stop();
+  }
+
+  if (renderer !== null) {
+    renderer.dispose();
+    renderer = null;
+  }
+
+  activeSession = null;
+  sim.stopSession();
+  pause.hide();
+  menu.show();
+}
+
+function pauseSession(): void {
+  if (activeSession === null) return;
+  if (pause.isVisible()) return;
+  sim.pause();
+  pause.show();
+}
+
+function resumeSession(): void {
+  if (activeSession === null) return;
+  if (!pause.isVisible()) return;
+  if (input !== null) {
+    input.requestLock();
+  }
+  sim.resume();
+  pause.hide();
+}
+
+const menu = createMenuOverlay({
+  parent: document.body,
+  onStart: startSession
 });
 
-let paused = false;
+const pause = createPauseOverlay({
+  parent: document.body,
+  onResume: resumeSession,
+  onExit: exitToMenu
+});
+
+window.addEventListener('resize', () => {
+  if (renderer !== null) {
+    renderer.fitToWindow();
+  }
+});
+
+document.addEventListener('pointerlockchange', () => {
+  // Browsers consume the Esc keydown that releases Pointer Lock and never
+  // forward it to JS, so the only reliable trigger for the pause overlay
+  // is the lock loss itself (design/input-commands.md).
+  if (document.pointerLockElement !== null) return;
+  if (activeSession === null) return;
+  if (pause.isVisible()) return;
+  pauseSession();
+});
 
 window.addEventListener('keydown', (event) => {
-  if (event.code !== 'Space' || event.repeat) {
+  if (event.code === 'Escape') {
+    if (activeSession === null) return;
+    if (pause.isVisible()) return;
+    pauseSession();
     return;
   }
-  event.preventDefault();
-  if (paused) {
-    sim.resume();
-    paused = false;
-  } else {
-    sim.pause();
-    paused = true;
+  if (event.code === 'Space' && !event.repeat) {
+    if (activeSession === null || pause.isVisible()) return;
+    event.preventDefault();
+    if (sim.isPaused()) {
+      sim.resume();
+    } else {
+      sim.pause();
+    }
   }
 });
 
 function tick(nowMs: number): void {
   fps.onFrame(nowMs);
-  renderer.render();
+  if (renderer !== null) {
+    renderer.render();
+  }
   requestAnimationFrame(tick);
 }
 
