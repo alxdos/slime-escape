@@ -50,10 +50,11 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
 const sessionFlow = createSessionFlowSystem({
   clock,
   emitEvent,
-  onSessionStart(session) {
+  onSessionStart(session, rng) {
     entities.clear();
     exporter.reset();
     combat.clear();
+    spawn.setRng(rng);
     const player = entities.spawnPlayer(session.player);
     if (session.loadout !== null) {
       combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
@@ -63,6 +64,7 @@ const sessionFlow = createSessionFlowSystem({
     entities.clear();
     exporter.reset();
     combat.clear();
+    spawn.setRng(null);
   },
   onEncounterStart(encounter) {
     spawn.onEncounterStart(encounter, entities);

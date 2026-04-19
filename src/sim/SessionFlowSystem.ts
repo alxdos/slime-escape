@@ -2,6 +2,7 @@ import type { RuntimeEvent } from '../shared/events';
 import type { InputCommand } from '../shared/input';
 import { log } from '../shared/log';
 import { assertNever } from '../shared/protocol';
+import { createRng, type Rng } from '../shared/rng';
 import type { EncounterDefinition, SessionDefinition } from '../shared/session';
 
 import {
@@ -20,12 +21,13 @@ export type SessionFlowSystem = Readonly<{
   isActive(): boolean;
   activeSession(): SessionDefinition | null;
   inputState(): RuntimeInputState;
+  rng(): Rng | null;
 }>;
 
 export type SessionFlowDeps = Readonly<{
   clock: SimulationClock;
   emitEvent(event: RuntimeEvent): void;
-  onSessionStart?(session: SessionDefinition): void;
+  onSessionStart?(session: SessionDefinition, rng: Rng): void;
   onSessionStop?(): void;
   onEncounterStart?(encounter: EncounterDefinition): void;
   onEncounterEnd?(encounter: EncounterDefinition): void;
@@ -34,6 +36,7 @@ export type SessionFlowDeps = Readonly<{
 export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSystem {
   const { clock, emitEvent } = deps;
   let session: SessionDefinition | null = null;
+  let sessionRng: Rng | null = null;
   const input = createRuntimeInputState();
 
   function start(next: SessionDefinition): void {
@@ -45,8 +48,9 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
       return;
     }
     session = next;
+    sessionRng = createRng(next.seed);
     resetRuntimeInputState(input, next.player.position.x, next.player.position.y);
-    deps.onSessionStart?.(next);
+    deps.onSessionStart?.(next, sessionRng);
     clock.toRunning();
     const simTime = clock.simTimeMs();
     emitEvent({ kind: 'sessionStart', simTime });
@@ -73,6 +77,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     deps.onSessionStop?.();
     resetRuntimeInputState(input, 0, 0);
     session = null;
+    sessionRng = null;
   }
 
   function pause(): void {
@@ -125,6 +130,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     handleInput,
     isActive: () => session !== null,
     activeSession: () => session,
-    inputState: () => input
+    inputState: () => input,
+    rng: () => sessionRng
   };
 }

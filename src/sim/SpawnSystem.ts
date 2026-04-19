@@ -1,10 +1,12 @@
 import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../shared/content/enemies';
 import { assertNever } from '../shared/protocol';
+import type { Rng } from '../shared/rng';
 import type { EncounterDefinition, SpawnPlan, StaticSpawnPlan } from '../shared/session';
 
 import type { EntityStore } from './EntityStore';
 
 export type SpawnSystem = Readonly<{
+  setRng(rng: Rng | null): void;
   onEncounterStart(encounter: EncounterDefinition, store: EntityStore): void;
   onEncounterEnd(encounter: EncounterDefinition): void;
 }>;
@@ -12,9 +14,13 @@ export type SpawnSystem = Readonly<{
 export function createSpawnSystem(
   enemyRegistry: Readonly<Record<string, EnemyArchetype>> = ENEMY_ARCHETYPES
 ): SpawnSystem {
+  let rng: Rng | null = null;
   return {
+    setRng(next): void {
+      rng = next;
+    },
     onEncounterStart(encounter, store): void {
-      executePlan(encounter.spawnPlan, store, enemyRegistry);
+      executePlan(encounter.spawnPlan, store, enemyRegistry, rng);
     },
     onEncounterEnd(_encounter): void {
       // No internal state to reset for 'empty'/'static'.
@@ -26,7 +32,8 @@ export function createSpawnSystem(
 function executePlan(
   plan: SpawnPlan,
   store: EntityStore,
-  enemyRegistry: Readonly<Record<string, EnemyArchetype>>
+  enemyRegistry: Readonly<Record<string, EnemyArchetype>>,
+  _rng: Rng | null
 ): void {
   switch (plan.kind) {
     case 'empty':
