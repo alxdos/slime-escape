@@ -40,7 +40,7 @@
 | T1 | Зафиксировать `design/web-stack.md` (Vite + TS + npm, layout `src/main`/`src/sim`/`src/shared`, правила импортов) | done | plan: `design-web-stack` |
 | T2 | Зафиксировать `design/simulation-timing.md` (`SIM_HZ=60`, `SNAPSHOT_HZ=30`, правила интерполяции и pause/resume) | done | plan: `design-sim-timing` |
 | T3 | Обновить `design/README.md` Index и `Related` истории под новые решения | done | plan: `design-index` |
-| T4 | Скелет проекта (Vite + TS + npm, `index.html`, пустая `three.js` сцена в `main`, `featureDetection`, `src/shared/timing.ts` с константами) | planned | plan: `scaffold` |
+| T4 | Скелет проекта (Vite + TS + npm, `index.html`, пустая `three.js` сцена в `main`, `featureDetection`, `src/shared/timing.ts` с константами) | done | plan: `scaffold` |
 | T5 | `simulation worker`: `SimulationClock` 60 Hz, world c testEntity, pause/resume, протокол в `src/shared` | planned | plan: `sim-worker` |
 | T6 | `SnapshotExportSystem` 30 Hz и публикация снапшотов в main | planned | plan: `snapshot-export` |
 | T7 | `Renderer`: буфер из 2 снапшотов, интерполяция позиции с задержкой `SNAPSHOT_INTERVAL_MS` | planned | plan: `render-interp` |
