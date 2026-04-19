@@ -24,6 +24,11 @@ self.addEventListener('message', (event: MessageEvent<MainToSim>) => {
     case 'resume':
       clock.resume();
       return;
+    case 'startSession':
+    case 'stopSession':
+    case 'input':
+    case 'debug':
+      throw new Error(`MainToSim kind not implemented in story 001: ${msg.kind}`);
     default:
       assertNever(msg);
   }

@@ -3,5 +3,6 @@
   "compilerOptions": {
     "lib": ["ES2022", "WebWorker"]
   },
-  "include": ["src/sim/**/*", "src/shared/**/*"]
+  "include": ["src/sim/**/*", "src/shared/**/*"],
+  "exclude": []
 }

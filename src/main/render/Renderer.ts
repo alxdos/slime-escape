@@ -89,7 +89,7 @@ function updateMeshPosition(mesh: THREE.Mesh, pair: SnapshotPair): void {
     mesh.position.set(currEntity.x, currEntity.y, 0);
     return;
   }
-  const elapsedMs = performance.now() - pair.currReceivedAtMs;
+  const elapsedMs = pair.nowMs - pair.currReceivedAtMs;
   const renderSimTimeMs = curr.simTimeMs + elapsedMs - SNAPSHOT_INTERVAL_MS;
   const span = curr.simTimeMs - prev.simTimeMs;
   const rawAlpha = span > 0 ? (renderSimTimeMs - prev.simTimeMs) / span : 1;
