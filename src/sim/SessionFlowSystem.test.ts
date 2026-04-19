@@ -165,3 +165,260 @@ describe('SessionFlowSystem', () => {
     expect(onStop).toHaveBeenCalledTimes(2);
   });
 });
+
+import type { EncounterDefinition, SessionDefinition } from '../shared/session';
+import type { WaveProgressSnapshot } from '../shared/snapshot';
+
+function emptyEncounter(id: string, transitionRules: EncounterDefinition['transitionRules']): EncounterDefinition {
+  return {
+    id,
+    type: 'wave',
+    spawnPlan: { kind: 'empty' },
+    zoneBehavior: { kind: 'disabled' },
+    objectives: [],
+    rewardRules: null,
+    transitionRules,
+    tuning: null
+  };
+}
+
+function waveEncounter(id: string, transitionRules: EncounterDefinition['transitionRules']): EncounterDefinition {
+  return {
+    id,
+    type: 'wave',
+    spawnPlan: {
+      kind: 'wave',
+      spawns: [{ archetypeId: 'slime-fast' }],
+      spawnIntervalMs: 100,
+      maxAlive: 1
+    },
+    zoneBehavior: { kind: 'disabled' },
+    objectives: [],
+    rewardRules: null,
+    transitionRules,
+    tuning: null
+  };
+}
+
+function makeSession(encounters: ReadonlyArray<EncounterDefinition>, options?: {
+  win?: SessionDefinition['winCondition'];
+  loss?: SessionDefinition['lossCondition'];
+}): SessionDefinition {
+  return {
+    id: 'flow-test',
+    seed: 1,
+    arena: { width: 32, height: 18 },
+    player: { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 },
+    loadout: null,
+    modifiers: [],
+    rules: null,
+    encounters,
+    winCondition: options?.win ?? { kind: 'allEncountersComplete' },
+    lossCondition: options?.loss ?? { kind: 'playerDeath' },
+    uiMeta: null
+  };
+}
+
+describe('SessionFlowSystem encounter transitions', () => {
+  it("'never' rule: checkTransitions never fires", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession([emptyEncounter('a', { kind: 'never', next: 'sequential' })]);
+
+    flow.start(session);
+    events.length = 0;
+    for (let t = 0; t < 1000; t += 16) flow.checkTransitions(t);
+    expect(events).toHaveLength(0);
+    expect(flow.isActive()).toBe(true);
+  });
+
+  it("'timer' rule: fires after durationMs and advances to next encounter", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession([
+      emptyEncounter('first', { kind: 'timer', durationMs: 100, next: 'sequential' }),
+      emptyEncounter('second', { kind: 'never', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+    events.length = 0;
+    flow.checkTransitions(99);
+    expect(events).toHaveLength(0);
+    flow.checkTransitions(100);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'encounterStart']);
+    expect(flow.activeEncounter()?.encounter.id).toBe('second');
+  });
+
+  it("'allEnemiesCleared' for empty plan fires on the very first check", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession([
+      emptyEncounter('a', { kind: 'allEnemiesCleared', next: 'sequential' }),
+      emptyEncounter('b', { kind: 'never', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+    events.length = 0;
+    flow.checkTransitions(0);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'encounterStart']);
+    expect(flow.activeEncounter()?.encounter.id).toBe('b');
+  });
+
+  it("'allEnemiesCleared' for wave fires only when waveProgress is dispatched=total && alive=0", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    let progress: WaveProgressSnapshot | null = { dispatched: 0, total: 2, alive: 0 };
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: (e) => events.push(e),
+      waveProgress: () => progress
+    });
+    const session = makeSession([
+      waveEncounter('w', { kind: 'allEnemiesCleared', next: 'sequential' }),
+      emptyEncounter('end', { kind: 'never', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+    events.length = 0;
+
+    progress = { dispatched: 1, total: 2, alive: 1 };
+    flow.checkTransitions(50);
+    expect(events).toHaveLength(0);
+
+    progress = { dispatched: 2, total: 2, alive: 1 };
+    flow.checkTransitions(100);
+    expect(events).toHaveLength(0);
+
+    progress = { dispatched: 2, total: 2, alive: 0 };
+    flow.checkTransitions(150);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'encounterStart']);
+  });
+
+  it("publishes 'win' once when last encounter ends and winCondition is allEncountersComplete", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession([
+      emptyEncounter('only', { kind: 'allEnemiesCleared', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+    events.length = 0;
+    flow.checkTransitions(0);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'win']);
+    expect(flow.isActive()).toBe(false);
+    expect(clock.isRunning()).toBe(false);
+  });
+
+  it("does not publish 'win' if winCondition is none", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession(
+      [emptyEncounter('only', { kind: 'allEnemiesCleared', next: 'sequential' })],
+      { win: { kind: 'none' }, loss: { kind: 'none' } }
+    );
+
+    flow.start(session);
+    events.length = 0;
+    flow.checkTransitions(0);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd']);
+    expect(flow.isActive()).toBe(false);
+  });
+
+  it("'next: byId' jumps to a specific encounter and ignores sequential order", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession([
+      emptyEncounter('first', { kind: 'allEnemiesCleared', next: { kind: 'byId', id: 'third' } }),
+      emptyEncounter('second', { kind: 'never', next: 'sequential' }),
+      emptyEncounter('third', { kind: 'never', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+    flow.checkTransitions(0);
+    expect(flow.activeEncounter()?.encounter.id).toBe('third');
+  });
+
+  it("throws when 'next: byId' references an unknown encounter id", () => {
+    const clock = createFakeClock();
+    const flow = createSessionFlowSystem({ clock, emitEvent: () => {} });
+    const session = makeSession([
+      emptyEncounter('first', { kind: 'allEnemiesCleared', next: { kind: 'byId', id: 'missing' } })
+    ]);
+
+    flow.start(session);
+    expect(() => flow.checkTransitions(0)).toThrow(/byId/);
+  });
+});
+
+describe('SessionFlowSystem player death', () => {
+  it("publishes 'loss' once when onPlayerDeath fires under lossCondition.playerDeath", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession([emptyEncounter('only', { kind: 'never', next: 'sequential' })]);
+
+    flow.start(session);
+    events.length = 0;
+    flow.onPlayerDeath();
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'loss']);
+    expect(flow.isActive()).toBe(false);
+    expect(clock.isRunning()).toBe(false);
+  });
+
+  it("does not publish 'loss' when lossCondition is none", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession(
+      [emptyEncounter('only', { kind: 'never', next: 'sequential' })],
+      { win: { kind: 'none' }, loss: { kind: 'none' } }
+    );
+
+    flow.start(session);
+    events.length = 0;
+    flow.onPlayerDeath();
+    expect(events).toHaveLength(0);
+    expect(flow.isActive()).toBe(true);
+  });
+
+  it("repeated onPlayerDeath after run end is a no-op", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession([emptyEncounter('only', { kind: 'never', next: 'sequential' })]);
+
+    flow.start(session);
+    flow.onPlayerDeath();
+    events.length = 0;
+    flow.onPlayerDeath();
+    expect(events).toHaveLength(0);
+  });
+
+  it("after win, input/pause/resume are warned and ignored", () => {
+    const localWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const clock = createFakeClock();
+      const flow = createSessionFlowSystem({ clock, emitEvent: () => {} });
+      const session = makeSession([
+        emptyEncounter('only', { kind: 'allEnemiesCleared', next: 'sequential' })
+      ]);
+      flow.start(session);
+      flow.checkTransitions(0);
+      expect(flow.isActive()).toBe(false);
+
+      localWarn.mockClear();
+      flow.pause();
+      flow.resume();
+      flow.handleInput({ kind: 'fire', phase: 'start' });
+      expect(localWarn).toHaveBeenCalledTimes(3);
+    } finally {
+      localWarn.mockRestore();
+    }
+  });
+});

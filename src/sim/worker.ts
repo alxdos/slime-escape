@@ -44,6 +44,7 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     emitEvent
   );
   healthDeath.tick(intents, entities, simTimeMs, emitEvent);
+  sessionFlow.checkTransitions(simTimeMs);
   zone.onTick();
   const snapshot = exporter.onTick(simTimeMs, entities);
   if (snapshot !== null) {
@@ -53,11 +54,13 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
 
 healthDeath.registerHook((ctx) => {
   if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
+  if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
 });
 
 const sessionFlow = createSessionFlowSystem({
   clock,
   emitEvent,
+  waveProgress: () => spawn.waveProgress(),
   onSessionStart(session, rng) {
     entities.clear();
     exporter.reset();
