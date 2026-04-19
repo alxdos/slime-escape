@@ -46,7 +46,11 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
   healthDeath.tick(intents, entities, simTimeMs, emitEvent);
   sessionFlow.checkTransitions(simTimeMs);
   zone.onTick();
-  const snapshot = exporter.onTick(simTimeMs, entities);
+  const snapshot = exporter.onTick(simTimeMs, entities, {
+    encounter: sessionFlow.activeEncounter(),
+    zone: zone.zone(),
+    waveProgress: spawn.waveProgress()
+  });
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });
   }
