@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { detectFeatures } from './featureDetection';
+import { createSimWorkerHost } from './sim/SimWorkerHost';
 
 function requireCanvas(selector: string): HTMLCanvasElement {
   const el = document.querySelector<HTMLCanvasElement>(selector);
@@ -11,6 +12,8 @@ function requireCanvas(selector: string): HTMLCanvasElement {
 }
 
 detectFeatures();
+
+const sim = createSimWorkerHost();
 
 const canvas = requireCanvas('#scene');
 
