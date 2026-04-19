@@ -19,3 +19,19 @@ Top-down arena shooter, в котором **человек** пытается в
 | [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md) | Открытые вопросы |
 
 Начать чтение с **VISION**, затем **GDD_CORE** и **SCOPE**.
+
+## Запуск
+
+Требуется Node.js 22+ и npm 11+.
+
+```bash
+npm install
+npm run dev      # dev-сервер Vite на http://127.0.0.1:5173
+npm run build    # production-сборка в dist/
+npm run preview  # локальный preview-сервер для собранного билда
+npm run typecheck
+```
+
+Управление в текущем билде (история [stories/001-engine-skeleton.md](stories/001-engine-skeleton.md)):
+
+- `Space` — пауза/продолжение симуляции.
