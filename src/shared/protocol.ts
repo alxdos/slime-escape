@@ -1,9 +1,9 @@
+import type { RuntimeEvent } from './events';
+import type { InputCommand } from './input';
+import type { SessionDefinition } from './session';
 import type { Snapshot } from './snapshot';
 
-export type SessionDefinition = unknown;
-export type InputCommand = unknown;
 export type DebugCommand = unknown;
-export type RuntimeEvent = unknown;
 export type TelemetryRecord = unknown;
 
 export type MainToSim =

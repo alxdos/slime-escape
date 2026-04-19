@@ -20,6 +20,7 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
         entities: [
           {
             id: world.testEntity.id,
+            kind: 'player',
             x: world.testEntity.x,
             y: world.testEntity.y
           }
