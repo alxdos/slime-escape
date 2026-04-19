@@ -1,6 +1,7 @@
 import { detectFeatures } from './featureDetection';
 import { createSimWorkerHost } from './sim/SimWorkerHost';
 import { createRenderer } from './render/Renderer';
+import { createFpsOverlay } from './render/FpsOverlay';
 
 function requireCanvas(selector: string): HTMLCanvasElement {
   const el = document.querySelector<HTMLCanvasElement>(selector);
@@ -24,11 +25,30 @@ const renderer = createRenderer({
   getSnapshotPair: sim.snapshotPair
 });
 
+const fps = createFpsOverlay(document.body);
+
 window.addEventListener('resize', () => {
   renderer.resize(canvas.clientWidth, canvas.clientHeight);
 });
 
-function tick(): void {
+let paused = false;
+
+window.addEventListener('keydown', (event) => {
+  if (event.code !== 'Space' || event.repeat) {
+    return;
+  }
+  event.preventDefault();
+  if (paused) {
+    sim.resume();
+    paused = false;
+  } else {
+    sim.pause();
+    paused = true;
+  }
+});
+
+function tick(nowMs: number): void {
+  fps.onFrame(nowMs);
   renderer.render();
   requestAnimationFrame(tick);
 }

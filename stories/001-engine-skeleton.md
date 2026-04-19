@@ -44,7 +44,7 @@
 | T5 | `simulation worker`: `SimulationClock` 60 Hz, world c testEntity, pause/resume, протокол в `src/shared` | done | plan: `sim-worker` |
 | T6 | `SnapshotExportSystem` 30 Hz и публикация снапшотов в main | done | plan: `snapshot-export` |
 | T7 | `Renderer`: буфер из 2 снапшотов, интерполяция позиции с задержкой `SNAPSHOT_INTERVAL_MS` | done | plan: `render-interp` |
-| T8 | `FpsOverlay` + hotkey `Space` для pause/resume + проверка acceptance | planned | plan: `fps-pause` |
+| T8 | `FpsOverlay` + hotkey `Space` для pause/resume + проверка acceptance | done | plan: `fps-pause` |
 | T9 | Перевести историю в `done`, обновить `stories/README.md`, добавить в корневой README секцию How to run | planned | plan: `story-status` |
 
 ## Related
