@@ -1,26 +1,44 @@
+import type { RuntimeEvent } from '../shared/events';
 import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
 
+import { createCombatSystem } from './CombatSystem';
 import { createEntityStore } from './EntityStore';
 import { createMovementSystem } from './MovementSystem';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
+import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
 
 const entities = createEntityStore();
 const exporter = createSnapshotExportSystem();
 const movement = createMovementSystem();
 const spawn = createSpawnSystem();
+const combat = createCombatSystem();
+const spatialIndex = createSpatialIndex();
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);
+}
+
+function emitEvent(event: RuntimeEvent): void {
+  postToMain({ kind: 'event', event });
 }
 
 const clock = createSimulationClock((_dtMs, simTimeMs) => {
   const session = sessionFlow.activeSession();
   if (session === null) return;
   movement.tick(session.arena, entities, sessionFlow.inputState());
+  combat.tick(
+    sessionFlow.inputState(),
+    entities,
+    spatialIndex,
+    simTimeMs,
+    session.arena,
+    emitEvent
+  );
+  // T7 will apply combat-produced damage intents through HealthDeathSystem.
   const snapshot = exporter.onTick(simTimeMs, entities);
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });
@@ -29,17 +47,20 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
 
 const sessionFlow = createSessionFlowSystem({
   clock,
-  emitEvent(event) {
-    postToMain({ kind: 'event', event });
-  },
+  emitEvent,
   onSessionStart(session) {
     entities.clear();
     exporter.reset();
-    entities.spawnPlayer(session.player);
+    combat.clear();
+    const player = entities.spawnPlayer(session.player);
+    if (session.loadout !== null) {
+      combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
+    }
   },
   onSessionStop() {
     entities.clear();
     exporter.reset();
+    combat.clear();
   },
   onEncounterStart(encounter) {
     spawn.onEncounterStart(encounter, entities);

@@ -1,3 +1,4 @@
+import { log } from '../log';
 import { assertNever } from '../protocol';
 import type {
   ArenaConfig,
@@ -6,12 +7,13 @@ import type {
   StaticSpawn,
   Vec2
 } from '../session';
+import { SIM_STEP_MS } from '../timing';
 
 import { SANDBOX_ARENA } from './arenas';
-import { TRAINING_TARGET } from './enemies';
+import { ENEMY_ARCHETYPES, TRAINING_TARGET } from './enemies';
 import { SANDBOX_PLAYER } from './players';
 import type { ModePreset } from './presets';
-import { PISTOL } from './weapons';
+import { PISTOL, WEAPON_ARCHETYPES } from './weapons';
 
 export type BuildOptions = Readonly<{
   seed: number;
@@ -69,6 +71,7 @@ function buildSandboxWithCombatSession(options: BuildOptions): SessionDefinition
     position: { x: 5, y: 0 }
   };
   assertSpawnInsideArena(targetSpawn.position, TRAINING_TARGET.radius, SANDBOX_ARENA);
+  warnIfWeaponMayTunnel(PISTOL.id);
 
   const encounter: EncounterDefinition = {
     id: 'sandbox-with-combat-encounter',
@@ -106,5 +109,28 @@ function assertSpawnInsideArena(position: Vec2, radius: number, arena: ArenaConf
       `static spawn at (${position.x}, ${position.y}) with radius ${radius} ` +
         `does not fit into arena ${arena.width}x${arena.height}`
     );
+  }
+}
+
+function warnIfWeaponMayTunnel(weaponId: string): void {
+  const weapon = WEAPON_ARCHETYPES[weaponId];
+  if (weapon === undefined) {
+    throw new Error(`unknown weapon archetype: ${weaponId}`);
+  }
+  let minEnemyRadius = Number.POSITIVE_INFINITY;
+  for (const archetype of Object.values(ENEMY_ARCHETYPES)) {
+    if (archetype.radius < minEnemyRadius) minEnemyRadius = archetype.radius;
+  }
+  if (!Number.isFinite(minEnemyRadius)) return;
+
+  const stepDistance = weapon.projectileSpeed * (SIM_STEP_MS / 1000);
+  const reach = weapon.projectileRadius + minEnemyRadius;
+  if (stepDistance > reach) {
+    log.warn('weapon may tunnel through smallest target per design/projectiles-and-combat.md', {
+      weaponId: weapon.id,
+      stepDistance,
+      reach,
+      minEnemyRadius
+    });
   }
 }
