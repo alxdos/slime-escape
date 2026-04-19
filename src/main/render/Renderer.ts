@@ -43,6 +43,9 @@ const SCENE_BG = 0x05060a;
 
 const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
+const ZONE_OVERLAY_Z = 0.2;
+const ZONE_CORNER_RADIUS_FACTOR = 0.25;
+const ZONE_FEATHER_WU = 1.5;
 
 export function createRenderer(init: RendererInit): Renderer {
   const enemyRegistry = init.enemyRegistry ?? ENEMY_ARCHETYPES;
@@ -84,6 +87,11 @@ export function createRenderer(init: RendererInit): Renderer {
   const crosshair = createCrosshair();
   crosshair.visible = false;
   scene.add(crosshair);
+
+  const zoneOverlay = createZoneOverlay(init.arena);
+  scene.add(zoneOverlay.mesh);
+
+  const debugHud = createDebugHud();
 
   type EntityMesh = { mesh: THREE.Mesh; geometry: THREE.BufferGeometry; material: THREE.Material };
   const enemyMeshes = new Map<number, EntityMesh>();
@@ -163,6 +171,8 @@ export function createRenderer(init: RendererInit): Renderer {
         disposeEntityMesh
       );
       updateCrosshair(crosshair, init.getAim);
+      updateZoneOverlay(zoneOverlay, pair, alpha);
+      debugHud.update(pair.curr);
       renderer.render(scene, camera);
     },
     fitToWindow,
@@ -171,6 +181,7 @@ export function createRenderer(init: RendererInit): Renderer {
       scene.remove(arenaBorder);
       scene.remove(playerMesh);
       scene.remove(crosshair);
+      scene.remove(zoneOverlay.mesh);
       for (const entry of enemyMeshes.values()) disposeEntityMesh(entry);
       enemyMeshes.clear();
       for (const entry of projectileMeshes.values()) disposeEntityMesh(entry);
@@ -182,6 +193,8 @@ export function createRenderer(init: RendererInit): Renderer {
       disposeCrosshair(crosshair);
       arenaBorder.geometry.dispose();
       (arenaBorder.material as THREE.Material).dispose();
+      zoneOverlay.dispose();
+      debugHud.dispose();
       renderer.dispose();
     }
   };
@@ -313,4 +326,138 @@ function updateCrosshair(group: THREE.Group, getAim: AimAccessor | undefined): v
   group.visible = true;
   group.position.x = aim.x;
   group.position.y = aim.y;
+}
+
+type ZoneOverlay = Readonly<{
+  mesh: THREE.Mesh;
+  setMargin(margin: number): void;
+  dispose(): void;
+}>;
+
+function createZoneOverlay(arena: ArenaConfig): ZoneOverlay {
+  const geometry = new THREE.PlaneGeometry(arena.width, arena.height);
+  const cornerRadius = ZONE_CORNER_RADIUS_FACTOR * arena.height;
+  const material = new THREE.ShaderMaterial({
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    uniforms: {
+      uHalfSize: { value: new THREE.Vector2(arena.width / 2, arena.height / 2) },
+      uMargin: { value: 0 },
+      uCornerRadius: { value: cornerRadius },
+      uFeather: { value: ZONE_FEATHER_WU }
+    },
+    vertexShader: `
+      varying vec2 vWorldXY;
+      void main() {
+        vec4 worldPos = modelMatrix * vec4(position, 1.0);
+        vWorldXY = worldPos.xy;
+        gl_Position = projectionMatrix * viewMatrix * worldPos;
+      }
+    `,
+    fragmentShader: `
+      varying vec2 vWorldXY;
+      uniform vec2 uHalfSize;
+      uniform float uMargin;
+      uniform float uCornerRadius;
+      uniform float uFeather;
+
+      float sdRoundedBox(vec2 p, vec2 b, float r) {
+        vec2 q = abs(p) - b + vec2(r);
+        return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+      }
+
+      void main() {
+        vec2 inner = max(uHalfSize - vec2(uMargin), vec2(0.001));
+        float r = min(uCornerRadius, min(inner.x, inner.y));
+        float d = sdRoundedBox(vWorldXY, inner, r);
+        float alpha = clamp(smoothstep(0.0, uFeather, d), 0.0, 1.0);
+        gl_FragColor = vec4(0.0, 0.0, 0.0, alpha);
+      }
+    `
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.z = ZONE_OVERLAY_Z;
+  mesh.renderOrder = 1;
+
+  return {
+    mesh,
+    setMargin(margin: number): void {
+      const uniform = material.uniforms.uMargin;
+      if (uniform === undefined) return;
+      uniform.value = Math.max(0, margin);
+    },
+    dispose(): void {
+      geometry.dispose();
+      material.dispose();
+    }
+  };
+}
+
+function updateZoneOverlay(overlay: ZoneOverlay, pair: SnapshotPair, alpha: number): void {
+  const { prev, curr } = pair;
+  if (!curr) {
+    overlay.setMargin(0);
+    return;
+  }
+  if (!prev) {
+    overlay.setMargin(curr.zone.margin);
+    return;
+  }
+  const margin = prev.zone.margin + (curr.zone.margin - prev.zone.margin) * alpha;
+  overlay.setMargin(margin);
+}
+
+type DebugHud = Readonly<{
+  update(snapshot: import('../../shared/snapshot').Snapshot | null): void;
+  dispose(): void;
+}>;
+
+function createDebugHud(): DebugHud {
+  const div = document.createElement('div');
+  div.style.cssText = [
+    'position:fixed',
+    'top:8px',
+    'left:8px',
+    'color:#9ad6ff',
+    'font:12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace',
+    'background:rgba(0,0,0,0.55)',
+    'padding:6px 8px',
+    'border-radius:4px',
+    'pointer-events:none',
+    'z-index:5',
+    'white-space:pre'
+  ].join(';');
+  document.body.appendChild(div);
+
+  return {
+    update(snapshot): void {
+      if (!snapshot) {
+        div.textContent = '';
+        return;
+      }
+      const lines: string[] = [];
+      const enc = snapshot.encounter;
+      lines.push(
+        enc
+          ? `encounter: ${enc.id} (${enc.type} #${enc.index})  ${(enc.elapsedMs / 1000).toFixed(1)}s`
+          : 'encounter: —'
+      );
+      const wp = snapshot.waveProgress;
+      if (wp !== null) {
+        lines.push(`wave: ${wp.dispatched}/${wp.total}  alive=${wp.alive}`);
+      }
+      const player = snapshot.entities.find((e) => e.kind === 'player');
+      lines.push(
+        player !== undefined && player.kind === 'player'
+          ? `hp:   ${player.hp}/${player.maxHp}`
+          : 'hp:   —'
+      );
+      lines.push(`zone: ${snapshot.zone.mode}  margin=${snapshot.zone.margin.toFixed(2)}`);
+      div.textContent = lines.join('\n');
+    },
+    dispose(): void {
+      div.remove();
+    }
+  };
 }

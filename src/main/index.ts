@@ -1,5 +1,5 @@
 import { buildSessionDefinition } from '../shared/content/buildSession';
-import { SANDBOX_WITH_COMBAT_PRESET } from '../shared/content/presets';
+import { TRAINING_PRESET } from '../shared/content/presets';
 import type { SessionDefinition } from '../shared/session';
 
 import { detectFeatures } from './featureDetection';
@@ -35,7 +35,7 @@ let input: InputController | null = null;
 function startSession(): void {
   if (activeSession !== null) return;
 
-  const session = buildSessionDefinition(SANDBOX_WITH_COMBAT_PRESET, { seed: makeSeed() });
+  const session = buildSessionDefinition(TRAINING_PRESET, { seed: makeSeed() });
   activeSession = session;
   sim.startSession(session);
 
