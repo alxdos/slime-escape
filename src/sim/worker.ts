@@ -11,6 +11,7 @@ import { createSimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
+import { createZoneSystem } from './ZoneSystem';
 
 const entities = createEntityStore();
 const exporter = createSnapshotExportSystem();
@@ -19,6 +20,7 @@ const spawn = createSpawnSystem();
 const combat = createCombatSystem();
 const healthDeath = createHealthDeathSystem();
 const spatialIndex = createSpatialIndex();
+const zone = createZoneSystem();
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);
@@ -42,6 +44,7 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     emitEvent
   );
   healthDeath.tick(intents, entities, simTimeMs, emitEvent);
+  zone.onTick();
   const snapshot = exporter.onTick(simTimeMs, entities);
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });
@@ -75,9 +78,11 @@ const sessionFlow = createSessionFlowSystem({
     const session = sessionFlow.activeSession();
     if (session === null) return;
     spawn.onEncounterStart(encounter, entities, session.arena);
+    zone.onEncounterStart(encounter);
   },
   onEncounterEnd(encounter) {
     spawn.onEncounterEnd(encounter);
+    zone.onEncounterEnd(encounter);
   }
 });
 
