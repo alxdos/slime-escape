@@ -22,6 +22,12 @@ export function createWorld(): World {
   };
 }
 
+export function resetWorld(world: World): void {
+  world.simTimeMs = 0;
+  world.testEntity.x = 0;
+  world.testEntity.y = 0;
+}
+
 const ORBIT_RADIUS = 0.6;
 const ORBIT_PERIOD_SEC = 4;
 

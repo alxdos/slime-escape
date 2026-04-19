@@ -6,6 +6,7 @@ const TICKS_PER_SNAPSHOT = Math.round(SNAPSHOT_INTERVAL_MS / SIM_STEP_MS);
 
 export type SnapshotExportSystem = Readonly<{
   onTick(simTimeMs: number, world: World): Snapshot | null;
+  reset(): void;
 }>;
 
 export function createSnapshotExportSystem(): SnapshotExportSystem {
@@ -26,6 +27,9 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           }
         ]
       };
+    },
+    reset(): void {
+      tickCount = 0;
     }
   };
 }
