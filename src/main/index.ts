@@ -1,7 +1,10 @@
+import { SANDBOX_ARENA } from '../shared/content/arenas';
+import { SANDBOX_PLAYER } from '../shared/content/players';
+
 import { detectFeatures } from './featureDetection';
-import { createSimWorkerHost } from './sim/SimWorkerHost';
-import { createRenderer } from './render/Renderer';
 import { createFpsOverlay } from './render/FpsOverlay';
+import { createRenderer } from './render/Renderer';
+import { createSimWorkerHost } from './sim/SimWorkerHost';
 
 function requireCanvas(selector: string): HTMLCanvasElement {
   const el = document.querySelector<HTMLCanvasElement>(selector);
@@ -20,15 +23,15 @@ const canvas = requireCanvas('#scene');
 const renderer = createRenderer({
   canvas,
   pixelRatio: Math.min(window.devicePixelRatio, 2),
-  width: canvas.clientWidth,
-  height: canvas.clientHeight,
+  arena: SANDBOX_ARENA,
+  player: SANDBOX_PLAYER,
   getSnapshotPair: sim.snapshotPair
 });
 
 const fps = createFpsOverlay(document.body);
 
 window.addEventListener('resize', () => {
-  renderer.resize(canvas.clientWidth, canvas.clientHeight);
+  renderer.fitToWindow();
 });
 
 let paused = false;
