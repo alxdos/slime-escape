@@ -17,6 +17,7 @@ export type DamageSource =
       ownerKind: 'player' | 'enemy';
       weaponArchetypeId: string;
     }
+  | { kind: 'enemyContact'; enemyId: EntityId }
   | { kind: 'environment'; tag: string }
   | { kind: 'boss'; bossId: EntityId; attackId: string };
 
@@ -70,7 +71,11 @@ export function createCombatSystem(
       runProjectileMovement(store);
       runLifetimeCleanup(store, simTimeMs, arena);
       index.rebuild(store);
-      return runHitDetection(store, index, simTimeMs, maxEnemyRadius, emit);
+      const contactIntents = runContactIntents(store, index, simTimeMs, maxEnemyRadius);
+      const projectileIntents = runHitDetection(store, index, simTimeMs, maxEnemyRadius, emit);
+      return contactIntents.length === 0
+        ? projectileIntents
+        : [...contactIntents, ...projectileIntents];
     }
   };
 }
@@ -150,6 +155,71 @@ function runLifetimeCleanup(store: EntityStore, simTimeMs: number, arena: ArenaC
     }
   }
   for (const id of expired) store.removeProjectile(id);
+}
+
+function runContactIntents(
+  store: EntityStore,
+  index: SpatialIndex,
+  simTimeMs: number,
+  maxEnemyRadius: number
+): DamageIntent[] {
+  const player = store.player();
+  if (player === null) return [];
+  const intents: DamageIntent[] = [];
+  const range = player.radius + maxEnemyRadius;
+  const candidates = index.queryRadius(player.position.x, player.position.y, range);
+  for (const candidate of candidates) {
+    if (candidate.kind !== 'enemy') continue;
+    const enemy = candidate;
+    if (enemy.contactDamage <= 0) continue;
+    if (simTimeMs < enemy.nextContactSimMs) continue;
+    const dx = enemy.position.x - player.position.x;
+    const dy = enemy.position.y - player.position.y;
+    const reach = enemy.radius + player.radius;
+    if (dx * dx + dy * dy > reach * reach) continue;
+    intents.push({
+      targetId: player.id,
+      amount: enemy.contactDamage,
+      source: { kind: 'enemyContact', enemyId: enemy.id },
+      hitPosition: { x: player.position.x, y: player.position.y }
+    });
+    enemy.nextContactSimMs = simTimeMs + enemy.contactCooldownMs;
+    applyKnockback(enemy, player, simTimeMs);
+  }
+  return intents;
+}
+
+function applyKnockback(enemy: Enemy, player: Player, simTimeMs: number): void {
+  const ndx = enemy.position.x - player.position.x;
+  const ndy = enemy.position.y - player.position.y;
+  const dist = Math.hypot(ndx, ndy);
+  let nx: number;
+  let ny: number;
+  if (dist > 0) {
+    nx = ndx / dist;
+    ny = ndy / dist;
+  } else {
+    const vlen = Math.hypot(enemy.velocity.vx, enemy.velocity.vy);
+    if (vlen > 0) {
+      nx = enemy.velocity.vx / vlen;
+      ny = enemy.velocity.vy / vlen;
+    } else {
+      nx = 1;
+      ny = 0;
+    }
+  }
+  const approachSpeed = Math.max(
+    0,
+    (player.velocity.vx - enemy.velocity.vx) * nx + (player.velocity.vy - enemy.velocity.vy) * ny
+  );
+  const impulseSpeed =
+    enemy.knockbackBaseImpulse + enemy.knockbackVelocityScale * approachSpeed;
+  enemy.knockback = {
+    vx: impulseSpeed * nx,
+    vy: impulseSpeed * ny,
+    startSimMs: simTimeMs,
+    endSimMs: simTimeMs + enemy.knockbackDurationMs
+  };
 }
 
 function runHitDetection(
