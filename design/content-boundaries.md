@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-19 (форма архетипов и правило резолва по `id` вынесены в `content-archetypes.md`)
 
 ## Context
 
@@ -22,6 +22,7 @@
   - параметры арены;
   - таблицы дропа;
   - стандартные `ModePreset`.
+- Форма архетипов (поля `EnemyArchetype`, `WeaponArchetype`, минимальный `Loadout`, правила резолва по стабильному `id`) фиксируется в [content-archetypes.md](content-archetypes.md). Ссылки в `SessionDefinition`, `EncounterDefinition`, `SpawnPlan` и runtime state идут только по `id`; резолв `id → archetype` выполняется один раз при сборке/старте сессии.
 - В `session configuration` хранить:
   - выбранный preset;
   - `SessionDefinition`;
@@ -59,3 +60,5 @@
 
 - [session-definition.md](session-definition.md)
 - [runtime-systems.md](runtime-systems.md)
+- [content-archetypes.md](content-archetypes.md)
+- [spawn-plan.md](spawn-plan.md)

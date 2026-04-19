@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-19 (вынос per-kind полей снапшота и формы combat-events в `snapshot-shape.md`)
 
 ## Context
 
@@ -48,7 +48,7 @@
   - позиционные данные и ориентацию;
   - данные по зоне и текущему encounter;
   - агрегированные данные HUD уровня run: HP, прогресс волны, состояние босса.
-- Каждая сущность в снапшоте обязана нести стабильный дискриминатор `kind` (например `'player'`, и далее `'enemy'`, `'projectile'`, `'drop'` по мере появления систем). Рендер и HUD выбирают визуализацию по `kind`, а не по `id` или порядку в списке.
+- Каждая сущность в снапшоте обязана нести стабильный дискриминатор `kind` (например `'player'`, и далее `'enemy'`, `'projectile'`, `'drop'` по мере появления систем). Рендер и HUD выбирают визуализацию по `kind`, а не по `id` или порядку в списке. Per-kind поля сущностей и форма combat runtime events (`fire`/`hit`/`death`) формализованы в [snapshot-shape.md](snapshot-shape.md); расширения добавляются туда же, не «по месту» в системах.
 - Immutable конфигурация сессии (включая `arena`) **не дублируется** в каждом снапшоте: `main` уже владеет `SessionDefinition`, потому что сам её собрал и передал в `startSession`. `Renderer` и UI читают `arena`, `player.position` и т.п. напрямую из этой `SessionDefinition`, а снапшоты несут только меняющееся state.
 - Runtime event используется для точечных фактов, которые не должны восстанавливать мир целиком. Минимально это:
   - выстрел;
@@ -87,3 +87,4 @@
 - [content-boundaries.md](content-boundaries.md)
 - [input-commands.md](input-commands.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
+- [snapshot-shape.md](snapshot-shape.md)

@@ -66,5 +66,10 @@
 | [simulation-timing.md](simulation-timing.md) | accepted | Частоты `SimulationClock` и снапшотов, правила интерполяции и pause/resume |
 | [logging.md](logging.md) | accepted | Единый log-модуль `src/shared/log.ts`, уровни и запрет прямых `console.*` |
 | [testing.md](testing.md) | accepted | Test runner (`vitest`), команды, обязательные инварианты под тестом |
+| [spawn-plan.md](spawn-plan.md) | accepted | Форма `SpawnPlan` (`empty`/`static` + расширения), ответственность `SpawnSystem` |
+| [content-archetypes.md](content-archetypes.md) | accepted | Минимальные `EnemyArchetype`, `WeaponArchetype`, `Loadout` и резолв архетипов по `id` |
+| [projectiles-and-combat.md](projectiles-and-combat.md) | accepted | Снаряды как сущности, кулдаун, движение/хит-тест, damage intents |
+| [health-and-death.md](health-and-death.md) | accepted | HP на сущностях, damage intents, death hooks, удаление сущностей |
+| [snapshot-shape.md](snapshot-shape.md) | accepted | Per-kind поля сущностей в снапшоте и форма combat runtime events (`fire`/`hit`/`death`) |
 | [decision-log-format.md](decision-log-format.md) | accepted | Вспомогательная выжимка формата решений; правила слоя задаются этим `README` |
 | [_template.md](_template.md) | template | Минимальный шаблон нового решения |

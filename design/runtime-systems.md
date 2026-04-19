@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-19 (уточнён `SpatialIndex`, явные ссылки на `spawn-plan.md`, `projectiles-and-combat.md`, `health-and-death.md`)
 
 ## Context
 
@@ -15,7 +15,7 @@
   - `SessionFlowSystem` - старт сессии, смена `encounter`, победа, поражение;
   - `EntityStore` - хранение и жизненный цикл runtime-сущностей;
   - `SpatialIndex` - быстрый поиск соседей для врагов, пуль и дропа;
-  - `MovementSystem` - перемещение игрока, врагов, снарядов;
+  - `MovementSystem` - перемещение управляемых актёров (игрок, враги с поведением); движение снарядов — внутри `CombatSystem`, см. [projectiles-and-combat.md](projectiles-and-combat.md);
   - `CombatSystem` - выстрелы, попадания, урон, кулдауны;
   - `HealthDeathSystem` - HP, смерть, удаление сущностей, death hooks;
   - `SpawnSystem` - исполнение `spawnPlan`;
@@ -41,13 +41,20 @@
 - Все системы должны быть управляемы через `SessionDefinition` и runtime state, а не через прямые условные ветки по названию режима.
 - Границы ответственности систем:
   - `SessionFlowSystem` решает, какой encounter активен, когда run завершается и какие session-level events публикуются; владеет lifecycle сессии (см. ниже);
-  - `SpawnSystem` только исполняет `spawnPlan` и не принимает решений о победе или поражении;
-  - `MovementSystem` меняет позиции и базовую кинематику, но не применяет урон; владеет инвариантом «сущность не выходит за границы арены» ([arena-and-coordinates.md](arena-and-coordinates.md)) и читает границы из активного `SessionDefinition.arena`, а не из глобальной константы;
-  - `CombatSystem` создаёт выстрелы, вычисляет попадания и формирует damage intents;
-  - `HealthDeathSystem` единственный слой, который применяет финальную потерю HP, фиксирует смерть и удаляет сущности;
+  - `SpawnSystem` только исполняет `spawnPlan` и не принимает решений о победе или поражении; форма `spawnPlan` и его исполнение — в [spawn-plan.md](spawn-plan.md);
+  - `MovementSystem` меняет позиции и базовую кинематику **управляемых актёров** (игрок, враги с поведением), но не применяет урон; владеет инвариантом «сущность не выходит за границы арены» ([arena-and-coordinates.md](arena-and-coordinates.md)) и читает границы из активного `SessionDefinition.arena`, а не из глобальной константы; снаряды живут вне `MovementSystem` (см. [projectiles-and-combat.md](projectiles-and-combat.md));
+  - `CombatSystem` создаёт выстрелы, двигает снаряды, вычисляет попадания и формирует damage intents; полный контракт — [projectiles-and-combat.md](projectiles-and-combat.md);
+  - `HealthDeathSystem` единственный слой, который применяет финальную потерю HP, фиксирует смерть и удаляет damageable-сущности; полный контракт — [health-and-death.md](health-and-death.md);
+  - `SpatialIndex` — внутренний помощник систем (`CombatSystem`, `DropSystem`, при необходимости `BossPhaseSystem`); см. ниже минимальный контракт;
   - `DropSystem` реагирует на death hooks и управляет только жизненным циклом дропа;
   - `ZoneSystem` управляет состоянием зоны и её экспортом, но не завершает encounter самостоятельно;
   - `BossPhaseSystem` управляет фазами и boss-specific attack rules, не подменяя `SessionFlowSystem`.
+- `SpatialIndex` — минимальный контракт уровня архитектуры:
+  - используется как акселератор соседских запросов и не является источником истины: исходное состояние сущностей живёт в `EntityStore`;
+  - перестраивается каждый тик из текущего `EntityStore` после фаз, которые могут менять позиции (`MovementSystem`, фаза движения снарядов в `CombatSystem`);
+  - минимальный API — два запроса: «соседи в радиусе вокруг точки» и «соседи в осевом прямоугольнике»;
+  - гранулярность — единый индекс на тик с фильтрацией по `kind` на стороне вызова; раздельные индексы по `kind` — деталь реализации, не контракт;
+  - `SpatialIndex` не публикует runtime events и не мутирует сущности.
 - `death hooks` должны срабатывать после того, как `HealthDeathSystem` зафиксировал смерть сущности, но до финального экспорта снапшота. Минимальные потребители death hooks:
   - `DropSystem`;
   - session-level статистика и progression;
@@ -84,3 +91,7 @@
 - [simulation-timing.md](simulation-timing.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
 - [input-commands.md](input-commands.md)
+- [spawn-plan.md](spawn-plan.md)
+- [projectiles-and-combat.md](projectiles-and-combat.md)
+- [health-and-death.md](health-and-death.md)
+- [snapshot-shape.md](snapshot-shape.md)
