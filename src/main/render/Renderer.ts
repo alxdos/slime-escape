@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 
+import { DROP_ARCHETYPES, type DropArchetype } from '../../shared/content/drops';
 import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../../shared/content/enemies';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
 import type { ArenaConfig, PlayerSpawn } from '../../shared/session';
 import type {
+  DropSnapshot,
   EnemySnapshot,
   EntitySnapshot,
   ProjectileSnapshot,
@@ -25,6 +27,7 @@ export type RendererInit = Readonly<{
   getAim?: AimAccessor;
   enemyRegistry?: Readonly<Record<string, EnemyArchetype>>;
   weaponRegistry?: Readonly<Record<string, WeaponArchetype>>;
+  dropRegistry?: Readonly<Record<string, DropArchetype>>;
 }>;
 
 export type Renderer = Readonly<{
@@ -43,6 +46,9 @@ const SCENE_BG = 0x05060a;
 
 const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
+const DROP_Z = 0.03;
+const DROP_PULSE_HZ = 1.6;
+const DROP_PULSE_AMPLITUDE = 0.15;
 const ZONE_OVERLAY_Z = 0.2;
 const ZONE_CORNER_RADIUS_FACTOR = 0.25;
 const ZONE_FEATHER_WU = 1.5;
@@ -50,6 +56,7 @@ const ZONE_FEATHER_WU = 1.5;
 export function createRenderer(init: RendererInit): Renderer {
   const enemyRegistry = init.enemyRegistry ?? ENEMY_ARCHETYPES;
   const weaponRegistry = init.weaponRegistry ?? WEAPON_ARCHETYPES;
+  const dropRegistry = init.dropRegistry ?? DROP_ARCHETYPES;
 
   const renderer = new THREE.WebGLRenderer({ canvas: init.canvas, antialias: true });
   renderer.setPixelRatio(init.pixelRatio);
@@ -96,6 +103,7 @@ export function createRenderer(init: RendererInit): Renderer {
   type EntityMesh = { mesh: THREE.Mesh; geometry: THREE.BufferGeometry; material: THREE.Material };
   const enemyMeshes = new Map<number, EntityMesh>();
   const projectileMeshes = new Map<number, EntityMesh>();
+  const dropMeshes = new Map<number, EntityMesh>();
 
   function fitToWindow(): void {
     const fit = fitCanvasToViewport({
@@ -149,6 +157,22 @@ export function createRenderer(init: RendererInit): Renderer {
     return entry;
   }
 
+  function ensureDropMesh(snap: DropSnapshot): EntityMesh {
+    const existing = dropMeshes.get(snap.id);
+    if (existing !== undefined) return existing;
+    const archetype = dropRegistry[snap.archetypeId];
+    const radius = archetype?.radius ?? 0.3;
+    const color = archetype?.color ?? 0xffffff;
+    const geometry = new THREE.CircleGeometry(radius, 24);
+    const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.z = DROP_Z;
+    scene.add(mesh);
+    const entry: EntityMesh = { mesh, geometry, material };
+    dropMeshes.set(snap.id, entry);
+    return entry;
+  }
+
   return {
     render(): void {
       const pair = init.getSnapshotPair();
@@ -170,6 +194,15 @@ export function createRenderer(init: RendererInit): Renderer {
         ensureProjectileMesh,
         disposeEntityMesh
       );
+      updateEntities(
+        pair,
+        alpha,
+        (e): e is DropSnapshot => e.kind === 'drop',
+        dropMeshes,
+        ensureDropMesh,
+        disposeEntityMesh
+      );
+      pulseDropMeshes(dropMeshes, pair.nowMs);
       updateCrosshair(crosshair, init.getAim);
       updateZoneOverlay(zoneOverlay, pair, alpha);
       debugHud.update(pair.curr);
@@ -186,6 +219,8 @@ export function createRenderer(init: RendererInit): Renderer {
       enemyMeshes.clear();
       for (const entry of projectileMeshes.values()) disposeEntityMesh(entry);
       projectileMeshes.clear();
+      for (const entry of dropMeshes.values()) disposeEntityMesh(entry);
+      dropMeshes.clear();
       arenaGeometry.dispose();
       arenaMaterial.dispose();
       playerGeometry.dispose();
@@ -310,6 +345,19 @@ function updateEntities<S extends EntitySnapshot>(
       dispose(entry);
       table.delete(id);
     }
+  }
+}
+
+function pulseDropMeshes(
+  table: Map<number, { mesh: THREE.Mesh }>,
+  nowMs: number
+): void {
+  // Visual-only breathing: drops do not have velocity in the snapshot,
+  // so a tiny scale modulation keeps them readable on a busy arena.
+  const phase = (nowMs / 1000) * DROP_PULSE_HZ * Math.PI * 2;
+  const scale = 1 + DROP_PULSE_AMPLITUDE * Math.sin(phase);
+  for (const entry of table.values()) {
+    entry.mesh.scale.set(scale, scale, 1);
   }
 }
 
@@ -454,6 +502,11 @@ function createDebugHud(): DebugHud {
           : 'hp:   —'
       );
       lines.push(`zone: ${snapshot.zone.mode}  margin=${snapshot.zone.margin.toFixed(2)}`);
+      let drops = 0;
+      for (const entity of snapshot.entities) {
+        if (entity.kind === 'drop') drops += 1;
+      }
+      lines.push(`drops: ${drops}`);
       div.textContent = lines.join('\n');
     },
     dispose(): void {

@@ -29,6 +29,18 @@ const sim = createSimWorkerHost({
   onEvent(event) {
     if (event.kind === 'win' || event.kind === 'loss') {
       handleRunEnd(event.kind, event.simTime);
+      return;
+    }
+    if (
+      event.kind === 'dropSpawn' ||
+      event.kind === 'dropPickup' ||
+      event.kind === 'dropExpire'
+    ) {
+      log.info(`drop event: ${event.kind}`, {
+        simTime: event.simTime,
+        entityId: event.entityId,
+        archetypeId: event.archetypeId
+      });
     }
   }
 });
