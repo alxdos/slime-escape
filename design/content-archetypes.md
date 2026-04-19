@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (для истории 004 расширены `EnemyArchetype` полями `maxSpeed`/`contactDamage`/`contactCooldownMs` и `behavior` union — добавлено `'chase'`; `PlayerSpawn` получает обязательное `maxHp`)
+- Updated: 2026-04-19 (для истории 004 расширены `EnemyArchetype` полями `maxSpeed`/`contactDamage`/`contactCooldownMs`/`knockbackBaseImpulse`/`knockbackVelocityScale`/`knockbackDurationMs` и `behavior` union — добавлено `'chase'`; `PlayerSpawn` получает обязательное `maxHp`)
 
 ## Context
 
@@ -34,22 +34,26 @@
   type EnemyArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;            // wu, для коллизий и рендера
-    maxHp: number;             // целое > 0
+    radius: number;                  // wu, для коллизий и рендера
+    maxHp: number;                   // целое > 0
     behavior: EnemyBehavior;
-    maxSpeed: number;          // wu/s, >= 0; для 'stationary' обязан быть 0
-    contactDamage: number;     // целое >= 0; 0 = врага можно касаться без урона
-    contactCooldownMs: number; // целое > 0; интервал между двумя контактными ударами одного и того же врага
-    color: number;             // 0xRRGGBB, плейсхолдер для рендера
+    maxSpeed: number;                // wu/s, >= 0; для 'stationary' обязан быть 0
+    contactDamage: number;           // целое >= 0; 0 = врага можно касаться без урона
+    contactCooldownMs: number;       // целое > 0; интервал между двумя контактными ударами одного и того же врага
+    knockbackBaseImpulse: number;    // wu/s, >= 0; базовая скорость отскока при нулевом сближении
+    knockbackVelocityScale: number;  // безразмерный, >= 0; множитель добавки от approachSpeed
+    knockbackDurationMs: number;     // целое > 0; длительность затухания knockback
+    color: number;                   // 0xRRGGBB, плейсхолдер для рендера
   }>;
   ```
 - `behavior: 'stationary'` означает, что `MovementSystem` не двигает врага этого архетипа; `maxSpeed` для `'stationary'` обязан быть 0 — это правило валидируется на стороне content/builder, не runtime.
 - `behavior: 'chase'` означает, что `MovementSystem` двигает врага к текущей позиции игрока с скоростью `maxSpeed`; конкретный alg (прямая линия / steering) — деталь реализации, контракт — «в среднем сокращает расстояние до игрока за тик». Дальнейшие поведения (`'wander'`, `'orbit'`, …) добавляются дописыванием в `EnemyBehavior` union, а не ветвями в `MovementSystem`.
 - `contactDamage` и `contactCooldownMs` — единственный источник правды для контактного урона; правила обработки — в [enemy-contact.md](enemy-contact.md). Если `contactDamage === 0`, кулдаун всё равно задаётся явно — отсутствие поля запрещено по тому же правилу единственности «нет данных».
+- `knockbackBaseImpulse`, `knockbackVelocityScale`, `knockbackDurationMs` — параметры контактного knockback враг → от игрока; правила обработки — в [enemy-contact.md](enemy-contact.md), раздел `Knockback at contact`. Поля задаются всегда: «knockback'а нет» выражается явными нулями `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0`, а не пропуском полей.
 - `color` — плейсхолдер до появления полноценных ассетов. Это контентное поле, не decision рендера.
 - Числовые ограничения, обязательные на стороне content/builder:
   - `maxSpeed * SIM_STEP_SEC <= radius + minPlayerRadius` ([enemy-contact.md](enemy-contact.md): запрет touring через игрока), warning через единый log-модуль ([logging.md](logging.md));
-  - для `'stationary'` обязан быть `maxSpeed === 0` и `contactDamage === 0` (стационарная мишень не должна неявно бить игрока); валидация на стороне content/builder.
+  - для `'stationary'` обязан быть `maxSpeed === 0`, `contactDamage === 0` и `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0` (стационарная мишень не должна неявно бить и не должна прыгать); валидация на стороне content/builder.
 
 ### WeaponArchetype
 
