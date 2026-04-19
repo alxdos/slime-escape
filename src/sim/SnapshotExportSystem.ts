@@ -27,6 +27,27 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           y: player.position.y
         });
       }
+      for (const enemy of store.enemies()) {
+        entities.push({
+          id: enemy.id,
+          kind: 'enemy',
+          archetypeId: enemy.archetypeId,
+          x: enemy.position.x,
+          y: enemy.position.y,
+          hp: enemy.hp,
+          maxHp: enemy.maxHp
+        });
+      }
+      for (const projectile of store.projectiles()) {
+        entities.push({
+          id: projectile.id,
+          kind: 'projectile',
+          weaponArchetypeId: projectile.weaponArchetypeId,
+          ownerKind: projectile.ownerKind,
+          x: projectile.position.x,
+          y: projectile.position.y
+        });
+      }
       return { simTimeMs, entities };
     },
     reset(): void {
