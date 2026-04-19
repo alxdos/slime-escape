@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (player получает `hp`/`maxHp`; top-level поля `encounter`, `zone`, `waveProgress`; runtime events `win`/`loss`)
+- Updated: 2026-04-19 (для истории 005: новый член union `DropSnapshot` с `kind: 'drop'`; runtime events `dropSpawn`/`dropPickup`/`dropExpire`, owner — `DropSystem`)
 
 ## Context
 
@@ -31,8 +31,8 @@
 type EntitySnapshot =
   | PlayerSnapshot
   | EnemySnapshot
-  | ProjectileSnapshot;
-// kind 'drop' добавляется историей 005 расширением union;
+  | ProjectileSnapshot
+  | DropSnapshot;
 // kind 'boss' добавляется 006 — отдельным расширением, не подменой enemy.
 ```
 
@@ -73,6 +73,17 @@ type EntitySnapshot =
     // отдельное поле dir/angle вводится только если потребует контент с ориентированным спрайтом
   }
   ```
+- `DropSnapshot` (история 005, см. [drops.md](drops.md)):
+  ```ts
+  {
+    id: number;
+    kind: 'drop';
+    archetypeId: string;     // DropArchetype.id; рендер выбирает визуал по архетипу
+    x: number;
+    y: number;
+  }
+  ```
+  `radius`, `effect`, `color`, `expireAtSimMs`, оставшееся время жизни в snapshot не уходят: gameplay-форма дропа (overlap-радиус, эффект) живёт только в `sim`, а render берёт визуал по `archetypeId` из `content library`. Если HUD когда-нибудь захочет «осталось N сек до исчезновения», это будет добавлением поля сюда, не вытаскиванием `expireAtSimMs` «по месту».
 
 ### Top-level snapshot
 
@@ -118,7 +129,7 @@ type EntitySnapshot =
 
 ### Runtime events: контракт kinds
 
-- К существующим lifecycle kinds из [runtime-systems.md](runtime-systems.md) (`sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`) этой историей добавляются три combat-kind, а историей 004 — `win` и `loss`:
+- К существующим lifecycle kinds из [runtime-systems.md](runtime-systems.md) (`sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`) этой историей добавляются три combat-kind, историей 004 — `win` и `loss`, а историей 005 — три drop-kind (`dropSpawn`, `dropPickup`, `dropExpire`):
   ```ts
   type RuntimeEvent =
     // lifecycle (см. runtime-systems.md)
@@ -162,14 +173,41 @@ type EntitySnapshot =
       }
     // session lifecycle (этот файл, история 004)
     | { kind: 'win'; simTime: number }
-    | { kind: 'loss'; simTime: number };
+    | { kind: 'loss'; simTime: number }
+    // drops (этот файл, история 005; см. drops.md)
+    | {
+        kind: 'dropSpawn';
+        simTime: number;
+        entityId: number;       // Drop.id
+        archetypeId: string;    // DropArchetype.id
+        x: number;
+        y: number;
+      }
+    | {
+        kind: 'dropPickup';
+        simTime: number;
+        entityId: number;       // Drop.id
+        archetypeId: string;    // DropArchetype.id
+        pickerId: number;       // на 005 — всегда player.id, поле явное на будущее
+        x: number;
+        y: number;
+      }
+    | {
+        kind: 'dropExpire';
+        simTime: number;
+        entityId: number;       // Drop.id
+        archetypeId: string;    // DropArchetype.id
+        x: number;
+        y: number;
+      };
   ```
 - `win`/`loss` несут только `simTime`. Дополнительные поля (статистика забега, причина) — будущие расширения, появятся вместе с потребителями (HUD-итог из 007). Минимальная форма достаточна, чтобы `main` отреагировал переходом в результат-экран.
 - Owner-системы (см. [runtime-systems.md](runtime-systems.md)):
   - `fire`, `hit` публикует `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md));
   - `death` публикует `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) сразу после фиксации смерти и до запуска death hooks;
-  - `win`, `loss` публикует `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md), [session-definition.md](session-definition.md)) ровно один раз за run.
-- Никакая другая система не имеет права публиковать события `fire`/`hit`/`death`/`win`/`loss`. `DropSystem` и `BossPhaseSystem` подписываются на death через death hook, а не публикуют альтернативное событие.
+  - `win`, `loss` публикует `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md), [session-definition.md](session-definition.md)) ровно один раз за run;
+  - `dropSpawn`, `dropPickup`, `dropExpire` публикует `DropSystem` ([drops.md](drops.md)): `dropSpawn` — внутри death hook, синхронно после `EntityStore.spawnDrop`; `dropPickup` и `dropExpire` — в фазе `DropSystem` тика, по правилам [drops.md](drops.md) (на один дроп — ровно одно из них).
+- Никакая другая система не имеет права публиковать события `fire`/`hit`/`death`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`. `DropSystem` и `BossPhaseSystem` подписываются на death через death hook, а не публикуют альтернативное событие.
 
 ### Гарантии и приоритеты
 
@@ -201,4 +239,5 @@ type EntitySnapshot =
 - [session-definition.md](session-definition.md)
 - [zone.md](zone.md)
 - [spawn-plan.md](spawn-plan.md)
+- [drops.md](drops.md)
 - [simulation-timing.md](simulation-timing.md)

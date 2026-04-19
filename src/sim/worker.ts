@@ -3,6 +3,7 @@ import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
 
 import { createCombatSystem } from './CombatSystem';
+import { createDropSystem } from './DropSystem';
 import { createEntityStore } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
@@ -21,6 +22,7 @@ const combat = createCombatSystem();
 const healthDeath = createHealthDeathSystem();
 const spatialIndex = createSpatialIndex();
 const zone = createZoneSystem();
+const drops = createDropSystem();
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);
@@ -44,6 +46,7 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     emitEvent
   );
   healthDeath.tick(intents, entities, simTimeMs, emitEvent);
+  drops.tick(simTimeMs, entities, emitEvent);
   sessionFlow.checkTransitions(simTimeMs);
   zone.onTick();
   const snapshot = exporter.onTick(simTimeMs, entities, {
@@ -58,6 +61,7 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
 
 healthDeath.registerHook((ctx) => {
   if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
+  if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
   if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
 });
 
@@ -70,6 +74,7 @@ const sessionFlow = createSessionFlowSystem({
     exporter.reset();
     combat.clear();
     spawn.setRng(rng);
+    drops.setRng(rng);
     const player = entities.spawnPlayer(session.player);
     if (session.loadout !== null) {
       combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
@@ -80,6 +85,7 @@ const sessionFlow = createSessionFlowSystem({
     exporter.reset();
     combat.clear();
     spawn.setRng(null);
+    drops.setRng(null);
   },
   onEncounterStart(encounter) {
     const session = sessionFlow.activeSession();

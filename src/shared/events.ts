@@ -37,4 +37,29 @@ export type RuntimeEvent =
       y: number;
     }
   | { kind: 'win'; simTime: number }
-  | { kind: 'loss'; simTime: number };
+  | { kind: 'loss'; simTime: number }
+  | {
+      kind: 'dropSpawn';
+      simTime: number;
+      entityId: number;
+      archetypeId: string;
+      x: number;
+      y: number;
+    }
+  | {
+      kind: 'dropPickup';
+      simTime: number;
+      entityId: number;
+      archetypeId: string;
+      pickerId: number;
+      x: number;
+      y: number;
+    }
+  | {
+      kind: 'dropExpire';
+      simTime: number;
+      entityId: number;
+      archetypeId: string;
+      x: number;
+      y: number;
+    };

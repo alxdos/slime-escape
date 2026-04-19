@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import type { DropEffect } from '../shared/content/drops';
+
 import {
   createEntityStore,
+  type DropSpawnSpec,
   type EnemySpawnSpec,
   type ProjectileSpawnSpec
 } from './EntityStore';
@@ -119,6 +122,28 @@ describe('EntityStore', () => {
     liveVelocity.vx = 999;
 
     expect(projectile.velocity.vx).toBe(5);
+  });
+
+  it('isolates drop effect from later mutations of the source archetype object', () => {
+    // design/drops.md: radius/effect/color are copied at spawn so a live drop
+    // is independent from later mutations of the archetype it came from.
+    const store = createEntityStore();
+    const archetypeEffect: DropEffect = { kind: 'heal', amount: 1 };
+    const spec: DropSpawnSpec = {
+      archetypeId: 'heal-orb',
+      position: { x: 0, y: 0 },
+      radius: 0.35,
+      effect: archetypeEffect,
+      color: 0xff7aa8,
+      expireAtSimMs: 1000
+    };
+    const drop = store.spawnDrop(spec);
+
+    archetypeEffect.amount = 999;
+
+    expect(drop.effect.kind).toBe('heal');
+    if (drop.effect.kind !== 'heal') throw new Error('expected heal');
+    expect(drop.effect.amount).toBe(1);
   });
 
   it('hands out unique ids across kinds', () => {

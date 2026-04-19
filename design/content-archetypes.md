@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (для истории 004 расширены `EnemyArchetype` полями `maxSpeed`/`contactDamage`/`contactCooldownMs`/`knockbackBaseImpulse`/`knockbackVelocityScale`/`knockbackDurationMs` и `behavior` union — добавлено `'chase'`; `PlayerSpawn` получает обязательное `maxHp`)
+- Updated: 2026-04-19 (для истории 005 добавлен `DropArchetype` и обязательное поле `dropTable` у `EnemyArchetype`; полные правила выбора и lifecycle дропа — в `drops.md`)
 
 ## Context
 
@@ -27,9 +27,14 @@
 
 ### EnemyArchetype
 
-- Форма на горизонт 004:
+- Форма на горизонт 005:
   ```ts
   type EnemyBehavior = 'stationary' | 'chase';
+
+  type DropTableEntry = Readonly<{
+    archetypeId: string;             // DropArchetype.id из реестра drops в content library
+    chance: number;                  // [0, 1]
+  }>;
 
   type EnemyArchetype = Readonly<{
     id: string;
@@ -44,6 +49,7 @@
     knockbackVelocityScale: number;  // безразмерный, >= 0; множитель добавки от approachSpeed
     knockbackDurationMs: number;     // целое > 0; длительность затухания knockback
     color: number;                   // 0xRRGGBB, плейсхолдер для рендера
+    dropTable: ReadonlyArray<DropTableEntry>;  // [] = враг ничего не дропает; правила выбора — drops.md
   }>;
   ```
 - `behavior: 'stationary'` означает, что `MovementSystem` не двигает врага этого архетипа; `maxSpeed` для `'stationary'` обязан быть 0 — это правило валидируется на стороне content/builder, не runtime.
@@ -54,6 +60,7 @@
 - Числовые ограничения, обязательные на стороне content/builder:
   - `maxSpeed * SIM_STEP_SEC <= radius + minPlayerRadius` ([enemy-contact.md](enemy-contact.md): запрет touring через игрока), warning через единый log-модуль ([logging.md](logging.md));
   - для `'stationary'` обязан быть `maxSpeed === 0`, `contactDamage === 0` и `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0` (стационарная мишень не должна неявно бить и не должна прыгать); валидация на стороне content/builder.
+- `dropTable` обязателен и задаётся всегда, даже если враг ничего не дропает: явное `[]` отличается от «забыли выставить» (см. правило «без двух разных «нет данных»). Дополнительные ограничения (каждый `chance ∈ [0, 1]`, сумма `chance` по таблице `<= 1`, все `archetypeId` резолвятся в реестре `DropArchetype`) — см. [drops.md](drops.md); их нарушение фиксируется warning через единый log-модуль на стороне content/builder и не доходит до runtime-фолбэка.
 
 ### WeaponArchetype
 
@@ -73,6 +80,25 @@
 - `cooldownMs` — минимальный интервал между двумя последовательными выстрелами; конкретное использование (per-shooter timer) — в [projectiles-and-combat.md](projectiles-and-combat.md).
 - Поле «бесконечный боезапас» из [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md) не выражается в архетипе: отсутствие поля `ammo` и есть его реализация. Когда (если) появится конечный боезапас, он добавится отдельным полем и отдельным design-решением.
 - Скорости и радиусы должны соблюдать инвариант «без туннелирования» из [projectiles-and-combat.md](projectiles-and-combat.md); проверка — на стороне content/builder, не на стороне рантайма.
+
+### DropArchetype
+
+- Минимальная форма для 005:
+  ```ts
+  type DropEffect =
+    | { kind: 'heal'; amount: number };   // amount > 0; future: weapon swap, modifier и т. п.
+
+  type DropArchetype = Readonly<{
+    id: string;
+    displayName: string;
+    radius: number;          // wu, > 0; для overlap-теста и рендера
+    ttlMs: number;           // целое > 0; время жизни на арене с момента спавна
+    effect: DropEffect;
+    color: number;           // 0xRRGGBB, плейсхолдер для рендера
+  }>;
+  ```
+- `DropEffect` — дискриминированный union по `kind`. Расширение происходит **добавлением** новых `kind` (новые слои силы и боеприпасов в будущем); переименование/смена семантики поля — новое решение и обновление этого файла, не «дописывание по месту».
+- Полный контракт «как именно дроп спавнится, живёт и подбирается, и как применяется `DropEffect`» — в [drops.md](drops.md); здесь фиксируется только форма архетипа и его место в `content library`.
 
 ### PlayerSpawn.maxHp
 
@@ -97,6 +123,7 @@
 - Структура каталога `src/shared/content/**` дополняется реестрами по типам контента (фактическое имя файла — деталь реализации, не часть контракта):
   - реестр `EnemyArchetype` (например, `enemies.ts`);
   - реестр `WeaponArchetype` (например, `weapons.ts`);
+  - реестр `DropArchetype` (например, `drops.ts`);
   - в `index.ts` реестры реэкспортируются вместе с уже существующими аренами/preset-ами.
 - В реестре допускается одна структура: словарь `Record<string, Archetype>` с ключом, равным `archetype.id`. Это исключает рассинхрон между ключом и `id`.
 
@@ -115,6 +142,7 @@
 - [projectiles-and-combat.md](projectiles-and-combat.md)
 - [enemy-contact.md](enemy-contact.md)
 - [health-and-death.md](health-and-death.md)
+- [drops.md](drops.md)
 - [logging.md](logging.md)
 - [web-stack.md](web-stack.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)

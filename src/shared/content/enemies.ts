@@ -1,7 +1,14 @@
 import { log } from '../log';
 import { SIM_STEP_MS } from '../timing';
 
+import { DROP_ARCHETYPES, HEAL_ORB, type DropArchetype } from './drops';
+
 export type EnemyBehavior = 'stationary' | 'chase';
+
+export type DropTableEntry = Readonly<{
+  archetypeId: string;
+  chance: number;
+}>;
 
 export type EnemyArchetype = Readonly<{
   id: string;
@@ -16,6 +23,7 @@ export type EnemyArchetype = Readonly<{
   knockbackVelocityScale: number;
   knockbackDurationMs: number;
   color: number;
+  dropTable: ReadonlyArray<DropTableEntry>;
 }>;
 
 export const TRAINING_TARGET: EnemyArchetype = {
@@ -30,7 +38,8 @@ export const TRAINING_TARGET: EnemyArchetype = {
   knockbackBaseImpulse: 0,
   knockbackVelocityScale: 0,
   knockbackDurationMs: 1,
-  color: 0xff7766
+  color: 0xff7766,
+  dropTable: []
 };
 
 export const SLIME_FAST: EnemyArchetype = {
@@ -45,7 +54,8 @@ export const SLIME_FAST: EnemyArchetype = {
   knockbackBaseImpulse: 8,
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
-  color: 0x77ff99
+  color: 0x77ff99,
+  dropTable: [{ archetypeId: HEAL_ORB.id, chance: 0.25 }]
 };
 
 export const SLIME_TANK: EnemyArchetype = {
@@ -60,7 +70,8 @@ export const SLIME_TANK: EnemyArchetype = {
   knockbackBaseImpulse: 3,
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 200,
-  color: 0x4488dd
+  color: 0x4488dd,
+  dropTable: [{ archetypeId: HEAL_ORB.id, chance: 0.6 }]
 };
 
 export const ENEMY_ARCHETYPES: Readonly<Record<string, EnemyArchetype>> = {
@@ -71,11 +82,14 @@ export const ENEMY_ARCHETYPES: Readonly<Record<string, EnemyArchetype>> = {
 
 export function validateEnemyRegistry(
   registry: Readonly<Record<string, EnemyArchetype>>,
-  playerRadius: number
+  playerRadius: number,
+  dropRegistry: Readonly<Record<string, DropArchetype>> = DROP_ARCHETYPES
 ): void {
   for (const archetype of Object.values(registry)) {
     warnIfStationaryInvariantsBroken(archetype);
     warnIfEnemyMayTunnelThroughPlayer(archetype, playerRadius);
+    warnIfDropTableInvalid(archetype);
+    assertDropTableArchetypesResolve(archetype, dropRegistry);
   }
 }
 
@@ -111,5 +125,39 @@ function warnIfEnemyMayTunnelThroughPlayer(
       enemyRadius: archetype.radius,
       playerRadius
     });
+  }
+}
+
+function warnIfDropTableInvalid(archetype: EnemyArchetype): void {
+  let sum = 0;
+  for (const entry of archetype.dropTable) {
+    if (!(entry.chance >= 0 && entry.chance <= 1)) {
+      log.warn('drop table entry chance out of [0, 1] per design/drops.md', {
+        enemyArchetypeId: archetype.id,
+        dropArchetypeId: entry.archetypeId,
+        chance: entry.chance
+      });
+    }
+    sum += entry.chance;
+  }
+  if (sum > 1 + 1e-9) {
+    log.warn('drop table chances sum exceeds 1 per design/drops.md', {
+      enemyArchetypeId: archetype.id,
+      sum
+    });
+  }
+}
+
+function assertDropTableArchetypesResolve(
+  archetype: EnemyArchetype,
+  dropRegistry: Readonly<Record<string, DropArchetype>>
+): void {
+  for (const entry of archetype.dropTable) {
+    if (dropRegistry[entry.archetypeId] === undefined) {
+      throw new Error(
+        `enemy archetype "${archetype.id}" drop table references unknown drop archetype ` +
+          `"${entry.archetypeId}" (see design/drops.md and design/content-archetypes.md)`
+      );
+    }
   }
 }

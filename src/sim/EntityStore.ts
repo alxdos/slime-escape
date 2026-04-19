@@ -1,3 +1,4 @@
+import type { DropEffect } from '../shared/content/drops';
 import type { EnemyBehavior } from '../shared/content/enemies';
 import type { PlayerSpawn, Vec2 } from '../shared/session';
 
@@ -54,6 +55,17 @@ export type Projectile = {
   velocity: { vx: number; vy: number };
 };
 
+export type Drop = {
+  readonly id: EntityId;
+  readonly kind: 'drop';
+  readonly archetypeId: string;
+  readonly radius: number;
+  readonly effect: DropEffect;
+  readonly color: number;
+  readonly expireAtSimMs: number;
+  position: { x: number; y: number };
+};
+
 export type EnemySpawnSpec = Readonly<{
   archetypeId: string;
   position: Vec2;
@@ -79,19 +91,33 @@ export type ProjectileSpawnSpec = Readonly<{
   expireAtSimMs: number;
 }>;
 
+export type DropSpawnSpec = Readonly<{
+  archetypeId: string;
+  position: Vec2;
+  radius: number;
+  effect: DropEffect;
+  color: number;
+  expireAtSimMs: number;
+}>;
+
 export type EntityStore = Readonly<{
   spawnPlayer(spec: PlayerSpawn): Player;
   spawnEnemy(spec: EnemySpawnSpec): Enemy;
   spawnProjectile(spec: ProjectileSpawnSpec): Projectile;
+  spawnDrop(spec: DropSpawnSpec): Drop;
   player(): Player | null;
   enemyById(id: EntityId): Enemy | null;
   projectileById(id: EntityId): Projectile | null;
+  dropById(id: EntityId): Drop | null;
   enemies(): IterableIterator<Enemy>;
   projectiles(): IterableIterator<Projectile>;
+  drops(): IterableIterator<Drop>;
   enemyCount(): number;
   projectileCount(): number;
+  dropCount(): number;
   removeEnemy(id: EntityId): boolean;
   removeProjectile(id: EntityId): boolean;
+  removeDrop(id: EntityId): boolean;
   removePlayer(): boolean;
   clear(): void;
 }>;
@@ -101,6 +127,7 @@ export function createEntityStore(): EntityStore {
   let player: Player | null = null;
   const enemies = new Map<EntityId, Enemy>();
   const projectiles = new Map<EntityId, Projectile>();
+  const drops = new Map<EntityId, Drop>();
 
   function makeId(): EntityId {
     const id = nextId as EntityId;
@@ -165,6 +192,22 @@ export function createEntityStore(): EntityStore {
       projectiles.set(next.id, next);
       return next;
     },
+    spawnDrop(spec): Drop {
+      const next: Drop = {
+        id: makeId(),
+        kind: 'drop',
+        archetypeId: spec.archetypeId,
+        radius: spec.radius,
+        // design/drops.md: effect is copied at spawn so a live drop is
+        // independent from later mutations of the source archetype.
+        effect: structuredClone(spec.effect),
+        color: spec.color,
+        expireAtSimMs: spec.expireAtSimMs,
+        position: { x: spec.position.x, y: spec.position.y }
+      };
+      drops.set(next.id, next);
+      return next;
+    },
     player(): Player | null {
       return player;
     },
@@ -174,11 +217,17 @@ export function createEntityStore(): EntityStore {
     projectileById(id): Projectile | null {
       return projectiles.get(id) ?? null;
     },
+    dropById(id): Drop | null {
+      return drops.get(id) ?? null;
+    },
     enemies(): IterableIterator<Enemy> {
       return enemies.values();
     },
     projectiles(): IterableIterator<Projectile> {
       return projectiles.values();
+    },
+    drops(): IterableIterator<Drop> {
+      return drops.values();
     },
     enemyCount(): number {
       return enemies.size;
@@ -186,11 +235,17 @@ export function createEntityStore(): EntityStore {
     projectileCount(): number {
       return projectiles.size;
     },
+    dropCount(): number {
+      return drops.size;
+    },
     removeEnemy(id): boolean {
       return enemies.delete(id);
     },
     removeProjectile(id): boolean {
       return projectiles.delete(id);
+    },
+    removeDrop(id): boolean {
+      return drops.delete(id);
     },
     removePlayer(): boolean {
       if (player === null) return false;
@@ -201,6 +256,7 @@ export function createEntityStore(): EntityStore {
       player = null;
       enemies.clear();
       projectiles.clear();
+      drops.clear();
       nextId = 1;
     }
   };

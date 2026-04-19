@@ -28,7 +28,19 @@ export type ProjectileSnapshot = Readonly<{
   y: number;
 }>;
 
-export type EntitySnapshot = PlayerSnapshot | EnemySnapshot | ProjectileSnapshot;
+export type DropSnapshot = Readonly<{
+  id: number;
+  kind: 'drop';
+  archetypeId: string;
+  x: number;
+  y: number;
+}>;
+
+export type EntitySnapshot =
+  | PlayerSnapshot
+  | EnemySnapshot
+  | ProjectileSnapshot
+  | DropSnapshot;
 
 export type EntityKind = EntitySnapshot['kind'];
 
