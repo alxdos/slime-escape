@@ -81,10 +81,11 @@ describe('EntityStore', () => {
 
   it('isolates enemy position from the spec object', () => {
     const store = createEntityStore();
-    const spec: EnemySpawnSpec = { ...ENEMY_SPEC, position: { x: 1, y: 1 } };
+    const livePosition = { x: 1, y: 1 };
+    const spec: EnemySpawnSpec = { ...ENEMY_SPEC, position: livePosition };
     const enemy = store.spawnEnemy(spec);
 
-    spec.position.x = 999;
+    livePosition.x = 999;
 
     expect(enemy.position.x).toBe(1);
   });
@@ -104,13 +105,11 @@ describe('EntityStore', () => {
 
   it('isolates projectile velocity from the spec object', () => {
     const store = createEntityStore();
-    const spec: ProjectileSpawnSpec = {
-      ...PROJECTILE_SPEC,
-      velocity: { vx: 5, vy: 0 }
-    };
+    const liveVelocity = { vx: 5, vy: 0 };
+    const spec: ProjectileSpawnSpec = { ...PROJECTILE_SPEC, velocity: liveVelocity };
     const projectile = store.spawnProjectile(spec);
 
-    spec.velocity.vx = 999;
+    liveVelocity.vx = 999;
 
     expect(projectile.velocity.vx).toBe(5);
   });
