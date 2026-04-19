@@ -92,6 +92,7 @@ export type EntityStore = Readonly<{
   projectileCount(): number;
   removeEnemy(id: EntityId): boolean;
   removeProjectile(id: EntityId): boolean;
+  removePlayer(): boolean;
   clear(): void;
 }>;
 
@@ -190,6 +191,11 @@ export function createEntityStore(): EntityStore {
     },
     removeProjectile(id): boolean {
       return projectiles.delete(id);
+    },
+    removePlayer(): boolean {
+      if (player === null) return false;
+      player = null;
+      return true;
     },
     clear(): void {
       player = null;

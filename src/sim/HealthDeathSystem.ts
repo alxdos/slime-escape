@@ -2,7 +2,7 @@ import type { RuntimeEvent } from '../shared/events';
 import type { Vec2 } from '../shared/session';
 
 import type { DamageIntent, DamageSource } from './CombatSystem';
-import type { EntityId, EntityStore } from './EntityStore';
+import type { Enemy, EntityId, EntityStore, Player } from './EntityStore';
 
 export type DeathContext = Readonly<{
   entityId: EntityId;
@@ -51,7 +51,8 @@ export function createHealthDeathSystem(): HealthDeathSystem {
         }
       }
       for (const death of deaths) {
-        store.removeEnemy(death.entityId);
+        if (death.entityKind === 'enemy') store.removeEnemy(death.entityId);
+        if (death.entityKind === 'player') store.removePlayer();
       }
     }
   };
@@ -64,20 +65,34 @@ function applyDamage(
 ): DeathContext[] {
   const deaths: DeathContext[] = [];
   for (const intent of intents) {
-    const target = store.enemyById(intent.targetId);
+    const target = resolveTarget(intent.targetId, store);
     if (target === null) continue;
     if (target.hp === 0) continue;
     target.hp = Math.max(0, target.hp - intent.amount);
     if (target.hp === 0) {
-      deaths.push({
-        entityId: target.id,
-        entityKind: 'enemy',
-        archetypeId: target.archetypeId,
-        position: { x: target.position.x, y: target.position.y },
-        cause: intent.source,
-        simTime: simTimeMs
-      });
+      deaths.push(makeDeathContext(target, intent.source, simTimeMs));
     }
   }
   return deaths;
+}
+
+function resolveTarget(id: EntityId, store: EntityStore): Enemy | Player | null {
+  const player = store.player();
+  if (player !== null && player.id === id) return player;
+  return store.enemyById(id);
+}
+
+function makeDeathContext(
+  target: Enemy | Player,
+  cause: DamageSource,
+  simTimeMs: number
+): DeathContext {
+  return {
+    entityId: target.id,
+    entityKind: target.kind,
+    archetypeId: target.kind === 'enemy' ? target.archetypeId : null,
+    position: { x: target.position.x, y: target.position.y },
+    cause,
+    simTime: simTimeMs
+  };
 }
