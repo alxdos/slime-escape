@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-19 (для истории 004 активирован `source.kind: 'enemyContact'`; путь смерти игрока через session-level death hook закреплён как обязательный для `lossCondition: playerDeath`)
 
 ## Context
 
@@ -27,7 +27,7 @@
     maxHp: number;    // целое > 0, копия из архетипа
   };
   ```
-- На 003 `HasHealth` есть только у `enemy`. Игрок добавит `HasHealth` в более поздних историях (зона/босс) — это сделает соответствующая история, не 003.
+- На 003 `HasHealth` есть только у `enemy`. История 004 даёт `HasHealth` и игроку: `Player` в `EntityStore` получает поля `hp`/`maxHp`, инициализируемые из `SessionDefinition.player.maxHp` ([content-archetypes.md](content-archetypes.md), [session-definition.md](session-definition.md)) на старте сессии. Никаких новых kind не вводится; контракт «HP на сущности» одинаков для `enemy` и `player`.
 - Снаряды (`projectile`) HP не имеют и `HealthDeathSystem` их не трогает.
 
 ### Damage intents
@@ -39,12 +39,13 @@
     amount: number;     // целое > 0
     source:
       | { kind: 'projectile'; projectileId: EntityId; ownerKind: 'player' | 'enemy'; weaponArchetypeId: string }
-      | { kind: 'environment'; tag: string }   // зарезервировано: газ, поджог и т.п.
-      | { kind: 'boss'; bossId: EntityId; attackId: string };  // зарезервировано под 006
+      | { kind: 'enemyContact'; enemyId: EntityId }                  // активен с 004; контракт — enemy-contact.md
+      | { kind: 'environment'; tag: string }                         // зарезервировано: газ, поджог и т.п.
+      | { kind: 'boss'; bossId: EntityId; attackId: string };        // зарезервировано под 006
     hitPosition: { x: number; y: number };
   }>;
   ```
-- Минимально на 003 единственный реальный `source.kind` — `'projectile'`. Остальные перечислены, чтобы будущие истории добавлялись расширением union, а не переименованием поля.
+- На 003 единственный реальный `source.kind` — `'projectile'`. Историей 004 активируется `'enemyContact'` (формирует `CombatSystem` в новой фазе по [enemy-contact.md](enemy-contact.md)). Остальные kind зарезервированы и активируются соответствующими историями расширением union, а не переименованием поля.
 - Damage intents за тик передаются в `HealthDeathSystem` явным списком (по конкретному signature метода), без отдельной глобальной шины событий: один тик — один список.
 - `CombatSystem` не имеет права читать или мутировать HP. Все вычитания выполняет только `HealthDeathSystem`.
 
@@ -96,10 +97,13 @@
   6. дальнейшие системы (`DropSystem`, `ZoneSystem` и т.п.) работают уже на консистентном `EntityStore`, потом — `SnapshotExportSystem`.
 - `SnapshotExportSystem` ([snapshot-shape.md](snapshot-shape.md)) не видит уже удалённую сущность — игрок не успевает увидеть её «лишний кадр».
 
-### Игрок (forward-compat)
+### Игрок и player-death (активно с 004)
 
-- Когда у игрока появится `HasHealth`, его смерть пойдёт через тот же путь, что и смерть врага.
-- `lossCondition: { kind: 'playerDeath' }` ([session-definition.md](session-definition.md)) реализуется через death hook session-level: hook регистрируется `SessionFlowSystem`, реагирует на `entityKind === 'player'` и переводит run в loss. Это решение здесь только зафиксировано как **направление**; конкретная реализация — в соответствующей истории, не в 003.
+- Игрок получает `HasHealth` (см. выше) и проходит через тот же путь, что и враг: `DamageIntent` → `applyDamage` → возможная смерть на этом тике → death events → death hooks → удаление.
+- `lossCondition: { kind: 'playerDeath' }` ([session-definition.md](session-definition.md)) реализуется через **session-level death hook**: hook регистрируется `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md)) на старте симуляции/сессии, реагирует на `entityKind === 'player'` и инициирует завершение run (публикация `loss`-event и сброс runtime state). Это единственный санкционированный путь loss-by-death; никакая система не имеет права «опережать» этот hook собственной публикацией `loss`.
+- Удаление игрока из `EntityStore` происходит по общему правилу `removeDead()`: после публикации `death`-event и hooks. Это значит, что hook session-level видит позицию игрока на момент смерти. Поведение `EntityStore.player()` после удаления — `null`; `MovementSystem`/`CombatSystem`/`SnapshotExportSystem` обязаны корректно обрабатывать отсутствие игрока (см. ниже).
+- После публикации `loss` `SimulationClock` переводится в idle, дальнейшие тики не выполняются. `SnapshotExportSystem` для следующего расписанного снапшота уже не вызывается; последний валидный снапшот — тот, который был экспортирован в тике смерти (с уже удалённым игроком). HUD реагирует на `loss`-event, а не на «отсутствие игрока в снапшоте».
+- `MovementSystem` и `CombatSystem` обязаны быть толерантны к `player === null`: фаза contact intents и фаза firing decisions становятся no-op. Это не специальное правило 004, а общий контракт «системы не предполагают, что player всегда жив».
 
 ## Consequences
 
@@ -113,6 +117,7 @@
 
 - [runtime-systems.md](runtime-systems.md)
 - [projectiles-and-combat.md](projectiles-and-combat.md)
+- [enemy-contact.md](enemy-contact.md)
 - [snapshot-shape.md](snapshot-shape.md)
 - [content-archetypes.md](content-archetypes.md)
 - [session-definition.md](session-definition.md)

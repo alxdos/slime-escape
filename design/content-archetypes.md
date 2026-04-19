@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-19 (для истории 004 расширены `EnemyArchetype` полями `maxSpeed`/`contactDamage`/`contactCooldownMs` и `behavior` union — добавлено `'chase'`; `PlayerSpawn` получает обязательное `maxHp`)
 
 ## Context
 
@@ -27,19 +27,29 @@
 
 ### EnemyArchetype
 
-- Минимальная форма для 003:
+- Форма на горизонт 004:
   ```ts
+  type EnemyBehavior = 'stationary' | 'chase';
+
   type EnemyArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;        // wu, для коллизий и рендера
-    maxHp: number;         // целое > 0
-    behavior: 'stationary'; // 003: только неподвижная мишень
-    color: number;         // 0xRRGGBB, плейсхолдер для рендера
+    radius: number;            // wu, для коллизий и рендера
+    maxHp: number;             // целое > 0
+    behavior: EnemyBehavior;
+    maxSpeed: number;          // wu/s, >= 0; для 'stationary' обязан быть 0
+    contactDamage: number;     // целое >= 0; 0 = врага можно касаться без урона
+    contactCooldownMs: number; // целое > 0; интервал между двумя контактными ударами одного и того же врага
+    color: number;             // 0xRRGGBB, плейсхолдер для рендера
   }>;
   ```
-- `behavior: 'stationary'` означает, что `MovementSystem` не двигает врага этого архетипа. Расширения (`'chase'`, `'wander'`, …) добавляются 004-й историей через дописывание `behavior` union, а не через ветви в `MovementSystem`.
+- `behavior: 'stationary'` означает, что `MovementSystem` не двигает врага этого архетипа; `maxSpeed` для `'stationary'` обязан быть 0 — это правило валидируется на стороне content/builder, не runtime.
+- `behavior: 'chase'` означает, что `MovementSystem` двигает врага к текущей позиции игрока с скоростью `maxSpeed`; конкретный alg (прямая линия / steering) — деталь реализации, контракт — «в среднем сокращает расстояние до игрока за тик». Дальнейшие поведения (`'wander'`, `'orbit'`, …) добавляются дописыванием в `EnemyBehavior` union, а не ветвями в `MovementSystem`.
+- `contactDamage` и `contactCooldownMs` — единственный источник правды для контактного урона; правила обработки — в [enemy-contact.md](enemy-contact.md). Если `contactDamage === 0`, кулдаун всё равно задаётся явно — отсутствие поля запрещено по тому же правилу единственности «нет данных».
 - `color` — плейсхолдер до появления полноценных ассетов. Это контентное поле, не decision рендера.
+- Числовые ограничения, обязательные на стороне content/builder:
+  - `maxSpeed * SIM_STEP_SEC <= radius + minPlayerRadius` ([enemy-contact.md](enemy-contact.md): запрет touring через игрока), warning через единый log-модуль ([logging.md](logging.md));
+  - для `'stationary'` обязан быть `maxSpeed === 0` и `contactDamage === 0` (стационарная мишень не должна неявно бить игрока); валидация на стороне content/builder.
 
 ### WeaponArchetype
 
@@ -59,6 +69,12 @@
 - `cooldownMs` — минимальный интервал между двумя последовательными выстрелами; конкретное использование (per-shooter timer) — в [projectiles-and-combat.md](projectiles-and-combat.md).
 - Поле «бесконечный боезапас» из [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md) не выражается в архетипе: отсутствие поля `ammo` и есть его реализация. Когда (если) появится конечный боезапас, он добавится отдельным полем и отдельным design-решением.
 - Скорости и радиусы должны соблюдать инвариант «без туннелирования» из [projectiles-and-combat.md](projectiles-and-combat.md); проверка — на стороне content/builder, не на стороне рантайма.
+
+### PlayerSpawn.maxHp
+
+- `SessionDefinition.player` ([session-definition.md](session-definition.md)) расширяется обязательным полем `maxHp: number` (целое > 0). Это закрепляет источник правды для стартового HP игрока в данных сессии, а не в коде систем.
+- `maxHp` задаётся **всегда**, даже для preset, в которых игрок не damageable (sandbox без боя). Это исключает «два разных нет данных» и упрощает HUD: для sandbox без боя `hp = maxHp` весь run.
+- Конкретные значения (например, `5` для тренировочного preset) — содержимое `content library`. Расширение (`maxArmor`, регенерация и т. п.) — будущие решения.
 
 ### Loadout в SessionDefinition
 
@@ -93,6 +109,9 @@
 - [session-definition.md](session-definition.md)
 - [spawn-plan.md](spawn-plan.md)
 - [projectiles-and-combat.md](projectiles-and-combat.md)
+- [enemy-contact.md](enemy-contact.md)
+- [health-and-death.md](health-and-death.md)
+- [logging.md](logging.md)
 - [web-stack.md](web-stack.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
 - [simulation-timing.md](simulation-timing.md)

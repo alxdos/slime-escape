@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-19 (для истории 004 добавлена фаза contact intents между `lifetime cleanup` и `hit detection`; полный контракт контактного урона — в `enemy-contact.md`)
 
 ## Context
 
@@ -103,8 +103,10 @@
   1. firing decisions: для каждого активного стрелка — спавн новых снарядов в `EntityStore`;
   2. projectile movement: интеграция позиций существующих снарядов;
   3. lifetime cleanup: пометка просроченных и вышедших за арену;
-  4. hit detection: список damage intents и пометка снарядов-поражений;
-  5. removal: удаление помеченных снарядов из `EntityStore`.
+  4. contact intents: формирование `DamageIntent` от врагов в контакте с игроком; полный контракт — [enemy-contact.md](enemy-contact.md);
+  5. hit detection: damage intents от снарядов и пометка снарядов-поражений;
+  6. removal: удаление помеченных снарядов из `EntityStore`.
+- Контактные и снарядные intents складываются в **один** список `DamageIntent` за тик и передаются в `HealthDeathSystem` единым вызовом ([health-and-death.md](health-and-death.md)). Отдельной шины contact-damage нет.
 - `HealthDeathSystem` запускается **после** `CombatSystem` и применяет полученные damage intents (см. [health-and-death.md](health-and-death.md)). Снапшот публикует уже консистентное состояние: умершие сущности в нём отсутствуют, а runtime event `death` уже сгенерирован.
 
 ### Интеграция с input
@@ -124,6 +126,7 @@
 
 - [runtime-systems.md](runtime-systems.md)
 - [health-and-death.md](health-and-death.md)
+- [enemy-contact.md](enemy-contact.md)
 - [content-archetypes.md](content-archetypes.md)
 - [snapshot-shape.md](snapshot-shape.md)
 - [input-commands.md](input-commands.md)

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-19 (добавлен `'wave'` kind для истории 004; правила выбора позиций спавна на периметре арены через session RNG)
 
 ## Context
 
@@ -20,10 +20,11 @@
 ### Форма SpawnPlan
 
 - `SpawnPlan` — дискриминированный union с полем `kind`. Расширение происходит **добавлением** новых `kind`, а не изменением существующих полей.
-- Минимальный набор `kind` на момент 003:
+- Набор `kind` на момент 004:
   - `'empty'` — спавнов нет; `SpawnSystem` ничего не делает;
-  - `'static'` — фиксированный список спавнов, исполняемый один раз при старте encounter.
-- Будущие `kind` (`'wave'` для 004, `'boss'` для 006 и т.п.) фиксируются в этом же файле по мере добавления историй.
+  - `'static'` — фиксированный список спавнов, исполняемый один раз при старте encounter;
+  - `'wave'` — счётный «бюджет» спавнов с темпом и лимитом одновременно живых, исполняемый по тикам в течение encounter.
+- Будущие `kind` (`'boss'` для 006 и т.п.) фиксируются в этом же файле по мере добавления историй.
 - `kind` запрещено переиспользовать с изменённой семантикой; устаревшая форма проходит через `superseded` так же, как design-решения.
 
 ### Static spawn
@@ -45,6 +46,33 @@
   - `position` обязан попадать внутрь арены ([arena-and-coordinates.md](arena-and-coordinates.md)); за пределами арены — ошибка сборки сессии, а не runtime-поведение;
   - архетипы резолвятся через `content library` ([content-archetypes.md](content-archetypes.md), [content-boundaries.md](content-boundaries.md)).
 
+### Wave spawn
+
+- Форма:
+  ```ts
+  type WaveSpawnPlan = {
+    kind: 'wave';
+    spawns: ReadonlyArray<{
+      archetypeId: string;     // EnemyArchetype.id из content library
+    }>;
+    spawnIntervalMs: number;   // > 0; минимальный интервал между двумя спавнами этого плана
+    maxAlive: number;          // > 0; верхний предел одновременно живых сущностей, заспавненных этим планом
+    edgeMargin?: number;       // wu, >= 0; отступ от внутренней кромки арены при выборе позиции; default 0
+  };
+  ```
+- Семантика:
+  - `spawns` — упорядоченный счётный «бюджет» спавнов; план **завершает диспатч**, когда все элементы выпущены, и больше не спавнит;
+  - на каждом тике `SpawnSystem` спавнит **не более одной** сущности из плана при выполнении всех условий:
+    1. `dispatched < spawns.length`;
+    2. `aliveFromThisPlan < maxAlive`;
+    3. `simTime − lastSpawnSimMs >= spawnIntervalMs` (на старте encounter `lastSpawnSimMs = -∞`, то есть первый спавн возможен на первом же тике);
+  - `aliveFromThisPlan` отслеживается `SpawnSystem` через death hook ([health-and-death.md](health-and-death.md)): при смерти сущности, которую спавнил этот план, счётчик уменьшается. Связь «сущность ↔ план» хранится во внутреннем state `SpawnSystem` (например, `Set<EntityId>`), а не как поле сущности — это деталь реализации;
+  - порядок выборки архетипов из `spawns` — **строго по индексу**: первый тик-кандидат берёт `spawns[0]`, второй — `spawns[1]` и т. д. Это даёт воспроизводимость по `seed` и оставляет «состав волны» полностью контентным;
+  - позиция каждого спавна выбирается на **периметре арены** через session RNG ([rng.md](rng.md)) детерминированно от `seed`. Алгоритм: одно `rng.nextFloat()` даёт нормированную координату вдоль периметра прямоугольника `arena` ([arena-and-coordinates.md](arena-and-coordinates.md)), сжатого внутрь на `edgeMargin + archetype.radius`, чтобы заспавненная сущность гарантированно влезала в безопасные границы. Это правило `SpawnSystem` соблюдает само; `WaveSpawnPlan` не содержит явных координат;
+  - на `encounterEnd` весь wave-state (`dispatched`, `aliveFromThisPlan`, `lastSpawnSimMs`, индексы заспавненных сущностей) сбрасывается; «остатки бюджета» между encounter не переносятся.
+- Wave-план **не определяет**, когда encounter завершается. Решение «волна закончилась» принимает `SessionFlowSystem` через `transitionRules` ([session-definition.md](session-definition.md)); правило `allEnemiesCleared` соблюдается как раз тогда, когда `dispatched == spawns.length && aliveFromThisPlan == 0`.
+- `SpawnSystem` для `'wave'` детерминирован относительно `seed`: при одинаковом `seed` и одинаковой последовательности тиков порядок и позиции спавнов идентичны. Это явно покрывается тестом по [testing.md](testing.md).
+
 ### Ответственность SpawnSystem
 
 - `SpawnSystem` исполняет `spawnPlan` активного encounter и больше ничего:
@@ -56,7 +84,7 @@
   - дальнейшая логика спавна (для `'wave'` и т.п.) исполняется внутри обычного update-tick по [runtime-systems.md](runtime-systems.md);
   - на `encounterEnd` весь внутренний state `SpawnSystem` сбрасывается; «остатки плана» не переносятся между encounter.
 - Все спавны проходят через `EntityStore` (см. [runtime-systems.md](runtime-systems.md)); `SpawnSystem` не создаёт сущности «в обход» store.
-- `SpawnSystem` детерминирован относительно `seed` сессии: если в плане появится случайный выбор архетипа или позиции, источником случайности обязан быть session RNG, а не `Math.random` ([session-definition.md](session-definition.md)).
+- `SpawnSystem` детерминирован относительно `seed` сессии: единственный источник случайности — session RNG ([rng.md](rng.md)). `Math.random` запрещён ([session-definition.md](session-definition.md)).
 
 ### Расширение и обратная совместимость
 
@@ -66,7 +94,9 @@
 
 ## Consequences
 
-- `SpawnSystem` появляется уже в 003, но в минимальной форме «исполнить статический список»; история 004 расширяет систему, а не вводит новую.
+- `SpawnSystem` появляется уже в 003, но в минимальной форме «исполнить статический список»; история 004 расширяет систему `'wave'` kind, а не вводит новую.
+- Содержимое волны (порядок и состав архетипов) полностью контентное; геймплейные числа волн (темп, лимит) — поля плана, а не константы в коде систем.
+- Позиции спавнов на периметре полностью детерминированы по `seed`: тест на воспроизводимость выражается через равенство списков `(archetypeId, position)` для двух прогонов с одинаковым `seed`.
 - `EncounterDefinition.spawnPlan` остаётся стабильным верхнеуровневым полем, эволюционирует только через новые `kind`.
 - Sandbox-encounter перестаёт быть жёстко привязан к «нулевому контенту»: bring-up истории могут спавнить тренировочные сущности через `'static'`, не нарушая sandbox-семантики (см. обновление в [session-definition.md](session-definition.md)).
 - Контент тренировочных и обучающих режимов выражается данными в `content library`, а не ветками в коде runtime.
@@ -78,4 +108,7 @@
 - [content-archetypes.md](content-archetypes.md)
 - [content-boundaries.md](content-boundaries.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
+- [rng.md](rng.md)
+- [health-and-death.md](health-and-death.md)
+- [testing.md](testing.md)
 - [web-stack.md](web-stack.md)

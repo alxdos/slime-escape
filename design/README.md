@@ -70,6 +70,9 @@
 | [content-archetypes.md](content-archetypes.md) | accepted | Минимальные `EnemyArchetype`, `WeaponArchetype`, `Loadout` и резолв архетипов по `id` |
 | [projectiles-and-combat.md](projectiles-and-combat.md) | accepted | Снаряды как сущности, кулдаун, движение/хит-тест, damage intents |
 | [health-and-death.md](health-and-death.md) | accepted | HP на сущностях, damage intents, death hooks, удаление сущностей |
-| [snapshot-shape.md](snapshot-shape.md) | accepted | Per-kind поля сущностей в снапшоте и форма combat runtime events (`fire`/`hit`/`death`) |
+| [snapshot-shape.md](snapshot-shape.md) | accepted | Per-kind поля сущностей в снапшоте, top-level `encounter`/`zone`/`waveProgress`, форма combat и lifecycle runtime events |
+| [zone.md](zone.md) | accepted | `ZoneSystem`: scalar `margin`, режимы `disabled`/`shrinkLinear`/`expandLinear`, экспорт в snapshot, разделение gameplay-формы и визуализации |
+| [enemy-contact.md](enemy-contact.md) | accepted | Контактный урон от врагов: новая фаза `CombatSystem`, `DamageIntent.source: 'enemyContact'`, per-enemy кулдаун |
+| [rng.md](rng.md) | accepted | Session RNG (`mulberry32` от `seed`) как единственный источник случайности в `sim` |
 | [decision-log-format.md](decision-log-format.md) | accepted | Вспомогательная выжимка формата решений; правила слоя задаются этим `README` |
 | [_template.md](_template.md) | template | Минимальный шаблон нового решения |

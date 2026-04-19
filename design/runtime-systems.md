@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (уточнён `SpatialIndex`, явные ссылки на `spawn-plan.md`, `projectiles-and-combat.md`, `health-and-death.md`)
+- Updated: 2026-04-19 (короткий контракт `ZoneSystem` со ссылкой на `zone.md`; encounter transitions, `win`/`loss` lifecycle и session-level player-death hook в `SessionFlowSystem`)
 
 ## Context
 
@@ -40,14 +40,14 @@
 - Отдельный физический движок не использовать; коллизии и overlap-проверки остаются кастомными и 2D-ориентированными.
 - Все системы должны быть управляемы через `SessionDefinition` и runtime state, а не через прямые условные ветки по названию режима.
 - Границы ответственности систем:
-  - `SessionFlowSystem` решает, какой encounter активен, когда run завершается и какие session-level events публикуются; владеет lifecycle сессии (см. ниже);
+  - `SessionFlowSystem` решает, какой encounter активен, когда run завершается и какие session-level events публикуются; владеет lifecycle сессии и encounter transitions (см. ниже);
   - `SpawnSystem` только исполняет `spawnPlan` и не принимает решений о победе или поражении; форма `spawnPlan` и его исполнение — в [spawn-plan.md](spawn-plan.md);
   - `MovementSystem` меняет позиции и базовую кинематику **управляемых актёров** (игрок, враги с поведением), но не применяет урон; владеет инвариантом «сущность не выходит за границы арены» ([arena-and-coordinates.md](arena-and-coordinates.md)) и читает границы из активного `SessionDefinition.arena`, а не из глобальной константы; снаряды живут вне `MovementSystem` (см. [projectiles-and-combat.md](projectiles-and-combat.md));
   - `CombatSystem` создаёт выстрелы, двигает снаряды, вычисляет попадания и формирует damage intents; полный контракт — [projectiles-and-combat.md](projectiles-and-combat.md);
   - `HealthDeathSystem` единственный слой, который применяет финальную потерю HP, фиксирует смерть и удаляет damageable-сущности; полный контракт — [health-and-death.md](health-and-death.md);
   - `SpatialIndex` — внутренний помощник систем (`CombatSystem`, `DropSystem`, при необходимости `BossPhaseSystem`); см. ниже минимальный контракт;
   - `DropSystem` реагирует на death hooks и управляет только жизненным циклом дропа;
-  - `ZoneSystem` управляет состоянием зоны и её экспортом, но не завершает encounter самостоятельно;
+  - `ZoneSystem` управляет состоянием зоны и её экспортом, но не завершает encounter самостоятельно и не наносит урона; полный контракт зоны (форма `margin`, режимы, lifecycle, экспорт) — в [zone.md](zone.md);
   - `BossPhaseSystem` управляет фазами и boss-specific attack rules, не подменяя `SessionFlowSystem`.
 - `SpatialIndex` — минимальный контракт уровня архитектуры:
   - используется как акселератор соседских запросов и не является источником истины: исходное состояние сущностей живёт в `EntityStore`;
@@ -74,6 +74,16 @@
   - `pause`/`resume` действуют только когда сессия активна; `pause` без активной сессии — no-op с warning. Семантика `pause`/`resume` для running-состояния не меняется и описана в [simulation-timing.md](simulation-timing.md).
   - `SessionFlowSystem` обязан публиковать runtime events lifecycle: `sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`, и при наличии — `win`/`loss`. Конкретный набор полей этих events фиксируется по мере появления потребителей (HUD из 007, audio из 008); до этого допускается публиковать минимальную форму `{ kind, simTime }`. При `winCondition`/`lossCondition` категории `none` ([session-definition.md](session-definition.md)) `win`/`loss` события не генерируются автоматически.
 
+- Encounter transitions владеет `SessionFlowSystem` (это уточнение для зоны ответственности; форма `transitionRules` — в [session-definition.md](session-definition.md)):
+  - проверка `transitionRules` активного encounter выполняется **один раз за тик**, после `HealthDeathSystem` (когда мёртвые сущности уже удалены и `aliveFromThisPlan` в `SpawnSystem` отражает реальность) и **до** `SnapshotExportSystem` (чтобы транзиция и связанные lifecycle-events успели до экспорта);
+  - конкретное место в update order: между шагом «8» (`DropSystem`) и «9» (`ZoneSystem`) — переименование шагов не требуется, поскольку `SessionFlowSystem` уже фигурирует на шаге 2; запрет «дважды на тике» сохраняется: шаг 2 владеет `startSession`/encounter activation, отдельная фаза проверки transitions — это та же `SessionFlowSystem`, не новая система;
+  - при срабатывании transition: `SessionFlowSystem` публикует `encounterEnd` для текущего encounter, выбирает следующий по `transitionRules.next` (по умолчанию sequential), активирует его (`SpawnSystem.onEncounterStart`, `ZoneSystem` инициализация, публикация `encounterStart`). Если следующего encounter нет, run завершается по `winCondition`;
+  - смена encounter происходит **в одном и том же тике**: между двумя последовательными снапшотами `main` видит либо старый encounter, либо новый, без промежуточного «никакого». Это сохраняет контракт «снапшот несёт консистентное state».
+- Завершение run (win/loss) владеет тем же `SessionFlowSystem`:
+  - при `winCondition: { kind: 'allEncountersComplete' }` после `encounterEnd` последнего encounter `SessionFlowSystem` публикует `win` ровно один раз;
+  - при `lossCondition: { kind: 'playerDeath' }` `SessionFlowSystem` регистрирует session-level death hook на `entityKind === 'player'` ([health-and-death.md](health-and-death.md)) на старте симуляции (или сессии, в одной точке). Hook на смерть игрока публикует `loss` ровно один раз и инициирует завершение run;
+  - после публикации `win` или `loss` `SessionFlowSystem` выполняет тот же сброс runtime state и перевод clock в idle, что и `stopSession`. Дальнейшие encounter transitions не выполняются. Повторное `pause`/`resume`/`input` отбрасываются с warning через единый log-модуль ([logging.md](logging.md)).
+
 ## Consequences
 
 - Есть чёткий минимальный объём ядра без преждевременного усложнения.
@@ -95,3 +105,7 @@
 - [projectiles-and-combat.md](projectiles-and-combat.md)
 - [health-and-death.md](health-and-death.md)
 - [snapshot-shape.md](snapshot-shape.md)
+- [zone.md](zone.md)
+- [enemy-contact.md](enemy-contact.md)
+- [rng.md](rng.md)
+- [logging.md](logging.md)

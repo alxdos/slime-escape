@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-19 (player получает `hp`/`maxHp`; top-level поля `encounter`, `zone`, `waveProgress`; runtime events `win`/`loss`)
 
 ## Context
 
@@ -43,9 +43,11 @@ type EntitySnapshot =
     kind: 'player';
     x: number;
     y: number;
-    // hp/maxHp добавляются историей, в которой игрок становится damageable
+    hp: number;       // целое >= 0
+    maxHp: number;    // целое > 0; повторяется в каждом снапшоте, как у enemy
   }
   ```
+  Поля `hp`/`maxHp` присутствуют **всегда**, независимо от того, активна ли в текущей сессии `lossCondition: playerDeath`. Это устраняет два разных «нет данных» в HUD и упрощает рендер: для sandbox-сессии без боя `hp = maxHp` всё время.
 - `EnemySnapshot`:
   ```ts
   {
@@ -74,18 +76,49 @@ type EntitySnapshot =
 
 ### Top-level snapshot
 
-- Минимальная форма верхнего уровня снапшота на горизонт 003:
+- Форма верхнего уровня снапшота на горизонт 004:
   ```ts
   type Snapshot = Readonly<{
     simTimeMs: number;
     entities: ReadonlyArray<EntitySnapshot>;
+    encounter: EncounterSnapshot | null;
+    zone: ZoneSnapshot;
+    waveProgress: WaveProgressSnapshot | null;
   }>;
   ```
-- HUD-агрегаты уровня run (HP игрока, прогресс волны, состояние босса) добавляются как отдельные top-level поля в более поздних историях (007 HUD, 004 волны, 006 босс), а не складываются в `entities`. Каждое такое расширение фиксируется здесь.
+- HUD-агрегаты уровня run (HP игрока, прогресс волны, состояние босса) живут как отдельные top-level поля, а не складываются в `entities`. Каждое такое расширение фиксируется здесь.
+- Поля 004:
+  - `encounter`:
+    ```ts
+    type EncounterSnapshot = Readonly<{
+      id: string;                                      // EncounterDefinition.id
+      type: 'wave' | 'break' | 'boss' | 'survivalTimer' | 'sandbox';
+      index: number;                                   // позиция в SessionDefinition.encounters
+      elapsedMs: number;                               // с момента encounterStart, целое
+    }>;
+    ```
+    `null` означает «активного encounter нет» — между `sessionStart` и активацией первого encounter (промежуток теоретически нулевой, но форма допускает) и после `sessionStop`/`win`/`loss`. До идеального состояния «снапшот всегда несёт encounter, если есть активная сессия» поле остаётся nullable как страховка от расхождения порядков активации.
+  - `zone`:
+    ```ts
+    type ZoneSnapshot = Readonly<{
+      mode: 'disabled' | 'shrink' | 'expand';
+      margin: number; // wu, >= 0
+    }>;
+    ```
+    Форма и семантика — в [zone.md](zone.md). Поле обязательное и не nullable: `disabled` — это всегда валидное значение для отсутствия активной зоны.
+  - `waveProgress`:
+    ```ts
+    type WaveProgressSnapshot = Readonly<{
+      dispatched: number;   // спавнов уже выпущено
+      total: number;        // всего по плану
+      alive: number;        // живых сущностей, заспавненных текущей волной
+    }>;
+    ```
+    `null` для encounter, у которого `spawnPlan.kind !== 'wave'` (включая `'static'` из 003). Для `'wave'` поле заполняется на каждом тике и доступно HUD/тестам.
 
 ### Runtime events: контракт kinds
 
-- К существующим lifecycle kinds из [runtime-systems.md](runtime-systems.md) (`sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`, опциональные `win`/`loss`) этой историей добавляются три combat-kind:
+- К существующим lifecycle kinds из [runtime-systems.md](runtime-systems.md) (`sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`) этой историей добавляются три combat-kind, а историей 004 — `win` и `loss`:
   ```ts
   type RuntimeEvent =
     // lifecycle (см. runtime-systems.md)
@@ -126,12 +159,17 @@ type EntitySnapshot =
         archetypeId: string | null;
         x: number;
         y: number;
-      };
+      }
+    // session lifecycle (этот файл, история 004)
+    | { kind: 'win'; simTime: number }
+    | { kind: 'loss'; simTime: number };
   ```
+- `win`/`loss` несут только `simTime`. Дополнительные поля (статистика забега, причина) — будущие расширения, появятся вместе с потребителями (HUD-итог из 007). Минимальная форма достаточна, чтобы `main` отреагировал переходом в результат-экран.
 - Owner-системы (см. [runtime-systems.md](runtime-systems.md)):
   - `fire`, `hit` публикует `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md));
-  - `death` публикует `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) сразу после фиксации смерти и до запуска death hooks.
-- Никакая другая система не имеет права публиковать события `fire`/`hit`/`death`. `DropSystem` и `BossPhaseSystem` подписываются на death через death hook, а не публикуют альтернативное событие.
+  - `death` публикует `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) сразу после фиксации смерти и до запуска death hooks;
+  - `win`, `loss` публикует `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md), [session-definition.md](session-definition.md)) ровно один раз за run.
+- Никакая другая система не имеет права публиковать события `fire`/`hit`/`death`/`win`/`loss`. `DropSystem` и `BossPhaseSystem` подписываются на death через death hook, а не публикуют альтернативное событие.
 
 ### Гарантии и приоритеты
 
@@ -160,4 +198,7 @@ type EntitySnapshot =
 - [projectiles-and-combat.md](projectiles-and-combat.md)
 - [health-and-death.md](health-and-death.md)
 - [content-archetypes.md](content-archetypes.md)
+- [session-definition.md](session-definition.md)
+- [zone.md](zone.md)
+- [spawn-plan.md](spawn-plan.md)
 - [simulation-timing.md](simulation-timing.md)
