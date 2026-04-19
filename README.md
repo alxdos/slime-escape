@@ -8,17 +8,9 @@ Top-down arena shooter, в котором **человек** пытается в
 
 ## Документация
 
-| Документ | Содержание |
-|----------|------------|
-| [docs/VISION.md](docs/VISION.md) | Питч, фантазия, первые 30 секунд и двухминутный геймплей |
-| [docs/GDD_CORE.md](docs/GDD_CORE.md) | Основной цикл, тёмная зона, победа и поражение, длительность забега |
-| [docs/WAVES_AND_SCALING.md](docs/WAVES_AND_SCALING.md) | Волны, сжатие зоны и рост сложности |
-| [docs/SURVIVAL_SYSTEMS.md](docs/SURVIVAL_SYSTEMS.md) | Системы выживания (черновик MVP) |
-| [docs/BOSS.md](docs/BOSS.md) | Финальный босс |
-| [docs/SCOPE.md](docs/SCOPE.md) | Что входит в MVP и что отложено на потом |
-| [docs/OPEN_QUESTIONS.md](docs/OPEN_QUESTIONS.md) | Открытые вопросы |
-
-Начать чтение с **VISION**, затем **GDD_CORE** и **SCOPE**.
+- [docs/README.md](docs/README.md) — геймдизайн и продуктовые документы
+- [design/README.md](design/README.md) — инженерные решения
+- [stories/README.md](stories/README.md) — истории и вертикальные срезы
 
 ## Запуск
 
@@ -31,7 +23,3 @@ npm run build    # production-сборка в dist/
 npm run preview  # локальный preview-сервер для собранного билда
 npm run typecheck
 ```
-
-Управление в текущем билде (история [stories/001-engine-skeleton.md](stories/001-engine-skeleton.md)):
-
-- `Space` — пауза/продолжение симуляции.
