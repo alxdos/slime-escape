@@ -62,9 +62,10 @@ function startSession(): void {
 }
 
 function exitToMenu(): void {
-  if (input !== null) {
-    input.stop();
-    input = null;
+  const previous = input;
+  input = null;
+  if (previous !== null) {
+    previous.stop();
   }
   sim.stopSession();
   pause.hide();
@@ -81,9 +82,9 @@ function pauseSession(): void {
 function resumeSession(): void {
   if (input === null) return;
   if (!pause.isVisible()) return;
+  input.requestLock();
   sim.resume();
   pause.hide();
-  input.requestLock();
 }
 
 const menu = createMenuOverlay({
@@ -99,6 +100,16 @@ const pause = createPauseOverlay({
 
 window.addEventListener('resize', () => {
   renderer.fitToWindow();
+});
+
+document.addEventListener('pointerlockchange', () => {
+  // Browsers consume the Esc keydown that releases Pointer Lock and never
+  // forward it to JS, so the only reliable trigger for the pause overlay
+  // is the lock loss itself (design/input-commands.md).
+  if (document.pointerLockElement !== null) return;
+  if (input === null) return;
+  if (pause.isVisible()) return;
+  pauseSession();
 });
 
 window.addEventListener('keydown', (event) => {
