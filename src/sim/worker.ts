@@ -31,7 +31,7 @@ function emitEvent(event: RuntimeEvent): void {
 const clock = createSimulationClock((_dtMs, simTimeMs) => {
   const session = sessionFlow.activeSession();
   if (session === null) return;
-  movement.tick(session.arena, entities, sessionFlow.inputState());
+  movement.tick(session.arena, entities, sessionFlow.inputState(), simTimeMs);
   const intents = combat.tick(
     sessionFlow.inputState(),
     entities,

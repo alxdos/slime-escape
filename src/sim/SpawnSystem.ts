@@ -64,6 +64,12 @@ function executeStatic(
       radius: archetype.radius,
       behavior: archetype.behavior,
       maxHp: archetype.maxHp,
+      maxSpeed: archetype.maxSpeed,
+      contactDamage: archetype.contactDamage,
+      contactCooldownMs: archetype.contactCooldownMs,
+      knockbackBaseImpulse: archetype.knockbackBaseImpulse,
+      knockbackVelocityScale: archetype.knockbackVelocityScale,
+      knockbackDurationMs: archetype.knockbackDurationMs,
       color: archetype.color
     });
   }

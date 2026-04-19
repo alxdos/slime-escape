@@ -29,6 +29,12 @@ function spawnTarget(store: ReturnType<typeof createEntityStore>, hp = 3) {
     radius: TRAINING_TARGET.radius,
     behavior: 'stationary',
     maxHp: hp,
+    maxSpeed: TRAINING_TARGET.maxSpeed,
+    contactDamage: TRAINING_TARGET.contactDamage,
+    contactCooldownMs: TRAINING_TARGET.contactCooldownMs,
+    knockbackBaseImpulse: TRAINING_TARGET.knockbackBaseImpulse,
+    knockbackVelocityScale: TRAINING_TARGET.knockbackVelocityScale,
+    knockbackDurationMs: TRAINING_TARGET.knockbackDurationMs,
     color: TRAINING_TARGET.color
   });
 }

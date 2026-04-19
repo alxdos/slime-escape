@@ -29,6 +29,12 @@ describe('combat integration (CombatSystem + HealthDeathSystem)', () => {
       radius: TRAINING_TARGET.radius,
       behavior: 'stationary',
       maxHp: 1,
+      maxSpeed: TRAINING_TARGET.maxSpeed,
+      contactDamage: TRAINING_TARGET.contactDamage,
+      contactCooldownMs: TRAINING_TARGET.contactCooldownMs,
+      knockbackBaseImpulse: TRAINING_TARGET.knockbackBaseImpulse,
+      knockbackVelocityScale: TRAINING_TARGET.knockbackVelocityScale,
+      knockbackDurationMs: TRAINING_TARGET.knockbackDurationMs,
       color: TRAINING_TARGET.color
     });
 

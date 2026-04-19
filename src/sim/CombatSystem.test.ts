@@ -14,6 +14,23 @@ import { createSpatialIndex } from './SpatialIndex';
 const ARENA: ArenaConfig = { width: 32, height: 18 };
 const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
 
+function trainingTargetSpec(position: { x: number; y: number }) {
+  return {
+    archetypeId: TRAINING_TARGET.id,
+    position,
+    radius: TRAINING_TARGET.radius,
+    behavior: TRAINING_TARGET.behavior,
+    maxHp: TRAINING_TARGET.maxHp,
+    maxSpeed: TRAINING_TARGET.maxSpeed,
+    contactDamage: TRAINING_TARGET.contactDamage,
+    contactCooldownMs: TRAINING_TARGET.contactCooldownMs,
+    knockbackBaseImpulse: TRAINING_TARGET.knockbackBaseImpulse,
+    knockbackVelocityScale: TRAINING_TARGET.knockbackVelocityScale,
+    knockbackDurationMs: TRAINING_TARGET.knockbackDurationMs,
+    color: TRAINING_TARGET.color
+  };
+}
+
 function setupCombat() {
   const store = createEntityStore();
   const index = createSpatialIndex();
@@ -77,14 +94,7 @@ describe('CombatSystem', () => {
 
   it('produces a damage intent and hit event when projectile reaches an enemy', () => {
     const { store, index, combat } = setupCombat();
-    const enemy = store.spawnEnemy({
-      archetypeId: TRAINING_TARGET.id,
-      position: { x: 1, y: 0 },
-      radius: TRAINING_TARGET.radius,
-      behavior: 'stationary',
-      maxHp: TRAINING_TARGET.maxHp,
-      color: TRAINING_TARGET.color
-    });
+    const enemy = store.spawnEnemy(trainingTargetSpec({ x: 1, y: 0 }));
     const input = makeInput({ aimWorld: { x: 5, y: 0 }, firing: true });
     const events: RuntimeEvent[] = [];
 
@@ -135,14 +145,7 @@ describe('CombatSystem', () => {
 
   it('honours friendly-fire: enemy projectile does not target enemy', () => {
     const { store, index, combat } = setupCombat();
-    store.spawnEnemy({
-      archetypeId: TRAINING_TARGET.id,
-      position: { x: 0.5, y: 0 },
-      radius: TRAINING_TARGET.radius,
-      behavior: 'stationary',
-      maxHp: TRAINING_TARGET.maxHp,
-      color: TRAINING_TARGET.color
-    });
+    store.spawnEnemy(trainingTargetSpec({ x: 0.5, y: 0 }));
     store.spawnProjectile({
       weaponArchetypeId: PISTOL.id,
       ownerKind: 'enemy',

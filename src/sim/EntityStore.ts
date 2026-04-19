@@ -10,7 +10,15 @@ export type Player = {
   readonly maxSpeed: number;
   readonly maxHp: number;
   position: { x: number; y: number };
+  velocity: { vx: number; vy: number };
   hp: number;
+};
+
+export type KnockbackState = {
+  vx: number;
+  vy: number;
+  startSimMs: number;
+  endSimMs: number;
 };
 
 export type Enemy = {
@@ -20,9 +28,18 @@ export type Enemy = {
   readonly radius: number;
   readonly behavior: EnemyBehavior;
   readonly maxHp: number;
+  readonly maxSpeed: number;
+  readonly contactDamage: number;
+  readonly contactCooldownMs: number;
+  readonly knockbackBaseImpulse: number;
+  readonly knockbackVelocityScale: number;
+  readonly knockbackDurationMs: number;
   readonly color: number;
   position: { x: number; y: number };
+  velocity: { vx: number; vy: number };
   hp: number;
+  nextContactSimMs: number;
+  knockback: KnockbackState | null;
 };
 
 export type Projectile = {
@@ -43,6 +60,12 @@ export type EnemySpawnSpec = Readonly<{
   radius: number;
   behavior: EnemyBehavior;
   maxHp: number;
+  maxSpeed: number;
+  contactDamage: number;
+  contactCooldownMs: number;
+  knockbackBaseImpulse: number;
+  knockbackVelocityScale: number;
+  knockbackDurationMs: number;
   color: number;
 }>;
 
@@ -96,6 +119,7 @@ export function createEntityStore(): EntityStore {
         maxSpeed: spec.maxSpeed,
         maxHp: spec.maxHp,
         position: { x: spec.position.x, y: spec.position.y },
+        velocity: { vx: 0, vy: 0 },
         hp: spec.maxHp
       };
       player = next;
@@ -109,9 +133,18 @@ export function createEntityStore(): EntityStore {
         radius: spec.radius,
         behavior: spec.behavior,
         maxHp: spec.maxHp,
+        maxSpeed: spec.maxSpeed,
+        contactDamage: spec.contactDamage,
+        contactCooldownMs: spec.contactCooldownMs,
+        knockbackBaseImpulse: spec.knockbackBaseImpulse,
+        knockbackVelocityScale: spec.knockbackVelocityScale,
+        knockbackDurationMs: spec.knockbackDurationMs,
         color: spec.color,
         position: { x: spec.position.x, y: spec.position.y },
-        hp: spec.maxHp
+        velocity: { vx: 0, vy: 0 },
+        hp: spec.maxHp,
+        nextContactSimMs: 0,
+        knockback: null
       };
       enemies.set(next.id, next);
       return next;

@@ -19,6 +19,12 @@ const ENEMY_SPEC: EnemySpawnSpec = {
   radius: 0.6,
   behavior: 'stationary',
   maxHp: 3,
+  maxSpeed: 0,
+  contactDamage: 0,
+  contactCooldownMs: 1,
+  knockbackBaseImpulse: 0,
+  knockbackVelocityScale: 0,
+  knockbackDurationMs: 1,
   color: 0xff7766
 };
 
