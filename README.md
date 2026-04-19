@@ -8,9 +8,9 @@ Top-down arena shooter, в котором **человек** пытается в
 
 ## Документация
 
-- [docs/README.md](docs/README.md) — геймдизайн и продуктовые документы
-- [design/README.md](design/README.md) — инженерные решения
-- [stories/README.md](stories/README.md) — истории и вертикальные срезы
+- [docs](docs) — геймдизайн и продуктовые документы
+- [design](design) — инженерные решения
+- [stories](stories) — истории и вертикальные срезы
 
 ## Запуск
 
