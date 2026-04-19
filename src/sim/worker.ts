@@ -31,6 +31,7 @@ function emitEvent(event: RuntimeEvent): void {
 const clock = createSimulationClock((_dtMs, simTimeMs) => {
   const session = sessionFlow.activeSession();
   if (session === null) return;
+  spawn.onTick(simTimeMs, entities);
   movement.tick(session.arena, entities, sessionFlow.inputState(), simTimeMs);
   const intents = combat.tick(
     sessionFlow.inputState(),
@@ -45,6 +46,10 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });
   }
+});
+
+healthDeath.registerHook((ctx) => {
+  if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
 });
 
 const sessionFlow = createSessionFlowSystem({
@@ -67,7 +72,9 @@ const sessionFlow = createSessionFlowSystem({
     spawn.setRng(null);
   },
   onEncounterStart(encounter) {
-    spawn.onEncounterStart(encounter, entities);
+    const session = sessionFlow.activeSession();
+    if (session === null) return;
+    spawn.onEncounterStart(encounter, entities, session.arena);
   },
   onEncounterEnd(encounter) {
     spawn.onEncounterEnd(encounter);

@@ -1,51 +1,94 @@
 import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../shared/content/enemies';
 import { assertNever } from '../shared/protocol';
 import type { Rng } from '../shared/rng';
-import type { EncounterDefinition, SpawnPlan, StaticSpawnPlan } from '../shared/session';
+import type {
+  ArenaConfig,
+  EncounterDefinition,
+  StaticSpawnPlan,
+  Vec2,
+  WaveSpawnPlan
+} from '../shared/session';
+import type { WaveProgressSnapshot } from '../shared/snapshot';
 
-import type { EntityStore } from './EntityStore';
+import type { EnemySpawnSpec, EntityId, EntityStore } from './EntityStore';
 
 export type SpawnSystem = Readonly<{
   setRng(rng: Rng | null): void;
-  onEncounterStart(encounter: EncounterDefinition, store: EntityStore): void;
+  onEncounterStart(
+    encounter: EncounterDefinition,
+    store: EntityStore,
+    arena: ArenaConfig
+  ): void;
   onEncounterEnd(encounter: EncounterDefinition): void;
+  onTick(simTimeMs: number, store: EntityStore): void;
+  onEnemyDeath(entityId: EntityId): void;
+  waveProgress(): WaveProgressSnapshot | null;
 }>;
+
+type WaveState = {
+  plan: WaveSpawnPlan;
+  arena: ArenaConfig;
+  dispatched: number;
+  lastSpawnSimMs: number;
+  alive: Set<EntityId>;
+};
 
 export function createSpawnSystem(
   enemyRegistry: Readonly<Record<string, EnemyArchetype>> = ENEMY_ARCHETYPES
 ): SpawnSystem {
   let rng: Rng | null = null;
+  let waveState: WaveState | null = null;
+
   return {
     setRng(next): void {
       rng = next;
     },
-    onEncounterStart(encounter, store): void {
-      executePlan(encounter.spawnPlan, store, enemyRegistry, rng);
+    onEncounterStart(encounter, store, arena): void {
+      waveState = null;
+      const plan = encounter.spawnPlan;
+      switch (plan.kind) {
+        case 'empty':
+          return;
+        case 'static':
+          executeStatic(plan, store, enemyRegistry);
+          return;
+        case 'wave':
+          waveState = {
+            plan,
+            arena,
+            dispatched: 0,
+            lastSpawnSimMs: Number.NEGATIVE_INFINITY,
+            alive: new Set()
+          };
+          return;
+        default:
+          assertNever(plan);
+      }
     },
     onEncounterEnd(_encounter): void {
-      // No internal state to reset for 'empty'/'static'.
-      // Wave-aware kinds (004) will reset their accumulators here.
+      waveState = null;
+    },
+    onTick(simTimeMs, store): void {
+      const state = waveState;
+      if (state === null) return;
+      if (state.dispatched >= state.plan.spawns.length) return;
+      if (state.alive.size >= state.plan.maxAlive) return;
+      if (simTimeMs - state.lastSpawnSimMs < state.plan.spawnIntervalMs) return;
+      spawnNextWaveEnemy(state, simTimeMs, store, enemyRegistry, rng);
+    },
+    onEnemyDeath(entityId): void {
+      if (waveState === null) return;
+      waveState.alive.delete(entityId);
+    },
+    waveProgress(): WaveProgressSnapshot | null {
+      if (waveState === null) return null;
+      return {
+        dispatched: waveState.dispatched,
+        total: waveState.plan.spawns.length,
+        alive: waveState.alive.size
+      };
     }
   };
-}
-
-function executePlan(
-  plan: SpawnPlan,
-  store: EntityStore,
-  enemyRegistry: Readonly<Record<string, EnemyArchetype>>,
-  _rng: Rng | null
-): void {
-  switch (plan.kind) {
-    case 'empty':
-      return;
-    case 'static':
-      executeStatic(plan, store, enemyRegistry);
-      return;
-    case 'wave':
-      throw new Error("SpawnPlan kind 'wave' is not implemented yet (story 004 T6)");
-    default:
-      assertNever(plan);
-  }
 }
 
 function executeStatic(
@@ -54,23 +97,93 @@ function executeStatic(
   enemyRegistry: Readonly<Record<string, EnemyArchetype>>
 ): void {
   for (const spec of plan.spawns) {
-    const archetype = enemyRegistry[spec.archetypeId];
-    if (archetype === undefined) {
-      throw new Error(`unknown enemy archetype: ${spec.archetypeId}`);
-    }
-    store.spawnEnemy({
-      archetypeId: archetype.id,
-      position: spec.position,
-      radius: archetype.radius,
-      behavior: archetype.behavior,
-      maxHp: archetype.maxHp,
-      maxSpeed: archetype.maxSpeed,
-      contactDamage: archetype.contactDamage,
-      contactCooldownMs: archetype.contactCooldownMs,
-      knockbackBaseImpulse: archetype.knockbackBaseImpulse,
-      knockbackVelocityScale: archetype.knockbackVelocityScale,
-      knockbackDurationMs: archetype.knockbackDurationMs,
-      color: archetype.color
-    });
+    const archetype = resolveArchetype(spec.archetypeId, enemyRegistry);
+    store.spawnEnemy(makeEnemySpawnSpec(archetype, spec.position));
   }
+}
+
+function spawnNextWaveEnemy(
+  state: WaveState,
+  simTimeMs: number,
+  store: EntityStore,
+  enemyRegistry: Readonly<Record<string, EnemyArchetype>>,
+  rng: Rng | null
+): void {
+  if (rng === null) {
+    throw new Error("wave spawn plan requires a session Rng (see design/rng.md)");
+  }
+  const spec = state.plan.spawns[state.dispatched];
+  if (spec === undefined) return;
+  const archetype = resolveArchetype(spec.archetypeId, enemyRegistry);
+  const position = pickEdgePosition(
+    state.arena,
+    state.plan.edgeMargin ?? 0,
+    archetype.radius,
+    rng
+  );
+  const enemy = store.spawnEnemy(makeEnemySpawnSpec(archetype, position));
+  state.alive.add(enemy.id);
+  state.dispatched += 1;
+  state.lastSpawnSimMs = simTimeMs;
+}
+
+function resolveArchetype(
+  id: string,
+  enemyRegistry: Readonly<Record<string, EnemyArchetype>>
+): EnemyArchetype {
+  const archetype = enemyRegistry[id];
+  if (archetype === undefined) {
+    throw new Error(`unknown enemy archetype: ${id}`);
+  }
+  return archetype;
+}
+
+function makeEnemySpawnSpec(archetype: EnemyArchetype, position: Vec2): EnemySpawnSpec {
+  return {
+    archetypeId: archetype.id,
+    position,
+    radius: archetype.radius,
+    behavior: archetype.behavior,
+    maxHp: archetype.maxHp,
+    maxSpeed: archetype.maxSpeed,
+    contactDamage: archetype.contactDamage,
+    contactCooldownMs: archetype.contactCooldownMs,
+    knockbackBaseImpulse: archetype.knockbackBaseImpulse,
+    knockbackVelocityScale: archetype.knockbackVelocityScale,
+    knockbackDurationMs: archetype.knockbackDurationMs,
+    color: archetype.color
+  };
+}
+
+function pickEdgePosition(
+  arena: ArenaConfig,
+  edgeMargin: number,
+  enemyRadius: number,
+  rng: Rng
+): Vec2 {
+  const inset = edgeMargin + enemyRadius;
+  const innerHalfW = arena.width / 2 - inset;
+  const innerHalfH = arena.height / 2 - inset;
+  if (innerHalfW <= 0 || innerHalfH <= 0) {
+    throw new Error(
+      `arena ${arena.width}x${arena.height} too small for edge spawn with inset ${inset}`
+    );
+  }
+  const sideW = innerHalfW * 2;
+  const sideH = innerHalfH * 2;
+  const perimeter = 2 * (sideW + sideH);
+  let t = rng.nextFloat() * perimeter;
+  if (t < sideW) {
+    return { x: -innerHalfW + t, y: innerHalfH };
+  }
+  t -= sideW;
+  if (t < sideH) {
+    return { x: innerHalfW, y: innerHalfH - t };
+  }
+  t -= sideH;
+  if (t < sideW) {
+    return { x: innerHalfW - t, y: -innerHalfH };
+  }
+  t -= sideW;
+  return { x: -innerHalfW, y: -innerHalfH + t };
 }
