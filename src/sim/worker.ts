@@ -4,6 +4,7 @@ import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol'
 
 import { createCombatSystem } from './CombatSystem';
 import { createEntityStore } from './EntityStore';
+import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSimulationClock } from './SimulationClock';
@@ -16,6 +17,7 @@ const exporter = createSnapshotExportSystem();
 const movement = createMovementSystem();
 const spawn = createSpawnSystem();
 const combat = createCombatSystem();
+const healthDeath = createHealthDeathSystem();
 const spatialIndex = createSpatialIndex();
 
 function postToMain(msg: SimToMain): void {
@@ -30,7 +32,7 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
   const session = sessionFlow.activeSession();
   if (session === null) return;
   movement.tick(session.arena, entities, sessionFlow.inputState());
-  combat.tick(
+  const intents = combat.tick(
     sessionFlow.inputState(),
     entities,
     spatialIndex,
@@ -38,7 +40,7 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     session.arena,
     emitEvent
   );
-  // T7 will apply combat-produced damage intents through HealthDeathSystem.
+  healthDeath.tick(intents, entities, simTimeMs, emitEvent);
   const snapshot = exporter.onTick(simTimeMs, entities);
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });
