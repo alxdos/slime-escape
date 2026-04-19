@@ -81,4 +81,35 @@ describe('MovementSystem', () => {
     expect(() => movement.tick(ARENA, store, input)).not.toThrow();
     expect(store.player()).toBeNull();
   });
+
+  it('does not move projectiles or stationary enemies (design/projectiles-and-combat.md)', () => {
+    const { store, movement, input } = setup();
+    const enemy = store.spawnEnemy({
+      archetypeId: 'training-target',
+      position: { x: 5, y: 0 },
+      radius: 0.6,
+      behavior: 'stationary',
+      maxHp: 3,
+      color: 0xff7766
+    });
+    const projectile = store.spawnProjectile({
+      weaponArchetypeId: 'pistol',
+      ownerKind: 'player',
+      position: { x: 1, y: 0 },
+      velocity: { vx: 24, vy: 0 },
+      radius: 0.1,
+      damage: 1,
+      expireAtSimMs: 10_000
+    });
+    const enemyPosBefore = { ...enemy.position };
+    const projectilePosBefore = { ...projectile.position };
+
+    input.moveDir.dx = 1;
+    for (let i = 0; i < 10; i += 1) {
+      movement.tick(ARENA, store, input);
+    }
+
+    expect(enemy.position).toEqual(enemyPosBefore);
+    expect(projectile.position).toEqual(projectilePosBefore);
+  });
 });
