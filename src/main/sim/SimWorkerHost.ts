@@ -1,4 +1,6 @@
+import type { InputCommand } from '../../shared/input';
 import { assertNever, type MainToSim, type SimToMain } from '../../shared/protocol';
+import type { SessionDefinition } from '../../shared/session';
 import type { Snapshot } from '../../shared/snapshot';
 
 export type SnapshotPair = Readonly<{
@@ -9,9 +11,13 @@ export type SnapshotPair = Readonly<{
 }>;
 
 export type SimWorkerHost = Readonly<{
+  startSession(session: SessionDefinition): void;
+  stopSession(): void;
   pause(): void;
   resume(): void;
+  sendInput(command: InputCommand): void;
   snapshotPair(): SnapshotPair;
+  isPaused(): boolean;
   dispose(): void;
 }>;
 
@@ -49,7 +55,8 @@ export function createSimWorkerHost(): SimWorkerHost {
         return;
       case 'event':
       case 'telemetry':
-        throw new Error(`SimToMain kind not implemented in story 001: ${msg.kind}`);
+        // Story 002 has no consumer; HUD/audio (007/008) will subscribe later.
+        return;
       default:
         assertNever(msg);
     }
@@ -67,7 +74,23 @@ export function createSimWorkerHost(): SimWorkerHost {
     worker.postMessage(msg);
   }
 
+  function clearPair(): void {
+    pair.prev = null;
+    pair.curr = null;
+    pair.currReceivedAtMs = 0;
+  }
+
   return {
+    startSession(session): void {
+      paused = false;
+      clearPair();
+      send({ kind: 'startSession', session });
+    },
+    stopSession(): void {
+      paused = false;
+      clearPair();
+      send({ kind: 'stopSession' });
+    },
     pause(): void {
       if (paused) return;
       paused = true;
@@ -81,9 +104,15 @@ export function createSimWorkerHost(): SimWorkerHost {
       paused = false;
       send({ kind: 'resume' });
     },
+    sendInput(command): void {
+      send({ kind: 'input', command });
+    },
     snapshotPair(): SnapshotPair {
       pair.nowMs = paused ? pauseAnchorMs : performance.now();
       return pair;
+    },
+    isPaused(): boolean {
+      return paused;
     },
     dispose(): void {
       worker.terminate();

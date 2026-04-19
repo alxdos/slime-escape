@@ -38,6 +38,8 @@ export type InputController = Readonly<{
   start(): void;
   stop(): void;
   isActive(): boolean;
+  currentAim(): Vec2;
+  requestLock(): void;
 }>;
 
 export function createInputController(init: InputControllerInit): InputController {
@@ -185,6 +187,13 @@ export function createInputController(init: InputControllerInit): InputControlle
     },
     isActive(): boolean {
       return active;
+    },
+    currentAim(): Vec2 {
+      return { x: aim.x, y: aim.y };
+    },
+    requestLock(): void {
+      if (isLocked()) return;
+      void canvas.requestPointerLock();
     }
   };
 }
