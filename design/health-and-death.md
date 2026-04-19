@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (для истории 004 активирован `source.kind: 'enemyContact'`; путь смерти игрока через session-level death hook закреплён как обязательный для `lossCondition: playerDeath`)
+- Updated: 2026-04-19 (для истории 005 закреплено: `HealthDeathSystem` владеет только decrement HP и death; heal от `DropSystem` — единственная санкционированная мутация HP в плюс и идёт мимо `applyDamage`; контракт death hook уточнён под спавн дропа в `EntityStore`)
 
 ## Context
 
@@ -48,6 +48,7 @@
 - На 003 единственный реальный `source.kind` — `'projectile'`. Историей 004 активируется `'enemyContact'` (формирует `CombatSystem` в новой фазе по [enemy-contact.md](enemy-contact.md)). Остальные kind зарезервированы и активируются соответствующими историями расширением union, а не переименованием поля.
 - Damage intents за тик передаются в `HealthDeathSystem` явным списком (по конкретному signature метода), без отдельной глобальной шины событий: один тик — один список.
 - `CombatSystem` не имеет права читать или мутировать HP. Все вычитания выполняет только `HealthDeathSystem`.
+- `HealthDeathSystem` владеет **только decrement HP и death**. Heal (увеличение `hp` в пределах `[0, maxHp]`) под этот контракт не подпадает: единственный санкционированный источник heal на горизонт MVP — `DropSystem` ([drops.md](drops.md)), который мутирует `player.hp` напрямую в фазе pickup, не строит `DamageIntent` и не вызывает `HealthDeathSystem.applyDamage`. Heal не может породить `death`-event, не запускает death hooks и не попадает в общий per-tick damage-список. Если когда-нибудь появится второй источник heal (регенерация, эффект босса), вводится отдельное design-решение об общем heal-канале — но не обходом этого правила «по месту».
 
 ### Применение урона и фиксация смерти
 
@@ -74,14 +75,14 @@
   type DeathHook = (ctx: DeathContext) => void;
   ```
 - Минимальные потребители death hooks (зафиксированы здесь как контракт; реализация — по соответствующим историям):
-  - `DropSystem` ([../stories/005-drops.md](../stories/005-drops.md)) — реагирует на смерти врагов;
+  - `DropSystem` ([drops.md](drops.md)) — реагирует на смерти врагов: фильтрует по `entityKind === 'enemy'`, при непустой `dropTable` делает один `nextFloat` через session RNG и при выпавшем dropArchetype спавнит `Drop` через `EntityStore.spawnDrop` в позиции `ctx.position`. Полный контракт hook'a — в [drops.md](drops.md);
   - session-level статистика и progression — счётчики убитых, прогресс волны и т.п.;
   - runtime events для HUD/audio/debug — публикация события `death` (см. [snapshot-shape.md](snapshot-shape.md)).
 - Hooks вызываются **синхронно**, в порядке регистрации, для каждой смерти отдельно. Hook не имеет права:
   - наносить новый урон в том же тике (это создаст цепочку смертей с непредсказуемым порядком и сломает воспроизводимость по `seed`);
-  - модифицировать HP и `EntityStore` для **других** сущностей;
+  - модифицировать HP и `EntityStore` для **других** сущностей (создание новых сущностей вроде `Drop` не считается мутацией других — это новые id);
   - читать состояние сущностей, помеченных к удалению на этом тике, как «живых».
-- Hook **может**: создать новые сущности (например, `DropSystem` спавнит дроп), записать в свою внутреннюю статистику, опубликовать runtime event.
+- Hook **может**: создать новые сущности (например, `DropSystem` спавнит `Drop` в `EntityStore`), записать в свою внутреннюю статистику, опубликовать runtime event (например, `dropSpawn` от `DropSystem`, см. [snapshot-shape.md](snapshot-shape.md)).
 
 ### Удаление и порядок внутри тика
 
@@ -110,7 +111,7 @@
 - HP и его мутация остаются в одной точке; багов вида «-1 HP в `CombatSystem` и -1 HP в `BossPhaseSystem`» по построению быть не может.
 - Death hooks фиксируют форму обмена для 005/006 заранее; добавление `DropSystem` не потребует переоткрывать порядок тика.
 - Запрет на «новый урон внутри hook» сохраняет детерминизм относительно `seed`: цепочка смертей в один тик невозможна.
-- `EntityStore` остаётся owner-ом lifecycle сущностей, но удаление инициируется только `HealthDeathSystem` для damageable-сущностей; для снарядов и дропа удалением владеют их собственные системы (см. [projectiles-and-combat.md](projectiles-and-combat.md)).
+- `EntityStore` остаётся owner-ом lifecycle сущностей, но удаление инициируется только `HealthDeathSystem` для damageable-сущностей; для снарядов и дропа удалением владеют их собственные системы ([projectiles-and-combat.md](projectiles-and-combat.md), [drops.md](drops.md)).
 - Когда у игрока появится HP, новых архитектурных решений не потребуется — переиспользуются те же intents и hooks.
 
 ## Related
@@ -120,6 +121,7 @@
 - [enemy-contact.md](enemy-contact.md)
 - [snapshot-shape.md](snapshot-shape.md)
 - [content-archetypes.md](content-archetypes.md)
+- [drops.md](drops.md)
 - [session-definition.md](session-definition.md)
 - [simulation-timing.md](simulation-timing.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (форма архетипов и правило резолва по `id` вынесены в `content-archetypes.md`)
+- Updated: 2026-04-19 (для истории 005 добавлены `DropArchetype` в `content library`; «таблицы дропа» из общего перечня уточнены как поле `dropTable` на `EnemyArchetype`, см. `content-archetypes.md` и `drops.md`)
 
 ## Context
 
@@ -18,11 +18,12 @@
 - В `content library` хранить:
   - архетипы врагов;
   - архетипы оружия;
+  - архетипы дропа;
   - профили босса;
   - параметры арены;
-  - таблицы дропа;
   - стандартные `ModePreset`.
-- Форма архетипов (поля `EnemyArchetype`, `WeaponArchetype`, минимальный `Loadout`, правила резолва по стабильному `id`) фиксируется в [content-archetypes.md](content-archetypes.md). Ссылки в `SessionDefinition`, `EncounterDefinition`, `SpawnPlan` и runtime state идут только по `id`; резолв `id → archetype` выполняется один раз при сборке/старте сессии.
+- Форма архетипов (поля `EnemyArchetype`, `WeaponArchetype`, `DropArchetype`, минимальный `Loadout`, правила резолва по стабильному `id`) фиксируется в [content-archetypes.md](content-archetypes.md). Ссылки в `SessionDefinition`, `EncounterDefinition`, `SpawnPlan` и runtime state идут только по `id`; резолв `id → archetype` выполняется один раз при сборке/старте сессии.
+- «Таблицы дропа» не выделены в отдельную сущность с собственным `id`: одна таблица — поле `dropTable: ReadonlyArray<DropTableEntry>` на `EnemyArchetype` (см. [content-archetypes.md](content-archetypes.md)). Правила выбора и lifecycle дропа — в [drops.md](drops.md). Если в будущем понадобится шаринг таблиц между врагами, это будет отдельным решением (ссылка по `dropTableId` поверх существующего поля), не «дописыванием по месту».
 - В `session configuration` хранить:
   - выбранный preset;
   - `SessionDefinition`;
@@ -62,3 +63,4 @@
 - [runtime-systems.md](runtime-systems.md)
 - [content-archetypes.md](content-archetypes.md)
 - [spawn-plan.md](spawn-plan.md)
+- [drops.md](drops.md)

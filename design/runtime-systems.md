@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (короткий контракт `ZoneSystem` со ссылкой на `zone.md`; encounter transitions, `win`/`loss` lifecycle и session-level player-death hook в `SessionFlowSystem`)
+- Updated: 2026-04-19 (для истории 005 уточнён короткий контракт `DropSystem` со ссылкой на `drops.md`; runtime events дропа переименованы в `dropSpawn`/`dropPickup`/`dropExpire` и закреплены за `DropSystem`)
 
 ## Context
 
@@ -46,7 +46,7 @@
   - `CombatSystem` создаёт выстрелы, двигает снаряды, вычисляет попадания и формирует damage intents; полный контракт — [projectiles-and-combat.md](projectiles-and-combat.md);
   - `HealthDeathSystem` единственный слой, который применяет финальную потерю HP, фиксирует смерть и удаляет damageable-сущности; полный контракт — [health-and-death.md](health-and-death.md);
   - `SpatialIndex` — внутренний помощник систем (`CombatSystem`, `DropSystem`, при необходимости `BossPhaseSystem`); см. ниже минимальный контракт;
-  - `DropSystem` реагирует на death hooks и управляет только жизненным циклом дропа;
+  - `DropSystem` реагирует на death hooks (спавн `Drop` в `EntityStore`) и в собственной фазе тика управляет только жизненным циклом дропа (ttl, pickup, удаление); полный контракт — [drops.md](drops.md);
   - `ZoneSystem` управляет состоянием зоны и её экспортом, но не завершает encounter самостоятельно и не наносит урона; полный контракт зоны (форма `margin`, режимы, lifecycle, экспорт) — в [zone.md](zone.md);
   - `BossPhaseSystem` управляет фазами и boss-specific attack rules, не подменяя `SessionFlowSystem`.
 - `SpatialIndex` — минимальный контракт уровня архитектуры:
@@ -63,7 +63,7 @@
   - `SessionFlowSystem` - pause/resume, encounter start/end, win/loss;
   - `CombatSystem` - fire/hit;
   - `HealthDeathSystem` - death;
-  - `DropSystem` - spawn/pickup/expire;
+  - `DropSystem` - dropSpawn/dropPickup/dropExpire (полный контракт kinds и owner-а — [snapshot-shape.md](snapshot-shape.md), [drops.md](drops.md));
   - `BossPhaseSystem` - phase change.
 - `SnapshotExportSystem` не создаёт новую gameplay-логику; он только агрегирует уже рассчитанное состояние и нужные HUD-поля.
 - Lifecycle симуляции относительно сессии:
@@ -107,5 +107,6 @@
 - [snapshot-shape.md](snapshot-shape.md)
 - [zone.md](zone.md)
 - [enemy-contact.md](enemy-contact.md)
+- [drops.md](drops.md)
 - [rng.md](rng.md)
 - [logging.md](logging.md)
