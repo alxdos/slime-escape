@@ -2,18 +2,23 @@ import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
 
 import { createEntityStore } from './EntityStore';
+import { createMovementSystem } from './MovementSystem';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 
 const entities = createEntityStore();
 const exporter = createSnapshotExportSystem();
+const movement = createMovementSystem();
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);
 }
 
 const clock = createSimulationClock((_dtMs, simTimeMs) => {
+  const session = sessionFlow.activeSession();
+  if (session === null) return;
+  movement.tick(session.arena, entities, sessionFlow.inputState());
   const snapshot = exporter.onTick(simTimeMs, entities);
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });

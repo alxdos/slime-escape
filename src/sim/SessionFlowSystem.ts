@@ -1,8 +1,14 @@
 import type { RuntimeEvent } from '../shared/events';
 import type { InputCommand } from '../shared/input';
 import { log } from '../shared/log';
+import { assertNever } from '../shared/protocol';
 import type { SessionDefinition } from '../shared/session';
 
+import {
+  createRuntimeInputState,
+  resetRuntimeInputState,
+  type RuntimeInputState
+} from './RuntimeInputState';
 import type { SimulationClock } from './SimulationClock';
 
 export type SessionFlowSystem = Readonly<{
@@ -13,6 +19,7 @@ export type SessionFlowSystem = Readonly<{
   handleInput(command: InputCommand): void;
   isActive(): boolean;
   activeSession(): SessionDefinition | null;
+  inputState(): RuntimeInputState;
 }>;
 
 export type SessionFlowDeps = Readonly<{
@@ -25,6 +32,7 @@ export type SessionFlowDeps = Readonly<{
 export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSystem {
   const { clock, emitEvent } = deps;
   let session: SessionDefinition | null = null;
+  const input = createRuntimeInputState();
 
   function start(next: SessionDefinition): void {
     if (session !== null) {
@@ -35,6 +43,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
       return;
     }
     session = next;
+    resetRuntimeInputState(input, next.player.position.x, next.player.position.y);
     deps.onSessionStart?.(next);
     clock.toRunning();
     const simTime = clock.simTimeMs();
@@ -56,6 +65,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     emitEvent({ kind: 'sessionStop', simTime });
     clock.toIdle();
     deps.onSessionStop?.();
+    resetRuntimeInputState(input, 0, 0);
     session = null;
   }
 
@@ -79,12 +89,26 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     emitEvent({ kind: 'resume', simTime: clock.simTimeMs() });
   }
 
-  function handleInput(_command: InputCommand): void {
+  function handleInput(command: InputCommand): void {
     if (session === null) {
       log.warn('input command ignored: no active session');
       return;
     }
-    // T6 wires actual handling onto runtime input state.
+    switch (command.kind) {
+      case 'move':
+        input.moveDir.dx = command.dx;
+        input.moveDir.dy = command.dy;
+        return;
+      case 'aim':
+        input.aimWorld.x = command.x;
+        input.aimWorld.y = command.y;
+        return;
+      case 'fire':
+        input.firing = command.phase === 'start';
+        return;
+      default:
+        assertNever(command);
+    }
   }
 
   return {
@@ -94,6 +118,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     resume,
     handleInput,
     isActive: () => session !== null,
-    activeSession: () => session
+    activeSession: () => session,
+    inputState: () => input
   };
 }
