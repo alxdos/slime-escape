@@ -63,6 +63,15 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           y: projectile.position.y
         });
       }
+      for (const drop of store.drops()) {
+        entities.push({
+          id: drop.id,
+          kind: 'drop',
+          archetypeId: drop.archetypeId,
+          x: drop.position.x,
+          y: drop.position.y
+        });
+      }
       return {
         simTimeMs,
         entities,
