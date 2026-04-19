@@ -10,7 +10,7 @@ import type {
 import { SIM_STEP_MS } from '../timing';
 
 import { SANDBOX_ARENA } from './arenas';
-import { ENEMY_ARCHETYPES, TRAINING_TARGET } from './enemies';
+import { ENEMY_ARCHETYPES, TRAINING_TARGET, validateEnemyRegistry } from './enemies';
 import { SANDBOX_PLAYER } from './players';
 import type { ModePreset } from './presets';
 import { PISTOL, WEAPON_ARCHETYPES } from './weapons';
@@ -39,6 +39,8 @@ export function buildSessionDefinition(
 }
 
 function buildSandboxSession(options: BuildOptions): SessionDefinition {
+  validateEnemyRegistry(ENEMY_ARCHETYPES, SANDBOX_PLAYER.radius);
+
   const encounter: EncounterDefinition = {
     id: 'sandbox-encounter',
     type: 'sandbox',
@@ -66,6 +68,8 @@ function buildSandboxSession(options: BuildOptions): SessionDefinition {
 }
 
 function buildSandboxWithCombatSession(options: BuildOptions): SessionDefinition {
+  validateEnemyRegistry(ENEMY_ARCHETYPES, SANDBOX_PLAYER.radius);
+
   const targetSpawn: StaticSpawn = {
     archetypeId: TRAINING_TARGET.id,
     position: { x: 5, y: 0 }
