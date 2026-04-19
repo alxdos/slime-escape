@@ -1,7 +1,6 @@
-import * as THREE from 'three';
-
 import { detectFeatures } from './featureDetection';
 import { createSimWorkerHost } from './sim/SimWorkerHost';
+import { createRenderer } from './render/Renderer';
 
 function requireCanvas(selector: string): HTMLCanvasElement {
   const el = document.querySelector<HTMLCanvasElement>(selector);
@@ -17,39 +16,20 @@ const sim = createSimWorkerHost();
 
 const canvas = requireCanvas('#scene');
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const renderer = createRenderer({
+  canvas,
+  pixelRatio: Math.min(window.devicePixelRatio, 2),
+  width: canvas.clientWidth,
+  height: canvas.clientHeight,
+  getSnapshotPair: sim.snapshotPair
+});
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x101218);
-
-const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
-camera.position.set(0, 0, 5);
-camera.lookAt(0, 0, 0);
-
-function applyAspect(width: number, height: number): void {
-  const aspect = width / height;
-  const halfH = 1;
-  const halfW = halfH * aspect;
-  camera.left = -halfW;
-  camera.right = halfW;
-  camera.top = halfH;
-  camera.bottom = -halfH;
-  camera.updateProjectionMatrix();
-}
-
-function resize(): void {
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
-  renderer.setSize(width, height, false);
-  applyAspect(width, height);
-}
-
-window.addEventListener('resize', resize);
-resize();
+window.addEventListener('resize', () => {
+  renderer.resize(canvas.clientWidth, canvas.clientHeight);
+});
 
 function tick(): void {
-  renderer.render(scene, camera);
+  renderer.render();
   requestAnimationFrame(tick);
 }
 

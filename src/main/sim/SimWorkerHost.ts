@@ -4,6 +4,7 @@ import type { Snapshot } from '../../shared/snapshot';
 export type SnapshotPair = Readonly<{
   prev: Snapshot | null;
   curr: Snapshot | null;
+  currReceivedAtMs: number;
 }>;
 
 export type SimWorkerHost = Readonly<{
@@ -19,9 +20,10 @@ export function createSimWorkerHost(): SimWorkerHost {
     name: 'simulation'
   });
 
-  const pair: { prev: Snapshot | null; curr: Snapshot | null } = {
+  const pair: { prev: Snapshot | null; curr: Snapshot | null; currReceivedAtMs: number } = {
     prev: null,
-    curr: null
+    curr: null,
+    currReceivedAtMs: 0
   };
 
   worker.addEventListener('message', (event: MessageEvent<SimToMain>) => {
@@ -30,6 +32,7 @@ export function createSimWorkerHost(): SimWorkerHost {
       case 'snapshot':
         pair.prev = pair.curr;
         pair.curr = msg.snapshot;
+        pair.currReceivedAtMs = performance.now();
         return;
     }
     assertNever(msg.kind);
