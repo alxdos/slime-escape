@@ -64,5 +64,7 @@
 | [input-commands.md](input-commands.md) | accepted | Структура `InputCommand`, WASD/Pointer Lock/прицел/ЛКМ, Esc-пауза |
 | [web-stack.md](web-stack.md) | accepted | Сборщик, язык, менеджер пакетов и раскладка `src/main`, `src/sim`, `src/shared` |
 | [simulation-timing.md](simulation-timing.md) | accepted | Частоты `SimulationClock` и снапшотов, правила интерполяции и pause/resume |
+| [logging.md](logging.md) | accepted | Единый log-модуль `src/shared/log.ts`, уровни и запрет прямых `console.*` |
+| [testing.md](testing.md) | accepted | Test runner (`vitest`), команды, обязательные инварианты под тестом |
 | [decision-log-format.md](decision-log-format.md) | accepted | Вспомогательная выжимка формата решений; правила слоя задаются этим `README` |
 | [_template.md](_template.md) | template | Минимальный шаблон нового решения |

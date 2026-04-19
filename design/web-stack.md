@@ -39,7 +39,7 @@
   ```ts
   new Worker(new URL('../../sim/worker.ts', import.meta.url), { type: 'module' })
   ```
-- Тестовый и debug-код, если появится, живёт рядом с модулем (`*.test.ts`) и не нарушает правила импортов между слоями.
+- Тестовый и debug-код, если появится, живёт рядом с модулем (`*.test.ts`) и не нарушает правила импортов между слоями. Конкретный test runner и команды зафиксированы в [testing.md](testing.md).
 - Все runtime-критичные числовые константы тика, частот и т.п. живут в `src/shared/**` (см. [simulation-timing.md](simulation-timing.md)), а не дублируются по системам.
 
 ## Consequences
@@ -56,3 +56,5 @@
 - [content-boundaries.md](content-boundaries.md)
 - [simulation-timing.md](simulation-timing.md)
 - [session-definition.md](session-definition.md)
+- [testing.md](testing.md)
+- [logging.md](logging.md)
