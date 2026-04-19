@@ -58,8 +58,10 @@
 |----------|--------|-------------|
 | [session-definition.md](session-definition.md) | accepted | Структура `SessionDefinition`, `EncounterDefinition` и `ModePreset` |
 | [thread-model.md](thread-model.md) | accepted | Граница между `main thread`, `simulation worker` и рендером |
-| [runtime-systems.md](runtime-systems.md) | accepted | Минимальный набор систем `core runtime` для MVP |
+| [runtime-systems.md](runtime-systems.md) | accepted | Минимальный набор систем `core runtime` и lifecycle симуляции |
 | [content-boundaries.md](content-boundaries.md) | accepted | Разделение `content library`, конфигурации сессии и runtime state |
+| [arena-and-coordinates.md](arena-and-coordinates.md) | accepted | Координатная система мира, форма арены и правило fit-to-viewport |
+| [input-commands.md](input-commands.md) | accepted | Структура `InputCommand`, WASD/Pointer Lock/прицел/ЛКМ, Esc-пауза |
 | [web-stack.md](web-stack.md) | accepted | Сборщик, язык, менеджер пакетов и раскладка `src/main`, `src/sim`, `src/shared` |
 | [simulation-timing.md](simulation-timing.md) | accepted | Частоты `SimulationClock` и снапшотов, правила интерполяции и pause/resume |
 | [decision-log-format.md](decision-log-format.md) | accepted | Вспомогательная выжимка формата решений; правила слоя задаются этим `README` |
