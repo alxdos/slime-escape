@@ -1,11 +1,18 @@
 import { createSimulationClock } from './SimulationClock';
 import { createWorld, updateWorld } from './world';
-import { assertNever, type MainToSim } from '../shared/protocol';
+import { createSnapshotExportSystem } from './SnapshotExportSystem';
+import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
 
 const world = createWorld();
+const exporter = createSnapshotExportSystem();
 
 const clock = createSimulationClock((_dtMs, simTimeMs) => {
   updateWorld(world, simTimeMs);
+  const snapshot = exporter.onTick(simTimeMs, world);
+  if (snapshot) {
+    const msg: SimToMain = { kind: 'snapshot', snapshot };
+    self.postMessage(msg);
+  }
 });
 
 self.addEventListener('message', (event: MessageEvent<MainToSim>) => {
