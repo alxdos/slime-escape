@@ -1,12 +1,12 @@
 import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
 
+import { createEntityStore } from './EntityStore';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
-import { createWorld, resetWorld, updateWorld } from './world';
 
-const world = createWorld();
+const entities = createEntityStore();
 const exporter = createSnapshotExportSystem();
 
 function postToMain(msg: SimToMain): void {
@@ -14,8 +14,7 @@ function postToMain(msg: SimToMain): void {
 }
 
 const clock = createSimulationClock((_dtMs, simTimeMs) => {
-  updateWorld(world, simTimeMs);
-  const snapshot = exporter.onTick(simTimeMs, world);
+  const snapshot = exporter.onTick(simTimeMs, entities);
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });
   }
@@ -26,12 +25,13 @@ const sessionFlow = createSessionFlowSystem({
   emitEvent(event) {
     postToMain({ kind: 'event', event });
   },
-  onSessionStart() {
-    resetWorld(world);
+  onSessionStart(session) {
+    entities.clear();
     exporter.reset();
+    entities.spawnPlayer(session.player);
   },
   onSessionStop() {
-    resetWorld(world);
+    entities.clear();
     exporter.reset();
   }
 });
