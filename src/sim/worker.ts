@@ -6,10 +6,12 @@ import { createMovementSystem } from './MovementSystem';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
+import { createSpawnSystem } from './SpawnSystem';
 
 const entities = createEntityStore();
 const exporter = createSnapshotExportSystem();
 const movement = createMovementSystem();
+const spawn = createSpawnSystem();
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);
@@ -38,6 +40,12 @@ const sessionFlow = createSessionFlowSystem({
   onSessionStop() {
     entities.clear();
     exporter.reset();
+  },
+  onEncounterStart(encounter) {
+    spawn.onEncounterStart(encounter, entities);
+  },
+  onEncounterEnd(encounter) {
+    spawn.onEncounterEnd(encounter);
   }
 });
 

@@ -2,7 +2,7 @@ import type { RuntimeEvent } from '../shared/events';
 import type { InputCommand } from '../shared/input';
 import { log } from '../shared/log';
 import { assertNever } from '../shared/protocol';
-import type { SessionDefinition } from '../shared/session';
+import type { EncounterDefinition, SessionDefinition } from '../shared/session';
 
 import {
   createRuntimeInputState,
@@ -27,6 +27,8 @@ export type SessionFlowDeps = Readonly<{
   emitEvent(event: RuntimeEvent): void;
   onSessionStart?(session: SessionDefinition): void;
   onSessionStop?(): void;
+  onEncounterStart?(encounter: EncounterDefinition): void;
+  onEncounterEnd?(encounter: EncounterDefinition): void;
 }>;
 
 export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSystem {
@@ -48,7 +50,9 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     clock.toRunning();
     const simTime = clock.simTimeMs();
     emitEvent({ kind: 'sessionStart', simTime });
-    if (next.encounters.length > 0) {
+    const firstEncounter = next.encounters[0];
+    if (firstEncounter !== undefined) {
+      deps.onEncounterStart?.(firstEncounter);
       emitEvent({ kind: 'encounterStart', simTime });
     }
   }
@@ -59,8 +63,10 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
       return;
     }
     const simTime = clock.simTimeMs();
-    if (session.encounters.length > 0) {
+    const firstEncounter = session.encounters[0];
+    if (firstEncounter !== undefined) {
       emitEvent({ kind: 'encounterEnd', simTime });
+      deps.onEncounterEnd?.(firstEncounter);
     }
     emitEvent({ kind: 'sessionStop', simTime });
     clock.toIdle();
