@@ -178,6 +178,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
       deps.onEncounterEnd?.(currentEncounter);
     }
     emitEvent({ kind: 'loss', simTime });
+    emitEvent({ kind: 'sessionStop', simTime });
     tearDown();
   }
 
@@ -186,6 +187,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     if (active.def.winCondition.kind === 'allEncountersComplete') {
       emitEvent({ kind: 'win', simTime: simTimeMs });
     }
+    emitEvent({ kind: 'sessionStop', simTime: simTimeMs });
     tearDown();
   }
 

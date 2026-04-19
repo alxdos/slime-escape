@@ -308,12 +308,12 @@ describe('SessionFlowSystem encounter transitions', () => {
     flow.start(session);
     events.length = 0;
     flow.checkTransitions(0);
-    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'win']);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'win', 'sessionStop']);
     expect(flow.isActive()).toBe(false);
     expect(clock.isRunning()).toBe(false);
   });
 
-  it("does not publish 'win' if winCondition is none", () => {
+  it("does not publish 'win' if winCondition is none, but still publishes sessionStop", () => {
     const clock = createFakeClock();
     const events: RuntimeEvent[] = [];
     const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
@@ -325,7 +325,7 @@ describe('SessionFlowSystem encounter transitions', () => {
     flow.start(session);
     events.length = 0;
     flow.checkTransitions(0);
-    expect(events.map((e) => e.kind)).toEqual(['encounterEnd']);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'sessionStop']);
     expect(flow.isActive()).toBe(false);
   });
 
@@ -366,7 +366,7 @@ describe('SessionFlowSystem player death', () => {
     flow.start(session);
     events.length = 0;
     flow.onPlayerDeath();
-    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'loss']);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'loss', 'sessionStop']);
     expect(flow.isActive()).toBe(false);
     expect(clock.isRunning()).toBe(false);
   });
