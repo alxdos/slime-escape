@@ -83,6 +83,48 @@ function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
   };
 }
 
+function makeBossSnapshot(): Snapshot {
+  return makeSnapshot({
+    entities: [
+      {
+        id: 1,
+        kind: 'player',
+        x: 0,
+        y: 0,
+        hp: 4,
+        maxHp: 5
+      },
+      {
+        id: 99,
+        kind: 'boss',
+        archetypeId: 'slime-king',
+        x: 1,
+        y: 1,
+        hp: 22,
+        maxHp: 40,
+        phaseIndex: 1,
+        phaseId: 'desperation',
+        activeAttackIds: ['dashSlam']
+      }
+    ],
+    encounter: {
+      id: 'campaign-boss',
+      type: 'boss',
+      index: 2,
+      elapsedMs: 12000
+    },
+    waveProgress: null,
+    bossHud: {
+      entityId: 99,
+      phaseIndex: 1,
+      phaseId: 'desperation',
+      hp: 22,
+      maxHp: 40,
+      activeAttackIds: ['dashSlam']
+    }
+  });
+}
+
 describe('Hud view model', () => {
   it('formats elapsed milliseconds as mm:ss', () => {
     expect(formatElapsedMs(0)).toBe('00:00');
@@ -122,6 +164,16 @@ describe('Hud view model', () => {
   });
 
   it('shows boss block only when bossHud is present and resolves phase through archetype data', () => {
+    const bossView = deriveHudViewModel(makeSession(), makeBossSnapshot());
+
+    expect(bossView.boss).not.toBeNull();
+    expect(bossView.boss?.titleText).toBe('Slime King');
+    expect(bossView.boss?.phaseText).toBe('Фаза 2/2 · desperation');
+    expect(bossView.boss?.hpText).toBe('22 / 40');
+    expect(bossView.boss?.hpRatio).toBe(0.55);
+  });
+
+  it('falls back to an unknown phase count when boss archetype is unavailable', () => {
     const bossView = deriveHudViewModel(
       makeSession(),
       makeSnapshot({
@@ -137,7 +189,7 @@ describe('Hud view model', () => {
           {
             id: 99,
             kind: 'boss',
-            archetypeId: 'slime-king',
+            archetypeId: 'missing-boss',
             x: 1,
             y: 1,
             hp: 22,
@@ -165,11 +217,7 @@ describe('Hud view model', () => {
       })
     );
 
-    expect(bossView.boss).not.toBeNull();
-    expect(bossView.boss?.titleText).toBe('Slime King');
-    expect(bossView.boss?.phaseText).toBe('Фаза 2/2 · desperation');
-    expect(bossView.boss?.hpText).toBe('22 / 40');
-    expect(bossView.boss?.hpRatio).toBe(0.55);
+    expect(bossView.boss?.phaseText).toBe('Фаза 2/? · desperation');
   });
 
   it('falls back to waiting state before the first snapshot arrives', () => {

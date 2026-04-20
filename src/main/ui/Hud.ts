@@ -248,9 +248,10 @@ function formatBossPhaseText(
   bossHud: BossHudSnapshot,
   bossArchetype: BossArchetype | null
 ): string {
-  const phaseCount = bossArchetype?.phases.length ?? Math.max(1, bossHud.phaseIndex + 1);
+  const phaseCountText =
+    bossArchetype === null ? '?' : `${Math.max(1, bossArchetype.phases.length)}`;
   const phaseId = bossArchetype?.phases[bossHud.phaseIndex]?.id ?? bossHud.phaseId;
-  return `Фаза ${bossHud.phaseIndex + 1}/${phaseCount} · ${phaseId}`;
+  return `Фаза ${bossHud.phaseIndex + 1}/${phaseCountText} · ${phaseId}`;
 }
 
 function resolveWaveNumber(

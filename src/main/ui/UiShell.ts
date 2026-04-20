@@ -229,18 +229,17 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function exitToMenu(): void {
     const previousPhase = phase;
-    if (
-      previousPhase.kind !== 'running' &&
-      previousPhase.kind !== 'paused' &&
-      previousPhase.kind !== 'result'
-    ) {
+    if (previousPhase.kind === 'running' || previousPhase.kind === 'paused') {
+      tearDownClientSession();
+      sim.stopSession();
+      setPhase(MENU_PHASE);
       return;
     }
 
-    tearDownClientSession();
-    if (previousPhase.kind === 'running' || previousPhase.kind === 'paused') {
-      sim.stopSession();
+    if (previousPhase.kind !== 'result') {
+      return;
     }
+
     setPhase(MENU_PHASE);
   }
 
