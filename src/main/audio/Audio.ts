@@ -214,8 +214,6 @@ export function createAudio(init: AudioInit = {}): Audio {
 
       const trimGain = readyDependencies.runtime.context.createGain();
       trimGain.gain.value = calculateEffectiveGain(sample, {
-        busGain: readyDependencies.runtime.busGains[sample.category].gain.value,
-        masterGain: readyDependencies.runtime.masterGain.gain.value,
         perCallGainMul
       });
 
@@ -295,10 +293,7 @@ export function createAudio(init: AudioInit = {}): Audio {
       source.loop = sample.loop ?? false;
 
       const trimGain = readyDependencies.runtime.context.createGain();
-      trimGain.gain.value = calculateEffectiveGain(sample, {
-        busGain: readyDependencies.runtime.busGains[sample.category].gain.value,
-        masterGain: readyDependencies.runtime.masterGain.gain.value
-      });
+      trimGain.gain.value = calculateEffectiveGain(sample, {});
 
       source.connect(trimGain);
       trimGain.connect(readyDependencies.runtime.busGains[sample.category]);
@@ -718,16 +713,8 @@ function formatError(error: unknown): string {
 export function calculateEffectiveGain(
   sample: Pick<SampleEntry, 'normalizedGain' | 'defaultGain'>,
   init: Readonly<{
-    busGain: number;
-    masterGain: number;
     perCallGainMul?: number;
   }>
 ): number {
-  return (
-    sample.normalizedGain *
-    sample.defaultGain *
-    (init.perCallGainMul ?? 1) *
-    init.busGain *
-    init.masterGain
-  );
+  return sample.normalizedGain * sample.defaultGain * (init.perCallGainMul ?? 1);
 }

@@ -242,6 +242,14 @@ function getRequiredGainNodes(context: FakeAudioContext): Readonly<{
   };
 }
 
+function getPlaybackTrimGain(context: FakeAudioContext, playbackIndex = 0): FakeGainNode {
+  const trimGain = context.gains[5 + playbackIndex];
+  if (trimGain === undefined) {
+    throw new Error(`expected playback trim gain #${playbackIndex} to exist`);
+  }
+  return trimGain;
+}
+
 function createDeferred(): Readonly<{
   promise: Promise<void>;
   resolve(): void;
@@ -270,7 +278,7 @@ async function flushAudioWork(): Promise<void> {
 }
 
 describe('createAudio', () => {
-  it('calculates effective gain from sample, bus, master and per-call multipliers', () => {
+  it('calculates per-source trim gain from sample and per-call multipliers', () => {
     expect(
       calculateEffectiveGain(
         {
@@ -278,12 +286,10 @@ describe('createAudio', () => {
           defaultGain: 0.3
         },
         {
-          busGain: 0.5,
-          masterGain: 0.8,
           perCallGainMul: 0.25
         }
       )
-    ).toBeCloseTo(0.0105);
+    ).toBeCloseTo(0.02625);
   });
 
   it('creates master, sfx, music and ui buses with unit gain and expected wiring', () => {
@@ -353,13 +359,29 @@ describe('createAudio', () => {
 
   it('routes fire events to one-shot playback after unlock', async () => {
     const { audio, context } = createAudioHarness();
+    const { masterGain, sfxGain } = getRequiredGainNodes(context);
     context.setState('running');
+    masterGain.gain.value = 0.8;
+    sfxGain.gain.value = 0.5;
 
-    audio.handleEvent(makeFireEvent());
+    audio.handleEvent({
+      kind: 'fire',
+      simTime: 10,
+      shooterId: 1,
+      ownerKind: 'player',
+      weaponArchetypeId: 'shotgun',
+      originX: 0,
+      originY: 0,
+      dirX: 1,
+      dirY: 0
+    });
     await flushAudioWork();
 
     expect(context.sources).toHaveLength(1);
     expect(context.sources[0]?.startCalls).toBe(1);
+    expect(getPlaybackTrimGain(context).gain.value).toBeCloseTo(0.35);
+    expect(sfxGain.gain.value).toBe(0.5);
+    expect(masterGain.gain.value).toBe(0.8);
   });
 
   it('skips unresolved boss fire events without emitting a missing-mapping warning', async () => {
@@ -697,8 +719,10 @@ describe('createAudio', () => {
 
   it('starts regular music in running and ducks the dedicated music duck gain without overwriting the music bus', async () => {
     const { audio, context } = createAudioHarness(() => 0);
-    const { musicGain, musicDuckGain } = getRequiredGainNodes(context);
+    const { masterGain, musicGain, musicDuckGain } = getRequiredGainNodes(context);
     context.setState('running');
+    masterGain.gain.value = 0.8;
+    musicGain.gain.value = 0.2;
 
     audio.update(
       makeSnapshotPair({
@@ -721,7 +745,9 @@ describe('createAudio', () => {
 
     expect(context.sources).toHaveLength(1);
     expect(context.sources[0]?.loop).toBe(false);
-    expect(musicGain.gain.value).toBe(1);
+    expect(getPlaybackTrimGain(context).gain.value).toBe(1);
+    expect(masterGain.gain.value).toBe(0.8);
+    expect(musicGain.gain.value).toBe(0.2);
     expect(musicDuckGain.gain.value).toBe(1);
 
     musicGain.gain.value = 0.2;
