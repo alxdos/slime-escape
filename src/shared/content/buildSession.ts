@@ -179,6 +179,115 @@ function makeTrainingRunEncounters(): ReadonlyArray<EncounterDefinition> {
   return [wave1, breakEncounter, wave2];
 }
 
+/** Три волны и передышки между ними — `design/session-definition.md` (preset `campaign`). */
+function makeCampaignRunEncounters(): ReadonlyArray<EncounterDefinition> {
+  const wave1: EncounterDefinition = {
+    id: 'campaign-wave-1',
+    type: 'wave',
+    spawnPlan: {
+      kind: 'wave',
+      spawns: [
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id }
+      ],
+      spawnIntervalMs: 1500,
+      maxAlive: 4,
+      edgeMargin: 0.5
+    },
+    zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 4, durationMs: 8000 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+
+  const breakAfterWave1: EncounterDefinition = {
+    id: 'campaign-break-after-wave-1',
+    type: 'break',
+    spawnPlan: { kind: 'empty' },
+    zoneBehavior: { kind: 'expandLinear', fromMargin: 4, toMargin: 0, durationMs: 2500 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+    tuning: null
+  };
+
+  const wave2: EncounterDefinition = {
+    id: 'campaign-wave-2',
+    type: 'wave',
+    spawnPlan: {
+      kind: 'wave',
+      spawns: [
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id }
+      ],
+      spawnIntervalMs: 1200,
+      maxAlive: 5,
+      edgeMargin: 0.5
+    },
+    zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 5, durationMs: 10000 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+
+  const breakAfterWave2: EncounterDefinition = {
+    id: 'campaign-break-after-wave-2',
+    type: 'break',
+    spawnPlan: { kind: 'empty' },
+    zoneBehavior: { kind: 'expandLinear', fromMargin: 5, toMargin: 0, durationMs: 2500 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+    tuning: null
+  };
+
+  const wave3: EncounterDefinition = {
+    id: 'campaign-wave-3',
+    type: 'wave',
+    spawnPlan: {
+      kind: 'wave',
+      spawns: [
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id }
+      ],
+      spawnIntervalMs: 1000,
+      maxAlive: 6,
+      edgeMargin: 0.5
+    },
+    zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 5, durationMs: 12000 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+
+  return [wave1, breakAfterWave1, wave2, breakAfterWave2, wave3];
+}
+
 function buildTrainingSession(options: BuildOptions): SessionDefinition {
   validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.radius);
   warnIfWeaponMayTunnel(PISTOL.id);
@@ -246,7 +355,7 @@ function buildCampaignSession(options: BuildOptions): SessionDefinition {
     loadout: { primaryWeaponArchetypeId: PISTOL.id },
     modifiers: [],
     rules: null,
-    encounters: [...makeTrainingRunEncounters(), campaignPreBossBreak, bossEncounter],
+    encounters: [...makeCampaignRunEncounters(), campaignPreBossBreak, bossEncounter],
     winCondition: { kind: 'bossDefeated' },
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null

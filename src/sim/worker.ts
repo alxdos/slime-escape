@@ -54,21 +54,19 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
   drops.tick(simTimeMs, entities, emitEvent);
   sessionFlow.checkTransitions(simTimeMs);
   zone.onTick();
+  const encounterCtx = sessionFlow.activeEncounter();
+  const waveSnap =
+    encounterCtx !== null && encounterCtx.encounter.spawnPlan.kind === 'wave'
+      ? spawn.waveProgress()
+      : null;
   const snapshot = exporter.onTick(simTimeMs, entities, {
-    encounter: sessionFlow.activeEncounter(),
+    encounter: encounterCtx,
     zone: zone.zone(),
-    waveProgress: spawn.waveProgress()
+    waveProgress: waveSnap
   });
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });
   }
-});
-
-healthDeath.registerHook((ctx) => {
-  if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
-  if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
-  if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
-  if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
 });
 
 const sessionFlow = createSessionFlowSystem({
@@ -103,6 +101,14 @@ const sessionFlow = createSessionFlowSystem({
     spawn.onEncounterEnd(encounter);
     zone.onEncounterEnd(encounter);
   }
+});
+
+healthDeath.registerHook((ctx) => {
+  if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
+  if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
+  if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
+  if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
+  if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
 });
 
 self.addEventListener('message', (event: MessageEvent<MainToSim>) => {

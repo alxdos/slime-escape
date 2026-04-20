@@ -185,19 +185,21 @@ describe('buildSessionDefinition (training)', () => {
 });
 
 describe('buildSessionDefinition (campaign)', () => {
-  it('chains training waves, break, wave2 then boss with bossDefeated win', () => {
+  it('campaign: three waves with breaks, pre-boss break, then boss with bossDefeated win', () => {
     const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
     expect(session.winCondition).toEqual({ kind: 'bossDefeated' });
     expect(session.lossCondition).toEqual({ kind: 'playerDeath' });
-    expect(session.encounters).toHaveLength(5);
+    expect(session.encounters).toHaveLength(7);
 
-    expect(session.encounters[0]?.type).toBe('wave');
-    expect(session.encounters[1]?.type).toBe('break');
-    expect(session.encounters[2]?.type).toBe('wave');
-    expect(session.encounters[3]?.type).toBe('break');
-    expect(session.encounters[3]?.id).toBe('campaign-pre-boss-break');
+    expect(session.encounters[0]?.id).toBe('campaign-wave-1');
+    expect(session.encounters[1]?.id).toBe('campaign-break-after-wave-1');
+    expect(session.encounters[2]?.id).toBe('campaign-wave-2');
+    expect(session.encounters[3]?.id).toBe('campaign-break-after-wave-2');
+    expect(session.encounters[4]?.id).toBe('campaign-wave-3');
+    expect(session.encounters[5]?.type).toBe('break');
+    expect(session.encounters[5]?.id).toBe('campaign-pre-boss-break');
 
-    const bossEnc = session.encounters[4];
+    const bossEnc = session.encounters[6];
     expect(bossEnc?.type).toBe('boss');
     expect(bossEnc?.zoneBehavior).toEqual({ kind: 'disabled' });
     const plan = bossEnc?.spawnPlan;

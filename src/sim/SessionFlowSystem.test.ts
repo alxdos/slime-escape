@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildSessionDefinition } from '../shared/content/buildSession';
 import { SANDBOX_PRESET } from '../shared/content/presets';
 import type { RuntimeEvent } from '../shared/events';
+import type { EntityId } from './EntityStore';
 import type { SimulationClock } from './SimulationClock';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 
@@ -353,6 +354,59 @@ describe('SessionFlowSystem encounter transitions', () => {
 
     flow.start(session);
     expect(() => flow.checkTransitions(0)).toThrow(/byId/);
+  });
+});
+
+describe('SessionFlowSystem bossDefeated', () => {
+  const bossEncounter = (
+    id: string,
+    rules: EncounterDefinition['transitionRules']
+  ): EncounterDefinition => ({
+    id,
+    type: 'boss',
+    spawnPlan: {
+      kind: 'boss',
+      bossArchetypeId: 'slime-king',
+      position: { x: 0, y: 0 }
+    },
+    zoneBehavior: { kind: 'disabled' },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: rules,
+    tuning: null
+  });
+
+  it('publishes encounterEnd, win, sessionStop from onBossDeath when winCondition is bossDefeated', () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession([bossEncounter('boss', { kind: 'never', next: 'sequential' })], {
+      win: { kind: 'bossDefeated' },
+      loss: { kind: 'playerDeath' }
+    });
+
+    flow.start(session);
+    events.length = 0;
+    flow.onBossDeath(42 as EntityId);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'win', 'sessionStop']);
+    expect(flow.isActive()).toBe(false);
+    expect(clock.isRunning()).toBe(false);
+  });
+
+  it('does nothing onBossDeath when winCondition is allEncountersComplete', () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession([bossEncounter('boss', { kind: 'never', next: 'sequential' })], {
+      win: { kind: 'allEncountersComplete' },
+      loss: { kind: 'playerDeath' }
+    });
+
+    flow.start(session);
+    events.length = 0;
+    flow.onBossDeath(1 as EntityId);
+    expect(events).toHaveLength(0);
+    expect(flow.isActive()).toBe(true);
   });
 });
 

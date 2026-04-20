@@ -94,6 +94,7 @@ function setupWorld() {
   healthDeath.registerHook((ctx) => {
     if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
+    if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
   });
 
@@ -116,10 +117,14 @@ function setupWorld() {
     healthDeath.tick(intents, entities, simTimeMs, emitEvent);
     sessionFlow.checkTransitions(simTimeMs);
     zone.onTick();
+    const encCtx = sessionFlow.activeEncounter();
     exporter.onTick(simTimeMs, entities, {
-      encounter: sessionFlow.activeEncounter(),
+      encounter: encCtx,
       zone: zone.zone(),
-      waveProgress: spawn.waveProgress()
+      waveProgress:
+        encCtx !== null && encCtx.encounter.spawnPlan.kind === 'wave'
+          ? spawn.waveProgress()
+          : null
     });
   }
 

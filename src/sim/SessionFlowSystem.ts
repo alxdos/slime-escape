@@ -17,6 +17,7 @@ import {
   type RuntimeInputState
 } from './RuntimeInputState';
 import type { SimulationClock } from './SimulationClock';
+import type { EntityId } from './EntityStore';
 
 export type EncounterContext = Readonly<{
   encounter: EncounterDefinition;
@@ -32,6 +33,7 @@ export type SessionFlowSystem = Readonly<{
   handleInput(command: InputCommand): void;
   checkTransitions(simTimeMs: number): void;
   onPlayerDeath(): void;
+  onBossDeath(entityId: EntityId): void;
   isActive(): boolean;
   activeSession(): SessionDefinition | null;
   activeEncounter(): EncounterContext | null;
@@ -157,7 +159,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     );
 
     if (nextIndex === null) {
-      finalizeRun(simTimeMs);
+      finalizeRunAfterLastEncounter(simTimeMs);
       return;
     }
 
@@ -182,13 +184,27 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     tearDown();
   }
 
-  function finalizeRun(simTimeMs: number): void {
+  function finalizeRunAfterLastEncounter(simTimeMs: number): void {
     if (active === null) return;
     const winKind = active.def.winCondition.kind;
-    if (winKind === 'allEncountersComplete' || winKind === 'bossDefeated') {
+    if (winKind === 'allEncountersComplete') {
       emitEvent({ kind: 'win', simTime: simTimeMs });
     }
+    // bossDefeated: win только через onBossDeath (design/session-definition.md, boss-encounter.md)
     emitEvent({ kind: 'sessionStop', simTime: simTimeMs });
+    tearDown();
+  }
+
+  function onBossDeath(_entityId: EntityId): void {
+    if (active === null) return;
+    if (active.def.winCondition.kind !== 'bossDefeated') return;
+    const enc = active.def.encounters[active.encounterIndex];
+    if (enc === undefined || enc.spawnPlan.kind !== 'boss') return;
+    const simTime = clock.simTimeMs();
+    emitEvent({ kind: 'encounterEnd', simTime });
+    deps.onEncounterEnd?.(enc);
+    emitEvent({ kind: 'win', simTime });
+    emitEvent({ kind: 'sessionStop', simTime });
     tearDown();
   }
 
@@ -208,6 +224,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     handleInput,
     checkTransitions,
     onPlayerDeath,
+    onBossDeath,
     isActive: () => active !== null,
     activeSession: () => active?.def ?? null,
     activeEncounter: () => {
