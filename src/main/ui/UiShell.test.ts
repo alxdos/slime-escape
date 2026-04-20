@@ -5,6 +5,7 @@ import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type { SessionDefinition } from '../../shared/session';
 import type { ModePresetId } from '../../shared/content/presets';
+import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import type { Renderer, RendererInit } from '../render/Renderer';
 import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/SimWorkerHost';
@@ -319,6 +320,50 @@ function createHudHarness() {
   };
 }
 
+function createAudioHarness() {
+  const events: RuntimeEvent[] = [];
+  const uiEvents: AudioUiEventId[] = [];
+  const attachedSessions: SessionDefinition[] = [];
+  const calls = {
+    unlock: 0,
+    update: 0,
+    detach: 0,
+    dispose: 0
+  };
+
+  return {
+    factory(): Audio {
+      return {
+        unlock(): void {
+          calls.unlock += 1;
+        },
+        handleEvent(event: RuntimeEvent): void {
+          events.push(event);
+        },
+        update(): void {
+          calls.update += 1;
+        },
+        attach(session: SessionDefinition): void {
+          attachedSessions.push(session);
+        },
+        detach(): void {
+          calls.detach += 1;
+        },
+        playUi(eventId: AudioUiEventId): void {
+          uiEvents.push(eventId);
+        },
+        dispose(): void {
+          calls.dispose += 1;
+        }
+      };
+    },
+    events,
+    uiEvents,
+    attachedSessions,
+    calls
+  };
+}
+
 describe('UiShell', () => {
   it('starts a session from the menu and hides overlays while running', () => {
     const menu = createMenuHarness();
@@ -328,6 +373,7 @@ describe('UiShell', () => {
     const input = createInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -350,6 +396,7 @@ describe('UiShell', () => {
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
+      createAudio: audio.factory,
       windowTarget,
       documentTarget
     });
@@ -357,12 +404,20 @@ describe('UiShell', () => {
     expect(menu.modes().map((mode) => mode.presetId)).toEqual(
       PLAYABLE_MODE_CATALOG.map((mode) => mode.presetId)
     );
+    expect(audio.calls.unlock).toBe(0);
+
+    windowTarget.dispatch('pointerdown', new Event('pointerdown'));
+    windowTarget.dispatch('keydown', new Event('keydown'));
+
+    expect(audio.calls.unlock).toBe(1);
 
     menu.start('training');
 
     expect(buildSession).toHaveBeenCalledTimes(1);
     expect(builtPresetId).toBe('training');
     expect(sim.startSessions).toHaveLength(1);
+    expect(audio.attachedSessions).toHaveLength(1);
+    expect(audio.uiEvents).toContain('buttonClick');
     expect(renderer.calls.create).toBe(1);
     expect(input.calls.create).toBe(1);
     expect(input.calls.start).toBe(1);
@@ -374,6 +429,7 @@ describe('UiShell', () => {
 
     shell.onFrame();
     expect(hud.calls.update).toBe(1);
+    expect(audio.calls.update).toBe(1);
   });
 
   it('routes Escape into overlay pause and exit back to menu with stopSession', () => {
@@ -384,6 +440,7 @@ describe('UiShell', () => {
     const input = createInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -401,6 +458,7 @@ describe('UiShell', () => {
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
+      createAudio: audio.factory,
       windowTarget,
       documentTarget
     });
@@ -417,6 +475,7 @@ describe('UiShell', () => {
 
     expect(sim.calls.pause).toBe(1);
     expect(pause.isVisible()).toBe(true);
+    expect(audio.uiEvents).toContain('overlayShow');
     expect(shell.phase()).toEqual({ kind: 'paused' });
 
     pause.exit();
@@ -425,6 +484,7 @@ describe('UiShell', () => {
     expect(input.calls.stop).toBe(1);
     expect(renderer.calls.dispose).toBe(1);
     expect(hud.calls.detach).toBe(1);
+    expect(audio.calls.detach).toBe(1);
     expect(menu.isVisible()).toBe(true);
     expect(pause.isVisible()).toBe(false);
     expect(result.isVisible()).toBe(false);
@@ -437,6 +497,7 @@ describe('UiShell', () => {
     const result = createResultHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -468,6 +529,7 @@ describe('UiShell', () => {
         requestLock() {}
       }),
       createHud: hud.factory,
+      createAudio: audio.factory,
       windowTarget,
       documentTarget
     });
@@ -478,6 +540,7 @@ describe('UiShell', () => {
     expect(sim.calls.pause).toBe(1);
     expect(pause.isVisible()).toBe(true);
     expect(result.isVisible()).toBe(false);
+    expect(audio.uiEvents).toContain('overlayShow');
     expect(shell.phase()).toEqual({ kind: 'paused' });
   });
 
@@ -487,6 +550,7 @@ describe('UiShell', () => {
     const result = createResultHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -518,6 +582,7 @@ describe('UiShell', () => {
         requestLock() {}
       }),
       createHud: hud.factory,
+      createAudio: audio.factory,
       windowTarget,
       documentTarget
     });
@@ -544,6 +609,7 @@ describe('UiShell', () => {
     const result = createResultHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -576,6 +642,7 @@ describe('UiShell', () => {
         requestLock() {}
       }),
       createHud: hud.factory,
+      createAudio: audio.factory,
       windowTarget,
       documentTarget
     });
@@ -619,6 +686,7 @@ describe('UiShell', () => {
     const input = createInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -636,6 +704,7 @@ describe('UiShell', () => {
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
+      createAudio: audio.factory,
       windowTarget,
       documentTarget
     });
@@ -644,6 +713,7 @@ describe('UiShell', () => {
     shell.onFrame();
     expect(hud.calls.update).toBe(1);
     expect(renderer.calls.render).toBe(1);
+    expect(audio.calls.update).toBe(1);
 
     windowTarget.dispatch(
       'keydown',
@@ -657,6 +727,7 @@ describe('UiShell', () => {
     shell.onFrame();
     expect(hud.calls.update).toBe(1);
     expect(renderer.calls.render).toBe(2);
+    expect(audio.calls.update).toBe(2);
     expect(pause.isVisible()).toBe(true);
     expect(result.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'paused' });
@@ -668,6 +739,7 @@ describe('UiShell', () => {
     const result = createResultHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -700,6 +772,7 @@ describe('UiShell', () => {
         requestLock() {}
       }),
       createHud: hud.factory,
+      createAudio: audio.factory,
       windowTarget,
       documentTarget
     });
@@ -736,6 +809,7 @@ describe('UiShell', () => {
     const result = createResultHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -768,6 +842,7 @@ describe('UiShell', () => {
         requestLock() {}
       }),
       createHud: hud.factory,
+      createAudio: audio.factory,
       windowTarget,
       documentTarget
     });
@@ -836,6 +911,7 @@ describe('UiShell', () => {
     const input = createInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -853,6 +929,7 @@ describe('UiShell', () => {
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
+      createAudio: audio.factory,
       windowTarget,
       documentTarget
     });
@@ -864,9 +941,12 @@ describe('UiShell', () => {
     expect(input.calls.stop).toBe(1);
     expect(renderer.calls.dispose).toBe(1);
     expect(hud.calls.detach).toBe(1);
+    expect(audio.events).toEqual([{ kind, simTime: 123 }]);
+    expect(audio.calls.detach).toBe(1);
     expect(menu.isVisible()).toBe(false);
     expect(result.isVisible()).toBe(true);
     expect(result.outcome()).toBe(outcome);
+    expect(audio.uiEvents).toContain('overlayShow');
     expect(shell.phase()).toEqual({ kind: 'result', outcome });
   });
 
@@ -878,6 +958,7 @@ describe('UiShell', () => {
     const input = createInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -895,6 +976,7 @@ describe('UiShell', () => {
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
+      createAudio: audio.factory,
       windowTarget,
       documentTarget
     });
@@ -912,8 +994,10 @@ describe('UiShell', () => {
     expect(input.calls.stop).toBe(1);
     expect(renderer.calls.dispose).toBe(1);
     expect(hud.calls.detach).toBe(1);
+    expect(audio.calls.detach).toBe(1);
     expect(menu.isVisible()).toBe(true);
     expect(result.isVisible()).toBe(false);
+    expect(audio.uiEvents.filter((eventId) => eventId === 'buttonClick')).toHaveLength(2);
     expect(shell.phase()).toEqual({ kind: 'menu' });
   });
 });
