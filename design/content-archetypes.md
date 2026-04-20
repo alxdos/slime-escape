@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (для истории 005 добавлен `DropArchetype` и обязательное поле `dropTable` у `EnemyArchetype`; полные правила выбора и lifecycle дропа — в `drops.md`)
+- Updated: 2026-04-20 (для истории 006 добавлен `BossArchetype`, реестр `bosses` и правила фаз; полный контекст босс-энкаунтера — [boss-encounter.md](boss-encounter.md))
 
 ## Context
 
@@ -100,6 +100,34 @@
 - `DropEffect` — дискриминированный union по `kind`. Расширение происходит **добавлением** новых `kind` (новые слои силы и боеприпасов в будущем); переименование/смена семантики поля — новое решение и обновление этого файла, не «дописывание по месту».
 - Полный контракт «как именно дроп спавнится, живёт и подбирается, и как применяется `DropEffect`» — в [drops.md](drops.md); здесь фиксируется только форма архетипа и его место в `content library`.
 
+### BossArchetype
+
+- Минимальная форма для 006:
+  ```ts
+  type BossArchetype = Readonly<{
+    id: string;
+    displayName: string;
+    radius: number;                      // wu
+    maxHp: number;                       // целое > 0
+    maxSpeed: number;                    // wu/s, >= 0; базовая скорость перемещения, если босс двигается
+    color: number;                       // 0xRRGGBB
+    contactDamage: number;
+    contactCooldownMs: number;
+    knockbackBaseImpulse: number;
+    knockbackVelocityScale: number;
+    knockbackDurationMs: number;
+    phases: ReadonlyArray<Readonly<{
+      id: string;
+      allowedAttackIds: ReadonlyArray<string>;  // не пусто; каждый id есть в `attacks`
+      /** Покинуть фазу и перейти к следующей, когда `hp/maxHp <= exitWhenHpFractionAtOrBelow`. Для **последней** фазы значение не используется (перехода за пределы `phases` нет). Пороги задаёт content/builder (см. [../docs/BOSS.md](../docs/BOSS.md)). */
+      exitWhenHpFractionAtOrBelow: number;
+    }>>;
+    attacks: Readonly<Record<string, Readonly<{ pattern: string; cooldownMs: number; damage: number }>>>;
+  }>;
+  ```
+- Контакт с игроком и knockback следуют тем же правилам, что и `EnemyArchetype` ([enemy-contact.md](enemy-contact.md)); числа задаются в архетипе босса.
+- Минимум **две** записи в `phases` и минимум **два** различимых ключа в `attacks` для acceptance истории 006 ([../stories/006-boss-encounter.md](../stories/006-boss-encounter.md)); конкретный выбор атаки из `allowedAttackIds` и паттерна — `BossPhaseSystem` ([boss-encounter.md](boss-encounter.md)).
+
 ### PlayerSpawn.maxHp
 
 - `SessionDefinition.player` ([session-definition.md](session-definition.md)) расширяется обязательным полем `maxHp: number` (целое > 0). Это закрепляет источник правды для стартового HP игрока в данных сессии, а не в коде систем.
@@ -124,12 +152,13 @@
   - реестр `EnemyArchetype` (например, `enemies.ts`);
   - реестр `WeaponArchetype` (например, `weapons.ts`);
   - реестр `DropArchetype` (например, `drops.ts`);
+  - реестр `BossArchetype` (например, `bosses.ts`);
   - в `index.ts` реестры реэкспортируются вместе с уже существующими аренами/preset-ами.
 - В реестре допускается одна структура: словарь `Record<string, Archetype>` с ключом, равным `archetype.id`. Это исключает рассинхрон между ключом и `id`.
 
 ## Consequences
 
-- 003 кладёт первое содержимое реестров (одна мишень, один пистолет) в готовую форму; 004–006 расширяют те же реестры данными, не меняя форму.
+- 003 кладёт первое содержимое реестров (одна мишень, один пистолет) в готовую форму; 004–006 расширяют те же реестры данными; 006 добавляет реестр `bosses` без ломки существующих форм.
 - `SpawnSystem` и `CombatSystem` остаются не зависящими от конкретного контента и работают через резолв по `id`.
 - `Loadout` входит в стабильный контракт `SessionDefinition`; UI выбора оружия (007) сможет собирать его, не переопределяя форму.
 - Возможный плагинный/моддинг-слой архетипов (вне MVP) ляжет на ту же модель «реестр + id», без переписывания историй.
@@ -148,3 +177,4 @@
 - [arena-and-coordinates.md](arena-and-coordinates.md)
 - [simulation-timing.md](simulation-timing.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
+- [boss-encounter.md](boss-encounter.md)

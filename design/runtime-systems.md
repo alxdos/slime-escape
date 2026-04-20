@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (для истории 005 уточнён короткий контракт `DropSystem` со ссылкой на `drops.md`; runtime events дропа переименованы в `dropSpawn`/`dropPickup`/`dropExpire` и закреплены за `DropSystem`)
+- Updated: 2026-04-20 (ссылки на контракт босс-энкаунтера — [boss-encounter.md](boss-encounter.md); событие `bossPhaseChange` зафиксировано в [snapshot-shape.md](snapshot-shape.md); ранее: дроп-события и `DropSystem`)
 
 ## Context
 
@@ -64,7 +64,7 @@
   - `CombatSystem` - fire/hit;
   - `HealthDeathSystem` - death;
   - `DropSystem` - dropSpawn/dropPickup/dropExpire (полный контракт kinds и owner-а — [snapshot-shape.md](snapshot-shape.md), [drops.md](drops.md));
-  - `BossPhaseSystem` - phase change.
+  - `BossPhaseSystem` — `bossPhaseChange` ([snapshot-shape.md](snapshot-shape.md)).
 - `SnapshotExportSystem` не создаёт новую gameplay-логику; он только агрегирует уже рассчитанное состояние и нужные HUD-поля.
 - Lifecycle симуляции относительно сессии:
   - `simulation worker` создаётся один раз при старте приложения и переиспользуется между сессиями ([thread-model.md](thread-model.md)); `stopSession` не приводит к `worker.terminate()`.
@@ -110,3 +110,4 @@
 - [drops.md](drops.md)
 - [rng.md](rng.md)
 - [logging.md](logging.md)
+- [boss-encounter.md](boss-encounter.md)

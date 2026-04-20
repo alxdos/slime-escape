@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (формализованы `ZoneBehavior` и `TransitionRules`; активированы `winCondition: allEncountersComplete` и `lossCondition: playerDeath`; preset `training` зафиксирован как режим истории 004; добавлено обязательное поле `maxHp` в `player`)
+- Updated: 2026-04-20 (семантика `winCondition: bossDefeated` — [boss-encounter.md](boss-encounter.md); ранее: формализованы `ZoneBehavior`/`TransitionRules`, `allEncountersComplete`/`playerDeath`, preset `training`, поле `player.maxHp`)
 
 ## Context
 
@@ -80,7 +80,7 @@
 - `winCondition` и `lossCondition` остаются обязательными полями `SessionDefinition`. Категория `none` задаётся явно, чтобы исключить «забыл выставить условие» от «осознанно условия нет». `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md)) при категории `none` не должен генерировать соответствующее win/loss событие самостоятельно.
 - Семантика активных категорий, реализуемая `SessionFlowSystem`:
   - `winCondition: { kind: 'allEncountersComplete' }` — `win` публикуется ровно один раз, после `encounterEnd` последнего encounter в `encounters` (когда `transitionRules.next` упирается в «следующего нет»);
-  - `winCondition: { kind: 'bossDefeated' }` — оставлено зарезервированным для 006; конкретный путь (death hook на босса) фиксируется в истории/решении 006;
+  - `winCondition: { kind: 'bossDefeated' }` — победа через session-level death hook на сущность `kind: 'boss'` при соблюдении условий из [boss-encounter.md](boss-encounter.md); не смешивается с `allEncountersComplete` в одном `SessionDefinition`;
   - `lossCondition: { kind: 'playerDeath' }` — `SessionFlowSystem` регистрирует session-level death hook, реагирующий на `entityKind === 'player'` ([health-and-death.md](health-and-death.md)), и публикует `loss` ровно один раз;
   - после публикации `win` или `loss` `SessionFlowSystem` корректно завершает run: дальнейшие encounter transitions не выполняются, clock переводится в idle, runtime state сбрасывается тем же путём, что и при `stopSession`. Дальнейший запуск возможен только через новый `startSession`.
 - `win`/`loss` события — единственный способ, которым `main` узнаёт об автоматическом завершении сессии. Параллельно с публикацией события `SessionFlowSystem` обязан вызвать тот же сброс runtime state, что и `stopSession`, чтобы `main` мог реагировать на событие без явного `stopSession` в ответ. Конкретная форма событий — в [snapshot-shape.md](snapshot-shape.md).
@@ -124,3 +124,4 @@
 - [zone.md](zone.md)
 - [health-and-death.md](health-and-death.md)
 - [snapshot-shape.md](snapshot-shape.md)
+- [boss-encounter.md](boss-encounter.md)

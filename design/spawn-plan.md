@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (добавлен `'wave'` kind для истории 004; правила выбора позиций спавна на периметре арены через session RNG)
+- Updated: 2026-04-20 (добавлен `'boss'` kind для истории 006; см. [boss-encounter.md](boss-encounter.md))
 
 ## Context
 
@@ -20,11 +20,12 @@
 ### Форма SpawnPlan
 
 - `SpawnPlan` — дискриминированный union с полем `kind`. Расширение происходит **добавлением** новых `kind`, а не изменением существующих полей.
-- Набор `kind` на момент 004:
+- Набор `kind` на момент 006:
   - `'empty'` — спавнов нет; `SpawnSystem` ничего не делает;
   - `'static'` — фиксированный список спавнов, исполняемый один раз при старте encounter;
-  - `'wave'` — счётный «бюджет» спавнов с темпом и лимитом одновременно живых, исполняемый по тикам в течение encounter.
-- Будущие `kind` (`'boss'` для 006 и т.п.) фиксируются в этом же файле по мере добавления историй.
+  - `'wave'` — счётный «бюджет» спавнов с темпом и лимитом одновременно живых, исполняемый по тикам в течение encounter;
+  - `'boss'` — один спавн одной сущности босса при старте encounter ([boss-encounter.md](boss-encounter.md)).
+- Дальнейшие `kind` фиксируются в этом же файле по мере добавления историй.
 - `kind` запрещено переиспользовать с изменённой семантикой; устаревшая форма проходит через `superseded` так же, как design-решения.
 
 ### Static spawn
@@ -73,6 +74,23 @@
 - Wave-план **не определяет**, когда encounter завершается. Решение «волна закончилась» принимает `SessionFlowSystem` через `transitionRules` ([session-definition.md](session-definition.md)); правило `allEnemiesCleared` соблюдается как раз тогда, когда `dispatched == spawns.length && aliveFromThisPlan == 0`.
 - `SpawnSystem` для `'wave'` детерминирован относительно `seed`: при одинаковом `seed` и одинаковой последовательности тиков порядок и позиции спавнов идентичны. Это явно покрывается тестом по [testing.md](testing.md).
 
+### Boss spawn
+
+- Форма:
+  ```ts
+  type BossSpawnPlan = Readonly<{
+    kind: 'boss';
+    bossArchetypeId: string;          // BossArchetype.id из реестра bosses в content library
+    position: { x: number; y: number }; // wu, центр сущности босса
+  }>;
+  ```
+- Семантика:
+  - выполняется **один раз** при `encounterStart`;
+  - создаётся **ровно одна** сущность `kind: 'boss'` с `HasHealth`, инициализированная из `BossArchetype` ([content-archetypes.md](content-archetypes.md), [boss-encounter.md](boss-encounter.md));
+  - `SpawnSystem` ведёт учёт этой сущности для `aliveFromThisPlan` так же, как для `'wave'`/`'static'`: смерть босса уменьшает счётчик; при `allEnemiesCleared` encounter с `spawnPlan.kind: 'boss'` завершается, когда босс мёртв и план не ожидает дальнейших спавнов (для `'boss'` это эквивалентно «босс убит»);
+  - `position` обязан попадать внутрь арены ([arena-and-coordinates.md](arena-and-coordinates.md)); иначе — ошибка сборки сессии;
+  - повторных спавнов по тикам нет.
+
 ### Ответственность SpawnSystem
 
 - `SpawnSystem` исполняет `spawnPlan` активного encounter и больше ничего:
@@ -112,3 +130,4 @@
 - [health-and-death.md](health-and-death.md)
 - [testing.md](testing.md)
 - [web-stack.md](web-stack.md)
+- [boss-encounter.md](boss-encounter.md)
