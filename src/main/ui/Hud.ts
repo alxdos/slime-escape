@@ -314,13 +314,13 @@ function clampRatio(value: number): number {
 function rootStyle(): string {
   return [
     'position:fixed',
-    'top:16px',
+    'bottom:16px',
     'left:16px',
     'right:16px',
     'display:grid',
     'grid-template-columns:repeat(auto-fit, minmax(180px, max-content))',
     'gap:12px',
-    'justify-content:start',
+    'justify-content:center',
     'z-index:30',
     'pointer-events:none'
   ].join(';');
