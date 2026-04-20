@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { SANDBOX_ARENA } from './arenas';
 import { buildSessionDefinition } from './buildSession';
 import { SLIME_KING } from './bosses';
 import { SLIME_FAST, SLIME_TANK, TRAINING_TARGET } from './enemies';
@@ -188,9 +189,15 @@ describe('buildSessionDefinition (campaign)', () => {
     const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
     expect(session.winCondition).toEqual({ kind: 'bossDefeated' });
     expect(session.lossCondition).toEqual({ kind: 'playerDeath' });
-    expect(session.encounters).toHaveLength(4);
+    expect(session.encounters).toHaveLength(5);
 
-    const bossEnc = session.encounters[3];
+    expect(session.encounters[0]?.type).toBe('wave');
+    expect(session.encounters[1]?.type).toBe('break');
+    expect(session.encounters[2]?.type).toBe('wave');
+    expect(session.encounters[3]?.type).toBe('break');
+    expect(session.encounters[3]?.id).toBe('campaign-pre-boss-break');
+
+    const bossEnc = session.encounters[4];
     expect(bossEnc?.type).toBe('boss');
     expect(bossEnc?.zoneBehavior).toEqual({ kind: 'disabled' });
     const plan = bossEnc?.spawnPlan;
@@ -198,10 +205,8 @@ describe('buildSessionDefinition (campaign)', () => {
     if (plan?.kind !== 'boss') throw new Error('expected boss spawn plan');
     expect(plan.bossArchetypeId).toBe(SLIME_KING.id);
     expect(plan.position.x).toBe(0);
-    expect(plan.position.y).toBe(0);
-
-    expect(session.encounters[0]?.type).toBe('wave');
-    expect(session.encounters[1]?.type).toBe('break');
-    expect(session.encounters[2]?.type).toBe('wave');
+    // top center, same inset as wave edge margin (0.5) + boss radius
+    const expectedY = SANDBOX_ARENA.height / 2 - 0.5 - SLIME_KING.radius;
+    expect(plan.position.y).toBeCloseTo(expectedY, 5);
   });
 });

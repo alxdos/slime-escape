@@ -202,8 +202,26 @@ function buildCampaignSession(options: BuildOptions): SessionDefinition {
   validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.radius);
   warnIfWeaponMayTunnel(PISTOL.id);
 
-  const bossSpawnPos: Vec2 = { x: 0, y: 0 };
+  /** Matches wave spawn `edgeMargin` — boss enters from top center like edge-spawned slimes. */
+  const bossEdgeMargin = 0.5;
+  const bossSpawnPos = bossTopCenterSpawnInArena(SANDBOX_ARENA, SLIME_KING.radius, bossEdgeMargin);
   assertSpawnInsideArena(bossSpawnPos, SLIME_KING.radius, SANDBOX_ARENA);
+
+  const campaignPreBossBreak: EncounterDefinition = {
+    id: 'campaign-pre-boss-break',
+    type: 'break',
+    spawnPlan: { kind: 'empty' },
+    zoneBehavior: {
+      kind: 'expandLinear',
+      fromMargin: 5,
+      toMargin: 0,
+      durationMs: 2500
+    },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+    tuning: null
+  };
 
   const bossEncounter: EncounterDefinition = {
     id: 'campaign-boss',
@@ -228,11 +246,21 @@ function buildCampaignSession(options: BuildOptions): SessionDefinition {
     loadout: { primaryWeaponArchetypeId: PISTOL.id },
     modifiers: [],
     rules: null,
-    encounters: [...makeTrainingRunEncounters(), bossEncounter],
+    encounters: [...makeTrainingRunEncounters(), campaignPreBossBreak, bossEncounter],
     winCondition: { kind: 'bossDefeated' },
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null
   };
+}
+
+/** Boss spawn: horizontally centered, as high as allowed inside arena (same inset as wave edge margin). */
+function bossTopCenterSpawnInArena(
+  arena: ArenaConfig,
+  bossRadius: number,
+  edgeMargin: number
+): Vec2 {
+  const halfH = arena.height / 2;
+  return { x: 0, y: halfH - edgeMargin - bossRadius };
 }
 
 function assertSpawnInsideArena(position: Vec2, radius: number, arena: ArenaConfig): void {

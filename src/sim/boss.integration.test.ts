@@ -50,13 +50,15 @@ function fakeClock(): SimulationClock & {
   };
 }
 
+const BOSS_TOP_Y = SANDBOX_ARENA.height / 2 - 0.5 - SLIME_KING.radius;
+
 const BOSS_ENCOUNTER: EncounterDefinition = {
   id: 'test-boss',
   type: 'boss',
   spawnPlan: {
     kind: 'boss',
     bossArchetypeId: SLIME_KING.id,
-    position: { x: 0, y: 3 }
+    position: { x: 0, y: BOSS_TOP_Y }
   },
   zoneBehavior: { kind: 'disabled' },
   objectives: [],
