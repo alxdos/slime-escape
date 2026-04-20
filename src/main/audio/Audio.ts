@@ -127,6 +127,7 @@ export function createAudio(init: AudioInit = {}): Audio {
   let activeMusic: ActiveMusicPlayback | null = null;
   let musicRequestToken = 0;
   let lastRegularMusicSampleId: string | null = null;
+  const enemyVoiceTimers = new Map<number, number>();
 
   function getPlaybackDependencies(): PlaybackDependencies | null {
     if (runtime === null || sampleRegistry === null || audioMappings === null || disposed) {
@@ -350,6 +351,70 @@ export function createAudio(init: AudioInit = {}): Audio {
     startMusicSample(pickNextRegularMusicSampleId());
   }
 
+  function nextRandomFloat(): number {
+    const random = init.random ?? Math.random;
+    return Math.min(0.999999, Math.max(0, random()));
+  }
+
+  function randomBetween(min: number, max: number): number {
+    return min + nextRandomFloat() * (max - min);
+  }
+
+  function syncEnemyAmbient(snapshotPair: SnapshotPair, phase: UiShellPhase): void {
+    if (phase.kind !== 'running') {
+      return;
+    }
+
+    const dependencies = getPlaybackDependencies();
+    const snapshot = snapshotPair.curr;
+    if (dependencies === null || snapshot === null) {
+      return;
+    }
+
+    const liveEnemyIds = new Set<number>();
+    for (const entity of snapshot.entities) {
+      if (entity.kind !== 'enemy') {
+        continue;
+      }
+
+      liveEnemyIds.add(entity.id);
+      const voiceSpec = dependencies.audioMappings.resolveEnemyVoice(entity.archetypeId);
+      if (voiceSpec === null) {
+        continue;
+      }
+
+      const scheduledAt = enemyVoiceTimers.get(entity.id);
+      if (scheduledAt === undefined) {
+        enemyVoiceTimers.set(
+          entity.id,
+          snapshotPair.nowMs + randomBetween(voiceSpec.intervalMinMs, voiceSpec.intervalMaxMs)
+        );
+        continue;
+      }
+
+      if (snapshotPair.nowMs < scheduledAt) {
+        continue;
+      }
+
+      const sampleIndex = Math.floor(nextRandomFloat() * voiceSpec.sampleIds.length);
+      const sampleId = voiceSpec.sampleIds[sampleIndex];
+      if (sampleId !== undefined) {
+        playSampleById(sampleId);
+      }
+
+      enemyVoiceTimers.set(
+        entity.id,
+        snapshotPair.nowMs + randomBetween(voiceSpec.intervalMinMs, voiceSpec.intervalMaxMs)
+      );
+    }
+
+    for (const entityId of Array.from(enemyVoiceTimers.keys())) {
+      if (!liveEnemyIds.has(entityId)) {
+        enemyVoiceTimers.delete(entityId);
+      }
+    }
+  }
+
   function resolveEntity(targetId: number): EntitySnapshot | null {
     return latestSnapshot?.entities.find((entity) => entity.id === targetId) ?? null;
   }
@@ -526,6 +591,7 @@ export function createAudio(init: AudioInit = {}): Audio {
         return;
       }
       syncMusicForPhase(phase);
+      syncEnemyAmbient(snapshotPair, phase);
     },
     attach(session): void {
       attachedSession = session;
@@ -533,6 +599,7 @@ export function createAudio(init: AudioInit = {}): Audio {
     detach(): void {
       attachedSession = null;
       latestSnapshot = null;
+      enemyVoiceTimers.clear();
       stopMusicPlayback();
     },
     playUi(eventId): void {
@@ -557,6 +624,7 @@ export function createAudio(init: AudioInit = {}): Audio {
       disposed = true;
       attachedSession = null;
       latestSnapshot = null;
+      enemyVoiceTimers.clear();
 
       if (runtime === null) {
         return;

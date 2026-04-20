@@ -161,12 +161,12 @@ function makeFireEvent(): RuntimeEvent {
   };
 }
 
-function makeSnapshotPair(curr: Snapshot | null = null): SnapshotPair {
+function makeSnapshotPair(curr: Snapshot | null = null, nowMs = 0): SnapshotPair {
   return {
     prev: null,
     curr,
     currReceivedAtMs: 0,
-    nowMs: 0
+    nowMs
   };
 }
 
@@ -649,5 +649,179 @@ describe('createAudio', () => {
 
     audio.update(makeSnapshotPair(), { kind: 'menu' }, null);
     expect(context.sources[1]?.stopCalls).toBe(1);
+  });
+
+  it('pauses ambient slime voice timers while paused and resumes them in running', async () => {
+    const { audio, context } = createAudioHarness(() => 0);
+    context.setState('running');
+
+    const slimeSnapshot: Snapshot = {
+      simTimeMs: 500,
+      entities: [
+        {
+          id: 21,
+          kind: 'enemy',
+          archetypeId: 'slime-fast',
+          x: 0,
+          y: 0,
+          hp: 1,
+          maxHp: 1
+        }
+      ],
+      encounter: {
+        id: 'wave-1',
+        type: 'wave',
+        index: 0,
+        elapsedMs: 500
+      },
+      zone: { mode: 'disabled', margin: 0 },
+      waveProgress: null,
+      bossHud: null
+    };
+
+    audio.update(makeSnapshotPair(slimeSnapshot), { kind: 'running' }, null);
+    await flushAudioWork();
+    const baselineSourceCount = context.sources.length;
+
+    audio.update(
+      {
+        prev: slimeSnapshot,
+        curr: slimeSnapshot,
+        currReceivedAtMs: 0,
+        nowMs: 4000
+      },
+      { kind: 'paused' },
+      null
+    );
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(baselineSourceCount);
+
+    audio.update(
+      {
+        prev: slimeSnapshot,
+        curr: slimeSnapshot,
+        currReceivedAtMs: 0,
+        nowMs: 4000
+      },
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(baselineSourceCount + 1);
+  });
+
+  it('reinitializes ambient timers for newly appeared enemies after removals', async () => {
+    const { audio, context } = createAudioHarness(() => 0);
+    context.setState('running');
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 0,
+        entities: [
+          {
+            id: 1,
+            kind: 'enemy',
+            archetypeId: 'slime-tank',
+            x: 0,
+            y: 0,
+            hp: 5,
+            maxHp: 5
+          }
+        ],
+        encounter: {
+          id: 'wave-1',
+          type: 'wave',
+          index: 0,
+          elapsedMs: 0
+        },
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }, 0),
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+    const baselineSourceCount = context.sources.length;
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 1000,
+        entities: [],
+        encounter: {
+          id: 'wave-1',
+          type: 'wave',
+          index: 0,
+          elapsedMs: 1000
+        },
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }, 1000),
+      { kind: 'running' },
+      null
+    );
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 1500,
+        entities: [
+          {
+            id: 2,
+            kind: 'enemy',
+            archetypeId: 'slime-tank',
+            x: 0,
+            y: 0,
+            hp: 5,
+            maxHp: 5
+          }
+        ],
+        encounter: {
+          id: 'wave-1',
+          type: 'wave',
+          index: 0,
+          elapsedMs: 1500
+        },
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }, 1500),
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 5000,
+        entities: [
+          {
+            id: 2,
+            kind: 'enemy',
+            archetypeId: 'slime-tank',
+            x: 0,
+            y: 0,
+            hp: 5,
+            maxHp: 5
+          }
+        ],
+        encounter: {
+          id: 'wave-1',
+          type: 'wave',
+          index: 0,
+          elapsedMs: 5000
+        },
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }, 5000),
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(baselineSourceCount + 1);
   });
 });
