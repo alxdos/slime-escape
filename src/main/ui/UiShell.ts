@@ -16,13 +16,18 @@ import {
 import {
   createMenuOverlay,
   type MenuOverlay,
-  type MenuOverlayInit,
-  type MenuResult
+  type MenuOverlayInit
 } from './MenuOverlay';
 import { createHud, type Hud, type HudInit } from './Hud';
 import { createPauseOverlay, type PauseOverlay, type PauseOverlayInit } from './PauseOverlay';
+import {
+  createResultOverlay,
+  type ResultOutcome,
+  type ResultOverlay,
+  type ResultOverlayInit
+} from './ResultOverlay';
 
-export type SessionResult = Exclude<MenuResult, null>;
+export type SessionResult = ResultOutcome;
 
 export type UiShellPhase =
   | Readonly<{ kind: 'menu' }>
@@ -39,6 +44,7 @@ type BuildSessionDefinitionFn = typeof buildSessionDefinition;
 type CreateSimWorkerHostFn = (options?: SimWorkerHostOptions) => SimWorkerHost;
 type CreateMenuOverlayFn = (init: MenuOverlayInit) => MenuOverlay;
 type CreatePauseOverlayFn = (init: PauseOverlayInit) => PauseOverlay;
+type CreateResultOverlayFn = (init: ResultOverlayInit) => ResultOverlay;
 type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
@@ -51,6 +57,7 @@ export type UiShellInit = Readonly<{
   createSimWorkerHost?: CreateSimWorkerHostFn;
   createMenuOverlay?: CreateMenuOverlayFn;
   createPauseOverlay?: CreatePauseOverlayFn;
+  createResultOverlay?: CreateResultOverlayFn;
   createRenderer?: CreateRendererFn;
   createInputController?: CreateInputControllerFn;
   createHud?: CreateHudFn;
@@ -74,6 +81,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const makeSeed = init.makeSeed ?? defaultMakeSeed;
   const menuFactory = init.createMenuOverlay ?? createMenuOverlay;
   const pauseFactory = init.createPauseOverlay ?? createPauseOverlay;
+  const resultFactory = init.createResultOverlay ?? createResultOverlay;
   const rendererFactory = init.createRenderer ?? createRenderer;
   const inputFactory = init.createInputController ?? createInputController;
   const hudFactory = init.createHud ?? createHud;
@@ -111,6 +119,13 @@ export function createUiShell(init: UiShellInit): UiShell {
     }
   });
 
+  const result = resultFactory({
+    parent: init.parent,
+    onBackToMenu() {
+      exitToMenu();
+    }
+  });
+
   function handleSimEvent(event: RuntimeEvent): void {
     if (event.kind === 'win' || event.kind === 'loss') {
       handleRunEnd(event.kind, event.simTime);
@@ -132,24 +147,24 @@ export function createUiShell(init: UiShellInit): UiShell {
   function applyPhaseVisibility(): void {
     switch (phase.kind) {
       case 'menu':
-        menu.setResult(null);
         menu.show();
         pause.hide();
+        result.hide();
         return;
       case 'running':
-        menu.setResult(null);
         menu.hide();
         pause.hide();
+        result.hide();
         return;
       case 'paused':
-        menu.setResult(null);
         menu.hide();
         pause.show();
+        result.hide();
         return;
       case 'result':
-        menu.setResult(phase.outcome);
-        menu.show();
+        menu.hide();
         pause.hide();
+        result.show(phase.outcome);
         return;
       default:
         assertNever(phase);
@@ -198,6 +213,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   function tearDownClientSession(): void {
     const previousInput = input;
     const previousRenderer = renderer;
+    const hadClientSession =
+      activeSession !== null || previousInput !== null || previousRenderer !== null;
 
     input = null;
     renderer = null;
@@ -205,7 +222,9 @@ export function createUiShell(init: UiShellInit): UiShell {
 
     previousInput?.stop();
     previousRenderer?.dispose();
-    hud.detach();
+    if (hadClientSession) {
+      hud.detach();
+    }
   }
 
   function exitToMenu(): void {
@@ -317,6 +336,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       tearDownClientSession();
       menu.dispose();
       pause.dispose();
+      result.dispose();
       hud.dispose();
       sim.dispose();
     }

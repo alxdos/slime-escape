@@ -7,13 +7,10 @@ export type MenuOverlayInit = Readonly<{
   onStart(presetId: ModePresetId): void;
 }>;
 
-export type MenuResult = 'win' | 'loss' | null;
-
 export type MenuOverlay = Readonly<{
   show(): void;
   hide(): void;
   isVisible(): boolean;
-  setResult(result: MenuResult): void;
   dispose(): void;
 }>;
 
@@ -24,11 +21,6 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
 
   const card = document.createElement('div');
   card.style.cssText = cardStyle();
-
-  const result = document.createElement('div');
-  result.style.cssText = resultStyle();
-  result.style.display = 'none';
-  card.appendChild(result);
 
   const title = document.createElement('h1');
   title.textContent = 'Slime Escape';
@@ -65,21 +57,6 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     isVisible(): boolean {
       return visible;
     },
-    setResult(next): void {
-      if (next === null) {
-        result.style.display = 'none';
-        result.textContent = '';
-        return;
-      }
-      result.style.display = 'block';
-      if (next === 'win') {
-        result.textContent = 'Победа!';
-        result.style.color = '#9ce69a';
-      } else {
-        result.textContent = 'Поражение';
-        result.style.color = '#ff8a7a';
-      }
-    },
     dispose(): void {
       root.remove();
     }
@@ -111,16 +88,6 @@ function cardStyle(): string {
     'border:1px solid #2a3142',
     'border-radius:8px',
     'box-shadow:0 12px 40px rgba(0,0,0,0.6)'
-  ].join(';');
-}
-
-function resultStyle(): string {
-  return [
-    'margin:0',
-    'font-size:18px',
-    'font-weight:600',
-    'letter-spacing:0.08em',
-    'text-transform:uppercase'
   ].join(';');
 }
 
