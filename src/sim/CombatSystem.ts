@@ -14,7 +14,7 @@ export type DamageSource =
   | {
       kind: 'projectile';
       projectileId: EntityId;
-      ownerKind: 'player' | 'enemy';
+      ownerKind: 'player' | 'enemy' | 'boss';
       weaponArchetypeId: string;
     }
   | { kind: 'enemyContact'; enemyId: EntityId }
@@ -292,10 +292,11 @@ function findFirstHit(
 
 function asValidTarget(
   entity: IndexedEntity,
-  ownerKind: 'player' | 'enemy'
+  ownerKind: 'player' | 'enemy' | 'boss'
 ): Enemy | Player | null {
   if (ownerKind === 'player' && entity.kind === 'enemy') return entity;
   if (ownerKind === 'enemy' && entity.kind === 'player') return entity;
+  if (ownerKind === 'boss' && entity.kind === 'player') return entity;
   return null;
 }
 

@@ -47,7 +47,7 @@ export type Projectile = {
   readonly id: EntityId;
   readonly kind: 'projectile';
   readonly weaponArchetypeId: string;
-  readonly ownerKind: 'player' | 'enemy';
+  readonly ownerKind: 'player' | 'enemy' | 'boss';
   readonly radius: number;
   readonly damage: number;
   readonly expireAtSimMs: number;
@@ -83,7 +83,7 @@ export type EnemySpawnSpec = Readonly<{
 
 export type ProjectileSpawnSpec = Readonly<{
   weaponArchetypeId: string;
-  ownerKind: 'player' | 'enemy';
+  ownerKind: 'player' | 'enemy' | 'boss';
   position: Vec2;
   velocity: { vx: number; vy: number };
   radius: number;

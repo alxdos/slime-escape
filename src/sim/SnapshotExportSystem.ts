@@ -84,7 +84,8 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
                 dispatched: sources.waveProgress.dispatched,
                 total: sources.waveProgress.total,
                 alive: sources.waveProgress.alive
-              }
+              },
+        bossHud: null
       };
     },
     reset(): void {

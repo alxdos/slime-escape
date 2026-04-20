@@ -6,7 +6,7 @@ import type { Enemy, EntityId, EntityStore, Player } from './EntityStore';
 
 export type DeathContext = Readonly<{
   entityId: EntityId;
-  entityKind: 'enemy' | 'player';
+  entityKind: 'enemy' | 'player' | 'boss';
   archetypeId: string | null;
   position: Vec2;
   cause: DamageSource;

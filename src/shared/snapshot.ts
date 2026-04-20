@@ -23,7 +23,7 @@ export type ProjectileSnapshot = Readonly<{
   id: number;
   kind: 'projectile';
   weaponArchetypeId: string;
-  ownerKind: 'player' | 'enemy';
+  ownerKind: 'player' | 'enemy' | 'boss';
   x: number;
   y: number;
 }>;
@@ -36,11 +36,25 @@ export type DropSnapshot = Readonly<{
   y: number;
 }>;
 
+export type BossSnapshot = Readonly<{
+  id: number;
+  kind: 'boss';
+  archetypeId: string;
+  x: number;
+  y: number;
+  hp: number;
+  maxHp: number;
+  phaseIndex: number;
+  phaseId: string;
+  activeAttackIds: ReadonlyArray<string>;
+}>;
+
 export type EntitySnapshot =
   | PlayerSnapshot
   | EnemySnapshot
   | ProjectileSnapshot
-  | DropSnapshot;
+  | DropSnapshot
+  | BossSnapshot;
 
 export type EntityKind = EntitySnapshot['kind'];
 
@@ -64,10 +78,20 @@ export type WaveProgressSnapshot = Readonly<{
   alive: number;
 }>;
 
+export type BossHudSnapshot = Readonly<{
+  entityId: number;
+  phaseIndex: number;
+  phaseId: string;
+  hp: number;
+  maxHp: number;
+  activeAttackIds: ReadonlyArray<string>;
+}>;
+
 export type Snapshot = Readonly<{
   simTimeMs: number;
   entities: ReadonlyArray<EntitySnapshot>;
   encounter: EncounterSnapshot | null;
   zone: ZoneSnapshot;
   waveProgress: WaveProgressSnapshot | null;
+  bossHud: BossHudSnapshot | null;
 }>;

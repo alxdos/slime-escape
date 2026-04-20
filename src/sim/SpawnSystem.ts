@@ -61,6 +61,8 @@ export function createSpawnSystem(
             alive: new Set()
           };
           return;
+        case 'boss':
+          return;
         default:
           assertNever(plan);
       }
