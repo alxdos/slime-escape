@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (для истории 005: новый член union `DropSnapshot` с `kind: 'drop'`; runtime events `dropSpawn`/`dropPickup`/`dropExpire`, owner — `DropSystem`)
+- Updated: 2026-04-20 (006: `BossSnapshot`, top-level `bossHud`, расширение `death`/`hit`/`fire` под `boss`; см. [boss-encounter.md](boss-encounter.md); ранее: дроп и события дропа)
 
 ## Context
 
@@ -32,8 +32,8 @@ type EntitySnapshot =
   | PlayerSnapshot
   | EnemySnapshot
   | ProjectileSnapshot
-  | DropSnapshot;
-// kind 'boss' добавляется 006 — отдельным расширением, не подменой enemy.
+  | DropSnapshot
+  | BossSnapshot;
 ```
 
 - `PlayerSnapshot`:
@@ -85,6 +85,22 @@ type EntitySnapshot =
   ```
   `radius`, `effect`, `color`, `expireAtSimMs`, оставшееся время жизни в snapshot не уходят: gameplay-форма дропа (overlap-радиус, эффект) живёт только в `sim`, а render берёт визуал по `archetypeId` из `content library`. Если HUD когда-нибудь захочет «осталось N сек до исчезновения», это будет добавлением поля сюда, не вытаскиванием `expireAtSimMs` «по месту».
 
+- `BossSnapshot` (006, [boss-encounter.md](boss-encounter.md), [content-archetypes.md](content-archetypes.md)):
+  ```ts
+  {
+    id: number;
+    kind: 'boss';
+    archetypeId: string;
+    x: number;
+    y: number;
+    hp: number;
+    maxHp: number;
+    phaseIndex: number;
+    phaseId: string;
+    activeAttackIds: ReadonlyArray<string>;
+  }
+  ```
+
 ### Top-level snapshot
 
 - Форма верхнего уровня снапшота на горизонт 004:
@@ -95,9 +111,22 @@ type EntitySnapshot =
     encounter: EncounterSnapshot | null;
     zone: ZoneSnapshot;
     waveProgress: WaveProgressSnapshot | null;
+    bossHud: BossHudSnapshot | null;
   }>;
   ```
 - HUD-агрегаты уровня run (HP игрока, прогресс волны, состояние босса) живут как отдельные top-level поля, а не складываются в `entities`. Каждое такое расширение фиксируется здесь.
+- `bossHud`:
+  ```ts
+  type BossHudSnapshot = Readonly<{
+    entityId: number;
+    phaseIndex: number;
+    phaseId: string;
+    hp: number;
+    maxHp: number;
+    activeAttackIds: ReadonlyArray<string>;
+  }>;
+  ```
+  Для encounter, у которых `encounter.type !== 'boss'` или активного босса нет, поле **`null`**. Значения дублируют ключевые поля сущности босса для дешёвого чтения HUD без поиска по `entities`; консистентность с сущностью обеспечивает `SnapshotExportSystem`.
 - Поля 004:
   - `encounter`:
     ```ts
@@ -144,7 +173,7 @@ type EntitySnapshot =
         kind: 'fire';
         simTime: number;
         shooterId: number;
-        ownerKind: 'player' | 'enemy';
+        ownerKind: 'player' | 'enemy' | 'boss';
         weaponArchetypeId: string;
         originX: number;
         originY: number;
@@ -156,7 +185,7 @@ type EntitySnapshot =
         simTime: number;
         projectileId: number;
         targetId: number;
-        targetKind: 'enemy' | 'player';
+        targetKind: 'enemy' | 'player' | 'boss';
         weaponArchetypeId: string;
         damage: number;
         x: number;
@@ -166,10 +195,17 @@ type EntitySnapshot =
         kind: 'death';
         simTime: number;
         entityId: number;
-        entityKind: 'enemy' | 'player';
+        entityKind: 'enemy' | 'player' | 'boss';
         archetypeId: string | null;
         x: number;
         y: number;
+      }
+    | {
+        kind: 'bossPhaseChange';
+        simTime: number;
+        bossId: number;
+        phaseIndex: number;
+        phaseId: string;
       }
     // session lifecycle (этот файл, история 004)
     | { kind: 'win'; simTime: number }
@@ -207,7 +243,7 @@ type EntitySnapshot =
   - `death` публикует `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) сразу после фиксации смерти и до запуска death hooks;
   - `win`, `loss` публикует `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md), [session-definition.md](session-definition.md)) ровно один раз за run;
   - `dropSpawn`, `dropPickup`, `dropExpire` публикует `DropSystem` ([drops.md](drops.md)): `dropSpawn` — внутри death hook, синхронно после `EntityStore.spawnDrop`; `dropPickup` и `dropExpire` — в фазе `DropSystem` тика, по правилам [drops.md](drops.md) (на один дроп — ровно одно из них).
-- Никакая другая система не имеет права публиковать события `fire`/`hit`/`death`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`. `DropSystem` и `BossPhaseSystem` подписываются на death через death hook, а не публикуют альтернативное событие.
+- Никакая другая система не имеет права публиковать события `fire`/`hit`/`death`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`/`bossPhaseChange`. Исключение: `BossPhaseSystem` публикует только `bossPhaseChange`; `DropSystem` подписан на death hook для дропа и не подменяет `death`. Обе системы не публикуют альтернативное событие смерти или победы.
 
 ### Гарантии и приоритеты
 
@@ -240,4 +276,5 @@ type EntitySnapshot =
 - [zone.md](zone.md)
 - [spawn-plan.md](spawn-plan.md)
 - [drops.md](drops.md)
+- [boss-encounter.md](boss-encounter.md)
 - [simulation-timing.md](simulation-timing.md)

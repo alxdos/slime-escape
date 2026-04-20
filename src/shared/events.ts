@@ -9,7 +9,7 @@ export type RuntimeEvent =
       kind: 'fire';
       simTime: number;
       shooterId: number;
-      ownerKind: 'player' | 'enemy';
+      ownerKind: 'player' | 'enemy' | 'boss';
       weaponArchetypeId: string;
       originX: number;
       originY: number;
@@ -21,7 +21,7 @@ export type RuntimeEvent =
       simTime: number;
       projectileId: number;
       targetId: number;
-      targetKind: 'enemy' | 'player';
+      targetKind: 'enemy' | 'player' | 'boss';
       weaponArchetypeId: string;
       damage: number;
       x: number;
@@ -31,7 +31,7 @@ export type RuntimeEvent =
       kind: 'death';
       simTime: number;
       entityId: number;
-      entityKind: 'enemy' | 'player';
+      entityKind: 'enemy' | 'player' | 'boss';
       archetypeId: string | null;
       x: number;
       y: number;
@@ -62,4 +62,11 @@ export type RuntimeEvent =
       archetypeId: string;
       x: number;
       y: number;
+    }
+  | {
+      kind: 'bossPhaseChange';
+      simTime: number;
+      bossId: number;
+      phaseIndex: number;
+      phaseId: string;
     };

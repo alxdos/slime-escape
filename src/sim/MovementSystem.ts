@@ -2,7 +2,7 @@ import { assertNever } from '../shared/protocol';
 import type { ArenaConfig } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
-import type { Enemy, EntityStore, Player } from './EntityStore';
+import type { Boss, Enemy, EntityStore, Player } from './EntityStore';
 import type { RuntimeInputState } from './RuntimeInputState';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
@@ -18,10 +18,11 @@ export type MovementSystem = Readonly<{
 
 export function createMovementSystem(): MovementSystem {
   return {
-    tick(arena, store, input, simTimeMs): void {
+      tick(arena, store, input, simTimeMs): void {
       const player = store.player();
       if (player !== null) tickPlayer(arena, player, input);
       tickEnemies(store, player, simTimeMs);
+      tickBosses(store, player, simTimeMs);
     }
   };
 }
@@ -45,16 +46,52 @@ function tickPlayer(arena: ArenaConfig, player: Player, input: RuntimeInputState
 
 function tickEnemies(store: EntityStore, player: Player | null, simTimeMs: number): void {
   for (const enemy of store.enemies()) {
-    if (tickKnockback(enemy, simTimeMs)) continue;
+    if (tickKnockbackCarrier(enemy, simTimeMs)) continue;
     tickEnemyBehavior(enemy, player);
   }
 }
 
-function tickKnockback(enemy: Enemy, simTimeMs: number): boolean {
-  const knockback = enemy.knockback;
+function tickBosses(store: EntityStore, player: Player | null, simTimeMs: number): void {
+  for (const boss of store.bosses()) {
+    if (tickKnockbackCarrier(boss, simTimeMs)) continue;
+    chaseTowardPlayer(boss, player);
+  }
+}
+
+function chaseTowardPlayer(actor: Enemy | Boss, player: Player | null): void {
+  if ('behavior' in actor && actor.behavior === 'stationary') {
+    actor.velocity.vx = 0;
+    actor.velocity.vy = 0;
+    return;
+  }
+  if (player === null) {
+    actor.velocity.vx = 0;
+    actor.velocity.vy = 0;
+    return;
+  }
+  const dx = player.position.x - actor.position.x;
+  const dy = player.position.y - actor.position.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist === 0) {
+    actor.velocity.vx = 0;
+    actor.velocity.vy = 0;
+    return;
+  }
+  const nx = dx / dist;
+  const ny = dy / dist;
+  const vx = nx * actor.maxSpeed;
+  const vy = ny * actor.maxSpeed;
+  actor.position.x += vx * SIM_STEP_SEC;
+  actor.position.y += vy * SIM_STEP_SEC;
+  actor.velocity.vx = vx;
+  actor.velocity.vy = vy;
+}
+
+function tickKnockbackCarrier(actor: Enemy | Boss, simTimeMs: number): boolean {
+  const knockback = actor.knockback;
   if (knockback === null) return false;
   if (simTimeMs >= knockback.endSimMs) {
-    enemy.knockback = null;
+    actor.knockback = null;
     return false;
   }
   const elapsed = simTimeMs - knockback.startSimMs;
@@ -62,10 +99,10 @@ function tickKnockback(enemy: Enemy, simTimeMs: number): boolean {
   const decay = duration > 0 ? Math.max(0, 1 - elapsed / duration) : 0;
   const vx = knockback.vx * decay;
   const vy = knockback.vy * decay;
-  enemy.position.x += vx * SIM_STEP_SEC;
-  enemy.position.y += vy * SIM_STEP_SEC;
-  enemy.velocity.vx = vx;
-  enemy.velocity.vy = vy;
+  actor.position.x += vx * SIM_STEP_SEC;
+  actor.position.y += vy * SIM_STEP_SEC;
+  actor.velocity.vx = vx;
+  actor.velocity.vy = vy;
   return true;
 }
 
@@ -75,30 +112,9 @@ function tickEnemyBehavior(enemy: Enemy, player: Player | null): void {
       enemy.velocity.vx = 0;
       enemy.velocity.vy = 0;
       return;
-    case 'chase': {
-      if (player === null) {
-        enemy.velocity.vx = 0;
-        enemy.velocity.vy = 0;
-        return;
-      }
-      const dx = player.position.x - enemy.position.x;
-      const dy = player.position.y - enemy.position.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist === 0) {
-        enemy.velocity.vx = 0;
-        enemy.velocity.vy = 0;
-        return;
-      }
-      const nx = dx / dist;
-      const ny = dy / dist;
-      const vx = nx * enemy.maxSpeed;
-      const vy = ny * enemy.maxSpeed;
-      enemy.position.x += vx * SIM_STEP_SEC;
-      enemy.position.y += vy * SIM_STEP_SEC;
-      enemy.velocity.vx = vx;
-      enemy.velocity.vy = vy;
+    case 'chase':
+      chaseTowardPlayer(enemy, player);
       return;
-    }
     default:
       assertNever(enemy.behavior);
   }

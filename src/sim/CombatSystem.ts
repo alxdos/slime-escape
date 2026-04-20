@@ -4,7 +4,7 @@ import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig, Loadout, Vec2 } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
-import type { Enemy, EntityId, EntityStore, Player, Projectile } from './EntityStore';
+import type { Boss, Enemy, EntityId, EntityStore, Player, Projectile } from './EntityStore';
 import type { RuntimeInputState } from './RuntimeInputState';
 import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
 
@@ -14,7 +14,7 @@ export type DamageSource =
   | {
       kind: 'projectile';
       projectileId: EntityId;
-      ownerKind: 'player' | 'enemy';
+      ownerKind: 'player' | 'enemy' | 'boss';
       weaponArchetypeId: string;
     }
   | { kind: 'enemyContact'; enemyId: EntityId }
@@ -49,7 +49,6 @@ export function createCombatSystem(
   weaponRegistry: Readonly<Record<string, WeaponArchetype>> = WEAPON_ARCHETYPES
 ): CombatSystem {
   const shooterWeapons = new Map<EntityId, ShooterWeapons>();
-  const maxEnemyRadius = computeMaxEnemyRadius();
 
   return {
     setPlayerLoadout(playerId, loadout, simTimeMs): void {
@@ -67,12 +66,13 @@ export function createCombatSystem(
       shooterWeapons.clear();
     },
     tick(input, store, index, simTimeMs, arena, emit): ReadonlyArray<DamageIntent> {
+      const maxThreatRadius = computeMaxThreatRadius(store);
       runFiringDecisions(input, store, simTimeMs, shooterWeapons, emit);
       runProjectileMovement(store);
       runLifetimeCleanup(store, simTimeMs, arena);
       index.rebuild(store);
-      const contactIntents = runContactIntents(store, index, simTimeMs, maxEnemyRadius);
-      const projectileIntents = runHitDetection(store, index, simTimeMs, maxEnemyRadius, emit);
+      const contactIntents = runContactIntents(store, index, simTimeMs, maxThreatRadius);
+      const projectileIntents = runHitDetection(store, index, simTimeMs, maxThreatRadius, emit);
       return contactIntents.length === 0
         ? projectileIntents
         : [...contactIntents, ...projectileIntents];
@@ -169,7 +169,7 @@ function runContactIntents(
   const range = player.radius + maxEnemyRadius;
   const candidates = index.queryRadius(player.position.x, player.position.y, range);
   for (const candidate of candidates) {
-    if (candidate.kind !== 'enemy') continue;
+    if (candidate.kind !== 'enemy' && candidate.kind !== 'boss') continue;
     const enemy = candidate;
     if (enemy.contactDamage <= 0) continue;
     if (simTimeMs < enemy.nextContactSimMs) continue;
@@ -184,12 +184,12 @@ function runContactIntents(
       hitPosition: { x: player.position.x, y: player.position.y }
     });
     enemy.nextContactSimMs = simTimeMs + enemy.contactCooldownMs;
-    applyKnockback(enemy, player, simTimeMs);
+    applyKnockbackToChaser(enemy, player, simTimeMs);
   }
   return intents;
 }
 
-function applyKnockback(enemy: Enemy, player: Player, simTimeMs: number): void {
+function applyKnockbackToChaser(enemy: Enemy | Boss, player: Player, simTimeMs: number): void {
   const ndx = enemy.position.x - player.position.x;
   const ndy = enemy.position.y - player.position.y;
   const dist = Math.hypot(ndx, ndy);
@@ -271,7 +271,7 @@ function findFirstHit(
   projectile: Projectile,
   index: SpatialIndex,
   maxEnemyRadius: number
-): Enemy | Player | null {
+): Enemy | Boss | Player | null {
   const candidates = index.queryRadius(
     projectile.position.x,
     projectile.position.y,
@@ -292,17 +292,22 @@ function findFirstHit(
 
 function asValidTarget(
   entity: IndexedEntity,
-  ownerKind: 'player' | 'enemy'
-): Enemy | Player | null {
+  ownerKind: 'player' | 'enemy' | 'boss'
+): Enemy | Boss | Player | null {
   if (ownerKind === 'player' && entity.kind === 'enemy') return entity;
+  if (ownerKind === 'player' && entity.kind === 'boss') return entity;
   if (ownerKind === 'enemy' && entity.kind === 'player') return entity;
+  if (ownerKind === 'boss' && entity.kind === 'player') return entity;
   return null;
 }
 
-function computeMaxEnemyRadius(): number {
+function computeMaxThreatRadius(store: EntityStore): number {
   let max = 0;
   for (const archetype of Object.values(ENEMY_ARCHETYPES)) {
     if (archetype.radius > max) max = archetype.radius;
+  }
+  for (const boss of store.bosses()) {
+    if (boss.radius > max) max = boss.radius;
   }
   return max;
 }

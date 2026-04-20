@@ -2,6 +2,7 @@ import type { RuntimeEvent } from '../shared/events';
 import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
 
+import { createBossPhaseSystem } from './BossPhaseSystem';
 import { createCombatSystem } from './CombatSystem';
 import { createDropSystem } from './DropSystem';
 import { createEntityStore } from './EntityStore';
@@ -18,6 +19,7 @@ const entities = createEntityStore();
 const exporter = createSnapshotExportSystem();
 const movement = createMovementSystem();
 const spawn = createSpawnSystem();
+const bossPhase = createBossPhaseSystem();
 const combat = createCombatSystem();
 const healthDeath = createHealthDeathSystem();
 const spatialIndex = createSpatialIndex();
@@ -36,8 +38,9 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
   const session = sessionFlow.activeSession();
   if (session === null) return;
   spawn.onTick(simTimeMs, entities);
+  const bossIntents = bossPhase.tick(entities, session.arena, simTimeMs, emitEvent);
   movement.tick(session.arena, entities, sessionFlow.inputState(), simTimeMs);
-  const intents = combat.tick(
+  const combatIntents = combat.tick(
     sessionFlow.inputState(),
     entities,
     spatialIndex,
@@ -45,24 +48,25 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     session.arena,
     emitEvent
   );
+  const intents =
+    bossIntents.length === 0 ? combatIntents : [...bossIntents, ...combatIntents];
   healthDeath.tick(intents, entities, simTimeMs, emitEvent);
   drops.tick(simTimeMs, entities, emitEvent);
   sessionFlow.checkTransitions(simTimeMs);
   zone.onTick();
+  const encounterCtx = sessionFlow.activeEncounter();
+  const waveSnap =
+    encounterCtx !== null && encounterCtx.encounter.spawnPlan.kind === 'wave'
+      ? spawn.waveProgress()
+      : null;
   const snapshot = exporter.onTick(simTimeMs, entities, {
-    encounter: sessionFlow.activeEncounter(),
+    encounter: encounterCtx,
     zone: zone.zone(),
-    waveProgress: spawn.waveProgress()
+    waveProgress: waveSnap
   });
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });
   }
-});
-
-healthDeath.registerHook((ctx) => {
-  if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
-  if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
-  if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
 });
 
 const sessionFlow = createSessionFlowSystem({
@@ -97,6 +101,14 @@ const sessionFlow = createSessionFlowSystem({
     spawn.onEncounterEnd(encounter);
     zone.onEncounterEnd(encounter);
   }
+});
+
+healthDeath.registerHook((ctx) => {
+  if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
+  if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
+  if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
+  if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
+  if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
 });
 
 self.addEventListener('message', (event: MessageEvent<MainToSim>) => {

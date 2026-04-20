@@ -32,6 +32,7 @@ describe('SnapshotExportSystem', () => {
     expect(entity?.x).toBe(3);
     expect(entity?.y).toBe(-2);
     expect(snapshot?.simTimeMs).toBe(0);
+    expect(snapshot?.bossHud).toBeNull();
   });
 
   it('emits empty entity list when no player is spawned', () => {

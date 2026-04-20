@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (для истории 005 закреплено: `HealthDeathSystem` владеет только decrement HP и death; heal от `DropSystem` — единственная санкционированная мутация HP в плюс и идёт мимо `applyDamage`; контракт death hook уточнён под спавн дропа в `EntityStore`)
+- Updated: 2026-04-20 (активирован `DamageIntent.source.kind: 'boss'` для 006; `DeathContext.entityKind` включает `'boss'`; см. [boss-encounter.md](boss-encounter.md); ранее: heal от `DropSystem`, контракт death hook под дроп)
 
 ## Context
 
@@ -41,11 +41,11 @@
       | { kind: 'projectile'; projectileId: EntityId; ownerKind: 'player' | 'enemy'; weaponArchetypeId: string }
       | { kind: 'enemyContact'; enemyId: EntityId }                  // активен с 004; контракт — enemy-contact.md
       | { kind: 'environment'; tag: string }                         // зарезервировано: газ, поджог и т.п.
-      | { kind: 'boss'; bossId: EntityId; attackId: string };        // зарезервировано под 006
+      | { kind: 'boss'; bossId: EntityId; attackId: string };        // активен с 006, [boss-encounter.md](boss-encounter.md)
     hitPosition: { x: number; y: number };
   }>;
   ```
-- На 003 единственный реальный `source.kind` — `'projectile'`. Историей 004 активируется `'enemyContact'` (формирует `CombatSystem` в новой фазе по [enemy-contact.md](enemy-contact.md)). Остальные kind зарезервированы и активируются соответствующими историями расширением union, а не переименованием поля.
+- На 003 единственный реальный `source.kind` — `'projectile'`. Историей 004 активируется `'enemyContact'` (формирует `CombatSystem` в новой фазе по [enemy-contact.md](enemy-contact.md)). Историей 006 активируется `'boss'` для урона от атак босса ([boss-encounter.md](boss-encounter.md)). Остальные зарезервированные kind активируются соответствующими историями расширением union, а не переименованием поля.
 - Damage intents за тик передаются в `HealthDeathSystem` явным списком (по конкретному signature метода), без отдельной глобальной шины событий: один тик — один список.
 - `CombatSystem` не имеет права читать или мутировать HP. Все вычитания выполняет только `HealthDeathSystem`.
 - `HealthDeathSystem` владеет **только decrement HP и death**. Heal (увеличение `hp` в пределах `[0, maxHp]`) под этот контракт не подпадает: единственный санкционированный источник heal на горизонт MVP — `DropSystem` ([drops.md](drops.md)), который мутирует `player.hp` напрямую в фазе pickup, не строит `DamageIntent` и не вызывает `HealthDeathSystem.applyDamage`. Heal не может породить `death`-event, не запускает death hooks и не попадает в общий per-tick damage-список. Если когда-нибудь появится второй источник heal (регенерация, эффект босса), вводится отдельное design-решение об общем heal-канале — но не обходом этого правила «по месту».
@@ -65,7 +65,7 @@
   ```ts
   type DeathContext = Readonly<{
     entityId: EntityId;
-    entityKind: 'enemy' | 'player';     // расширяется по мере появления damageable-kind-ов
+    entityKind: 'enemy' | 'player' | 'boss';
     archetypeId: string | null;          // для enemy/boss; null если архетипа нет
     position: { x: number; y: number }; // позиция на момент смерти
     cause: DamageIntent['source'];       // что нанесло финальный удар
@@ -75,7 +75,8 @@
   type DeathHook = (ctx: DeathContext) => void;
   ```
 - Минимальные потребители death hooks (зафиксированы здесь как контракт; реализация — по соответствующим историям):
-  - `DropSystem` ([drops.md](drops.md)) — реагирует на смерти врагов: фильтрует по `entityKind === 'enemy'`, при непустой `dropTable` делает один `nextFloat` через session RNG и при выпавшем dropArchetype спавнит `Drop` через `EntityStore.spawnDrop` в позиции `ctx.position`. Полный контракт hook'a — в [drops.md](drops.md);
+  - `DropSystem` ([drops.md](drops.md)) — реагирует на смерти врагов: фильтрует по `entityKind === 'enemy'`, при непустой `dropTable` делает один `nextFloat` через session RNG и при выпавшем dropArchetype спавнит `Drop` через `EntityStore.spawnDrop` в позиции `ctx.position`. Полный контракт hook'a — в [drops.md](drops.md); смерть `entityKind === 'boss'` дроп не порождает, если отдельно не оговорено контентом;
+  - `SessionFlowSystem` — session-level hooks на `player` ([session-definition.md](session-definition.md)) и, при `winCondition: bossDefeated`, на смерть босса ([boss-encounter.md](boss-encounter.md));
   - session-level статистика и progression — счётчики убитых, прогресс волны и т.п.;
   - runtime events для HUD/audio/debug — публикация события `death` (см. [snapshot-shape.md](snapshot-shape.md)).
 - Hooks вызываются **синхронно**, в порядке регистрации, для каждой смерти отдельно. Hook не имеет права:
@@ -125,3 +126,4 @@
 - [session-definition.md](session-definition.md)
 - [simulation-timing.md](simulation-timing.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
+- [boss-encounter.md](boss-encounter.md)

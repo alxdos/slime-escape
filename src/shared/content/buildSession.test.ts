@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
+import { SANDBOX_ARENA } from './arenas';
 import { buildSessionDefinition } from './buildSession';
+import { SLIME_KING } from './bosses';
 import { SLIME_FAST, SLIME_TANK, TRAINING_TARGET } from './enemies';
-import { SANDBOX_PRESET, SANDBOX_WITH_COMBAT_PRESET, TRAINING_PRESET } from './presets';
+import {
+  CAMPAIGN_PRESET,
+  SANDBOX_PRESET,
+  SANDBOX_WITH_COMBAT_PRESET,
+  TRAINING_PRESET
+} from './presets';
 import { PISTOL } from './weapons';
 
 describe('buildSessionDefinition (sandbox)', () => {
@@ -174,5 +181,34 @@ describe('buildSessionDefinition (training)', () => {
 
     expect(session.loadout).toEqual({ primaryWeaponArchetypeId: PISTOL.id });
     expect(session.player.maxHp).toBeGreaterThan(0);
+  });
+});
+
+describe('buildSessionDefinition (campaign)', () => {
+  it('campaign: three waves with breaks, pre-boss break, then boss with bossDefeated win', () => {
+    const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
+    expect(session.winCondition).toEqual({ kind: 'bossDefeated' });
+    expect(session.lossCondition).toEqual({ kind: 'playerDeath' });
+    expect(session.encounters).toHaveLength(7);
+
+    expect(session.encounters[0]?.id).toBe('campaign-wave-1');
+    expect(session.encounters[1]?.id).toBe('campaign-break-after-wave-1');
+    expect(session.encounters[2]?.id).toBe('campaign-wave-2');
+    expect(session.encounters[3]?.id).toBe('campaign-break-after-wave-2');
+    expect(session.encounters[4]?.id).toBe('campaign-wave-3');
+    expect(session.encounters[5]?.type).toBe('break');
+    expect(session.encounters[5]?.id).toBe('campaign-pre-boss-break');
+
+    const bossEnc = session.encounters[6];
+    expect(bossEnc?.type).toBe('boss');
+    expect(bossEnc?.zoneBehavior).toEqual({ kind: 'disabled' });
+    const plan = bossEnc?.spawnPlan;
+    expect(plan?.kind).toBe('boss');
+    if (plan?.kind !== 'boss') throw new Error('expected boss spawn plan');
+    expect(plan.bossArchetypeId).toBe(SLIME_KING.id);
+    expect(plan.position.x).toBe(0);
+    // top center, same inset as wave edge margin (0.5) + boss radius
+    const expectedY = SANDBOX_ARENA.height / 2 - 0.5 - SLIME_KING.radius;
+    expect(plan.position.y).toBeCloseTo(expectedY, 5);
   });
 });

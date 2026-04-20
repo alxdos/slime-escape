@@ -1,8 +1,10 @@
+import { BOSS_ARCHETYPES, type BossArchetype } from '../shared/content/bosses';
 import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../shared/content/enemies';
 import { assertNever } from '../shared/protocol';
 import type { Rng } from '../shared/rng';
 import type {
   ArenaConfig,
+  BossSpawnPlan,
   EncounterDefinition,
   StaticSpawnPlan,
   Vec2,
@@ -10,7 +12,7 @@ import type {
 } from '../shared/session';
 import type { WaveProgressSnapshot } from '../shared/snapshot';
 
-import type { EnemySpawnSpec, EntityId, EntityStore } from './EntityStore';
+import type { BossSpawnSpec, EnemySpawnSpec, EntityId, EntityStore } from './EntityStore';
 
 export type SpawnSystem = Readonly<{
   setRng(rng: Rng | null): void;
@@ -22,6 +24,7 @@ export type SpawnSystem = Readonly<{
   onEncounterEnd(encounter: EncounterDefinition): void;
   onTick(simTimeMs: number, store: EntityStore): void;
   onEnemyDeath(entityId: EntityId): void;
+  onBossDeath(entityId: EntityId): void;
   waveProgress(): WaveProgressSnapshot | null;
 }>;
 
@@ -33,11 +36,18 @@ type WaveState = {
   alive: Set<EntityId>;
 };
 
+type BossSpawnState = {
+  plan: BossSpawnPlan;
+  alive: Set<EntityId>;
+};
+
 export function createSpawnSystem(
-  enemyRegistry: Readonly<Record<string, EnemyArchetype>> = ENEMY_ARCHETYPES
+  enemyRegistry: Readonly<Record<string, EnemyArchetype>> = ENEMY_ARCHETYPES,
+  bossRegistry: Readonly<Record<string, BossArchetype>> = BOSS_ARCHETYPES
 ): SpawnSystem {
   let rng: Rng | null = null;
   let waveState: WaveState | null = null;
+  let bossState: BossSpawnState | null = null;
 
   return {
     setRng(next): void {
@@ -45,6 +55,7 @@ export function createSpawnSystem(
     },
     onEncounterStart(encounter, store, arena): void {
       waveState = null;
+      bossState = null;
       const plan = encounter.spawnPlan;
       switch (plan.kind) {
         case 'empty':
@@ -61,12 +72,19 @@ export function createSpawnSystem(
             alive: new Set()
           };
           return;
+        case 'boss': {
+          const archetype = resolveBossArchetype(plan.bossArchetypeId, bossRegistry);
+          const boss = store.spawnBoss(makeBossSpawnSpec(archetype, plan.position));
+          bossState = { plan, alive: new Set([boss.id]) };
+          return;
+        }
         default:
           assertNever(plan);
       }
     },
     onEncounterEnd(_encounter): void {
       waveState = null;
+      bossState = null;
     },
     onTick(simTimeMs, store): void {
       const state = waveState;
@@ -80,14 +98,63 @@ export function createSpawnSystem(
       if (waveState === null) return;
       waveState.alive.delete(entityId);
     },
+    onBossDeath(entityId): void {
+      if (bossState === null) return;
+      bossState.alive.delete(entityId);
+    },
     waveProgress(): WaveProgressSnapshot | null {
-      if (waveState === null) return null;
-      return {
-        dispatched: waveState.dispatched,
-        total: waveState.plan.spawns.length,
-        alive: waveState.alive.size
-      };
+      if (waveState !== null) {
+        return {
+          dispatched: waveState.dispatched,
+          total: waveState.plan.spawns.length,
+          alive: waveState.alive.size
+        };
+      }
+      if (bossState !== null) {
+        return {
+          dispatched: 1,
+          total: 1,
+          alive: bossState.alive.size
+        };
+      }
+      return null;
     }
+  };
+}
+
+function resolveBossArchetype(
+  id: string,
+  bossRegistry: Readonly<Record<string, BossArchetype>>
+): BossArchetype {
+  const archetype = bossRegistry[id];
+  if (archetype === undefined) {
+    throw new Error(`unknown boss archetype: ${id}`);
+  }
+  return archetype;
+}
+
+function makeBossSpawnSpec(archetype: BossArchetype, position: Vec2): BossSpawnSpec {
+  const phase0 = archetype.phases[0];
+  if (phase0 === undefined) {
+    throw new Error(`boss archetype ${archetype.id} has no phases`);
+  }
+  const attackIdsFromArchetype = Object.keys(archetype.attacks);
+  return {
+    archetypeId: archetype.id,
+    position,
+    radius: archetype.radius,
+    maxHp: archetype.maxHp,
+    maxSpeed: archetype.maxSpeed,
+    color: archetype.color,
+    contactDamage: archetype.contactDamage,
+    contactCooldownMs: archetype.contactCooldownMs,
+    knockbackBaseImpulse: archetype.knockbackBaseImpulse,
+    knockbackVelocityScale: archetype.knockbackVelocityScale,
+    knockbackDurationMs: archetype.knockbackDurationMs,
+    phaseIndex: 0,
+    phaseId: phase0.id,
+    activeAttackIds: [...phase0.allowedAttackIds],
+    attackIdsFromArchetype
   };
 }
 

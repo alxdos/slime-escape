@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (для истории 004 добавлена фаза contact intents между `lifetime cleanup` и `hit detection`; полный контракт контактного урона — в `enemy-contact.md`)
+- Updated: 2026-04-20 (006: `projectile.ownerKind` и `fire`/`hit` — см. [boss-encounter.md](boss-encounter.md), [snapshot-shape.md](snapshot-shape.md); friendly fire с сущностью `kind: 'boss'`; ранее: contact intents)
 
 ## Context
 
@@ -26,7 +26,7 @@
     id: EntityId;
     kind: 'projectile';
     weaponArchetypeId: string;        // ссылка в content library
-    ownerKind: 'player' | 'enemy';   // кто стреляет (см. friendly fire)
+    ownerKind: 'player' | 'enemy' | 'boss';   // кто стреляет (см. friendly fire)
     position: { x: number; y: number };
     velocity: { vx: number; vy: number }; // wu/s
     radius: number;                   // wu, копия из WeaponArchetype.projectileRadius
@@ -78,8 +78,9 @@
   - кандидаты — соседи снаряда из `SpatialIndex` ([runtime-systems.md](runtime-systems.md)) в радиусе `projectile.radius + maxEnemyRadius`;
   - проверка коллизии — circle-vs-circle между текущей позицией снаряда и позицией потенциальной цели.
 - Friendly fire:
-  - снаряд с `ownerKind: 'player'` поражает только сущности, которые сейчас могут получать урон **со стороны игрока** — на 003 это враги;
-  - снаряд с `ownerKind: 'enemy'` поражает только игрока (актуально с 006);
+  - снаряд с `ownerKind: 'player'` поражает сущности с `kind: 'enemy'` и `kind: 'boss'` (урон со стороны игрока);
+  - снаряд с `ownerKind: 'enemy'` поражает только игрока;
+  - снаряд с `ownerKind: 'boss'` поражает только игрока (атаки босса через снаряд — [boss-encounter.md](boss-encounter.md));
   - проверка реализована как фильтр по `target.kind` относительно `projectile.ownerKind`; отдельных team-id в MVP не вводим.
 - При попадании:
   1. формируется damage intent `{ targetId, amount: projectile.damage, source: { kind: 'projectile', projectileId, ownerKind, weaponArchetypeId }, hitPosition }`;
@@ -131,6 +132,7 @@
 - [snapshot-shape.md](snapshot-shape.md)
 - [input-commands.md](input-commands.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
+- [boss-encounter.md](boss-encounter.md)
 - [simulation-timing.md](simulation-timing.md)
 - [logging.md](logging.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)

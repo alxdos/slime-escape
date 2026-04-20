@@ -38,7 +38,13 @@ export type WaveSpawnPlan = Readonly<{
   edgeMargin?: number;
 }>;
 
-export type SpawnPlan = EmptySpawnPlan | StaticSpawnPlan | WaveSpawnPlan;
+export type BossSpawnPlan = Readonly<{
+  kind: 'boss';
+  bossArchetypeId: string;
+  position: Vec2;
+}>;
+
+export type SpawnPlan = EmptySpawnPlan | StaticSpawnPlan | WaveSpawnPlan | BossSpawnPlan;
 
 export type Loadout = Readonly<{
   primaryWeaponArchetypeId: string;

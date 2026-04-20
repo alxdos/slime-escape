@@ -10,6 +10,7 @@ import type {
 import { SIM_STEP_MS } from '../timing';
 
 import { SANDBOX_ARENA } from './arenas';
+import { SLIME_KING } from './bosses';
 import {
   ENEMY_ARCHETYPES,
   SLIME_FAST,
@@ -38,6 +39,7 @@ export function buildSessionDefinition(
     case 'training':
       return buildTrainingSession(options);
     case 'campaign':
+      return buildCampaignSession(options);
     case 'pistolOnly':
       throw new Error(`ModePreset '${preset.id}' is not implemented yet`);
     default:
@@ -110,10 +112,7 @@ function buildSandboxWithCombatSession(options: BuildOptions): SessionDefinition
   };
 }
 
-function buildTrainingSession(options: BuildOptions): SessionDefinition {
-  validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.radius);
-  warnIfWeaponMayTunnel(PISTOL.id);
-
+function makeTrainingRunEncounters(): ReadonlyArray<EncounterDefinition> {
   const wave1: EncounterDefinition = {
     id: 'training-wave-1',
     type: 'wave',
@@ -177,6 +176,122 @@ function buildTrainingSession(options: BuildOptions): SessionDefinition {
     tuning: null
   };
 
+  return [wave1, breakEncounter, wave2];
+}
+
+/** Три волны и передышки между ними — `design/session-definition.md` (preset `campaign`). */
+function makeCampaignRunEncounters(): ReadonlyArray<EncounterDefinition> {
+  const wave1: EncounterDefinition = {
+    id: 'campaign-wave-1',
+    type: 'wave',
+    spawnPlan: {
+      kind: 'wave',
+      spawns: [
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id }
+      ],
+      spawnIntervalMs: 1500,
+      maxAlive: 4,
+      edgeMargin: 0.5
+    },
+    zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 4, durationMs: 8000 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+
+  const breakAfterWave1: EncounterDefinition = {
+    id: 'campaign-break-after-wave-1',
+    type: 'break',
+    spawnPlan: { kind: 'empty' },
+    zoneBehavior: { kind: 'expandLinear', fromMargin: 4, toMargin: 0, durationMs: 2500 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+    tuning: null
+  };
+
+  const wave2: EncounterDefinition = {
+    id: 'campaign-wave-2',
+    type: 'wave',
+    spawnPlan: {
+      kind: 'wave',
+      spawns: [
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id }
+      ],
+      spawnIntervalMs: 1200,
+      maxAlive: 5,
+      edgeMargin: 0.5
+    },
+    zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 5, durationMs: 10000 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+
+  const breakAfterWave2: EncounterDefinition = {
+    id: 'campaign-break-after-wave-2',
+    type: 'break',
+    spawnPlan: { kind: 'empty' },
+    zoneBehavior: { kind: 'expandLinear', fromMargin: 5, toMargin: 0, durationMs: 2500 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+    tuning: null
+  };
+
+  const wave3: EncounterDefinition = {
+    id: 'campaign-wave-3',
+    type: 'wave',
+    spawnPlan: {
+      kind: 'wave',
+      spawns: [
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_FAST.id },
+        { archetypeId: SLIME_TANK.id }
+      ],
+      spawnIntervalMs: 1000,
+      maxAlive: 6,
+      edgeMargin: 0.5
+    },
+    zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 5, durationMs: 12000 },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+
+  return [wave1, breakAfterWave1, wave2, breakAfterWave2, wave3];
+}
+
+function buildTrainingSession(options: BuildOptions): SessionDefinition {
+  validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.radius);
+  warnIfWeaponMayTunnel(PISTOL.id);
+
   return {
     id: options.id ?? 'training-session',
     seed: options.seed,
@@ -185,11 +300,76 @@ function buildTrainingSession(options: BuildOptions): SessionDefinition {
     loadout: { primaryWeaponArchetypeId: PISTOL.id },
     modifiers: [],
     rules: null,
-    encounters: [wave1, breakEncounter, wave2],
+    encounters: makeTrainingRunEncounters(),
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null
   };
+}
+
+function buildCampaignSession(options: BuildOptions): SessionDefinition {
+  validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.radius);
+  warnIfWeaponMayTunnel(PISTOL.id);
+
+  /** Matches wave spawn `edgeMargin` — boss enters from top center like edge-spawned slimes. */
+  const bossEdgeMargin = 0.5;
+  const bossSpawnPos = bossTopCenterSpawnInArena(SANDBOX_ARENA, SLIME_KING.radius, bossEdgeMargin);
+  assertSpawnInsideArena(bossSpawnPos, SLIME_KING.radius, SANDBOX_ARENA);
+
+  const campaignPreBossBreak: EncounterDefinition = {
+    id: 'campaign-pre-boss-break',
+    type: 'break',
+    spawnPlan: { kind: 'empty' },
+    zoneBehavior: {
+      kind: 'expandLinear',
+      fromMargin: 5,
+      toMargin: 0,
+      durationMs: 2500
+    },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+    tuning: null
+  };
+
+  const bossEncounter: EncounterDefinition = {
+    id: 'campaign-boss',
+    type: 'boss',
+    spawnPlan: {
+      kind: 'boss',
+      bossArchetypeId: SLIME_KING.id,
+      position: bossSpawnPos
+    },
+    zoneBehavior: { kind: 'disabled' },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+
+  return {
+    id: options.id ?? 'campaign-session',
+    seed: options.seed,
+    arena: SANDBOX_ARENA,
+    player: TRAINING_PLAYER,
+    loadout: { primaryWeaponArchetypeId: PISTOL.id },
+    modifiers: [],
+    rules: null,
+    encounters: [...makeCampaignRunEncounters(), campaignPreBossBreak, bossEncounter],
+    winCondition: { kind: 'bossDefeated' },
+    lossCondition: { kind: 'playerDeath' },
+    uiMeta: null
+  };
+}
+
+/** Boss spawn: horizontally centered, as high as allowed inside arena (same inset as wave edge margin). */
+function bossTopCenterSpawnInArena(
+  arena: ArenaConfig,
+  bossRadius: number,
+  edgeMargin: number
+): Vec2 {
+  const halfH = arena.height / 2;
+  return { x: 0, y: halfH - edgeMargin - bossRadius };
 }
 
 function assertSpawnInsideArena(position: Vec2, radius: number, arena: ArenaConfig): void {
