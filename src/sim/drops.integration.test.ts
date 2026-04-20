@@ -100,6 +100,7 @@ function setupWorld() {
 
   healthDeath.registerHook((ctx) => {
     if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
+    if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
     if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
   });

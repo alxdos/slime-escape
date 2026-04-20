@@ -1,16 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildSessionDefinition } from '../shared/content/buildSession';
-import { TRAINING_PRESET } from '../shared/content/presets';
+import { SANDBOX_ARENA } from '../shared/content/arenas';
+import { SLIME_KING } from '../shared/content/bosses';
+import { TRAINING_PLAYER } from '../shared/content/players';
+import { PISTOL } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
+import type { EncounterDefinition, SessionDefinition } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
+import { createBossPhaseSystem } from './BossPhaseSystem';
 import { createCombatSystem } from './CombatSystem';
 import { createEntityStore } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createSessionFlowSystem } from './SessionFlowSystem';
-import { createSimulationClock, type SimulationClock } from './SimulationClock';
+import { type SimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
@@ -46,11 +50,43 @@ function fakeClock(): SimulationClock & {
   };
 }
 
-function setupWorld() {
+const BOSS_ENCOUNTER: EncounterDefinition = {
+  id: 'test-boss',
+  type: 'boss',
+  spawnPlan: {
+    kind: 'boss',
+    bossArchetypeId: SLIME_KING.id,
+    position: { x: 0, y: 3 }
+  },
+  zoneBehavior: { kind: 'disabled' },
+  objectives: [],
+  rewardRules: null,
+  transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+  tuning: null
+};
+
+function bossOnlySession(seed: number): SessionDefinition {
+  return {
+    id: 'boss-session',
+    seed,
+    arena: SANDBOX_ARENA,
+    player: TRAINING_PLAYER,
+    loadout: { primaryWeaponArchetypeId: PISTOL.id },
+    modifiers: [],
+    rules: null,
+    encounters: [BOSS_ENCOUNTER],
+    winCondition: { kind: 'bossDefeated' },
+    lossCondition: { kind: 'playerDeath' },
+    uiMeta: null
+  };
+}
+
+function setupBossWorld() {
   const entities = createEntityStore();
   const exporter = createSnapshotExportSystem();
   const movement = createMovementSystem();
   const spawn = createSpawnSystem();
+  const bossPhase = createBossPhaseSystem();
   const combat = createCombatSystem();
   const healthDeath = createHealthDeathSystem();
   const spatialIndex = createSpatialIndex();
@@ -104,6 +140,7 @@ function setupWorld() {
     const session = sessionFlow.activeSession();
     if (session === null) return;
     spawn.onTick(simTimeMs, entities);
+    bossPhase.tick(entities, session.arena, simTimeMs, emitEvent);
     movement.tick(session.arena, entities, sessionFlow.inputState(), simTimeMs);
     const intents = combat.tick(
       sessionFlow.inputState(),
@@ -123,16 +160,19 @@ function setupWorld() {
     });
   }
 
-  function killAllEnemies(simTimeMs: number): void {
-    const ids = [...entities.enemies()].map((e) => e.id);
-    if (ids.length === 0) return;
+  function killBoss(simTimeMs: number): void {
+    const bosses = [...entities.bosses()];
+    if (bosses.length === 0) return;
+    const target = bosses[0]!;
     healthDeath.tick(
-      ids.map((id) => ({
-        targetId: id,
-        amount: 9999,
-        source: { kind: 'enemyContact', enemyId: id },
-        hitPosition: { x: 0, y: 0 }
-      })),
+      [
+        {
+          targetId: target.id,
+          amount: target.hp + 99,
+          source: { kind: 'environment', tag: 'test-kill-boss' },
+          hitPosition: target.position
+        }
+      ],
       entities,
       simTimeMs,
       emitEvent
@@ -146,88 +186,29 @@ function setupWorld() {
     sessionFlow,
     clock,
     events,
-    healthDeath,
     tick,
-    killAllEnemies
+    killBoss
   };
 }
 
-describe('training run integration', () => {
-  it('emits sessionStart, two encounter cycles and a single win on full clear', () => {
-    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 42 });
-    const world = setupWorld();
-    world.sessionFlow.start(session);
-
-    let safety = 0;
-    while (world.clock.isRunning() && safety < 5_000) {
-      safety += 1;
-      world.tick();
-      world.killAllEnemies(world.clock.simTimeMs());
-    }
-
-    expect(world.clock.isRunning()).toBe(false);
-    const kinds = world.events.map((e) => e.kind);
-    expect(kinds.filter((k) => k === 'win')).toHaveLength(1);
-    expect(kinds.filter((k) => k === 'loss')).toHaveLength(0);
-    expect(kinds.filter((k) => k === 'encounterStart')).toHaveLength(3);
-    expect(kinds.filter((k) => k === 'encounterEnd')).toHaveLength(3);
+describe('boss encounter integration', () => {
+  it('keeps zone disabled during boss encounter', () => {
+    const world = setupBossWorld();
+    world.sessionFlow.start(bossOnlySession(7));
+    expect(world.zone.zone()).toEqual({ mode: 'disabled', margin: 0 });
   });
 
-  it('publishes a single loss when player dies mid-run and stops further ticks', () => {
-    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 42 });
-    const world = setupWorld();
-    world.sessionFlow.start(session);
+  it('emits a single win after boss death when winCondition is bossDefeated', () => {
+    const world = setupBossWorld();
+    world.sessionFlow.start(bossOnlySession(11));
+
+    expect(world.entities.bossCount()).toBe(1);
+
+    world.killBoss(world.clock.simTimeMs());
     world.tick();
 
-    const player = world.entities.player();
-    if (player === null) throw new Error('expected player');
-    world.healthDeath.tick(
-      [
-        {
-          targetId: player.id,
-          amount: 999,
-          source: { kind: 'enemyContact', enemyId: player.id },
-          hitPosition: { x: 0, y: 0 }
-        }
-      ],
-      world.entities,
-      world.clock.simTimeMs(),
-      (e) => world.events.push(e)
-    );
-
-    const losses = world.events.filter((e) => e.kind === 'loss');
-    expect(losses).toHaveLength(1);
     expect(world.clock.isRunning()).toBe(false);
-    expect(world.entities.player()).toBeNull();
-
-    world.tick();
-    expect(world.events.filter((e) => e.kind === 'loss')).toHaveLength(1);
-  });
-
-  it('two runs with the same seed produce identical (archetypeId, position) spawn lists', () => {
-    function spawnsForSeed(seed: number): Array<{ id: string; x: number; y: number }> {
-      const session = buildSessionDefinition(TRAINING_PRESET, { seed });
-      const world = setupWorld();
-      world.sessionFlow.start(session);
-      const collected: Array<{ id: string; x: number; y: number }> = [];
-      const seen = new Set<number>();
-      let safety = 0;
-      while (world.clock.isRunning() && safety < 5_000) {
-        safety += 1;
-        world.tick();
-        for (const enemy of world.entities.enemies()) {
-          if (seen.has(enemy.id)) continue;
-          seen.add(enemy.id);
-          collected.push({ id: enemy.archetypeId, x: enemy.position.x, y: enemy.position.y });
-        }
-        world.killAllEnemies(world.clock.simTimeMs());
-      }
-      return collected;
-    }
-
-    const a = spawnsForSeed(98765);
-    const b = spawnsForSeed(98765);
-    expect(b).toEqual(a);
-    expect(a.length).toBeGreaterThan(0);
+    expect(world.events.filter((e) => e.kind === 'win')).toHaveLength(1);
+    expect(world.events.filter((e) => e.kind === 'loss')).toHaveLength(0);
   });
 });

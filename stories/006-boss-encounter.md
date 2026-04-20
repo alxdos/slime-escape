@@ -1,6 +1,6 @@
 # Boss Encounter
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-19
 - Updated: 2026-04-20
 
@@ -32,13 +32,13 @@
 |----|--------|------|------|
 | T1 | [x] | Расширить публичные контракты в `src/shared/**`: `SpawnPlan` (`kind: 'boss'`), типы босса и сущности `kind: 'boss'` в протоколах снапшота/событий (`bossHud`, `bossPhaseChange`, расширения `fire`/`hit`/`death`), `DamageIntent.source`, `Projectile.ownerKind`, `DeathContext.entityKind` — строго по обновлённым `design/*` без реализации симуляции в этой задаче. | опоры: `spawn-plan.md`, `snapshot-shape.md`, `health-and-death.md`, `projectiles-and-combat.md`, `boss-encounter.md` |
 | T2 | [x] | Контент: реестр `BossArchetype` (`bosses.ts`), один профиль босса с ≥2 фазами и ≥2 атаками; расширение кампании / builder: цепочка после волновых encounter — boss-encounter с `spawnPlan: { kind: 'boss', … }`, `zoneBehavior: { kind: 'disabled' }`, `winCondition: { kind: 'bossDefeated' }` (не смешивать с `allEncountersComplete`). | `content-archetypes.md`, `session-definition.md`, `boss-encounter.md`, `BOSS.md` |
-| T3 | [ ] | `SpawnSystem`: исполнение `'boss'` (один спавн при `encounterStart`, учёт `aliveFromThisPlan`, сброс на `encounterEnd`). | `spawn-plan.md`, `boss-encounter.md` |
-| T4 | [ ] | `EntityStore` и движение: сущность `kind: 'boss'`, `HasHealth`, интеграция в `SpatialIndex`/коллизии; contact intents с боссом по [enemy-contact.md](../design/enemy-contact.md). | `health-and-death.md`, `enemy-contact.md`, `arena-and-coordinates.md` |
-| T5 | [ ] | `CombatSystem`: попадание снарядов игрока по `boss`; при необходимости снаряды с `ownerKind: 'boss'`; без дублирования урона вне `HealthDeathSystem`. | `projectiles-and-combat.md`, `boss-encounter.md` |
-| T6 | [ ] | `BossPhaseSystem`: пороги фаз по `BossArchetype.phases`, выбор/кулдауны атак, `DamageIntent` с `source.kind: 'boss'`; публикация `bossPhaseChange`. | `boss-encounter.md`, `runtime-systems.md`, `snapshot-shape.md` |
-| T7 | [ ] | `SessionFlowSystem`: session-level death hook для `bossDefeated`; гарантия одного `win`; согласование с `transitionRules` boss-encounter без двойной победы. | `session-definition.md`, `boss-encounter.md`, `health-and-death.md` |
-| T8 | [ ] | `SnapshotExportSystem` + минимальный рендер босса (отладочный/плейсхолдер): `BossSnapshot`, `bossHud`, сущность в списке entities. | `snapshot-shape.md`, `thread-model.md` |
-| T9 | [ ] | Тесты: спавн босса, две фазы (переход по порогу HP), победа по смерти босса при `bossDefeated`, зона `disabled` на boss-encounter; закрытие истории по чек-листу `stories/README.md`. | `testing.md`, архитектор для мета-задачи закрытия |
+| T3 | [x] | `SpawnSystem`: исполнение `'boss'` (один спавн при `encounterStart`, учёт `aliveFromThisPlan`, сброс на `encounterEnd`). | `spawn-plan.md`, `boss-encounter.md` |
+| T4 | [x] | `EntityStore` и движение: сущность `kind: 'boss'`, `HasHealth`, интеграция в `SpatialIndex`/коллизии; contact intents с боссом по [enemy-contact.md](../design/enemy-contact.md). | `health-and-death.md`, `enemy-contact.md`, `arena-and-coordinates.md` |
+| T5 | [x] | `CombatSystem`: попадание снарядов игрока по `boss`; при необходимости снаряды с `ownerKind: 'boss'`; без дублирования урона вне `HealthDeathSystem`. | `projectiles-and-combat.md`, `boss-encounter.md` |
+| T6 | [x] | `BossPhaseSystem`: пороги фаз по `BossArchetype.phases`, выбор/кулдауны атак, `DamageIntent` с `source.kind: 'boss'`; публикация `bossPhaseChange`. | `boss-encounter.md`, `runtime-systems.md`, `snapshot-shape.md` |
+| T7 | [x] | `SessionFlowSystem`: session-level death hook для `bossDefeated`; гарантия одного `win`; согласование с `transitionRules` boss-encounter без двойной победы. | `session-definition.md`, `boss-encounter.md`, `health-and-death.md` |
+| T8 | [x] | `SnapshotExportSystem` + минимальный рендер босса (отладочный/плейсхолдер): `BossSnapshot`, `bossHud`, сущность в списке entities. | `snapshot-shape.md`, `thread-model.md` |
+| T9 | [x] | Тесты: спавн босса, две фазы (переход по порогу HP), победа по смерти босса при `bossDefeated`, зона `disabled` на boss-encounter; закрытие истории по чек-листу `stories/README.md`. | `testing.md`, архитектор для мета-задачи закрытия |
 
 ## Related
 

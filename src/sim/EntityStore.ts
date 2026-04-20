@@ -43,6 +43,30 @@ export type Enemy = {
   knockback: KnockbackState | null;
 };
 
+export type Boss = {
+  readonly id: EntityId;
+  readonly kind: 'boss';
+  readonly archetypeId: string;
+  readonly radius: number;
+  readonly maxHp: number;
+  readonly maxSpeed: number;
+  readonly color: number;
+  readonly contactDamage: number;
+  readonly contactCooldownMs: number;
+  readonly knockbackBaseImpulse: number;
+  readonly knockbackVelocityScale: number;
+  readonly knockbackDurationMs: number;
+  position: { x: number; y: number };
+  velocity: { vx: number; vy: number };
+  hp: number;
+  nextContactSimMs: number;
+  knockback: KnockbackState | null;
+  phaseIndex: number;
+  phaseId: string;
+  activeAttackIds: string[];
+  attackNextSimMs: Map<string, number>;
+};
+
 export type Projectile = {
   readonly id: EntityId;
   readonly kind: 'projectile';
@@ -100,22 +124,45 @@ export type DropSpawnSpec = Readonly<{
   expireAtSimMs: number;
 }>;
 
+export type BossSpawnSpec = Readonly<{
+  archetypeId: string;
+  position: Vec2;
+  radius: number;
+  maxHp: number;
+  maxSpeed: number;
+  color: number;
+  contactDamage: number;
+  contactCooldownMs: number;
+  knockbackBaseImpulse: number;
+  knockbackVelocityScale: number;
+  knockbackDurationMs: number;
+  phaseIndex: number;
+  phaseId: string;
+  activeAttackIds: ReadonlyArray<string>;
+  attackIdsFromArchetype: ReadonlyArray<string>;
+}>;
+
 export type EntityStore = Readonly<{
   spawnPlayer(spec: PlayerSpawn): Player;
   spawnEnemy(spec: EnemySpawnSpec): Enemy;
+  spawnBoss(spec: BossSpawnSpec): Boss;
   spawnProjectile(spec: ProjectileSpawnSpec): Projectile;
   spawnDrop(spec: DropSpawnSpec): Drop;
   player(): Player | null;
   enemyById(id: EntityId): Enemy | null;
+  bossById(id: EntityId): Boss | null;
   projectileById(id: EntityId): Projectile | null;
   dropById(id: EntityId): Drop | null;
   enemies(): IterableIterator<Enemy>;
+  bosses(): IterableIterator<Boss>;
   projectiles(): IterableIterator<Projectile>;
   drops(): IterableIterator<Drop>;
   enemyCount(): number;
+  bossCount(): number;
   projectileCount(): number;
   dropCount(): number;
   removeEnemy(id: EntityId): boolean;
+  removeBoss(id: EntityId): boolean;
   removeProjectile(id: EntityId): boolean;
   removeDrop(id: EntityId): boolean;
   removePlayer(): boolean;
@@ -126,6 +173,7 @@ export function createEntityStore(): EntityStore {
   let nextId = 1;
   let player: Player | null = null;
   const enemies = new Map<EntityId, Enemy>();
+  const bosses = new Map<EntityId, Boss>();
   const projectiles = new Map<EntityId, Projectile>();
   const drops = new Map<EntityId, Drop>();
 
@@ -177,6 +225,37 @@ export function createEntityStore(): EntityStore {
       enemies.set(next.id, next);
       return next;
     },
+    spawnBoss(spec): Boss {
+      const attackNextSimMs = new Map<string, number>();
+      for (const aid of spec.attackIdsFromArchetype) {
+        attackNextSimMs.set(aid, 0);
+      }
+      const next: Boss = {
+        id: makeId(),
+        kind: 'boss',
+        archetypeId: spec.archetypeId,
+        radius: spec.radius,
+        maxHp: spec.maxHp,
+        maxSpeed: spec.maxSpeed,
+        color: spec.color,
+        contactDamage: spec.contactDamage,
+        contactCooldownMs: spec.contactCooldownMs,
+        knockbackBaseImpulse: spec.knockbackBaseImpulse,
+        knockbackVelocityScale: spec.knockbackVelocityScale,
+        knockbackDurationMs: spec.knockbackDurationMs,
+        position: { x: spec.position.x, y: spec.position.y },
+        velocity: { vx: 0, vy: 0 },
+        hp: spec.maxHp,
+        nextContactSimMs: 0,
+        knockback: null,
+        phaseIndex: spec.phaseIndex,
+        phaseId: spec.phaseId,
+        activeAttackIds: [...spec.activeAttackIds],
+        attackNextSimMs
+      };
+      bosses.set(next.id, next);
+      return next;
+    },
     spawnProjectile(spec): Projectile {
       const next: Projectile = {
         id: makeId(),
@@ -214,6 +293,9 @@ export function createEntityStore(): EntityStore {
     enemyById(id): Enemy | null {
       return enemies.get(id) ?? null;
     },
+    bossById(id): Boss | null {
+      return bosses.get(id) ?? null;
+    },
     projectileById(id): Projectile | null {
       return projectiles.get(id) ?? null;
     },
@@ -222,6 +304,9 @@ export function createEntityStore(): EntityStore {
     },
     enemies(): IterableIterator<Enemy> {
       return enemies.values();
+    },
+    bosses(): IterableIterator<Boss> {
+      return bosses.values();
     },
     projectiles(): IterableIterator<Projectile> {
       return projectiles.values();
@@ -232,6 +317,9 @@ export function createEntityStore(): EntityStore {
     enemyCount(): number {
       return enemies.size;
     },
+    bossCount(): number {
+      return bosses.size;
+    },
     projectileCount(): number {
       return projectiles.size;
     },
@@ -240,6 +328,9 @@ export function createEntityStore(): EntityStore {
     },
     removeEnemy(id): boolean {
       return enemies.delete(id);
+    },
+    removeBoss(id): boolean {
+      return bosses.delete(id);
     },
     removeProjectile(id): boolean {
       return projectiles.delete(id);
@@ -255,6 +346,7 @@ export function createEntityStore(): EntityStore {
     clear(): void {
       player = null;
       enemies.clear();
+      bosses.clear();
       projectiles.clear();
       drops.clear();
       nextId = 1;

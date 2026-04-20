@@ -184,7 +184,8 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
 
   function finalizeRun(simTimeMs: number): void {
     if (active === null) return;
-    if (active.def.winCondition.kind === 'allEncountersComplete') {
+    const winKind = active.def.winCondition.kind;
+    if (winKind === 'allEncountersComplete' || winKind === 'bossDefeated') {
       emitEvent({ kind: 'win', simTime: simTimeMs });
     }
     emitEvent({ kind: 'sessionStop', simTime: simTimeMs });
@@ -238,7 +239,7 @@ function shouldTransition(
     case 'allEnemiesCleared': {
       const plan = encounter.spawnPlan;
       if (plan.kind === 'empty') return true;
-      if (plan.kind === 'wave') {
+      if (plan.kind === 'wave' || plan.kind === 'boss') {
         const progress = deps.waveProgress?.() ?? null;
         if (progress === null) return false;
         return progress.dispatched === progress.total && progress.alive === 0;

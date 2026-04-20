@@ -1,4 +1,5 @@
 import type {
+  BossHudSnapshot,
   EncounterSnapshot,
   EntitySnapshot,
   Snapshot,
@@ -72,6 +73,31 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           y: drop.position.y
         });
       }
+      let bossHud: BossHudSnapshot | null = null;
+      for (const boss of store.bosses()) {
+        entities.push({
+          id: boss.id,
+          kind: 'boss',
+          archetypeId: boss.archetypeId,
+          x: boss.position.x,
+          y: boss.position.y,
+          hp: boss.hp,
+          maxHp: boss.maxHp,
+          phaseIndex: boss.phaseIndex,
+          phaseId: boss.phaseId,
+          activeAttackIds: boss.activeAttackIds
+        });
+        if (bossHud === null) {
+          bossHud = {
+            entityId: boss.id,
+            phaseIndex: boss.phaseIndex,
+            phaseId: boss.phaseId,
+            hp: boss.hp,
+            maxHp: boss.maxHp,
+            activeAttackIds: boss.activeAttackIds
+          };
+        }
+      }
       return {
         simTimeMs,
         entities,
@@ -85,7 +111,7 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
                 total: sources.waveProgress.total,
                 alive: sources.waveProgress.alive
               },
-        bossHud: null
+        bossHud
       };
     },
     reset(): void {

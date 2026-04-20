@@ -2,7 +2,7 @@ import type { RuntimeEvent } from '../shared/events';
 import type { Vec2 } from '../shared/session';
 
 import type { DamageIntent, DamageSource } from './CombatSystem';
-import type { Enemy, EntityId, EntityStore, Player } from './EntityStore';
+import type { Boss, Enemy, EntityId, EntityStore, Player } from './EntityStore';
 
 export type DeathContext = Readonly<{
   entityId: EntityId;
@@ -52,6 +52,7 @@ export function createHealthDeathSystem(): HealthDeathSystem {
       }
       for (const death of deaths) {
         if (death.entityKind === 'enemy') store.removeEnemy(death.entityId);
+        if (death.entityKind === 'boss') store.removeBoss(death.entityId);
         if (death.entityKind === 'player') store.removePlayer();
       }
     }
@@ -76,21 +77,25 @@ function applyDamage(
   return deaths;
 }
 
-function resolveTarget(id: EntityId, store: EntityStore): Enemy | Player | null {
+function resolveTarget(id: EntityId, store: EntityStore): Enemy | Boss | Player | null {
   const player = store.player();
   if (player !== null && player.id === id) return player;
-  return store.enemyById(id);
+  const enemy = store.enemyById(id);
+  if (enemy !== null) return enemy;
+  return store.bossById(id);
 }
 
 function makeDeathContext(
-  target: Enemy | Player,
+  target: Enemy | Boss | Player,
   cause: DamageSource,
   simTimeMs: number
 ): DeathContext {
+  const archetypeId =
+    target.kind === 'enemy' || target.kind === 'boss' ? target.archetypeId : null;
   return {
     entityId: target.id,
     entityKind: target.kind,
-    archetypeId: target.kind === 'enemy' ? target.archetypeId : null,
+    archetypeId,
     position: { x: target.position.x, y: target.position.y },
     cause,
     simTime: simTimeMs

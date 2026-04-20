@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 
+import { BOSS_ARCHETYPES, type BossArchetype } from '../../shared/content/bosses';
 import { DROP_ARCHETYPES, type DropArchetype } from '../../shared/content/drops';
 import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../../shared/content/enemies';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
 import type { ArenaConfig, PlayerSpawn } from '../../shared/session';
 import type {
+  BossSnapshot,
   DropSnapshot,
   EnemySnapshot,
   EntitySnapshot,
@@ -26,6 +28,7 @@ export type RendererInit = Readonly<{
   getSnapshotPair: () => SnapshotPair;
   getAim?: AimAccessor;
   enemyRegistry?: Readonly<Record<string, EnemyArchetype>>;
+  bossRegistry?: Readonly<Record<string, BossArchetype>>;
   weaponRegistry?: Readonly<Record<string, WeaponArchetype>>;
   dropRegistry?: Readonly<Record<string, DropArchetype>>;
 }>;
@@ -55,6 +58,7 @@ const ZONE_FEATHER_WU = 1.5;
 
 export function createRenderer(init: RendererInit): Renderer {
   const enemyRegistry = init.enemyRegistry ?? ENEMY_ARCHETYPES;
+  const bossRegistry = init.bossRegistry ?? BOSS_ARCHETYPES;
   const weaponRegistry = init.weaponRegistry ?? WEAPON_ARCHETYPES;
   const dropRegistry = init.dropRegistry ?? DROP_ARCHETYPES;
 
@@ -102,6 +106,7 @@ export function createRenderer(init: RendererInit): Renderer {
 
   type EntityMesh = { mesh: THREE.Mesh; geometry: THREE.BufferGeometry; material: THREE.Material };
   const enemyMeshes = new Map<number, EntityMesh>();
+  const bossMeshes = new Map<number, EntityMesh>();
   const projectileMeshes = new Map<number, EntityMesh>();
   const dropMeshes = new Map<number, EntityMesh>();
 
@@ -123,6 +128,22 @@ export function createRenderer(init: RendererInit): Renderer {
     scene.remove(entry.mesh);
     entry.geometry.dispose();
     entry.material.dispose();
+  }
+
+  function ensureBossMesh(snap: BossSnapshot): EntityMesh {
+    const existing = bossMeshes.get(snap.id);
+    if (existing !== undefined) return existing;
+    const archetype = bossRegistry[snap.archetypeId];
+    const radius = archetype?.radius ?? 1.1;
+    const color = archetype?.color ?? 0xaa44ff;
+    const geometry = new THREE.CircleGeometry(radius, 28);
+    const material = new THREE.MeshBasicMaterial({ color });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.z = ENEMY_Z;
+    scene.add(mesh);
+    const entry: EntityMesh = { mesh, geometry, material };
+    bossMeshes.set(snap.id, entry);
+    return entry;
   }
 
   function ensureEnemyMesh(snap: EnemySnapshot): EntityMesh {
@@ -189,6 +210,14 @@ export function createRenderer(init: RendererInit): Renderer {
       updateEntities(
         pair,
         alpha,
+        (e): e is BossSnapshot => e.kind === 'boss',
+        bossMeshes,
+        ensureBossMesh,
+        disposeEntityMesh
+      );
+      updateEntities(
+        pair,
+        alpha,
         (e): e is ProjectileSnapshot => e.kind === 'projectile',
         projectileMeshes,
         ensureProjectileMesh,
@@ -217,6 +246,8 @@ export function createRenderer(init: RendererInit): Renderer {
       scene.remove(zoneOverlay.mesh);
       for (const entry of enemyMeshes.values()) disposeEntityMesh(entry);
       enemyMeshes.clear();
+      for (const entry of bossMeshes.values()) disposeEntityMesh(entry);
+      bossMeshes.clear();
       for (const entry of projectileMeshes.values()) disposeEntityMesh(entry);
       projectileMeshes.clear();
       for (const entry of dropMeshes.values()) disposeEntityMesh(entry);

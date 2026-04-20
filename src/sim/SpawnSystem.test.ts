@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { SLIME_KING } from '../shared/content/bosses';
 import {
   SLIME_FAST,
   SLIME_TANK,
@@ -259,5 +260,50 @@ describe('SpawnSystem wave', () => {
     expect(spawn.waveProgress()).toBeNull();
     spawn.onTick(SIM_STEP_MS, store);
     expect(store.enemyCount()).toBe(1);
+  });
+});
+
+describe('SpawnSystem boss', () => {
+  it('boss plan spawns exactly one boss; waveProgress tracks alive until onBossDeath', () => {
+    const store = createEntityStore();
+    const spawn = createSpawnSystem(REGISTRY);
+    spawn.onEncounterStart(
+      makeEncounter({
+        kind: 'boss',
+        bossArchetypeId: SLIME_KING.id,
+        position: { x: 2, y: -1 }
+      }),
+      store,
+      ARENA
+    );
+
+    expect(store.bossCount()).toBe(1);
+    expect(spawn.waveProgress()).toEqual({ dispatched: 1, total: 1, alive: 1 });
+    const boss = [...store.bosses()][0]!;
+    expect(boss.archetypeId).toBe(SLIME_KING.id);
+    expect(boss.position).toEqual({ x: 2, y: -1 });
+
+    spawn.onBossDeath(boss.id);
+    expect(spawn.waveProgress()).toEqual({ dispatched: 1, total: 1, alive: 0 });
+
+    spawn.onEncounterEnd(makeEncounter({ kind: 'empty' }));
+    expect(spawn.waveProgress()).toBeNull();
+  });
+
+  it('throws on unknown boss archetype id', () => {
+    const store = createEntityStore();
+    const spawn = createSpawnSystem(REGISTRY);
+
+    expect(() =>
+      spawn.onEncounterStart(
+        makeEncounter({
+          kind: 'boss',
+          bossArchetypeId: 'no-such-boss',
+          position: { x: 0, y: 0 }
+        }),
+        store,
+        ARENA
+      )
+    ).toThrow(/unknown boss archetype/);
   });
 });
