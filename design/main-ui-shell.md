@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-20
+- Updated: 2026-04-20 (для истории 009 добавлен раздел «Settings overlay»: sub-modal поверх `menu`/`paused`, не меняет фазу, owned `UiShell`)
 
 ## Context
 
@@ -122,6 +122,21 @@
 - В фазе `result` доступно ровно одно действие: «В меню» (переход `result → menu`). Никаких «retry», «stats», «share» в 007 не вводится. Они — расширения Result UI и будущих историй.
 - При переходе `result → menu` `UiShell` сбрасывает внутреннее состояние «последний результат» и показывает чистый стартовый экран. История последних результатов не сохраняется (`client settings` под это место не используются — см. [content-boundaries.md](content-boundaries.md)).
 
+### Settings overlay
+
+- Settings overlay — компонент `src/main/ui/**` (фактическое имя — деталь реализации). Он **не** становится отдельной фазой `UiShell` и **не** имеет права манипулировать `SimWorkerHost.pause/resume`, `startSession`/`stopSession` или видимостью HUD/Pause/Result/Menu overlay-ев. Это чистый sub-modal поверх текущей фазы.
+- Доступен ровно из двух мест:
+  1. Из `MenuOverlay` (фаза `menu`) — кнопкой «Настройки» рядом с выбором режима;
+  2. Из `PauseOverlay` (фаза `paused`) — кнопкой «Настройки» рядом с «Продолжить»/«Выйти в меню».
+  В фазах `running` и `result` settings overlay недоступен. В `running` для открытия настроек игрок сначала входит в паузу штатным способом ([input-commands.md](input-commands.md)); это удерживает правило «overlay-и не появляются поверх живой сцены без явного pause».
+- Открытие/закрытие settings overlay — единственный orchestration-эффект: `UiShell` показывает/прячет соответствующий компонент. Никаких побочных переходов между фазами `menu`/`paused`/`running`/`result` это не вызывает: открыли в `paused` — после закрытия остаёмся в `paused` с тем же `Pause overlay` под спудом; открыли в `menu` — возвращаемся в `menu` к выбору режима.
+- Параллельно с settings overlay не показывается **никакой** другой overlay поверх него. Z-order: Settings overlay выше Pause/Menu overlay-ев, ниже Result UI (Result UI и Settings overlay не сосуществуют по построению — settings недоступен в `result`). Конкретные `z-index` — деталь реализации.
+- Pointer Lock в фазе `paused` уже снят браузером ([input-commands.md](input-commands.md)); открытие/закрытие settings overlay в `paused` его статус не меняет. В фазе `menu` Pointer Lock не запрашивается, и settings overlay тоже его не трогает.
+- Источник правды о значениях, которые редактирует overlay — `ClientSettingsStore` ([client-settings.md](client-settings.md)). На каждое действие игрока (drag слайдера громкости, выбор пресета разрешения) overlay вызывает соответствующий `store.set*`; `UiShell` уже подписал на этот store `Audio` (для `masterVolume` через `audio.setMasterGain`, см. [audio.md](audio.md)) и `Renderer` (для `renderScalePreset` через `renderer.applyScalePolicy`, см. [render-scale.md](render-scale.md)). Таким образом изменения применяются «на лету» в той же фазе, без рестарта сессии и без специальной логики на стороне overlay-я.
+- Settings overlay **не** имеет права обращаться к `SimWorkerHost`, `Audio`, `Renderer` напрямую. Это сохраняет инвариант «единственный owner оркестрации — `UiShell`» и держит overlay чистым presentation-компонентом.
+- В фазе `menu` `Renderer` ещё не существует ([client-settings.md](client-settings.md), раздел «Применение настроек»); смена `renderScalePreset` в `menu` корректно: store сохраняет значение, ближайший новый `Renderer` его прочитает. Никаких «отложенных применений» вне store держать не нужно.
+- Кнопки settings overlay (включая кнопки внутри overlay-я и точку входа из `MenuOverlay`/`PauseOverlay`) звучат через `audio.playUi('buttonClick')` тем же способом, что и остальные UI-кнопки ([audio.md](audio.md)). Открытие settings overlay само по себе **не** играет `events.uiOverlayShow` — этот звук закреплён за переходами в `paused` и `result(*)` ([audio.md](audio.md)) и не дублируется на каждом sub-modal.
+
 ### Жизненный цикл рендера и input в рамках фаз
 
 - `Renderer` и `InputController` создаются `UiShell` при переходе `menu → running` и уничтожаются при переходе в `menu` (явный exit) или `result` (`win`/`loss`). Это сохраняет уже работающую модель `src/main/index.ts`, но переносит её в один owner.
@@ -155,9 +170,13 @@
 - [content-archetypes.md](content-archetypes.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
 - [simulation-timing.md](simulation-timing.md)
+- [client-settings.md](client-settings.md)
+- [audio.md](audio.md)
+- [render-scale.md](render-scale.md)
 - [web-stack.md](web-stack.md)
 - [boss-encounter.md](boss-encounter.md)
 - [zone.md](zone.md)
 - [../docs/GDD_CORE.md](../docs/GDD_CORE.md)
 - [../docs/VISION.md](../docs/VISION.md)
 - [../stories/007-hud-and-menu.md](../stories/007-hud-and-menu.md)
+- [../stories/009-settings.md](../stories/009-settings.md)
