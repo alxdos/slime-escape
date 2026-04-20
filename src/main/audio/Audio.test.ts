@@ -407,6 +407,113 @@ describe('createAudio', () => {
     expect(context.sources).toHaveLength(baselineSourceCount + 2);
   });
 
+  it('skips player hit events without playback or warnings', async () => {
+    const { audio, context, log } = createAudioHarness();
+    context.setState('running');
+
+    audio.handleEvent({
+      kind: 'hit',
+      simTime: 110,
+      projectileId: 1,
+      targetId: 5,
+      targetKind: 'player',
+      weaponArchetypeId: 'pistol',
+      damage: 1,
+      x: 0,
+      y: 0
+    });
+
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(0);
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  it('warns once and skips boss hit playback when the boss hit mapping is absent', async () => {
+    const { audio, context, log } = createAudioHarness();
+    context.setState('running');
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 100,
+        entities: [
+          {
+            id: 7,
+            kind: 'boss',
+            archetypeId: 'slime-king',
+            x: 0,
+            y: 0,
+            hp: 40,
+            maxHp: 40,
+            phaseIndex: 0,
+            phaseId: 'crown-intact',
+            activeAttackIds: []
+          }
+        ],
+        encounter: null,
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }),
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+    const baselineSourceCount = context.sources.length;
+
+    audio.handleEvent({
+      kind: 'hit',
+      simTime: 110,
+      projectileId: 1,
+      targetId: 7,
+      targetKind: 'boss',
+      weaponArchetypeId: 'pistol',
+      damage: 1,
+      x: 0,
+      y: 0
+    });
+    audio.handleEvent({
+      kind: 'hit',
+      simTime: 111,
+      projectileId: 2,
+      targetId: 7,
+      targetKind: 'boss',
+      weaponArchetypeId: 'pistol',
+      damage: 1,
+      x: 0,
+      y: 0
+    });
+
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(baselineSourceCount);
+    expect(log.warn).toHaveBeenCalledTimes(1);
+    expect(log.warn).toHaveBeenCalledWith('audio mapping missing; skipping playback', {
+      mappingKey: 'bosses.slime-king.hit'
+    });
+  });
+
+  it('falls back to the event archetype when an enemy death arrives after the snapshot entity is gone', async () => {
+    const { audio, context, log } = createAudioHarness();
+    context.setState('running');
+
+    audio.handleEvent({
+      kind: 'death',
+      simTime: 120,
+      entityId: 42,
+      entityKind: 'enemy',
+      archetypeId: 'slime-fast',
+      x: 0,
+      y: 0
+    });
+
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(1);
+    expect(context.sources[0]?.startCalls).toBe(1);
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
   it('skips unmapped training-target death with one warning and no crash', async () => {
     const { audio, context, log } = createAudioHarness();
     context.setState('running');
@@ -528,6 +635,32 @@ describe('createAudio', () => {
     await flushAudioWork();
 
     expect(context.sources).toHaveLength(baselineSourceCount + 2);
+  });
+
+  it('drops the oldest one-shot when more than 32 one-shots overlap', async () => {
+    const { audio, context } = createAudioHarness();
+    context.setState('running');
+
+    for (let index = 0; index < 33; index += 1) {
+      audio.handleEvent({
+        kind: 'fire',
+        simTime: index,
+        shooterId: index,
+        ownerKind: 'player',
+        weaponArchetypeId: 'pistol',
+        originX: 0,
+        originY: 0,
+        dirX: 1,
+        dirY: 0
+      });
+    }
+
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(33);
+    expect(context.sources[0]?.startCalls).toBe(1);
+    expect(context.sources[0]?.stopCalls).toBe(1);
+    expect(context.sources.slice(1).every((source) => source.stopCalls === 0)).toBe(true);
   });
 
   it('starts regular music in running and ducks the music bus in paused', async () => {

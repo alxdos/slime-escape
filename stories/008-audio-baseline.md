@@ -1,6 +1,6 @@
 # Audio Baseline
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-19
 - Updated: 2026-04-20
 
@@ -49,7 +49,7 @@
 | T6 | [x] | Music selector: regularPool ([6 треков](../design/audio.md#music-selector)), boss-track, переключение по `phase` и `encounter.type`, ducking на `paused` | snapshot/phase-driven |
 | T7 | [x] | Ambient слайм-голоса: per-entity таймеры по `snapshot.entities[kind === 'enemy']`, presentation RNG (`Math.random`), пауза таймеров в `paused` | snapshot-driven |
 | T8 | [x] | Wire в `UiShell`: создание `Audio` рядом с `Hud`, фан-аут `onEvent` в `audio.handleEvent`, `audio.update` в `onFrame` после `hud.update`, `attach`/`detach` на старте/завершении сессии, `audio.unlock()` на первом user-gesture, `audio.playUi('overlayShow')` на показе pause/result, `audio.playUi('buttonClick')` в кнопках overlay-ев | оркестрация |
-| T9 | [ ] | Тесты `Audio` без реального `AudioContext` через `AudioApi` mock: effective gain, валидация реестра, роутинг событий и `targetKind`-ветки, переключение music selector по фазам/encounter, отсутствие тиков ambient в `paused`, drop-oldest при > 32 одновременных one-shot | testing |
+| T9 | [x] | Тесты `Audio` без реального `AudioContext` через `AudioApi` mock: effective gain, валидация реестра, роутинг событий и `targetKind`-ветки, переключение music selector по фазам/encounter, отсутствие тиков ambient в `paused`, drop-oldest при > 32 одновременных one-shot | testing |
 
 ## Related
 
