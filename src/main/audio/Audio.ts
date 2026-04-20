@@ -37,6 +37,7 @@ export type AudioUiEventId = 'overlayShow' | 'buttonClick';
 export type AudioInit = Readonly<{
   audioApi?: AudioApi;
   log?: Log;
+  random?: () => number;
 }>;
 
 export type Audio = Readonly<{
@@ -67,8 +68,24 @@ type ActiveOneShotPlayback = Readonly<{
   trimGain: AudioGainNodeLike;
 }>;
 
+type ActiveMusicPlayback = Readonly<{
+  sampleId: string;
+  source: AudioBufferSourceNodeLike;
+  trimGain: AudioGainNodeLike;
+}>;
+
 const DEFAULT_GAIN = 1;
 const MAX_ACTIVE_ONE_SHOTS = 32;
+const PAUSED_MUSIC_DUCK_GAIN = 0.5;
+const REGULAR_MUSIC_POOL = Object.freeze([
+  'music/100-waves',
+  'music/101-clock-ticking',
+  'music/001-calm',
+  'music/005-forest',
+  'music/007-nature',
+  'music/009-windy-forest'
+]);
+const BOSS_MUSIC_SAMPLE_ID = 'boss/boss-music';
 
 export function createAudio(init: AudioInit = {}): Audio {
   const audioLog = init.log ?? defaultLog;
@@ -97,7 +114,8 @@ export function createAudio(init: AudioInit = {}): Audio {
       ? null
       : createAudioMappings({
           sampleRegistry,
-          log: audioLog
+          log: audioLog,
+          random: init.random
         });
 
   let attachedSession: SessionDefinition | null = null;
@@ -106,6 +124,9 @@ export function createAudio(init: AudioInit = {}): Audio {
   let warnedBeforeUnlock = false;
   let disposed = false;
   const activeOneShots: ActiveOneShotPlayback[] = [];
+  let activeMusic: ActiveMusicPlayback | null = null;
+  let musicRequestToken = 0;
+  let lastRegularMusicSampleId: string | null = null;
 
   function getPlaybackDependencies(): PlaybackDependencies | null {
     if (runtime === null || sampleRegistry === null || audioMappings === null || disposed) {
@@ -208,6 +229,125 @@ export function createAudio(init: AudioInit = {}): Audio {
       trackOneShotPlayback(playback);
       source.start();
     });
+  }
+
+  function disconnectMusicPlayback(playback: ActiveMusicPlayback): void {
+    playback.source.disconnect();
+    playback.trimGain.disconnect();
+  }
+
+  function stopMusicPlayback(): void {
+    musicRequestToken += 1;
+    const playback = activeMusic;
+    activeMusic = null;
+    if (playback === null) {
+      return;
+    }
+    playback.source.onended = null;
+    playback.source.stop();
+    disconnectMusicPlayback(playback);
+  }
+
+  function startMusicSample(sampleId: string): void {
+    const dependencies = getPlaybackDependencies();
+    if (dependencies === null) {
+      return;
+    }
+
+    if (activeMusic?.sampleId === sampleId) {
+      return;
+    }
+
+    stopMusicPlayback();
+    const requestToken = musicRequestToken + 1;
+    musicRequestToken = requestToken;
+
+    const sample = dependencies.sampleRegistry.require(sampleId);
+    void dependencies.sampleRegistry.decode(sampleId).then((buffer) => {
+      const readyDependencies = getPlaybackDependencies();
+      if (
+        buffer === null ||
+        readyDependencies === null ||
+        requestToken !== musicRequestToken ||
+        disposed
+      ) {
+        return;
+      }
+
+      const source = readyDependencies.runtime.context.createBufferSource();
+      source.buffer = buffer;
+      source.loop = sample.loop ?? false;
+
+      const trimGain = readyDependencies.runtime.context.createGain();
+      trimGain.gain.value = calculateEffectiveGain(sample, {
+        busGain: readyDependencies.runtime.busGains[sample.category].gain.value,
+        masterGain: readyDependencies.runtime.masterGain.gain.value
+      });
+
+      source.connect(trimGain);
+      trimGain.connect(readyDependencies.runtime.busGains[sample.category]);
+
+      const playback: ActiveMusicPlayback = {
+        sampleId,
+        source,
+        trimGain
+      };
+      activeMusic = playback;
+      source.onended = () => {
+        if (activeMusic === playback) {
+          activeMusic = null;
+          if (REGULAR_MUSIC_POOL.includes(playback.sampleId)) {
+            lastRegularMusicSampleId = playback.sampleId;
+          }
+        }
+        disconnectMusicPlayback(playback);
+      };
+      source.start();
+    });
+  }
+
+  function pickNextRegularMusicSampleId(): string {
+    const random = init.random ?? Math.random;
+    const rawIndex = Math.floor(Math.min(0.999999, Math.max(0, random())) * REGULAR_MUSIC_POOL.length);
+    const candidate = REGULAR_MUSIC_POOL[rawIndex] ?? REGULAR_MUSIC_POOL[0];
+    if (
+      candidate !== undefined &&
+      candidate === lastRegularMusicSampleId &&
+      REGULAR_MUSIC_POOL.length > 1
+    ) {
+      const candidateIndex = REGULAR_MUSIC_POOL.indexOf(candidate);
+      return REGULAR_MUSIC_POOL[(candidateIndex + 1) % REGULAR_MUSIC_POOL.length] ?? candidate;
+    }
+    return candidate ?? BOSS_MUSIC_SAMPLE_ID;
+  }
+
+  function syncMusicForPhase(phase: UiShellPhase): void {
+    const dependencies = getPlaybackDependencies();
+    if (dependencies === null) {
+      return;
+    }
+
+    dependencies.runtime.busGains.music.gain.value =
+      phase.kind === 'paused' ? PAUSED_MUSIC_DUCK_GAIN : DEFAULT_GAIN;
+
+    if (phase.kind === 'menu' || phase.kind === 'result') {
+      stopMusicPlayback();
+      return;
+    }
+
+    const desiredMusicSampleId =
+      latestSnapshot?.encounter?.type === 'boss' ? BOSS_MUSIC_SAMPLE_ID : null;
+
+    if (desiredMusicSampleId !== null) {
+      startMusicSample(desiredMusicSampleId);
+      return;
+    }
+
+    if (activeMusic !== null && REGULAR_MUSIC_POOL.includes(activeMusic.sampleId)) {
+      return;
+    }
+
+    startMusicSample(pickNextRegularMusicSampleId());
   }
 
   function resolveEntity(targetId: number): EntitySnapshot | null {
@@ -379,11 +519,13 @@ export function createAudio(init: AudioInit = {}): Audio {
     update(snapshotPair, phase, _encounter): void {
       latestSnapshot = snapshotPair.curr;
       if (phase.kind === 'menu' || phase.kind === 'result') {
+        syncMusicForPhase(phase);
         return;
       }
       if (!canPlay(`phase:${phase.kind}`)) {
         return;
       }
+      syncMusicForPhase(phase);
     },
     attach(session): void {
       attachedSession = session;
@@ -391,6 +533,7 @@ export function createAudio(init: AudioInit = {}): Audio {
     detach(): void {
       attachedSession = null;
       latestSnapshot = null;
+      stopMusicPlayback();
     },
     playUi(eventId): void {
       if (!canPlay(`ui:${eventId}`)) {
@@ -428,6 +571,8 @@ export function createAudio(init: AudioInit = {}): Audio {
         playback.source.stop();
         disconnectPlayback(playback);
       }
+
+      stopMusicPlayback();
 
       for (const busGain of Object.values(runtime.busGains)) {
         busGain.disconnect();

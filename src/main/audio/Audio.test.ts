@@ -126,7 +126,7 @@ function createLogHarness(): Log {
   };
 }
 
-function createAudioHarness() {
+function createAudioHarness(random?: () => number) {
   const context = new FakeAudioContext();
   const log = createLogHarness();
   const audioApi: AudioApi = {
@@ -140,7 +140,8 @@ function createAudioHarness() {
 
   const audio = createAudio({
     audioApi,
-    log
+    log,
+    random
   });
 
   return { audio, context, log };
@@ -377,6 +378,8 @@ describe('createAudio', () => {
       { kind: 'running' },
       null
     );
+    await flushAudioWork();
+    const baselineSourceCount = context.sources.length;
 
     audio.handleEvent({
       kind: 'hit',
@@ -401,7 +404,7 @@ describe('createAudio', () => {
 
     await flushAudioWork();
 
-    expect(context.sources).toHaveLength(2);
+    expect(context.sources).toHaveLength(baselineSourceCount + 2);
   });
 
   it('skips unmapped training-target death with one warning and no crash', async () => {
@@ -430,6 +433,8 @@ describe('createAudio', () => {
       { kind: 'running' },
       null
     );
+    await flushAudioWork();
+    const baselineSourceCount = context.sources.length;
 
     audio.handleEvent({
       kind: 'death',
@@ -452,7 +457,7 @@ describe('createAudio', () => {
 
     await flushAudioWork();
 
-    expect(context.sources).toHaveLength(0);
+    expect(context.sources).toHaveLength(baselineSourceCount);
     expect(log.warn).toHaveBeenCalledWith('audio mapping missing; skipping playback', {
       mappingKey: 'enemies.training-target.death'
     });
@@ -500,6 +505,8 @@ describe('createAudio', () => {
       { kind: 'running' },
       null
     );
+    await flushAudioWork();
+    const baselineSourceCount = context.sources.length;
 
     audio.handleEvent({
       kind: 'dropPickup',
@@ -520,6 +527,127 @@ describe('createAudio', () => {
 
     await flushAudioWork();
 
+    expect(context.sources).toHaveLength(baselineSourceCount + 2);
+  });
+
+  it('starts regular music in running and ducks the music bus in paused', async () => {
+    const { audio, context } = createAudioHarness(() => 0);
+    const { musicGain } = getRequiredGainNodes(context);
+    context.setState('running');
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 300,
+        entities: [],
+        encounter: {
+          id: 'wave-1',
+          type: 'wave',
+          index: 0,
+          elapsedMs: 0
+        },
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }),
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(1);
+    expect(context.sources[0]?.loop).toBe(false);
+    expect(musicGain.gain.value).toBe(1);
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 320,
+        entities: [],
+        encounter: {
+          id: 'wave-1',
+          type: 'wave',
+          index: 0,
+          elapsedMs: 20
+        },
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }),
+      { kind: 'paused' },
+      null
+    );
+
+    expect(context.sources).toHaveLength(1);
+    expect(musicGain.gain.value).toBe(0.5);
+  });
+
+  it('switches to boss music and silences it in menu/result phases', async () => {
+    const { audio, context } = createAudioHarness(() => 0);
+    context.setState('running');
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 400,
+        entities: [],
+        encounter: {
+          id: 'wave-1',
+          type: 'wave',
+          index: 0,
+          elapsedMs: 0
+        },
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }),
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+
+    audio.attach(makeBossSession());
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 450,
+        entities: [
+          {
+            id: 7,
+            kind: 'boss',
+            archetypeId: 'slime-king',
+            x: 0,
+            y: 0,
+            hp: 40,
+            maxHp: 40,
+            phaseIndex: 0,
+            phaseId: 'crown-intact',
+            activeAttackIds: []
+          }
+        ],
+        encounter: {
+          id: 'boss-encounter',
+          type: 'boss',
+          index: 0,
+          elapsedMs: 0
+        },
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: {
+          entityId: 7,
+          phaseIndex: 0,
+          phaseId: 'crown-intact',
+          hp: 40,
+          maxHp: 40,
+          activeAttackIds: []
+        }
+      }),
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+
     expect(context.sources).toHaveLength(2);
+    expect(context.sources[0]?.stopCalls).toBe(1);
+    expect(context.sources[1]?.loop).toBe(true);
+
+    audio.update(makeSnapshotPair(), { kind: 'menu' }, null);
+    expect(context.sources[1]?.stopCalls).toBe(1);
   });
 });
