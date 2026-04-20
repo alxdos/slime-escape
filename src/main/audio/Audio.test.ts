@@ -8,6 +8,7 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 import { createAudio } from './Audio';
 import type {
   AudioApi,
+  AudioBufferLike,
   AudioConnectable,
   AudioContextLike,
   AudioContextStateLike,
@@ -67,6 +68,10 @@ class FakeAudioContext implements AudioContextLike {
     return node;
   }
 
+  async decodeAudioData(audioData: ArrayBuffer): Promise<AudioBufferLike> {
+    return { byteLength: audioData.byteLength };
+  }
+
   async resume(): Promise<void> {
     this.resumeCalls += 1;
     await this.resumeImpl();
@@ -92,6 +97,9 @@ function createAudioHarness() {
   const audioApi: AudioApi = {
     createContext(): AudioContextLike {
       return context;
+    },
+    async fetchArrayBuffer(): Promise<ArrayBuffer> {
+      return new Uint8Array([1, 2, 3, 4]).buffer;
     }
   };
 

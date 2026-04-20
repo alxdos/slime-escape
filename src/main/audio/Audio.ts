@@ -11,8 +11,13 @@ import {
   type AudioContextLike,
   type AudioGainNodeLike
 } from './AudioApi';
+import {
+  createSampleRegistry,
+  type SampleCategory,
+  type SampleRegistry
+} from './SampleRegistry';
 
-export type AudioBusId = 'sfx' | 'music' | 'ui';
+export type AudioBusId = SampleCategory;
 
 export type AudioUiEventId = 'overlayShow' | 'buttonClick';
 
@@ -51,6 +56,14 @@ export function createAudio(init: AudioInit = {}): Audio {
       error: formatError(error)
     });
   }
+  const sampleRegistry: SampleRegistry | null =
+    runtime === null
+      ? null
+      : createSampleRegistry({
+          audioApi,
+          context: runtime.context,
+          log: audioLog
+        });
 
   let attachedSession: SessionDefinition | null = null;
   let unlockInFlight: Promise<void> | null = null;

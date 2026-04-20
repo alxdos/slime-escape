@@ -18,17 +18,21 @@ export type AudioGainNodeLike = AudioNodeLike &
 
 export type AudioDestinationNodeLike = object;
 
+export type AudioBufferLike = object;
+
 export type AudioContextLike = Readonly<{
   state: AudioContextStateLike;
   currentTime: number;
   destination: AudioDestinationNodeLike;
   createGain(): AudioGainNodeLike;
+  decodeAudioData(audioData: ArrayBuffer): Promise<AudioBufferLike>;
   resume(): Promise<void>;
   close(): Promise<void>;
 }>;
 
 export type AudioApi = Readonly<{
   createContext(): AudioContextLike;
+  fetchArrayBuffer(url: string): Promise<ArrayBuffer>;
 }>;
 
 type AudioContextCtor = new () => AudioContext;
@@ -41,6 +45,13 @@ export function createBrowserAudioApi(): AudioApi {
         throw new Error('Web Audio API is not supported in this environment');
       }
       return new AudioContextCtor();
+    },
+    async fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`failed to fetch audio sample: ${response.status} ${response.statusText}`);
+      }
+      return response.arrayBuffer();
     }
   };
 }
