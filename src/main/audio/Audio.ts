@@ -1,22 +1,34 @@
 import type { RuntimeEvent } from '../../shared/events';
 import { log as defaultLog, type Log } from '../../shared/log';
+import { assertNever } from '../../shared/protocol';
 import type { SessionDefinition } from '../../shared/session';
-import type { EncounterSnapshot } from '../../shared/snapshot';
+import type {
+  BossSnapshot,
+  EncounterSnapshot,
+  EntitySnapshot,
+  Snapshot
+} from '../../shared/snapshot';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 import type { UiShellPhase } from '../ui/UiShell';
 
 import {
   createBrowserAudioApi,
   type AudioApi,
+  type AudioBufferSourceNodeLike,
   type AudioContextLike,
   type AudioGainNodeLike
 } from './AudioApi';
 import {
   createSampleRegistry,
   type SampleCategory,
+  type SampleEntry,
   type SampleRegistry
 } from './SampleRegistry';
-import { createAudioMappings, type AudioMappings } from './AudioMappings';
+import {
+  createAudioMappings,
+  resolveBossArchetypeIdFromSession,
+  type AudioMappings
+} from './AudioMappings';
 
 export type AudioBusId = SampleCategory;
 
@@ -43,7 +55,20 @@ type AudioRuntime = Readonly<{
   busGains: Readonly<Record<AudioBusId, AudioGainNodeLike>>;
 }>;
 
+type PlaybackDependencies = Readonly<{
+  runtime: AudioRuntime;
+  sampleRegistry: SampleRegistry;
+  audioMappings: AudioMappings;
+}>;
+
+type ActiveOneShotPlayback = Readonly<{
+  startedAt: number;
+  source: AudioBufferSourceNodeLike;
+  trimGain: AudioGainNodeLike;
+}>;
+
 const DEFAULT_GAIN = 1;
+const MAX_ACTIVE_ONE_SHOTS = 32;
 
 export function createAudio(init: AudioInit = {}): Audio {
   const audioLog = init.log ?? defaultLog;
@@ -57,6 +82,7 @@ export function createAudio(init: AudioInit = {}): Audio {
       error: formatError(error)
     });
   }
+
   const sampleRegistry: SampleRegistry | null =
     runtime === null
       ? null
@@ -65,6 +91,7 @@ export function createAudio(init: AudioInit = {}): Audio {
           context: runtime.context,
           log: audioLog
         });
+
   const audioMappings: AudioMappings | null =
     sampleRegistry === null
       ? null
@@ -74,16 +101,30 @@ export function createAudio(init: AudioInit = {}): Audio {
         });
 
   let attachedSession: SessionDefinition | null = null;
+  let latestSnapshot: Snapshot | null = null;
   let unlockInFlight: Promise<void> | null = null;
   let warnedBeforeUnlock = false;
   let disposed = false;
+  const activeOneShots: ActiveOneShotPlayback[] = [];
+
+  function getPlaybackDependencies(): PlaybackDependencies | null {
+    if (runtime === null || sampleRegistry === null || audioMappings === null || disposed) {
+      return null;
+    }
+    return {
+      runtime,
+      sampleRegistry,
+      audioMappings
+    };
+  }
 
   function canPlay(reason: string): boolean {
-    if (runtime === null || disposed) {
+    const dependencies = getPlaybackDependencies();
+    if (dependencies === null) {
       return false;
     }
 
-    if (runtime.context.state === 'running') {
+    if (dependencies.runtime.context.state === 'running') {
       return true;
     }
 
@@ -92,6 +133,221 @@ export function createAudio(init: AudioInit = {}): Audio {
       audioLog.warn('audio skipped before unlock', { reason });
     }
     return false;
+  }
+
+  function removeTrackedPlayback(playback: ActiveOneShotPlayback): void {
+    const index = activeOneShots.indexOf(playback);
+    if (index >= 0) {
+      activeOneShots.splice(index, 1);
+    }
+  }
+
+  function disconnectPlayback(playback: ActiveOneShotPlayback): void {
+    playback.source.disconnect();
+    playback.trimGain.disconnect();
+  }
+
+  function trackOneShotPlayback(playback: ActiveOneShotPlayback): void {
+    activeOneShots.push(playback);
+    playback.source.onended = () => {
+      removeTrackedPlayback(playback);
+      disconnectPlayback(playback);
+    };
+  }
+
+  function dropOldestOneShotIfNeeded(): void {
+    if (activeOneShots.length < MAX_ACTIVE_ONE_SHOTS) {
+      return;
+    }
+
+    const oldestPlayback = activeOneShots.shift();
+    if (oldestPlayback === undefined) {
+      return;
+    }
+
+    oldestPlayback.source.onended = null;
+    oldestPlayback.source.stop();
+    disconnectPlayback(oldestPlayback);
+  }
+
+  function playSampleById(sampleId: string, perCallGainMul = 1): void {
+    const dependencies = getPlaybackDependencies();
+    if (dependencies === null) {
+      return;
+    }
+
+    const sample = dependencies.sampleRegistry.require(sampleId);
+    void dependencies.sampleRegistry.decode(sampleId).then((buffer) => {
+      const readyDependencies = getPlaybackDependencies();
+      if (buffer === null || readyDependencies === null) {
+        return;
+      }
+
+      dropOldestOneShotIfNeeded();
+
+      const source = readyDependencies.runtime.context.createBufferSource();
+      source.buffer = buffer;
+      source.loop = sample.loop ?? false;
+
+      const trimGain = readyDependencies.runtime.context.createGain();
+      trimGain.gain.value = calculateEffectiveGain(sample, {
+        busGain: readyDependencies.runtime.busGains[sample.category].gain.value,
+        masterGain: readyDependencies.runtime.masterGain.gain.value,
+        perCallGainMul
+      });
+
+      source.connect(trimGain);
+      trimGain.connect(readyDependencies.runtime.busGains[sample.category]);
+
+      const playback: ActiveOneShotPlayback = {
+        startedAt: readyDependencies.runtime.context.currentTime,
+        source,
+        trimGain
+      };
+
+      trackOneShotPlayback(playback);
+      source.start();
+    });
+  }
+
+  function resolveEntity(targetId: number): EntitySnapshot | null {
+    return latestSnapshot?.entities.find((entity) => entity.id === targetId) ?? null;
+  }
+
+  function resolveBossArchetypeId(entityId: number | null = null): string | null {
+    const bossEntity =
+      entityId === null
+        ? latestSnapshot?.entities.find((entity): entity is BossSnapshot => entity.kind === 'boss') ?? null
+        : latestSnapshot?.entities.find(
+            (entity): entity is BossSnapshot => entity.kind === 'boss' && entity.id === entityId
+          ) ?? null;
+
+    if (bossEntity !== null) {
+      return bossEntity.archetypeId;
+    }
+
+    if (attachedSession === null) {
+      return null;
+    }
+
+    return resolveBossArchetypeIdFromSession(
+      latestSnapshot?.encounter?.index ?? null,
+      attachedSession.encounters
+    );
+  }
+
+  function playRoutedEventSample(event: RuntimeEvent): void {
+    const dependencies = getPlaybackDependencies();
+    if (dependencies === null) {
+      return;
+    }
+
+    switch (event.kind) {
+      case 'fire': {
+        const sampleId =
+          event.ownerKind === 'boss'
+            ? dependencies.audioMappings.resolveBossSample(
+                'fire',
+                resolveBossArchetypeId(event.shooterId) ?? ''
+              )
+            : dependencies.audioMappings.resolveWeaponFire(event.weaponArchetypeId);
+        if (sampleId !== null) {
+          playSampleById(sampleId);
+        }
+        return;
+      }
+      case 'hit': {
+        if (event.targetKind === 'player') {
+          return;
+        }
+        const target = resolveEntity(event.targetId);
+        if (target?.kind === 'enemy') {
+          const sampleId = dependencies.audioMappings.resolveEnemySample('hit', target.archetypeId);
+          if (sampleId !== null) {
+            playSampleById(sampleId);
+          }
+          return;
+        }
+        if (target?.kind === 'boss') {
+          const sampleId = dependencies.audioMappings.resolveBossSample('hit', target.archetypeId);
+          if (sampleId !== null) {
+            playSampleById(sampleId);
+          }
+        }
+        return;
+      }
+      case 'death': {
+        if (event.entityKind === 'player') {
+          return;
+        }
+
+        const target = resolveEntity(event.entityId);
+        if (target?.kind === 'enemy') {
+          const sampleId = dependencies.audioMappings.resolveEnemySample(
+            'death',
+            target.archetypeId
+          );
+          if (sampleId !== null) {
+            playSampleById(sampleId);
+          }
+          return;
+        }
+        if (target?.kind === 'boss') {
+          const sampleId = dependencies.audioMappings.resolveBossSample(
+            'death',
+            target.archetypeId
+          );
+          if (sampleId !== null) {
+            playSampleById(sampleId);
+          }
+          return;
+        }
+        if (event.archetypeId !== null) {
+          const sampleId =
+            event.entityKind === 'boss'
+              ? dependencies.audioMappings.resolveBossSample('death', event.archetypeId)
+              : dependencies.audioMappings.resolveEnemySample('death', event.archetypeId);
+          if (sampleId !== null) {
+            playSampleById(sampleId);
+          }
+        }
+        return;
+      }
+      case 'dropPickup': {
+        const sampleId = dependencies.audioMappings.resolveEventSample('dropPickup');
+        if (sampleId !== null) {
+          playSampleById(sampleId);
+        }
+        return;
+      }
+      case 'bossPhaseChange': {
+        const bossArchetypeId = resolveBossArchetypeId(event.bossId);
+        if (bossArchetypeId === null) {
+          return;
+        }
+        const sampleId = dependencies.audioMappings.resolveBossSample(
+          'phaseChange',
+          bossArchetypeId
+        );
+        if (sampleId !== null) {
+          playSampleById(sampleId);
+        }
+        return;
+      }
+      case 'sessionStart':
+      case 'sessionStop':
+      case 'encounterStart':
+      case 'encounterEnd':
+      case 'pause':
+      case 'resume':
+      case 'win':
+      case 'loss':
+      case 'dropSpawn':
+      case 'dropExpire':
+        return;
+      default:
+        assertNever(event);
+    }
   }
 
   return {
@@ -118,8 +374,10 @@ export function createAudio(init: AudioInit = {}): Audio {
       if (!canPlay(`event:${event.kind}`)) {
         return;
       }
+      playRoutedEventSample(event);
     },
-    update(_snapshotPair, phase, _encounter): void {
+    update(snapshotPair, phase, _encounter): void {
+      latestSnapshot = snapshotPair.curr;
       if (phase.kind === 'menu' || phase.kind === 'result') {
         return;
       }
@@ -132,14 +390,21 @@ export function createAudio(init: AudioInit = {}): Audio {
     },
     detach(): void {
       attachedSession = null;
+      latestSnapshot = null;
     },
     playUi(eventId): void {
       if (!canPlay(`ui:${eventId}`)) {
         return;
       }
-      const sampleId = audioMappings?.resolveUiSample(eventId) ?? null;
-      if (sampleId === null) {
+
+      const dependencies = getPlaybackDependencies();
+      if (dependencies === null) {
         return;
+      }
+
+      const sampleId = dependencies.audioMappings.resolveUiSample(eventId);
+      if (sampleId !== null) {
+        playSampleById(sampleId);
       }
     },
     dispose(): void {
@@ -148,9 +413,20 @@ export function createAudio(init: AudioInit = {}): Audio {
       }
       disposed = true;
       attachedSession = null;
+      latestSnapshot = null;
 
       if (runtime === null) {
         return;
+      }
+
+      while (activeOneShots.length > 0) {
+        const playback = activeOneShots.pop();
+        if (playback === undefined) {
+          continue;
+        }
+        playback.source.onended = null;
+        playback.source.stop();
+        disconnectPlayback(playback);
       }
 
       for (const busGain of Object.values(runtime.busGains)) {
@@ -202,4 +478,21 @@ function formatError(error: unknown): string {
     return error.message;
   }
   return String(error);
+}
+
+export function calculateEffectiveGain(
+  sample: Pick<SampleEntry, 'normalizedGain' | 'defaultGain'>,
+  init: Readonly<{
+    busGain: number;
+    masterGain: number;
+    perCallGainMul?: number;
+  }>
+): number {
+  return (
+    sample.normalizedGain *
+    sample.defaultGain *
+    (init.perCallGainMul ?? 1) *
+    init.busGain *
+    init.masterGain
+  );
 }

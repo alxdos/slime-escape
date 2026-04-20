@@ -20,11 +20,20 @@ export type AudioDestinationNodeLike = object;
 
 export type AudioBufferLike = object;
 
+export type AudioBufferSourceNodeLike = AudioNodeLike & {
+  buffer: AudioBufferLike | null;
+  loop: boolean;
+  onended: ((event: Event) => unknown) | null;
+  start(when?: number): void;
+  stop(when?: number): void;
+};
+
 export type AudioContextLike = Readonly<{
   state: AudioContextStateLike;
   currentTime: number;
   destination: AudioDestinationNodeLike;
   createGain(): AudioGainNodeLike;
+  createBufferSource(): AudioBufferSourceNodeLike;
   decodeAudioData(audioData: ArrayBuffer): Promise<AudioBufferLike>;
   resume(): Promise<void>;
   close(): Promise<void>;

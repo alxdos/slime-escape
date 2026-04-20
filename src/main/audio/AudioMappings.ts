@@ -250,3 +250,38 @@ function pickSampleId(sampleSpec: SampleSpec, random: () => number): string {
 function normalizeSampleSpec(sampleSpec: SampleSpec): ReadonlyArray<string> {
   return typeof sampleSpec === 'string' ? [sampleSpec] : sampleSpec;
 }
+
+export function resolveBossArchetypeIdFromSession(
+  encounterIndex: number | null,
+  encounters: ReadonlyArray<
+    Readonly<{ type: string; spawnPlan: Readonly<{ kind: string; bossArchetypeId?: string }> }>
+  >
+): string | null {
+  if (encounterIndex !== null) {
+    const encounter = encounters[encounterIndex];
+    if (
+      encounter?.type === 'boss' &&
+      encounter.spawnPlan.kind === 'boss' &&
+      encounter.spawnPlan.bossArchetypeId !== undefined
+    ) {
+      return encounter.spawnPlan.bossArchetypeId;
+    }
+  }
+
+  let resolvedBossArchetypeId: string | null = null;
+  for (const encounter of encounters) {
+    if (
+      encounter.type !== 'boss' ||
+      encounter.spawnPlan.kind !== 'boss' ||
+      encounter.spawnPlan.bossArchetypeId === undefined
+    ) {
+      continue;
+    }
+    if (resolvedBossArchetypeId !== null) {
+      return null;
+    }
+    resolvedBossArchetypeId = encounter.spawnPlan.bossArchetypeId;
+  }
+
+  return resolvedBossArchetypeId;
+}

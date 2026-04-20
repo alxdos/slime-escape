@@ -2,13 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { RuntimeEvent } from '../../shared/events';
 import type { Log } from '../../shared/log';
-import type { EncounterSnapshot } from '../../shared/snapshot';
+import type { SessionDefinition } from '../../shared/session';
+import type { Snapshot } from '../../shared/snapshot';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
-import { createAudio } from './Audio';
+import { calculateEffectiveGain, createAudio } from './Audio';
 import type {
   AudioApi,
   AudioBufferLike,
+  AudioBufferSourceNodeLike,
   AudioConnectable,
   AudioContextLike,
   AudioContextStateLike,
@@ -38,9 +40,36 @@ class FakeGainNode implements AudioGainNodeLike {
   }
 }
 
+class FakeBufferSourceNode implements AudioBufferSourceNodeLike {
+  buffer: AudioBufferLike | null = null;
+  loop = false;
+  onended: ((event: Event) => unknown) | null = null;
+  readonly connections: AudioConnectable[] = [];
+  startCalls = 0;
+  stopCalls = 0;
+
+  connect(destination: AudioConnectable): void {
+    this.connections.push(destination);
+  }
+
+  disconnect(): void {
+    this.connections.length = 0;
+  }
+
+  start(): void {
+    this.startCalls += 1;
+  }
+
+  stop(): void {
+    this.stopCalls += 1;
+    this.onended?.({} as Event);
+  }
+}
+
 class FakeAudioContext implements AudioContextLike {
   readonly destination = new FakeAudioDestination();
   readonly gains: FakeGainNode[] = [];
+  readonly sources: FakeBufferSourceNode[] = [];
   currentTime = 0;
   resumeCalls = 0;
   closeCalls = 0;
@@ -65,6 +94,12 @@ class FakeAudioContext implements AudioContextLike {
   createGain(): AudioGainNodeLike {
     const node = new FakeGainNode();
     this.gains.push(node);
+    return node;
+  }
+
+  createBufferSource(): AudioBufferSourceNodeLike {
+    const node = new FakeBufferSourceNode();
+    this.sources.push(node);
     return node;
   }
 
@@ -125,12 +160,48 @@ function makeFireEvent(): RuntimeEvent {
   };
 }
 
-function makeSnapshotPair(): SnapshotPair {
+function makeSnapshotPair(curr: Snapshot | null = null): SnapshotPair {
   return {
     prev: null,
-    curr: null,
+    curr,
     currReceivedAtMs: 0,
     nowMs: 0
+  };
+}
+
+function makeBossSession(): SessionDefinition {
+  return {
+    id: 'boss-session',
+    seed: 1,
+    arena: { width: 16, height: 9 },
+    player: {
+      position: { x: 0, y: 0 },
+      radius: 0.5,
+      maxSpeed: 5,
+      maxHp: 5
+    },
+    loadout: { primaryWeaponArchetypeId: 'pistol' },
+    modifiers: [],
+    rules: null,
+    encounters: [
+      {
+        id: 'boss-encounter',
+        type: 'boss',
+        spawnPlan: {
+          kind: 'boss',
+          bossArchetypeId: 'slime-king',
+          position: { x: 0, y: 0 }
+        },
+        zoneBehavior: { kind: 'disabled' },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      }
+    ],
+    winCondition: { kind: 'bossDefeated' },
+    lossCondition: { kind: 'playerDeath' },
+    uiMeta: null
   };
 }
 
@@ -182,7 +253,30 @@ function createDeferred(): Readonly<{
   };
 }
 
+async function flushAudioWork(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 describe('createAudio', () => {
+  it('calculates effective gain from sample, bus, master and per-call multipliers', () => {
+    expect(
+      calculateEffectiveGain(
+        {
+          normalizedGain: 0.35,
+          defaultGain: 0.3
+        },
+        {
+          busGain: 0.5,
+          masterGain: 0.8,
+          perCallGainMul: 0.25
+        }
+      )
+    ).toBeCloseTo(0.0105);
+  });
+
   it('creates master, sfx, music and ui buses with unit gain and expected wiring', () => {
     const { audio, context } = createAudioHarness();
 
@@ -217,8 +311,7 @@ describe('createAudio', () => {
     expect(context.resumeCalls).toBe(1);
 
     deferred.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    await flushAudioWork();
 
     audio.unlock();
     expect(context.resumeCalls).toBe(1);
@@ -229,7 +322,7 @@ describe('createAudio', () => {
 
     audio.handleEvent(makeFireEvent());
     audio.playUi('buttonClick');
-    audio.update(makeSnapshotPair(), { kind: 'running' }, null as EncounterSnapshot | null);
+    audio.update(makeSnapshotPair(), { kind: 'running' }, null);
 
     expect(log.warn).toHaveBeenCalledTimes(1);
     expect(log.warn).toHaveBeenCalledWith('audio skipped before unlock', {
@@ -241,9 +334,192 @@ describe('createAudio', () => {
     const { audio, context } = createAudioHarness();
 
     audio.dispose();
-    await Promise.resolve();
+    await flushAudioWork();
 
     expect(context.closeCalls).toBe(1);
     expect(context.gains.every((node) => node.disconnectCalls === 1)).toBe(true);
+  });
+
+  it('routes fire events to one-shot playback after unlock', async () => {
+    const { audio, context } = createAudioHarness();
+    context.setState('running');
+
+    audio.handleEvent(makeFireEvent());
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(1);
+    expect(context.sources[0]?.startCalls).toBe(1);
+  });
+
+  it('routes hit and death through snapshot archetype resolution', async () => {
+    const { audio, context } = createAudioHarness();
+    context.setState('running');
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 100,
+        entities: [
+          {
+            id: 99,
+            kind: 'enemy',
+            archetypeId: 'slime-fast',
+            x: 0,
+            y: 0,
+            hp: 1,
+            maxHp: 1
+          }
+        ],
+        encounter: null,
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }),
+      { kind: 'running' },
+      null
+    );
+
+    audio.handleEvent({
+      kind: 'hit',
+      simTime: 110,
+      projectileId: 1,
+      targetId: 99,
+      targetKind: 'enemy',
+      weaponArchetypeId: 'pistol',
+      damage: 1,
+      x: 0,
+      y: 0
+    });
+    audio.handleEvent({
+      kind: 'death',
+      simTime: 120,
+      entityId: 99,
+      entityKind: 'enemy',
+      archetypeId: 'slime-fast',
+      x: 0,
+      y: 0
+    });
+
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(2);
+  });
+
+  it('skips unmapped training-target death with one warning and no crash', async () => {
+    const { audio, context, log } = createAudioHarness();
+    context.setState('running');
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 100,
+        entities: [
+          {
+            id: 10,
+            kind: 'enemy',
+            archetypeId: 'training-target',
+            x: 0,
+            y: 0,
+            hp: 0,
+            maxHp: 3
+          }
+        ],
+        encounter: null,
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }),
+      { kind: 'running' },
+      null
+    );
+
+    audio.handleEvent({
+      kind: 'death',
+      simTime: 100,
+      entityId: 10,
+      entityKind: 'enemy',
+      archetypeId: 'training-target',
+      x: 0,
+      y: 0
+    });
+    audio.handleEvent({
+      kind: 'death',
+      simTime: 101,
+      entityId: 10,
+      entityKind: 'enemy',
+      archetypeId: 'training-target',
+      x: 0,
+      y: 0
+    });
+
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(0);
+    expect(log.warn).toHaveBeenCalledWith('audio mapping missing; skipping playback', {
+      mappingKey: 'enemies.training-target.death'
+    });
+  });
+
+  it('routes drop pickup and boss phase change samples', async () => {
+    const { audio, context } = createAudioHarness();
+    context.setState('running');
+    audio.attach(makeBossSession());
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 200,
+        entities: [
+          {
+            id: 7,
+            kind: 'boss',
+            archetypeId: 'slime-king',
+            x: 0,
+            y: 0,
+            hp: 20,
+            maxHp: 40,
+            phaseIndex: 0,
+            phaseId: 'crown-intact',
+            activeAttackIds: []
+          }
+        ],
+        encounter: {
+          id: 'boss-encounter',
+          type: 'boss',
+          index: 0,
+          elapsedMs: 500
+        },
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: {
+          entityId: 7,
+          phaseIndex: 0,
+          phaseId: 'crown-intact',
+          hp: 20,
+          maxHp: 40,
+          activeAttackIds: []
+        }
+      }),
+      { kind: 'running' },
+      null
+    );
+
+    audio.handleEvent({
+      kind: 'dropPickup',
+      simTime: 210,
+      entityId: 1,
+      archetypeId: 'heal-orb',
+      pickerId: 2,
+      x: 0,
+      y: 0
+    });
+    audio.handleEvent({
+      kind: 'bossPhaseChange',
+      simTime: 220,
+      bossId: 7,
+      phaseIndex: 1,
+      phaseId: 'desperation'
+    });
+
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(2);
   });
 });

@@ -6,6 +6,7 @@ import { createSampleRegistry } from './SampleRegistry';
 import type {
   AudioApi,
   AudioBufferLike,
+  AudioBufferSourceNodeLike,
   AudioConnectable,
   AudioContextLike,
   AudioContextStateLike,
@@ -28,6 +29,22 @@ class FakeGainNode implements AudioGainNodeLike {
   disconnect(): void {}
 }
 
+class FakeBufferSourceNode implements AudioBufferSourceNodeLike {
+  buffer: AudioBufferLike | null = null;
+  loop = false;
+  onended: ((event: Event) => unknown) | null = null;
+
+  connect(_destination: AudioConnectable): void {}
+
+  disconnect(): void {}
+
+  start(): void {}
+
+  stop(): void {
+    this.onended?.({} as Event);
+  }
+}
+
 class FakeAudioContext implements AudioContextLike {
   readonly destination = new FakeAudioDestination();
   currentTime = 0;
@@ -39,6 +56,10 @@ class FakeAudioContext implements AudioContextLike {
 
   createGain(): AudioGainNodeLike {
     return new FakeGainNode();
+  }
+
+  createBufferSource(): AudioBufferSourceNodeLike {
+    return new FakeBufferSourceNode();
   }
 
   async decodeAudioData(audioData: ArrayBuffer): Promise<AudioBufferLike> {
