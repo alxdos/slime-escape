@@ -1,5 +1,5 @@
 import { buildSessionDefinition } from '../shared/content/buildSession';
-import { TRAINING_PRESET } from '../shared/content/presets';
+import { CAMPAIGN_PRESET } from '../shared/content/presets';
 import { log } from '../shared/log';
 import type { SessionDefinition } from '../shared/session';
 
@@ -55,7 +55,7 @@ function startSession(): void {
   if (activeSession !== null) return;
 
   menu.setResult(null);
-  const session = buildSessionDefinition(TRAINING_PRESET, { seed: makeSeed() });
+  const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: makeSeed() });
   activeSession = session;
   sim.startSession(session);
 
