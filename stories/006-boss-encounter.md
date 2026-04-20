@@ -1,6 +1,6 @@
 # Boss Encounter
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-19
 - Updated: 2026-04-20
 
@@ -30,8 +30,8 @@
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Расширить публичные контракты в `src/shared/**`: `SpawnPlan` (`kind: 'boss'`), типы босса и сущности `kind: 'boss'` в протоколах снапшота/событий (`bossHud`, `bossPhaseChange`, расширения `fire`/`hit`/`death`), `DamageIntent.source`, `Projectile.ownerKind`, `DeathContext.entityKind` — строго по обновлённым `design/*` без реализации симуляции в этой задаче. | опоры: `spawn-plan.md`, `snapshot-shape.md`, `health-and-death.md`, `projectiles-and-combat.md`, `boss-encounter.md` |
-| T2 | [ ] | Контент: реестр `BossArchetype` (`bosses.ts`), один профиль босса с ≥2 фазами и ≥2 атаками; расширение кампании / builder: цепочка после волновых encounter — boss-encounter с `spawnPlan: { kind: 'boss', … }`, `zoneBehavior: { kind: 'disabled' }`, `winCondition: { kind: 'bossDefeated' }` (не смешивать с `allEncountersComplete`). | `content-archetypes.md`, `session-definition.md`, `boss-encounter.md`, `BOSS.md` |
+| T1 | [x] | Расширить публичные контракты в `src/shared/**`: `SpawnPlan` (`kind: 'boss'`), типы босса и сущности `kind: 'boss'` в протоколах снапшота/событий (`bossHud`, `bossPhaseChange`, расширения `fire`/`hit`/`death`), `DamageIntent.source`, `Projectile.ownerKind`, `DeathContext.entityKind` — строго по обновлённым `design/*` без реализации симуляции в этой задаче. | опоры: `spawn-plan.md`, `snapshot-shape.md`, `health-and-death.md`, `projectiles-and-combat.md`, `boss-encounter.md` |
+| T2 | [x] | Контент: реестр `BossArchetype` (`bosses.ts`), один профиль босса с ≥2 фазами и ≥2 атаками; расширение кампании / builder: цепочка после волновых encounter — boss-encounter с `spawnPlan: { kind: 'boss', … }`, `zoneBehavior: { kind: 'disabled' }`, `winCondition: { kind: 'bossDefeated' }` (не смешивать с `allEncountersComplete`). | `content-archetypes.md`, `session-definition.md`, `boss-encounter.md`, `BOSS.md` |
 | T3 | [ ] | `SpawnSystem`: исполнение `'boss'` (один спавн при `encounterStart`, учёт `aliveFromThisPlan`, сброс на `encounterEnd`). | `spawn-plan.md`, `boss-encounter.md` |
 | T4 | [ ] | `EntityStore` и движение: сущность `kind: 'boss'`, `HasHealth`, интеграция в `SpatialIndex`/коллизии; contact intents с боссом по [enemy-contact.md](../design/enemy-contact.md). | `health-and-death.md`, `enemy-contact.md`, `arena-and-coordinates.md` |
 | T5 | [ ] | `CombatSystem`: попадание снарядов игрока по `boss`; при необходимости снаряды с `ownerKind: 'boss'`; без дублирования урона вне `HealthDeathSystem`. | `projectiles-and-combat.md`, `boss-encounter.md` |

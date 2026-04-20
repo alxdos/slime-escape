@@ -1,4 +1,5 @@
 export * from './arenas';
+export * from './bosses';
 export * from './buildSession';
 export * from './drops';
 export * from './enemies';

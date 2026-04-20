@@ -10,6 +10,7 @@ import type {
 import { SIM_STEP_MS } from '../timing';
 
 import { SANDBOX_ARENA } from './arenas';
+import { SLIME_KING } from './bosses';
 import {
   ENEMY_ARCHETYPES,
   SLIME_FAST,
@@ -38,6 +39,7 @@ export function buildSessionDefinition(
     case 'training':
       return buildTrainingSession(options);
     case 'campaign':
+      return buildCampaignSession(options);
     case 'pistolOnly':
       throw new Error(`ModePreset '${preset.id}' is not implemented yet`);
     default:
@@ -110,10 +112,7 @@ function buildSandboxWithCombatSession(options: BuildOptions): SessionDefinition
   };
 }
 
-function buildTrainingSession(options: BuildOptions): SessionDefinition {
-  validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.radius);
-  warnIfWeaponMayTunnel(PISTOL.id);
-
+function makeTrainingRunEncounters(): ReadonlyArray<EncounterDefinition> {
   const wave1: EncounterDefinition = {
     id: 'training-wave-1',
     type: 'wave',
@@ -177,6 +176,13 @@ function buildTrainingSession(options: BuildOptions): SessionDefinition {
     tuning: null
   };
 
+  return [wave1, breakEncounter, wave2];
+}
+
+function buildTrainingSession(options: BuildOptions): SessionDefinition {
+  validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.radius);
+  warnIfWeaponMayTunnel(PISTOL.id);
+
   return {
     id: options.id ?? 'training-session',
     seed: options.seed,
@@ -185,8 +191,45 @@ function buildTrainingSession(options: BuildOptions): SessionDefinition {
     loadout: { primaryWeaponArchetypeId: PISTOL.id },
     modifiers: [],
     rules: null,
-    encounters: [wave1, breakEncounter, wave2],
+    encounters: makeTrainingRunEncounters(),
     winCondition: { kind: 'allEncountersComplete' },
+    lossCondition: { kind: 'playerDeath' },
+    uiMeta: null
+  };
+}
+
+function buildCampaignSession(options: BuildOptions): SessionDefinition {
+  validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.radius);
+  warnIfWeaponMayTunnel(PISTOL.id);
+
+  const bossSpawnPos: Vec2 = { x: 0, y: 0 };
+  assertSpawnInsideArena(bossSpawnPos, SLIME_KING.radius, SANDBOX_ARENA);
+
+  const bossEncounter: EncounterDefinition = {
+    id: 'campaign-boss',
+    type: 'boss',
+    spawnPlan: {
+      kind: 'boss',
+      bossArchetypeId: SLIME_KING.id,
+      position: bossSpawnPos
+    },
+    zoneBehavior: { kind: 'disabled' },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+
+  return {
+    id: options.id ?? 'campaign-session',
+    seed: options.seed,
+    arena: SANDBOX_ARENA,
+    player: TRAINING_PLAYER,
+    loadout: { primaryWeaponArchetypeId: PISTOL.id },
+    modifiers: [],
+    rules: null,
+    encounters: [...makeTrainingRunEncounters(), bossEncounter],
+    winCondition: { kind: 'bossDefeated' },
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null
   };
