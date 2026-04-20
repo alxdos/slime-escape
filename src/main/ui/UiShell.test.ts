@@ -510,6 +510,209 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
 
+  it('freezes HUD updates while paused but keeps renderer rendering', () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShell({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      pixelRatio: 1,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    menu.start();
+    shell.onFrame();
+    expect(hud.calls.update).toBe(1);
+    expect(renderer.calls.render).toBe(1);
+
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Escape',
+        preventDefault() {},
+        repeat: false
+      } as unknown as Event
+    );
+
+    shell.onFrame();
+    expect(hud.calls.update).toBe(1);
+    expect(renderer.calls.render).toBe(2);
+    expect(pause.isVisible()).toBe(true);
+    expect(shell.phase()).toEqual({ kind: 'paused' });
+  });
+
+  it('ignores Space while overlay pause is active', () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    const preventDefault = vi.fn();
+
+    const shell = createUiShell({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      pixelRatio: 1,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createRenderer: () => ({
+        render() {},
+        fitToWindow() {},
+        dispose() {}
+      }),
+      createInputController: () => ({
+        start() {},
+        stop() {},
+        isActive() {
+          return true;
+        },
+        currentAim() {
+          return { x: 0, y: 0 };
+        },
+        requestLock() {}
+      }),
+      createHud: hud.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    menu.start();
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Escape',
+        preventDefault() {},
+        repeat: false
+      } as unknown as Event
+    );
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Space',
+        preventDefault,
+        repeat: false
+      } as unknown as Event
+    );
+
+    expect(sim.calls.pause).toBe(1);
+    expect(sim.calls.resume).toBe(0);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(pause.isVisible()).toBe(true);
+    expect(shell.phase()).toEqual({ kind: 'paused' });
+  });
+
+  it('ignores pause hotkeys in menu and result phases', () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    const preventDefault = vi.fn();
+
+    const shell = createUiShell({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      pixelRatio: 1,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createRenderer: () => ({
+        render() {},
+        fitToWindow() {},
+        dispose() {}
+      }),
+      createInputController: () => ({
+        start() {},
+        stop() {},
+        isActive() {
+          return true;
+        },
+        currentAim() {
+          return { x: 0, y: 0 };
+        },
+        requestLock() {}
+      }),
+      createHud: hud.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Escape',
+        preventDefault() {},
+        repeat: false
+      } as unknown as Event
+    );
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Space',
+        preventDefault,
+        repeat: false
+      } as unknown as Event
+    );
+
+    expect(sim.calls.pause).toBe(0);
+    expect(sim.calls.resume).toBe(0);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(pause.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+
+    menu.start();
+    sim.emit({ kind: 'loss', simTime: 123 });
+
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Escape',
+        preventDefault() {},
+        repeat: false
+      } as unknown as Event
+    );
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Space',
+        preventDefault,
+        repeat: false
+      } as unknown as Event
+    );
+
+    expect(sim.calls.pause).toBe(0);
+    expect(sim.calls.resume).toBe(0);
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(pause.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'result', outcome: 'loss' });
+  });
+
   it.each([
     ['win', 'win'],
     ['loss', 'loss']

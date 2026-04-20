@@ -232,9 +232,12 @@ export function createUiShell(init: UiShellInit): UiShell {
     setPhase({ kind: 'result', outcome: kind });
   }
 
+  function isRunningSessionActive(): boolean {
+    return activeSession !== null && phase.kind === 'running';
+  }
+
   function enterOverlayPause(): void {
-    if (activeSession === null) return;
-    if (phase.kind !== 'running') return;
+    if (!isRunningSessionActive()) return;
     if (!sim.isPaused()) {
       sim.pause();
     }
@@ -270,8 +273,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     }
 
     if (event.code === 'Space' && !event.repeat) {
-      if (activeSession === null) return;
-      if (phase.kind !== 'running') return;
+      if (!isRunningSessionActive()) return;
       event.preventDefault();
       if (sim.isPaused()) {
         sim.resume();
@@ -302,7 +304,7 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   return {
     onFrame(): void {
-      if (phase.kind === 'running' && activeSession !== null) {
+      if (isRunningSessionActive()) {
         hud.update(sim.snapshotPair());
       }
       renderer?.render();
