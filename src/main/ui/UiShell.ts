@@ -31,6 +31,11 @@ import {
   type ResultOverlay,
   type ResultOverlayInit
 } from './ResultOverlay';
+import {
+  createSettingsOverlay,
+  type SettingsOverlay,
+  type SettingsOverlayInit
+} from './SettingsOverlay';
 import type { UiShellPhase } from './UiShellPhase';
 
 export type SessionResult = ResultOutcome;
@@ -46,6 +51,7 @@ type CreateSimWorkerHostFn = (options?: SimWorkerHostOptions) => SimWorkerHost;
 type CreateMenuOverlayFn = (init: MenuOverlayInit) => MenuOverlay;
 type CreatePauseOverlayFn = (init: PauseOverlayInit) => PauseOverlay;
 type CreateResultOverlayFn = (init: ResultOverlayInit) => ResultOverlay;
+type CreateSettingsOverlayFn = (init: SettingsOverlayInit) => SettingsOverlay;
 type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
@@ -60,6 +66,7 @@ export type UiShellInit = Readonly<{
   createMenuOverlay?: CreateMenuOverlayFn;
   createPauseOverlay?: CreatePauseOverlayFn;
   createResultOverlay?: CreateResultOverlayFn;
+  createSettingsOverlay?: CreateSettingsOverlayFn;
   createRenderer?: CreateRendererFn;
   createInputController?: CreateInputControllerFn;
   createHud?: CreateHudFn;
@@ -86,6 +93,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const menuFactory = init.createMenuOverlay ?? createMenuOverlay;
   const pauseFactory = init.createPauseOverlay ?? createPauseOverlay;
   const resultFactory = init.createResultOverlay ?? createResultOverlay;
+  const settingsOverlayFactory = init.createSettingsOverlay ?? createSettingsOverlay;
   const rendererFactory = init.createRenderer ?? createRenderer;
   const inputFactory = init.createInputController ?? createInputController;
   const hudFactory = init.createHud ?? createHud;
@@ -99,6 +107,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let renderer: Renderer | null = null;
   let input: InputController | null = null;
   let unsubscribeRendererSettings: (() => void) | null = null;
+  let settingsVisible = false;
   let phase: UiShellPhase = MENU_PHASE;
   const hud = hudFactory({ parent: init.parent });
   const clientSettingsStore = clientSettingsStoreFactory();
@@ -122,6 +131,10 @@ export function createUiShell(init: UiShellInit): UiShell {
     onStart(presetId) {
       audio.playUi('buttonClick');
       startPresetId(presetId);
+    },
+    onOpenSettings() {
+      audio.playUi('buttonClick');
+      openSettings();
     }
   });
 
@@ -134,6 +147,10 @@ export function createUiShell(init: UiShellInit): UiShell {
     onExit() {
       audio.playUi('buttonClick');
       exitToMenu();
+    },
+    onOpenSettings() {
+      audio.playUi('buttonClick');
+      openSettings();
     }
   });
 
@@ -142,6 +159,17 @@ export function createUiShell(init: UiShellInit): UiShell {
     onBackToMenu() {
       audio.playUi('buttonClick');
       exitToMenu();
+    }
+  });
+
+  const settingsOverlay = settingsOverlayFactory({
+    parent: init.parent,
+    store: clientSettingsStore,
+    onClose() {
+      closeSettings();
+    },
+    onButtonClick() {
+      audio.playUi('buttonClick');
     }
   });
 
@@ -170,25 +198,51 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.show();
         pause.hide();
         result.hide();
+        syncSettingsVisibility();
         return;
       case 'running':
         menu.hide();
         pause.hide();
         result.hide();
+        syncSettingsVisibility();
         return;
       case 'paused':
         menu.hide();
         pause.show();
         result.hide();
+        syncSettingsVisibility();
         return;
       case 'result':
         menu.hide();
         pause.hide();
         result.show(phase.outcome);
+        syncSettingsVisibility();
         return;
       default:
         assertNever(phase);
     }
+  }
+
+  function syncSettingsVisibility(): void {
+    if (settingsVisible && (phase.kind === 'menu' || phase.kind === 'paused')) {
+      settingsOverlay.show();
+      return;
+    }
+    settingsVisible = false;
+    settingsOverlay.hide();
+  }
+
+  function openSettings(): void {
+    if (phase.kind !== 'menu' && phase.kind !== 'paused') {
+      return;
+    }
+    settingsVisible = true;
+    syncSettingsVisibility();
+  }
+
+  function closeSettings(): void {
+    settingsVisible = false;
+    syncSettingsVisibility();
   }
 
   function setPhase(next: UiShellPhase): void {
@@ -254,6 +308,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     input = null;
     renderer = null;
     activeSession = null;
+    settingsVisible = false;
     unsubscribeRendererSettings = null;
 
     previousInput?.stop();
@@ -390,6 +445,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       menu.dispose();
       pause.dispose();
       result.dispose();
+      settingsOverlay.dispose();
       hud.dispose();
       unsubscribeAudioSettings();
       clientSettingsStore.dispose();

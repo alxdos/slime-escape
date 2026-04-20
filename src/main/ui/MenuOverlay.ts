@@ -5,6 +5,7 @@ export type MenuOverlayInit = Readonly<{
   parent: HTMLElement;
   modes: ReadonlyArray<PlayableModeEntry>;
   onStart(presetId: ModePresetId): void;
+  onOpenSettings(): void;
 }>;
 
 export type MenuOverlay = Readonly<{
@@ -39,6 +40,18 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     modesList.appendChild(createModeCard(mode, init.onStart));
   }
   card.appendChild(modesList);
+
+  const actions = document.createElement('div');
+  actions.style.cssText = actionsStyle();
+
+  const settingsButton = document.createElement('button');
+  settingsButton.type = 'button';
+  settingsButton.textContent = 'Настройки';
+  settingsButton.style.cssText = secondaryButtonStyle();
+  settingsButton.addEventListener('click', () => init.onOpenSettings());
+  actions.appendChild(settingsButton);
+
+  card.appendChild(actions);
 
   root.appendChild(card);
   init.parent.appendChild(root);
@@ -120,6 +133,13 @@ function modesListStyle(): string {
   ].join(';');
 }
 
+function actionsStyle(): string {
+  return [
+    'display:flex',
+    'justify-content:flex-end'
+  ].join(';');
+}
+
 function createModeCard(
   mode: PlayableModeEntry,
   onStart: (presetId: ModePresetId) => void
@@ -193,5 +213,20 @@ function primaryButtonStyle(): string {
     'border-radius:4px',
     'cursor:pointer',
     'align-self:flex-start'
+  ].join(';');
+}
+
+function secondaryButtonStyle(): string {
+  return [
+    'appearance:none',
+    'padding:10px 24px',
+    'font-size:15px',
+    'font-weight:500',
+    'letter-spacing:0.04em',
+    'color:#cdd5e3',
+    'background:transparent',
+    'border:1px solid #2a3142',
+    'border-radius:4px',
+    'cursor:pointer'
   ].join(';');
 }

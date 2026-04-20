@@ -2,6 +2,7 @@ export type PauseOverlayInit = Readonly<{
   parent: HTMLElement;
   onResume(): void;
   onExit(): void;
+  onOpenSettings(): void;
 }>;
 
 export type PauseOverlay = Readonly<{
@@ -30,6 +31,13 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   resumeButton.style.cssText = primaryButtonStyle();
   resumeButton.addEventListener('click', () => init.onResume());
   card.appendChild(resumeButton);
+
+  const settingsButton = document.createElement('button');
+  settingsButton.type = 'button';
+  settingsButton.textContent = 'Настройки';
+  settingsButton.style.cssText = secondaryButtonStyle();
+  settingsButton.addEventListener('click', () => init.onOpenSettings());
+  card.appendChild(settingsButton);
 
   const exitButton = document.createElement('button');
   exitButton.type = 'button';
