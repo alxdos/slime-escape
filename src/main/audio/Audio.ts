@@ -16,6 +16,7 @@ import {
   type SampleCategory,
   type SampleRegistry
 } from './SampleRegistry';
+import { createAudioMappings, type AudioMappings } from './AudioMappings';
 
 export type AudioBusId = SampleCategory;
 
@@ -62,6 +63,13 @@ export function createAudio(init: AudioInit = {}): Audio {
       : createSampleRegistry({
           audioApi,
           context: runtime.context,
+          log: audioLog
+        });
+  const audioMappings: AudioMappings | null =
+    sampleRegistry === null
+      ? null
+      : createAudioMappings({
+          sampleRegistry,
           log: audioLog
         });
 
@@ -127,6 +135,10 @@ export function createAudio(init: AudioInit = {}): Audio {
     },
     playUi(eventId): void {
       if (!canPlay(`ui:${eventId}`)) {
+        return;
+      }
+      const sampleId = audioMappings?.resolveUiSample(eventId) ?? null;
+      if (sampleId === null) {
         return;
       }
     },
