@@ -1,7 +1,7 @@
 import { log as defaultLog, type Log } from '../../shared/log';
 
 import type { SampleRegistry } from './SampleRegistry';
-import type { AudioUiEventId } from './Audio';
+import type { AudioUiEventId } from './AudioUiEventId';
 
 export type SampleSpec = string | ReadonlyArray<string>;
 
@@ -102,7 +102,7 @@ const BOSS_AUDIO_MAPPINGS: Readonly<Record<string, BossAudioMapping>> = Object.f
 });
 
 const EVENT_AUDIO_MAPPINGS: EventAudioMapping = Object.freeze({
-  dropPickup: 'ui/open-2',
+  dropPickup: 'events/drop-pickup',
   uiOverlayShow: ['ui/open-1', 'ui/open-2'],
   uiButtonClick: ['ui/switch-1', 'ui/switch-2', 'ui/switch-3', 'ui/switch-4']
 });

@@ -27,14 +27,10 @@ import {
   type ResultOverlay,
   type ResultOverlayInit
 } from './ResultOverlay';
+import type { UiShellPhase } from './UiShellPhase';
 
 export type SessionResult = ResultOutcome;
-
-export type UiShellPhase =
-  | Readonly<{ kind: 'menu' }>
-  | Readonly<{ kind: 'running' }>
-  | Readonly<{ kind: 'paused' }>
-  | Readonly<{ kind: 'result'; outcome: SessionResult }>;
+export type { UiShellPhase } from './UiShellPhase';
 
 type WindowTarget = Pick<Window, 'addEventListener' | 'removeEventListener'>;
 type DocumentTarget = Pick<Document, 'addEventListener' | 'removeEventListener'> & {

@@ -47,6 +47,7 @@ class FakeBufferSourceNode implements AudioBufferSourceNodeLike {
   readonly connections: AudioConnectable[] = [];
   startCalls = 0;
   stopCalls = 0;
+  throwOnStop = false;
 
   connect(destination: AudioConnectable): void {
     this.connections.push(destination);
@@ -62,6 +63,9 @@ class FakeBufferSourceNode implements AudioBufferSourceNodeLike {
 
   stop(): void {
     this.stopCalls += 1;
+    if (this.throwOnStop) {
+      throw new Error('stop failed');
+    }
     this.onended?.({} as Event);
   }
 }
@@ -211,17 +215,20 @@ function getRequiredGainNodes(context: FakeAudioContext): Readonly<{
   sfxGain: FakeGainNode;
   musicGain: FakeGainNode;
   uiGain: FakeGainNode;
+  musicDuckGain: FakeGainNode;
 }> {
   const masterGain = context.gains[0];
   const sfxGain = context.gains[1];
   const musicGain = context.gains[2];
   const uiGain = context.gains[3];
+  const musicDuckGain = context.gains[4];
 
   if (
     masterGain === undefined ||
     sfxGain === undefined ||
     musicGain === undefined ||
-    uiGain === undefined
+    uiGain === undefined ||
+    musicDuckGain === undefined
   ) {
     throw new Error('audio mixer graph is incomplete');
   }
@@ -230,7 +237,8 @@ function getRequiredGainNodes(context: FakeAudioContext): Readonly<{
     masterGain,
     sfxGain,
     musicGain,
-    uiGain
+    uiGain,
+    musicDuckGain
   };
 }
 
@@ -281,17 +289,19 @@ describe('createAudio', () => {
   it('creates master, sfx, music and ui buses with unit gain and expected wiring', () => {
     const { audio, context } = createAudioHarness();
 
-    expect(context.gains).toHaveLength(4);
-    const { masterGain, sfxGain, musicGain, uiGain } = getRequiredGainNodes(context);
+    expect(context.gains).toHaveLength(5);
+    const { masterGain, sfxGain, musicGain, uiGain, musicDuckGain } = getRequiredGainNodes(context);
     expect(masterGain.gain.value).toBe(1);
     expect(sfxGain.gain.value).toBe(1);
     expect(musicGain.gain.value).toBe(1);
     expect(uiGain.gain.value).toBe(1);
+    expect(musicDuckGain.gain.value).toBe(1);
 
     expect(masterGain.connections).toEqual([context.destination]);
     expect(sfxGain.connections).toEqual([masterGain]);
-    expect(musicGain.connections).toEqual([masterGain]);
+    expect(musicGain.connections).toEqual([musicDuckGain]);
     expect(uiGain.connections).toEqual([masterGain]);
+    expect(musicDuckGain.connections).toEqual([masterGain]);
 
     audio.dispose();
   });
@@ -350,6 +360,28 @@ describe('createAudio', () => {
 
     expect(context.sources).toHaveLength(1);
     expect(context.sources[0]?.startCalls).toBe(1);
+  });
+
+  it('skips unresolved boss fire events without emitting a missing-mapping warning', async () => {
+    const { audio, context, log } = createAudioHarness();
+    context.setState('running');
+
+    audio.handleEvent({
+      kind: 'fire',
+      simTime: 10,
+      shooterId: 77,
+      ownerKind: 'boss',
+      weaponArchetypeId: 'boss-fire',
+      originX: 0,
+      originY: 0,
+      dirX: 1,
+      dirY: 0
+    });
+
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(0);
+    expect(log.warn).not.toHaveBeenCalled();
   });
 
   it('routes hit and death through snapshot archetype resolution', async () => {
@@ -663,9 +695,9 @@ describe('createAudio', () => {
     expect(context.sources.slice(1).every((source) => source.stopCalls === 0)).toBe(true);
   });
 
-  it('starts regular music in running and ducks the music bus in paused', async () => {
+  it('starts regular music in running and ducks the dedicated music duck gain without overwriting the music bus', async () => {
     const { audio, context } = createAudioHarness(() => 0);
-    const { musicGain } = getRequiredGainNodes(context);
+    const { musicGain, musicDuckGain } = getRequiredGainNodes(context);
     context.setState('running');
 
     audio.update(
@@ -690,6 +722,9 @@ describe('createAudio', () => {
     expect(context.sources).toHaveLength(1);
     expect(context.sources[0]?.loop).toBe(false);
     expect(musicGain.gain.value).toBe(1);
+    expect(musicDuckGain.gain.value).toBe(1);
+
+    musicGain.gain.value = 0.2;
 
     audio.update(
       makeSnapshotPair({
@@ -710,7 +745,53 @@ describe('createAudio', () => {
     );
 
     expect(context.sources).toHaveLength(1);
-    expect(musicGain.gain.value).toBe(0.5);
+    expect(musicGain.gain.value).toBe(0.2);
+    expect(musicDuckGain.gain.value).toBe(0.5);
+  });
+
+  it('warns instead of throwing when one-shot eviction hits an invalid stop state', async () => {
+    const { audio, context, log } = createAudioHarness();
+    context.setState('running');
+
+    for (let index = 0; index < 32; index += 1) {
+      audio.handleEvent({
+        kind: 'fire',
+        simTime: index,
+        shooterId: index,
+        ownerKind: 'player',
+        weaponArchetypeId: 'pistol',
+        originX: 0,
+        originY: 0,
+        dirX: 1,
+        dirY: 0
+      });
+    }
+    await flushAudioWork();
+
+    const oldestSource = context.sources[0];
+    if (oldestSource === undefined) {
+      throw new Error('expected oldest source to exist');
+    }
+    oldestSource.throwOnStop = true;
+
+    audio.handleEvent({
+      kind: 'fire',
+      simTime: 99,
+      shooterId: 99,
+      ownerKind: 'player',
+      weaponArchetypeId: 'pistol',
+      originX: 0,
+      originY: 0,
+      dirX: 1,
+      dirY: 0
+    });
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(33);
+    expect(log.warn).toHaveBeenCalledWith('audio source stop failed', {
+      context: 'overflow-eviction',
+      error: 'stop failed'
+    });
   });
 
   it('switches to boss music and silences it in menu/result phases', async () => {

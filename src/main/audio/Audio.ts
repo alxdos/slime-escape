@@ -9,7 +9,7 @@ import type {
   Snapshot
 } from '../../shared/snapshot';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
-import type { UiShellPhase } from '../ui/UiShell';
+import type { UiShellPhase } from '../ui/UiShellPhase';
 
 import {
   createBrowserAudioApi,
@@ -18,6 +18,7 @@ import {
   type AudioContextLike,
   type AudioGainNodeLike
 } from './AudioApi';
+import type { AudioUiEventId } from './AudioUiEventId';
 import {
   createSampleRegistry,
   type SampleCategory,
@@ -31,8 +32,7 @@ import {
 } from './AudioMappings';
 
 export type AudioBusId = SampleCategory;
-
-export type AudioUiEventId = 'overlayShow' | 'buttonClick';
+export type { AudioUiEventId } from './AudioUiEventId';
 
 export type AudioInit = Readonly<{
   audioApi?: AudioApi;
@@ -53,6 +53,7 @@ export type Audio = Readonly<{
 type AudioRuntime = Readonly<{
   context: AudioContextLike;
   masterGain: AudioGainNodeLike;
+  musicDuckGain: AudioGainNodeLike;
   busGains: Readonly<Record<AudioBusId, AudioGainNodeLike>>;
 }>;
 
@@ -188,7 +189,7 @@ export function createAudio(init: AudioInit = {}): Audio {
     }
 
     oldestPlayback.source.onended = null;
-    oldestPlayback.source.stop();
+    stopSourceSafely(oldestPlayback.source, 'overflow-eviction');
     disconnectPlayback(oldestPlayback);
   }
 
@@ -245,8 +246,22 @@ export function createAudio(init: AudioInit = {}): Audio {
       return;
     }
     playback.source.onended = null;
-    playback.source.stop();
+    stopSourceSafely(playback.source, 'music-stop');
     disconnectMusicPlayback(playback);
+  }
+
+  function stopSourceSafely(
+    source: AudioBufferSourceNodeLike,
+    warningContext: 'dispose' | 'music-stop' | 'overflow-eviction'
+  ): void {
+    try {
+      source.stop();
+    } catch (error) {
+      audioLog.warn('audio source stop failed', {
+        context: warningContext,
+        error: formatError(error)
+      });
+    }
   }
 
   function startMusicSample(sampleId: string): void {
@@ -328,7 +343,7 @@ export function createAudio(init: AudioInit = {}): Audio {
       return;
     }
 
-    dependencies.runtime.busGains.music.gain.value =
+    dependencies.runtime.musicDuckGain.gain.value =
       phase.kind === 'paused' ? PAUSED_MUSIC_DUCK_GAIN : DEFAULT_GAIN;
 
     if (phase.kind === 'menu' || phase.kind === 'result') {
@@ -449,13 +464,16 @@ export function createAudio(init: AudioInit = {}): Audio {
 
     switch (event.kind) {
       case 'fire': {
-        const sampleId =
-          event.ownerKind === 'boss'
-            ? dependencies.audioMappings.resolveBossSample(
-                'fire',
-                resolveBossArchetypeId(event.shooterId) ?? ''
-              )
-            : dependencies.audioMappings.resolveWeaponFire(event.weaponArchetypeId);
+        let sampleId: string | null;
+        if (event.ownerKind === 'boss') {
+          const bossArchetypeId = resolveBossArchetypeId(event.shooterId);
+          sampleId =
+            bossArchetypeId === null
+              ? null
+              : dependencies.audioMappings.resolveBossSample('fire', bossArchetypeId);
+        } else {
+          sampleId = dependencies.audioMappings.resolveWeaponFire(event.weaponArchetypeId);
+        }
         if (sampleId !== null) {
           playSampleById(sampleId);
         }
@@ -636,7 +654,7 @@ export function createAudio(init: AudioInit = {}): Audio {
           continue;
         }
         playback.source.onended = null;
-        playback.source.stop();
+        stopSourceSafely(playback.source, 'dispose');
         disconnectPlayback(playback);
       }
 
@@ -645,6 +663,7 @@ export function createAudio(init: AudioInit = {}): Audio {
       for (const busGain of Object.values(runtime.busGains)) {
         busGain.disconnect();
       }
+      runtime.musicDuckGain.disconnect();
       runtime.masterGain.disconnect();
 
       void runtime.context.close().catch((error: unknown) => {
@@ -660,30 +679,33 @@ function createAudioRuntime(audioApi: AudioApi): AudioRuntime {
   const context = audioApi.createContext();
   const masterGain = context.createGain();
   masterGain.gain.value = DEFAULT_GAIN;
-
-  const busGains: Readonly<Record<AudioBusId, AudioGainNodeLike>> = {
-    sfx: createBusGain(context, masterGain),
-    music: createBusGain(context, masterGain),
-    ui: createBusGain(context, masterGain)
-  };
+  const sfxGain = context.createGain();
+  sfxGain.gain.value = DEFAULT_GAIN;
+  const musicGain = context.createGain();
+  musicGain.gain.value = DEFAULT_GAIN;
+  const uiGain = context.createGain();
+  uiGain.gain.value = DEFAULT_GAIN;
+  const musicDuckGain = context.createGain();
+  musicDuckGain.gain.value = DEFAULT_GAIN;
 
   masterGain.connect(context.destination);
+  sfxGain.connect(masterGain);
+  musicGain.connect(musicDuckGain);
+  uiGain.connect(masterGain);
+  musicDuckGain.connect(masterGain);
+
+  const busGains: Readonly<Record<AudioBusId, AudioGainNodeLike>> = {
+    sfx: sfxGain,
+    music: musicGain,
+    ui: uiGain
+  };
 
   return {
     context,
     masterGain,
+    musicDuckGain,
     busGains
   };
-}
-
-function createBusGain(
-  context: AudioContextLike,
-  masterGain: AudioGainNodeLike
-): AudioGainNodeLike {
-  const gainNode = context.createGain();
-  gainNode.gain.value = DEFAULT_GAIN;
-  gainNode.connect(masterGain);
-  return gainNode;
 }
 
 function formatError(error: unknown): string {

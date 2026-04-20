@@ -157,6 +157,32 @@ describe('createSampleRegistry', () => {
     expect(log.warn).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps the drop pickup placeholder on the sfx bus even when it reuses a ui file', () => {
+    const context = new FakeAudioContext();
+    const audioApi: AudioApi = {
+      createContext(): AudioContextLike {
+        return context;
+      },
+      async fetchArrayBuffer(): Promise<ArrayBuffer> {
+        return createArrayBuffer(4);
+      }
+    };
+
+    const registry = createSampleRegistry({
+      audioApi,
+      context
+    });
+
+    expect(registry.require('events/drop-pickup')).toEqual({
+      id: 'events/drop-pickup',
+      url: '/sfx/ui/open-2.mp3',
+      category: 'sfx',
+      normalizedGain: 1,
+      defaultGain: 1
+    });
+    expect(registry.require('ui/open-2').category).toBe('ui');
+  });
+
   it('decodes lazily and caches decoded buffers per sample id', async () => {
     const context = new FakeAudioContext();
     const fetched = vi.fn(async () => createArrayBuffer(16));

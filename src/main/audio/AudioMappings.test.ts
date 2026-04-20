@@ -26,6 +26,7 @@ function createSampleRegistryHarness(): Pick<SampleRegistry, 'require'> {
     'slimes/hit-4',
     'boss/boss-fireball',
     'boss/boss-ahaha',
+    'events/drop-pickup',
     'ui/open-1',
     'ui/open-2',
     'ui/switch-1',
@@ -84,7 +85,7 @@ describe('createAudioMappings', () => {
   it('validates all mapped sample ids against the registry during initialization', () => {
     const brokenRegistry: Pick<SampleRegistry, 'require'> = {
       require(sampleId: string) {
-        if (sampleId === 'ui/open-2') {
+        if (sampleId === 'events/drop-pickup') {
           throw new Error(`missing sample ${sampleId}`);
         }
         return {
@@ -101,7 +102,7 @@ describe('createAudioMappings', () => {
       createAudioMappings({
         sampleRegistry: brokenRegistry
       })
-    ).toThrow('missing sample ui/open-2');
+    ).toThrow('missing sample events/drop-pickup');
   });
 
   it('resolves configured boss, event and voice mappings', () => {
@@ -111,7 +112,7 @@ describe('createAudioMappings', () => {
     });
 
     expect(mappings.resolveBossSample('fire', 'slime-king')).toBe('boss/boss-fireball');
-    expect(mappings.resolveEventSample('dropPickup')).toBe('ui/open-2');
+    expect(mappings.resolveEventSample('dropPickup')).toBe('events/drop-pickup');
     expect(mappings.resolveUiSample('overlayShow')).toBe('ui/open-1');
     expect(mappings.resolveEnemyVoice('slime-tank')).toEqual({
       sampleIds: ['slimes/hit-1', 'slimes/hit-2', 'slimes/hit-3', 'slimes/hit-4'],
