@@ -1,6 +1,6 @@
 # HUD and Menu
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-19
 - Updated: 2026-04-20
 
@@ -43,7 +43,7 @@
 | T5 | [x] | Расширение `Hud`: блок босса (HP-бар, индекс/идентификатор фазы) поверх `snapshot.bossHud`; блок виден ровно при `bossHud !== null`; имя/визуал фазы резолвится через `BossArchetype` из `content library`. | контракт поля — `snapshot-shape.md`, `boss-encounter.md` |
 | T6 | [x] | Pause UX интеграция: `UiShell` — единственный вызывающий `SimWorkerHost.pause/resume`; обработчики Esc / `pointerlockchange` / Space переехали в `UiShell`; в `paused` HUD заморожен (нет вызова `Hud.update`), pause overlay над HUD; в фазах `menu`/`result` хоткеи паузы игнорируются. | соответствие `input-commands.md` (обновлено под 007) |
 | T7 | [x] | Result UX: новый компонент `ResultOverlay` в `src/main/ui/**` (или эквивалент), `UiShell` входит в `result(win|loss)` только по событиям `win`/`loss` и **не** вызывает `stopSession` (sim уже сбросилась); единственное действие — «В меню» (`result → menu`); HUD скрыт. | разделение с `MenuOverlay`: меню перестаёт держать `setResult` |
-| T8 | [ ] | Юнит/поведенческие тесты: валидация `PLAYABLE_MODE_CATALOG`, переходы `UiShell` (включая `running → result` без `stopSession` и `paused → menu` через exit), HUD деривации (`«волна N из M»`, видимость boss-блока, отсутствие `waveProgress` в не-wave encounter), Esc/Space-маршрутизация в `UiShell`. | jsdom + ручные `SnapshotPair`/`SessionDefinition`-фикстуры |
+| T8 | [x] | Юнит/поведенческие тесты: валидация `PLAYABLE_MODE_CATALOG`, переходы `UiShell` (включая `running → result` без `stopSession` и `paused → menu` через exit), HUD деривации (`«волна N из M»`, видимость boss-блока, отсутствие `waveProgress` в не-wave encounter), Esc/Space-маршрутизация в `UiShell`. | jsdom + ручные `SnapshotPair`/`SessionDefinition`-фикстуры |
 
 ## Related
 

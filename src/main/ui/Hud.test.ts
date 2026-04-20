@@ -173,6 +173,46 @@ describe('Hud view model', () => {
     expect(bossView.boss?.hpRatio).toBe(0.55);
   });
 
+  it('keeps boss summary hidden when only the boss entity is present without bossHud', () => {
+    const view = deriveHudViewModel(
+      makeSession(),
+      makeSnapshot({
+        entities: [
+          {
+            id: 1,
+            kind: 'player',
+            x: 0,
+            y: 0,
+            hp: 4,
+            maxHp: 5
+          },
+          {
+            id: 99,
+            kind: 'boss',
+            archetypeId: 'slime-king',
+            x: 1,
+            y: 1,
+            hp: 22,
+            maxHp: 40,
+            phaseIndex: 1,
+            phaseId: 'desperation',
+            activeAttackIds: ['dashSlam']
+          }
+        ],
+        encounter: {
+          id: 'campaign-boss',
+          type: 'boss',
+          index: 2,
+          elapsedMs: 12000
+        },
+        waveProgress: null,
+        bossHud: null
+      })
+    );
+
+    expect(view.boss).toBeNull();
+  });
+
   it('falls back to an unknown phase count when boss archetype is unavailable', () => {
     const bossView = deriveHudViewModel(
       makeSession(),

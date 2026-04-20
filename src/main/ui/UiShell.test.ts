@@ -481,6 +481,63 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'paused' });
   });
 
+  it('ignores pointer lock loss outside the running phase', () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShell({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      pixelRatio: 1,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createRenderer: () => ({
+        render() {},
+        fitToWindow() {},
+        dispose() {}
+      }),
+      createInputController: () => ({
+        start() {},
+        stop() {},
+        isActive() {
+          return true;
+        },
+        currentAim() {
+          return { x: 0, y: 0 };
+        },
+        requestLock() {}
+      }),
+      createHud: hud.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    documentEvents.dispatch('pointerlockchange', new Event('pointerlockchange'));
+
+    expect(sim.calls.pause).toBe(0);
+    expect(pause.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+
+    menu.start();
+    sim.emit({ kind: 'win', simTime: 123 });
+    documentEvents.dispatch('pointerlockchange', new Event('pointerlockchange'));
+
+    expect(sim.calls.pause).toBe(0);
+    expect(pause.isVisible()).toBe(false);
+    expect(result.isVisible()).toBe(true);
+    expect(shell.phase()).toEqual({ kind: 'result', outcome: 'win' });
+  });
+
   it('keeps Space as dev pause without showing the pause overlay', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
