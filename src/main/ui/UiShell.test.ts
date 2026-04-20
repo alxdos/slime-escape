@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
-import type { Snapshot } from '../../shared/snapshot';
 import type { SessionDefinition } from '../../shared/session';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import type { Renderer, RendererInit } from '../render/Renderer';
@@ -340,6 +339,51 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'menu' });
   });
 
+  it('routes pointer lock loss into overlay pause while a run is active', () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const sim = createSimHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShell({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      pixelRatio: 1,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createRenderer: () => ({
+        render() {},
+        fitToWindow() {},
+        dispose() {}
+      }),
+      createInputController: () => ({
+        start() {},
+        stop() {},
+        isActive() {
+          return true;
+        },
+        currentAim() {
+          return { x: 0, y: 0 };
+        },
+        requestLock() {}
+      }),
+      windowTarget,
+      documentTarget
+    });
+
+    menu.start();
+    documentEvents.dispatch('pointerlockchange', new Event('pointerlockchange'));
+
+    expect(sim.calls.pause).toBe(1);
+    expect(pause.isVisible()).toBe(true);
+    expect(shell.phase()).toEqual({ kind: 'paused' });
+  });
+
   it('keeps Space as dev pause without showing the pause overlay', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
@@ -407,7 +451,10 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
 
-  it('transitions to result on win without calling stopSession', () => {
+  it.each([
+    ['win', 'win'],
+    ['loss', 'loss']
+  ] as const)('transitions to result on %s without calling stopSession', (kind, outcome) => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const renderer = createRendererHarness();
@@ -433,13 +480,13 @@ describe('UiShell', () => {
     });
 
     menu.start();
-    sim.emit({ kind: 'win', simTime: 123 });
+    sim.emit({ kind, simTime: 123 });
 
     expect(sim.calls.stop).toBe(0);
     expect(input.calls.stop).toBe(1);
     expect(renderer.calls.dispose).toBe(1);
     expect(menu.isVisible()).toBe(true);
-    expect(menu.result()).toBe('win');
-    expect(shell.phase()).toEqual({ kind: 'result', outcome: 'win' });
+    expect(menu.result()).toBe(outcome);
+    expect(shell.phase()).toEqual({ kind: 'result', outcome });
   });
 });

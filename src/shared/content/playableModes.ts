@@ -31,18 +31,12 @@ validatePlayableModeCatalog(PLAYABLE_MODE_CATALOG);
 
 function validatePlayableModeCatalog(catalog: ReadonlyArray<PlayableModeEntry>): void {
   const seenPresetIds = new Set<ModePresetId>();
-  const seenOrders = new Set<number>();
 
   for (const entry of catalog) {
     if (seenPresetIds.has(entry.presetId)) {
       throw new Error(`duplicate playable mode presetId: ${entry.presetId}`);
     }
     seenPresetIds.add(entry.presetId);
-
-    if (seenOrders.has(entry.order)) {
-      throw new Error(`duplicate playable mode order: ${entry.order}`);
-    }
-    seenOrders.add(entry.order);
 
     const preset = resolveModePreset(entry.presetId);
     buildSessionDefinition(preset, {

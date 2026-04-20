@@ -58,7 +58,6 @@ export type UiShellInit = Readonly<{
 
 export type UiShell = Readonly<{
   onFrame(): void;
-  fitToWindow(): void;
   phase(): UiShellPhase;
   dispose(): void;
 }>;
@@ -245,6 +244,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function onPointerLockChange(): void {
+    // Browsers consume the Escape keydown that releases Pointer Lock, so
+    // lock loss is the reliable pause trigger for the player-facing overlay.
     if (documentTarget.pointerLockElement !== null) return;
     if (activeSession === null) return;
     enterOverlayPause();
@@ -291,7 +292,6 @@ export function createUiShell(init: UiShellInit): UiShell {
     onFrame(): void {
       renderer?.render();
     },
-    fitToWindow,
     phase(): UiShellPhase {
       return phase;
     },
