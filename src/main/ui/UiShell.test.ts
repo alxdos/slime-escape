@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { PLAYABLE_MODE_CATALOG } from '../../shared/content/playableModes';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type { SessionDefinition } from '../../shared/session';
+import type { ModePresetId } from '../../shared/content/presets';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import type { Renderer, RendererInit } from '../render/Renderer';
 import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/SimWorkerHost';
@@ -55,7 +57,8 @@ function makeSession(id = 'test-session'): SessionDefinition {
 function createMenuHarness() {
   let visible = true;
   let result: MenuResult = null;
-  let onStart: (() => void) | null = null;
+  let onStart: ((presetId: ModePresetId) => void) | null = null;
+  let modes: ReadonlyArray<{ presetId: ModePresetId }> = [];
 
   const overlay: MenuOverlay = {
     show(): void {
@@ -75,17 +78,21 @@ function createMenuHarness() {
 
   return {
     factory(init: MenuOverlayInit): MenuOverlay {
+      modes = init.modes;
       onStart = init.onStart;
       return overlay;
     },
-    start(): void {
-      onStart?.();
+    start(presetId: ModePresetId = 'campaign'): void {
+      onStart?.(presetId);
     },
     isVisible(): boolean {
       return visible;
     },
     result(): MenuResult {
       return result;
+    },
+    modes(): ReadonlyArray<{ presetId: ModePresetId }> {
+      return modes;
     }
   };
 }
@@ -261,7 +268,11 @@ describe('UiShell', () => {
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
-    const buildSession = vi.fn(() => makeSession('running-session'));
+    let builtPresetId: ModePresetId | null = null;
+    const buildSession = vi.fn((preset, _options) => {
+      builtPresetId = preset.id;
+      return makeSession('running-session');
+    });
 
     const shell = createUiShell({
       parent: {} as HTMLElement,
@@ -278,9 +289,14 @@ describe('UiShell', () => {
       documentTarget
     });
 
-    menu.start();
+    expect(menu.modes().map((mode) => mode.presetId)).toEqual(
+      PLAYABLE_MODE_CATALOG.map((mode) => mode.presetId)
+    );
+
+    menu.start('training');
 
     expect(buildSession).toHaveBeenCalledTimes(1);
+    expect(builtPresetId).toBe('training');
     expect(sim.startSessions).toHaveLength(1);
     expect(renderer.calls.create).toBe(1);
     expect(input.calls.create).toBe(1);

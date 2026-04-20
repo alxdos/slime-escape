@@ -1,5 +1,6 @@
 import { buildSessionDefinition } from '../../shared/content/buildSession';
-import { CAMPAIGN_PRESET, type ModePreset } from '../../shared/content/presets';
+import { PLAYABLE_MODE_CATALOG } from '../../shared/content/playableModes';
+import { resolveModePreset, type ModePreset, type ModePresetId } from '../../shared/content/presets';
 import type { RuntimeEvent } from '../../shared/events';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
@@ -44,7 +45,6 @@ export type UiShellInit = Readonly<{
   parent: HTMLElement;
   canvas: HTMLCanvasElement;
   pixelRatio: number;
-  defaultPreset?: ModePreset;
   buildSessionDefinition?: BuildSessionDefinitionFn;
   createSimWorkerHost?: CreateSimWorkerHostFn;
   createMenuOverlay?: CreateMenuOverlayFn;
@@ -75,7 +75,6 @@ export function createUiShell(init: UiShellInit): UiShell {
   const inputFactory = init.createInputController ?? createInputController;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
-  const defaultPreset = init.defaultPreset ?? CAMPAIGN_PRESET;
 
   let activeSession: SessionDefinition | null = null;
   let renderer: Renderer | null = null;
@@ -91,8 +90,9 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   const menu = menuFactory({
     parent: init.parent,
-    onStart() {
-      startPreset(defaultPreset);
+    modes: PLAYABLE_MODE_CATALOG,
+    onStart(presetId) {
+      startPresetId(presetId);
     }
   });
 
@@ -154,6 +154,11 @@ export function createUiShell(init: UiShellInit): UiShell {
   function setPhase(next: UiShellPhase): void {
     phase = next;
     applyPhaseVisibility();
+  }
+
+  function startPresetId(presetId: ModePresetId): void {
+    const preset = resolveModePreset(presetId);
+    startPreset(preset);
   }
 
   function startPreset(preset: ModePreset): void {
