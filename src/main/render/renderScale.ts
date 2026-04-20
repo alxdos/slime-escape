@@ -1,3 +1,5 @@
+import { assertNever } from '../../shared/protocol';
+
 export type RenderScalePreset = 'low' | 'medium' | 'high';
 
 export type ResolveRenderScaleInput = Readonly<{
@@ -65,8 +67,4 @@ function clampDevicePixelRatio(value: number): number {
     return 1;
   }
   return Math.min(MAX_DEVICE_PIXEL_RATIO, value);
-}
-
-function assertNever(value: never): never {
-  throw new Error(`Unexpected render scale preset: ${String(value)}`);
 }

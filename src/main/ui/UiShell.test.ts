@@ -1014,6 +1014,9 @@ describe('UiShell', () => {
 
     expect(renderer.lastInit()?.renderScalePreset).toBe('high');
 
+    settings.setMasterVolume(0.5);
+    expect(renderer.appliedPresets).toEqual([]);
+
     settings.setRenderScalePreset('low');
     expect(renderer.appliedPresets).toEqual(['low']);
 

@@ -280,8 +280,13 @@ export function createUiShell(init: UiShellInit): UiShell {
       getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
     });
     const activeRenderer = renderer;
+    let lastRendererPreset = clientSettings.renderScalePreset;
     unsubscribeRendererSettings?.();
     unsubscribeRendererSettings = clientSettingsStore.subscribe((settings) => {
+      if (settings.renderScalePreset === lastRendererPreset) {
+        return;
+      }
+      lastRendererPreset = settings.renderScalePreset;
       activeRenderer.applyScalePolicy(settings.renderScalePreset);
     });
 
