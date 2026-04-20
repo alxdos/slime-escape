@@ -77,5 +77,6 @@
 | [drops.md](drops.md) | accepted | `DropArchetype`, `Drop` как сущность, `DropSystem` (spawn-on-death-hook + ttl/pickup), `dropTable` на `EnemyArchetype`, heal-эффект |
 | [rng.md](rng.md) | accepted | Session RNG (`mulberry32` от `seed`) как единственный источник случайности в `sim` |
 | [main-ui-shell.md](main-ui-shell.md) | accepted | `UiShell` (фазы `menu`/`running`/`paused`/`result`), HUD как пассивный потребитель снапшотов, playable preset catalog |
+| [audio.md](audio.md) | accepted | Аудио-стек в `src/main/audio/**`: единый `AudioContext`, mixer (`master` + `sfx`/`music`/`ui` buses), двухслойная громкость sample-реестра, маппинги архетип/событие → sampleId, music selector и ambient слаймов |
 | [decision-log-format.md](decision-log-format.md) | accepted | Вспомогательная выжимка формата решений; правила слоя задаются этим `README` |
 | [_template.md](_template.md) | template | Минимальный шаблон нового решения |
