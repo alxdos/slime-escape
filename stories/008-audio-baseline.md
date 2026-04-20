@@ -42,13 +42,13 @@
 | ID | Status | Task | Note |
 |----|--------|------|------|
 | T1 | [x] | Зафиксировать решение [../design/audio.md](../design/audio.md), обновить `Index` в [../design/README.md](../design/README.md) | архитектурная задача |
-| T2 | [ ] | `src/main/audio/**`: `AudioContext` owner, mixer graph (`master` + `sfx`/`music`/`ui` buses), идемпотентный `unlock()` | базовый каркас |
-| T3 | [ ] | Sample registry с двухслойным gain (`normalizedGain`/`defaultGain`), валидация на init (дубль `id`, clamp диапазонов), lazy-decode mp3 через инжектируемый `AudioApi` | реестр и валидация |
-| T4 | [ ] | Маппинги `weapons` / `enemies` / `bosses` / `events`, поддержка `SampleSpec` как `id` или `id[]` (рандомный выбор), warning «маппинга нет → пропуск» один раз на уникальный ключ | отдельный модуль внутри `src/main/audio/**` |
-| T5 | [ ] | `Audio.handleEvent`: роутинг `fire`/`hit`/`death`/`dropPickup`/`bossPhaseChange` в sampleId через маппинги; для `hit`/`death` — резолв `archetypeId` цели по текущему снапшоту | one-shot SFX |
-| T6 | [ ] | Music selector: regularPool ([6 треков](../design/audio.md#music-selector)), boss-track, переключение по `phase` и `encounter.type`, ducking на `paused` | snapshot/phase-driven |
-| T7 | [ ] | Ambient слайм-голоса: per-entity таймеры по `snapshot.entities[kind === 'enemy']`, presentation RNG (`Math.random`), пауза таймеров в `paused` | snapshot-driven |
-| T8 | [ ] | Wire в `UiShell`: создание `Audio` рядом с `Hud`, фан-аут `onEvent` в `audio.handleEvent`, `audio.update` в `onFrame` после `hud.update`, `attach`/`detach` на старте/завершении сессии, `audio.unlock()` на первом user-gesture, `audio.playUi('overlayShow')` на показе pause/result, `audio.playUi('buttonClick')` в кнопках overlay-ев | оркестрация |
+| T2 | [x] | `src/main/audio/**`: `AudioContext` owner, mixer graph (`master` + `sfx`/`music`/`ui` buses), идемпотентный `unlock()` | базовый каркас |
+| T3 | [x] | Sample registry с двухслойным gain (`normalizedGain`/`defaultGain`), валидация на init (дубль `id`, clamp диапазонов), lazy-decode mp3 через инжектируемый `AudioApi` | реестр и валидация |
+| T4 | [x] | Маппинги `weapons` / `enemies` / `bosses` / `events`, поддержка `SampleSpec` как `id` или `id[]` (рандомный выбор), warning «маппинга нет → пропуск» один раз на уникальный ключ | отдельный модуль внутри `src/main/audio/**` |
+| T5 | [x] | `Audio.handleEvent`: роутинг `fire`/`hit`/`death`/`dropPickup`/`bossPhaseChange` в sampleId через маппинги; для `hit`/`death` — резолв `archetypeId` цели по текущему снапшоту | one-shot SFX |
+| T6 | [x] | Music selector: regularPool ([6 треков](../design/audio.md#music-selector)), boss-track, переключение по `phase` и `encounter.type`, ducking на `paused` | snapshot/phase-driven |
+| T7 | [x] | Ambient слайм-голоса: per-entity таймеры по `snapshot.entities[kind === 'enemy']`, presentation RNG (`Math.random`), пауза таймеров в `paused` | snapshot-driven |
+| T8 | [x] | Wire в `UiShell`: создание `Audio` рядом с `Hud`, фан-аут `onEvent` в `audio.handleEvent`, `audio.update` в `onFrame` после `hud.update`, `attach`/`detach` на старте/завершении сессии, `audio.unlock()` на первом user-gesture, `audio.playUi('overlayShow')` на показе pause/result, `audio.playUi('buttonClick')` в кнопках overlay-ев | оркестрация |
 | T9 | [ ] | Тесты `Audio` без реального `AudioContext` через `AudioApi` mock: effective gain, валидация реестра, роутинг событий и `targetKind`-ветки, переключение music selector по фазам/encounter, отсутствие тиков ambient в `paused`, drop-oldest при > 32 одновременных one-shot | testing |
 
 ## Related

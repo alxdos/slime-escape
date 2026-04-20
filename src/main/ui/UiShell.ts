@@ -5,6 +5,7 @@ import type { RuntimeEvent } from '../../shared/events';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type { SessionDefinition } from '../../shared/session';
+import { createAudio, type Audio } from '../audio/Audio';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
 import { createRenderer, type Renderer, type RendererInit } from '../render/Renderer';
 import {
@@ -48,6 +49,7 @@ type CreateResultOverlayFn = (init: ResultOverlayInit) => ResultOverlay;
 type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
+type CreateAudioFn = () => Audio;
 
 export type UiShellInit = Readonly<{
   parent: HTMLElement;
@@ -61,6 +63,7 @@ export type UiShellInit = Readonly<{
   createRenderer?: CreateRendererFn;
   createInputController?: CreateInputControllerFn;
   createHud?: CreateHudFn;
+  createAudio?: CreateAudioFn;
   makeSeed?: () => number;
   windowTarget?: WindowTarget;
   documentTarget?: DocumentTarget;
@@ -85,6 +88,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const rendererFactory = init.createRenderer ?? createRenderer;
   const inputFactory = init.createInputController ?? createInputController;
   const hudFactory = init.createHud ?? createHud;
+  const audioFactory = init.createAudio ?? createAudio;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
 
@@ -93,6 +97,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   let input: InputController | null = null;
   let phase: UiShellPhase = MENU_PHASE;
   const hud = hudFactory({ parent: init.parent });
+  const audio = audioFactory();
+  let unlockGestureArmed = true;
 
   const sim =
     (init.createSimWorkerHost ?? createSimWorkerHost)({
@@ -105,6 +111,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     parent: init.parent,
     modes: PLAYABLE_MODE_CATALOG,
     onStart(presetId) {
+      audio.playUi('buttonClick');
       startPresetId(presetId);
     }
   });
@@ -112,9 +119,11 @@ export function createUiShell(init: UiShellInit): UiShell {
   const pause = pauseFactory({
     parent: init.parent,
     onResume() {
+      audio.playUi('buttonClick');
       resumeOverlayPause();
     },
     onExit() {
+      audio.playUi('buttonClick');
       exitToMenu();
     }
   });
@@ -122,11 +131,13 @@ export function createUiShell(init: UiShellInit): UiShell {
   const result = resultFactory({
     parent: init.parent,
     onBackToMenu() {
+      audio.playUi('buttonClick');
       exitToMenu();
     }
   });
 
   function handleSimEvent(event: RuntimeEvent): void {
+    audio.handleEvent(event);
     if (event.kind === 'win' || event.kind === 'loss') {
       handleRunEnd(event.kind, event.simTime);
       return;
@@ -172,8 +183,15 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function setPhase(next: UiShellPhase): void {
+    const previousPhase = phase;
     phase = next;
     applyPhaseVisibility();
+    if (next.kind === 'paused' && previousPhase.kind !== 'paused') {
+      audio.playUi('overlayShow');
+    }
+    if (next.kind === 'result' && previousPhase.kind !== 'result') {
+      audio.playUi('overlayShow');
+    }
   }
 
   function startPresetId(presetId: ModePresetId): void {
@@ -186,6 +204,7 @@ export function createUiShell(init: UiShellInit): UiShell {
 
     const session = builder(preset, { seed: makeSeed() });
     activeSession = session;
+    audio.attach(session);
     sim.startSession(session);
 
     renderer = rendererFactory({
@@ -224,6 +243,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     previousRenderer?.dispose();
     if (hadClientSession) {
       hud.detach();
+      audio.detach();
     }
   }
 
@@ -276,6 +296,16 @@ export function createUiShell(init: UiShellInit): UiShell {
     fitToWindow();
   }
 
+  function unlockAudioFromGesture(): void {
+    if (!unlockGestureArmed) {
+      return;
+    }
+    unlockGestureArmed = false;
+    windowTarget.removeEventListener('pointerdown', unlockAudioFromGesture as EventListener);
+    windowTarget.removeEventListener('keydown', unlockAudioFromGesture as EventListener);
+    audio.unlock();
+  }
+
   function onPointerLockChange(): void {
     // Browsers consume the Escape keydown that releases Pointer Lock, so
     // lock loss is the reliable pause trigger for the player-facing overlay.
@@ -302,12 +332,16 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function attach(): void {
+    windowTarget.addEventListener('pointerdown', unlockAudioFromGesture as EventListener);
+    windowTarget.addEventListener('keydown', unlockAudioFromGesture as EventListener);
     windowTarget.addEventListener('resize', onResize);
     windowTarget.addEventListener('keydown', onKeyDown as EventListener);
     documentTarget.addEventListener('pointerlockchange', onPointerLockChange);
   }
 
   function detach(): void {
+    windowTarget.removeEventListener('pointerdown', unlockAudioFromGesture as EventListener);
+    windowTarget.removeEventListener('keydown', unlockAudioFromGesture as EventListener);
     windowTarget.removeEventListener('resize', onResize);
     windowTarget.removeEventListener('keydown', onKeyDown as EventListener);
     documentTarget.removeEventListener('pointerlockchange', onPointerLockChange);
@@ -322,9 +356,11 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   return {
     onFrame(): void {
+      const snapshotPair = sim.snapshotPair();
       if (isRunningSessionActive()) {
-        hud.update(sim.snapshotPair());
+        hud.update(snapshotPair);
       }
+      audio.update(snapshotPair, phase, snapshotPair.curr?.encounter ?? null);
       renderer?.render();
     },
     phase(): UiShellPhase {
@@ -337,6 +373,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       pause.dispose();
       result.dispose();
       hud.dispose();
+      audio.dispose();
       sim.dispose();
     }
   };
