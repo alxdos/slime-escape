@@ -1,6 +1,6 @@
 # Settings
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-19
 - Updated: 2026-04-20
 
