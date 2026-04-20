@@ -36,7 +36,7 @@
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | `playableModes.ts` в `src/shared/content/**`: реестр `PLAYABLE_MODE_CATALOG` с записями `campaign` и `training`, валидация резолва каждого `presetId` через `buildSessionDefinition` при загрузке модуля. | data-only; sandbox-id'ы в каталог не входят |
+| T1 | [x] | `playableModes.ts` в `src/shared/content/**`: реестр `PLAYABLE_MODE_CATALOG` с записями `campaign` и `training`, валидация резолва каждого `presetId` через `buildSessionDefinition` при загрузке модуля. | data-only; sandbox-id'ы в каталог не входят |
 | T2 | [ ] | `src/main/ui/UiShell.ts`: оркестратор фаз `menu`/`running`/`paused`/`result`, единственный owner вызовов `SimWorkerHost.startSession/stopSession/pause/resume`, единая таблица видимости overlay-ев и HUD. Перенос текущей оркестрации из `src/main/index.ts`, поведение сессии не меняется. | контракт переходов и видимости — `design/main-ui-shell.md` |
 | T3 | [ ] | `MenuOverlay`: рендер списка режимов из `PLAYABLE_MODE_CATALOG` (одна карточка на запись с `displayName`/`description`); клик по «Старт» вызывает переход `menu → running` через `UiShell`; стартовая кнопка по умолчанию убрана. | без поля «seed»: seed генерирует `UiShell` |
 | T4 | [ ] | `Hud.ts` (`src/main/ui/**`): блок HP игрока (из `PlayerSnapshot.hp`/`maxHp`), блок encounter (id/тип/таймер `elapsedMs`), блок волны (`waveProgress` + «волна N из M», N/M из `SessionDefinition.encounters`); обновление через `update(snapshotPair)` из main rAF. | HUD не подписан на runtime events |
