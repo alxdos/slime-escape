@@ -4,5 +4,6 @@ export * from './buildSession';
 export * from './drops';
 export * from './enemies';
 export * from './players';
+export * from './playableModes';
 export * from './presets';
 export * from './weapons';

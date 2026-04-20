@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-20 (007: финализирована роль Space как dev-pause без overlay; маршрутизация Esc/Space — через `UiShell` из [main-ui-shell.md](main-ui-shell.md))
 
 ## Context
 
@@ -67,7 +67,9 @@
 - `Esc` всегда означает «открыть паузу с overlay»; кнопка «Выйти в меню» внутри overlay вызывает `stopSession`.
 - Браузер автоматически снимает Pointer Lock на `Esc` — это намеренно совпадает с открытием overlay паузы: системный курсор появляется, и им можно кликнуть кнопки.
 - При выходе из паузы `main` повторно запрашивает Pointer Lock. Пока пользователь не сделал жест (клик), запрос может быть отказан браузером — это корректно и обрабатывается следующим mousedown.
-- `Space` сохраняет роль из 001 как «дев-пауза»: ставит/снимает паузу симуляции, но **не** показывает overlay меню. Это намеренное расхождение со штатным UX и используется для дебага рендера/таймингов; в 007 поведение Space может быть пересмотрено.
+- `Space` сохраняет роль из 001 как **dev-пауза**: переключает `SimWorkerHost.pause()`/`.resume()`, но **не** меняет фазу `UiShell` и **не** показывает `PauseOverlay`. Это намеренное расхождение со штатным UX и используется для дебага рендера/таймингов на стороне разработчика. Player-facing путь паузы — только `Esc` + overlay.
+- Маршрутизация хоткеев в 007: и `Esc`, и `Space` обрабатывает единственный owner `UiShell` ([main-ui-shell.md](main-ui-shell.md)). Прямые вызовы `SimWorkerHost.pause()`/`.resume()` из обработчиков `keydown` вне `UiShell` запрещены — иначе фаза `UiShell` (`running`/`paused`) разъедется с `isPaused()` симуляции, и появится «двойная пауза» из дев-хоткея + overlay.
+- В фазе `paused` (overlay поднят через `Esc`) `Space` дополнительно **не** действует: оркестратор игнорирует дев-хоткей, пока активна штатная пауза, чтобы не было сценария «снял дев-хоткеем, но overlay остался видим». В фазах `menu` и `result` оба хоткея игнорируются.
 
 ### Структура `InputCommand`
 
@@ -113,4 +115,5 @@
 - [arena-and-coordinates.md](arena-and-coordinates.md)
 - [runtime-systems.md](runtime-systems.md)
 - [content-boundaries.md](content-boundaries.md)
+- [main-ui-shell.md](main-ui-shell.md)
 - [../docs/GDD_CORE.md](../docs/GDD_CORE.md)

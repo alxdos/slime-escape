@@ -1,15 +1,16 @@
+import type { PlayableModeEntry } from '../../shared/content/playableModes';
+import type { ModePresetId } from '../../shared/content/presets';
+
 export type MenuOverlayInit = Readonly<{
   parent: HTMLElement;
-  onStart(): void;
+  modes: ReadonlyArray<PlayableModeEntry>;
+  onStart(presetId: ModePresetId): void;
 }>;
-
-export type MenuResult = 'win' | 'loss' | null;
 
 export type MenuOverlay = Readonly<{
   show(): void;
   hide(): void;
   isVisible(): boolean;
-  setResult(result: MenuResult): void;
   dispose(): void;
 }>;
 
@@ -21,22 +22,23 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   const card = document.createElement('div');
   card.style.cssText = cardStyle();
 
-  const result = document.createElement('div');
-  result.style.cssText = resultStyle();
-  result.style.display = 'none';
-  card.appendChild(result);
-
   const title = document.createElement('h1');
   title.textContent = 'Slime Escape';
   title.style.cssText = titleStyle();
   card.appendChild(title);
 
-  const startButton = document.createElement('button');
-  startButton.type = 'button';
-  startButton.textContent = 'Старт';
-  startButton.style.cssText = primaryButtonStyle();
-  startButton.addEventListener('click', () => init.onStart());
-  card.appendChild(startButton);
+  const subtitle = document.createElement('p');
+  subtitle.textContent = 'Выбери режим и запусти новый забег.';
+  subtitle.style.cssText = subtitleStyle();
+  card.appendChild(subtitle);
+
+  const modesList = document.createElement('div');
+  modesList.style.cssText = modesListStyle();
+
+  for (const mode of init.modes) {
+    modesList.appendChild(createModeCard(mode, init.onStart));
+  }
+  card.appendChild(modesList);
 
   root.appendChild(card);
   init.parent.appendChild(root);
@@ -54,21 +56,6 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     },
     isVisible(): boolean {
       return visible;
-    },
-    setResult(next): void {
-      if (next === null) {
-        result.style.display = 'none';
-        result.textContent = '';
-        return;
-      }
-      result.style.display = 'block';
-      if (next === 'win') {
-        result.textContent = 'Победа!';
-        result.style.color = '#9ce69a';
-      } else {
-        result.textContent = 'Поражение';
-        result.style.color = '#ff8a7a';
-      }
     },
     dispose(): void {
       root.remove();
@@ -93,23 +80,14 @@ function cardStyle(): string {
   return [
     'display:flex',
     'flex-direction:column',
-    'align-items:center',
+    'align-items:stretch',
     'gap:24px',
     'padding:32px 40px',
+    'width:min(720px, calc(100vw - 48px))',
     'background:#11151c',
     'border:1px solid #2a3142',
     'border-radius:8px',
     'box-shadow:0 12px 40px rgba(0,0,0,0.6)'
-  ].join(';');
-}
-
-function resultStyle(): string {
-  return [
-    'margin:0',
-    'font-size:18px',
-    'font-weight:600',
-    'letter-spacing:0.08em',
-    'text-transform:uppercase'
   ].join(';');
 }
 
@@ -119,7 +97,86 @@ function titleStyle(): string {
     'font-size:28px',
     'font-weight:600',
     'color:#e6e8ef',
-    'letter-spacing:0.04em'
+    'letter-spacing:0.04em',
+    'text-align:center'
+  ].join(';');
+}
+
+function subtitleStyle(): string {
+  return [
+    'margin:0',
+    'font-size:15px',
+    'line-height:1.5',
+    'color:#aeb7c8',
+    'text-align:center'
+  ].join(';');
+}
+
+function modesListStyle(): string {
+  return [
+    'display:grid',
+    'grid-template-columns:repeat(auto-fit, minmax(240px, 1fr))',
+    'gap:16px'
+  ].join(';');
+}
+
+function createModeCard(
+  mode: PlayableModeEntry,
+  onStart: (presetId: ModePresetId) => void
+): HTMLElement {
+  const root = document.createElement('section');
+  root.dataset['role'] = 'menu-mode-card';
+  root.dataset['presetId'] = mode.presetId;
+  root.style.cssText = modeCardStyle();
+
+  const heading = document.createElement('h2');
+  heading.textContent = mode.displayName;
+  heading.style.cssText = modeHeadingStyle();
+  root.appendChild(heading);
+
+  const description = document.createElement('p');
+  description.textContent = mode.description;
+  description.style.cssText = modeDescriptionStyle();
+  root.appendChild(description);
+
+  const startButton = document.createElement('button');
+  startButton.type = 'button';
+  startButton.textContent = 'Старт';
+  startButton.style.cssText = primaryButtonStyle();
+  startButton.addEventListener('click', () => onStart(mode.presetId));
+  root.appendChild(startButton);
+
+  return root;
+}
+
+function modeCardStyle(): string {
+  return [
+    'display:flex',
+    'flex-direction:column',
+    'gap:16px',
+    'padding:20px',
+    'background:#171c26',
+    'border:1px solid #2a3142',
+    'border-radius:8px'
+  ].join(';');
+}
+
+function modeHeadingStyle(): string {
+  return [
+    'margin:0',
+    'font-size:20px',
+    'font-weight:600',
+    'color:#e6e8ef'
+  ].join(';');
+}
+
+function modeDescriptionStyle(): string {
+  return [
+    'margin:0',
+    'min-height:48px',
+    'font-size:14px',
+    'line-height:1.5',
+    'color:#b4bdd0'
   ].join(';');
 }
 
@@ -134,6 +191,7 @@ function primaryButtonStyle(): string {
     'color:#0a0c10',
     'background:#9ad6ff',
     'border-radius:4px',
-    'cursor:pointer'
+    'cursor:pointer',
+    'align-self:flex-start'
   ].join(';');
 }

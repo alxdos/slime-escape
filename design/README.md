@@ -76,5 +76,6 @@
 | [boss-encounter.md](boss-encounter.md) | accepted | Сущность `kind: 'boss'`, `SpawnPlan` `'boss'`, `BossArchetype`, `BossPhaseSystem`, `winCondition: bossDefeated`, снапшот/HUD босса |
 | [drops.md](drops.md) | accepted | `DropArchetype`, `Drop` как сущность, `DropSystem` (spawn-on-death-hook + ttl/pickup), `dropTable` на `EnemyArchetype`, heal-эффект |
 | [rng.md](rng.md) | accepted | Session RNG (`mulberry32` от `seed`) как единственный источник случайности в `sim` |
+| [main-ui-shell.md](main-ui-shell.md) | accepted | `UiShell` (фазы `menu`/`running`/`paused`/`result`), HUD как пассивный потребитель снапшотов, playable preset catalog |
 | [decision-log-format.md](decision-log-format.md) | accepted | Вспомогательная выжимка формата решений; правила слоя задаются этим `README` |
 | [_template.md](_template.md) | template | Минимальный шаблон нового решения |
