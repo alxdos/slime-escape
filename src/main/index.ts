@@ -15,8 +15,7 @@ const canvas = requireCanvas('#scene');
 const fps = createFpsOverlay(document.body);
 const uiShell = createUiShell({
   parent: document.body,
-  canvas,
-  renderScalePreset: 'medium'
+  canvas
 });
 
 function tick(nowMs: number): void {

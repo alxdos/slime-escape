@@ -8,7 +8,10 @@ import type { SessionDefinition } from '../../shared/session';
 import { createAudio, type Audio } from '../audio/Audio';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
 import { createRenderer, type Renderer, type RendererInit } from '../render/Renderer';
-import type { RenderScalePreset } from '../render/renderScale';
+import {
+  createClientSettingsStore,
+  type ClientSettingsStore
+} from '../settings/ClientSettingsStore';
 import {
   createSimWorkerHost,
   type SimWorkerHost,
@@ -47,11 +50,11 @@ type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
 type CreateAudioFn = () => Audio;
+type CreateClientSettingsStoreFn = () => ClientSettingsStore;
 
 export type UiShellInit = Readonly<{
   parent: HTMLElement;
   canvas: HTMLCanvasElement;
-  renderScalePreset: RenderScalePreset;
   buildSessionDefinition?: BuildSessionDefinitionFn;
   createSimWorkerHost?: CreateSimWorkerHostFn;
   createMenuOverlay?: CreateMenuOverlayFn;
@@ -61,6 +64,7 @@ export type UiShellInit = Readonly<{
   createInputController?: CreateInputControllerFn;
   createHud?: CreateHudFn;
   createAudio?: CreateAudioFn;
+  createClientSettingsStore?: CreateClientSettingsStoreFn;
   makeSeed?: () => number;
   windowTarget?: WindowTarget;
   documentTarget?: DocumentTarget;
@@ -86,15 +90,23 @@ export function createUiShell(init: UiShellInit): UiShell {
   const inputFactory = init.createInputController ?? createInputController;
   const hudFactory = init.createHud ?? createHud;
   const audioFactory = init.createAudio ?? createAudio;
+  const clientSettingsStoreFactory =
+    init.createClientSettingsStore ?? createClientSettingsStore;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
 
   let activeSession: SessionDefinition | null = null;
   let renderer: Renderer | null = null;
   let input: InputController | null = null;
+  let unsubscribeRendererSettings: (() => void) | null = null;
   let phase: UiShellPhase = MENU_PHASE;
   const hud = hudFactory({ parent: init.parent });
+  const clientSettingsStore = clientSettingsStoreFactory();
   const audio = audioFactory();
+  audio.setMasterGain(clientSettingsStore.get().masterVolume);
+  const unsubscribeAudioSettings = clientSettingsStore.subscribe((settings) => {
+    audio.setMasterGain(settings.masterVolume);
+  });
   let unlockGestureArmed = true;
 
   const sim =
@@ -200,17 +212,23 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (activeSession !== null) return;
 
     const session = builder(preset, { seed: makeSeed() });
+    const clientSettings = clientSettingsStore.get();
     activeSession = session;
     audio.attach(session);
     sim.startSession(session);
 
     renderer = rendererFactory({
       canvas: init.canvas,
-      renderScalePreset: init.renderScalePreset,
+      renderScalePreset: clientSettings.renderScalePreset,
       arena: session.arena,
       player: session.player,
       getSnapshotPair: sim.snapshotPair,
       getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
+    });
+    const activeRenderer = renderer;
+    unsubscribeRendererSettings?.();
+    unsubscribeRendererSettings = clientSettingsStore.subscribe((settings) => {
+      activeRenderer.applyScalePolicy(settings.renderScalePreset);
     });
 
     input = inputFactory({
@@ -229,14 +247,17 @@ export function createUiShell(init: UiShellInit): UiShell {
   function tearDownClientSession(): void {
     const previousInput = input;
     const previousRenderer = renderer;
+    const previousUnsubscribeRendererSettings = unsubscribeRendererSettings;
     const hadClientSession =
       activeSession !== null || previousInput !== null || previousRenderer !== null;
 
     input = null;
     renderer = null;
     activeSession = null;
+    unsubscribeRendererSettings = null;
 
     previousInput?.stop();
+    previousUnsubscribeRendererSettings?.();
     previousRenderer?.dispose();
     if (hadClientSession) {
       hud.detach();
@@ -370,6 +391,8 @@ export function createUiShell(init: UiShellInit): UiShell {
       pause.dispose();
       result.dispose();
       hud.dispose();
+      unsubscribeAudioSettings();
+      clientSettingsStore.dispose();
       audio.dispose();
       sim.dispose();
     }

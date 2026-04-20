@@ -8,6 +8,12 @@ import type { ModePresetId } from '../../shared/content/presets';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import type { Renderer, RendererInit } from '../render/Renderer';
+import {
+  DEFAULT_CLIENT_SETTINGS,
+  type ClientSettings,
+  type ClientSettingsStore,
+  type RenderScalePreset
+} from '../settings/ClientSettingsStore';
 import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/SimWorkerHost';
 
 import type { Hud, HudInit } from './Hud';
@@ -175,6 +181,7 @@ function createRendererHarness() {
     dispose: 0
   };
   let lastInit: RendererInit | null = null;
+  const appliedPresets: RenderScalePreset[] = [];
 
   return {
     factory(init: RendererInit): Renderer {
@@ -187,8 +194,9 @@ function createRendererHarness() {
         fitToWindow(): void {
           calls.fitToWindow += 1;
         },
-        applyScalePolicy(): void {
+        applyScalePolicy(preset: RenderScalePreset): void {
           calls.applyScalePolicy += 1;
+          appliedPresets.push(preset);
         },
         dispose(): void {
           calls.dispose += 1;
@@ -196,6 +204,7 @@ function createRendererHarness() {
       };
     },
     calls,
+    appliedPresets,
     lastInit(): RendererInit | null {
       return lastInit;
     }
@@ -333,6 +342,7 @@ function createAudioHarness() {
   const events: RuntimeEvent[] = [];
   const uiEvents: AudioUiEventId[] = [];
   const attachedSessions: SessionDefinition[] = [];
+  const masterGainValues: number[] = [];
   const calls = {
     unlock: 0,
     update: 0,
@@ -361,7 +371,9 @@ function createAudioHarness() {
         playUi(eventId: AudioUiEventId): void {
           uiEvents.push(eventId);
         },
-        setMasterGain(): void {},
+        setMasterGain(value: number): void {
+          masterGainValues.push(value);
+        },
         dispose(): void {
           calls.dispose += 1;
         }
@@ -370,6 +382,80 @@ function createAudioHarness() {
     events,
     uiEvents,
     attachedSessions,
+    masterGainValues,
+    calls
+  };
+}
+
+function createClientSettingsStoreHarness(
+  initial: Partial<ClientSettings> = {}
+) {
+  let settings: ClientSettings = {
+    ...DEFAULT_CLIENT_SETTINGS,
+    ...initial
+  };
+  let listeners: Array<(settings: ClientSettings) => void> = [];
+  const calls = {
+    dispose: 0,
+    subscribe: 0
+  };
+
+  function notify(): void {
+    for (const listener of listeners) {
+      listener(settings);
+    }
+  }
+
+  return {
+    factory(): ClientSettingsStore {
+      return {
+        get(): ClientSettings {
+          return settings;
+        },
+        setMasterVolume(value: number): void {
+          settings = {
+            ...settings,
+            masterVolume: value
+          };
+          notify();
+        },
+        setRenderScalePreset(preset: RenderScalePreset): void {
+          settings = {
+            ...settings,
+            renderScalePreset: preset
+          };
+          notify();
+        },
+        subscribe(listener): () => void {
+          calls.subscribe += 1;
+          listeners.push(listener);
+          return () => {
+            listeners = listeners.filter((entry) => entry !== listener);
+          };
+        },
+        dispose(): void {
+          calls.dispose += 1;
+          listeners = [];
+        }
+      };
+    },
+    get(): ClientSettings {
+      return settings;
+    },
+    setMasterVolume(value: number): void {
+      settings = {
+        ...settings,
+        masterVolume: value
+      };
+      notify();
+    },
+    setRenderScalePreset(preset: RenderScalePreset): void {
+      settings = {
+        ...settings,
+        renderScalePreset: preset
+      };
+      notify();
+    },
     calls
   };
 }
@@ -396,7 +482,6 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      renderScalePreset: 'medium',
       makeSeed: () => 123,
       buildSessionDefinition: buildSession,
       createSimWorkerHost: sim.factory,
@@ -459,7 +544,6 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -516,7 +600,6 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -570,7 +653,6 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -631,7 +713,6 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -692,6 +773,91 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
 
+  it('applies the initial master volume from client settings and keeps audio subscribed', () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const settings = createClientSettingsStoreHarness({ masterVolume: 0.25 });
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShell({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      createClientSettingsStore: settings.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    expect(audio.masterGainValues).toEqual([0.25]);
+
+    settings.setMasterVolume(0.6);
+
+    expect(audio.masterGainValues).toEqual([0.25, 0.6]);
+
+    shell.dispose();
+    expect(settings.calls.dispose).toBe(1);
+  });
+
+  it('uses the current render scale preset for renderer creation and unsubscribes it on teardown', () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const settings = createClientSettingsStoreHarness({ renderScalePreset: 'high' });
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShell({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      createClientSettingsStore: settings.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    menu.start();
+
+    expect(renderer.lastInit()?.renderScalePreset).toBe('high');
+
+    settings.setRenderScalePreset('low');
+    expect(renderer.appliedPresets).toEqual(['low']);
+
+    sim.emit({ kind: 'win', simTime: 123 });
+    settings.setRenderScalePreset('medium');
+
+    expect(renderer.appliedPresets).toEqual(['low']);
+  });
+
   it('freezes HUD updates while paused but keeps renderer rendering', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
@@ -708,7 +874,6 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -762,7 +927,6 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -833,7 +997,6 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -935,7 +1098,6 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -982,7 +1144,6 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
