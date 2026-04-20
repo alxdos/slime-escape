@@ -19,6 +19,7 @@ import {
   type MenuOverlayInit,
   type MenuResult
 } from './MenuOverlay';
+import { createHud, type Hud, type HudInit } from './Hud';
 import { createPauseOverlay, type PauseOverlay, type PauseOverlayInit } from './PauseOverlay';
 
 export type SessionResult = Exclude<MenuResult, null>;
@@ -40,6 +41,7 @@ type CreateMenuOverlayFn = (init: MenuOverlayInit) => MenuOverlay;
 type CreatePauseOverlayFn = (init: PauseOverlayInit) => PauseOverlay;
 type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
+type CreateHudFn = (init: HudInit) => Hud;
 
 export type UiShellInit = Readonly<{
   parent: HTMLElement;
@@ -51,6 +53,7 @@ export type UiShellInit = Readonly<{
   createPauseOverlay?: CreatePauseOverlayFn;
   createRenderer?: CreateRendererFn;
   createInputController?: CreateInputControllerFn;
+  createHud?: CreateHudFn;
   makeSeed?: () => number;
   windowTarget?: WindowTarget;
   documentTarget?: DocumentTarget;
@@ -73,6 +76,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const pauseFactory = init.createPauseOverlay ?? createPauseOverlay;
   const rendererFactory = init.createRenderer ?? createRenderer;
   const inputFactory = init.createInputController ?? createInputController;
+  const hudFactory = init.createHud ?? createHud;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
 
@@ -80,6 +84,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let renderer: Renderer | null = null;
   let input: InputController | null = null;
   let phase: UiShellPhase = MENU_PHASE;
+  const hud = hudFactory({ parent: init.parent });
 
   const sim =
     (init.createSimWorkerHost ?? createSimWorkerHost)({
@@ -185,6 +190,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       onCommand: sim.sendInput
     });
     input.start();
+    hud.attach(session);
 
     setPhase(RUNNING_PHASE);
   }
@@ -199,6 +205,7 @@ export function createUiShell(init: UiShellInit): UiShell {
 
     previousInput?.stop();
     previousRenderer?.dispose();
+    hud.detach();
   }
 
   function exitToMenu(): void {
@@ -295,6 +302,9 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   return {
     onFrame(): void {
+      if (phase.kind === 'running' && activeSession !== null) {
+        hud.update(sim.snapshotPair());
+      }
       renderer?.render();
     },
     phase(): UiShellPhase {
@@ -305,6 +315,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       tearDownClientSession();
       menu.dispose();
       pause.dispose();
+      hud.dispose();
       sim.dispose();
     }
   };

@@ -9,6 +9,7 @@ import type { InputController, InputControllerInit } from '../input/InputControl
 import type { Renderer, RendererInit } from '../render/Renderer';
 import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/SimWorkerHost';
 
+import type { Hud, HudInit } from './Hud';
 import { createUiShell } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit, MenuResult } from './MenuOverlay';
 import type { PauseOverlay, PauseOverlayInit } from './PauseOverlay';
@@ -258,6 +259,35 @@ function createSimHarness() {
   };
 }
 
+function createHudHarness() {
+  const calls = {
+    attach: 0,
+    update: 0,
+    detach: 0,
+    dispose: 0
+  };
+
+  return {
+    factory(_init: HudInit): Hud {
+      return {
+        attach(): void {
+          calls.attach += 1;
+        },
+        update(): void {
+          calls.update += 1;
+        },
+        detach(): void {
+          calls.detach += 1;
+        },
+        dispose(): void {
+          calls.dispose += 1;
+        }
+      };
+    },
+    calls
+  };
+}
+
 describe('UiShell', () => {
   it('starts a session from the menu and hides overlays while running', () => {
     const menu = createMenuHarness();
@@ -265,6 +295,7 @@ describe('UiShell', () => {
     const renderer = createRendererHarness();
     const input = createInputHarness();
     const sim = createSimHarness();
+    const hud = createHudHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -285,6 +316,7 @@ describe('UiShell', () => {
       createPauseOverlay: pause.factory,
       createRenderer: renderer.factory,
       createInputController: input.factory,
+      createHud: hud.factory,
       windowTarget,
       documentTarget
     });
@@ -301,9 +333,13 @@ describe('UiShell', () => {
     expect(renderer.calls.create).toBe(1);
     expect(input.calls.create).toBe(1);
     expect(input.calls.start).toBe(1);
+    expect(hud.calls.attach).toBe(1);
     expect(menu.isVisible()).toBe(false);
     expect(pause.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'running' });
+
+    shell.onFrame();
+    expect(hud.calls.update).toBe(1);
   });
 
   it('routes Escape into overlay pause and exit back to menu with stopSession', () => {
@@ -312,6 +348,7 @@ describe('UiShell', () => {
     const renderer = createRendererHarness();
     const input = createInputHarness();
     const sim = createSimHarness();
+    const hud = createHudHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -327,6 +364,7 @@ describe('UiShell', () => {
       createPauseOverlay: pause.factory,
       createRenderer: renderer.factory,
       createInputController: input.factory,
+      createHud: hud.factory,
       windowTarget,
       documentTarget
     });
@@ -350,6 +388,7 @@ describe('UiShell', () => {
     expect(sim.calls.stop).toBe(1);
     expect(input.calls.stop).toBe(1);
     expect(renderer.calls.dispose).toBe(1);
+    expect(hud.calls.detach).toBe(1);
     expect(menu.isVisible()).toBe(true);
     expect(pause.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'menu' });
@@ -359,6 +398,7 @@ describe('UiShell', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const sim = createSimHarness();
+    const hud = createHudHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -388,6 +428,7 @@ describe('UiShell', () => {
         },
         requestLock() {}
       }),
+      createHud: hud.factory,
       windowTarget,
       documentTarget
     });
@@ -404,6 +445,7 @@ describe('UiShell', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const sim = createSimHarness();
+    const hud = createHudHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -434,6 +476,7 @@ describe('UiShell', () => {
         },
         requestLock() {}
       }),
+      createHud: hud.factory,
       windowTarget,
       documentTarget
     });
@@ -476,6 +519,7 @@ describe('UiShell', () => {
     const renderer = createRendererHarness();
     const input = createInputHarness();
     const sim = createSimHarness();
+    const hud = createHudHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
@@ -491,6 +535,7 @@ describe('UiShell', () => {
       createPauseOverlay: pause.factory,
       createRenderer: renderer.factory,
       createInputController: input.factory,
+      createHud: hud.factory,
       windowTarget,
       documentTarget
     });
@@ -501,6 +546,7 @@ describe('UiShell', () => {
     expect(sim.calls.stop).toBe(0);
     expect(input.calls.stop).toBe(1);
     expect(renderer.calls.dispose).toBe(1);
+    expect(hud.calls.detach).toBe(1);
     expect(menu.isVisible()).toBe(true);
     expect(menu.result()).toBe(outcome);
     expect(shell.phase()).toEqual({ kind: 'result', outcome });
