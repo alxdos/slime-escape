@@ -22,7 +22,17 @@ import type {
 class FakeAudioDestination implements AudioDestinationNodeLike {}
 
 class FakeAudioParam implements AudioParamLike {
-  value = 0;
+  private currentValue = 0;
+  setCalls = 0;
+
+  get value(): number {
+    return this.currentValue;
+  }
+
+  set value(next: number) {
+    this.currentValue = next;
+    this.setCalls += 1;
+  }
 }
 
 class FakeGainNode implements AudioGainNodeLike {
@@ -355,6 +365,58 @@ describe('createAudio', () => {
 
     expect(context.closeCalls).toBe(1);
     expect(context.gains.every((node) => node.disconnectCalls === 1)).toBe(true);
+  });
+
+  it('applies master gain before unlock and across attach/detach', () => {
+    const { audio, context } = createAudioHarness();
+    const { masterGain } = getRequiredGainNodes(context);
+
+    audio.setMasterGain(0.4);
+    expect(masterGain.gain.value).toBe(0.4);
+
+    audio.attach(makeBossSession());
+    audio.detach();
+
+    audio.setMasterGain(0.7);
+    expect(masterGain.gain.value).toBe(0.7);
+  });
+
+  it('clamps out-of-range master gain, warns, and skips redundant assignments', () => {
+    const { audio, context, log } = createAudioHarness();
+    const { masterGain } = getRequiredGainNodes(context);
+
+    const initialSetCalls = masterGain.gain.setCalls;
+
+    audio.setMasterGain(2);
+    expect(masterGain.gain.value).toBe(1);
+    expect(masterGain.gain.setCalls).toBe(initialSetCalls);
+    expect(log.warn).toHaveBeenCalledWith('audio master gain clamped to [0, 1]', {
+      value: 2,
+      clampedValue: 1
+    });
+
+    audio.setMasterGain(-0.25);
+    expect(masterGain.gain.value).toBe(0);
+    expect(masterGain.gain.setCalls).toBe(initialSetCalls + 1);
+    expect(log.warn).toHaveBeenCalledWith('audio master gain clamped to [0, 1]', {
+      value: -0.25,
+      clampedValue: 0
+    });
+
+    const setCallsAfterClamp = masterGain.gain.setCalls;
+    audio.setMasterGain(0);
+    expect(masterGain.gain.setCalls).toBe(setCallsAfterClamp);
+
+    audio.setMasterGain(Number.NaN);
+    expect(masterGain.gain.value).toBe(0);
+    expect(masterGain.gain.setCalls).toBe(setCallsAfterClamp);
+    expect(log.warn).toHaveBeenCalledWith(
+      'audio master gain is not a number; keeping current value',
+      {
+        value: Number.NaN,
+        currentValue: 0
+      }
+    );
   });
 
   it('routes fire events to one-shot playback after unlock', async () => {

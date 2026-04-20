@@ -352,6 +352,7 @@ function createAudioHarness() {
         playUi(eventId: AudioUiEventId): void {
           uiEvents.push(eventId);
         },
+        setMasterGain(): void {},
         dispose(): void {
           calls.dispose += 1;
         }
