@@ -1,5 +1,13 @@
+import { BOSS_ARCHETYPES, type BossArchetype } from '../../shared/content/bosses';
 import type { SessionDefinition } from '../../shared/session';
-import type { EncounterSnapshot, PlayerSnapshot, Snapshot, WaveProgressSnapshot } from '../../shared/snapshot';
+import type {
+  BossHudSnapshot,
+  BossSnapshot,
+  EncounterSnapshot,
+  PlayerSnapshot,
+  Snapshot,
+  WaveProgressSnapshot
+} from '../../shared/snapshot';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 export type HudInit = Readonly<{
@@ -20,6 +28,14 @@ export type HudViewModel = Readonly<{
   encounterElapsedText: string;
   waveTitleText: string | null;
   waveProgressText: string | null;
+  boss: BossViewModel | null;
+}>;
+
+export type BossViewModel = Readonly<{
+  titleText: string;
+  phaseText: string;
+  hpText: string;
+  hpRatio: number;
 }>;
 
 export function createHud(init: HudInit): Hud {
@@ -31,10 +47,12 @@ export function createHud(init: HudInit): Hud {
   const hpBlock = createBlock('HP');
   const encounterBlock = createBlock('Encounter');
   const waveBlock = createBlock('Wave');
+  const bossBlock = createBossBlock();
 
   root.appendChild(hpBlock.root);
   root.appendChild(encounterBlock.root);
   root.appendChild(waveBlock.root);
+  root.appendChild(bossBlock.root);
   init.parent.appendChild(root);
 
   let session: SessionDefinition | null = null;
@@ -43,17 +61,11 @@ export function createHud(init: HudInit): Hud {
     attach(nextSession): void {
       session = nextSession;
       root.style.display = 'grid';
-      render(deriveHudViewModel(nextSession, null), waveBlock.root, hpBlock.value, encounterBlock, waveBlock);
+      render(deriveHudViewModel(nextSession, null), hpBlock, encounterBlock, waveBlock, bossBlock);
     },
     update(snapshotPair): void {
       if (session === null) return;
-      render(
-        deriveHudViewModel(session, snapshotPair.curr),
-        waveBlock.root,
-        hpBlock.value,
-        encounterBlock,
-        waveBlock
-      );
+      render(deriveHudViewModel(session, snapshotPair.curr), hpBlock, encounterBlock, waveBlock, bossBlock);
     },
     detach(): void {
       session = null;
@@ -82,7 +94,8 @@ export function deriveHudViewModel(
     encounterTypeText: encounter?.type ?? 'none',
     encounterElapsedText: encounter === null ? '--:--' : formatElapsedMs(encounter.elapsedMs),
     waveTitleText: wave?.title ?? null,
-    waveProgressText: wave?.progress ?? null
+    waveProgressText: wave?.progress ?? null,
+    boss: deriveBossSummary(snapshot)
   };
 }
 
@@ -95,25 +108,38 @@ export function formatElapsedMs(elapsedMs: number): string {
 
 function render(
   viewModel: HudViewModel,
-  waveRoot: HTMLElement,
-  hpValue: HTMLElement,
+  hpBlock: HudBlock,
   encounterBlock: HudBlock,
-  waveBlock: HudBlock
+  waveBlock: HudBlock,
+  bossBlock: BossHudBlock
 ): void {
-  hpValue.textContent = viewModel.hpText;
+  hpBlock.value.textContent = viewModel.hpText;
+  hpBlock.meta.textContent = '';
   encounterBlock.value.textContent = `${viewModel.encounterTypeText} • ${viewModel.encounterIdText}`;
   encounterBlock.meta.textContent = `t=${viewModel.encounterElapsedText}`;
 
   if (viewModel.waveTitleText === null || viewModel.waveProgressText === null) {
-    waveRoot.style.display = 'none';
+    waveBlock.root.style.display = 'none';
     waveBlock.value.textContent = '';
     waveBlock.meta.textContent = '';
+  } else {
+    waveBlock.root.style.display = 'flex';
+    waveBlock.value.textContent = viewModel.waveTitleText;
+    waveBlock.meta.textContent = viewModel.waveProgressText;
+  }
+
+  if (viewModel.boss === null) {
+    bossBlock.root.style.display = 'none';
+    bossBlock.value.textContent = '';
+    bossBlock.meta.textContent = '';
+    bossBlock.barFill.style.width = '0%';
     return;
   }
 
-  waveRoot.style.display = 'flex';
-  waveBlock.value.textContent = viewModel.waveTitleText;
-  waveBlock.meta.textContent = viewModel.waveProgressText;
+  bossBlock.root.style.display = 'flex';
+  bossBlock.value.textContent = viewModel.boss.titleText;
+  bossBlock.meta.textContent = `${viewModel.boss.phaseText} · ${viewModel.boss.hpText}`;
+  bossBlock.barFill.style.width = `${Math.round(viewModel.boss.hpRatio * 100)}%`;
 }
 
 type HudBlock = Readonly<{
@@ -121,6 +147,11 @@ type HudBlock = Readonly<{
   value: HTMLElement;
   meta: HTMLElement;
 }>;
+
+type BossHudBlock = HudBlock &
+  Readonly<{
+    barFill: HTMLElement;
+  }>;
 
 function createBlock(labelText: string): HudBlock {
   const root = document.createElement('section');
@@ -140,6 +171,34 @@ function createBlock(labelText: string): HudBlock {
   root.appendChild(meta);
 
   return { root, value, meta };
+}
+
+function createBossBlock(): BossHudBlock {
+  const root = document.createElement('section');
+  root.style.cssText = blockStyle();
+  root.style.display = 'none';
+
+  const label = document.createElement('div');
+  label.textContent = 'Boss';
+  label.style.cssText = labelStyle();
+  root.appendChild(label);
+
+  const value = document.createElement('div');
+  value.style.cssText = valueStyle();
+  root.appendChild(value);
+
+  const meta = document.createElement('div');
+  meta.style.cssText = metaStyle();
+  root.appendChild(meta);
+
+  const barTrack = document.createElement('div');
+  barTrack.style.cssText = bossBarTrackStyle();
+  const barFill = document.createElement('div');
+  barFill.style.cssText = bossBarFillStyle();
+  barTrack.appendChild(barFill);
+  root.appendChild(barTrack);
+
+  return { root, value, meta, barFill };
 }
 
 function deriveWaveSummary(
@@ -165,6 +224,33 @@ function deriveWaveSummary(
     title: `Волна ${waveNumber} из ${totalWaves}`,
     progress: `Выпущено ${waveProgress.dispatched}/${waveProgress.total} · Живых ${waveProgress.alive}`
   };
+}
+
+function deriveBossSummary(snapshot: Snapshot | null): BossViewModel | null {
+  const bossHud = snapshot?.bossHud ?? null;
+  if (bossHud === null) {
+    return null;
+  }
+
+  const bossEntity = snapshot === null ? null : findBossSnapshot(snapshot, bossHud.entityId);
+  const bossArchetype =
+    bossEntity === null ? null : BOSS_ARCHETYPES[bossEntity.archetypeId] ?? null;
+
+  return {
+    titleText: bossArchetype?.displayName ?? 'Boss',
+    phaseText: formatBossPhaseText(bossHud, bossArchetype),
+    hpText: `${clampHp(bossHud.hp)} / ${bossHud.maxHp}`,
+    hpRatio: clampRatio(bossHud.maxHp <= 0 ? 0 : bossHud.hp / bossHud.maxHp)
+  };
+}
+
+function formatBossPhaseText(
+  bossHud: BossHudSnapshot,
+  bossArchetype: BossArchetype | null
+): string {
+  const phaseCount = bossArchetype?.phases.length ?? Math.max(1, bossHud.phaseIndex + 1);
+  const phaseId = bossArchetype?.phases[bossHud.phaseIndex]?.id ?? bossHud.phaseId;
+  return `Фаза ${bossHud.phaseIndex + 1}/${phaseCount} · ${phaseId}`;
 }
 
 function resolveWaveNumber(
@@ -207,8 +293,21 @@ function findPlayerSnapshot(snapshot: Snapshot): PlayerSnapshot | null {
   return null;
 }
 
+function findBossSnapshot(snapshot: Snapshot, entityId: number): BossSnapshot | null {
+  for (const entity of snapshot.entities) {
+    if (entity.kind === 'boss' && entity.id === entityId) {
+      return entity;
+    }
+  }
+  return null;
+}
+
 function clampHp(hp: number): number {
   return Math.max(0, Math.floor(hp));
+}
+
+function clampRatio(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 function rootStyle(): string {
@@ -264,6 +363,26 @@ function metaStyle(): string {
     'font-size:13px',
     'line-height:1.4',
     'color:#b7c3d8'
+  ].join(';');
+}
+
+function bossBarTrackStyle(): string {
+  return [
+    'width:100%',
+    'height:8px',
+    'margin-top:4px',
+    'background:rgba(255,255,255,0.08)',
+    'border-radius:999px',
+    'overflow:hidden'
+  ].join(';');
+}
+
+function bossBarFillStyle(): string {
+  return [
+    'width:0%',
+    'height:100%',
+    'background:linear-gradient(90deg, #ff8a7a 0%, #ff5e7a 100%)',
+    'border-radius:999px'
   ].join(';');
 }
 

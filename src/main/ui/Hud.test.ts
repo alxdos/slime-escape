@@ -99,6 +99,7 @@ describe('Hud view model', () => {
     expect(view.encounterElapsedText).toBe('01:05');
     expect(view.waveTitleText).toBe('Волна 2 из 2');
     expect(view.waveProgressText).toBe('Выпущено 3/7 · Живых 2');
+    expect(view.boss).toBeNull();
   });
 
   it('hides wave text for non-wave encounters or missing waveProgress', () => {
@@ -117,6 +118,58 @@ describe('Hud view model', () => {
 
     expect(breakView.waveTitleText).toBeNull();
     expect(breakView.waveProgressText).toBeNull();
+    expect(breakView.boss).toBeNull();
+  });
+
+  it('shows boss block only when bossHud is present and resolves phase through archetype data', () => {
+    const bossView = deriveHudViewModel(
+      makeSession(),
+      makeSnapshot({
+        entities: [
+          {
+            id: 1,
+            kind: 'player',
+            x: 0,
+            y: 0,
+            hp: 4,
+            maxHp: 5
+          },
+          {
+            id: 99,
+            kind: 'boss',
+            archetypeId: 'slime-king',
+            x: 1,
+            y: 1,
+            hp: 22,
+            maxHp: 40,
+            phaseIndex: 1,
+            phaseId: 'desperation',
+            activeAttackIds: ['dashSlam']
+          }
+        ],
+        encounter: {
+          id: 'campaign-boss',
+          type: 'boss',
+          index: 2,
+          elapsedMs: 12000
+        },
+        waveProgress: null,
+        bossHud: {
+          entityId: 99,
+          phaseIndex: 1,
+          phaseId: 'desperation',
+          hp: 22,
+          maxHp: 40,
+          activeAttackIds: ['dashSlam']
+        }
+      })
+    );
+
+    expect(bossView.boss).not.toBeNull();
+    expect(bossView.boss?.titleText).toBe('Slime King');
+    expect(bossView.boss?.phaseText).toBe('Фаза 2/2 · desperation');
+    expect(bossView.boss?.hpText).toBe('22 / 40');
+    expect(bossView.boss?.hpRatio).toBe(0.55);
   });
 
   it('falls back to waiting state before the first snapshot arrives', () => {
@@ -128,5 +181,6 @@ describe('Hud view model', () => {
     expect(view.encounterElapsedText).toBe('--:--');
     expect(view.waveTitleText).toBeNull();
     expect(view.waveProgressText).toBeNull();
+    expect(view.boss).toBeNull();
   });
 });
