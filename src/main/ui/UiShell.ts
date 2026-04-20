@@ -8,6 +8,7 @@ import type { SessionDefinition } from '../../shared/session';
 import { createAudio, type Audio } from '../audio/Audio';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
 import { createRenderer, type Renderer, type RendererInit } from '../render/Renderer';
+import type { RenderScalePreset } from '../render/renderScale';
 import {
   createSimWorkerHost,
   type SimWorkerHost,
@@ -50,7 +51,7 @@ type CreateAudioFn = () => Audio;
 export type UiShellInit = Readonly<{
   parent: HTMLElement;
   canvas: HTMLCanvasElement;
-  pixelRatio: number;
+  renderScalePreset: RenderScalePreset;
   buildSessionDefinition?: BuildSessionDefinitionFn;
   createSimWorkerHost?: CreateSimWorkerHostFn;
   createMenuOverlay?: CreateMenuOverlayFn;
@@ -205,7 +206,7 @@ export function createUiShell(init: UiShellInit): UiShell {
 
     renderer = rendererFactory({
       canvas: init.canvas,
-      pixelRatio: init.pixelRatio,
+      renderScalePreset: init.renderScalePreset,
       arena: session.arena,
       player: session.player,
       getSnapshotPair: sim.snapshotPair,

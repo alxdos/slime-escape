@@ -16,7 +16,7 @@ const fps = createFpsOverlay(document.body);
 const uiShell = createUiShell({
   parent: document.body,
   canvas,
-  pixelRatio: Math.min(window.devicePixelRatio, 2)
+  renderScalePreset: 'medium'
 });
 
 function tick(nowMs: number): void {

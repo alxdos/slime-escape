@@ -171,12 +171,15 @@ function createRendererHarness() {
     create: 0,
     render: 0,
     fitToWindow: 0,
+    applyScalePolicy: 0,
     dispose: 0
   };
+  let lastInit: RendererInit | null = null;
 
   return {
-    factory(_init: RendererInit): Renderer {
+    factory(init: RendererInit): Renderer {
       calls.create += 1;
+      lastInit = init;
       return {
         render(): void {
           calls.render += 1;
@@ -184,12 +187,18 @@ function createRendererHarness() {
         fitToWindow(): void {
           calls.fitToWindow += 1;
         },
+        applyScalePolicy(): void {
+          calls.applyScalePolicy += 1;
+        },
         dispose(): void {
           calls.dispose += 1;
         }
       };
     },
-    calls
+    calls,
+    lastInit(): RendererInit | null {
+      return lastInit;
+    }
   };
 }
 
@@ -387,7 +396,7 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
+      renderScalePreset: 'medium',
       makeSeed: () => 123,
       buildSessionDefinition: buildSession,
       createSimWorkerHost: sim.factory,
@@ -416,6 +425,7 @@ describe('UiShell', () => {
 
     expect(buildSession).toHaveBeenCalledTimes(1);
     expect(builtPresetId).toBe('training');
+    expect(renderer.lastInit()?.renderScalePreset).toBe('medium');
     expect(sim.startSessions).toHaveLength(1);
     expect(audio.attachedSessions).toHaveLength(1);
     expect(audio.uiEvents).toContain('buttonClick');
@@ -449,7 +459,7 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
+      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -506,7 +516,7 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
+      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -516,6 +526,7 @@ describe('UiShell', () => {
       createRenderer: () => ({
         render() {},
         fitToWindow() {},
+        applyScalePolicy() {},
         dispose() {}
       }),
       createInputController: () => ({
@@ -559,7 +570,7 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
+      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -569,6 +580,7 @@ describe('UiShell', () => {
       createRenderer: () => ({
         render() {},
         fitToWindow() {},
+        applyScalePolicy() {},
         dispose() {}
       }),
       createInputController: () => ({
@@ -619,7 +631,7 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
+      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -629,6 +641,7 @@ describe('UiShell', () => {
       createRenderer: () => ({
         render() {},
         fitToWindow() {},
+        applyScalePolicy() {},
         dispose() {}
       }),
       createInputController: () => ({
@@ -695,7 +708,7 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
+      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -749,7 +762,7 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
+      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -759,6 +772,7 @@ describe('UiShell', () => {
       createRenderer: () => ({
         render() {},
         fitToWindow() {},
+        applyScalePolicy() {},
         dispose() {}
       }),
       createInputController: () => ({
@@ -819,7 +833,7 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
+      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -829,6 +843,7 @@ describe('UiShell', () => {
       createRenderer: () => ({
         render() {},
         fitToWindow() {},
+        applyScalePolicy() {},
         dispose() {}
       }),
       createInputController: () => ({
@@ -920,7 +935,7 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
+      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
@@ -967,7 +982,7 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
+      renderScalePreset: 'medium',
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
