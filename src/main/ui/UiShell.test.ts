@@ -8,6 +8,12 @@ import type { ModePresetId } from '../../shared/content/presets';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import type { Renderer, RendererInit } from '../render/Renderer';
+import {
+  DEFAULT_CLIENT_SETTINGS,
+  type ClientSettings,
+  type ClientSettingsStore,
+  type RenderScalePreset
+} from '../settings/ClientSettingsStore';
 import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/SimWorkerHost';
 
 import type { Hud, HudInit } from './Hud';
@@ -15,6 +21,7 @@ import { createUiShell } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
 import type { PauseOverlay, PauseOverlayInit } from './PauseOverlay';
 import type { ResultOutcome, ResultOverlay, ResultOverlayInit } from './ResultOverlay';
+import type { SettingsOverlay, SettingsOverlayInit } from './SettingsOverlay';
 
 class FakeEventTarget {
   private readonly listeners = new Map<string, Set<EventListener>>();
@@ -34,6 +41,40 @@ class FakeEventTarget {
       listener(event);
     }
   }
+}
+
+class FakeDomElement {
+  readonly children: FakeDomElement[] = [];
+  readonly dataset: Record<string, string> = {};
+  readonly style: Record<string, string> = {};
+  parent: FakeDomElement | null = null;
+
+  appendChild(child: FakeDomElement): void {
+    child.parent = this;
+    this.children.push(child);
+  }
+
+  remove(): void {
+    if (this.parent === null) {
+      return;
+    }
+    this.parent.children.splice(this.parent.children.indexOf(this), 1);
+    this.parent = null;
+  }
+}
+
+function appendHarnessRoot(parent: HTMLElement, root: FakeDomElement): void {
+  const maybeParent = parent as unknown as Partial<FakeDomElement>;
+  maybeParent.appendChild?.(root);
+}
+
+function findHarnessRoot(parent: FakeDomElement, role: string): FakeDomElement | null {
+  for (const child of parent.children) {
+    if (child.dataset['role'] === role) {
+      return child;
+    }
+  }
+  return null;
 }
 
 function makeSession(id = 'test-session'): SessionDefinition {
@@ -60,14 +101,22 @@ function makeSession(id = 'test-session'): SessionDefinition {
 function createMenuHarness() {
   let visible = true;
   let onStart: ((presetId: ModePresetId) => void) | null = null;
+  let onOpenSettings: (() => void) | null = null;
   let modes: ReadonlyArray<{ presetId: ModePresetId }> = [];
+  let root: FakeDomElement | null = null;
 
   const overlay: MenuOverlay = {
     show(): void {
       visible = true;
+      if (root !== null) {
+        root.style.display = 'flex';
+      }
     },
     hide(): void {
       visible = false;
+      if (root !== null) {
+        root.style.display = 'none';
+      }
     },
     isVisible(): boolean {
       return visible;
@@ -79,6 +128,12 @@ function createMenuHarness() {
     factory(init: MenuOverlayInit): MenuOverlay {
       modes = init.modes;
       onStart = init.onStart;
+      onOpenSettings = init.onOpenSettings;
+      root = new FakeDomElement();
+      root.dataset['role'] = 'menu-overlay';
+      root.style.zIndex = '100';
+      root.style.display = visible ? 'flex' : 'none';
+      appendHarnessRoot(init.parent, root);
       return overlay;
     },
     start(presetId: ModePresetId = 'campaign'): void {
@@ -89,6 +144,15 @@ function createMenuHarness() {
     },
     modes(): ReadonlyArray<{ presetId: ModePresetId }> {
       return modes;
+    },
+    openSettings(): void {
+      if (!visible) {
+        return;
+      }
+      onOpenSettings?.();
+    },
+    root(): FakeDomElement | null {
+      return root;
     }
   };
 }
@@ -97,15 +161,22 @@ function createResultHarness() {
   let visible = false;
   let outcome: ResultOutcome | null = null;
   let onBackToMenu: (() => void) | null = null;
+  let root: FakeDomElement | null = null;
 
   const overlay: ResultOverlay = {
     show(next): void {
       visible = true;
       outcome = next;
+      if (root !== null) {
+        root.style.display = 'flex';
+      }
     },
     hide(): void {
       visible = false;
       outcome = null;
+      if (root !== null) {
+        root.style.display = 'none';
+      }
     },
     isVisible(): boolean {
       return visible;
@@ -116,6 +187,11 @@ function createResultHarness() {
   return {
     factory(init: ResultOverlayInit): ResultOverlay {
       onBackToMenu = init.onBackToMenu;
+      root = new FakeDomElement();
+      root.dataset['role'] = 'result-overlay';
+      root.style.zIndex = '110';
+      root.style.display = 'none';
+      appendHarnessRoot(init.parent, root);
       return overlay;
     },
     backToMenu(): void {
@@ -126,6 +202,9 @@ function createResultHarness() {
     },
     outcome(): ResultOutcome | null {
       return outcome;
+    },
+    root(): FakeDomElement | null {
+      return root;
     }
   };
 }
@@ -134,13 +213,21 @@ function createPauseHarness() {
   let visible = false;
   let onResume: (() => void) | null = null;
   let onExit: (() => void) | null = null;
+  let onOpenSettings: (() => void) | null = null;
+  let root: FakeDomElement | null = null;
 
   const overlay: PauseOverlay = {
     show(): void {
       visible = true;
+      if (root !== null) {
+        root.style.display = 'flex';
+      }
     },
     hide(): void {
       visible = false;
+      if (root !== null) {
+        root.style.display = 'none';
+      }
     },
     isVisible(): boolean {
       return visible;
@@ -152,6 +239,12 @@ function createPauseHarness() {
     factory(init: PauseOverlayInit): PauseOverlay {
       onResume = init.onResume;
       onExit = init.onExit;
+      onOpenSettings = init.onOpenSettings;
+      root = new FakeDomElement();
+      root.dataset['role'] = 'pause-overlay';
+      root.style.zIndex = '90';
+      root.style.display = 'none';
+      appendHarnessRoot(init.parent, root);
       return overlay;
     },
     resume(): void {
@@ -160,8 +253,72 @@ function createPauseHarness() {
     exit(): void {
       onExit?.();
     },
+    openSettings(): void {
+      if (!visible) {
+        return;
+      }
+      onOpenSettings?.();
+    },
     isVisible(): boolean {
       return visible;
+    },
+    root(): FakeDomElement | null {
+      return root;
+    }
+  };
+}
+
+function createSettingsOverlayHarness() {
+  let visible = false;
+  let onClose: (() => void) | null = null;
+  let onButtonClick: (() => void) | null = null;
+  let root: FakeDomElement | null = null;
+
+  const overlay: SettingsOverlay = {
+    show(): void {
+      visible = true;
+      if (root !== null) {
+        root.style.display = 'flex';
+      }
+    },
+    hide(): void {
+      visible = false;
+      if (root !== null) {
+        root.style.display = 'none';
+      }
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    dispose(): void {
+      root?.remove();
+      root = null;
+    }
+  };
+
+  return {
+    factory(init: SettingsOverlayInit): SettingsOverlay {
+      onClose = init.onClose;
+      onButtonClick = init.onButtonClick ?? null;
+      root = new FakeDomElement();
+      root.dataset['role'] = 'settings-overlay';
+      root.style.zIndex = '105';
+      root.style.display = 'none';
+      appendHarnessRoot(init.parent, root);
+      return overlay;
+    },
+    close(): void {
+      onButtonClick?.();
+      onClose?.();
+    },
+    pressButton(): void {
+      onButtonClick?.();
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    root(): FakeDomElement | null {
+      return root;
     }
   };
 }
@@ -171,12 +328,16 @@ function createRendererHarness() {
     create: 0,
     render: 0,
     fitToWindow: 0,
+    applyScalePolicy: 0,
     dispose: 0
   };
+  let lastInit: RendererInit | null = null;
+  const appliedPresets: RenderScalePreset[] = [];
 
   return {
-    factory(_init: RendererInit): Renderer {
+    factory(init: RendererInit): Renderer {
       calls.create += 1;
+      lastInit = init;
       return {
         render(): void {
           calls.render += 1;
@@ -184,12 +345,20 @@ function createRendererHarness() {
         fitToWindow(): void {
           calls.fitToWindow += 1;
         },
+        applyScalePolicy(preset: RenderScalePreset): void {
+          calls.applyScalePolicy += 1;
+          appliedPresets.push(preset);
+        },
         dispose(): void {
           calls.dispose += 1;
         }
       };
     },
-    calls
+    calls,
+    appliedPresets,
+    lastInit(): RendererInit | null {
+      return lastInit;
+    }
   };
 }
 
@@ -324,6 +493,7 @@ function createAudioHarness() {
   const events: RuntimeEvent[] = [];
   const uiEvents: AudioUiEventId[] = [];
   const attachedSessions: SessionDefinition[] = [];
+  const masterGainValues: number[] = [];
   const calls = {
     unlock: 0,
     update: 0,
@@ -352,6 +522,9 @@ function createAudioHarness() {
         playUi(eventId: AudioUiEventId): void {
           uiEvents.push(eventId);
         },
+        setMasterGain(value: number): void {
+          masterGainValues.push(value);
+        },
         dispose(): void {
           calls.dispose += 1;
         }
@@ -360,6 +533,80 @@ function createAudioHarness() {
     events,
     uiEvents,
     attachedSessions,
+    masterGainValues,
+    calls
+  };
+}
+
+function createClientSettingsStoreHarness(
+  initial: Partial<ClientSettings> = {}
+) {
+  let settings: ClientSettings = {
+    ...DEFAULT_CLIENT_SETTINGS,
+    ...initial
+  };
+  let listeners: Array<(settings: ClientSettings) => void> = [];
+  const calls = {
+    dispose: 0,
+    subscribe: 0
+  };
+
+  function notify(): void {
+    for (const listener of listeners) {
+      listener(settings);
+    }
+  }
+
+  return {
+    factory(): ClientSettingsStore {
+      return {
+        get(): ClientSettings {
+          return settings;
+        },
+        setMasterVolume(value: number): void {
+          settings = {
+            ...settings,
+            masterVolume: value
+          };
+          notify();
+        },
+        setRenderScalePreset(preset: RenderScalePreset): void {
+          settings = {
+            ...settings,
+            renderScalePreset: preset
+          };
+          notify();
+        },
+        subscribe(listener): () => void {
+          calls.subscribe += 1;
+          listeners.push(listener);
+          return () => {
+            listeners = listeners.filter((entry) => entry !== listener);
+          };
+        },
+        dispose(): void {
+          calls.dispose += 1;
+          listeners = [];
+        }
+      };
+    },
+    get(): ClientSettings {
+      return settings;
+    },
+    setMasterVolume(value: number): void {
+      settings = {
+        ...settings,
+        masterVolume: value
+      };
+      notify();
+    },
+    setRenderScalePreset(preset: RenderScalePreset): void {
+      settings = {
+        ...settings,
+        renderScalePreset: preset
+      };
+      notify();
+    },
     calls
   };
 }
@@ -369,6 +616,7 @@ describe('UiShell', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
     const renderer = createRendererHarness();
     const input = createInputHarness();
     const sim = createSimHarness();
@@ -386,13 +634,13 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
       makeSeed: () => 123,
       buildSessionDefinition: buildSession,
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
       createPauseOverlay: pause.factory,
       createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
@@ -415,6 +663,7 @@ describe('UiShell', () => {
 
     expect(buildSession).toHaveBeenCalledTimes(1);
     expect(builtPresetId).toBe('training');
+    expect(renderer.lastInit()?.renderScalePreset).toBe('medium');
     expect(sim.startSessions).toHaveLength(1);
     expect(audio.attachedSessions).toHaveLength(1);
     expect(audio.uiEvents).toContain('buttonClick');
@@ -436,6 +685,7 @@ describe('UiShell', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
     const renderer = createRendererHarness();
     const input = createInputHarness();
     const sim = createSimHarness();
@@ -448,13 +698,13 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
       createPauseOverlay: pause.factory,
       createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
@@ -495,6 +745,7 @@ describe('UiShell', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
     const audio = createAudioHarness();
@@ -505,16 +756,17 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
       createPauseOverlay: pause.factory,
       createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
       createRenderer: () => ({
         render() {},
         fitToWindow() {},
+        applyScalePolicy() {},
         dispose() {}
       }),
       createInputController: () => ({
@@ -548,6 +800,7 @@ describe('UiShell', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
     const audio = createAudioHarness();
@@ -558,16 +811,17 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
       createPauseOverlay: pause.factory,
       createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
       createRenderer: () => ({
         render() {},
         fitToWindow() {},
+        applyScalePolicy() {},
         dispose() {}
       }),
       createInputController: () => ({
@@ -607,6 +861,7 @@ describe('UiShell', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
     const audio = createAudioHarness();
@@ -618,16 +873,17 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
       createPauseOverlay: pause.factory,
       createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
       createRenderer: () => ({
         render() {},
         fitToWindow() {},
+        applyScalePolicy() {},
         dispose() {}
       }),
       createInputController: () => ({
@@ -678,10 +934,261 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
 
+  it('applies the initial master volume from client settings and keeps audio subscribed', () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const settings = createClientSettingsStoreHarness({ masterVolume: 0.25 });
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShell({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      createClientSettingsStore: settings.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    expect(audio.masterGainValues).toEqual([0.25]);
+
+    settings.setMasterVolume(0.6);
+
+    expect(audio.masterGainValues).toEqual([0.25, 0.6]);
+
+    shell.dispose();
+    expect(settings.calls.dispose).toBe(1);
+  });
+
+  it('uses the current render scale preset for renderer creation and unsubscribes it on teardown', () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const settings = createClientSettingsStoreHarness({ renderScalePreset: 'high' });
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShell({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      createClientSettingsStore: settings.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    menu.start();
+
+    expect(renderer.lastInit()?.renderScalePreset).toBe('high');
+
+    settings.setMasterVolume(0.5);
+    expect(renderer.appliedPresets).toEqual([]);
+
+    settings.setRenderScalePreset('low');
+    expect(renderer.appliedPresets).toEqual(['low']);
+
+    sim.emit({ kind: 'win', simTime: 123 });
+    settings.setRenderScalePreset('medium');
+
+    expect(renderer.appliedPresets).toEqual(['low']);
+  });
+
+  it('opens settings from the menu and closes them without changing the phase', () => {
+    const parent = new FakeDomElement();
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settings = createSettingsOverlayHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShell({
+      parent: parent as unknown as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settings.factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    menu.openSettings();
+
+    expect(settings.isVisible()).toBe(true);
+    expect(menu.isVisible()).toBe(true);
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+    expect(audio.uiEvents).toEqual(['buttonClick']);
+    expect(Number(findHarnessRoot(parent, 'settings-overlay')?.style.zIndex ?? '0')).toBeGreaterThan(
+      Number(findHarnessRoot(parent, 'menu-overlay')?.style.zIndex ?? '0')
+    );
+
+    settings.close();
+
+    expect(settings.isVisible()).toBe(false);
+    expect(menu.isVisible()).toBe(true);
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+    expect(audio.uiEvents).toEqual(['buttonClick', 'buttonClick']);
+
+    shell.dispose();
+  });
+
+  it('opens settings over pause, keeps the paused phase, and keeps the pause overlay underneath', () => {
+    const parent = new FakeDomElement();
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settings = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShell({
+      parent: parent as unknown as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settings.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    menu.start();
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Escape',
+        preventDefault() {},
+        repeat: false
+      } as unknown as Event
+    );
+
+    pause.openSettings();
+
+    expect(settings.isVisible()).toBe(true);
+    expect(pause.isVisible()).toBe(true);
+    expect(shell.phase()).toEqual({ kind: 'paused' });
+    expect(sim.calls.pause).toBe(1);
+    expect(sim.calls.resume).toBe(0);
+    expect(audio.uiEvents.at(-1)).toBe('buttonClick');
+    expect(Number(findHarnessRoot(parent, 'settings-overlay')?.style.zIndex ?? '0')).toBeGreaterThan(
+      Number(findHarnessRoot(parent, 'pause-overlay')?.style.zIndex ?? '0')
+    );
+
+    settings.pressButton();
+    expect(audio.uiEvents.at(-1)).toBe('buttonClick');
+    expect(shell.phase()).toEqual({ kind: 'paused' });
+
+    settings.close();
+
+    expect(settings.isVisible()).toBe(false);
+    expect(pause.isVisible()).toBe(true);
+    expect(shell.phase()).toEqual({ kind: 'paused' });
+  });
+
+  it('does not expose settings in running or result because the entry overlays are hidden', () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settings = createSettingsOverlayHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShell({
+      parent: new FakeDomElement() as unknown as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settings.factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    menu.start();
+    menu.openSettings();
+    expect(settings.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'running' });
+
+    sim.emit({ kind: 'win', simTime: 123 });
+    pause.openSettings();
+    expect(settings.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'result', outcome: 'win' });
+  });
+
   it('freezes HUD updates while paused but keeps renderer rendering', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
     const renderer = createRendererHarness();
     const input = createInputHarness();
     const sim = createSimHarness();
@@ -694,13 +1201,13 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
       createPauseOverlay: pause.factory,
       createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
@@ -737,6 +1244,7 @@ describe('UiShell', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
     const audio = createAudioHarness();
@@ -748,16 +1256,17 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
       createPauseOverlay: pause.factory,
       createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
       createRenderer: () => ({
         render() {},
         fitToWindow() {},
+        applyScalePolicy() {},
         dispose() {}
       }),
       createInputController: () => ({
@@ -807,6 +1316,7 @@ describe('UiShell', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
     const audio = createAudioHarness();
@@ -818,16 +1328,17 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
       createPauseOverlay: pause.factory,
       createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
       createRenderer: () => ({
         render() {},
         fitToWindow() {},
+        applyScalePolicy() {},
         dispose() {}
       }),
       createInputController: () => ({
@@ -907,6 +1418,7 @@ describe('UiShell', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
     const renderer = createRendererHarness();
     const input = createInputHarness();
     const sim = createSimHarness();
@@ -919,13 +1431,13 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
       createPauseOverlay: pause.factory,
       createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
@@ -954,6 +1466,7 @@ describe('UiShell', () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
     const renderer = createRendererHarness();
     const input = createInputHarness();
     const sim = createSimHarness();
@@ -966,13 +1479,13 @@ describe('UiShell', () => {
     const shell = createUiShell({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      pixelRatio: 1,
       makeSeed: () => 1,
       buildSessionDefinition: () => makeSession(),
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
       createPauseOverlay: pause.factory,
       createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,

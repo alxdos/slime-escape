@@ -17,12 +17,34 @@ import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 import { fitCanvasToViewport } from './fitToViewport';
+import {
+  resolveRenderScale,
+  type RenderScalePreset
+} from './renderScale';
 
 export type AimAccessor = () => { x: number; y: number } | null;
 
+type RendererWindowTarget = Pick<Window, 'innerWidth' | 'innerHeight' | 'devicePixelRatio'>;
+
+type WebGlRendererLike = Readonly<{
+  setPixelRatio(value: number): void;
+  setSize(width: number, height: number, updateStyle?: boolean): void;
+  render(scene: THREE.Scene, camera: THREE.Camera): void;
+  dispose(): void;
+}>;
+
+type CreateRendererBackendFn = (init: Readonly<{
+  canvas: HTMLCanvasElement;
+}>) => WebGlRendererLike;
+
+type DebugHud = Readonly<{
+  update(snapshot: import('../../shared/snapshot').Snapshot | null): void;
+  dispose(): void;
+}>;
+
 export type RendererInit = Readonly<{
   canvas: HTMLCanvasElement;
-  pixelRatio: number;
+  renderScalePreset: RenderScalePreset;
   arena: ArenaConfig;
   player: Pick<PlayerSpawn, 'radius'>;
   getSnapshotPair: () => SnapshotPair;
@@ -31,11 +53,15 @@ export type RendererInit = Readonly<{
   bossRegistry?: Readonly<Record<string, BossArchetype>>;
   weaponRegistry?: Readonly<Record<string, WeaponArchetype>>;
   dropRegistry?: Readonly<Record<string, DropArchetype>>;
+  windowTarget?: RendererWindowTarget;
+  createRendererBackend?: CreateRendererBackendFn;
+  createDebugHud?: () => DebugHud;
 }>;
 
 export type Renderer = Readonly<{
   render(): void;
   fitToWindow(): void;
+  applyScalePolicy(preset: RenderScalePreset): void;
   dispose(): void;
 }>;
 
@@ -61,9 +87,12 @@ export function createRenderer(init: RendererInit): Renderer {
   const bossRegistry = init.bossRegistry ?? BOSS_ARCHETYPES;
   const weaponRegistry = init.weaponRegistry ?? WEAPON_ARCHETYPES;
   const dropRegistry = init.dropRegistry ?? DROP_ARCHETYPES;
+  const windowTarget = init.windowTarget ?? window;
 
-  const renderer = new THREE.WebGLRenderer({ canvas: init.canvas, antialias: true });
-  renderer.setPixelRatio(init.pixelRatio);
+  const renderer =
+    (init.createRendererBackend ?? createThreeRendererBackend)({
+      canvas: init.canvas
+    });
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(SCENE_BG);
@@ -102,7 +131,8 @@ export function createRenderer(init: RendererInit): Renderer {
   const zoneOverlay = createZoneOverlay(init.arena);
   scene.add(zoneOverlay.mesh);
 
-  const debugHud = createDebugHud();
+  const debugHud = (init.createDebugHud ?? createDebugHud)();
+  let currentRenderScalePreset = init.renderScalePreset;
 
   type EntityMesh = { mesh: THREE.Mesh; geometry: THREE.BufferGeometry; material: THREE.Material };
   const enemyMeshes = new Map<number, EntityMesh>();
@@ -110,16 +140,38 @@ export function createRenderer(init: RendererInit): Renderer {
   const projectileMeshes = new Map<number, EntityMesh>();
   const dropMeshes = new Map<number, EntityMesh>();
 
+  function applyResolvedScalePolicy(
+    preset: RenderScalePreset,
+    cssWidthPx: number,
+    cssHeightPx: number
+  ): void {
+    currentRenderScalePreset = preset;
+    const resolution = resolveRenderScale({
+      preset,
+      cssWidthPx,
+      cssHeightPx,
+      devicePixelRatio: windowTarget.devicePixelRatio
+    });
+    init.canvas.style.imageRendering = resolution.imageRendering;
+    renderer.setPixelRatio(resolution.pixelRatio);
+    renderer.setSize(resolution.backingWidthPx, resolution.backingHeightPx, false);
+  }
+
+  function applyScalePolicy(preset: RenderScalePreset): void {
+    const cssSize = readCanvasCssSize(init.canvas);
+    applyResolvedScalePolicy(preset, cssSize.width, cssSize.height);
+  }
+
   function fitToWindow(): void {
     const fit = fitCanvasToViewport({
-      viewportWidth: window.innerWidth,
-      viewportHeight: window.innerHeight,
+      viewportWidth: windowTarget.innerWidth,
+      viewportHeight: windowTarget.innerHeight,
       arenaAspect: init.arena.width / init.arena.height
     });
     if (fit.width <= 0 || fit.height <= 0) return;
     init.canvas.style.width = `${fit.width}px`;
     init.canvas.style.height = `${fit.height}px`;
-    renderer.setSize(fit.width, fit.height, false);
+    applyResolvedScalePolicy(currentRenderScalePreset, fit.width, fit.height);
   }
 
   fitToWindow();
@@ -238,6 +290,7 @@ export function createRenderer(init: RendererInit): Renderer {
       renderer.render(scene, camera);
     },
     fitToWindow,
+    applyScalePolicy,
     dispose(): void {
       scene.remove(arenaMesh);
       scene.remove(arenaBorder);
@@ -264,6 +317,29 @@ export function createRenderer(init: RendererInit): Renderer {
       renderer.dispose();
     }
   };
+}
+
+function createThreeRendererBackend(init: Readonly<{
+  canvas: HTMLCanvasElement;
+}>): WebGlRendererLike {
+  return new THREE.WebGLRenderer({ canvas: init.canvas, antialias: true });
+}
+
+function readCanvasCssSize(canvas: HTMLCanvasElement): Readonly<{
+  width: number;
+  height: number;
+}> {
+  const styleWidth = parseCssPixels(canvas.style.width);
+  const styleHeight = parseCssPixels(canvas.style.height);
+  return {
+    width: canvas.clientWidth > 0 ? canvas.clientWidth : styleWidth,
+    height: canvas.clientHeight > 0 ? canvas.clientHeight : styleHeight
+  };
+}
+
+function parseCssPixels(value: string): number {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function computeAlpha(pair: SnapshotPair): number {
@@ -486,11 +562,6 @@ function updateZoneOverlay(overlay: ZoneOverlay, pair: SnapshotPair, alpha: numb
   const margin = prev.zone.margin + (curr.zone.margin - prev.zone.margin) * alpha;
   overlay.setMargin(margin);
 }
-
-type DebugHud = Readonly<{
-  update(snapshot: import('../../shared/snapshot').Snapshot | null): void;
-  dispose(): void;
-}>;
 
 function createDebugHud(): DebugHud {
   const div = document.createElement('div');

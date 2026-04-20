@@ -9,6 +9,10 @@ import { createAudio, type Audio } from '../audio/Audio';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
 import { createRenderer, type Renderer, type RendererInit } from '../render/Renderer';
 import {
+  createClientSettingsStore,
+  type ClientSettingsStore
+} from '../settings/ClientSettingsStore';
+import {
   createSimWorkerHost,
   type SimWorkerHost,
   type SimWorkerHostOptions
@@ -27,6 +31,11 @@ import {
   type ResultOverlay,
   type ResultOverlayInit
 } from './ResultOverlay';
+import {
+  createSettingsOverlay,
+  type SettingsOverlay,
+  type SettingsOverlayInit
+} from './SettingsOverlay';
 import type { UiShellPhase } from './UiShellPhase';
 
 export type SessionResult = ResultOutcome;
@@ -42,24 +51,27 @@ type CreateSimWorkerHostFn = (options?: SimWorkerHostOptions) => SimWorkerHost;
 type CreateMenuOverlayFn = (init: MenuOverlayInit) => MenuOverlay;
 type CreatePauseOverlayFn = (init: PauseOverlayInit) => PauseOverlay;
 type CreateResultOverlayFn = (init: ResultOverlayInit) => ResultOverlay;
+type CreateSettingsOverlayFn = (init: SettingsOverlayInit) => SettingsOverlay;
 type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
 type CreateAudioFn = () => Audio;
+type CreateClientSettingsStoreFn = () => ClientSettingsStore;
 
 export type UiShellInit = Readonly<{
   parent: HTMLElement;
   canvas: HTMLCanvasElement;
-  pixelRatio: number;
   buildSessionDefinition?: BuildSessionDefinitionFn;
   createSimWorkerHost?: CreateSimWorkerHostFn;
   createMenuOverlay?: CreateMenuOverlayFn;
   createPauseOverlay?: CreatePauseOverlayFn;
   createResultOverlay?: CreateResultOverlayFn;
+  createSettingsOverlay?: CreateSettingsOverlayFn;
   createRenderer?: CreateRendererFn;
   createInputController?: CreateInputControllerFn;
   createHud?: CreateHudFn;
   createAudio?: CreateAudioFn;
+  createClientSettingsStore?: CreateClientSettingsStoreFn;
   makeSeed?: () => number;
   windowTarget?: WindowTarget;
   documentTarget?: DocumentTarget;
@@ -81,19 +93,29 @@ export function createUiShell(init: UiShellInit): UiShell {
   const menuFactory = init.createMenuOverlay ?? createMenuOverlay;
   const pauseFactory = init.createPauseOverlay ?? createPauseOverlay;
   const resultFactory = init.createResultOverlay ?? createResultOverlay;
+  const settingsOverlayFactory = init.createSettingsOverlay ?? createSettingsOverlay;
   const rendererFactory = init.createRenderer ?? createRenderer;
   const inputFactory = init.createInputController ?? createInputController;
   const hudFactory = init.createHud ?? createHud;
   const audioFactory = init.createAudio ?? createAudio;
+  const clientSettingsStoreFactory =
+    init.createClientSettingsStore ?? createClientSettingsStore;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
 
   let activeSession: SessionDefinition | null = null;
   let renderer: Renderer | null = null;
   let input: InputController | null = null;
+  let unsubscribeRendererSettings: (() => void) | null = null;
+  let settingsVisible = false;
   let phase: UiShellPhase = MENU_PHASE;
   const hud = hudFactory({ parent: init.parent });
+  const clientSettingsStore = clientSettingsStoreFactory();
   const audio = audioFactory();
+  audio.setMasterGain(clientSettingsStore.get().masterVolume);
+  const unsubscribeAudioSettings = clientSettingsStore.subscribe((settings) => {
+    audio.setMasterGain(settings.masterVolume);
+  });
   let unlockGestureArmed = true;
 
   const sim =
@@ -109,6 +131,10 @@ export function createUiShell(init: UiShellInit): UiShell {
     onStart(presetId) {
       audio.playUi('buttonClick');
       startPresetId(presetId);
+    },
+    onOpenSettings() {
+      audio.playUi('buttonClick');
+      openSettings();
     }
   });
 
@@ -121,6 +147,10 @@ export function createUiShell(init: UiShellInit): UiShell {
     onExit() {
       audio.playUi('buttonClick');
       exitToMenu();
+    },
+    onOpenSettings() {
+      audio.playUi('buttonClick');
+      openSettings();
     }
   });
 
@@ -129,6 +159,17 @@ export function createUiShell(init: UiShellInit): UiShell {
     onBackToMenu() {
       audio.playUi('buttonClick');
       exitToMenu();
+    }
+  });
+
+  const settingsOverlay = settingsOverlayFactory({
+    parent: init.parent,
+    store: clientSettingsStore,
+    onClose() {
+      closeSettings();
+    },
+    onButtonClick() {
+      audio.playUi('buttonClick');
     }
   });
 
@@ -157,25 +198,51 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.show();
         pause.hide();
         result.hide();
+        syncSettingsVisibility();
         return;
       case 'running':
         menu.hide();
         pause.hide();
         result.hide();
+        syncSettingsVisibility();
         return;
       case 'paused':
         menu.hide();
         pause.show();
         result.hide();
+        syncSettingsVisibility();
         return;
       case 'result':
         menu.hide();
         pause.hide();
         result.show(phase.outcome);
+        syncSettingsVisibility();
         return;
       default:
         assertNever(phase);
     }
+  }
+
+  function syncSettingsVisibility(): void {
+    if (settingsVisible && (phase.kind === 'menu' || phase.kind === 'paused')) {
+      settingsOverlay.show();
+      return;
+    }
+    settingsVisible = false;
+    settingsOverlay.hide();
+  }
+
+  function openSettings(): void {
+    if (phase.kind !== 'menu' && phase.kind !== 'paused') {
+      return;
+    }
+    settingsVisible = true;
+    syncSettingsVisibility();
+  }
+
+  function closeSettings(): void {
+    settingsVisible = false;
+    syncSettingsVisibility();
   }
 
   function setPhase(next: UiShellPhase): void {
@@ -199,17 +266,28 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (activeSession !== null) return;
 
     const session = builder(preset, { seed: makeSeed() });
+    const clientSettings = clientSettingsStore.get();
     activeSession = session;
     audio.attach(session);
     sim.startSession(session);
 
     renderer = rendererFactory({
       canvas: init.canvas,
-      pixelRatio: init.pixelRatio,
+      renderScalePreset: clientSettings.renderScalePreset,
       arena: session.arena,
       player: session.player,
       getSnapshotPair: sim.snapshotPair,
       getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
+    });
+    const activeRenderer = renderer;
+    let lastRendererPreset = clientSettings.renderScalePreset;
+    unsubscribeRendererSettings?.();
+    unsubscribeRendererSettings = clientSettingsStore.subscribe((settings) => {
+      if (settings.renderScalePreset === lastRendererPreset) {
+        return;
+      }
+      lastRendererPreset = settings.renderScalePreset;
+      activeRenderer.applyScalePolicy(settings.renderScalePreset);
     });
 
     input = inputFactory({
@@ -228,14 +306,18 @@ export function createUiShell(init: UiShellInit): UiShell {
   function tearDownClientSession(): void {
     const previousInput = input;
     const previousRenderer = renderer;
+    const previousUnsubscribeRendererSettings = unsubscribeRendererSettings;
     const hadClientSession =
       activeSession !== null || previousInput !== null || previousRenderer !== null;
 
     input = null;
     renderer = null;
     activeSession = null;
+    settingsVisible = false;
+    unsubscribeRendererSettings = null;
 
     previousInput?.stop();
+    previousUnsubscribeRendererSettings?.();
     previousRenderer?.dispose();
     if (hadClientSession) {
       hud.detach();
@@ -368,7 +450,10 @@ export function createUiShell(init: UiShellInit): UiShell {
       menu.dispose();
       pause.dispose();
       result.dispose();
+      settingsOverlay.dispose();
       hud.dispose();
+      unsubscribeAudioSettings();
+      clientSettingsStore.dispose();
       audio.dispose();
       sim.dispose();
     }

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-20
+- Updated: 2026-04-20 (для истории 009 зафиксирован API `setMasterGain` и декомпозиция формулы effective gain по узлам графа; см. разделы «Двухслойная громкость», «Жизненный цикл и API», «Settings integration (009)»)
 
 ## Context
 
@@ -78,6 +78,11 @@
     * masterGain
   ```
   где `perCallGainMul` — опциональный ситуативный множитель (например, falloff по дистанции в будущих расширениях), а `busGain`/`masterGain` — узлы графа.
+- Формула описывает **итоговый** effective gain в точке `destination`. На уровне `Web Audio`-графа эти множители распределены по узлам так, что каждый множитель появляется ровно один раз:
+  - `perSourceTrim.gain.value = sample.normalizedGain * sample.defaultGain * (perCallGainMul ?? 1)`;
+  - `busGain[category].gain.value` — owned bus-узлом, меняется только через расширения этого файла (на горизонт 008 — статически `1.0`);
+  - `masterGain.gain.value` — owned master-узлом, единственная точка для 009 (см. ниже «Settings integration»).
+- Запрещено инлайнить значение `busGain`/`masterGain` внутрь `perSourceTrim`: это сломает live-изменение громкости у уже играющих источников и продублирует множитель для новых. Смена `gain.value` на bus/master-узле штатно (по семантике Web Audio) применяется ко всем подключённым источникам, включая уже играющие.
 - Правила содержания полей:
   - `normalizedGain` подбирается «по уху/измерению» на стороне реестра, **не** в кодах систем-потребителей. Менять только при замене файла.
   - `defaultGain` отражает дизайн-намерение «как громко эта роль должна звучать в нейтральных условиях». Менять при изменении дизайнерской роли звука (например, «слайм-ambient слишком давит — снизить до 0.2»).
@@ -177,6 +182,7 @@
     attach(session: SessionDefinition): void;
     detach(): void;
     playUi(eventId: 'overlayShow' | 'buttonClick'): void;
+    setMasterGain(value: number): void;
     dispose(): void;
   }>;
   ```
@@ -210,6 +216,17 @@
   - ambient slime voice не дёргает таймеры в `paused` и переинициализируется на новых entity.
 - Регрессий [snapshot-shape.md](snapshot-shape.md) и [main-ui-shell.md](main-ui-shell.md) тестами не вводится: `Audio` стоит «ниже» этих контрактов.
 
+### Settings integration (009)
+
+- 009 управляет громкостью **только** через master gain. На горизонт 009 это единственная игровая ось громкости; per-bus громкость (отдельно `sfx`/`music`/`ui`) явно out of scope ([../stories/009-settings.md](../stories/009-settings.md)).
+- `Audio.setMasterGain(value)`:
+  - принимает число; clamp в `[0, 1]` перед применением, значение вне диапазона дополнительно логируется warning через единый log-модуль ([logging.md](logging.md));
+  - присваивает `runtime.masterGain.gain.value` — это единственная legitimate точка изменения master gain снаружи модуля;
+  - идемпотентен: повторный вызов с уже установленным значением выполняет присвоение, но не имеет наблюдаемого эффекта (Web Audio: `gain.value = same` — no-op);
+  - корректен в любом состоянии: до `unlock()`, в `menu`, во время `running`/`paused`/`result`, до и после `attach`/`detach`. Он не зависит ни от активной сессии, ни от состояния `AudioContext`.
+- `setMasterGain` **никогда** не пишет в persistent storage и не подписывается на `ClientSettingsStore`. Поток обратный: `UiShell` подписывает `Audio` на изменение `masterVolume` в [client-settings.md](client-settings.md) и вызывает `audio.setMasterGain(settings.masterVolume)` на каждое изменение и один раз при инициализации.
+- Прямой доступ к `runtime.masterGain` или к `runtime.busGains[*]` извне модуля — запрещён. Любая будущая ось (per-bus volume, ducking из gameplay-эффектов и т. п.) добавляется как отдельный явный API на `Audio`, не как утечка `GainNode`-ов наружу.
+
 ### Расширение
 
 - Добавление нового sample → запись в реестр + (при необходимости) запись в один из маппингов. Без правки этого файла.
@@ -236,9 +253,11 @@
 - [content-boundaries.md](content-boundaries.md)
 - [content-archetypes.md](content-archetypes.md)
 - [session-definition.md](session-definition.md)
+- [client-settings.md](client-settings.md)
 - [web-stack.md](web-stack.md)
 - [rng.md](rng.md)
 - [logging.md](logging.md)
 - [testing.md](testing.md)
 - [../docs/VISION.md](../docs/VISION.md)
 - [../stories/008-audio-baseline.md](../stories/008-audio-baseline.md)
+- [../stories/009-settings.md](../stories/009-settings.md)

@@ -47,6 +47,7 @@ export type Audio = Readonly<{
   attach(session: SessionDefinition): void;
   detach(): void;
   playUi(eventId: AudioUiEventId): void;
+  setMasterGain(value: number): void;
   dispose(): void;
 }>;
 
@@ -76,6 +77,8 @@ type ActiveMusicPlayback = Readonly<{
 }>;
 
 const DEFAULT_GAIN = 1;
+const MIN_MASTER_GAIN = 0;
+const MAX_MASTER_GAIN = 1;
 const MAX_ACTIVE_ONE_SHOTS = 32;
 const PAUSED_MUSIC_DUCK_GAIN = 0.5;
 const REGULAR_MUSIC_POOL = Object.freeze([
@@ -214,8 +217,6 @@ export function createAudio(init: AudioInit = {}): Audio {
 
       const trimGain = readyDependencies.runtime.context.createGain();
       trimGain.gain.value = calculateEffectiveGain(sample, {
-        busGain: readyDependencies.runtime.busGains[sample.category].gain.value,
-        masterGain: readyDependencies.runtime.masterGain.gain.value,
         perCallGainMul
       });
 
@@ -295,10 +296,7 @@ export function createAudio(init: AudioInit = {}): Audio {
       source.loop = sample.loop ?? false;
 
       const trimGain = readyDependencies.runtime.context.createGain();
-      trimGain.gain.value = calculateEffectiveGain(sample, {
-        busGain: readyDependencies.runtime.busGains[sample.category].gain.value,
-        masterGain: readyDependencies.runtime.masterGain.gain.value
-      });
+      trimGain.gain.value = calculateEffectiveGain(sample, {});
 
       source.connect(trimGain);
       trimGain.connect(readyDependencies.runtime.busGains[sample.category]);
@@ -635,6 +633,16 @@ export function createAudio(init: AudioInit = {}): Audio {
         playSampleById(sampleId);
       }
     },
+    setMasterGain(value): void {
+      if (runtime === null || disposed) {
+        return;
+      }
+      const nextMasterGain = normalizeMasterGain(value, runtime.masterGain.gain.value, audioLog);
+      if (runtime.masterGain.gain.value === nextMasterGain) {
+        return;
+      }
+      runtime.masterGain.gain.value = nextMasterGain;
+    },
     dispose(): void {
       if (disposed) {
         return;
@@ -715,19 +723,32 @@ function formatError(error: unknown): string {
   return String(error);
 }
 
+function normalizeMasterGain(value: number, currentValue: number, audioLog: Log): number {
+  if (Number.isNaN(value)) {
+    audioLog.warn('audio master gain is not a number; keeping current value', {
+      value,
+      currentValue
+    });
+    return currentValue;
+  }
+
+  if (value >= MIN_MASTER_GAIN && value <= MAX_MASTER_GAIN) {
+    return value;
+  }
+
+  const clampedValue = Math.min(MAX_MASTER_GAIN, Math.max(MIN_MASTER_GAIN, value));
+  audioLog.warn('audio master gain clamped to [0, 1]', {
+    value,
+    clampedValue
+  });
+  return clampedValue;
+}
+
 export function calculateEffectiveGain(
   sample: Pick<SampleEntry, 'normalizedGain' | 'defaultGain'>,
   init: Readonly<{
-    busGain: number;
-    masterGain: number;
     perCallGainMul?: number;
   }>
 ): number {
-  return (
-    sample.normalizedGain *
-    sample.defaultGain *
-    (init.perCallGainMul ?? 1) *
-    init.busGain *
-    init.masterGain
-  );
+  return sample.normalizedGain * sample.defaultGain * (init.perCallGainMul ?? 1);
 }
