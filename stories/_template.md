@@ -1,6 +1,6 @@
 # <Title>
 
-- Status: planned | in-progress | done | blocked
+- Status: planned | in-progress | done | blocked | deferred
 - Created: YYYY-MM-DD
 - Updated: YYYY-MM-DD
 

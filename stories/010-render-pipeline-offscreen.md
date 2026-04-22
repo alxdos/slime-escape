@@ -1,8 +1,8 @@
 # Render Pipeline: OffscreenCanvas
 
-- Status: planned
+- Status: deferred
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-22
 
 ## Player-facing
 
@@ -11,6 +11,7 @@
 
 ## Technical
 
+- История отложена до появления подтверждённой проблемы производительности в текущем main-thread render pipeline.
 - Render worker на базе `OffscreenCanvas` для поддерживаемых браузеров.
 - Переключение render backend (`main` / `offscreen`) без переписывания симуляции.
 - Fallback на main-thread рендер из `001` при отсутствии надёжной поддержки `OffscreenCanvas`.

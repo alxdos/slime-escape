@@ -4,8 +4,9 @@
 
 - Имя файла: `NNN-shortname.md`. Номер с шагом `+1`, не переиспользуется.
 - Нумерация задаёт смысловой порядок чтения. Порядок исполнения может отличаться: историю можно перепрыгнуть и вернуться позже — это отражается через `Status`.
-- Статусы: `planned` | `in-progress` | `done` | `blocked`.
-- Маркеры в таблицах задач и в индексе историй: `[ ]` planned, `[/]` in-progress, `[x]` done, `[-]` blocked. В шапке файла истории (`- Status:`) статус остаётся словом.
+- Статусы: `planned` | `in-progress` | `done` | `blocked` | `deferred`.
+- Маркеры в таблицах задач и в индексе историй: `[ ]` planned, `[/]` in-progress, `[x]` done, `[-]` blocked, `[~]` deferred. В шапке файла истории (`- Status:`) статус остаётся словом.
+- `blocked` означает, что история не может двигаться из-за внешнего или технического препятствия; `deferred` — что мы сознательно откладываем её до появления триггера или приоритета.
 
 ## Процесс работы
 
@@ -39,5 +40,5 @@
 | [007-hud-and-menu.md](007-hud-and-menu.md) | [x] | Полноценное меню выбора режима, HUD с HP/таймером/волной, пауза, экран результата | `UiShell` (фазы `menu`/`running`/`paused`/`result`), data-driven меню из `playableModes`, HUD как пассивный потребитель `SnapshotPair`, единый owner pause/resume |
 | [008-audio-baseline.md](008-audio-baseline.md) | [x] | Звуки выстрелов, попаданий, смерти, ambient слаймов, музыка с переключением на boss-track, UI-щелчки | Web Audio в `src/main/audio/**`, единый `AudioContext` + unlock, mixer (`master`+`sfx`/`music`/`ui`), двухслойная громкость sample-реестра, маппинги архетип/событие → sampleId, music selector, snapshot-driven ambient, фан-аут через `UiShell` |
 | [009-settings.md](009-settings.md) | [x] | Экран настроек: громкость и разрешение арены `low` / `medium` / `high`, применяется на лету и сохраняется между запусками | `ClientSettingsStore` со `schemaVersion` и subscriber-моделью, `Audio.setMasterGain`, render scale policy (`resolveRenderScale` + `Renderer.applyScalePolicy`), Settings overlay как sub-modal `UiShell` |
-| [010-render-pipeline-offscreen.md](010-render-pipeline-offscreen.md) | [ ] | На поддерживаемых браузерах рендер плавнее под нагрузкой, на остальных — корректный fallback без визуальных регрессий | `OffscreenCanvas` render worker, переключение backend, fallback на main-рендер из `001`, проброс render scale из `009`, измерение FPS/frame-time |
+| [010-render-pipeline-offscreen.md](010-render-pipeline-offscreen.md) | [~] | На поддерживаемых браузерах рендер плавнее под нагрузкой, на остальных — корректный fallback без визуальных регрессий | `OffscreenCanvas` render worker, переключение backend, fallback на main-рендер из `001`, проброс render scale из `009`, измерение FPS/frame-time |
 | [_template.md](_template.md) | — | Шаблон новой истории | — |
