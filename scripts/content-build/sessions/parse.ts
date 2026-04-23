@@ -9,6 +9,7 @@ import type {
   ZoneBehavior
 } from '../../../src/shared/session';
 import {
+  type MarkdownCell,
   type MarkdownDocument,
   type MarkdownSection,
   type MarkdownTable,
@@ -19,16 +20,19 @@ import {
   cellError,
   getRowId,
   readMarkdownDocument,
-  requireField,
   requireSingleTable,
   sectionError
 } from '../util/markdown';
-import { toConstName } from '../util/render';
+import {
+  type ResolvedContentRef,
+  requireArenaRef,
+  requireBossRef,
+  requireEnemyRef,
+  requirePlayerRef,
+  requireWeaponRef
+} from './crossAreaRefs';
 
-export type ParsedRef = Readonly<{
-  id: string;
-  constName: string;
-}>;
+export type ParsedRef = ResolvedContentRef;
 
 export type ParsedWinCondition = WinCondition;
 export type ParsedLossCondition = LossCondition;
@@ -99,6 +103,7 @@ type FieldReader = Readonly<{
   section: MarkdownSection;
   table: MarkdownTable;
   read(fieldName: string): string;
+  readCell(fieldName: string): MarkdownCell;
   readNumber(fieldName: string): number;
 }>;
 
@@ -151,9 +156,9 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
     description: sessionFields.read('description'),
     visibleInMenu: parseBooleanField(sessionFields, 'visibleInMenu'),
     order: sessionFields.readNumber('order'),
-    arena: arenaRef(sessionFields.read('arenaId')),
-    player: playerRef(sessionFields.read('playerId')),
-    loadoutWeapon: parseLoadoutWeapon(sessionFields.read('loadoutWeaponId')),
+    arena: parseArenaRef(sessionFields, 'arenaId'),
+    player: parsePlayerRef(sessionFields, 'playerId'),
+    loadoutWeapon: parseLoadoutWeapon(sessionFields, 'loadoutWeaponId'),
     winCondition: parseWinCondition(sessionFields, 'winCondition'),
     lossCondition: parseLossCondition(sessionFields, 'lossCondition'),
     encounters: encountersSection.sections.map(parseEncounterSection)
@@ -228,7 +233,7 @@ function parseSpawnPlan(field: FieldReader, tables: EncounterTables): ParsedSpaw
     case 'boss':
       return {
         kind: 'boss',
-        bossArchetype: bossRef(field.read('bossArchetypeId')),
+        bossArchetype: parseBossRef(field, 'bossArchetypeId'),
         position: parseBossSpawnPosition(field),
         bossEdgeMargin: field.readNumber('bossEdgeMargin')
       };
@@ -242,7 +247,7 @@ function parseWaveSpawns(
   table: MarkdownTable
 ): ReadonlyArray<Readonly<{ archetype: ParsedRef }>> {
   return sortedSpawnRows(section, table).map((row) => ({
-    archetype: enemyRef(requireColumn(section, table, row, 'archetypeId'))
+    archetype: parseEnemyRef(section, table, row, 'archetypeId')
   }));
 }
 
@@ -251,7 +256,7 @@ function parseStaticSpawns(
   table: MarkdownTable
 ): ReadonlyArray<Readonly<{ archetype: ParsedRef; position: Readonly<{ x: number; y: number }> }>> {
   return sortedSpawnRows(section, table).map((row) => ({
-    archetype: enemyRef(requireColumn(section, table, row, 'archetypeId')),
+    archetype: parseEnemyRef(section, table, row, 'archetypeId'),
     position: {
       x: requireNumber(section, table, row, 'x'),
       y: requireNumber(section, table, row, 'y')
@@ -374,11 +379,37 @@ function parseBooleanField(field: FieldReader, fieldName: string): boolean {
   throw fieldError(field, fieldName, 'expected true or false');
 }
 
-function parseLoadoutWeapon(raw: string): ParsedRef | null {
-  if (raw === 'none') {
+function parseLoadoutWeapon(field: FieldReader, fieldName: string): ParsedRef | null {
+  const cell = field.readCell(fieldName);
+  if (cell.value === 'none') {
     return null;
   }
-  return weaponRef(raw);
+  return requireWeaponRef(field.section, cell.position, fieldName, cell.value);
+}
+
+function parseArenaRef(field: FieldReader, fieldName: string): ParsedRef {
+  const cell = field.readCell(fieldName);
+  return requireArenaRef(field.section, cell.position, fieldName, cell.value);
+}
+
+function parsePlayerRef(field: FieldReader, fieldName: string): ParsedRef {
+  const cell = field.readCell(fieldName);
+  return requirePlayerRef(field.section, cell.position, fieldName, cell.value);
+}
+
+function parseBossRef(field: FieldReader, fieldName: string): ParsedRef {
+  const cell = field.readCell(fieldName);
+  return requireBossRef(field.section, cell.position, fieldName, cell.value);
+}
+
+function parseEnemyRef(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow,
+  columnName: string
+): ParsedRef {
+  const cell = requireColumnCell(section, table, row, columnName);
+  return requireEnemyRef(section, cell.position, columnName, cell.value);
 }
 
 function parseEnumField<const T extends string>(
@@ -399,18 +430,42 @@ function fieldReader(section: MarkdownSection, table: MarkdownTable): FieldReade
     section,
     table,
     read(fieldName: string): string {
-      return requireField(section, table, fieldName);
+      return readFieldCell(section, table, fieldName).value;
+    },
+    readCell(fieldName: string): MarkdownCell {
+      return readFieldCell(section, table, fieldName);
     },
     readNumber(fieldName: string): number {
-      const raw = requireField(section, table, fieldName);
-      const row = findFieldRow(table, fieldName);
-      const value = Number(raw);
+      const cell = readFieldCell(section, table, fieldName);
+      const value = Number(cell.value);
       if (!Number.isFinite(value)) {
-        throw cellError(section, row?.position ?? section.position, fieldName, 'value', 'expected number');
+        throw cellError(section, cell.position, fieldName, 'value', 'expected number');
       }
       return value;
     }
   };
+}
+
+function readFieldCell(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  fieldName: string
+): MarkdownCell {
+  const row = findFieldRow(table, fieldName);
+  if (row === null) {
+    throw cellError(section, section.position, fieldName, 'value', `expected field "${fieldName}"`);
+  }
+  const cell = row.cells[1];
+  if (cell === undefined || cell.value.length === 0) {
+    throw cellError(
+      section,
+      cell?.position ?? row.position,
+      fieldName,
+      'value',
+      'expected non-empty value'
+    );
+  }
+  return cell;
 }
 
 function findFieldRow(table: MarkdownTable, fieldName: string): MarkdownTableRow | null {
@@ -452,43 +507,27 @@ function assertSpawnTableHeader(
   }
 }
 
-function requireColumn(
+function requireColumnCell(
   section: MarkdownSection,
   table: MarkdownTable,
   row: MarkdownTableRow,
   columnName: string
-): string {
+): MarkdownCell {
   const columnIndex = table.header.findIndex((cell) => cell.value === columnName);
   if (columnIndex < 0) {
     throw cellError(section, row.position, getRowId(row), columnName, `expected column "${columnName}"`);
   }
-  const value = row.cells[columnIndex]?.value;
-  if (value === undefined || value.length === 0) {
-    throw cellError(section, row.position, getRowId(row), columnName, 'expected non-empty value');
+  const cell = row.cells[columnIndex];
+  if (cell === undefined || cell.value.length === 0) {
+    throw cellError(
+      section,
+      cell?.position ?? row.position,
+      getRowId(row),
+      columnName,
+      'expected non-empty value'
+    );
   }
-  return value;
-}
-
-function arenaRef(id: string): ParsedRef {
-  return { id, constName: `${toConstName(id)}_ARENA` };
-}
-
-function playerRef(id: string): ParsedRef {
-  if (id === 'hero-sandbox') return { id, constName: 'SANDBOX_PLAYER' };
-  if (id === 'hero-training') return { id, constName: 'TRAINING_PLAYER' };
-  return { id, constName: `${toConstName(id)}_PLAYER` };
-}
-
-function weaponRef(id: string): ParsedRef {
-  return { id, constName: toConstName(id) };
-}
-
-function enemyRef(id: string): ParsedRef {
-  return { id, constName: toConstName(id) };
-}
-
-function bossRef(id: string): ParsedRef {
-  return { id, constName: toConstName(id) };
+  return cell;
 }
 
 function presetIdFromSourcePath(sourcePath: string): string {
