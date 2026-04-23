@@ -109,7 +109,7 @@ describe('content-build sessions area', () => {
           '| bossArchetypeId | boss-scrap-king |',
           '| bossArchetypeId | boss-missing |'
         ),
-      pattern: /section "## campaign-boss": unknown bossArchetypeId "boss-missing"/
+      pattern: /section "## campaign-set-3-boss": unknown bossArchetypeId "boss-missing"/
     },
     {
       name: 'archetypeId',
