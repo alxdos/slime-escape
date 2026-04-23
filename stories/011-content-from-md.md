@@ -1,8 +1,8 @@
 # Content from Markdown
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-23
-- Updated: 2026-04-23 (T9: demo-flow проверен и откатан: `slime-fast.maxSpeed` 4→6 меняет generated content, `slime-tank.hit` меняет generated audio, `npm run dev` стартует через `predev`; пользователь подтвердил локально «всё работает»)
+- Updated: 2026-04-23 (T10: история закрыта, `stories/README.md` переведён на `[x]`, `design/README.md` index проверен)
 
 ## Game designer
 
@@ -52,7 +52,7 @@
 | T7 | [x] | Расширить `package.json`: добавить `content:build` (`tsx scripts/content-build/index.ts`), `content:check` (`tsx scripts/content-build/index.ts --check`), `predev` (`npm run content:build`); расширить `build` композицией: `npm run content:check && tsc -p tsconfig.json && tsc -p tsconfig.worker.json && vite build`. Существующие `dev`/`preview`/`typecheck`/`test`/`test:watch` — без изменений. Проверить: `npm run dev` (через `predev`) зелёный, `npm run build` зелёный. | опоры: `design/content-authoring.md`, `design/web-stack.md` |
 | T8 | [x] | Тесты на генератор (vitest, рядом с модулями `scripts/content-build/**` или в `__tests__/`): (а) happy path — парсинг текущего `content/enemies.md` даёт выход, идентичный закоммиченным `enemies.generated.ts` и `enemyAudio.generated.ts`; (б) отсутствующая обязательная ячейка → exit non-zero, целевые файлы не модифицированы; (в) ссылка на неизвестный `id` в `# Balance` → exit non-zero; (г) дрейф — синтетическая модификация ячейки в MD, `--check` падает с понятным diff'ом; (д) атомарность — симуляция ошибки рендера одной области не приводит к частичной перезаписи другой. Расширить vitest-конфиг при необходимости, чтобы тесты `scripts/**` подхватывались. | опоры: `design/content-authoring.md`, `design/testing.md` |
 | T9 | [x] | Demo проверка acceptance: (1) поменять `slime-fast.maxSpeed` `4 → 6` в MD, `npm run content:build` + `npm run dev`, наблюдать ускоренного слайма в `Побеге`/`Тренировке`; (2) подменить колонку `hit` у `slime-tank` в `## Sounds` на другой набор `sampleId` из `SampleRegistry`, пересобрать, наблюдать иной звук попадания. После проверки — откатить демо-правки. Зафиксировать факт прогона в `Updated` истории. | опоры: `design/content-authoring.md` |
-| T10 | [ ] | Закрытие истории: чек-лист закрытия из `stories/README.md`; проверка `Index` в `design/README.md`; перевод `Status` истории в `done` и обновление таблицы в `stories/README.md`. | архитектор |
+| T10 | [x] | Закрытие истории: чек-лист закрытия из `stories/README.md`; проверка `Index` в `design/README.md`; перевод `Status` истории в `done` и обновление таблицы в `stories/README.md`. | архитектор |
 
 ## Related
 
