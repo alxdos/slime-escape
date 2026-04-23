@@ -118,6 +118,45 @@ describe('content-build archetype areas', () => {
     });
   });
 
+  it('rejects weapon audio without the required inline H2 link', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) => replaceExact(source, '[weapons/pistol](../public/sfx/weapons/pistol.mp3)\n\n', ''),
+      parse: parseWeaponsArea,
+      pattern: /expected \[<sample-id>\]/
+    });
+  });
+
+  it('rejects legacy weapon Sound balance groups', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        `${source}\n\n## Sound\n\n| id | fire |\n|---|---|\n| pistol | weapons/pistol |\n`,
+      parse: parseWeaponsArea,
+      pattern: /replaced by inline audio-link/
+    });
+  });
+
+  it('rejects bosses without required inline image nodes', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/bosses.md',
+      mutate: (source) =>
+        replaceExact(source, '![Gargoyle Slime](../public/assets/boss-01.png)\n\n', ''),
+      parse: parseBossesArea,
+      pattern: /expected !\[…\]/
+    });
+  });
+
+  it('rejects legacy boss Visual balance groups', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/bosses.md',
+      mutate: (source) =>
+        `${source}\n\n## Visual\n\n| id | image |\n|---|---|\n| boss-gargoyle | /assets/boss-01.png |\n`,
+      parse: parseBossesArea,
+      pattern: /replaced by inline image/
+    });
+  });
+
   it('renders boss visual specs from PNG image paths', async () => {
     const area = await parseBossesArea('content/bosses.md');
     const visuals = renderBossVisuals(area);

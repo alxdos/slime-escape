@@ -2,12 +2,16 @@
 
 ## pistol
 
+[weapons/pistol](../public/sfx/weapons/pistol.mp3)
+
 | field | value |
 |---|---|
 | displayName | Pistol |
 | color | #ffd76b |
 
 ## shotgun
+
+[weapons/shotgun](../public/sfx/weapons/shotgun.mp3)
 
 | field | value |
 |---|---|
@@ -16,6 +20,8 @@
 
 ## smg
 
+[weapons/smg](../public/sfx/weapons/smg.mp3)
+
 | field | value |
 |---|---|
 | displayName | SMG |
@@ -23,12 +29,16 @@
 
 ## sniper
 
+[weapons/sniper](../public/sfx/weapons/sniper.mp3)
+
 | field | value |
 |---|---|
 | displayName | Sniper |
 | color | #b8e8ff |
 
 ## laser
+
+[weapons/laser](../public/sfx/weapons/laser.mp3)
 
 | field | value |
 |---|---|
@@ -66,13 +76,3 @@
 | smg | 1 |
 | sniper | 6 |
 | laser | 1 |
-
-## Sound
-
-| id | fire |
-|---|---|
-| pistol | weapons/pistol |
-| shotgun | weapons/shotgun |
-| smg | weapons/smg |
-| sniper | weapons/sniper |
-| laser | weapons/laser |

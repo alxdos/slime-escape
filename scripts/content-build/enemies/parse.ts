@@ -9,12 +9,18 @@ import {
 import {
   ContentBuildError,
   requireCell,
-  requireHexColor,
   requireNumber,
   requireRow,
-  requireSampleIdList,
   requireSection
 } from '../util/require';
+import { requireInlineImage } from '../util/inlineMedia';
+import { BUILD_SAMPLE_REGISTRY } from '../util/sampleRegistry';
+import {
+  expandSetToMembers,
+  parseSampleIdCellGroup,
+  parseSharedResourceSetPartition,
+  type SharedResourceSetPartition
+} from '../util/sharedResourceSet';
 
 export type ParsedEnemyBehavior = 'stationary' | 'chase';
 
@@ -66,15 +72,15 @@ type EnemyDefinition = Readonly<{
   id: string;
   displayName: string;
   color: number;
+  visual: ParsedEnemyVisual;
 }>;
 
-const FORBIDDEN_VISUAL_COLUMNS = new Set([
-  'sourceSizePx',
-  'displayWidthPx',
-  'displayHeightPx',
-  'displaySizePx',
-  'worldSize'
-]);
+const SOUND_SET_MEMBERS_GROUP = 'Members';
+const SOUND_SET_GROUPS = ['Hit', 'Death', 'Voice'] as const;
+const SOUND_SET_SECTIONS = [SOUND_SET_MEMBERS_GROUP, ...SOUND_SET_GROUPS] as const;
+const SOUND_SET_SAMPLE_COLUMNS = ['s1', 's2', 's3', 's4'] as const;
+const ENEMY_VOICE_INTERVAL_MIN_MS = 3000;
+const ENEMY_VOICE_INTERVAL_MAX_MS = 6000;
 
 export async function parseEnemiesArea(sourcePath: string): Promise<ParsedEnemiesArea> {
   const document = await readEnemiesDocument(sourcePath);
@@ -84,37 +90,31 @@ export async function parseEnemiesArea(sourcePath: string): Promise<ParsedEnemie
 function parseEnemiesDocument(document: MarkdownDocument): ParsedEnemiesArea {
   const enemiesSection = requireSection(document, 'Enemies');
   const balanceSection = requireSection(document, 'Balance');
+  const soundSetsSection = requireSection(document, 'Sound sets');
 
   const definitions = enemiesSection.sections.map(parseEnemyDefinition);
   const knownEnemyIds = new Set(definitions.map((enemy) => enemy.id));
+  const audioByEnemyId = parseSoundSets(soundSetsSection, knownEnemyIds, document.filePath);
 
   const bodySection = requireSection(balanceSection, 'Body');
   const movementSection = requireSection(balanceSection, 'Movement');
   const contactSection = requireSection(balanceSection, 'Contact damage');
   const knockbackSection = requireSection(balanceSection, 'Knockback');
   const dropsSection = requireSection(balanceSection, 'Drops');
-  const soundsSection = requireSection(balanceSection, 'Sounds');
-  const voiceSection = requireSection(balanceSection, 'Voice');
-  const visualSection = requireSection(balanceSection, 'Visual');
+  assertNoForbiddenVisualGroup(balanceSection);
+  assertNoForbiddenAudioGroups(balanceSection);
 
   const bodyTable = requireSingleTable(bodySection);
   const movementTable = requireSingleTable(movementSection);
   const contactTable = requireSingleTable(contactSection);
   const knockbackTable = requireSingleTable(knockbackSection);
   const dropsTable = requireSingleTable(dropsSection);
-  const soundsTable = requireSingleTable(soundsSection);
-  const voiceTable = requireSingleTable(voiceSection);
-  const visualTable = requireSingleTable(visualSection);
 
   assertKnownReferences(bodySection, bodyTable, knownEnemyIds);
   assertKnownReferences(movementSection, movementTable, knownEnemyIds);
   assertKnownReferences(contactSection, contactTable, knownEnemyIds);
   assertKnownReferences(knockbackSection, knockbackTable, knownEnemyIds);
   assertKnownReferences(dropsSection, dropsTable, knownEnemyIds);
-  assertKnownReferences(soundsSection, soundsTable, knownEnemyIds);
-  assertKnownReferences(voiceSection, voiceTable, knownEnemyIds);
-  assertKnownReferences(visualSection, visualTable, knownEnemyIds);
-  assertNoForbiddenVisualColumns(visualSection, visualTable);
 
   return {
     sourcePath: document.filePath,
@@ -130,12 +130,7 @@ function parseEnemiesDocument(document: MarkdownDocument): ParsedEnemiesArea {
         knockbackTable,
         dropsSection,
         dropsTable,
-        soundsSection,
-        soundsTable,
-        voiceSection,
-        voiceTable,
-        visualSection,
-        visualTable
+        audioByEnemyId
       })
     )
   };
@@ -157,7 +152,10 @@ function parseEnemyDefinition(section: MarkdownSection): EnemyDefinition {
   return {
     id: section.title,
     displayName: requireField(section, table, 'displayName'),
-    color: requireFieldHexColor(section, table, 'color')
+    color: requireFieldHexColor(section, table, 'color'),
+    visual: {
+      image: requireInlineImage(section).url
+    }
   };
 }
 
@@ -174,22 +172,21 @@ function parseEnemy(
     knockbackTable: MarkdownTable;
     dropsSection: MarkdownSection;
     dropsTable: MarkdownTable;
-    soundsSection: MarkdownSection;
-    soundsTable: MarkdownTable;
-    voiceSection: MarkdownSection;
-    voiceTable: MarkdownTable;
-    visualSection: MarkdownSection;
-    visualTable: MarkdownTable;
+    audioByEnemyId: ReadonlyMap<string, ParsedEnemyAudio>;
   }>
 ): ParsedEnemy {
   const bodyRow = requireRow(tables.bodySection, tables.bodyTable, definition.id);
   const movementRow = requireRow(tables.movementSection, tables.movementTable, definition.id);
   const contactRow = requireRow(tables.contactSection, tables.contactTable, definition.id);
   const knockbackRow = requireRow(tables.knockbackSection, tables.knockbackTable, definition.id);
-  const soundsRow = requireRow(tables.soundsSection, tables.soundsTable, definition.id);
   const dropRows = findRowsById(tables.dropsSection, tables.dropsTable, definition.id);
-  const voiceRow = findRowById(tables.voiceSection, tables.voiceTable, definition.id);
-  const visualRow = requireRow(tables.visualSection, tables.visualTable, definition.id);
+  const audio = tables.audioByEnemyId.get(definition.id);
+  if (audio === undefined) {
+    throw sectionError(
+      tables.dropsSection,
+      `enemy "${definition.id}" is missing expanded sound-set audio`
+    );
+  }
 
   return {
     ...definition,
@@ -228,26 +225,123 @@ function parseEnemy(
       'durationMs'
     ),
     dropTable: parseDropTable(tables.dropsSection, tables.dropsTable, dropRows),
-    audio: {
-      hit: readOptionalSampleIdList(tables.soundsSection, tables.soundsTable, soundsRow, 'hit'),
-      death: readOptionalSampleIdList(tables.soundsSection, tables.soundsTable, soundsRow, 'death'),
-      voice: voiceRow === null ? null : parseVoice(tables.voiceSection, tables.voiceTable, voiceRow)
-    },
-    visual: {
-      image: requireCell(tables.visualSection, tables.visualTable, visualRow, 'image')
-    }
+    audio,
+    visual: definition.visual
   };
 }
 
-function assertNoForbiddenVisualColumns(section: MarkdownSection, table: MarkdownTable): void {
-  for (const header of table.header) {
-    if (!FORBIDDEN_VISUAL_COLUMNS.has(header.value)) continue;
+function assertNoForbiddenVisualGroup(balanceSection: MarkdownSection): void {
+  const visualSection = balanceSection.sections.find((section) => section.title === 'Visual');
+  if (visualSection !== undefined) {
+    throw sectionError(visualSection, 'group "## Visual" is replaced by inline image under enemy H2');
+  }
+}
+
+function assertNoForbiddenAudioGroups(balanceSection: MarkdownSection): void {
+  for (const groupName of ['Sounds', 'Voice']) {
+    const section = balanceSection.sections.find((candidate) => candidate.title === groupName);
+    if (section !== undefined) {
+      throw sectionError(section, `group "## ${groupName}" is replaced by # Sound sets`);
+    }
+  }
+}
+
+function parseSoundSets(
+  soundSetsSection: MarkdownSection,
+  knownEnemyIds: ReadonlySet<string>,
+  sourcePath: string
+): ReadonlyMap<string, ParsedEnemyAudio> {
+  assertSoundSetShape(soundSetsSection);
+
+  const partition = parseSharedResourceSetPartition(soundSetsSection, {
+    archetypeIds: knownEnemyIds,
+    membersColumnName: 'slimes',
+    requiredGroups: SOUND_SET_GROUPS
+  });
+
+  const hitBySet = parseSoundSetSampleGroup(partition, 'Hit', sourcePath);
+  const deathBySet = parseSoundSetSampleGroup(partition, 'Death', sourcePath);
+  const voiceBySet = parseSoundSetSampleGroup(partition, 'Voice', sourcePath);
+  const hitByEnemy = expandSetToMembers(partition.members, hitBySet);
+  const deathByEnemy = expandSetToMembers(partition.members, deathBySet);
+  const voiceByEnemy = expandSetToMembers(partition.members, voiceBySet);
+
+  const audioByEnemyId = new Map<string, ParsedEnemyAudio>();
+  for (const [enemyId] of partition.members) {
+    audioByEnemyId.set(enemyId, {
+      hit: requireExpandedSampleIds(hitByEnemy, enemyId, 'Hit'),
+      death: requireExpandedSampleIds(deathByEnemy, enemyId, 'Death'),
+      voice: {
+        sampleIds: requireExpandedSampleIds(voiceByEnemy, enemyId, 'Voice'),
+        intervalMinMs: ENEMY_VOICE_INTERVAL_MIN_MS,
+        intervalMaxMs: ENEMY_VOICE_INTERVAL_MAX_MS
+      }
+    });
+  }
+  return audioByEnemyId;
+}
+
+function parseSoundSetSampleGroup(
+  partition: SharedResourceSetPartition,
+  groupName: (typeof SOUND_SET_GROUPS)[number],
+  sourcePath: string
+): ReadonlyMap<string, ReadonlyArray<string>> {
+  const group = partition.groups.get(groupName);
+  if (group === undefined) {
+    throw new Error(`sound-set required group "${groupName}" was not parsed`);
+  }
+  return parseSampleIdCellGroup(groupName, group, BUILD_SAMPLE_REGISTRY, { sourcePath }).sampleIdsBySetId;
+}
+
+function assertSoundSetShape(soundSetsSection: MarkdownSection): void {
+  const expectedSections = new Set<string>(SOUND_SET_SECTIONS);
+  const seenSections = new Set<string>();
+  for (const section of soundSetsSection.sections) {
+    if (!expectedSections.has(section.title)) {
+      throw sectionError(section, `unexpected sound-set section "## ${section.title}"`);
+    }
+    if (seenSections.has(section.title)) {
+      throw sectionError(section, `duplicate sound-set section "## ${section.title}"`);
+    }
+    seenSections.add(section.title);
+  }
+
+  for (const sectionName of SOUND_SET_SECTIONS) {
+    if (!seenSections.has(sectionName)) {
+      throw sectionError(soundSetsSection, `expected sound-set section "## ${sectionName}"`);
+    }
+  }
+  if (soundSetsSection.sections[0]?.title !== SOUND_SET_MEMBERS_GROUP) {
+    throw sectionError(soundSetsSection, 'expected "## Members" to be the first sound-set section');
+  }
+
+  const membersSection = requireSection(soundSetsSection, SOUND_SET_MEMBERS_GROUP);
+  const membersTable = requireSingleTable(membersSection);
+  requireExactHeader(membersSection, membersTable, ['setId', 'slimes']);
+
+  for (const groupName of SOUND_SET_GROUPS) {
+    const groupSection = requireSection(soundSetsSection, groupName);
+    const groupTable = requireSingleTable(groupSection);
+    requireExactHeader(groupSection, groupTable, ['setId', ...SOUND_SET_SAMPLE_COLUMNS]);
+  }
+}
+
+function requireExactHeader(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  expectedHeader: ReadonlyArray<string>
+): void {
+  const actualHeader = table.header.map((cell) => cell.value);
+  if (
+    actualHeader.length !== expectedHeader.length ||
+    actualHeader.some((value, index) => value !== expectedHeader[index])
+  ) {
     throw cellError(
       section,
-      header.position,
+      table.position,
       '<header>',
-      header.value,
-      'derive visual field is generated from the PNG asset'
+      expectedHeader.join(' | '),
+      `expected header "${expectedHeader.join(' | ')}"`
     );
   }
 }
@@ -277,18 +371,6 @@ function parseDropTable(
       chance: requireNumber(section, table, row, 'chance')
     };
   });
-}
-
-function parseVoice(
-  section: MarkdownSection,
-  table: MarkdownTable,
-  row: MarkdownTableRow
-): ParsedEnemyVoice {
-  return {
-    sampleIds: requireSampleIdList(section, table, row, 'sampleIds'),
-    intervalMinMs: requireNumber(section, table, row, 'intervalMinMs'),
-    intervalMaxMs: requireNumber(section, table, row, 'intervalMaxMs')
-  };
 }
 
 function requireBehavior(
@@ -347,15 +429,6 @@ function findFieldRow(table: MarkdownTable, fieldName: string): MarkdownTableRow
   return table.rows.find((row) => row.cells[0]?.value === fieldName) ?? null;
 }
 
-function findRowById(
-  section: MarkdownSection,
-  table: MarkdownTable,
-  id: string
-): MarkdownTableRow | null {
-  requireIdHeader(section, table);
-  return table.rows.find((row) => getRowId(row) === id) ?? null;
-}
-
 function findRowsById(
   section: MarkdownSection,
   table: MarkdownTable,
@@ -377,23 +450,6 @@ function assertKnownReferences(
       throw cellError(section, row.position, rowId, 'id', `unknown enemy id "${rowId}"`);
     }
   }
-}
-
-function readOptionalSampleIdList(
-  section: MarkdownSection,
-  table: MarkdownTable,
-  row: MarkdownTableRow,
-  columnName: string
-): ReadonlyArray<string> {
-  const columnIndex = table.header.findIndex((cell) => cell.value === columnName);
-  if (columnIndex < 0) {
-    throw cellError(section, row.position, getRowId(row), columnName, `expected column "${columnName}"`);
-  }
-  const raw = row.cells[columnIndex]?.value ?? '';
-  if (raw.length === 0) {
-    return [];
-  }
-  return requireSampleIdList(section, table, row, columnName);
 }
 
 function requireIdHeader(section: MarkdownSection, table: MarkdownTable): void {
@@ -426,6 +482,18 @@ function cellError(
       section
     )}" row "${rowId}" column "${columnName}": ${expected}`
   );
+}
+
+function requireExpandedSampleIds(
+  samplesByEnemy: ReadonlyMap<string, ReadonlyArray<string>>,
+  enemyId: string,
+  groupName: string
+): ReadonlyArray<string> {
+  const sampleIds = samplesByEnemy.get(enemyId);
+  if (sampleIds === undefined) {
+    throw new Error(`enemy "${enemyId}" is missing expanded "${groupName}" sample ids`);
+  }
+  return sampleIds;
 }
 
 function sectionLabel(section: MarkdownSection): string {

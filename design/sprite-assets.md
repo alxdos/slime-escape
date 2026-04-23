@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-23
+- Updated: 2026-04-23 (story 014: авторская поверхность для пути к PNG-ассету переезжает с MD-колонки `image` на inline image-узел `![alt](../public/...)` под `## <id>` в `content/players.md` / `content/enemies.md` / `content/bosses.md` — см. раздел «Inline media-узлы как derive-источники» в [content-authoring.md](content-authoring.md). Рантайм-контракт `SpriteVisualSpec` (`image`/`sourceSizePx`/`worldSize`/`anchor`), правило producer-а `worldSize = sourceSizePx / PX_PER_WU`, three visual registries и hard-error policy — не меняются.)
 
 ## Context
 
@@ -69,7 +69,7 @@
   - `content/players.md` → `playerVisuals.generated.ts` (новая area, см. [content-authoring.md](content-authoring.md));
   - `content/enemies.md` → `enemyVisuals.generated.ts` (расширение существующей area);
   - `content/bosses.md`  → `bossVisuals.generated.ts`  (расширение существующей area).
-- Авторская колонка в MD — только `image` (путь от корня `public/`). Поля `sourceSizePx`/`worldSize`/`anchor` в MD запрещены: они либо derive-ятся (`sourceSizePx`, `worldSize`), либо фиксированы константой контракта (`anchor`). Запрет — частный случай правила «MD-колонка для derive-поля запрещена» из [content-authoring.md](content-authoring.md).
+- Авторская поверхность для пути к PNG-ассету — **inline image-узел `![alt](../public/<path>)` под H2 архетипа** в `content/<area>.md` (см. раздел «Inline media-узлы как derive-источники» в [content-authoring.md](content-authoring.md)). MD-колонка `image` — запрещена: она была бы вторым источником правды для того же derive-поля. URL inline-узла в `.generated.ts` записывается как public-relative path после strip префикса `../public/`, по правилу из того же раздела. Поля `sourceSizePx`/`worldSize`/`anchor` в MD запрещены целиком: они либо derive-ятся (`sourceSizePx`, `worldSize`), либо фиксированы константой контракта (`anchor`). Запрет — частный случай правила «MD-колонка для derive-поля запрещена» из [content-authoring.md](content-authoring.md).
 
 ### Asset-only renderer
 

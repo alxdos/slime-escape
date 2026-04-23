@@ -1,12 +1,15 @@
 import { type MarkdownDocument, type MarkdownSection, type MarkdownTable } from '../parse';
-import { requireNumber, requireRow, requireSampleIdList, requireSection } from '../util/require';
+import { requireNumber, requireRow, requireSection } from '../util/require';
+import { requireInlineAudioLink } from '../util/inlineMedia';
 import {
   assertKnownReferences,
   readMarkdownDocument,
   requireField,
   requireFieldHexColor,
-  requireSingleTable
+  requireSingleTable,
+  sectionError
 } from '../util/markdown';
+import { BUILD_SAMPLE_REGISTRY } from '../util/sampleRegistry';
 
 export type ParsedWeaponAudio = Readonly<{
   fire: ReadonlyArray<string>;
@@ -32,6 +35,7 @@ type WeaponDefinition = Readonly<{
   id: string;
   displayName: string;
   color: number;
+  audio: ParsedWeaponAudio;
 }>;
 
 export async function parseWeaponsArea(sourcePath: string): Promise<ParsedWeaponsArea> {
@@ -49,17 +53,15 @@ function parseWeaponsDocument(document: MarkdownDocument): ParsedWeaponsArea {
   const cooldownSection = requireSection(balanceSection, 'Cooldown');
   const projectileSection = requireSection(balanceSection, 'Projectile');
   const damageSection = requireSection(balanceSection, 'Damage');
-  const soundSection = requireSection(balanceSection, 'Sound');
+  assertNoForbiddenSoundGroup(balanceSection);
 
   const cooldownTable = requireSingleTable(cooldownSection);
   const projectileTable = requireSingleTable(projectileSection);
   const damageTable = requireSingleTable(damageSection);
-  const soundTable = requireSingleTable(soundSection);
 
   assertKnownReferences(cooldownSection, cooldownTable, knownWeaponIds, 'weapon');
   assertKnownReferences(projectileSection, projectileTable, knownWeaponIds, 'weapon');
   assertKnownReferences(damageSection, damageTable, knownWeaponIds, 'weapon');
-  assertKnownReferences(soundSection, soundTable, knownWeaponIds, 'weapon');
 
   return {
     weapons: definitions.map((definition) =>
@@ -69,9 +71,7 @@ function parseWeaponsDocument(document: MarkdownDocument): ParsedWeaponsArea {
         projectileSection,
         projectileTable,
         damageSection,
-        damageTable,
-        soundSection,
-        soundTable
+        damageTable
       })
     )
   };
@@ -82,7 +82,10 @@ function parseWeaponDefinition(section: MarkdownSection): WeaponDefinition {
   return {
     id: section.title,
     displayName: requireField(section, table, 'displayName'),
-    color: requireFieldHexColor(section, table, 'color')
+    color: requireFieldHexColor(section, table, 'color'),
+    audio: {
+      fire: [requireInlineAudioLink(section, BUILD_SAMPLE_REGISTRY).sampleId]
+    }
   };
 }
 
@@ -95,14 +98,11 @@ function parseWeapon(
     projectileTable: MarkdownTable;
     damageSection: MarkdownSection;
     damageTable: MarkdownTable;
-    soundSection: MarkdownSection;
-    soundTable: MarkdownTable;
   }>
 ): ParsedWeapon {
   const cooldownRow = requireRow(tables.cooldownSection, tables.cooldownTable, definition.id);
   const projectileRow = requireRow(tables.projectileSection, tables.projectileTable, definition.id);
   const damageRow = requireRow(tables.damageSection, tables.damageTable, definition.id);
-  const soundRow = requireRow(tables.soundSection, tables.soundTable, definition.id);
 
   return {
     ...definition,
@@ -126,8 +126,13 @@ function parseWeapon(
       'projectileTtlMs'
     ),
     damage: requireNumber(tables.damageSection, tables.damageTable, damageRow, 'damage'),
-    audio: {
-      fire: requireSampleIdList(tables.soundSection, tables.soundTable, soundRow, 'fire')
-    }
+    audio: definition.audio
   };
+}
+
+function assertNoForbiddenSoundGroup(balanceSection: MarkdownSection): void {
+  const soundSection = balanceSection.sections.find((section) => section.title === 'Sound');
+  if (soundSection !== undefined) {
+    throw sectionError(soundSection, 'group "## Sound" is replaced by inline audio-link under weapon H2');
+  }
 }
