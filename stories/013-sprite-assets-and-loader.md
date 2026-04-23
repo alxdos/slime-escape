@@ -1,8 +1,8 @@
 # Sprite Assets and Loader
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-23
-- Updated: 2026-04-23 (architect pass: добавлены `design/sprite-assets.md` и расширения `content-authoring.md`/`main-ui-shell.md`; после ручной проверки добавлен follow-up контракт `design/body-contact-boxes.md` для body-contact по sprite-derived `contactBox`; follow-up завершён для projectile hit detection по `contactBox` в `CombatSystem`; code-review follow-up: `players` split на `hero-sandbox` / `hero-training`, minimum splash duration зафиксирован в `main-ui-shell.md`, session-builder spawn-fit переведён на `contactBox`)
+- Updated: 2026-04-23 (closed: PR #12 merged в `main`. Architect pass завёл `design/sprite-assets.md`, `design/body-contact-boxes.md` и расширения `content-authoring.md`/`main-ui-shell.md`/`spawn-plan.md`. Code-review закрыл блокеры: `PX_PER_WU = 200` зафиксирован в shared (`src/shared/sprite/spriteScale.ts`), generator больше не импортирует из `src/main/**`, splash min-duration зафиксирован контрактом, `players` разведён на `hero-sandbox`/`hero-training` без drift `maxHp`, session spawn-fit переведён на `contactBox`. Известный follow-up на отдельную мелкую историю: вызовы `validateEnemyVisuals`/`validateBossVisuals`/`validatePlayerVisuals` на старте сессии (сейчас orphan archetype/visual ловится только лениво в renderer-е).)
 
 ## Player-facing
 
@@ -129,7 +129,7 @@ Bosses reuse the existing boss phase/attack patterns for this story unless a bos
 | T16 | [x] | Tests: PNG-size util tests (см. T4); drift-сценарий «PNG поменялся, MD не правлен — `content:check` падает»; renderer hard-error tests (missing visual spec / missing texture); UiShell `loading`/`error('preload')` phase tests (переходы, видимость, отсутствие Renderer); `validateEnemyVisuals`/`validateBossVisuals`/`validatePlayerVisuals` tests; smoke tests на все 30 slime ids и 5 boss ids; миграция существующих snapshot-тестов под новые id; тест «`PX_PER_WU = 200` единственный источник scale». | опоры: `design/sprite-assets.md`, `design/main-ui-shell.md`, `design/testing.md` |
 | T16a | [x] | Архитектор: добавить `design/body-contact-boxes.md` и обновить `design/content-archetypes.md`, `design/session-definition.md`, `design/enemy-contact.md` под derive `contactBox` для body-contact `player` / `enemy` / `boss`; обновить `design/README.md`, `stories/013` (`Technical`, `Tasks`, `Related`). | архитектор |
 | T16b | [x] | Collision follow-up: derive `contactBox` в shared content для `players` / `enemies` / `bosses` из того же PNG scale pipeline, что и visual registry; перенести `CombatSystem` contact overlap на box-vs-box и projectile hit detection на circle-vs-contactBox; player clamp в `MovementSystem` перевести на `contactBox`; добавить/обновить tests на `content-build`, `CombatSystem`, `MovementSystem`, `buildSession` и live registries. | опоры: `design/body-contact-boxes.md`, `design/content-archetypes.md`, `design/enemy-contact.md`, `design/projectiles-and-combat.md`, `design/session-definition.md` |
-| T17 | [ ] | Demo/closure: пройти `loading → menu → training → campaign`. Зафиксировать в `Updated` истории, что splash + loader появляются до меню, hero/slime/boss спрайты отрисовываются, gameplay-regression тесты зелёные. Чек-лист закрытия из `stories/README.md`; перевод `Status` истории в `done`; обновление таблицы в `stories/README.md`; проверка `Index` в `design/README.md`. | архитектор |
+| T17 | [x] | Demo/closure: PR #12 merged в `main`. Splash + loader появляются до меню, hero/slime/boss спрайты отрисовываются, gameplay-regression тесты зелёные (313/313). `Status` переведён в `done`, таблица в `stories/README.md` обновлена, `Index` в `design/README.md` включает `sprite-assets.md` и `body-contact-boxes.md`. | архитектор |
 
 ## Related
 
