@@ -1,7 +1,12 @@
 import { log } from '../log';
 import { SIM_STEP_MS } from '../timing';
 
-import { DROP_ARCHETYPES, HEAL_ORB, type DropArchetype } from './drops';
+import {
+  SLIME_FAST,
+  SLIME_TANK,
+  TRAINING_TARGET
+} from './enemies.generated';
+import { DROP_ARCHETYPES, type DropArchetype } from './drops';
 
 export type EnemyBehavior = 'stationary' | 'chase';
 
@@ -26,53 +31,7 @@ export type EnemyArchetype = Readonly<{
   dropTable: ReadonlyArray<DropTableEntry>;
 }>;
 
-export const TRAINING_TARGET: EnemyArchetype = {
-  id: 'training-target',
-  displayName: 'Training Target',
-  radius: 0.6,
-  maxHp: 3,
-  behavior: 'stationary',
-  maxSpeed: 0,
-  contactDamage: 0,
-  contactCooldownMs: 1,
-  knockbackBaseImpulse: 0,
-  knockbackVelocityScale: 0,
-  knockbackDurationMs: 1,
-  color: 0xff7766,
-  dropTable: []
-};
-
-export const SLIME_FAST: EnemyArchetype = {
-  id: 'slime-fast',
-  displayName: 'Fast Slime',
-  radius: 0.4,
-  maxHp: 1,
-  behavior: 'chase',
-  maxSpeed: 4,
-  contactDamage: 1,
-  contactCooldownMs: 800,
-  knockbackBaseImpulse: 8,
-  knockbackVelocityScale: 1.5,
-  knockbackDurationMs: 350,
-  color: 0x77ff99,
-  dropTable: [{ archetypeId: HEAL_ORB.id, chance: 0.25 }]
-};
-
-export const SLIME_TANK: EnemyArchetype = {
-  id: 'slime-tank',
-  displayName: 'Tank Slime',
-  radius: 0.7,
-  maxHp: 5,
-  behavior: 'chase',
-  maxSpeed: 1.8,
-  contactDamage: 2,
-  contactCooldownMs: 1000,
-  knockbackBaseImpulse: 3,
-  knockbackVelocityScale: 0.5,
-  knockbackDurationMs: 200,
-  color: 0x4488dd,
-  dropTable: [{ archetypeId: HEAL_ORB.id, chance: 0.6 }]
-};
+export { SLIME_FAST, SLIME_TANK, TRAINING_TARGET } from './enemies.generated';
 
 export const ENEMY_ARCHETYPES: Readonly<Record<string, EnemyArchetype>> = {
   [TRAINING_TARGET.id]: TRAINING_TARGET,
