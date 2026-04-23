@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (добавлен `player.contactBox` по [body-contact-boxes.md](body-contact-boxes.md); семантика `winCondition: bossDefeated` — [boss-encounter.md](boss-encounter.md); ранее: формализованы `ZoneBehavior`/`TransitionRules`, `allEncountersComplete`/`playerDeath`, preset `training`, поле `player.maxHp`)
+- Updated: 2026-04-23 (story 015: метаданные playable preset — `displayName`, `description`, `visibleInMenu`, `order` — переезжают в `content library` и хранятся как поля партиции `# Session` в `content/sessions/<presetId>.md` (см. [content-authoring.md](content-authoring.md), раздел «Multi-file области»). Форма `SessionDefinition`, `EncounterDefinition`, `SpawnPlan`, `ZoneBehavior`, `TransitionRules`, `Loadout`, `WinCondition`, `LossCondition` в `src/shared/session.ts` — **не меняется**. Ранее: добавлен `player.contactBox` по [body-contact-boxes.md](body-contact-boxes.md); семантика `winCondition: bossDefeated` — [boss-encounter.md](boss-encounter.md); ранее: формализованы `ZoneBehavior`/`TransitionRules`, `allEncountersComplete`/`playerDeath`, preset `training`, поле `player.maxHp`)
 
 ## Context
 
@@ -126,3 +126,6 @@
 - [snapshot-shape.md](snapshot-shape.md)
 - [boss-encounter.md](boss-encounter.md)
 - [body-contact-boxes.md](body-contact-boxes.md)
+- [content-authoring.md](content-authoring.md)
+- [main-ui-shell.md](main-ui-shell.md)
+- [../stories/015-sessions-from-md.md](../stories/015-sessions-from-md.md)
