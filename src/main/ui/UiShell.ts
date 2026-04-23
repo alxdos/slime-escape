@@ -352,38 +352,78 @@ export function createUiShell(init: UiShellInit): UiShell {
 
     const session = builder(preset, { seed: makeSeed() });
     const clientSettings = clientSettingsStore.get();
-    activeSession = session;
-    audio.attach(session);
-    sim.startSession(session);
+    const spriteTextures = preloadedTextures;
+    if (spriteTextures === null) {
+      throw new Error('Sprite textures must be preloaded before starting a session');
+    }
 
-    renderer = rendererFactory({
-      canvas: init.canvas,
-      renderScalePreset: clientSettings.renderScalePreset,
-      arena: session.arena,
-      player: session.player,
-      getSnapshotPair: sim.snapshotPair,
-      getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
-    });
-    const activeRenderer = renderer;
-    let lastRendererPreset = clientSettings.renderScalePreset;
-    unsubscribeRendererSettings?.();
-    unsubscribeRendererSettings = clientSettingsStore.subscribe((settings) => {
-      if (settings.renderScalePreset === lastRendererPreset) {
-        return;
+    let nextRenderer: Renderer | null = null;
+    let nextInput: InputController | null = null;
+    let nextUnsubscribeRendererSettings: (() => void) | null = null;
+    try {
+      nextRenderer = rendererFactory({
+        canvas: init.canvas,
+        renderScalePreset: clientSettings.renderScalePreset,
+        arena: session.arena,
+        spriteTextures,
+        getSnapshotPair: sim.snapshotPair,
+        getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
+      });
+      const activeRenderer = nextRenderer;
+      let lastRendererPreset = clientSettings.renderScalePreset;
+      nextUnsubscribeRendererSettings = clientSettingsStore.subscribe((settings) => {
+        if (settings.renderScalePreset === lastRendererPreset) {
+          return;
+        }
+        lastRendererPreset = settings.renderScalePreset;
+        activeRenderer.applyScalePolicy(settings.renderScalePreset);
+      });
+
+      nextInput = inputFactory({
+        canvas: init.canvas,
+        arena: session.arena,
+        pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height,
+        initialAim: session.player.position,
+        onCommand: sim.sendInput
+      });
+    } catch (error: unknown) {
+      nextUnsubscribeRendererSettings?.();
+      nextRenderer?.dispose();
+      throw error;
+    }
+
+    let audioAttached = false;
+    let sessionStarted = false;
+    let hudAttached = false;
+    try {
+      audio.attach(session);
+      audioAttached = true;
+      sim.startSession(session);
+      sessionStarted = true;
+      nextInput.start();
+      hud.attach(session);
+      hudAttached = true;
+    } catch (error: unknown) {
+      if (hudAttached) {
+        hud.detach();
       }
-      lastRendererPreset = settings.renderScalePreset;
-      activeRenderer.applyScalePolicy(settings.renderScalePreset);
-    });
+      nextInput.stop();
+      if (sessionStarted) {
+        sim.stopSession();
+      }
+      if (audioAttached) {
+        audio.detach();
+      }
+      nextUnsubscribeRendererSettings?.();
+      nextRenderer.dispose();
+      throw error;
+    }
 
-    input = inputFactory({
-      canvas: init.canvas,
-      arena: session.arena,
-      pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height,
-      initialAim: session.player.position,
-      onCommand: sim.sendInput
-    });
-    input.start();
-    hud.attach(session);
+    renderer = nextRenderer;
+    input = nextInput;
+    activeSession = session;
+    unsubscribeRendererSettings?.();
+    unsubscribeRendererSettings = nextUnsubscribeRendererSettings;
 
     setPhase(RUNNING_PHASE);
   }

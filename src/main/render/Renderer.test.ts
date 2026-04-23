@@ -1,8 +1,13 @@
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
+import { BOSS_GARGOYLE } from '../../shared/content/bosses';
+import { SLIME_BUG } from '../../shared/content/enemies';
+import { HERO_VISUAL } from './playerVisuals';
 import { createRenderer } from './Renderer';
+import type { TextureMap } from './spritePreload';
 
 type FakeRendererOp =
   | Readonly<{ kind: 'pixelRatio'; value: number }>
@@ -56,6 +61,15 @@ function createEmptySnapshotPair(): SnapshotPair {
   };
 }
 
+function createSpriteTextures(
+  overrides: Readonly<Record<string, THREE.Texture>> = {}
+): TextureMap {
+  return {
+    [HERO_VISUAL.archetypeId]: new THREE.Texture(),
+    ...overrides
+  };
+}
+
 describe('createRenderer', () => {
   it('applies the low preset with quarter-resolution backing pixels and pixelated output on init', () => {
     const canvas = createCanvasHarness();
@@ -65,7 +79,7 @@ describe('createRenderer', () => {
       canvas,
       renderScalePreset: 'low',
       arena: { width: 16, height: 9 },
-      player: { radius: 0.5 },
+      spriteTextures: createSpriteTextures(),
       getSnapshotPair: createEmptySnapshotPair,
       windowTarget: {
         innerWidth: 800,
@@ -95,7 +109,7 @@ describe('createRenderer', () => {
       canvas,
       renderScalePreset: 'medium',
       arena: { width: 16, height: 9 },
-      player: { radius: 0.5 },
+      spriteTextures: createSpriteTextures(),
       getSnapshotPair: createEmptySnapshotPair,
       windowTarget: {
         innerWidth: 800,
@@ -133,7 +147,7 @@ describe('createRenderer', () => {
       canvas,
       renderScalePreset: 'medium',
       arena: { width: 16, height: 9 },
-      player: { radius: 0.5 },
+      spriteTextures: createSpriteTextures(),
       getSnapshotPair: createEmptySnapshotPair,
       windowTarget,
       createRendererBackend: backend.factory,
@@ -157,5 +171,70 @@ describe('createRenderer', () => {
       { kind: 'pixelRatio', value: 1 },
       { kind: 'size', width: 256, height: 144, updateStyle: false }
     ]);
+  });
+
+  it('renders snapshots with sprite-backed enemy and boss entities from preloaded textures', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      spriteTextures: createSpriteTextures({
+        [SLIME_BUG.id]: new THREE.Texture(),
+        [BOSS_GARGOYLE.id]: new THREE.Texture()
+      }),
+      getSnapshotPair: () => ({
+        prev: null,
+        curr: {
+          simTimeMs: 0,
+          entities: [
+            { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+            {
+              id: 2,
+              kind: 'enemy',
+              archetypeId: SLIME_BUG.id,
+              x: 1,
+              y: 1,
+              hp: 2,
+              maxHp: 2
+            },
+            {
+              id: 3,
+              kind: 'boss',
+              archetypeId: BOSS_GARGOYLE.id,
+              x: -1,
+              y: -1,
+              hp: 10,
+              maxHp: 10,
+              phaseIndex: 0,
+              phaseId: 'phase-0',
+              activeAttackIds: []
+            }
+          ],
+          encounter: null,
+          zone: { mode: 'disabled', margin: 0 },
+          waveProgress: null,
+          bossHud: null
+        },
+        currReceivedAtMs: 0,
+        nowMs: 0
+      }),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    backend.reset();
+    renderer.render();
+
+    expect(backend.ops).toEqual([{ kind: 'render' }]);
   });
 });

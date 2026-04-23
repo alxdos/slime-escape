@@ -1,10 +1,8 @@
 import * as THREE from 'three';
 
-import { BOSS_ARCHETYPES, type BossArchetype } from '../../shared/content/bosses';
 import { DROP_ARCHETYPES, type DropArchetype } from '../../shared/content/drops';
-import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../../shared/content/enemies';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
-import type { ArenaConfig, PlayerSpawn } from '../../shared/session';
+import type { ArenaConfig } from '../../shared/session';
 import type {
   BossSnapshot,
   DropSnapshot,
@@ -16,11 +14,16 @@ import type {
 import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
+import { BOSS_VISUALS } from './bossVisuals';
+import { ENEMY_VISUALS } from './enemyVisuals';
 import { fitCanvasToViewport } from './fitToViewport';
+import { HERO_VISUAL } from './playerVisuals';
 import {
   resolveRenderScale,
   type RenderScalePreset
 } from './renderScale';
+import type { SpriteVisualSpec } from './SpriteVisualSpec';
+import type { TextureMap } from './spritePreload';
 
 export type AimAccessor = () => { x: number; y: number } | null;
 
@@ -46,11 +49,9 @@ export type RendererInit = Readonly<{
   canvas: HTMLCanvasElement;
   renderScalePreset: RenderScalePreset;
   arena: ArenaConfig;
-  player: Pick<PlayerSpawn, 'radius'>;
+  spriteTextures: TextureMap;
   getSnapshotPair: () => SnapshotPair;
   getAim?: AimAccessor;
-  enemyRegistry?: Readonly<Record<string, EnemyArchetype>>;
-  bossRegistry?: Readonly<Record<string, BossArchetype>>;
   weaponRegistry?: Readonly<Record<string, WeaponArchetype>>;
   dropRegistry?: Readonly<Record<string, DropArchetype>>;
   windowTarget?: RendererWindowTarget;
@@ -67,7 +68,6 @@ export type Renderer = Readonly<{
 
 const ARENA_FLOOR_COLOR = 0x1b1f29;
 const ARENA_BORDER_COLOR = 0x2a3142;
-const PLAYER_COLOR = 0x9ad6ff;
 const CROSSHAIR_COLOR = 0xffe066;
 const CROSSHAIR_SIZE_WU = 0.6;
 const CROSSHAIR_THICKNESS_WU = 0.05;
@@ -82,9 +82,13 @@ const ZONE_OVERLAY_Z = 0.2;
 const ZONE_CORNER_RADIUS_FACTOR = 0.25;
 const ZONE_FEATHER_WU = 1.5;
 
+type EntityMeshEntry = {
+  mesh: THREE.Mesh;
+  geometry: THREE.BufferGeometry;
+  material: THREE.Material;
+};
+
 export function createRenderer(init: RendererInit): Renderer {
-  const enemyRegistry = init.enemyRegistry ?? ENEMY_ARCHETYPES;
-  const bossRegistry = init.bossRegistry ?? BOSS_ARCHETYPES;
   const weaponRegistry = init.weaponRegistry ?? WEAPON_ARCHETYPES;
   const dropRegistry = init.dropRegistry ?? DROP_ARCHETYPES;
   const windowTarget = init.windowTarget ?? window;
@@ -117,10 +121,12 @@ export function createRenderer(init: RendererInit): Renderer {
   arenaBorder.position.z = -0.5;
   scene.add(arenaBorder);
 
-  const playerGeometry = new THREE.CircleGeometry(init.player.radius, 32);
-  const playerMaterial = new THREE.MeshBasicMaterial({ color: PLAYER_COLOR });
-  const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
-  playerMesh.position.z = 0;
+  const playerEntry = createSpriteMesh(
+    HERO_VISUAL,
+    requireSpriteTexture(init.spriteTextures, HERO_VISUAL.archetypeId, 'player'),
+    ENEMY_Z
+  );
+  const playerMesh = playerEntry.mesh;
   playerMesh.visible = false;
   scene.add(playerMesh);
 
@@ -134,11 +140,10 @@ export function createRenderer(init: RendererInit): Renderer {
   const debugHud = (init.createDebugHud ?? createDebugHud)();
   let currentRenderScalePreset = init.renderScalePreset;
 
-  type EntityMesh = { mesh: THREE.Mesh; geometry: THREE.BufferGeometry; material: THREE.Material };
-  const enemyMeshes = new Map<number, EntityMesh>();
-  const bossMeshes = new Map<number, EntityMesh>();
-  const projectileMeshes = new Map<number, EntityMesh>();
-  const dropMeshes = new Map<number, EntityMesh>();
+  const enemyMeshes = new Map<number, EntityMeshEntry>();
+  const bossMeshes = new Map<number, EntityMeshEntry>();
+  const projectileMeshes = new Map<number, EntityMeshEntry>();
+  const dropMeshes = new Map<number, EntityMeshEntry>();
 
   function applyResolvedScalePolicy(
     preset: RenderScalePreset,
@@ -176,45 +181,39 @@ export function createRenderer(init: RendererInit): Renderer {
 
   fitToWindow();
 
-  function disposeEntityMesh(entry: EntityMesh): void {
+  function disposeEntityMesh(entry: EntityMeshEntry): void {
     scene.remove(entry.mesh);
     entry.geometry.dispose();
     entry.material.dispose();
   }
 
-  function ensureBossMesh(snap: BossSnapshot): EntityMesh {
+  function ensureBossMesh(snap: BossSnapshot): EntityMeshEntry {
     const existing = bossMeshes.get(snap.id);
     if (existing !== undefined) return existing;
-    const archetype = bossRegistry[snap.archetypeId];
-    const radius = archetype?.radius ?? 1.1;
-    const color = archetype?.color ?? 0xaa44ff;
-    const geometry = new THREE.CircleGeometry(radius, 28);
-    const material = new THREE.MeshBasicMaterial({ color });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.z = ENEMY_Z;
-    scene.add(mesh);
-    const entry: EntityMesh = { mesh, geometry, material };
+    const entry = createSpriteMesh(
+      requireVisualSpec(BOSS_VISUALS, snap.archetypeId, 'boss'),
+      requireSpriteTexture(init.spriteTextures, snap.archetypeId, 'boss'),
+      ENEMY_Z
+    );
+    scene.add(entry.mesh);
     bossMeshes.set(snap.id, entry);
     return entry;
   }
 
-  function ensureEnemyMesh(snap: EnemySnapshot): EntityMesh {
+  function ensureEnemyMesh(snap: EnemySnapshot): EntityMeshEntry {
     const existing = enemyMeshes.get(snap.id);
     if (existing !== undefined) return existing;
-    const archetype = enemyRegistry[snap.archetypeId];
-    const radius = archetype?.radius ?? 0.5;
-    const color = archetype?.color ?? 0xffffff;
-    const geometry = new THREE.CircleGeometry(radius, 24);
-    const material = new THREE.MeshBasicMaterial({ color });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.z = ENEMY_Z;
-    scene.add(mesh);
-    const entry: EntityMesh = { mesh, geometry, material };
+    const entry = createSpriteMesh(
+      requireVisualSpec(ENEMY_VISUALS, snap.archetypeId, 'enemy'),
+      requireSpriteTexture(init.spriteTextures, snap.archetypeId, 'enemy'),
+      ENEMY_Z
+    );
+    scene.add(entry.mesh);
     enemyMeshes.set(snap.id, entry);
     return entry;
   }
 
-  function ensureProjectileMesh(snap: ProjectileSnapshot): EntityMesh {
+  function ensureProjectileMesh(snap: ProjectileSnapshot): EntityMeshEntry {
     const existing = projectileMeshes.get(snap.id);
     if (existing !== undefined) return existing;
     const archetype = weaponRegistry[snap.weaponArchetypeId];
@@ -225,12 +224,12 @@ export function createRenderer(init: RendererInit): Renderer {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.z = PROJECTILE_Z;
     scene.add(mesh);
-    const entry: EntityMesh = { mesh, geometry, material };
+    const entry: EntityMeshEntry = { mesh, geometry, material };
     projectileMeshes.set(snap.id, entry);
     return entry;
   }
 
-  function ensureDropMesh(snap: DropSnapshot): EntityMesh {
+  function ensureDropMesh(snap: DropSnapshot): EntityMeshEntry {
     const existing = dropMeshes.get(snap.id);
     if (existing !== undefined) return existing;
     const archetype = dropRegistry[snap.archetypeId];
@@ -241,7 +240,7 @@ export function createRenderer(init: RendererInit): Renderer {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.z = DROP_Z;
     scene.add(mesh);
-    const entry: EntityMesh = { mesh, geometry, material };
+    const entry: EntityMeshEntry = { mesh, geometry, material };
     dropMeshes.set(snap.id, entry);
     return entry;
   }
@@ -294,7 +293,7 @@ export function createRenderer(init: RendererInit): Renderer {
     dispose(): void {
       scene.remove(arenaMesh);
       scene.remove(arenaBorder);
-      scene.remove(playerMesh);
+      disposeEntityMesh(playerEntry);
       scene.remove(crosshair);
       scene.remove(zoneOverlay.mesh);
       for (const entry of enemyMeshes.values()) disposeEntityMesh(entry);
@@ -307,8 +306,6 @@ export function createRenderer(init: RendererInit): Renderer {
       dropMeshes.clear();
       arenaGeometry.dispose();
       arenaMaterial.dispose();
-      playerGeometry.dispose();
-      playerMaterial.dispose();
       disposeCrosshair(crosshair);
       arenaBorder.geometry.dispose();
       (arenaBorder.material as THREE.Material).dispose();
@@ -317,6 +314,46 @@ export function createRenderer(init: RendererInit): Renderer {
       renderer.dispose();
     }
   };
+}
+
+function createSpriteMesh(
+  visual: SpriteVisualSpec,
+  texture: THREE.Texture,
+  z: number
+): EntityMeshEntry {
+  const geometry = new THREE.PlaneGeometry(visual.worldSize.width, visual.worldSize.height);
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.z = z;
+  return { mesh, geometry, material };
+}
+
+function requireVisualSpec(
+  visuals: Readonly<Record<string, SpriteVisualSpec>>,
+  archetypeId: string,
+  kind: 'player' | 'enemy' | 'boss'
+): SpriteVisualSpec {
+  const visual = visuals[archetypeId];
+  if (visual !== undefined) {
+    return visual;
+  }
+  throw new Error(`${kind} visual missing for archetype "${archetypeId}"`);
+}
+
+function requireSpriteTexture(
+  textures: TextureMap,
+  archetypeId: string,
+  kind: 'player' | 'enemy' | 'boss'
+): THREE.Texture {
+  const texture = textures[archetypeId];
+  if (texture !== undefined) {
+    return texture;
+  }
+  throw new Error(`${kind} texture missing for archetype "${archetypeId}"`);
 }
 
 function createThreeRendererBackend(init: Readonly<{
@@ -418,8 +455,6 @@ function updatePlayer(mesh: THREE.Mesh, pair: SnapshotPair, alpha: number): void
   mesh.visible = true;
   mesh.position.set(x, y, 0);
 }
-
-type EntityMeshEntry = { mesh: THREE.Mesh; geometry: THREE.BufferGeometry; material: THREE.Material };
 
 function updateEntities<S extends EntitySnapshot>(
   pair: SnapshotPair,
