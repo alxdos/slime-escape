@@ -8,6 +8,7 @@ import { runContentBuild, type ContentArea } from '../index';
 import { parseEnemiesArea } from './parse';
 import { renderEnemyAudio } from './renderAudio';
 import { renderEnemyContent } from './renderContent';
+import { renderEnemyVisuals } from './renderVisuals';
 
 describe('content-build enemies area', () => {
   it('renders the committed enemies markdown to the committed generated files', async () => {
@@ -57,6 +58,20 @@ describe('content-build enemies area', () => {
       { archetypeId: 'heal-orb', chance: 0.25 },
       { archetypeId: 'coin', chance: 0.1 }
     ]);
+  });
+
+  it('renders visual specs from PNG image paths', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-enemy-visuals-'));
+    const sourcePath = join(directory, 'enemies.md');
+    await writeFile(sourcePath, makeEnemiesMarkdown(), 'utf8');
+
+    const area = await parseEnemiesArea(sourcePath);
+    const visuals = renderEnemyVisuals(area);
+
+    expect(visuals).toContain("export const SLIME_FAST_VISUAL: SpriteVisualSpec");
+    expect(visuals).toContain("image: '/assets/slime-06.png'");
+    expect(visuals).toContain('sourceSizePx: { width:');
+    expect(visuals).toContain('ENEMY_VISUAL_SPECS');
   });
 
   it('rejects duplicate enemy/drop pairs in the drops table', async () => {
@@ -181,5 +196,12 @@ ${extraFastDropRow}
 | id | sampleIds | intervalMinMs | intervalMaxMs |
 |---|---|---:|---:|
 | slime-fast | slimes/hit-1, slimes/hit-2 | 3000 | 6000 |
+
+## Visual
+
+| id | image |
+|---|---|
+| training-target | /assets/slime-05.png |
+| slime-fast | /assets/slime-06.png |
 `;
 }

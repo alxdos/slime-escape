@@ -29,6 +29,10 @@ export type ParsedEnemyAudio = Readonly<{
   voice: ParsedEnemyVoice | null;
 }>;
 
+export type ParsedEnemyVisual = Readonly<{
+  image: string;
+}>;
+
 export type ParsedEnemyVoice = Readonly<{
   sampleIds: ReadonlyArray<string>;
   intervalMinMs: number;
@@ -50,9 +54,11 @@ export type ParsedEnemy = Readonly<{
   color: number;
   dropTable: ReadonlyArray<ParsedDropTableEntry>;
   audio: ParsedEnemyAudio;
+  visual: ParsedEnemyVisual;
 }>;
 
 export type ParsedEnemiesArea = Readonly<{
+  sourcePath: string;
   enemies: ReadonlyArray<ParsedEnemy>;
 }>;
 
@@ -61,6 +67,14 @@ type EnemyDefinition = Readonly<{
   displayName: string;
   color: number;
 }>;
+
+const FORBIDDEN_VISUAL_COLUMNS = new Set([
+  'sourceSizePx',
+  'displayWidthPx',
+  'displayHeightPx',
+  'displaySizePx',
+  'worldSize'
+]);
 
 export async function parseEnemiesArea(sourcePath: string): Promise<ParsedEnemiesArea> {
   const document = await readEnemiesDocument(sourcePath);
@@ -81,6 +95,7 @@ function parseEnemiesDocument(document: MarkdownDocument): ParsedEnemiesArea {
   const dropsSection = requireSection(balanceSection, 'Drops');
   const soundsSection = requireSection(balanceSection, 'Sounds');
   const voiceSection = requireSection(balanceSection, 'Voice');
+  const visualSection = requireSection(balanceSection, 'Visual');
 
   const bodyTable = requireSingleTable(bodySection);
   const movementTable = requireSingleTable(movementSection);
@@ -89,6 +104,7 @@ function parseEnemiesDocument(document: MarkdownDocument): ParsedEnemiesArea {
   const dropsTable = requireSingleTable(dropsSection);
   const soundsTable = requireSingleTable(soundsSection);
   const voiceTable = requireSingleTable(voiceSection);
+  const visualTable = requireSingleTable(visualSection);
 
   assertKnownReferences(bodySection, bodyTable, knownEnemyIds);
   assertKnownReferences(movementSection, movementTable, knownEnemyIds);
@@ -97,8 +113,11 @@ function parseEnemiesDocument(document: MarkdownDocument): ParsedEnemiesArea {
   assertKnownReferences(dropsSection, dropsTable, knownEnemyIds);
   assertKnownReferences(soundsSection, soundsTable, knownEnemyIds);
   assertKnownReferences(voiceSection, voiceTable, knownEnemyIds);
+  assertKnownReferences(visualSection, visualTable, knownEnemyIds);
+  assertNoForbiddenVisualColumns(visualSection, visualTable);
 
   return {
+    sourcePath: document.filePath,
     enemies: definitions.map((definition) =>
       parseEnemy(definition, {
         bodySection,
@@ -114,7 +133,9 @@ function parseEnemiesDocument(document: MarkdownDocument): ParsedEnemiesArea {
         soundsSection,
         soundsTable,
         voiceSection,
-        voiceTable
+        voiceTable,
+        visualSection,
+        visualTable
       })
     )
   };
@@ -157,6 +178,8 @@ function parseEnemy(
     soundsTable: MarkdownTable;
     voiceSection: MarkdownSection;
     voiceTable: MarkdownTable;
+    visualSection: MarkdownSection;
+    visualTable: MarkdownTable;
   }>
 ): ParsedEnemy {
   const bodyRow = requireRow(tables.bodySection, tables.bodyTable, definition.id);
@@ -166,6 +189,7 @@ function parseEnemy(
   const soundsRow = requireRow(tables.soundsSection, tables.soundsTable, definition.id);
   const dropRows = findRowsById(tables.dropsSection, tables.dropsTable, definition.id);
   const voiceRow = findRowById(tables.voiceSection, tables.voiceTable, definition.id);
+  const visualRow = requireRow(tables.visualSection, tables.visualTable, definition.id);
 
   return {
     ...definition,
@@ -208,8 +232,24 @@ function parseEnemy(
       hit: readOptionalSampleIdList(tables.soundsSection, tables.soundsTable, soundsRow, 'hit'),
       death: readOptionalSampleIdList(tables.soundsSection, tables.soundsTable, soundsRow, 'death'),
       voice: voiceRow === null ? null : parseVoice(tables.voiceSection, tables.voiceTable, voiceRow)
+    },
+    visual: {
+      image: requireCell(tables.visualSection, tables.visualTable, visualRow, 'image')
     }
   };
+}
+
+function assertNoForbiddenVisualColumns(section: MarkdownSection, table: MarkdownTable): void {
+  for (const header of table.header) {
+    if (!FORBIDDEN_VISUAL_COLUMNS.has(header.value)) continue;
+    throw cellError(
+      section,
+      header.position,
+      '<header>',
+      header.value,
+      'derive visual field is generated from the PNG asset'
+    );
+  }
 }
 
 function parseDropTable(

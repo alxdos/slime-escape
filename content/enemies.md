@@ -76,3 +76,11 @@
 |---|---|---:|---:|
 | slime-fast | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
 | slime-tank | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3500 | 7000 |
+
+## Visual
+
+| id | image |
+|---|---|
+| training-target | /assets/slime-05.png |
+| slime-fast | /assets/slime-06.png |
+| slime-tank | /assets/slime-04.png |
