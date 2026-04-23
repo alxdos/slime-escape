@@ -311,36 +311,36 @@
 
 | id | maxSpeed |
 |---|---:|
-| slime-one-eye | 4.0 |
-| slime-hornling | 3.3 |
+| slime-one-eye | 2.6 |
+| slime-hornling | 2.5 |
 | slime-many-eye | 2.2 |
 | slime-stonehead | 1.5 |
 | slime-sleeper | 1.0 |
-| slime-spark | 5.2 |
-| slime-wraith | 3.5 |
+| slime-spark | 2.8 |
+| slime-wraith | 2.6 |
 | slime-shell | 1.7 |
-| slime-flame | 3.8 |
+| slime-flame | 2.6 |
 | slime-mech-crab | 2.0 |
-| slime-stack | 2.4 |
-| slime-trickster | 3.2 |
-| slime-bug | 3.6 |
+| slime-stack | 2.2 |
+| slime-trickster | 2.5 |
+| slime-bug | 2.6 |
 | slime-lifter | 1.6 |
-| slime-saw | 3.0 |
-| slime-drone | 4.8 |
-| slime-star | 5.0 |
-| slime-echo | 4.4 |
-| slime-splitter | 2.8 |
+| slime-saw | 2.5 |
+| slime-drone | 2.8 |
+| slime-star | 2.8 |
+| slime-echo | 2.6 |
+| slime-splitter | 2.4 |
 | slime-prince | 2.2 |
 | slime-kingling | 1.7 |
 | slime-fortress | 1.2 |
-| slime-dasher | 4.6 |
-| slime-tadpole | 4.2 |
+| slime-dasher | 2.8 |
+| slime-tadpole | 2.7 |
 | slime-door | 1.1 |
 | slime-mech | 1.8 |
-| slime-clamper | 3.0 |
-| slime-candle | 3.4 |
+| slime-clamper | 2.5 |
+| slime-candle | 2.5 |
 | slime-obelisk | 2.0 |
-| slime-ninja | 4.0 |
+| slime-ninja | 2.6 |
 
 ## Contact damage
 
