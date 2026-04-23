@@ -1,6 +1,8 @@
 import { log as defaultLog, type Log } from '../../shared/log';
 
+import { BOSS_AUDIO_MAPPINGS } from './bossAudio.generated';
 import { ENEMY_AUDIO_MAPPINGS } from './enemyAudio.generated';
+import { WEAPON_AUDIO_MAPPINGS } from './weaponAudio.generated';
 import type { SampleRegistry } from './SampleRegistry';
 import type { AudioUiEventId } from './AudioUiEventId';
 
@@ -16,6 +18,10 @@ export type EnemyAudioMapping = Readonly<{
   hit?: SampleSpec;
   death?: SampleSpec;
   voice?: VoiceSampleSpec;
+}>;
+
+export type WeaponAudioMapping = Readonly<{
+  fire: SampleSpec;
 }>;
 
 export type BossAudioMapping = Readonly<{
@@ -56,22 +62,6 @@ export type AudioMappings = Readonly<{
   resolveEventSample(kind: keyof EventAudioMapping): string | null;
   resolveUiSample(eventId: AudioUiEventId): string | null;
 }>;
-
-const WEAPON_AUDIO_MAPPINGS: Readonly<Record<string, Readonly<{ fire: SampleSpec }>>> =
-  Object.freeze({
-  pistol: Object.freeze({ fire: 'weapons/pistol' }),
-  shotgun: Object.freeze({ fire: 'weapons/shotgun' }),
-  smg: Object.freeze({ fire: 'weapons/smg' }),
-  sniper: Object.freeze({ fire: 'weapons/sniper' }),
-  laser: Object.freeze({ fire: 'weapons/laser' })
-  });
-
-const BOSS_AUDIO_MAPPINGS: Readonly<Record<string, BossAudioMapping>> = Object.freeze({
-  'slime-king': Object.freeze({
-    fire: 'boss/boss-fireball',
-    phaseChange: 'boss/boss-ahaha'
-  })
-});
 
 const EVENT_AUDIO_MAPPINGS: EventAudioMapping = Object.freeze({
   dropPickup: 'events/drop-pickup',

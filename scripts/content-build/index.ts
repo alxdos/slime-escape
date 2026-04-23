@@ -2,7 +2,10 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { BOSSES_AREA } from './bosses';
+import { DROPS_AREA } from './drops';
 import { ENEMIES_AREA } from './enemies';
+import { WEAPONS_AREA } from './weapons';
 import { atomicWrite, type GeneratedFile } from './util/atomicWrite';
 import { ContentBuildError } from './util/require';
 
@@ -13,7 +16,7 @@ export type ContentArea = Readonly<{
   render(): Promise<ReadonlyArray<GeneratedFile>>;
 }>;
 
-const AREAS: ReadonlyArray<ContentArea> = [ENEMIES_AREA];
+const AREAS: ReadonlyArray<ContentArea> = [ENEMIES_AREA, WEAPONS_AREA, DROPS_AREA, BOSSES_AREA];
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
 export async function runContentBuild(

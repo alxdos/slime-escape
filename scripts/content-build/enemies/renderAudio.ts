@@ -145,8 +145,14 @@ function sampleListKey(sampleIds: ReadonlyArray<string>): string {
 }
 
 function inferSampleListName(sampleIds: ReadonlyArray<string>, fallbackIndex: number): string {
-  if (sampleIds.every((sampleId) => sampleId.startsWith('slimes/'))) {
-    return 'SLIME_VARIANTS';
+  if (sampleIds.every((sampleId) => sampleId.startsWith('slimes/hit-'))) {
+    return 'SLIME_HIT_VARIANTS';
+  }
+  if (sampleIds.every((sampleId) => sampleId.startsWith('slimes/death-'))) {
+    return 'SLIME_DEATH_VARIANTS';
+  }
+  if (sampleIds.every((sampleId) => sampleId.startsWith('slimes/voice-'))) {
+    return 'SLIME_VOICE_VARIANTS';
   }
   return `SAMPLE_VARIANTS_${fallbackIndex}`;
 }
