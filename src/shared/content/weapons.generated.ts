@@ -6,7 +6,7 @@ export const PISTOL: WeaponArchetype = {
   id: 'pistol',
   displayName: 'Pistol',
   cooldownMs: 250,
-  projectileSpeed: 24,
+  projectileSpeed: 12,
   projectileRadius: 0.1,
   projectileTtlMs: 2000,
   damage: 1,

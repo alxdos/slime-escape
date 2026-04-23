@@ -1,33 +1,67 @@
 import { describe, expect, it } from 'vitest';
 
-import { SLIME_FAST, TRAINING_TARGET } from '../shared/content/enemies';
 import { PISTOL } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import { createCombatSystem } from './CombatSystem';
-import { createEntityStore, type EntityId } from './EntityStore';
+import { createEntityStore, type EnemySpawnSpec, type EntityId } from './EntityStore';
 import { createRuntimeInputState, type RuntimeInputState } from './RuntimeInputState';
 import { createSpatialIndex } from './SpatialIndex';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
-const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
+const PLAYER_SPEC = {
+  position: { x: 0, y: 0 },
+  radius: 0.5,
+  contactBox: { width: 1.2, height: 2 },
+  maxSpeed: 6,
+  maxHp: 1
+};
+const STATIONARY_TEST_ENEMY = {
+  archetypeId: 'test-stationary-enemy',
+  radius: 0.6,
+  contactBox: { width: 1.2, height: 1.2 },
+  behavior: 'stationary',
+  maxHp: 3,
+  maxSpeed: 0,
+  contactDamage: 0,
+  contactCooldownMs: 1,
+  knockbackBaseImpulse: 0,
+  knockbackVelocityScale: 0,
+  knockbackDurationMs: 1,
+  color: 0xff7766
+} as const;
+const CONTACT_TEST_ENEMY = {
+  archetypeId: 'test-contact-enemy',
+  radius: 0.4,
+  contactBox: { width: 1.4, height: 0.4 },
+  behavior: 'chase',
+  maxHp: 1,
+  maxSpeed: 4,
+  contactDamage: 1,
+  contactCooldownMs: 800,
+  knockbackBaseImpulse: 8,
+  knockbackVelocityScale: 1.5,
+  knockbackDurationMs: 350,
+  color: 0x77ff99
+} as const;
 
-function trainingTargetSpec(position: { x: number; y: number }) {
+function stationaryEnemySpec(position: { x: number; y: number }): EnemySpawnSpec {
   return {
-    archetypeId: TRAINING_TARGET.id,
+    archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
     position,
-    radius: TRAINING_TARGET.radius,
-    behavior: TRAINING_TARGET.behavior,
-    maxHp: TRAINING_TARGET.maxHp,
-    maxSpeed: TRAINING_TARGET.maxSpeed,
-    contactDamage: TRAINING_TARGET.contactDamage,
-    contactCooldownMs: TRAINING_TARGET.contactCooldownMs,
-    knockbackBaseImpulse: TRAINING_TARGET.knockbackBaseImpulse,
-    knockbackVelocityScale: TRAINING_TARGET.knockbackVelocityScale,
-    knockbackDurationMs: TRAINING_TARGET.knockbackDurationMs,
-    color: TRAINING_TARGET.color
+    radius: STATIONARY_TEST_ENEMY.radius,
+    contactBox: STATIONARY_TEST_ENEMY.contactBox,
+    behavior: STATIONARY_TEST_ENEMY.behavior,
+    maxHp: STATIONARY_TEST_ENEMY.maxHp,
+    maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
+    contactDamage: STATIONARY_TEST_ENEMY.contactDamage,
+    contactCooldownMs: STATIONARY_TEST_ENEMY.contactCooldownMs,
+    knockbackBaseImpulse: STATIONARY_TEST_ENEMY.knockbackBaseImpulse,
+    knockbackVelocityScale: STATIONARY_TEST_ENEMY.knockbackVelocityScale,
+    knockbackDurationMs: STATIONARY_TEST_ENEMY.knockbackDurationMs,
+    color: STATIONARY_TEST_ENEMY.color
   };
 }
 
@@ -94,7 +128,7 @@ describe('CombatSystem', () => {
 
   it('produces a damage intent and hit event when projectile reaches an enemy', () => {
     const { store, index, combat } = setupCombat();
-    const enemy = store.spawnEnemy(trainingTargetSpec({ x: 1, y: 0 }));
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 0.75, y: 0 }));
     const input = makeInput({ aimWorld: { x: 5, y: 0 }, firing: true });
     const events: RuntimeEvent[] = [];
 
@@ -107,6 +141,22 @@ describe('CombatSystem', () => {
     const hitEvents = events.filter((e) => e.kind === 'hit');
     expect(hitEvents).toHaveLength(1);
     expect(store.projectileCount()).toBe(0);
+  });
+
+  it('hits an enemy by contactBox even when the legacy radius would miss', () => {
+    const { store, index, combat } = setupCombat();
+    const enemy = store.spawnEnemy({
+      ...stationaryEnemySpec({ x: 0.85, y: 0 }),
+      radius: 0.3,
+      contactBox: { width: 1.4, height: 0.4 }
+    });
+    const input = makeInput({ aimWorld: { x: 5, y: 0 }, firing: true });
+
+    const intents = combat.tick(input, store, index, 0, ARENA, () => {});
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(enemy.id);
+    expect(intents[0]?.source.kind).toBe('projectile');
   });
 
   it('removes projectiles that exceed projectileTtlMs without producing a damage intent', () => {
@@ -145,7 +195,7 @@ describe('CombatSystem', () => {
 
   it('honours friendly-fire: enemy projectile does not target enemy', () => {
     const { store, index, combat } = setupCombat();
-    store.spawnEnemy(trainingTargetSpec({ x: 0.5, y: 0 }));
+    store.spawnEnemy(stationaryEnemySpec({ x: 0.5, y: 0 }));
     store.spawnProjectile({
       weaponArchetypeId: PISTOL.id,
       ownerKind: 'enemy',
@@ -163,6 +213,29 @@ describe('CombatSystem', () => {
       return enemy !== null;
     });
     expect(targetsEnemy).toBe(false);
+  });
+
+  it('hits the player by contactBox for enemy projectiles even outside the player radius', () => {
+    const { store, index, combat, player } = setupCombat();
+    store.spawnProjectile({
+      weaponArchetypeId: PISTOL.id,
+      ownerKind: 'enemy',
+      position: {
+        x: player.position.x + player.contactBox.width / 2 - 0.01,
+        y: player.position.y + player.contactBox.height / 2 - 0.08
+      },
+      velocity: { vx: 0, vy: 0 },
+      radius: PISTOL.projectileRadius,
+      damage: PISTOL.damage,
+      expireAtSimMs: 10_000
+    });
+
+    const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, () => {});
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(player.id);
+    expect(intents[0]?.source.kind).toBe('projectile');
+    expect(store.projectileCount()).toBe(0);
   });
 
   it('clear() drops registered loadout so player no longer fires', () => {
@@ -187,20 +260,21 @@ describe('CombatSystem', () => {
 });
 
 describe('CombatSystem contact intents', () => {
-  function slimeFastSpec(position: { x: number; y: number }) {
+  function contactEnemySpec(position: { x: number; y: number }): EnemySpawnSpec {
     return {
-      archetypeId: SLIME_FAST.id,
+      archetypeId: CONTACT_TEST_ENEMY.archetypeId,
       position,
-      radius: SLIME_FAST.radius,
-      behavior: SLIME_FAST.behavior,
-      maxHp: SLIME_FAST.maxHp,
-      maxSpeed: SLIME_FAST.maxSpeed,
-      contactDamage: SLIME_FAST.contactDamage,
-      contactCooldownMs: SLIME_FAST.contactCooldownMs,
-      knockbackBaseImpulse: SLIME_FAST.knockbackBaseImpulse,
-      knockbackVelocityScale: SLIME_FAST.knockbackVelocityScale,
-      knockbackDurationMs: SLIME_FAST.knockbackDurationMs,
-      color: SLIME_FAST.color
+      radius: CONTACT_TEST_ENEMY.radius,
+      contactBox: CONTACT_TEST_ENEMY.contactBox,
+      behavior: CONTACT_TEST_ENEMY.behavior,
+      maxHp: CONTACT_TEST_ENEMY.maxHp,
+      maxSpeed: CONTACT_TEST_ENEMY.maxSpeed,
+      contactDamage: CONTACT_TEST_ENEMY.contactDamage,
+      contactCooldownMs: CONTACT_TEST_ENEMY.contactCooldownMs,
+      knockbackBaseImpulse: CONTACT_TEST_ENEMY.knockbackBaseImpulse,
+      knockbackVelocityScale: CONTACT_TEST_ENEMY.knockbackVelocityScale,
+      knockbackDurationMs: CONTACT_TEST_ENEMY.knockbackDurationMs,
+      color: CONTACT_TEST_ENEMY.color
     };
   }
 
@@ -214,21 +288,21 @@ describe('CombatSystem contact intents', () => {
 
   it('forms enemyContact DamageIntent for an overlapping enemy with contactDamage > 0', () => {
     const { store, index, combat } = setupContact();
-    const enemy = store.spawnEnemy(slimeFastSpec({ x: 0.5, y: 0 }));
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
 
     const intents = combat.tick(makeInput(), store, index, 0, ARENA, () => {});
 
     expect(intents).toHaveLength(1);
     const intent = intents[0]!;
     expect(intent.targetId).toBe(store.player()!.id);
-    expect(intent.amount).toBe(SLIME_FAST.contactDamage);
+    expect(intent.amount).toBe(CONTACT_TEST_ENEMY.contactDamage);
     if (intent.source.kind !== 'enemyContact') throw new Error('expected enemyContact source');
     expect(intent.source.enemyId).toBe(enemy.id);
   });
 
   it('does not emit a runtime event for the contact', () => {
     const { store, index, combat } = setupContact();
-    store.spawnEnemy(slimeFastSpec({ x: 0.5, y: 0 }));
+    store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
     const events: RuntimeEvent[] = [];
 
     combat.tick(makeInput(), store, index, 0, ARENA, (e) => events.push(e));
@@ -238,7 +312,7 @@ describe('CombatSystem contact intents', () => {
 
   it('skips contact if cooldown not elapsed and re-fires once it does', () => {
     const { store, index, combat } = setupContact();
-    store.spawnEnemy(slimeFastSpec({ x: 0.5, y: 0 }));
+    store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
 
     const first = combat.tick(makeInput(), store, index, 0, ARENA, () => {});
     expect(first).toHaveLength(1);
@@ -247,7 +321,7 @@ describe('CombatSystem contact intents', () => {
       makeInput(),
       store,
       index,
-      SLIME_FAST.contactCooldownMs - 1,
+      CONTACT_TEST_ENEMY.contactCooldownMs - 1,
       ARENA,
       () => {}
     );
@@ -257,7 +331,7 @@ describe('CombatSystem contact intents', () => {
       makeInput(),
       store,
       index,
-      SLIME_FAST.contactCooldownMs,
+      CONTACT_TEST_ENEMY.contactCooldownMs,
       ARENA,
       () => {}
     );
@@ -267,18 +341,19 @@ describe('CombatSystem contact intents', () => {
   it('skips enemies with contactDamage === 0', () => {
     const { store, index, combat } = setupContact();
     store.spawnEnemy({
-      archetypeId: TRAINING_TARGET.id,
+      archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
       position: { x: 0.5, y: 0 },
-      radius: TRAINING_TARGET.radius,
-      behavior: TRAINING_TARGET.behavior,
-      maxHp: TRAINING_TARGET.maxHp,
-      maxSpeed: TRAINING_TARGET.maxSpeed,
+      radius: STATIONARY_TEST_ENEMY.radius,
+      contactBox: STATIONARY_TEST_ENEMY.contactBox,
+      behavior: STATIONARY_TEST_ENEMY.behavior,
+      maxHp: STATIONARY_TEST_ENEMY.maxHp,
+      maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
       contactDamage: 0,
-      contactCooldownMs: TRAINING_TARGET.contactCooldownMs,
-      knockbackBaseImpulse: TRAINING_TARGET.knockbackBaseImpulse,
-      knockbackVelocityScale: TRAINING_TARGET.knockbackVelocityScale,
-      knockbackDurationMs: TRAINING_TARGET.knockbackDurationMs,
-      color: TRAINING_TARGET.color
+      contactCooldownMs: STATIONARY_TEST_ENEMY.contactCooldownMs,
+      knockbackBaseImpulse: STATIONARY_TEST_ENEMY.knockbackBaseImpulse,
+      knockbackVelocityScale: STATIONARY_TEST_ENEMY.knockbackVelocityScale,
+      knockbackDurationMs: STATIONARY_TEST_ENEMY.knockbackDurationMs,
+      color: STATIONARY_TEST_ENEMY.color
     });
 
     const intents = combat.tick(makeInput(), store, index, 0, ARENA, () => {});
@@ -289,29 +364,29 @@ describe('CombatSystem contact intents', () => {
     const store = createEntityStore();
     const index = createSpatialIndex();
     const combat = createCombatSystem();
-    store.spawnEnemy(slimeFastSpec({ x: 0, y: 0 }));
+    store.spawnEnemy(contactEnemySpec({ x: 0, y: 0 }));
 
     expect(() => combat.tick(makeInput(), store, index, 0, ARENA, () => {})).not.toThrow();
   });
 
   it('knocks the enemy back along (enemy - player) and writes a positive duration', () => {
     const { store, index, combat } = setupContact();
-    const enemy = store.spawnEnemy(slimeFastSpec({ x: 0.5, y: 0 }));
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
 
     combat.tick(makeInput(), store, index, 0, ARENA, () => {});
 
     expect(enemy.knockback).not.toBeNull();
     if (enemy.knockback === null) throw new Error('unreachable');
     expect(enemy.knockback.vx).toBeGreaterThan(0);
-    expect(enemy.knockback.vy).toBe(0);
+    expect(enemy.knockback.vy).toBeGreaterThan(0);
     expect(enemy.knockback.endSimMs - enemy.knockback.startSimMs).toBe(
-      SLIME_FAST.knockbackDurationMs
+      CONTACT_TEST_ENEMY.knockbackDurationMs
     );
   });
 
   it('with zero approach speed the knockback magnitude equals knockbackBaseImpulse', () => {
     const { store, index, combat } = setupContact();
-    const enemy = store.spawnEnemy(slimeFastSpec({ x: 0.5, y: 0 }));
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
     store.player()!.velocity.vx = 0;
     store.player()!.velocity.vy = 0;
     enemy.velocity.vx = 0;
@@ -321,12 +396,12 @@ describe('CombatSystem contact intents', () => {
 
     if (enemy.knockback === null) throw new Error('expected knockback');
     const speed = Math.hypot(enemy.knockback.vx, enemy.knockback.vy);
-    expect(speed).toBeCloseTo(SLIME_FAST.knockbackBaseImpulse, 10);
+    expect(speed).toBeCloseTo(CONTACT_TEST_ENEMY.knockbackBaseImpulse, 10);
   });
 
   it('approach speed adds knockbackVelocityScale * approach to base impulse', () => {
     const { store, index, combat } = setupContact();
-    const enemy = store.spawnEnemy(slimeFastSpec({ x: 0.5, y: 0 }));
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
     store.player()!.velocity.vx = 3;
     enemy.velocity.vx = -2;
 
@@ -334,22 +409,23 @@ describe('CombatSystem contact intents', () => {
 
     if (enemy.knockback === null) throw new Error('expected knockback');
     const speed = Math.hypot(enemy.knockback.vx, enemy.knockback.vy);
-    const expected = SLIME_FAST.knockbackBaseImpulse + SLIME_FAST.knockbackVelocityScale * 5;
+    const expected =
+      CONTACT_TEST_ENEMY.knockbackBaseImpulse + CONTACT_TEST_ENEMY.knockbackVelocityScale * 4;
     expect(speed).toBeCloseTo(expected, 10);
   });
 
   it('repeated contact (after cooldown) overwrites knockback rather than summing', () => {
     const { store, index, combat } = setupContact();
-    const enemy = store.spawnEnemy(slimeFastSpec({ x: 0.5, y: 0 }));
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
 
     combat.tick(makeInput(), store, index, 0, ARENA, () => {});
     if (enemy.knockback === null) throw new Error('expected knockback');
     const firstSpeed = Math.hypot(enemy.knockback.vx, enemy.knockback.vy);
 
-    combat.tick(makeInput(), store, index, SLIME_FAST.contactCooldownMs, ARENA, () => {});
+    combat.tick(makeInput(), store, index, CONTACT_TEST_ENEMY.contactCooldownMs, ARENA, () => {});
     if (enemy.knockback === null) throw new Error('expected knockback');
     const secondSpeed = Math.hypot(enemy.knockback.vx, enemy.knockback.vy);
     expect(secondSpeed).toBeCloseTo(firstSpeed, 10);
-    expect(enemy.knockback.startSimMs).toBe(SLIME_FAST.contactCooldownMs);
+    expect(enemy.knockback.startSimMs).toBe(CONTACT_TEST_ENEMY.contactCooldownMs);
   });
 });

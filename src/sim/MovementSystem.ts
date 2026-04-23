@@ -36,10 +36,12 @@ function tickPlayer(arena: ArenaConfig, player: Player, input: RuntimeInputState
   if (vx === 0 && vy === 0) return;
   const halfW = arena.width / 2;
   const halfH = arena.height / 2;
-  const minX = -halfW + player.radius;
-  const maxX = halfW - player.radius;
-  const minY = -halfH + player.radius;
-  const maxY = halfH - player.radius;
+  const halfContactWidth = player.contactBox.width / 2;
+  const halfContactHeight = player.contactBox.height / 2;
+  const minX = -halfW + halfContactWidth;
+  const maxX = halfW - halfContactWidth;
+  const minY = -halfH + halfContactHeight;
+  const maxY = halfH - halfContactHeight;
   player.position.x = clamp(player.position.x + vx * SIM_STEP_SEC, minX, maxX);
   player.position.y = clamp(player.position.y + vy * SIM_STEP_SEC, minY, maxY);
 }

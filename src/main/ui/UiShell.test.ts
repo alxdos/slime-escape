@@ -8,6 +8,7 @@ import type { ModePresetId } from '../../shared/content/presets';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import type { Renderer, RendererInit } from '../render/Renderer';
+import type { TextureMap } from '../render/spritePreload';
 import {
   DEFAULT_CLIENT_SETTINGS,
   type ClientSettings,
@@ -17,11 +18,13 @@ import {
 import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/SimWorkerHost';
 
 import type { Hud, HudInit } from './Hud';
-import { createUiShell } from './UiShell';
+import { createUiShell, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
 import type { PauseOverlay, PauseOverlayInit } from './PauseOverlay';
 import type { ResultOutcome, ResultOverlay, ResultOverlayInit } from './ResultOverlay';
 import type { SettingsOverlay, SettingsOverlayInit } from './SettingsOverlay';
+import type { StartupErrorOverlay, StartupErrorOverlayInit } from './StartupErrorOverlay';
+import type { StartupOverlay, StartupOverlayInit } from './StartupOverlay';
 
 class FakeEventTarget {
   private readonly listeners = new Map<string, Set<EventListener>>();
@@ -85,6 +88,7 @@ function makeSession(id = 'test-session'): SessionDefinition {
     player: {
       position: { x: 0, y: 0 },
       radius: 0.5,
+      contactBox: { width: 1, height: 1 },
       maxSpeed: 5,
       maxHp: 5
     },
@@ -96,6 +100,39 @@ function makeSession(id = 'test-session'): SessionDefinition {
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null
   };
+}
+
+const EMPTY_TEXTURE_MAP = Object.freeze({}) satisfies TextureMap;
+
+async function flushUiShellStartup(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+function createDeferredPreload() {
+  let resolvePromise: ((value: TextureMap) => void) | null = null;
+  let rejectPromise: ((error: unknown) => void) | null = null;
+  const promise = new Promise<TextureMap>((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = reject;
+  });
+
+  return {
+    promise,
+    resolve(): void {
+      resolvePromise?.(EMPTY_TEXTURE_MAP);
+    },
+    reject(error: unknown): void {
+      rejectPromise?.(error);
+    }
+  };
+}
+
+function createUiShellForTest(init: UiShellInit) {
+  return createUiShell({
+    runStartupPreload: () => Promise.resolve(EMPTY_TEXTURE_MAP),
+    ...init
+  });
 }
 
 function createMenuHarness() {
@@ -316,6 +353,112 @@ function createSettingsOverlayHarness() {
     },
     isVisible(): boolean {
       return visible;
+    },
+    root(): FakeDomElement | null {
+      return root;
+    }
+  };
+}
+
+function createStartupOverlayHarness() {
+  let visible = true;
+  let progress = { loaded: 0, total: 0 };
+  let root: FakeDomElement | null = null;
+
+  const overlay: StartupOverlay = {
+    show(): void {
+      visible = true;
+      if (root !== null) {
+        root.style.display = 'flex';
+      }
+    },
+    hide(): void {
+      visible = false;
+      if (root !== null) {
+        root.style.display = 'none';
+      }
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    setProgress(loaded: number, total: number): void {
+      progress = { loaded, total };
+    },
+    dispose(): void {
+      root?.remove();
+      root = null;
+    }
+  };
+
+  return {
+    factory(init: StartupOverlayInit): StartupOverlay {
+      root = new FakeDomElement();
+      root.dataset['role'] = 'startup-overlay';
+      root.style.zIndex = '120';
+      root.style.display = visible ? 'flex' : 'none';
+      appendHarnessRoot(init.parent, root);
+      return overlay;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    progress(): Readonly<{ loaded: number; total: number }> {
+      return progress;
+    },
+    root(): FakeDomElement | null {
+      return root;
+    }
+  };
+}
+
+function createStartupErrorOverlayHarness() {
+  let visible = false;
+  let message = '';
+  let onReload: (() => void) | null = null;
+  let root: FakeDomElement | null = null;
+
+  const overlay: StartupErrorOverlay = {
+    show(nextMessage: string): void {
+      visible = true;
+      message = nextMessage;
+      if (root !== null) {
+        root.style.display = 'flex';
+      }
+    },
+    hide(): void {
+      visible = false;
+      message = '';
+      if (root !== null) {
+        root.style.display = 'none';
+      }
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    dispose(): void {
+      root?.remove();
+      root = null;
+    }
+  };
+
+  return {
+    factory(init: StartupErrorOverlayInit): StartupErrorOverlay {
+      onReload = init.onReload;
+      root = new FakeDomElement();
+      root.dataset['role'] = 'startup-error-overlay';
+      root.style.zIndex = '130';
+      root.style.display = 'none';
+      appendHarnessRoot(init.parent, root);
+      return overlay;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    message(): string {
+      return message;
+    },
+    reload(): void {
+      onReload?.();
     },
     root(): FakeDomElement | null {
       return root;
@@ -612,7 +755,139 @@ function createClientSettingsStoreHarness(
 }
 
 describe('UiShell', () => {
-  it('starts a session from the menu and hides overlays while running', () => {
+  it('shows startup loading before the menu and delays session client creation until preload finishes', async () => {
+    const parent = new FakeDomElement();
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const startupOverlay = createStartupOverlayHarness();
+    const startupErrorOverlay = createStartupErrorOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const deferredPreload = createDeferredPreload();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: parent as unknown as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createStartupOverlay: startupOverlay.factory,
+      createStartupErrorOverlay: startupErrorOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      runStartupPreload(onProgress) {
+        onProgress(1, 4);
+        return deferredPreload.promise;
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    expect(shell.phase()).toEqual({ kind: 'loading' });
+    expect(startupOverlay.isVisible()).toBe(true);
+    expect(startupOverlay.progress()).toEqual({ loaded: 1, total: 4 });
+    expect(startupErrorOverlay.isVisible()).toBe(false);
+    expect(menu.isVisible()).toBe(false);
+    expect(settingsOverlay.isVisible()).toBe(false);
+    expect(renderer.calls.create).toBe(0);
+    expect(input.calls.create).toBe(0);
+    expect(Number(findHarnessRoot(parent, 'startup-overlay')?.style.zIndex ?? '0')).toBeGreaterThan(
+      Number(findHarnessRoot(parent, 'menu-overlay')?.style.zIndex ?? '0')
+    );
+
+    windowTarget.dispatch('pointerdown', new Event('pointerdown'));
+    expect(audio.calls.unlock).toBe(0);
+
+    deferredPreload.resolve();
+    await flushUiShellStartup();
+
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+    expect(startupOverlay.isVisible()).toBe(false);
+    expect(startupErrorOverlay.isVisible()).toBe(false);
+    expect(menu.isVisible()).toBe(true);
+
+    windowTarget.dispatch('pointerdown', new Event('pointerdown'));
+    expect(audio.calls.unlock).toBe(1);
+  });
+
+  it('transitions loading into preload error and exposes only reload', async () => {
+    const parent = new FakeDomElement();
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const startupOverlay = createStartupOverlayHarness();
+    const startupErrorOverlay = createStartupErrorOverlayHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    let reloadCalls = 0;
+
+    const shell = createUiShellForTest({
+      parent: parent as unknown as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createStartupOverlay: startupOverlay.factory,
+      createStartupErrorOverlay: startupErrorOverlay.factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: audio.factory,
+      runStartupPreload() {
+        return Promise.reject(new Error('failed to decode /assets/hero.png'));
+      },
+      reloadPage() {
+        reloadCalls += 1;
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(shell.phase()).toEqual({
+      kind: 'error',
+      reason: 'preload',
+      message: 'failed to decode /assets/hero.png'
+    });
+    expect(startupOverlay.isVisible()).toBe(false);
+    expect(startupErrorOverlay.isVisible()).toBe(true);
+    expect(startupErrorOverlay.message()).toBe('failed to decode /assets/hero.png');
+    expect(menu.isVisible()).toBe(false);
+    expect(pause.isVisible()).toBe(false);
+    expect(result.isVisible()).toBe(false);
+    expect(settingsOverlay.isVisible()).toBe(false);
+    expect(Number(findHarnessRoot(parent, 'startup-error-overlay')?.style.zIndex ?? '0')).toBeGreaterThan(
+      Number(findHarnessRoot(parent, 'startup-overlay')?.style.zIndex ?? '0')
+    );
+
+    windowTarget.dispatch('pointerdown', new Event('pointerdown'));
+    expect(audio.calls.unlock).toBe(0);
+
+    startupErrorOverlay.reload();
+    expect(reloadCalls).toBe(1);
+  });
+
+  it('starts a session from the menu and hides overlays while running', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -631,7 +906,7 @@ describe('UiShell', () => {
       return makeSession('running-session');
     });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 123,
@@ -648,6 +923,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     expect(menu.modes().map((mode) => mode.presetId)).toEqual(
       PLAYABLE_MODE_CATALOG.map((mode) => mode.presetId)
@@ -681,7 +958,7 @@ describe('UiShell', () => {
     expect(audio.calls.update).toBe(1);
   });
 
-  it('routes Escape into overlay pause and exit back to menu with stopSession', () => {
+  it('routes Escape into overlay pause and exit back to menu with stopSession', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -695,7 +972,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -712,6 +989,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     menu.start();
     windowTarget.dispatch(
@@ -741,7 +1020,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'menu' });
   });
 
-  it('routes pointer lock loss into overlay pause while a run is active', () => {
+  it('routes pointer lock loss into overlay pause while a run is active', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -753,7 +1032,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -785,6 +1064,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     menu.start();
     documentEvents.dispatch('pointerlockchange', new Event('pointerlockchange'));
@@ -796,7 +1077,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'paused' });
   });
 
-  it('ignores pointer lock loss outside the running phase', () => {
+  it('ignores pointer lock loss outside the running phase', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -808,7 +1089,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -840,6 +1121,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     documentEvents.dispatch('pointerlockchange', new Event('pointerlockchange'));
 
@@ -857,7 +1140,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'result', outcome: 'win' });
   });
 
-  it('keeps Space as dev pause without showing the pause overlay', () => {
+  it('keeps Space as dev pause without showing the pause overlay', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -870,7 +1153,7 @@ describe('UiShell', () => {
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
     const preventDefault = vi.fn();
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -902,6 +1185,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     menu.start();
     windowTarget.dispatch(
@@ -947,7 +1232,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -976,7 +1261,7 @@ describe('UiShell', () => {
     expect(settings.calls.dispose).toBe(1);
   });
 
-  it('uses the current render scale preset for renderer creation and unsubscribes it on teardown', () => {
+  it('uses the current render scale preset for renderer creation and unsubscribes it on teardown', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -991,7 +1276,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    createUiShell({
+    createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1010,6 +1295,8 @@ describe('UiShell', () => {
       documentTarget
     });
 
+    await flushUiShellStartup();
+
     menu.start();
 
     expect(renderer.lastInit()?.renderScalePreset).toBe('high');
@@ -1026,7 +1313,7 @@ describe('UiShell', () => {
     expect(renderer.appliedPresets).toEqual(['low']);
   });
 
-  it('opens settings from the menu and closes them without changing the phase', () => {
+  it('opens settings from the menu and closes them without changing the phase', async () => {
     const parent = new FakeDomElement();
     const menu = createMenuHarness();
     const pause = createPauseHarness();
@@ -1039,7 +1326,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: parent as unknown as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1056,6 +1343,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     menu.openSettings();
 
@@ -1077,7 +1366,7 @@ describe('UiShell', () => {
     shell.dispose();
   });
 
-  it('opens settings over pause, keeps the paused phase, and keeps the pause overlay underneath', () => {
+  it('opens settings over pause, keeps the paused phase, and keeps the pause overlay underneath', async () => {
     const parent = new FakeDomElement();
     const menu = createMenuHarness();
     const pause = createPauseHarness();
@@ -1092,7 +1381,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: parent as unknown as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1109,6 +1398,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     menu.start();
     windowTarget.dispatch(
@@ -1143,7 +1434,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'paused' });
   });
 
-  it('does not expose settings in running or result because the entry overlays are hidden', () => {
+  it('does not expose settings in running or result because the entry overlays are hidden', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -1155,7 +1446,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: new FakeDomElement() as unknown as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1173,6 +1464,8 @@ describe('UiShell', () => {
       documentTarget
     });
 
+    await flushUiShellStartup();
+
     menu.start();
     menu.openSettings();
     expect(settings.isVisible()).toBe(false);
@@ -1184,7 +1477,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'result', outcome: 'win' });
   });
 
-  it('freezes HUD updates while paused but keeps renderer rendering', () => {
+  it('freezes HUD updates while paused but keeps renderer rendering', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -1198,7 +1491,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1215,6 +1508,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     menu.start();
     shell.onFrame();
@@ -1240,7 +1535,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'paused' });
   });
 
-  it('ignores Space while overlay pause is active', () => {
+  it('ignores Space while overlay pause is active', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -1253,7 +1548,7 @@ describe('UiShell', () => {
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
     const preventDefault = vi.fn();
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1285,6 +1580,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     menu.start();
     windowTarget.dispatch(
@@ -1312,7 +1609,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'paused' });
   });
 
-  it('ignores pause hotkeys in menu and result phases', () => {
+  it('ignores pause hotkeys in menu and result phases', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -1325,7 +1622,7 @@ describe('UiShell', () => {
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
     const preventDefault = vi.fn();
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1357,6 +1654,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     windowTarget.dispatch(
       'keydown',
@@ -1414,7 +1713,7 @@ describe('UiShell', () => {
   it.each([
     ['win', 'win'],
     ['loss', 'loss']
-  ] as const)('transitions to result on %s without calling stopSession', (kind, outcome) => {
+  ] as const)('transitions to result on %s without calling stopSession', async (kind, outcome) => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -1428,7 +1727,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1445,6 +1744,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     menu.start();
     sim.emit({ kind, simTime: 123 });
@@ -1462,7 +1763,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'result', outcome });
   });
 
-  it('returns from result overlay to menu without calling stopSession again', () => {
+  it('returns from result overlay to menu without calling stopSession again', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -1476,7 +1777,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1493,6 +1794,8 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget
     });
+
+    await flushUiShellStartup();
 
     menu.start();
     sim.emit({ kind: 'win', simTime: 123 });

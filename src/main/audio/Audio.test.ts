@@ -192,6 +192,7 @@ function makeBossSession(): SessionDefinition {
     player: {
       position: { x: 0, y: 0 },
       radius: 0.5,
+      contactBox: { width: 1, height: 1 },
       maxSpeed: 5,
       maxHp: 5
     },
@@ -204,7 +205,7 @@ function makeBossSession(): SessionDefinition {
         type: 'boss',
         spawnPlan: {
           kind: 'boss',
-          bossArchetypeId: 'slime-king',
+          bossArchetypeId: 'boss-scrap-king',
           position: { x: 0, y: 0 }
         },
         zoneBehavior: { kind: 'disabled' },
@@ -479,7 +480,7 @@ describe('createAudio', () => {
           {
             id: 99,
             kind: 'enemy',
-            archetypeId: 'slime-fast',
+            archetypeId: 'slime-one-eye',
             x: 0,
             y: 0,
             hp: 1,
@@ -513,7 +514,7 @@ describe('createAudio', () => {
       simTime: 120,
       entityId: 99,
       entityKind: 'enemy',
-      archetypeId: 'slime-fast',
+      archetypeId: 'slime-one-eye',
       x: 0,
       y: 0
     });
@@ -556,7 +557,7 @@ describe('createAudio', () => {
           {
             id: 7,
             kind: 'boss',
-            archetypeId: 'slime-king',
+            archetypeId: 'boss-scrap-king',
             x: 0,
             y: 0,
             hp: 40,
@@ -605,7 +606,7 @@ describe('createAudio', () => {
     expect(context.sources).toHaveLength(baselineSourceCount);
     expect(log.warn).toHaveBeenCalledTimes(1);
     expect(log.warn).toHaveBeenCalledWith('audio mapping missing; skipping playback', {
-      mappingKey: 'bosses.slime-king.hit'
+      mappingKey: 'bosses.boss-scrap-king.hit'
     });
   });
 
@@ -618,7 +619,7 @@ describe('createAudio', () => {
       simTime: 120,
       entityId: 42,
       entityKind: 'enemy',
-      archetypeId: 'slime-fast',
+      archetypeId: 'slime-one-eye',
       x: 0,
       y: 0
     });
@@ -630,7 +631,7 @@ describe('createAudio', () => {
     expect(log.warn).not.toHaveBeenCalled();
   });
 
-  it('skips unmapped training-target death with one warning and no crash', async () => {
+  it('skips unmapped enemy death with one warning and no crash', async () => {
     const { audio, context, log } = createAudioHarness();
     context.setState('running');
 
@@ -641,7 +642,7 @@ describe('createAudio', () => {
           {
             id: 10,
             kind: 'enemy',
-            archetypeId: 'training-target',
+            archetypeId: 'missing-enemy',
             x: 0,
             y: 0,
             hp: 0,
@@ -664,7 +665,7 @@ describe('createAudio', () => {
       simTime: 100,
       entityId: 10,
       entityKind: 'enemy',
-      archetypeId: 'training-target',
+      archetypeId: 'missing-enemy',
       x: 0,
       y: 0
     });
@@ -673,7 +674,7 @@ describe('createAudio', () => {
       simTime: 101,
       entityId: 10,
       entityKind: 'enemy',
-      archetypeId: 'training-target',
+      archetypeId: 'missing-enemy',
       x: 0,
       y: 0
     });
@@ -682,7 +683,7 @@ describe('createAudio', () => {
 
     expect(context.sources).toHaveLength(baselineSourceCount);
     expect(log.warn).toHaveBeenCalledWith('audio mapping missing; skipping playback', {
-      mappingKey: 'enemies.training-target.death'
+      mappingKey: 'enemies.missing-enemy.death'
     });
   });
 
@@ -698,7 +699,7 @@ describe('createAudio', () => {
           {
             id: 7,
             kind: 'boss',
-            archetypeId: 'slime-king',
+            archetypeId: 'boss-scrap-king',
             x: 0,
             y: 0,
             hp: 20,
@@ -913,7 +914,7 @@ describe('createAudio', () => {
           {
             id: 7,
             kind: 'boss',
-            archetypeId: 'slime-king',
+            archetypeId: 'boss-scrap-king',
             x: 0,
             y: 0,
             hp: 40,
@@ -963,7 +964,7 @@ describe('createAudio', () => {
         {
           id: 21,
           kind: 'enemy',
-          archetypeId: 'slime-fast',
+          archetypeId: 'slime-one-eye',
           x: 0,
           y: 0,
           hp: 1,
@@ -1025,7 +1026,7 @@ describe('createAudio', () => {
           {
             id: 1,
             kind: 'enemy',
-            archetypeId: 'slime-tank',
+            archetypeId: 'slime-shell',
             x: 0,
             y: 0,
             hp: 5,
@@ -1073,7 +1074,7 @@ describe('createAudio', () => {
           {
             id: 2,
             kind: 'enemy',
-            archetypeId: 'slime-tank',
+            archetypeId: 'slime-shell',
             x: 0,
             y: 0,
             hp: 5,
@@ -1102,7 +1103,7 @@ describe('createAudio', () => {
           {
             id: 2,
             kind: 'enemy',
-            archetypeId: 'slime-tank',
+            archetypeId: 'slime-shell',
             x: 0,
             y: 0,
             hp: 5,

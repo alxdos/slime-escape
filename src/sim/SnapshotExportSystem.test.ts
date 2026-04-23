@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { TRAINING_TARGET } from '../shared/content/enemies';
 import { PISTOL } from '../shared/content/weapons';
 import type { ZoneSnapshot } from '../shared/snapshot';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../shared/timing';
@@ -11,16 +10,39 @@ import { createSnapshotExportSystem, type SnapshotSources } from './SnapshotExpo
 
 const TICKS_PER_SNAPSHOT = Math.round(SNAPSHOT_INTERVAL_MS / SIM_STEP_MS);
 const IDLE_ZONE: ZoneSnapshot = { mode: 'disabled', margin: 0 };
+function squareContactBox(radius: number) {
+  return { width: radius * 2, height: radius * 2 };
+}
+
 const NO_SOURCES: SnapshotSources = {
   encounter: null,
   zone: IDLE_ZONE,
   waveProgress: null
 };
+const STATIONARY_TEST_ENEMY = {
+  archetypeId: 'test-stationary-enemy',
+  radius: 0.6,
+  contactBox: squareContactBox(0.6),
+  maxHp: 3,
+  maxSpeed: 0,
+  contactDamage: 0,
+  contactCooldownMs: 1,
+  knockbackBaseImpulse: 0,
+  knockbackVelocityScale: 0,
+  knockbackDurationMs: 1,
+  color: 0xff7766
+} as const;
 
 describe('SnapshotExportSystem', () => {
   it('emits the player entity with kind "player"', () => {
     const store = createEntityStore();
-    store.spawnPlayer({ position: { x: 3, y: -2 }, radius: 0.5, maxSpeed: 6, maxHp: 1 });
+    store.spawnPlayer({
+      position: { x: 3, y: -2 },
+      radius: 0.5,
+      contactBox: squareContactBox(0.5),
+      maxSpeed: 6,
+      maxHp: 1
+    });
     const exporter = createSnapshotExportSystem();
 
     const snapshot = exporter.onTick(0, store, NO_SOURCES);
@@ -46,7 +68,13 @@ describe('SnapshotExportSystem', () => {
 
   it('emits exactly once per TICKS_PER_SNAPSHOT', () => {
     const store = createEntityStore();
-    store.spawnPlayer({ position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 });
+    store.spawnPlayer({
+      position: { x: 0, y: 0 },
+      radius: 0.5,
+      contactBox: squareContactBox(0.5),
+      maxSpeed: 6,
+      maxHp: 1
+    });
     const exporter = createSnapshotExportSystem();
 
     let emitted = 0;
@@ -60,7 +88,13 @@ describe('SnapshotExportSystem', () => {
 
   it('reset() restores the cadence so the next call emits', () => {
     const store = createEntityStore();
-    store.spawnPlayer({ position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 });
+    store.spawnPlayer({
+      position: { x: 0, y: 0 },
+      radius: 0.5,
+      contactBox: squareContactBox(0.5),
+      maxSpeed: 6,
+      maxHp: 1
+    });
     const exporter = createSnapshotExportSystem();
 
     exporter.onTick(0, store, NO_SOURCES);
@@ -73,18 +107,19 @@ describe('SnapshotExportSystem', () => {
   it('emits enemy with archetypeId/hp/maxHp and projectile with weaponArchetypeId/ownerKind', () => {
     const store = createEntityStore();
     store.spawnEnemy({
-      archetypeId: TRAINING_TARGET.id,
+      archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
       position: { x: 5, y: 0 },
-      radius: TRAINING_TARGET.radius,
+      radius: STATIONARY_TEST_ENEMY.radius,
+      contactBox: STATIONARY_TEST_ENEMY.contactBox,
       behavior: 'stationary',
-      maxHp: TRAINING_TARGET.maxHp,
-      maxSpeed: TRAINING_TARGET.maxSpeed,
-      contactDamage: TRAINING_TARGET.contactDamage,
-      contactCooldownMs: TRAINING_TARGET.contactCooldownMs,
-      knockbackBaseImpulse: TRAINING_TARGET.knockbackBaseImpulse,
-      knockbackVelocityScale: TRAINING_TARGET.knockbackVelocityScale,
-      knockbackDurationMs: TRAINING_TARGET.knockbackDurationMs,
-      color: TRAINING_TARGET.color
+      maxHp: STATIONARY_TEST_ENEMY.maxHp,
+      maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
+      contactDamage: STATIONARY_TEST_ENEMY.contactDamage,
+      contactCooldownMs: STATIONARY_TEST_ENEMY.contactCooldownMs,
+      knockbackBaseImpulse: STATIONARY_TEST_ENEMY.knockbackBaseImpulse,
+      knockbackVelocityScale: STATIONARY_TEST_ENEMY.knockbackVelocityScale,
+      knockbackDurationMs: STATIONARY_TEST_ENEMY.knockbackDurationMs,
+      color: STATIONARY_TEST_ENEMY.color
     });
     store.spawnProjectile({
       weaponArchetypeId: PISTOL.id,
@@ -102,9 +137,9 @@ describe('SnapshotExportSystem', () => {
     const enemy = snapshot?.entities.find((e) => e.kind === 'enemy');
     expect(enemy).toBeDefined();
     if (enemy?.kind !== 'enemy') throw new Error('expected enemy snapshot');
-    expect(enemy.archetypeId).toBe(TRAINING_TARGET.id);
-    expect(enemy.hp).toBe(TRAINING_TARGET.maxHp);
-    expect(enemy.maxHp).toBe(TRAINING_TARGET.maxHp);
+    expect(enemy.archetypeId).toBe(STATIONARY_TEST_ENEMY.archetypeId);
+    expect(enemy.hp).toBe(STATIONARY_TEST_ENEMY.maxHp);
+    expect(enemy.maxHp).toBe(STATIONARY_TEST_ENEMY.maxHp);
 
     const projectile = snapshot?.entities.find((e) => e.kind === 'projectile');
     expect(projectile).toBeDefined();
@@ -116,18 +151,19 @@ describe('SnapshotExportSystem', () => {
   it('omits removed entities (no tombstones in entities)', () => {
     const store = createEntityStore();
     const enemy = store.spawnEnemy({
-      archetypeId: TRAINING_TARGET.id,
+      archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
       position: { x: 0, y: 0 },
-      radius: TRAINING_TARGET.radius,
+      radius: STATIONARY_TEST_ENEMY.radius,
+      contactBox: STATIONARY_TEST_ENEMY.contactBox,
       behavior: 'stationary',
       maxHp: 1,
-      maxSpeed: TRAINING_TARGET.maxSpeed,
-      contactDamage: TRAINING_TARGET.contactDamage,
-      contactCooldownMs: TRAINING_TARGET.contactCooldownMs,
-      knockbackBaseImpulse: TRAINING_TARGET.knockbackBaseImpulse,
-      knockbackVelocityScale: TRAINING_TARGET.knockbackVelocityScale,
-      knockbackDurationMs: TRAINING_TARGET.knockbackDurationMs,
-      color: TRAINING_TARGET.color
+      maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
+      contactDamage: STATIONARY_TEST_ENEMY.contactDamage,
+      contactCooldownMs: STATIONARY_TEST_ENEMY.contactCooldownMs,
+      knockbackBaseImpulse: STATIONARY_TEST_ENEMY.knockbackBaseImpulse,
+      knockbackVelocityScale: STATIONARY_TEST_ENEMY.knockbackVelocityScale,
+      knockbackDurationMs: STATIONARY_TEST_ENEMY.knockbackDurationMs,
+      color: STATIONARY_TEST_ENEMY.color
     });
     const exporter = createSnapshotExportSystem();
 
@@ -146,6 +182,7 @@ describe('SnapshotExportSystem top-level fields', () => {
     return store.spawnPlayer({
       position: { x: 0, y: 0 },
       radius: 0.5,
+      contactBox: squareContactBox(0.5),
       maxSpeed: 6,
       maxHp: 5
     });

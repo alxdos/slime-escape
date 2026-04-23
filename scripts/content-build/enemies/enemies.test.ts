@@ -8,6 +8,7 @@ import { runContentBuild, type ContentArea } from '../index';
 import { parseEnemiesArea } from './parse';
 import { renderEnemyAudio } from './renderAudio';
 import { renderEnemyContent } from './renderContent';
+import { renderEnemyVisuals } from './renderVisuals';
 
 describe('content-build enemies area', () => {
   it('renders the committed enemies markdown to the committed generated files', async () => {
@@ -25,7 +26,7 @@ describe('content-build enemies area', () => {
     const directory = await mkdtemp(join(tmpdir(), 'content-build-missing-cell-'));
     const sourcePath = join(directory, 'enemies.md');
     const targetPath = join(directory, 'enemies.generated.ts');
-    await writeFile(sourcePath, makeEnemiesMarkdown({ fastMaxSpeed: '' }), 'utf8');
+    await writeFile(sourcePath, makeEnemiesMarkdown({ runnerMaxSpeed: '' }), 'utf8');
     await writeFile(targetPath, 'old target', 'utf8');
 
     const area = makeArea('missing-cell', async () => {
@@ -48,21 +49,40 @@ describe('content-build enemies area', () => {
   it('allows multiple drop rows for one enemy', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'content-build-multi-drop-'));
     const sourcePath = join(directory, 'enemies.md');
-    await writeFile(sourcePath, makeEnemiesMarkdown({ extraFastDropArchetypeId: 'coin' }), 'utf8');
+    await writeFile(sourcePath, makeEnemiesMarkdown({ extraRunnerDropArchetypeId: 'coin' }), 'utf8');
 
     const area = await parseEnemiesArea(sourcePath);
-    const fastSlime = area.enemies.find((enemy) => enemy.id === 'slime-fast');
+    const runner = area.enemies.find((enemy) => enemy.id === 'slime-one-eye');
 
-    expect(fastSlime?.dropTable).toEqual([
+    expect(runner?.dropTable).toEqual([
       { archetypeId: 'heal-orb', chance: 0.25 },
       { archetypeId: 'coin', chance: 0.1 }
     ]);
   });
 
+  it('renders visual specs from PNG image paths', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-enemy-visuals-'));
+    const sourcePath = join(directory, 'enemies.md');
+    await writeFile(sourcePath, makeEnemiesMarkdown(), 'utf8');
+
+    const area = await parseEnemiesArea(sourcePath);
+    expect(renderEnemyContent(area)).toContain('contactBox: { width:');
+    const visuals = renderEnemyVisuals(area);
+
+    expect(visuals).toContain("export const SLIME_ONE_EYE_VISUAL: SpriteVisualSpec");
+    expect(visuals).toContain("image: '/assets/slime-01.png'");
+    expect(visuals).toContain('sourceSizePx: { width:');
+    expect(visuals).toContain('ENEMY_VISUAL_SPECS');
+  });
+
   it('rejects duplicate enemy/drop pairs in the drops table', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'content-build-duplicate-drop-'));
     const sourcePath = join(directory, 'enemies.md');
-    await writeFile(sourcePath, makeEnemiesMarkdown({ extraFastDropArchetypeId: 'heal-orb' }), 'utf8');
+    await writeFile(
+      sourcePath,
+      makeEnemiesMarkdown({ extraRunnerDropArchetypeId: 'heal-orb' }),
+      'utf8'
+    );
 
     await expect(parseEnemiesArea(sourcePath)).rejects.toThrow(/duplicate drop pair/);
   });
@@ -101,35 +121,35 @@ function makeArea(name: string, render: ContentArea['render']): ContentArea {
 
 function makeEnemiesMarkdown(
   options: Readonly<{
-    fastMaxSpeed?: string;
+    runnerMaxSpeed?: string;
     extraBodyRowId?: string;
-    extraFastDropArchetypeId?: string;
+    extraRunnerDropArchetypeId?: string;
   }> = {}
 ): string {
-  const fastMaxSpeed = options.fastMaxSpeed ?? '4';
+  const runnerMaxSpeed = options.runnerMaxSpeed ?? '4';
   const extraBodyRow =
     options.extraBodyRowId === undefined
       ? ''
       : `| ${options.extraBodyRowId} | 0.5 | 1 | chase |\n`;
-  const extraFastDropRow =
-    options.extraFastDropArchetypeId === undefined
+  const extraRunnerDropRow =
+    options.extraRunnerDropArchetypeId === undefined
       ? ''
-      : `| slime-fast | ${options.extraFastDropArchetypeId} | 0.1 |\n`;
+      : `| slime-one-eye | ${options.extraRunnerDropArchetypeId} | 0.1 |\n`;
 
   return `# Enemies
 
-## training-target
+## test-stationary
 
 | field | value |
 |---|---|
-| displayName | Training Target |
+| displayName | Test Stationary |
 | color | #ff7766 |
 
-## slime-fast
+## slime-one-eye
 
 | field | value |
 |---|---|
-| displayName | Fast Slime |
+| displayName | One-Eye Slime |
 | color | #77ff99 |
 
 # Balance
@@ -138,48 +158,55 @@ function makeEnemiesMarkdown(
 
 | id | radius | maxHp | behavior |
 |---|---:|---:|---|
-| training-target | 0.6 | 3 | stationary |
-| slime-fast | 0.4 | 1 | chase |
+| test-stationary | 0.6 | 3 | stationary |
+| slime-one-eye | 0.4 | 1 | chase |
 ${extraBodyRow}
 ## Movement
 
 | id | maxSpeed |
 |---|---:|
-| training-target | 0 |
-| slime-fast | ${fastMaxSpeed} |
+| test-stationary | 0 |
+| slime-one-eye | ${runnerMaxSpeed} |
 
 ## Contact damage
 
 | id | contactDamage | contactCooldownMs |
 |---|---:|---:|
-| training-target | 0 | 1 |
-| slime-fast | 1 | 800 |
+| test-stationary | 0 | 1 |
+| slime-one-eye | 1 | 800 |
 
 ## Knockback
 
 | id | baseImpulse | velocityScale | durationMs |
 |---|---:|---:|---:|
-| training-target | 0 | 0 | 1 |
-| slime-fast | 8 | 1.5 | 350 |
+| test-stationary | 0 | 0 | 1 |
+| slime-one-eye | 8 | 1.5 | 350 |
 
 ## Drops
 
 | id | dropArchetypeId | chance |
 |---|---|---:|
-| slime-fast | heal-orb | 0.25 |
-${extraFastDropRow}
+| slime-one-eye | heal-orb | 0.25 |
+${extraRunnerDropRow}
 
 ## Sounds
 
 | id | hit | death |
 |---|---|---|
-| training-target | | |
-| slime-fast | slimes/hit-1, slimes/hit-2 | slimes/hit-1, slimes/hit-2 |
+| test-stationary | | |
+| slime-one-eye | slimes/hit-1, slimes/hit-2 | slimes/hit-1, slimes/hit-2 |
 
 ## Voice
 
 | id | sampleIds | intervalMinMs | intervalMaxMs |
 |---|---|---:|---:|
-| slime-fast | slimes/hit-1, slimes/hit-2 | 3000 | 6000 |
+| slime-one-eye | slimes/hit-1, slimes/hit-2 | 3000 | 6000 |
+
+## Visual
+
+| id | image |
+|---|---|
+| test-stationary | /assets/slime-05.png |
+| slime-one-eye | /assets/slime-01.png |
 `;
 }

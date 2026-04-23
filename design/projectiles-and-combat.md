@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-20 (006: `projectile.ownerKind` и `fire`/`hit` — см. [boss-encounter.md](boss-encounter.md), [snapshot-shape.md](snapshot-shape.md); friendly fire с сущностью `kind: 'boss'`; ранее: contact intents)
+- Updated: 2026-04-23 (013 follow-up: hit detection по `target.contactBox` для `player` / `enemy` / `boss`, broadphase по derived bounds radius; ранее: 006 `projectile.ownerKind` и `fire`/`hit` — см. [boss-encounter.md](boss-encounter.md), [snapshot-shape.md](snapshot-shape.md); friendly fire с сущностью `kind: 'boss'`; ранее: contact intents)
 
 ## Context
 
@@ -75,8 +75,8 @@
 ### Хит-тест и damage intents
 
 - Хит-тест выполняется после движения снарядов, в той же фазе `CombatSystem`:
-  - кандидаты — соседи снаряда из `SpatialIndex` ([runtime-systems.md](runtime-systems.md)) в радиусе `projectile.radius + maxEnemyRadius`;
-  - проверка коллизии — circle-vs-circle между текущей позицией снаряда и позицией потенциальной цели.
+  - кандидаты — соседи снаряда из `SpatialIndex` ([runtime-systems.md](runtime-systems.md)) в радиусе `projectile.radius + maxTargetBoundsRadius`, где `maxTargetBoundsRadius` derive-ится как circumscribed circle для `target.contactBox` по [body-contact-boxes.md](body-contact-boxes.md);
+  - проверка коллизии для `player` / `enemy` / `boss` — circle-vs-axis-aligned-box между текущей позицией снаряда и `target.contactBox`, центрированным в `target.position`.
 - Friendly fire:
   - снаряд с `ownerKind: 'player'` поражает сущности с `kind: 'enemy'` и `kind: 'boss'` (урон со стороны игрока);
   - снаряд с `ownerKind: 'enemy'` поражает только игрока;
@@ -92,9 +92,9 @@
 
 - Хит-тест по текущей позиции снаряда корректен только при условии:
   ```
-  projectile.projectileSpeed * SIM_STEP_SEC <= projectile.radius + minTargetRadius
+  projectile.projectileSpeed * SIM_STEP_SEC <= projectile.radius + minTargetInsetRadius
   ```
-  где `minTargetRadius` — минимальный радиус сущности, которую этот снаряд может поразить.
+  где `minTargetInsetRadius = min(contactBox.width, contactBox.height) / 2` для самой узкой сущности, которую этот снаряд может поразить.
 - Это **контракт контента**: автор `WeaponArchetype` обязан соблюдать ограничение относительно ожидаемых целей. Превышение фиксируется warning через единый log-модуль ([logging.md](logging.md)) при сборке/старте сессии и не должно поддерживаться в content review.
 - Свёрнутый sweep-тест (segment vs circle) — будущее улучшение и оформляется отдельным design-решением, если контент перестанет влезать в ограничение.
 

@@ -13,6 +13,7 @@ function makeSession(): SessionDefinition {
     player: {
       position: { x: 0, y: 0 },
       radius: 0.5,
+      contactBox: { width: 1, height: 1 },
       maxSpeed: 5,
       maxHp: 5
     },
@@ -97,7 +98,7 @@ function makeBossSnapshot(): Snapshot {
       {
         id: 99,
         kind: 'boss',
-        archetypeId: 'slime-king',
+        archetypeId: 'boss-scrap-king',
         x: 1,
         y: 1,
         hp: 22,
@@ -167,7 +168,7 @@ describe('Hud view model', () => {
     const bossView = deriveHudViewModel(makeSession(), makeBossSnapshot());
 
     expect(bossView.boss).not.toBeNull();
-    expect(bossView.boss?.titleText).toBe('Slime King');
+    expect(bossView.boss?.titleText).toBe('Scrap King');
     expect(bossView.boss?.phaseText).toBe('Фаза 2/2 · desperation');
     expect(bossView.boss?.hpText).toBe('22 / 40');
     expect(bossView.boss?.hpRatio).toBe(0.55);
@@ -189,7 +190,7 @@ describe('Hud view model', () => {
           {
             id: 99,
             kind: 'boss',
-            archetypeId: 'slime-king',
+            archetypeId: 'boss-scrap-king',
             x: 1,
             y: 1,
             hp: 22,

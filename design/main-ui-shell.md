@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-20 (для истории 009 добавлен раздел «Settings overlay»: sub-modal поверх `menu`/`paused`, не меняет фазу, owned `UiShell`)
+- Updated: 2026-04-23 (для истории 013 добавлены стартовая фаза `loading` и финальная фаза `error('preload')`: видимый splash + sprite preload до меню, hard-error при провале загрузки, недоступность Renderer/InputController/Settings/SimWorkerHost в этих фазах; follow-up: minimum splash duration зафиксирован как контракт `STARTUP_PRELOAD_MIN_DURATION_MS = 1500`)
 
 ## Context
 
@@ -34,11 +34,15 @@
 
 - Вводится единый компонент `UiShell` в `src/main/ui/**` (фактическое имя файла — деталь реализации). Он — единственный owner презентационной фазы приложения.
 - Презентационная фаза — конечный автомат с состояниями:
+  - `loading` — **стартовое** состояние приложения. До перехода в `menu` идёт обязательный startup preload (см. [sprite-assets.md](sprite-assets.md), раздел «Preload contract»). Никакая сессия не активна, `Renderer`/`InputController` не созданы, симуляция не тикает.
   - `menu` — стартовый экран и экран «между забегами»; ни одна сессия не активна (`SimWorkerHost.startSession` ещё не вызывался либо сессия уже корректно завершена);
   - `running` — активная сессия, симуляция тикает, рендер и HUD показаны;
   - `paused` — активная сессия, симуляция стоит (`SimWorkerHost.pause` вызван), HUD и сцена остаются видны и заморожены, поверх показан `PauseOverlay`;
-  - `result(win | loss)` — последняя сессия завершилась автоматически (`win`/`loss` event) и ещё не сброшена пользователем; на экране отображается итог и единственное действие «в меню».
+  - `result(win | loss)` — последняя сессия завершилась автоматически (`win`/`loss` event) и ещё не сброшена пользователем; на экране отображается итог и единственное действие «в меню»;
+  - `error('preload')` — **финальное** состояние, в которое попадаем, если хотя бы один обязательный ассет не загрузился во время `loading`. На экране — `StartupErrorOverlay` с явным сообщением и единственным действием «перезагрузить страницу». Ни одна другая фаза из `error('preload')` не достижима.
 - Допустимые переходы (любой другой переход — баг оркестрации, не «свобода UX»):
+  - `loading → menu` после успешного завершения startup preload;
+  - `loading → error('preload')` при ошибке загрузки/декодирования хотя бы одного обязательного ассета;
   - `menu → running` через явное действие игрока (выбор режима);
   - `running ↔ paused` через `Esc`/потерю Pointer Lock/кнопки overlay-ев и через дев-хоткей (см. ниже);
   - `running → result(win|loss)` через `win`/`loss` event из sim;
@@ -46,25 +50,30 @@
   - `paused → menu` через тот же exit (без промежуточного `running`);
   - `result → menu` через единственное действие «В меню»;
   - `result → running` напрямую запрещён: новый забег стартует только из `menu`.
+- Из `error('preload')` нет санкционированных переходов; единственный способ покинуть это состояние — `location.reload()`. Это исключает «частично-загруженный» режим, в котором renderer падает на missing texture в середине боя.
 - Переходы из `running`/`paused` в `menu` всегда явно вызывают `SimWorkerHost.stopSession()`. Переход `running → result` — наоборот, **не** вызывает `stopSession()`: симуляция уже сама выполнила teardown по контракту [session-definition.md](session-definition.md). Это исключает «no active session» warning и двойной сброс runtime state.
 - Один экземпляр `simulation worker` живёт всю жизнь приложения и переиспользуется между сессиями ([thread-model.md](thread-model.md)). `UiShell` не пересоздаёт worker при переходах между фазами.
 - Переход в любую фазу делает явный show/hide для всех overlay-ев и HUD по таблице ниже. Никакой компонент не имеет права самостоятельно показывать/скрывать себя «по событию мимо UiShell».
 
 ### Видимость overlay-ев и HUD по фазам
 
-| Фаза | Menu overlay | HUD | Pause overlay | Result UI | Pointer Lock |
-|------|--------------|-----|---------------|-----------|--------------|
-| `menu` | visible | hidden | hidden | hidden | released |
-| `running` | hidden | visible (live) | hidden | hidden | requested |
-| `paused` | hidden | visible (frozen на последнем снапшоте) | visible | hidden | released |
-| `result(win|loss)` | hidden | hidden | hidden | visible | released |
+| Фаза | Startup overlay | Menu overlay | HUD | Pause overlay | Result UI | Startup error | Pointer Lock |
+|------|-----------------|--------------|-----|---------------|-----------|---------------|--------------|
+| `loading` | visible | hidden | hidden | hidden | hidden | hidden | released |
+| `menu` | hidden | visible | hidden | hidden | hidden | hidden | released |
+| `running` | hidden | hidden | visible (live) | hidden | hidden | hidden | requested |
+| `paused` | hidden | hidden | visible (frozen на последнем снапшоте) | visible | hidden | hidden | released |
+| `result(win|loss)` | hidden | hidden | hidden | hidden | visible | hidden | released |
+| `error('preload')` | hidden | hidden | hidden | hidden | hidden | visible | released |
 
+- `Startup overlay` в фазе `loading` — белый фон, `public/images/slime-escape.jpg` с `object-fit: contain`, нижний progress bar и короткий статус (`Loading assets X/Y`). Конкретные числа `X/Y` приходят из preload-callback (см. [sprite-assets.md](sprite-assets.md)). Никакого «между загрузкой» меню или HUD не показано: игрок видит либо splash, либо menu, либо явный startup error.
+- `Startup error` в фазе `error('preload')` — отдельный overlay поверх пустого фона, с человекочитаемым описанием первой провалившейся загрузки и единственной кнопкой «Перезагрузить страницу» (вызывает `location.reload()`).
 - HUD остаётся видимым в `paused` намеренно: игрок должен видеть текущие значения HP/таймера/волны/босса, на которых он поставил паузу. Pause overlay рисуется над ним.
 - Result UI скрывает HUD: цифры забега, на котором всё закончилось, не должны конкурировать с финальным итогом. Если позже потребуется «итоговая сводка» — это расширение Result UI, не возвращение HUD.
 
 ### Стек слоёв (z-order)
 
-- Слои сверху вниз: Result UI > Pause overlay > Menu overlay > HUD > canvas. Конкретные числовые `z-index` — деталь реализации; контракт — порядок и непересекающаяся видимость одновременных слоёв (по таблице фаз одновременно показано не более одного overlay-я плюс HUD).
+- Слои сверху вниз: Startup error > Startup overlay > Result UI > Pause overlay > Menu overlay > HUD > canvas. Конкретные числовые `z-index` — деталь реализации; контракт — порядок и непересекающаяся видимость одновременных слоёв (по таблице фаз одновременно показано не более одного overlay-я плюс HUD; в `loading` и `error('preload')` HUD отсутствует).
 - HUD и overlay-и позиционированы относительно viewport (`position: fixed`), а не относительно canvas. Letterbox/pillarbox-полосы из [arena-and-coordinates.md](arena-and-coordinates.md) при этом не «прячут» HUD — он рисуется поверх любых пустых полос. Это даёт стабильное место HUD при нестандартных aspect ratio.
 
 ### HUD как пассивный потребитель
@@ -128,7 +137,7 @@
 - Доступен ровно из двух мест:
   1. Из `MenuOverlay` (фаза `menu`) — кнопкой «Настройки» рядом с выбором режима;
   2. Из `PauseOverlay` (фаза `paused`) — кнопкой «Настройки» рядом с «Продолжить»/«Выйти в меню».
-  В фазах `running` и `result` settings overlay недоступен. В `running` для открытия настроек игрок сначала входит в паузу штатным способом ([input-commands.md](input-commands.md)); это удерживает правило «overlay-и не появляются поверх живой сцены без явного pause».
+  В фазах `running`, `result`, `loading` и `error('preload')` settings overlay недоступен. В `running` для открытия настроек игрок сначала входит в паузу штатным способом ([input-commands.md](input-commands.md)); это удерживает правило «overlay-и не появляются поверх живой сцены без явного pause». В `loading` нет ни Renderer-а, чтобы применять `renderScalePreset`, ни sample-плейбэка, чтобы услышать `masterVolume`; в `error('preload')` единственное санкционированное действие — reload страницы.
 - Открытие/закрытие settings overlay — единственный orchestration-эффект: `UiShell` показывает/прячет соответствующий компонент. Никаких побочных переходов между фазами `menu`/`paused`/`running`/`result` это не вызывает: открыли в `paused` — после закрытия остаёмся в `paused` с тем же `Pause overlay` под спудом; открыли в `menu` — возвращаемся в `menu` к выбору режима.
 - Параллельно с settings overlay не показывается **никакой** другой overlay поверх него. Z-order: Settings overlay выше Pause/Menu overlay-ев, ниже Result UI (Result UI и Settings overlay не сосуществуют по построению — settings недоступен в `result`). Конкретные `z-index` — деталь реализации.
 - Pointer Lock в фазе `paused` уже снят браузером ([input-commands.md](input-commands.md)); открытие/закрытие settings overlay в `paused` его статус не меняет. В фазе `menu` Pointer Lock не запрашивается, и settings overlay тоже его не трогает.
@@ -139,10 +148,22 @@
 
 ### Жизненный цикл рендера и input в рамках фаз
 
+- В фазах `loading` и `error('preload')` `Renderer` и `InputController` **не существуют**. Создание `THREE.WebGLRenderer` и подписка на input-события откладываются до первого `menu → running`. Это держит фазу `loading` максимально дешёвой и гарантирует, что preload не конкурирует за GPU/canvas ни с одной gameplay-системой.
 - `Renderer` и `InputController` создаются `UiShell` при переходе `menu → running` и уничтожаются при переходе в `menu` (явный exit) или `result` (`win`/`loss`). Это сохраняет уже работающую модель `src/main/index.ts`, но переносит её в один owner.
 - В фазе `paused` `Renderer` продолжает рендер каждый кадр (картинка не «замирает в моменте получения паузы», а отрисовывает последний интерполированный кадр), `InputController` остаётся подключён, но Pointer Lock снят браузером ([input-commands.md](input-commands.md)). HUD заморожен (см. выше).
 - В фазе `result` `Renderer` и `InputController` уничтожаются: на экране только Result UI; canvas под ним может остаться пустым/чёрным. Это явно: после смерти игрока «арена сзади продолжает шевелиться» — нежелательный артефакт, и контракт его исключает.
 - Смена render backend в 010 (main vs render worker через `OffscreenCanvas`) живёт внутри `Renderer` и не ломает фазовую модель `UiShell`.
+
+### Startup preload в фазе `loading`
+
+- `UiShell` стартует с фазы `loading` и **до** перехода в `menu` обязан выполнить sprite preload по контракту [sprite-assets.md](sprite-assets.md): загрузить и декодировать все textures из объединения generated visual registries (player/enemy/boss). Lazy-load в фазах `running`/`paused`/`result` запрещён.
+- Splash в фазе `loading` обязан оставаться видимым **минимум 1.5 секунды**, даже если preload ассетов завершился раньше. Это контракт UI, а не UX-эвристика «по месту»: константа `STARTUP_PRELOAD_MIN_DURATION_MS = 1500` живёт в `src/main/ui/UiShell.ts`, и её изменение требует обновления этого файла.
+- Источник списка ассетов — visual registries в `src/main/render/**`; preload не знает про content registry напрямую и не парсит MD: `image` уже зафиксирован в generated данных.
+- Прогресс preload-а (количество загруженных / общее) пробрасывается callback-ом в `StartupOverlay`. Текстуры считаются «готовыми» только после успешного декодирования — частично декодированный bitmap не отдаётся renderer-у даже на короткое время.
+- Любая ошибка загрузки или декодирования хотя бы одного обязательного ассета — единственный сан­кц­ио­ни­ро­ва­ный триггер `loading → error('preload')`. `UiShell` запоминает первое поражение (URL + браузерное сообщение) и передаёт его в `StartupErrorOverlay`. Параллельно идущие загрузки прерываются; partial-success-режима нет.
+- `SimWorkerHost.startSession` в фазе `loading` не вызывается; сам worker может быть инициализирован пустым (без сессии) уже здесь, но это деталь реализации, не контракт.
+- `Audio.unlock()` в фазе `loading` не вызывается: контекст по-прежнему ждёт первый user-gesture (`audio.md`). Splash без звука — ожидаемое поведение.
+- В фазе `loading` `ClientSettingsStore` уже доступен: его создание не требует worker-а или Renderer-а. Изменения настроек в `loading` запрещены UI-ем (Settings overlay недоступен), но программное чтение допустимо — это используется при первом `menu → running`, см. [render-scale.md](render-scale.md).
 
 ### Пересечение с input-commands
 
@@ -173,6 +194,7 @@
 - [client-settings.md](client-settings.md)
 - [audio.md](audio.md)
 - [render-scale.md](render-scale.md)
+- [sprite-assets.md](sprite-assets.md)
 - [web-stack.md](web-stack.md)
 - [boss-encounter.md](boss-encounter.md)
 - [zone.md](zone.md)
@@ -180,3 +202,4 @@
 - [../docs/VISION.md](../docs/VISION.md)
 - [../stories/007-hud-and-menu.md](../stories/007-hud-and-menu.md)
 - [../stories/009-settings.md](../stories/009-settings.md)
+- [../stories/013-sprite-assets-and-loader.md](../stories/013-sprite-assets-and-loader.md)

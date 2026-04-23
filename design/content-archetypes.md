@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (story 012 покрывает MD-генерацией weapons/drops/bosses; формы архетипов и правила реестров не меняются)
+- Updated: 2026-04-23 (story 013: после ввода [sprite-assets.md](sprite-assets.md) renderer для player/enemy/boss перестаёт читать `EnemyArchetype.color`/`BossArchetype.color`; добавлен derive `contactBox` для body-contact и projectile hit detection по [body-contact-boxes.md](body-contact-boxes.md) и [projectiles-and-combat.md](projectiles-and-combat.md). story 012 покрывает MD-генерацией weapons/drops/bosses; формы архетипов и правила реестров не меняются)
 
 ## Context
 
@@ -39,7 +39,8 @@
   type EnemyArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;                  // wu, для коллизий и рендера
+    radius: number;                  // wu, legacy circle metric для не-мигрированных consumers; body-contact не читает его после body-contact-boxes.md
+    contactBox: Readonly<{ width: number; height: number }>;  // wu, derive из sprite asset; owner body-contact и projectile target overlap для `player` / `enemy` / `boss`
     maxHp: number;                   // целое > 0
     behavior: EnemyBehavior;
     maxSpeed: number;                // wu/s, >= 0; для 'stationary' обязан быть 0
@@ -54,11 +55,12 @@
   ```
 - `behavior: 'stationary'` означает, что `MovementSystem` не двигает врага этого архетипа; `maxSpeed` для `'stationary'` обязан быть 0 — это правило валидируется на стороне content/builder, не runtime.
 - `behavior: 'chase'` означает, что `MovementSystem` двигает врага к текущей позиции игрока с скоростью `maxSpeed`; конкретный alg (прямая линия / steering) — деталь реализации, контракт — «в среднем сокращает расстояние до игрока за тик». Дальнейшие поведения (`'wander'`, `'orbit'`, …) добавляются дописыванием в `EnemyBehavior` union, а не ветвями в `MovementSystem`.
+- `contactBox` — axis-aligned footprint тела врага для body-contact и projectile hit detection по [body-contact-boxes.md](body-contact-boxes.md) и [projectiles-and-combat.md](projectiles-and-combat.md). На горизонте 013 не авторится руками в MD и derive-ится из sprite asset тем же scale pipeline, что и visual `worldSize`.
 - `contactDamage` и `contactCooldownMs` — единственный источник правды для контактного урона; правила обработки — в [enemy-contact.md](enemy-contact.md). Если `contactDamage === 0`, кулдаун всё равно задаётся явно — отсутствие поля запрещено по тому же правилу единственности «нет данных».
 - `knockbackBaseImpulse`, `knockbackVelocityScale`, `knockbackDurationMs` — параметры контактного knockback враг → от игрока; правила обработки — в [enemy-contact.md](enemy-contact.md), раздел `Knockback at contact`. Поля задаются всегда: «knockback'а нет» выражается явными нулями `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0`, а не пропуском полей.
-- `color` — плейсхолдер до появления полноценных ассетов. Это контентное поле, не decision рендера.
+- `color` — плейсхолдер до появления полноценных ассетов. Это контентное поле, не decision рендера. После [sprite-assets.md](sprite-assets.md) renderer для `player`/`enemy`/`boss` поле не читает (визуал — preloaded sprite), но поле остаётся в архетипе как content-плейсхолдер для не-renderer сценариев (debug overlay, мини-карта, tooling). Удаление — отдельное решение, когда появится фактический consumer или подтверждение, что его не будет.
 - Числовые ограничения, обязательные на стороне content/builder:
-  - `maxSpeed * SIM_STEP_SEC <= radius + minPlayerRadius` ([enemy-contact.md](enemy-contact.md): запрет touring через игрока), warning через единый log-модуль ([logging.md](logging.md));
+  - `maxSpeed * SIM_STEP_SEC <= min((contactBox.width + player.contactBox.width) / 2, (contactBox.height + player.contactBox.height) / 2)` ([enemy-contact.md](enemy-contact.md): запрет touring через игрока), warning через единый log-модуль ([logging.md](logging.md));
   - для `'stationary'` обязан быть `maxSpeed === 0`, `contactDamage === 0` и `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0` (стационарная мишень не должна неявно бить и не должна прыгать); валидация на стороне content/builder.
 - `dropTable` обязателен и задаётся всегда, даже если враг ничего не дропает: явное `[]` отличается от «забыли выставить» (см. правило «без двух разных «нет данных»). Дополнительные ограничения (каждый `chance ∈ [0, 1]`, сумма `chance` по таблице `<= 1`, все `archetypeId` резолвятся в реестре `DropArchetype`) — см. [drops.md](drops.md); их нарушение фиксируется warning через единый log-модуль на стороне content/builder и не доходит до runtime-фолбэка.
 
@@ -79,7 +81,7 @@
   ```
 - `cooldownMs` — минимальный интервал между двумя последовательными выстрелами; конкретное использование (per-shooter timer) — в [projectiles-and-combat.md](projectiles-and-combat.md).
 - Поле «бесконечный боезапас» из [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md) не выражается в архетипе: отсутствие поля `ammo` и есть его реализация. Когда (если) появится конечный боезапас, он добавится отдельным полем и отдельным design-решением.
-- Скорости и радиусы должны соблюдать инвариант «без туннелирования» из [projectiles-and-combat.md](projectiles-and-combat.md); проверка — на стороне content/builder, не на стороне рантайма.
+- Скорости и `projectileRadius` должны соблюдать инвариант «без туннелирования» из [projectiles-and-combat.md](projectiles-and-combat.md) относительно `contactBox`-целей; проверка — на стороне content/builder, не на стороне рантайма.
 
 ### DropArchetype
 
@@ -107,7 +109,8 @@
   type BossArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;                      // wu
+    radius: number;                      // wu, legacy circle metric для не-мигрированных consumers
+    contactBox: Readonly<{ width: number; height: number }>;  // wu, derive body footprint / projectile target shape
     maxHp: number;                       // целое > 0
     maxSpeed: number;                    // wu/s, >= 0; базовая скорость перемещения, если босс двигается
     color: number;                       // 0xRRGGBB
@@ -126,7 +129,25 @@
   }>;
   ```
 - Контакт с игроком и knockback следуют тем же правилам, что и `EnemyArchetype` ([enemy-contact.md](enemy-contact.md)); числа задаются в архетипе босса.
+- `contactBox` для босса следует тому же правилу, что и у `EnemyArchetype`: derive из sprite asset, owner body-contact и projectile target overlap.
 - Минимум **две** записи в `phases` и минимум **два** различимых ключа в `attacks` для acceptance истории 006 ([../stories/006-boss-encounter.md](../stories/006-boss-encounter.md)); конкретный выбор атаки из `allowedAttackIds` и паттерна — `BossPhaseSystem` ([boss-encounter.md](boss-encounter.md)).
+- `color` следует тому же правилу, что и `EnemyArchetype.color` после [sprite-assets.md](sprite-assets.md): renderer для `boss` его не читает, поле остаётся как content-плейсхолдер для не-renderer сценариев.
+
+### PlayerArchetype
+
+- Для content-area `players` (история 013) минимальная форма:
+  ```ts
+  type PlayerArchetype = Readonly<{
+    id: string;
+    displayName: string;
+    radius: number;                                       // wu, legacy circle metric для не-мигрированных consumers
+    contactBox: Readonly<{ width: number; height: number }>;  // wu, derive body footprint / projectile target shape
+    maxSpeed: number;                                     // wu/s
+    maxHp: number;                                        // целое > 0
+  }>;
+  ```
+- `contactBox` у игрока следует тому же правилу, что и у `EnemyArchetype` / `BossArchetype`: derive из sprite asset по [body-contact-boxes.md](body-contact-boxes.md), используется для body-contact и projectile hit detection, без ручных MD-колонок на горизонте 013.
+- `PlayerSpawn` в `SessionDefinition.player` собирается из `PlayerArchetype`, но остаётся отдельным контрактом уровня сессии, потому что хранит стартовую позицию и session-local форму.
 
 ### PlayerSpawn.maxHp
 
@@ -165,6 +186,7 @@
 
 ## Related
 
+- [body-contact-boxes.md](body-contact-boxes.md)
 - [content-boundaries.md](content-boundaries.md)
 - [session-definition.md](session-definition.md)
 - [spawn-plan.md](spawn-plan.md)
@@ -179,3 +201,4 @@
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
 - [boss-encounter.md](boss-encounter.md)
 - [content-authoring.md](content-authoring.md)
+- [sprite-assets.md](sprite-assets.md)

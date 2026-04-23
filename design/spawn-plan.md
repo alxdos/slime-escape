@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-20 (кампания: break перед боссом, спавн босса сверху по центру; ранее: `'boss'` kind для 006)
+- Updated: 2026-04-23 (static/boss builder-fit уточнён до `contactBox` для `enemy` / `boss`; ранее: кампания: break перед боссом, спавн босса сверху по центру; `'boss'` kind для 006)
 
 ## Context
 
@@ -44,7 +44,7 @@
   - список выполняется **один раз** при старте encounter;
   - порядок исполнения соответствует порядку в массиве — это даёт стабильные `id` при детерминированной сборке `SessionDefinition`;
   - повторных спавнов и респавнов нет;
-  - `position` обязан попадать внутрь арены ([arena-and-coordinates.md](arena-and-coordinates.md)); за пределами арены — ошибка сборки сессии, а не runtime-поведение;
+  - `position` обязан попадать внутрь арены ([arena-and-coordinates.md](arena-and-coordinates.md)); для `enemy` builder проверяет влезание по полному `contactBox`, а не по legacy `radius`, чтобы статический spawn не выпускал прямоугольное тело за границы арены;
   - архетипы резолвятся через `content library` ([content-archetypes.md](content-archetypes.md), [content-boundaries.md](content-boundaries.md)).
 
 ### Wave spawn
@@ -88,7 +88,7 @@
   - выполняется **один раз** при `encounterStart`;
   - создаётся **ровно одна** сущность `kind: 'boss'` с `HasHealth`, инициализированная из `BossArchetype` ([content-archetypes.md](content-archetypes.md), [boss-encounter.md](boss-encounter.md));
   - `SpawnSystem` ведёт учёт этой сущности для `aliveFromThisPlan` так же, как для `'wave'`/`'static'`: смерть босса уменьшает счётчик; при `allEnemiesCleared` encounter с `spawnPlan.kind: 'boss'` завершается, когда босс мёртв и план не ожидает дальнейших спавнов (для `'boss'` это эквивалентно «босс убит»);
-  - `position` обязан попадать внутрь арены ([arena-and-coordinates.md](arena-and-coordinates.md)); иначе — ошибка сборки сессии; для пресета кампании босс ставится **сверху по центру** (x = 0, y = верхняя полоса с inset как у `edgeMargin` волны), а не в геометрическом центре поля;
+  - `position` обязан попадать внутрь арены ([arena-and-coordinates.md](arena-and-coordinates.md)); builder проверяет fit по полному `contactBox` босса, а не по `radius`; для пресета кампании босс ставится **сверху по центру** (x = 0, y = верхняя полоса с inset как у `edgeMargin` волны), а не в геометрическом центре поля;
   - повторных спавнов по тикам нет.
 
 ### Ответственность SpawnSystem

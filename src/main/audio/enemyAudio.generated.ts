@@ -24,8 +24,7 @@ const SLIME_VOICE_VARIANTS = Object.freeze([
 ]);
 
 export const ENEMY_AUDIO_MAPPINGS: Readonly<Record<string, EnemyAudioMapping>> = Object.freeze({
-  'training-target': Object.freeze({}),
-  'slime-fast': Object.freeze({
+  'slime-one-eye': Object.freeze({
     hit: SLIME_HIT_VARIANTS,
     death: SLIME_DEATH_VARIANTS,
     voice: Object.freeze({
@@ -34,13 +33,265 @@ export const ENEMY_AUDIO_MAPPINGS: Readonly<Record<string, EnemyAudioMapping>> =
       intervalMaxMs: 6000
     })
   }),
-  'slime-tank': Object.freeze({
+  'slime-hornling': Object.freeze({
     hit: SLIME_HIT_VARIANTS,
     death: SLIME_DEATH_VARIANTS,
     voice: Object.freeze({
       sample: SLIME_VOICE_VARIANTS,
-      intervalMinMs: 3500,
-      intervalMaxMs: 7000
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-many-eye': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-stonehead': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-sleeper': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-spark': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-wraith': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-shell': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-flame': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-mech-crab': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-stack': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-trickster': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-bug': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-lifter': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-saw': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-drone': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-star': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-echo': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-splitter': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-prince': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-kingling': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-fortress': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-dasher': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-tadpole': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-door': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-mech': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-clamper': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-candle': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-obelisk': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'slime-ninja': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
     })
   })
 });

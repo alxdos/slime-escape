@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { SLIME_FAST, TRAINING_TARGET } from '../shared/content/enemies';
 import type { ArenaConfig, PlayerSpawn } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
@@ -9,8 +8,42 @@ import { createMovementSystem } from './MovementSystem';
 import { createRuntimeInputState } from './RuntimeInputState';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
-const PLAYER: PlayerSpawn = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
+const PLAYER: PlayerSpawn = {
+  position: { x: 0, y: 0 },
+  radius: 0.5,
+  contactBox: { width: 1.2, height: 2 },
+  maxSpeed: 6,
+  maxHp: 1
+};
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
+const STATIONARY_TEST_ENEMY = {
+  archetypeId: 'test-stationary-enemy',
+  radius: 0.6,
+  contactBox: { width: 1.2, height: 1.2 },
+  behavior: 'stationary',
+  maxHp: 3,
+  maxSpeed: 0,
+  contactDamage: 0,
+  contactCooldownMs: 1,
+  knockbackBaseImpulse: 0,
+  knockbackVelocityScale: 0,
+  knockbackDurationMs: 1,
+  color: 0xff7766
+} as const;
+const CHASE_TEST_ENEMY = {
+  archetypeId: 'test-chase-enemy',
+  radius: 0.4,
+  contactBox: { width: 0.8, height: 0.8 },
+  behavior: 'chase',
+  maxHp: 1,
+  maxSpeed: 4,
+  contactDamage: 1,
+  contactCooldownMs: 800,
+  knockbackBaseImpulse: 8,
+  knockbackVelocityScale: 1.5,
+  knockbackDurationMs: 350,
+  color: 0x77ff99
+} as const;
 
 function setup(spec: PlayerSpawn = PLAYER) {
   const store = createEntityStore();
@@ -22,35 +55,37 @@ function setup(spec: PlayerSpawn = PLAYER) {
 
 function trainingTargetAt(x: number, y: number): EnemySpawnSpec {
   return {
-    archetypeId: TRAINING_TARGET.id,
+    archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
     position: { x, y },
-    radius: TRAINING_TARGET.radius,
-    behavior: TRAINING_TARGET.behavior,
-    maxHp: TRAINING_TARGET.maxHp,
-    maxSpeed: TRAINING_TARGET.maxSpeed,
-    contactDamage: TRAINING_TARGET.contactDamage,
-    contactCooldownMs: TRAINING_TARGET.contactCooldownMs,
-    knockbackBaseImpulse: TRAINING_TARGET.knockbackBaseImpulse,
-    knockbackVelocityScale: TRAINING_TARGET.knockbackVelocityScale,
-    knockbackDurationMs: TRAINING_TARGET.knockbackDurationMs,
-    color: TRAINING_TARGET.color
+    radius: STATIONARY_TEST_ENEMY.radius,
+    contactBox: STATIONARY_TEST_ENEMY.contactBox,
+    behavior: STATIONARY_TEST_ENEMY.behavior,
+    maxHp: STATIONARY_TEST_ENEMY.maxHp,
+    maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
+    contactDamage: STATIONARY_TEST_ENEMY.contactDamage,
+    contactCooldownMs: STATIONARY_TEST_ENEMY.contactCooldownMs,
+    knockbackBaseImpulse: STATIONARY_TEST_ENEMY.knockbackBaseImpulse,
+    knockbackVelocityScale: STATIONARY_TEST_ENEMY.knockbackVelocityScale,
+    knockbackDurationMs: STATIONARY_TEST_ENEMY.knockbackDurationMs,
+    color: STATIONARY_TEST_ENEMY.color
   };
 }
 
 function slimeFastAt(x: number, y: number): EnemySpawnSpec {
   return {
-    archetypeId: SLIME_FAST.id,
+    archetypeId: CHASE_TEST_ENEMY.archetypeId,
     position: { x, y },
-    radius: SLIME_FAST.radius,
-    behavior: SLIME_FAST.behavior,
-    maxHp: SLIME_FAST.maxHp,
-    maxSpeed: SLIME_FAST.maxSpeed,
-    contactDamage: SLIME_FAST.contactDamage,
-    contactCooldownMs: SLIME_FAST.contactCooldownMs,
-    knockbackBaseImpulse: SLIME_FAST.knockbackBaseImpulse,
-    knockbackVelocityScale: SLIME_FAST.knockbackVelocityScale,
-    knockbackDurationMs: SLIME_FAST.knockbackDurationMs,
-    color: SLIME_FAST.color
+    radius: CHASE_TEST_ENEMY.radius,
+    contactBox: CHASE_TEST_ENEMY.contactBox,
+    behavior: CHASE_TEST_ENEMY.behavior,
+    maxHp: CHASE_TEST_ENEMY.maxHp,
+    maxSpeed: CHASE_TEST_ENEMY.maxSpeed,
+    contactDamage: CHASE_TEST_ENEMY.contactDamage,
+    contactCooldownMs: CHASE_TEST_ENEMY.contactCooldownMs,
+    knockbackBaseImpulse: CHASE_TEST_ENEMY.knockbackBaseImpulse,
+    knockbackVelocityScale: CHASE_TEST_ENEMY.knockbackVelocityScale,
+    knockbackDurationMs: CHASE_TEST_ENEMY.knockbackDurationMs,
+    color: CHASE_TEST_ENEMY.color
   };
 }
 
@@ -99,6 +134,8 @@ describe('MovementSystem player', () => {
     const { store, movement, input } = setup();
     const halfW = ARENA.width / 2;
     const halfH = ARENA.height / 2;
+    const halfContactWidth = PLAYER.contactBox.width / 2;
+    const halfContactHeight = PLAYER.contactBox.height / 2;
     input.moveDir.dx = 1;
     input.moveDir.dy = 1;
     for (let i = 0; i < 10000; i += 1) {
@@ -107,16 +144,16 @@ describe('MovementSystem player', () => {
     const p = store.player();
     expect(p).not.toBeNull();
     if (p === null) throw new Error('unreachable');
-    expect(p.position.x).toBeLessThanOrEqual(halfW - PLAYER.radius);
-    expect(p.position.y).toBeLessThanOrEqual(halfH - PLAYER.radius);
+    expect(p.position.x).toBeLessThanOrEqual(halfW - halfContactWidth);
+    expect(p.position.y).toBeLessThanOrEqual(halfH - halfContactHeight);
 
     input.moveDir.dx = -1;
     input.moveDir.dy = -1;
     for (let i = 0; i < 10000; i += 1) {
       movement.tick(ARENA, store, input, i * SIM_STEP_MS);
     }
-    expect(p.position.x).toBeGreaterThanOrEqual(-halfW + PLAYER.radius);
-    expect(p.position.y).toBeGreaterThanOrEqual(-halfH + PLAYER.radius);
+    expect(p.position.x).toBeGreaterThanOrEqual(-halfW + halfContactWidth);
+    expect(p.position.y).toBeGreaterThanOrEqual(-halfH + halfContactHeight);
   });
 
   it('is a no-op when no player is spawned', () => {
@@ -161,8 +198,8 @@ describe('MovementSystem enemies', () => {
     movement.tick(ARENA, store, input, 0);
     const after = enemy.position.x;
     expect(after).toBeLessThan(before);
-    expect(before - after).toBeCloseTo(SLIME_FAST.maxSpeed * SIM_STEP_SEC, 10);
-    expect(enemy.velocity.vx).toBeCloseTo(-SLIME_FAST.maxSpeed, 10);
+    expect(before - after).toBeCloseTo(CHASE_TEST_ENEMY.maxSpeed * SIM_STEP_SEC, 10);
+    expect(enemy.velocity.vx).toBeCloseTo(-CHASE_TEST_ENEMY.maxSpeed, 10);
     expect(enemy.velocity.vy).toBeCloseTo(0, 10);
   });
 

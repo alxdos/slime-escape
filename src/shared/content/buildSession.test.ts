@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { SANDBOX_ARENA } from './arenas';
 import { buildSessionDefinition } from './buildSession';
-import { SLIME_KING } from './bosses';
-import { SLIME_FAST, SLIME_TANK, TRAINING_TARGET } from './enemies';
+import { BOSS_SCRAP_KING } from './bosses';
+import { SLIME_BUG, SLIME_ONE_EYE, SLIME_SHELL } from './enemies';
 import {
   CAMPAIGN_PRESET,
   SANDBOX_PRESET,
@@ -50,6 +50,8 @@ describe('buildSessionDefinition (sandbox)', () => {
     expect(session.arena.width).toBeGreaterThan(0);
     expect(session.arena.height).toBeGreaterThan(0);
     expect(session.player.position).toEqual({ x: 0, y: 0 });
+    expect(session.player.contactBox.width).toBeGreaterThan(0);
+    expect(session.player.contactBox.height).toBeGreaterThan(0);
     expect(session.player.maxSpeed).toBeGreaterThan(0);
   });
 
@@ -75,7 +77,7 @@ describe('buildSessionDefinition (sandbox-with-combat)', () => {
     expect(session.loadout).toEqual({ primaryWeaponArchetypeId: PISTOL.id });
   });
 
-  it('uses a static spawn plan with the training target inside the arena', () => {
+  it('uses a static spawn plan with slime-bug inside the arena', () => {
     const session = buildSessionDefinition(SANDBOX_WITH_COMBAT_PRESET, { seed: 7 });
     const encounter = session.encounters[0];
 
@@ -85,15 +87,17 @@ describe('buildSessionDefinition (sandbox-with-combat)', () => {
     const plan = encounter?.spawnPlan;
     if (plan?.kind !== 'static') throw new Error('expected static spawn plan');
     expect(plan.spawns).toHaveLength(1);
-    expect(plan.spawns[0]?.archetypeId).toBe(TRAINING_TARGET.id);
+    expect(plan.spawns[0]?.archetypeId).toBe(SLIME_BUG.id);
+    expect(SLIME_BUG.contactBox.width).toBeGreaterThan(0);
+    expect(SLIME_BUG.contactBox.height).toBeGreaterThan(0);
 
     const halfW = session.arena.width / 2;
     const halfH = session.arena.height / 2;
     const pos = plan.spawns[0]!.position;
-    expect(pos.x).toBeGreaterThan(-halfW);
-    expect(pos.x).toBeLessThan(halfW);
-    expect(pos.y).toBeGreaterThan(-halfH);
-    expect(pos.y).toBeLessThan(halfH);
+    expect(pos.x - SLIME_BUG.contactBox.width / 2).toBeGreaterThanOrEqual(-halfW);
+    expect(pos.x + SLIME_BUG.contactBox.width / 2).toBeLessThanOrEqual(halfW);
+    expect(pos.y - SLIME_BUG.contactBox.height / 2).toBeGreaterThanOrEqual(-halfH);
+    expect(pos.y + SLIME_BUG.contactBox.height / 2).toBeLessThanOrEqual(halfH);
   });
 });
 
@@ -116,7 +120,7 @@ describe('buildSessionDefinition (training)', () => {
 
   it('every wave is a wave-spawn-plan composed only of known archetypes', () => {
     const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
-    const knownIds = new Set([SLIME_FAST.id, SLIME_TANK.id]);
+    const knownIds = new Set([SLIME_ONE_EYE.id, SLIME_SHELL.id]);
 
     for (const encounter of session.encounters) {
       if (encounter.type !== 'wave') continue;
@@ -202,13 +206,27 @@ describe('buildSessionDefinition (campaign)', () => {
     const bossEnc = session.encounters[6];
     expect(bossEnc?.type).toBe('boss');
     expect(bossEnc?.zoneBehavior).toEqual({ kind: 'disabled' });
+    expect(BOSS_SCRAP_KING.contactBox.width).toBeGreaterThan(0);
+    expect(BOSS_SCRAP_KING.contactBox.height).toBeGreaterThan(0);
     const plan = bossEnc?.spawnPlan;
     expect(plan?.kind).toBe('boss');
     if (plan?.kind !== 'boss') throw new Error('expected boss spawn plan');
-    expect(plan.bossArchetypeId).toBe(SLIME_KING.id);
+    expect(plan.bossArchetypeId).toBe(BOSS_SCRAP_KING.id);
     expect(plan.position.x).toBe(0);
-    // top center, same inset as wave edge margin (0.5) + boss radius
-    const expectedY = SANDBOX_ARENA.height / 2 - 0.5 - SLIME_KING.radius;
+    // top center, same inset as wave edge margin (0.5) + half boss contact-box height
+    const expectedY = SANDBOX_ARENA.height / 2 - 0.5 - BOSS_SCRAP_KING.contactBox.height / 2;
     expect(plan.position.y).toBeCloseTo(expectedY, 5);
+    expect(plan.position.x - BOSS_SCRAP_KING.contactBox.width / 2).toBeGreaterThanOrEqual(
+      -SANDBOX_ARENA.width / 2
+    );
+    expect(plan.position.x + BOSS_SCRAP_KING.contactBox.width / 2).toBeLessThanOrEqual(
+      SANDBOX_ARENA.width / 2
+    );
+    expect(plan.position.y - BOSS_SCRAP_KING.contactBox.height / 2).toBeGreaterThanOrEqual(
+      -SANDBOX_ARENA.height / 2
+    );
+    expect(plan.position.y + BOSS_SCRAP_KING.contactBox.height / 2).toBeLessThanOrEqual(
+      SANDBOX_ARENA.height / 2
+    );
   });
 });

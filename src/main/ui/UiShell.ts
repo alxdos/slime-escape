@@ -7,7 +7,11 @@ import { assertNever } from '../../shared/protocol';
 import type { SessionDefinition } from '../../shared/session';
 import { createAudio, type Audio } from '../audio/Audio';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
+import { BOSS_VISUALS } from '../render/bossVisuals';
+import { ENEMY_VISUALS } from '../render/enemyVisuals';
+import { PLAYER_VISUALS } from '../render/playerVisuals';
 import { createRenderer, type Renderer, type RendererInit } from '../render/Renderer';
+import { preloadSprites, type TextureMap } from '../render/spritePreload';
 import {
   createClientSettingsStore,
   type ClientSettingsStore
@@ -36,6 +40,16 @@ import {
   type SettingsOverlay,
   type SettingsOverlayInit
 } from './SettingsOverlay';
+import {
+  createStartupErrorOverlay,
+  type StartupErrorOverlay,
+  type StartupErrorOverlayInit
+} from './StartupErrorOverlay';
+import {
+  createStartupOverlay,
+  type StartupOverlay,
+  type StartupOverlayInit
+} from './StartupOverlay';
 import type { UiShellPhase } from './UiShellPhase';
 
 export type SessionResult = ResultOutcome;
@@ -52,11 +66,17 @@ type CreateMenuOverlayFn = (init: MenuOverlayInit) => MenuOverlay;
 type CreatePauseOverlayFn = (init: PauseOverlayInit) => PauseOverlay;
 type CreateResultOverlayFn = (init: ResultOverlayInit) => ResultOverlay;
 type CreateSettingsOverlayFn = (init: SettingsOverlayInit) => SettingsOverlay;
+type CreateStartupOverlayFn = (init: StartupOverlayInit) => StartupOverlay;
+type CreateStartupErrorOverlayFn = (init: StartupErrorOverlayInit) => StartupErrorOverlay;
 type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
 type CreateAudioFn = () => Audio;
 type CreateClientSettingsStoreFn = () => ClientSettingsStore;
+type RunStartupPreloadFn = (
+  onProgress: (loaded: number, total: number) => void
+) => Promise<TextureMap>;
+type ReloadPageFn = () => void;
 
 export type UiShellInit = Readonly<{
   parent: HTMLElement;
@@ -67,11 +87,15 @@ export type UiShellInit = Readonly<{
   createPauseOverlay?: CreatePauseOverlayFn;
   createResultOverlay?: CreateResultOverlayFn;
   createSettingsOverlay?: CreateSettingsOverlayFn;
+  createStartupOverlay?: CreateStartupOverlayFn;
+  createStartupErrorOverlay?: CreateStartupErrorOverlayFn;
   createRenderer?: CreateRendererFn;
   createInputController?: CreateInputControllerFn;
   createHud?: CreateHudFn;
   createAudio?: CreateAudioFn;
   createClientSettingsStore?: CreateClientSettingsStoreFn;
+  runStartupPreload?: RunStartupPreloadFn;
+  reloadPage?: ReloadPageFn;
   makeSeed?: () => number;
   windowTarget?: WindowTarget;
   documentTarget?: DocumentTarget;
@@ -83,9 +107,17 @@ export type UiShell = Readonly<{
   dispose(): void;
 }>;
 
+const LOADING_PHASE: UiShellPhase = { kind: 'loading' };
 const MENU_PHASE: UiShellPhase = { kind: 'menu' };
 const RUNNING_PHASE: UiShellPhase = { kind: 'running' };
 const PAUSED_PHASE: UiShellPhase = { kind: 'paused' };
+const STARTUP_PRELOAD_MIN_DURATION_MS = 1500;
+const STARTUP_PRELOAD_PROGRESS_TICK_MS = 50;
+const STARTUP_SPRITE_SPECS = [
+  ...Object.values(PLAYER_VISUALS),
+  ...Object.values(ENEMY_VISUALS),
+  ...Object.values(BOSS_VISUALS)
+];
 
 export function createUiShell(init: UiShellInit): UiShell {
   const builder = init.buildSessionDefinition ?? buildSessionDefinition;
@@ -94,21 +126,34 @@ export function createUiShell(init: UiShellInit): UiShell {
   const pauseFactory = init.createPauseOverlay ?? createPauseOverlay;
   const resultFactory = init.createResultOverlay ?? createResultOverlay;
   const settingsOverlayFactory = init.createSettingsOverlay ?? createSettingsOverlay;
+  const canMountStartupOverlays =
+    typeof (init.parent as Partial<HTMLElement>).appendChild === 'function' &&
+    typeof document !== 'undefined';
+  const startupOverlayFactory =
+    init.createStartupOverlay ??
+    (canMountStartupOverlays ? createStartupOverlay : createNullStartupOverlay);
+  const startupErrorOverlayFactory =
+    init.createStartupErrorOverlay ??
+    (canMountStartupOverlays ? createStartupErrorOverlay : createNullStartupErrorOverlay);
   const rendererFactory = init.createRenderer ?? createRenderer;
   const inputFactory = init.createInputController ?? createInputController;
   const hudFactory = init.createHud ?? createHud;
   const audioFactory = init.createAudio ?? createAudio;
   const clientSettingsStoreFactory =
     init.createClientSettingsStore ?? createClientSettingsStore;
+  const runStartupPreload = init.runStartupPreload ?? defaultRunStartupPreload;
+  const reloadPage = init.reloadPage ?? defaultReloadPage;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
 
   let activeSession: SessionDefinition | null = null;
+  let preloadedTextures: TextureMap | null = null;
   let renderer: Renderer | null = null;
   let input: InputController | null = null;
   let unsubscribeRendererSettings: (() => void) | null = null;
   let settingsVisible = false;
-  let phase: UiShellPhase = MENU_PHASE;
+  let phase: UiShellPhase = LOADING_PHASE;
+  let disposed = false;
   const hud = hudFactory({ parent: init.parent });
   const clientSettingsStore = clientSettingsStoreFactory();
   const audio = audioFactory();
@@ -125,14 +170,30 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
     });
 
+  const startupOverlay = startupOverlayFactory({
+    parent: init.parent
+  });
+  const startupErrorOverlay = startupErrorOverlayFactory({
+    parent: init.parent,
+    onReload() {
+      reloadPage();
+    }
+  });
+
   const menu = menuFactory({
     parent: init.parent,
     modes: PLAYABLE_MODE_CATALOG,
     onStart(presetId) {
+      if (phase.kind !== 'menu') {
+        return;
+      }
       audio.playUi('buttonClick');
       startPresetId(presetId);
     },
     onOpenSettings() {
+      if (phase.kind !== 'menu') {
+        return;
+      }
       audio.playUi('buttonClick');
       openSettings();
     }
@@ -194,28 +255,52 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function applyPhaseVisibility(): void {
     switch (phase.kind) {
+      case 'loading':
+        startupOverlay.show();
+        startupErrorOverlay.hide();
+        menu.hide();
+        pause.hide();
+        result.hide();
+        syncSettingsVisibility();
+        return;
       case 'menu':
+        startupOverlay.hide();
+        startupErrorOverlay.hide();
         menu.show();
         pause.hide();
         result.hide();
         syncSettingsVisibility();
         return;
       case 'running':
+        startupOverlay.hide();
+        startupErrorOverlay.hide();
         menu.hide();
         pause.hide();
         result.hide();
         syncSettingsVisibility();
         return;
       case 'paused':
+        startupOverlay.hide();
+        startupErrorOverlay.hide();
         menu.hide();
         pause.show();
         result.hide();
         syncSettingsVisibility();
         return;
       case 'result':
+        startupOverlay.hide();
+        startupErrorOverlay.hide();
         menu.hide();
         pause.hide();
         result.show(phase.outcome);
+        syncSettingsVisibility();
+        return;
+      case 'error':
+        startupOverlay.hide();
+        menu.hide();
+        pause.hide();
+        result.hide();
+        startupErrorOverlay.show(phase.message);
         syncSettingsVisibility();
         return;
       default:
@@ -258,47 +343,89 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function startPresetId(presetId: ModePresetId): void {
+    if (phase.kind !== 'menu') return;
     const preset = resolveModePreset(presetId);
     startPreset(preset);
   }
 
   function startPreset(preset: ModePreset): void {
+    if (phase.kind !== 'menu') return;
     if (activeSession !== null) return;
 
     const session = builder(preset, { seed: makeSeed() });
     const clientSettings = clientSettingsStore.get();
-    activeSession = session;
-    audio.attach(session);
-    sim.startSession(session);
+    const spriteTextures = preloadedTextures;
+    if (spriteTextures === null) {
+      throw new Error('Sprite textures must be preloaded before starting a session');
+    }
 
-    renderer = rendererFactory({
-      canvas: init.canvas,
-      renderScalePreset: clientSettings.renderScalePreset,
-      arena: session.arena,
-      player: session.player,
-      getSnapshotPair: sim.snapshotPair,
-      getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
-    });
-    const activeRenderer = renderer;
-    let lastRendererPreset = clientSettings.renderScalePreset;
-    unsubscribeRendererSettings?.();
-    unsubscribeRendererSettings = clientSettingsStore.subscribe((settings) => {
-      if (settings.renderScalePreset === lastRendererPreset) {
-        return;
+    let nextRenderer: Renderer | null = null;
+    let nextInput: InputController | null = null;
+    let nextUnsubscribeRendererSettings: (() => void) | null = null;
+    try {
+      nextRenderer = rendererFactory({
+        canvas: init.canvas,
+        renderScalePreset: clientSettings.renderScalePreset,
+        arena: session.arena,
+        spriteTextures,
+        getSnapshotPair: sim.snapshotPair,
+        getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
+      });
+      const activeRenderer = nextRenderer;
+      let lastRendererPreset = clientSettings.renderScalePreset;
+      nextUnsubscribeRendererSettings = clientSettingsStore.subscribe((settings) => {
+        if (settings.renderScalePreset === lastRendererPreset) {
+          return;
+        }
+        lastRendererPreset = settings.renderScalePreset;
+        activeRenderer.applyScalePolicy(settings.renderScalePreset);
+      });
+
+      nextInput = inputFactory({
+        canvas: init.canvas,
+        arena: session.arena,
+        pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height,
+        initialAim: session.player.position,
+        onCommand: sim.sendInput
+      });
+    } catch (error: unknown) {
+      nextUnsubscribeRendererSettings?.();
+      nextRenderer?.dispose();
+      throw error;
+    }
+
+    let audioAttached = false;
+    let sessionStarted = false;
+    let hudAttached = false;
+    try {
+      audio.attach(session);
+      audioAttached = true;
+      sim.startSession(session);
+      sessionStarted = true;
+      nextInput.start();
+      hud.attach(session);
+      hudAttached = true;
+    } catch (error: unknown) {
+      if (hudAttached) {
+        hud.detach();
       }
-      lastRendererPreset = settings.renderScalePreset;
-      activeRenderer.applyScalePolicy(settings.renderScalePreset);
-    });
+      nextInput.stop();
+      if (sessionStarted) {
+        sim.stopSession();
+      }
+      if (audioAttached) {
+        audio.detach();
+      }
+      nextUnsubscribeRendererSettings?.();
+      nextRenderer.dispose();
+      throw error;
+    }
 
-    input = inputFactory({
-      canvas: init.canvas,
-      arena: session.arena,
-      pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height,
-      initialAim: session.player.position,
-      onCommand: sim.sendInput
-    });
-    input.start();
-    hud.attach(session);
+    renderer = nextRenderer;
+    input = nextInput;
+    activeSession = session;
+    unsubscribeRendererSettings?.();
+    unsubscribeRendererSettings = nextUnsubscribeRendererSettings;
 
     setPhase(RUNNING_PHASE);
   }
@@ -378,6 +505,9 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (!unlockGestureArmed) {
       return;
     }
+    if (phase.kind === 'loading' || phase.kind === 'error') {
+      return;
+    }
     unlockGestureArmed = false;
     windowTarget.removeEventListener('pointerdown', unlockAudioFromGesture as EventListener);
     windowTarget.removeEventListener('keydown', unlockAudioFromGesture as EventListener);
@@ -429,8 +559,45 @@ export function createUiShell(init: UiShellInit): UiShell {
     renderer?.fitToWindow();
   }
 
+  function onStartupPreloadProgress(loaded: number, total: number): void {
+    startupOverlay.setProgress(loaded, total);
+  }
+
+  function releasePreloadedTextures(): void {
+    if (preloadedTextures === null) {
+      return;
+    }
+    for (const texture of new Set(Object.values(preloadedTextures))) {
+      texture.dispose();
+    }
+    preloadedTextures = null;
+  }
+
+  async function startStartupPreload(): Promise<void> {
+    startupOverlay.setProgress(0, 0);
+    try {
+      const textures = await runStartupPreload(onStartupPreloadProgress);
+      if (disposed) {
+        disposeTextureMap(textures);
+        return;
+      }
+      preloadedTextures = textures;
+      setPhase(MENU_PHASE);
+    } catch (error: unknown) {
+      if (disposed) {
+        return;
+      }
+      setPhase({
+        kind: 'error',
+        reason: 'preload',
+        message: formatStartupError(error)
+      });
+    }
+  }
+
   attach();
   applyPhaseVisibility();
+  void startStartupPreload();
 
   return {
     onFrame(): void {
@@ -445,8 +612,12 @@ export function createUiShell(init: UiShellInit): UiShell {
       return phase;
     },
     dispose(): void {
+      disposed = true;
       detach();
       tearDownClientSession();
+      releasePreloadedTextures();
+      startupOverlay.dispose();
+      startupErrorOverlay.dispose();
       menu.dispose();
       pause.dispose();
       result.dispose();
@@ -458,6 +629,102 @@ export function createUiShell(init: UiShellInit): UiShell {
       sim.dispose();
     }
   };
+}
+
+async function defaultRunStartupPreload(
+  onProgress: (loaded: number, total: number) => void
+): Promise<TextureMap> {
+  const startedAt = performance.now();
+  let actualLoaded = 0;
+  let total = 0;
+  let textures: TextureMap | null = null;
+  let failure: unknown = null;
+
+  const preloadPromise = preloadSprites(STARTUP_SPRITE_SPECS, (loaded, nextTotal) => {
+    actualLoaded = loaded;
+    total = nextTotal;
+  })
+    .then((resolvedTextures) => {
+      textures = resolvedTextures;
+    })
+    .catch((error: unknown) => {
+      failure = error;
+    });
+
+  while (true) {
+    const elapsedMs = performance.now() - startedAt;
+    const timedFraction =
+      total === 0 ? 1 : Math.min(1, elapsedMs / STARTUP_PRELOAD_MIN_DURATION_MS);
+    const timedLoaded = total === 0 ? 0 : Math.floor(total * timedFraction);
+    const displayedLoaded = Math.min(actualLoaded, timedLoaded);
+    onProgress(displayedLoaded, total);
+
+    if (failure !== null) {
+      await preloadPromise;
+      throw failure;
+    }
+
+    if (
+      textures !== null &&
+      elapsedMs >= STARTUP_PRELOAD_MIN_DURATION_MS &&
+      displayedLoaded >= total
+    ) {
+      return textures;
+    }
+
+    await delayMs(STARTUP_PRELOAD_PROGRESS_TICK_MS);
+  }
+}
+
+function defaultReloadPage(): void {
+  location.reload();
+}
+
+function formatStartupError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown preload error';
+}
+
+function createNullStartupOverlay(_init: StartupOverlayInit): StartupOverlay {
+  return {
+    show(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
+    },
+    setProgress(): void {},
+    dispose(): void {}
+  };
+}
+
+function createNullStartupErrorOverlay(
+  _init: StartupErrorOverlayInit
+): StartupErrorOverlay {
+  return {
+    show(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
+    },
+    dispose(): void {}
+  };
+}
+
+function disposeTextureMap(textures: TextureMap): void {
+  for (const texture of new Set(Object.values(textures))) {
+    texture.dispose();
+  }
+}
+
+function delayMs(durationMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    globalThis.setTimeout(resolve, durationMs);
+  });
 }
 
 function defaultMakeSeed(): number {

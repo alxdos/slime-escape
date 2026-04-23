@@ -9,17 +9,23 @@ import {
   type ProjectileSpawnSpec
 } from './EntityStore';
 
+function squareContactBox(radius: number) {
+  return { width: radius * 2, height: radius * 2 };
+}
+
 const SPEC = {
   position: { x: 1, y: 2 },
   radius: 0.5,
+  contactBox: squareContactBox(0.5),
   maxSpeed: 6,
   maxHp: 1
 };
 
 const ENEMY_SPEC: EnemySpawnSpec = {
-  archetypeId: 'training-target',
+  archetypeId: 'test-stationary-enemy',
   position: { x: 3, y: 4 },
   radius: 0.6,
+  contactBox: squareContactBox(0.6),
   behavior: 'stationary',
   maxHp: 3,
   maxSpeed: 0,
@@ -59,7 +65,13 @@ describe('EntityStore', () => {
 
   it('makes the spawned position independent from the spec object', () => {
     const store = createEntityStore();
-    const spec = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
+    const spec = {
+      position: { x: 0, y: 0 },
+      radius: 0.5,
+      contactBox: squareContactBox(0.5),
+      maxSpeed: 6,
+      maxHp: 1
+    };
     const player = store.spawnPlayer(spec);
 
     spec.position.x = 999;

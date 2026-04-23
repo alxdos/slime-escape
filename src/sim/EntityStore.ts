@@ -1,6 +1,6 @@
 import type { DropEffect } from '../shared/content/drops';
 import type { EnemyBehavior } from '../shared/content/enemies';
-import type { PlayerSpawn, Vec2 } from '../shared/session';
+import type { ContactBox, PlayerSpawn, Vec2 } from '../shared/session';
 
 export type EntityId = number & { readonly __brand: 'EntityId' };
 
@@ -8,6 +8,7 @@ export type Player = {
   readonly id: EntityId;
   readonly kind: 'player';
   readonly radius: number;
+  readonly contactBox: ContactBox;
   readonly maxSpeed: number;
   readonly maxHp: number;
   position: { x: number; y: number };
@@ -27,6 +28,7 @@ export type Enemy = {
   readonly kind: 'enemy';
   readonly archetypeId: string;
   readonly radius: number;
+  readonly contactBox: ContactBox;
   readonly behavior: EnemyBehavior;
   readonly maxHp: number;
   readonly maxSpeed: number;
@@ -48,6 +50,7 @@ export type Boss = {
   readonly kind: 'boss';
   readonly archetypeId: string;
   readonly radius: number;
+  readonly contactBox: ContactBox;
   readonly maxHp: number;
   readonly maxSpeed: number;
   readonly color: number;
@@ -94,6 +97,7 @@ export type EnemySpawnSpec = Readonly<{
   archetypeId: string;
   position: Vec2;
   radius: number;
+  contactBox: ContactBox;
   behavior: EnemyBehavior;
   maxHp: number;
   maxSpeed: number;
@@ -128,6 +132,7 @@ export type BossSpawnSpec = Readonly<{
   archetypeId: string;
   position: Vec2;
   radius: number;
+  contactBox: ContactBox;
   maxHp: number;
   maxSpeed: number;
   color: number;
@@ -192,6 +197,7 @@ export function createEntityStore(): EntityStore {
         id: makeId(),
         kind: 'player',
         radius: spec.radius,
+        contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
         maxSpeed: spec.maxSpeed,
         maxHp: spec.maxHp,
         position: { x: spec.position.x, y: spec.position.y },
@@ -207,6 +213,7 @@ export function createEntityStore(): EntityStore {
         kind: 'enemy',
         archetypeId: spec.archetypeId,
         radius: spec.radius,
+        contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
         behavior: spec.behavior,
         maxHp: spec.maxHp,
         maxSpeed: spec.maxSpeed,
@@ -235,6 +242,7 @@ export function createEntityStore(): EntityStore {
         kind: 'boss',
         archetypeId: spec.archetypeId,
         radius: spec.radius,
+        contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
         maxHp: spec.maxHp,
         maxSpeed: spec.maxSpeed,
         color: spec.color,

@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { parseBossesArea, type ParsedBossesArea } from './bosses/parse';
 import { renderBossAudio } from './bosses/renderAudio';
 import { renderBossContent } from './bosses/renderContent';
+import { renderBossVisuals } from './bosses/renderVisuals';
 import { parseDropsArea, type ParsedDropsArea } from './drops/parse';
 import { renderDropContent } from './drops/renderContent';
 import { runContentBuild, type ContentArea } from './index';
@@ -70,7 +71,8 @@ describe('content-build archetype areas', () => {
       name: 'bosses-missing-cell',
       sourcePath: 'content/bosses.md',
       targetName: 'bosses.generated.ts',
-      mutate: (source) => replaceExact(source, '| slime-king | 1.1 | 40 |', '| slime-king | | 40 |'),
+      mutate: (source) =>
+        replaceExact(source, '| boss-gargoyle | 1.15 | 35 |', '| boss-gargoyle | | 35 |'),
       parse: parseBossesArea,
       render: renderBossContent,
       pattern: /column "radius"/
@@ -97,7 +99,11 @@ describe('content-build archetype areas', () => {
     await expectParseRejects({
       sourcePath: 'content/bosses.md',
       mutate: (source) =>
-        replaceExact(source, '| slime-king | 1.1 | 40 |', '| slime-king | 1.1 | 40 |\n| slime-queen | 1 | 20 |'),
+        replaceExact(
+          source,
+          '| boss-gargoyle | 1.15 | 35 |',
+          '| boss-gargoyle | 1.15 | 35 |\n| slime-queen | 1 | 20 |'
+        ),
       parse: parseBossesArea,
       pattern: /unknown boss id "slime-queen"/
     });
@@ -110,6 +116,16 @@ describe('content-build archetype areas', () => {
       parse: parseBossesArea,
       pattern: /unknown attackKey "missingAttack"/
     });
+  });
+
+  it('renders boss visual specs from PNG image paths', async () => {
+    const area = await parseBossesArea('content/bosses.md');
+    const visuals = renderBossVisuals(area);
+
+    expect(visuals).toContain("export const BOSS_SCRAP_KING_VISUAL: SpriteVisualSpec");
+    expect(visuals).toContain("image: '/assets/boss-03.png'");
+    expect(visuals).toContain('sourceSizePx: { width:');
+    expect(visuals).toContain('BOSS_VISUAL_SPECS');
   });
 
   it('fails check mode when a new area generated target has drifted', async () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { SANDBOX_ARENA } from '../shared/content/arenas';
-import { SLIME_KING } from '../shared/content/bosses';
+import { BOSS_SCRAP_KING } from '../shared/content/bosses';
 import { TRAINING_PLAYER } from '../shared/content/players';
 import { PISTOL } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
@@ -50,14 +50,14 @@ function fakeClock(): SimulationClock & {
   };
 }
 
-const BOSS_TOP_Y = SANDBOX_ARENA.height / 2 - 0.5 - SLIME_KING.radius;
+const BOSS_TOP_Y = SANDBOX_ARENA.height / 2 - 0.5 - BOSS_SCRAP_KING.radius;
 
 const BOSS_ENCOUNTER: EncounterDefinition = {
   id: 'test-boss',
   type: 'boss',
   spawnPlan: {
     kind: 'boss',
-    bossArchetypeId: SLIME_KING.id,
+    bossArchetypeId: BOSS_SCRAP_KING.id,
     position: { x: 0, y: BOSS_TOP_Y }
   },
   zoneBehavior: { kind: 'disabled' },

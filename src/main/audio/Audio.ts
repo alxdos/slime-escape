@@ -344,7 +344,7 @@ export function createAudio(init: AudioInit = {}): Audio {
     dependencies.runtime.musicDuckGain.gain.value =
       phase.kind === 'paused' ? PAUSED_MUSIC_DUCK_GAIN : DEFAULT_GAIN;
 
-    if (phase.kind === 'menu' || phase.kind === 'result') {
+    if (phase.kind === 'menu' || phase.kind === 'result' || phase.kind === 'loading' || phase.kind === 'error') {
       stopMusicPlayback();
       return;
     }
@@ -599,7 +599,12 @@ export function createAudio(init: AudioInit = {}): Audio {
     },
     update(snapshotPair, phase, _encounter): void {
       latestSnapshot = snapshotPair.curr;
-      if (phase.kind === 'menu' || phase.kind === 'result') {
+      if (
+        phase.kind === 'menu' ||
+        phase.kind === 'result' ||
+        phase.kind === 'loading' ||
+        phase.kind === 'error'
+      ) {
         syncMusicForPhase(phase);
         return;
       }
