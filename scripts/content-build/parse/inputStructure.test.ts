@@ -39,7 +39,7 @@ describe('content-build input structure parser', () => {
     ]);
   });
 
-  it('stores inlineLink only when a table cell is exactly one markdown link', () => {
+  it('stores inline media only when a table cell is exactly one markdown media node', () => {
     const document = parseMarkdown(
       'content/example.md',
       [
@@ -47,9 +47,9 @@ describe('content-build input structure parser', () => {
         '',
         '## Hit',
         '',
-        '| setId | linked | plain | mixed |',
-        '|-------|--------|-------|-------|',
-        '| default | [slimes/hit-1](../public/audio/slimes/hit-1.mp3) | slimes/hit-2 | prefix [slimes/hit-3](../public/audio/slimes/hit-3.mp3) |'
+        '| setId | linked | image | plain | mixed |',
+        '|-------|--------|-------|-------|-------|',
+        '| default | [slimes/hit-1](../public/audio/slimes/hit-1.mp3) | ![Background](../public/images/bg/bg-01.jpg) | slimes/hit-2 | prefix [slimes/hit-3](../public/audio/slimes/hit-3.mp3) |'
       ].join('\n')
     );
 
@@ -60,7 +60,13 @@ describe('content-build input structure parser', () => {
       label: 'slimes/hit-1',
       url: '../public/audio/slimes/hit-1.mp3'
     });
-    expect(cells?.[2]?.inlineLink).toBeNull();
+    expect(cells?.[2]?.value).toBe('');
+    expect(cells?.[2]?.inlineImage).toEqual({
+      alt: 'Background',
+      url: '../public/images/bg/bg-01.jpg'
+    });
     expect(cells?.[3]?.inlineLink).toBeNull();
+    expect(cells?.[4]?.inlineLink).toBeNull();
+    expect(cells?.[4]?.inlineImage).toBeNull();
   });
 });

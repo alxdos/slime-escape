@@ -6,7 +6,7 @@ export const HERO_SANDBOX_VISUAL: SpriteVisualSpec = {
   archetypeId: 'hero-sandbox',
   image: '/assets/hero.png',
   sourceSizePx: { width: 294, height: 550 },
-  worldSize: { width: 1.47, height: 2.75 },
+  worldSize: { width: 1.225, height: 2.2916666666666665 },
   anchor: { x: 0.5, y: 0.5 }
 };
 
@@ -14,7 +14,7 @@ export const HERO_TRAINING_VISUAL: SpriteVisualSpec = {
   archetypeId: 'hero-training',
   image: '/assets/hero.png',
   sourceSizePx: { width: 294, height: 550 },
-  worldSize: { width: 1.47, height: 2.75 },
+  worldSize: { width: 1.225, height: 2.2916666666666665 },
   anchor: { x: 0.5, y: 0.5 }
 };
 

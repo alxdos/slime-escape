@@ -61,11 +61,11 @@
 
 | id | maxSpeed |
 |---|---:|
-| boss-gargoyle | 3.2 |
-| boss-saw-cyclops | 2.4 |
-| boss-scrap-king | 3.0 |
-| boss-tower-sentinel | 1.8 |
-| boss-bubble-hog | 2.6 |
+| boss-gargoyle | 2.0 |
+| boss-saw-cyclops | 1.6 |
+| boss-scrap-king | 1.9 |
+| boss-tower-sentinel | 1.2 |
+| boss-bubble-hog | 1.7 |
 
 ## Contact damage
 

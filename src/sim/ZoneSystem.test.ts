@@ -9,6 +9,7 @@ function encounter(zoneBehavior: ZoneBehavior): EncounterDefinition {
   return {
     id: 'test',
     type: 'wave',
+    backgroundId: null,
     spawnPlan: { kind: 'empty' },
     zoneBehavior,
     objectives: [],
@@ -62,27 +63,49 @@ describe('ZoneSystem', () => {
     expect(zone.zone()).toEqual({ mode: 'shrink', margin: 3 });
   });
 
-  it('first onTick after onEncounterStart leaves margin at fromMargin (consistent with elapsedMs=0)', () => {
+  it('starts a new linear behavior from the current actual margin', () => {
     const zone = createZoneSystem();
+    const durationMs = SIM_STEP_MS * 8;
     zone.onEncounterStart(
       encounter({
         kind: 'shrinkLinear',
-        fromMargin: 5,
-        toMargin: 0,
-        durationMs: SIM_STEP_MS * 8
+        fromMargin: 0,
+        toMargin: 4,
+        durationMs
       })
     );
-    expect(zone.zone()).toEqual({ mode: 'shrink', margin: 5 });
+    for (let i = 0; i < 4; i += 1) zone.onTick();
+    const currentMargin = zone.zone().margin;
+    expect(currentMargin).toBeGreaterThan(0);
+    expect(currentMargin).toBeLessThan(4);
+
+    zone.onEncounterEnd(encounter({ kind: 'disabled' }));
+    zone.onEncounterStart(
+      encounter({
+        kind: 'shrinkLinear',
+        fromMargin: 0,
+        toMargin: 5,
+        durationMs
+      })
+    );
+    expect(zone.zone()).toEqual({ mode: 'shrink', margin: currentMargin });
+
     zone.onTick();
-    expect(zone.zone()).toEqual({ mode: 'shrink', margin: 5 });
+    expect(zone.zone()).toEqual({ mode: 'shrink', margin: currentMargin });
   });
 
-  it("'expandLinear' interpolates from fromMargin (large) to toMargin (small)", () => {
+  it("'expandLinear' interpolates from the current actual margin to toMargin", () => {
     const zone = createZoneSystem();
     const durationMs = SIM_STEP_MS * 4;
     zone.onEncounterStart(
-      encounter({ kind: 'expandLinear', fromMargin: 4, toMargin: 0, durationMs })
+      encounter({ kind: 'shrinkLinear', fromMargin: 0, toMargin: 4, durationMs })
     );
+    for (let i = 0; i < 5; i += 1) zone.onTick();
+    zone.onEncounterEnd(encounter({ kind: 'disabled' }));
+    zone.onEncounterStart(
+      encounter({ kind: 'expandLinear', fromMargin: 99, toMargin: 0, durationMs })
+    );
+
     expect(zone.zone()).toEqual({ mode: 'expand', margin: 4 });
 
     zone.onTick();
@@ -98,7 +121,7 @@ describe('ZoneSystem', () => {
     expect(zone.zone()).toEqual({ mode: 'expand', margin: 0 });
   });
 
-  it('onEncounterEnd resets to disabled / margin = 0 and onTick becomes no-op', () => {
+  it('onEncounterEnd disables ticks but preserves margin until reset', () => {
     const zone = createZoneSystem();
     zone.onEncounterStart(
       encounter({
@@ -112,13 +135,17 @@ describe('ZoneSystem', () => {
     expect(zone.zone().margin).toBeGreaterThan(0);
 
     zone.onEncounterEnd(encounter({ kind: 'disabled' }));
-    expect(zone.zone()).toEqual({ mode: 'disabled', margin: 0 });
+    const heldMargin = zone.zone().margin;
+    expect(zone.zone()).toEqual({ mode: 'disabled', margin: heldMargin });
 
     for (let i = 0; i < 50; i += 1) zone.onTick();
+    expect(zone.zone()).toEqual({ mode: 'disabled', margin: heldMargin });
+
+    zone.reset();
     expect(zone.zone()).toEqual({ mode: 'disabled', margin: 0 });
   });
 
-  it('a fresh shrink encounter resets elapsedMs (no carry over between encounters)', () => {
+  it('reset clears held margin before a fresh shrink encounter', () => {
     const zone = createZoneSystem();
     const durationMs = SIM_STEP_MS * 5;
     zone.onEncounterStart(
@@ -128,6 +155,7 @@ describe('ZoneSystem', () => {
     expect(zone.zone().margin).toBeCloseTo(5, 10);
 
     zone.onEncounterEnd(encounter({ kind: 'disabled' }));
+    zone.reset();
     zone.onEncounterStart(
       encounter({ kind: 'shrinkLinear', fromMargin: 0, toMargin: 5, durationMs })
     );

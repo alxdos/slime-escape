@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-23 (для истории 013 добавлены стартовая фаза `loading` и финальная фаза `error('preload')`: видимый splash + sprite preload до меню, hard-error при провале загрузки, недоступность Renderer/InputController/Settings/SimWorkerHost в этих фазах; follow-up: minimum splash duration зафиксирован как контракт `STARTUP_PRELOAD_MIN_DURATION_MS = 1500`)
+- Updated: 2026-04-23 (story 015 follow-up: `Renderer` получает immutable `SessionDefinition` при создании, читает `session.backgrounds` + `encounters[].backgroundId` и переключает фон арены по `snapshot.encounter.id`; snapshot не расширяется, потому что активный encounter уже присутствует. story 015: playable preset catalog становится derived view над `SESSION_PRESET_TEMPLATES` из `content library`; метаданные пресета (`displayName`/`description`/`visibleInMenu`/`order`) живут в партиции `# Session` каждого `content/sessions/<presetId>.md`, рядом с самим описанием пресета (см. [content-authoring.md](content-authoring.md), раздел «Multi-file области»); отдельный `playableModes.ts` исчезает; форма `PlayableModeEntry` сворачивается в derived view, без отдельного реестра. Story 013: для истории 013 добавлены стартовая фаза `loading` и финальная фаза `error('preload')`: видимый splash + sprite preload до меню, hard-error при провале загрузки, недоступность Renderer/InputController/Settings/SimWorkerHost в этих фазах; follow-up: minimum splash duration зафиксирован как контракт `STARTUP_PRELOAD_MIN_DURATION_MS = 1500`)
 
 ## Context
 
@@ -101,21 +101,28 @@
 ### Меню и playable preset catalog
 
 - Меню — data-driven: оно отображает список сущностей «выбираемый игроком режим» и для каждого вызывает builder сессии. Меню не знает о конкретных preset-id и не содержит «if/switch по id» для рендера.
-- Список выбираемых режимов вводится как отдельный реестр в `src/shared/content/**` (фактическое имя файла — деталь реализации, например `playableModes.ts`):
+- Источник правды о метаданных пресета (`displayName`, `description`, `visibleInMenu`, `order`) — партиция `# Session` каждого `content/sessions/<presetId>.md`, см. [content-authoring.md](content-authoring.md), раздел «Multi-file области». Эти поля хранятся рядом с самим описанием пресета (списком encounter'ов, `arenaId`/`playerId`/`loadoutWeaponId` и т. п.), а не в отдельном UI-реестре. Отдельный файл `playableModes.ts` с собственным `PlayableModeEntry`-реестром — нет; он исчезает после миграции области `sessions` в MD-источник.
+- Каталог собирается как **derived view** над генерируемым `SESSION_PRESET_TEMPLATES` (типизированным как `as const satisfies Record<presetId, SessionPresetTemplate>` из `content library`):
   ```ts
-  type PlayableModeEntry = Readonly<{
-    presetId: ModePresetId;          // ссылка в содержимое presets.ts
-    displayName: string;             // короткое имя кнопки в меню
-    description: string;             // 1–2 строки player-facing описания
-    order: number;                   // порядок в меню; меньше = выше
-  }>;
+  // конкретное имя функции — деталь реализации
+  function getPlayableModeCatalog(): ReadonlyArray<PlayableModeEntry> {
+    return Object.values(SESSION_PRESET_TEMPLATES)
+      .filter((preset) => preset.visibleInMenu)
+      .sort((a, b) => a.order - b.order);
+  }
 
-  export const PLAYABLE_MODE_CATALOG: ReadonlyArray<PlayableModeEntry>;
+  type PlayableModeEntry = Readonly<{
+    presetId: keyof typeof SESSION_PRESET_TEMPLATES;
+    displayName: string;
+    description: string;
+    order: number;
+  }>;
   ```
-- Реестр валидируется при сборке: каждый `presetId` обязан резолвиться в `ModePreset` и иметь живую ветку в `buildSessionDefinition` (`src/shared/content/buildSession.ts`); неизвестный `presetId` или preset без билдера — ошибка модуля, не runtime-фолбэк. Это правило тождественно правилу «неизвестный архетипный id — ошибка сборки/старта сессии» из [content-archetypes.md](content-archetypes.md).
-- `ModePreset` ([session-definition.md](session-definition.md)) при этом остаётся минимальным authoritative объектом (`{ id }`); ему **не** добавляются поля `displayName`/`description`. Display-данные относятся к презентации и собираются в каталоге, а не «навешиваются» на authoritative preset. Это сохраняет правило «builder читает content library и опции, на выходе — `SessionDefinition`» ([content-boundaries.md](content-boundaries.md)).
-- На горизонт 007 каталог содержит как минимум `campaign` (основной забег с боссом) и `training` (короткий тренировочный без босса). Sandbox-варианты (`sandbox`, `sandbox-with-combat`) остаются доступными как preset-id, но в каталоге **не** появляются: это bring-up для разработки, не player-facing режимы (см. [session-definition.md](session-definition.md), раздел про sandbox). Расширение каталога в будущем (например, `pistolOnly`) — добавление записи, не изменение этого решения.
-- `BuildOptions` для меню в 007 минимальны: `seed` генерируется на стороне `UiShell` при выборе режима, никакие пользовательские опции (loadout, modifiers, кастомизация encounter) в этой истории не вводятся (Out of scope в [../stories/007-hud-and-menu.md](../stories/007-hud-and-menu.md)). Расширение `BuildOptions` — будущее решение в [session-definition.md](session-definition.md), не «по месту» в меню.
+  `PlayableModeEntry` остаётся типом презентации (что именно нужно меню), но его значения берутся из template-ов, а не дублируются в отдельном реестре. Это устраняет двойную точку правды «catalog vs preset».
+- Валидация при сборке: каждый `presetId ∈ keyof SESSION_PRESET_TEMPLATES` обязан иметь поле `visibleInMenu: boolean` и `order: number` (правило «без двух разных нет данных» из [content-archetypes.md](content-archetypes.md): `order` обязателен даже для `visibleInMenu: false` пресетов). Неизвестный `presetId` в коде — `tsc`-ошибка, не runtime-фолбэк, благодаря derived `keyof typeof`.
+- `ModePreset` остаётся минимальным authoritative объектом (`{ id }`); ему **не** добавляются поля `displayName`/`description`. Display-данные относятся к презентации и собираются как derived view над template-ами, а не «навешиваются» на authoritative preset. Это сохраняет правило «builder читает content library и опции, на выходе — `SessionDefinition`» ([content-boundaries.md](content-boundaries.md)).
+- На момент этой ревизии каталог по `visibleInMenu: true` содержит `campaign` (основной забег с боссом) и `training` (короткий тренировочный без босса). Sandbox-варианты (`sandbox`, `sandbox-with-combat`) остаются доступными как preset-id, но имеют `visibleInMenu: false` и в меню не появляются: это bring-up для разработки, не player-facing режимы (см. [session-definition.md](session-definition.md), раздел про sandbox). Расширение каталога в будущем (например, новый пресет `training-hard`) — добавление файла `content/sessions/<id>.md` с `visibleInMenu: true`, не изменение этого решения и не правка кода UI.
+- `BuildOptions` для меню минимальны: `seed` генерируется на стороне `UiShell` при выборе режима, никакие пользовательские опции (loadout, modifiers, кастомизация encounter) в этой истории не вводятся (Out of scope в [../stories/007-hud-and-menu.md](../stories/007-hud-and-menu.md)). Расширение `BuildOptions` — будущее решение в [session-definition.md](session-definition.md), не «по месту» в меню.
 
 ### Pause UX
 
@@ -150,6 +157,8 @@
 
 - В фазах `loading` и `error('preload')` `Renderer` и `InputController` **не существуют**. Создание `THREE.WebGLRenderer` и подписка на input-события откладываются до первого `menu → running`. Это держит фазу `loading` максимально дешёвой и гарантирует, что preload не конкурирует за GPU/canvas ни с одной gameplay-системой.
 - `Renderer` и `InputController` создаются `UiShell` при переходе `menu → running` и уничтожаются при переходе в `menu` (явный exit) или `result` (`win`/`loss`). Это сохраняет уже работающую модель `src/main/index.ts`, но переносит её в один owner.
+- При создании `Renderer` `UiShell` передаёт тот же immutable `SessionDefinition`, который отдаётся в `SimWorkerHost.startSession()` и `Hud.attach()`. `Renderer` использует из него только presentation-конфиг: `backgrounds` и `encounters[].backgroundId`. Переключение фона идёт по `snapshot.encounter.id`; дополнительное поле в snapshot не вводится, потому что id активного encounter уже является authoritative runtime-state из [snapshot-shape.md](snapshot-shape.md), а mapping id→background принадлежит конфигурации сессии. Размер одной фоновой плитки в world-units выводится из фактических пикселей загруженного изображения через тот же `PX_PER_WU`, что и sprite-ассеты ([sprite-assets.md](sprite-assets.md)); renderer не растягивает картинку до размеров арены, а повторяет её как texture pattern по всей арене.
+- Фон арены — presentation-only слой внутри render scene. Если у активного encounter нет background (`backgroundId: null`) или snapshot ещё не содержит encounter, renderer показывает нейтральный arena floor; неизвестные id должны быть отловлены на этапе `content:build`/builder, а не превращаться в runtime fallback.
 - В фазе `paused` `Renderer` продолжает рендер каждый кадр (картинка не «замирает в моменте получения паузы», а отрисовывает последний интерполированный кадр), `InputController` остаётся подключён, но Pointer Lock снят браузером ([input-commands.md](input-commands.md)). HUD заморожен (см. выше).
 - В фазе `result` `Renderer` и `InputController` уничтожаются: на экране только Result UI; canvas под ним может остаться пустым/чёрным. Это явно: после смерти игрока «арена сзади продолжает шевелиться» — нежелательный артефакт, и контракт его исключает.
 - Смена render backend в 010 (main vs render worker через `OffscreenCanvas`) живёт внутри `Renderer` и не ломает фазовую модель `UiShell`.
@@ -203,3 +212,4 @@
 - [../stories/007-hud-and-menu.md](../stories/007-hud-and-menu.md)
 - [../stories/009-settings.md](../stories/009-settings.md)
 - [../stories/013-sprite-assets-and-loader.md](../stories/013-sprite-assets-and-loader.md)
+- [../stories/015-sessions-from-md.md](../stories/015-sessions-from-md.md)

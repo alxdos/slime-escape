@@ -2,7 +2,8 @@ import * as THREE from 'three';
 
 import { DROP_ARCHETYPES, type DropArchetype } from '../../shared/content/drops';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
-import type { ArenaConfig } from '../../shared/session';
+import type { ArenaConfig, SessionDefinition } from '../../shared/session';
+import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import type {
   BossSnapshot,
   DropSnapshot,
@@ -40,6 +41,11 @@ type CreateRendererBackendFn = (init: Readonly<{
   canvas: HTMLCanvasElement;
 }>) => WebGlRendererLike;
 
+type LoadTextureFn = (
+  url: string,
+  onLoad?: (texture: THREE.Texture) => void
+) => THREE.Texture;
+
 type DebugHud = Readonly<{
   update(snapshot: import('../../shared/snapshot').Snapshot | null): void;
   dispose(): void;
@@ -49,6 +55,7 @@ export type RendererInit = Readonly<{
   canvas: HTMLCanvasElement;
   renderScalePreset: RenderScalePreset;
   arena: ArenaConfig;
+  session: Pick<SessionDefinition, 'backgrounds' | 'encounters'>;
   spriteTextures: TextureMap;
   getSnapshotPair: () => SnapshotPair;
   getAim?: AimAccessor;
@@ -56,6 +63,7 @@ export type RendererInit = Readonly<{
   dropRegistry?: Readonly<Record<string, DropArchetype>>;
   windowTarget?: RendererWindowTarget;
   createRendererBackend?: CreateRendererBackendFn;
+  loadBackgroundTexture?: LoadTextureFn;
   createDebugHud?: () => DebugHud;
 }>;
 
@@ -72,7 +80,10 @@ const CROSSHAIR_COLOR = 0xffe066;
 const CROSSHAIR_SIZE_WU = 0.6;
 const CROSSHAIR_THICKNESS_WU = 0.05;
 const SCENE_BG = 0x05060a;
+const ARENA_TINT_COLOR = 0x05060a;
+const ARENA_TINT_OPACITY = 0.18;
 
+const BACKGROUND_Z = -2;
 const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
 const DROP_Z = 0.03;
@@ -108,8 +119,20 @@ export function createRenderer(init: RendererInit): Renderer {
   camera.position.set(0, 0, 5);
   camera.lookAt(0, 0, 0);
 
+  const arenaBackground = createArenaBackground({
+    arena: init.arena,
+    session: init.session,
+    loadTexture: init.loadBackgroundTexture ?? loadBackgroundTexture
+  });
+  scene.add(arenaBackground.mesh);
+
   const arenaGeometry = new THREE.PlaneGeometry(init.arena.width, init.arena.height);
-  const arenaMaterial = new THREE.MeshBasicMaterial({ color: ARENA_FLOOR_COLOR });
+  const arenaMaterial = new THREE.MeshBasicMaterial({
+    color: ARENA_TINT_COLOR,
+    transparent: true,
+    opacity: ARENA_TINT_OPACITY,
+    depthWrite: false
+  });
   const arenaMesh = new THREE.Mesh(arenaGeometry, arenaMaterial);
   arenaMesh.position.z = -1;
   scene.add(arenaMesh);
@@ -285,6 +308,7 @@ export function createRenderer(init: RendererInit): Renderer {
       pulseDropMeshes(dropMeshes, pair.nowMs);
       updateCrosshair(crosshair, init.getAim);
       updateZoneOverlay(zoneOverlay, pair, alpha);
+      arenaBackground.setEncounterId(pair.curr?.encounter?.id ?? null);
       debugHud.update(pair.curr);
       renderer.render(scene, camera);
     },
@@ -293,6 +317,7 @@ export function createRenderer(init: RendererInit): Renderer {
     dispose(): void {
       scene.remove(arenaMesh);
       scene.remove(arenaBorder);
+      scene.remove(arenaBackground.mesh);
       disposeEntityMesh(playerEntry);
       scene.remove(crosshair);
       scene.remove(zoneOverlay.mesh);
@@ -306,6 +331,7 @@ export function createRenderer(init: RendererInit): Renderer {
       dropMeshes.clear();
       arenaGeometry.dispose();
       arenaMaterial.dispose();
+      arenaBackground.dispose();
       disposeCrosshair(crosshair);
       arenaBorder.geometry.dispose();
       (arenaBorder.material as THREE.Material).dispose();
@@ -314,6 +340,129 @@ export function createRenderer(init: RendererInit): Renderer {
       renderer.dispose();
     }
   };
+}
+
+type ArenaBackground = Readonly<{
+  mesh: THREE.Mesh;
+  setEncounterId(encounterId: string | null): void;
+  dispose(): void;
+}>;
+
+function createArenaBackground(init: Readonly<{
+  arena: ArenaConfig;
+  session: Pick<SessionDefinition, 'backgrounds' | 'encounters'>;
+  loadTexture: LoadTextureFn;
+}>): ArenaBackground {
+  const geometry = new THREE.PlaneGeometry(1, 1);
+  const material = new THREE.MeshBasicMaterial({ color: ARENA_FLOOR_COLOR });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.z = BACKGROUND_Z;
+  mesh.scale.set(init.arena.width, init.arena.height, 1);
+
+  let activeEncounterId: string | null = null;
+  let activeTexture: THREE.Texture | null = null;
+
+  const textureById = new Map<string, THREE.Texture>();
+  for (const background of init.session.backgrounds) {
+    const texture = init.loadTexture(background.imageUrl, (loaded) => {
+      prepareBackgroundTexture(loaded);
+      if (activeTexture === loaded) {
+        applyBackgroundPattern(loaded);
+      }
+    });
+    prepareBackgroundTexture(texture);
+    textureById.set(background.id, texture);
+  }
+
+  const backgroundIdByEncounterId = new Map<string, string | null>();
+  for (const encounter of init.session.encounters) {
+    backgroundIdByEncounterId.set(encounter.id, encounter.backgroundId);
+  }
+
+  function applyTexture(texture: THREE.Texture | null): void {
+    if (activeTexture === texture) return;
+    activeTexture = texture;
+    material.map = texture;
+    material.color.set(texture === null ? ARENA_FLOOR_COLOR : 0xffffff);
+    applyBackgroundPattern(texture);
+    material.needsUpdate = true;
+  }
+
+  function applyBackgroundPattern(texture: THREE.Texture | null): void {
+    mesh.scale.set(init.arena.width, init.arena.height, 1);
+    if (texture === null) {
+      return;
+    }
+
+    const sourceSize = readTextureSourceSize(texture);
+    if (sourceSize === null) {
+      return;
+    }
+    const tileWidthWu = sourceSize.width / PX_PER_WU;
+    const tileHeightWu = sourceSize.height / PX_PER_WU;
+    texture.repeat.set(init.arena.width / tileWidthWu, init.arena.height / tileHeightWu);
+    texture.needsUpdate = true;
+  }
+
+  return {
+    mesh,
+    setEncounterId(encounterId: string | null): void {
+      if (activeEncounterId === encounterId) return;
+      activeEncounterId = encounterId;
+      if (encounterId === null) {
+        applyTexture(null);
+        return;
+      }
+      const backgroundId = backgroundIdByEncounterId.get(encounterId) ?? null;
+      if (backgroundId === null) {
+        applyTexture(null);
+        return;
+      }
+      const texture = textureById.get(backgroundId);
+      if (texture === undefined) {
+        throw new Error(
+          `background texture missing for background "${backgroundId}" in encounter "${encounterId}"`
+        );
+      }
+      applyTexture(texture);
+    },
+    dispose(): void {
+      geometry.dispose();
+      material.dispose();
+      for (const texture of textureById.values()) {
+        texture.dispose();
+      }
+    }
+  };
+}
+
+function loadBackgroundTexture(
+  url: string,
+  onLoad?: (texture: THREE.Texture) => void
+): THREE.Texture {
+  return new THREE.TextureLoader().load(url, onLoad);
+}
+
+function prepareBackgroundTexture(texture: THREE.Texture): void {
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 1);
+  texture.offset.set(0, 0);
+  if (readTextureSourceSize(texture) !== null) {
+    texture.needsUpdate = true;
+  }
+}
+
+function readTextureSourceSize(texture: THREE.Texture): Readonly<{
+  width: number;
+  height: number;
+}> | null {
+  const image = texture.image as Partial<Readonly<{ width: number; height: number }>> | undefined;
+  const width = image?.width ?? 0;
+  const height = image?.height ?? 0;
+  if (width <= 0 || height <= 0) return null;
+  return { width, height };
 }
 
 function createSpriteMesh(

@@ -4,6 +4,7 @@ import type { ZoneMode, ZoneSnapshot } from '../shared/snapshot';
 import { SIM_STEP_MS } from '../shared/timing';
 
 export type ZoneSystem = Readonly<{
+  reset(): void;
   onEncounterStart(encounter: EncounterDefinition): void;
   onEncounterEnd(encounter: EncounterDefinition): void;
   onTick(): void;
@@ -23,6 +24,9 @@ export function createZoneSystem(): ZoneSystem {
   let state: ZoneState = idleState();
 
   return {
+    reset(): void {
+      state = idleState();
+    },
     onEncounterStart(encounter): void {
       const behavior = encounter.zoneBehavior;
       switch (behavior.kind) {
@@ -30,31 +34,27 @@ export function createZoneSystem(): ZoneSystem {
           state = idleState();
           return;
         case 'shrinkLinear':
-          state = {
-            mode: 'shrink',
-            margin: behavior.fromMargin,
-            elapsedMs: 0,
-            fromMargin: behavior.fromMargin,
-            toMargin: behavior.toMargin,
-            durationMs: behavior.durationMs
-          };
+          state = activeState(
+            'shrink',
+            state.margin,
+            behavior.toMargin,
+            behavior.durationMs
+          );
           return;
         case 'expandLinear':
-          state = {
-            mode: 'expand',
-            margin: behavior.fromMargin,
-            elapsedMs: 0,
-            fromMargin: behavior.fromMargin,
-            toMargin: behavior.toMargin,
-            durationMs: behavior.durationMs
-          };
+          state = activeState(
+            'expand',
+            state.margin,
+            behavior.toMargin,
+            behavior.durationMs
+          );
           return;
         default:
           assertNever(behavior);
       }
     },
     onEncounterEnd(_encounter): void {
-      state = idleState();
+      state = holdState(state.margin);
     },
     onTick(): void {
       if (state.mode === 'disabled') return;
@@ -74,6 +74,22 @@ export function createZoneSystem(): ZoneSystem {
   };
 }
 
+function activeState(
+  mode: Extract<ZoneMode, 'shrink' | 'expand'>,
+  fromMargin: number,
+  toMargin: number,
+  durationMs: number
+): ZoneState {
+  return {
+    mode,
+    margin: fromMargin,
+    elapsedMs: 0,
+    fromMargin,
+    toMargin,
+    durationMs
+  };
+}
+
 function idleState(): ZoneState {
   return {
     mode: 'disabled',
@@ -81,6 +97,17 @@ function idleState(): ZoneState {
     elapsedMs: 0,
     fromMargin: 0,
     toMargin: 0,
+    durationMs: 1
+  };
+}
+
+function holdState(margin: number): ZoneState {
+  return {
+    mode: 'disabled',
+    margin,
+    elapsedMs: 0,
+    fromMargin: margin,
+    toMargin: margin,
     durationMs: 1
   };
 }

@@ -1,1 +1,1 @@
-export const PX_PER_WU = 200;
+export const PX_PER_WU = 240;

@@ -197,12 +197,14 @@ function makeBossSession(): SessionDefinition {
       maxHp: 5
     },
     loadout: { primaryWeaponArchetypeId: 'pistol' },
+    backgrounds: [],
     modifiers: [],
     rules: null,
     encounters: [
       {
         id: 'boss-encounter',
         type: 'boss',
+        backgroundId: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: 'boss-scrap-king',

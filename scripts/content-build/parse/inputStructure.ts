@@ -25,11 +25,17 @@ export type SourcePosition = Readonly<{
 export type MarkdownCell = Readonly<{
   value: string;
   inlineLink: MarkdownInlineLink | null;
+  inlineImage: MarkdownInlineImage | null;
   position: SourcePosition;
 }>;
 
 export type MarkdownInlineLink = Readonly<{
   label: string;
+  url: string;
+}>;
+
+export type MarkdownInlineImage = Readonly<{
+  alt?: string;
   url: string;
 }>;
 
@@ -176,6 +182,7 @@ function parseTableCells(cells: ReadonlyArray<TableCell>): ReadonlyArray<Markdow
   return cells.map((cell) => ({
     value: extractText(cell).trim(),
     inlineLink: parseInlineLinkCell(cell),
+    inlineImage: parseInlineImageCell(cell),
     position: positionOf(cell)
   }));
 }
@@ -222,6 +229,22 @@ function parseInlineLinkCell(cell: TableCell): MarkdownInlineLink | null {
 
   return {
     label: extractText(child).trim(),
+    url: child.url
+  };
+}
+
+function parseInlineImageCell(cell: TableCell): MarkdownInlineImage | null {
+  if (cell.children.length !== 1) {
+    return null;
+  }
+
+  const child = cell.children[0];
+  if (child === undefined || !isImage(child)) {
+    return null;
+  }
+
+  return {
+    ...(child.alt !== null && child.alt !== undefined ? { alt: child.alt } : {}),
     url: child.url
   };
 }

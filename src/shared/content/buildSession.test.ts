@@ -2,15 +2,40 @@ import { describe, expect, it } from 'vitest';
 
 import { SANDBOX_ARENA } from './arenas';
 import { buildSessionDefinition } from './buildSession';
-import { BOSS_SCRAP_KING } from './bosses';
+import { BOSS_ARCHETYPES } from './bosses';
 import { SLIME_BUG, SLIME_ONE_EYE, SLIME_SHELL } from './enemies';
 import {
   CAMPAIGN_PRESET,
+  resolveModePreset,
+  SESSION_PRESET_TEMPLATES,
   SANDBOX_PRESET,
   SANDBOX_WITH_COMBAT_PRESET,
-  TRAINING_PRESET
-} from './presets';
+  TRAINING_PRESET,
+  type ModePresetId
+} from './sessions';
 import { PISTOL } from './weapons';
+
+const ACCEPTANCE_PRESET_IDS = Object.keys(SESSION_PRESET_TEMPLATES) as ModePresetId[];
+const ACCEPTANCE_SEEDS = [0, 1, 42] as const;
+const CAMPAIGN_SET_BOSSES = [
+  'boss-gargoyle',
+  'boss-saw-cyclops',
+  'boss-scrap-king',
+  'boss-tower-sentinel',
+  'boss-bubble-hog'
+] as const;
+
+describe('buildSessionDefinition acceptance snapshots', () => {
+  for (const presetId of ACCEPTANCE_PRESET_IDS) {
+    for (const seed of ACCEPTANCE_SEEDS) {
+      it(`matches accepted ${presetId} session for seed ${seed}`, () => {
+        const session = buildSessionDefinition(resolveModePreset(presetId), { seed });
+
+        expect(session).toMatchSnapshot();
+      });
+    }
+  }
+});
 
 describe('buildSessionDefinition (sandbox)', () => {
   it('produces a sandbox session with none win/loss conditions', () => {
@@ -189,44 +214,81 @@ describe('buildSessionDefinition (training)', () => {
 });
 
 describe('buildSessionDefinition (campaign)', () => {
-  it('campaign: three waves with breaks, pre-boss break, then boss with bossDefeated win', () => {
+  it('campaign: five acts, each followed by its own boss', () => {
     const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
-    expect(session.winCondition).toEqual({ kind: 'bossDefeated' });
+
+    expect(session.winCondition).toEqual({ kind: 'allEncountersComplete' });
     expect(session.lossCondition).toEqual({ kind: 'playerDeath' });
-    expect(session.encounters).toHaveLength(7);
+    expect(session.encounters).toHaveLength(29);
 
-    expect(session.encounters[0]?.id).toBe('campaign-wave-1');
-    expect(session.encounters[1]?.id).toBe('campaign-break-after-wave-1');
-    expect(session.encounters[2]?.id).toBe('campaign-wave-2');
-    expect(session.encounters[3]?.id).toBe('campaign-break-after-wave-2');
-    expect(session.encounters[4]?.id).toBe('campaign-wave-3');
-    expect(session.encounters[5]?.type).toBe('break');
-    expect(session.encounters[5]?.id).toBe('campaign-pre-boss-break');
+    const bossIds: string[] = [];
+    const waveCountBySet = new Map<number, number>();
 
-    const bossEnc = session.encounters[6];
-    expect(bossEnc?.type).toBe('boss');
-    expect(bossEnc?.zoneBehavior).toEqual({ kind: 'disabled' });
-    expect(BOSS_SCRAP_KING.contactBox.width).toBeGreaterThan(0);
-    expect(BOSS_SCRAP_KING.contactBox.height).toBeGreaterThan(0);
-    const plan = bossEnc?.spawnPlan;
-    expect(plan?.kind).toBe('boss');
-    if (plan?.kind !== 'boss') throw new Error('expected boss spawn plan');
-    expect(plan.bossArchetypeId).toBe(BOSS_SCRAP_KING.id);
-    expect(plan.position.x).toBe(0);
-    // top center, same inset as wave edge margin (0.5) + half boss contact-box height
-    const expectedY = SANDBOX_ARENA.height / 2 - 0.5 - BOSS_SCRAP_KING.contactBox.height / 2;
-    expect(plan.position.y).toBeCloseTo(expectedY, 5);
-    expect(plan.position.x - BOSS_SCRAP_KING.contactBox.width / 2).toBeGreaterThanOrEqual(
-      -SANDBOX_ARENA.width / 2
-    );
-    expect(plan.position.x + BOSS_SCRAP_KING.contactBox.width / 2).toBeLessThanOrEqual(
-      SANDBOX_ARENA.width / 2
-    );
-    expect(plan.position.y - BOSS_SCRAP_KING.contactBox.height / 2).toBeGreaterThanOrEqual(
-      -SANDBOX_ARENA.height / 2
-    );
-    expect(plan.position.y + BOSS_SCRAP_KING.contactBox.height / 2).toBeLessThanOrEqual(
-      SANDBOX_ARENA.height / 2
-    );
+    for (const encounter of session.encounters) {
+      if (encounter.spawnPlan.kind === 'wave') {
+        const setIndex = campaignSetIndex(encounter.id);
+        waveCountBySet.set(setIndex, (waveCountBySet.get(setIndex) ?? 0) + 1);
+        continue;
+      }
+
+      if (encounter.spawnPlan.kind === 'boss') {
+        bossIds.push(encounter.spawnPlan.bossArchetypeId);
+        expect(encounter.zoneBehavior).toEqual({ kind: 'disabled' });
+        expect(encounter.transitionRules.kind).toBe('allEnemiesCleared');
+        assertBossSpawnInsideArena(encounter.spawnPlan.bossArchetypeId, encounter.spawnPlan.position);
+      }
+    }
+
+    expect([...waveCountBySet.entries()]).toEqual([
+      [1, 3],
+      [2, 3],
+      [3, 3],
+      [4, 3],
+      [5, 3]
+    ]);
+    expect(bossIds).toEqual([...CAMPAIGN_SET_BOSSES]);
+  });
+
+  it('campaign: pre-boss breaks finish zone expansion with the timer', () => {
+    const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
+    let preBossBreaks = 0;
+
+    for (const encounter of session.encounters) {
+      if (!/^campaign-set-\d-pre-boss-break$/.test(encounter.id)) continue;
+      if (
+        encounter.zoneBehavior.kind !== 'expandLinear' ||
+        encounter.transitionRules.kind !== 'timer'
+      ) {
+        throw new Error(`expected timer expand pre-boss break, got ${encounter.id}`);
+      }
+
+      preBossBreaks += 1;
+      expect(encounter.zoneBehavior.toMargin).toBe(0);
+      expect(encounter.transitionRules.durationMs).toBe(encounter.zoneBehavior.durationMs);
+    }
+
+    expect(preBossBreaks).toBe(5);
   });
 });
+
+function campaignSetIndex(encounterId: string): number {
+  const match = /^campaign-set-(\d)-/.exec(encounterId);
+  if (match === null) {
+    throw new Error(`expected campaign set encounter id, got ${encounterId}`);
+  }
+  return Number(match[1]);
+}
+
+function assertBossSpawnInsideArena(bossArchetypeId: string, position: { x: number; y: number }): void {
+  const boss = BOSS_ARCHETYPES[bossArchetypeId];
+  if (boss === undefined) {
+    throw new Error(`unknown boss archetype in campaign: ${bossArchetypeId}`);
+  }
+  expect(position.x).toBe(0);
+  const expectedY = SANDBOX_ARENA.height / 2 - 0.5 - boss.contactBox.height / 2;
+  expect(position.y).toBeCloseTo(expectedY, 5);
+  expect(position.x - boss.contactBox.width / 2).toBeGreaterThanOrEqual(-SANDBOX_ARENA.width / 2);
+  expect(position.x + boss.contactBox.width / 2).toBeLessThanOrEqual(SANDBOX_ARENA.width / 2);
+  expect(position.y - boss.contactBox.height / 2).toBeGreaterThanOrEqual(-SANDBOX_ARENA.height / 2);
+  expect(position.y + boss.contactBox.height / 2).toBeLessThanOrEqual(SANDBOX_ARENA.height / 2);
+}

@@ -211,6 +211,7 @@ describe('SnapshotExportSystem top-level fields', () => {
       encounter: {
         id: 'wave-1',
         type: 'wave',
+        backgroundId: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],

@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { PLAYABLE_MODE_CATALOG } from '../../shared/content/playableModes';
+import { getPlayableModeCatalog, type ModePresetId } from '../../shared/content/sessions';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type { SessionDefinition } from '../../shared/session';
-import type { ModePresetId } from '../../shared/content/presets';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import type { Renderer, RendererInit } from '../render/Renderer';
@@ -93,6 +92,7 @@ function makeSession(id = 'test-session'): SessionDefinition {
       maxHp: 5
     },
     loadout: { primaryWeaponArchetypeId: 'pistol' },
+    backgrounds: [],
     modifiers: [],
     rules: null,
     encounters: [],
@@ -927,7 +927,7 @@ describe('UiShell', () => {
     await flushUiShellStartup();
 
     expect(menu.modes().map((mode) => mode.presetId)).toEqual(
-      PLAYABLE_MODE_CATALOG.map((mode) => mode.presetId)
+      getPlayableModeCatalog().map((mode) => mode.presetId)
     );
     expect(audio.calls.unlock).toBe(0);
 

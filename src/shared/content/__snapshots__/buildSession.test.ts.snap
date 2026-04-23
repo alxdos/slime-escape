@@ -1,0 +1,4612 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "set-1",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "set-2",
+      "imageUrl": "/images/bg/bg-02.jpg",
+    },
+    {
+      "id": "set-3",
+      "imageUrl": "/images/bg/bg-03.jpg",
+    },
+    {
+      "id": "set-4",
+      "imageUrl": "/images/bg/bg-04.jpg",
+    },
+    {
+      "id": "set-5",
+      "imageUrl": "/images/bg/bg-05.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 14000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1250,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1100,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-gargoyle",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.3125,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1400,
+        "spawns": [
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 15000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1150,
+        "spawns": [
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 17000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-saw-cyclops",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.395833333333333,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1300,
+        "spawns": [
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1050,
+        "spawns": [
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 900,
+        "spawns": [
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-saw",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-saw",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 20000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-scrap-king",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 6.860416666666667,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 17000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 950,
+        "spawns": [
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 8,
+        "spawnIntervalMs": 800,
+        "spawns": [
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-kingling",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-kingling",
+          },
+          {
+            "archetypeId": "slime-kingling",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 21000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-tower-sentinel",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.025,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 1100,
+        "spawns": [
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 8,
+        "spawnIntervalMs": 850,
+        "spawns": [
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 20000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 9,
+        "spawnIntervalMs": 700,
+        "spawns": [
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-obelisk",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-obelisk",
+          },
+          {
+            "archetypeId": "slime-obelisk",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 22000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-bubble-hog",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.304166666666667,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "campaign-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "allEncountersComplete",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "set-1",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "set-2",
+      "imageUrl": "/images/bg/bg-02.jpg",
+    },
+    {
+      "id": "set-3",
+      "imageUrl": "/images/bg/bg-03.jpg",
+    },
+    {
+      "id": "set-4",
+      "imageUrl": "/images/bg/bg-04.jpg",
+    },
+    {
+      "id": "set-5",
+      "imageUrl": "/images/bg/bg-05.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 14000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1250,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1100,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-gargoyle",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.3125,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1400,
+        "spawns": [
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 15000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1150,
+        "spawns": [
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 17000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-saw-cyclops",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.395833333333333,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1300,
+        "spawns": [
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1050,
+        "spawns": [
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 900,
+        "spawns": [
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-saw",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-saw",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 20000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-scrap-king",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 6.860416666666667,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 17000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 950,
+        "spawns": [
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 8,
+        "spawnIntervalMs": 800,
+        "spawns": [
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-kingling",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-kingling",
+          },
+          {
+            "archetypeId": "slime-kingling",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 21000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-tower-sentinel",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.025,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 1100,
+        "spawns": [
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 8,
+        "spawnIntervalMs": 850,
+        "spawns": [
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 20000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 9,
+        "spawnIntervalMs": 700,
+        "spawns": [
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-obelisk",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-obelisk",
+          },
+          {
+            "archetypeId": "slime-obelisk",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 22000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-bubble-hog",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.304166666666667,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "campaign-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "allEncountersComplete",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "set-1",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "set-2",
+      "imageUrl": "/images/bg/bg-02.jpg",
+    },
+    {
+      "id": "set-3",
+      "imageUrl": "/images/bg/bg-03.jpg",
+    },
+    {
+      "id": "set-4",
+      "imageUrl": "/images/bg/bg-04.jpg",
+    },
+    {
+      "id": "set-5",
+      "imageUrl": "/images/bg/bg-05.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 14000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1250,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1100,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-gargoyle",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.3125,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-1",
+      "id": "campaign-set-1-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1400,
+        "spawns": [
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 15000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1150,
+        "spawns": [
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 17000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-stack",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-saw-cyclops",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.395833333333333,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-2",
+      "id": "campaign-set-2-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1300,
+        "spawns": [
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1050,
+        "spawns": [
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 900,
+        "spawns": [
+          {
+            "archetypeId": "slime-echo",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-saw",
+          },
+          {
+            "archetypeId": "slime-bug",
+          },
+          {
+            "archetypeId": "slime-star",
+          },
+          {
+            "archetypeId": "slime-lifter",
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-saw",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 20000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-scrap-king",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 6.860416666666667,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-3",
+      "id": "campaign-set-3-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 17000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 950,
+        "spawns": [
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 8,
+        "spawnIntervalMs": 800,
+        "spawns": [
+          {
+            "archetypeId": "slime-tadpole",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-kingling",
+          },
+          {
+            "archetypeId": "slime-fortress",
+          },
+          {
+            "archetypeId": "slime-splitter",
+          },
+          {
+            "archetypeId": "slime-prince",
+          },
+          {
+            "archetypeId": "slime-dasher",
+          },
+          {
+            "archetypeId": "slime-kingling",
+          },
+          {
+            "archetypeId": "slime-kingling",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 21000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-tower-sentinel",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.025,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-4",
+      "id": "campaign-set-4-after-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 1100,
+        "spawns": [
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 8,
+        "spawnIntervalMs": 850,
+        "spawns": [
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 20000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 9,
+        "spawnIntervalMs": 700,
+        "spawns": [
+          {
+            "archetypeId": "slime-door",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-obelisk",
+          },
+          {
+            "archetypeId": "slime-candle",
+          },
+          {
+            "archetypeId": "slime-mech",
+          },
+          {
+            "archetypeId": "slime-clamper",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+          {
+            "archetypeId": "slime-obelisk",
+          },
+          {
+            "archetypeId": "slime-obelisk",
+          },
+          {
+            "archetypeId": "slime-ninja",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 22000,
+        "fromMargin": 2.8,
+        "kind": "shrinkLinear",
+        "toMargin": 3.5,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3500,
+        "fromMargin": 3.5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "set-5",
+      "id": "campaign-set-5-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-bubble-hog",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.304166666666667,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "campaign-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "allEncountersComplete",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "sandbox",
+      "id": "sandbox-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-session",
+  "loadout": null,
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "sandbox",
+      "id": "sandbox-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-session",
+  "loadout": null,
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "sandbox",
+      "id": "sandbox-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-session",
+  "loadout": null,
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-with-combat session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "sandbox",
+      "id": "sandbox-with-combat-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "static",
+        "spawns": [
+          {
+            "archetypeId": "slime-bug",
+            "position": {
+              "x": 5,
+              "y": 0,
+            },
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-with-combat-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-with-combat session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "sandbox",
+      "id": "sandbox-with-combat-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "static",
+        "spawns": [
+          {
+            "archetypeId": "slime-bug",
+            "position": {
+              "x": 5,
+              "y": 0,
+            },
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-with-combat-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-with-combat session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "sandbox",
+      "id": "sandbox-with-combat-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "static",
+        "spawns": [
+          {
+            "archetypeId": "slime-bug",
+            "position": {
+              "x": 5,
+              "y": 0,
+            },
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-with-combat-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted training session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "training",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "training",
+      "id": "training-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 8000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 4,
+      },
+    },
+    {
+      "backgroundId": "training",
+      "id": "training-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "training",
+      "id": "training-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 10000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+  ],
+  "id": "training-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "allEncountersComplete",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted training session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "training",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "training",
+      "id": "training-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 8000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 4,
+      },
+    },
+    {
+      "backgroundId": "training",
+      "id": "training-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "training",
+      "id": "training-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 10000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+  ],
+  "id": "training-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "allEncountersComplete",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted training session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "training",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "training",
+      "id": "training-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 8000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 4,
+      },
+    },
+    {
+      "backgroundId": "training",
+      "id": "training-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "training",
+      "id": "training-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 10000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+  ],
+  "id": "training-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "allEncountersComplete",
+  },
+}
+`;

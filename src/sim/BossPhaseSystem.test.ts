@@ -17,6 +17,7 @@ describe('BossPhaseSystem', () => {
       {
         id: 'boss-only',
         type: 'boss',
+        backgroundId: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_SCRAP_KING.id,

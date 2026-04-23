@@ -6,6 +6,7 @@ import { BOSSES_AREA } from './bosses';
 import { DROPS_AREA } from './drops';
 import { ENEMIES_AREA } from './enemies';
 import { PLAYERS_AREA } from './players';
+import { SESSIONS_AREA } from './sessions';
 import { WEAPONS_AREA } from './weapons';
 import { atomicWrite, type GeneratedFile } from './util/atomicWrite';
 import { ContentBuildError } from './util/require';
@@ -22,7 +23,8 @@ const AREAS: ReadonlyArray<ContentArea> = [
   WEAPONS_AREA,
   DROPS_AREA,
   BOSSES_AREA,
-  PLAYERS_AREA
+  PLAYERS_AREA,
+  SESSIONS_AREA
 ];
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 

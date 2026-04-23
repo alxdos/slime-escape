@@ -1,6 +1,10 @@
 import { buildSessionDefinition } from '../../shared/content/buildSession';
-import { PLAYABLE_MODE_CATALOG } from '../../shared/content/playableModes';
-import { resolveModePreset, type ModePreset, type ModePresetId } from '../../shared/content/presets';
+import {
+  getPlayableModeCatalog,
+  resolveModePreset,
+  type ModePreset,
+  type ModePresetId
+} from '../../shared/content/sessions';
 import type { RuntimeEvent } from '../../shared/events';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
@@ -182,7 +186,7 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   const menu = menuFactory({
     parent: init.parent,
-    modes: PLAYABLE_MODE_CATALOG,
+    modes: getPlayableModeCatalog(),
     onStart(presetId) {
       if (phase.kind !== 'menu') {
         return;
@@ -367,6 +371,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         canvas: init.canvas,
         renderScalePreset: clientSettings.renderScalePreset,
         arena: session.arena,
+        session,
         spriteTextures,
         getSnapshotPair: sim.snapshotPair,
         getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
