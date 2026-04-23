@@ -10,7 +10,7 @@ import {
 export function renderPlayerVisuals(area: ParsedPlayersArea): string {
   return `${renderHeader(area.sourcePath)}${renderImport()}${area.players
     .map((player) => renderPlayerVisual(area, player))
-    .join('\n\n')}\n`;
+    .join('\n\n')}\n\n${renderPlayerVisualSpecs(area.players)}\n`;
 }
 
 function renderImport(): string {
@@ -30,4 +30,9 @@ function renderPlayerVisual(area: ParsedPlayersArea, player: ParsedPlayer): stri
   worldSize: { width: ${formatNumber(worldSize.width)}, height: ${formatNumber(worldSize.height)} },
   anchor: { x: 0.5, y: 0.5 }
 };`;
+}
+
+function renderPlayerVisualSpecs(players: ReadonlyArray<ParsedPlayer>): string {
+  const constNames = players.map((player) => `${toConstName(player.id)}_VISUAL`);
+  return `export const PLAYER_VISUAL_SPECS = [${constNames.join(', ')}] as const satisfies ReadonlyArray<SpriteVisualSpec>;`;
 }

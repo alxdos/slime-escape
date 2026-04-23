@@ -94,10 +94,10 @@ describe('buildSessionDefinition (sandbox-with-combat)', () => {
     const halfW = session.arena.width / 2;
     const halfH = session.arena.height / 2;
     const pos = plan.spawns[0]!.position;
-    expect(pos.x).toBeGreaterThan(-halfW);
-    expect(pos.x).toBeLessThan(halfW);
-    expect(pos.y).toBeGreaterThan(-halfH);
-    expect(pos.y).toBeLessThan(halfH);
+    expect(pos.x - SLIME_BUG.contactBox.width / 2).toBeGreaterThanOrEqual(-halfW);
+    expect(pos.x + SLIME_BUG.contactBox.width / 2).toBeLessThanOrEqual(halfW);
+    expect(pos.y - SLIME_BUG.contactBox.height / 2).toBeGreaterThanOrEqual(-halfH);
+    expect(pos.y + SLIME_BUG.contactBox.height / 2).toBeLessThanOrEqual(halfH);
   });
 });
 
@@ -213,8 +213,20 @@ describe('buildSessionDefinition (campaign)', () => {
     if (plan?.kind !== 'boss') throw new Error('expected boss spawn plan');
     expect(plan.bossArchetypeId).toBe(BOSS_SCRAP_KING.id);
     expect(plan.position.x).toBe(0);
-    // top center, same inset as wave edge margin (0.5) + boss radius
-    const expectedY = SANDBOX_ARENA.height / 2 - 0.5 - BOSS_SCRAP_KING.radius;
+    // top center, same inset as wave edge margin (0.5) + half boss contact-box height
+    const expectedY = SANDBOX_ARENA.height / 2 - 0.5 - BOSS_SCRAP_KING.contactBox.height / 2;
     expect(plan.position.y).toBeCloseTo(expectedY, 5);
+    expect(plan.position.x - BOSS_SCRAP_KING.contactBox.width / 2).toBeGreaterThanOrEqual(
+      -SANDBOX_ARENA.width / 2
+    );
+    expect(plan.position.x + BOSS_SCRAP_KING.contactBox.width / 2).toBeLessThanOrEqual(
+      SANDBOX_ARENA.width / 2
+    );
+    expect(plan.position.y - BOSS_SCRAP_KING.contactBox.height / 2).toBeGreaterThanOrEqual(
+      -SANDBOX_ARENA.height / 2
+    );
+    expect(plan.position.y + BOSS_SCRAP_KING.contactBox.height / 2).toBeLessThanOrEqual(
+      SANDBOX_ARENA.height / 2
+    );
   });
 });

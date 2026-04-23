@@ -3,8 +3,17 @@
 import type { PlayerSpawn } from '../session';
 import type { PlayerArchetype } from './players';
 
-export const HERO: PlayerArchetype = {
-  id: 'hero',
+export const HERO_SANDBOX: PlayerArchetype = {
+  id: 'hero-sandbox',
+  displayName: 'Hero',
+  radius: 0.5,
+  contactBox: { width: 1.47, height: 2.75 },
+  maxSpeed: 6,
+  maxHp: 1
+};
+
+export const HERO_TRAINING: PlayerArchetype = {
+  id: 'hero-training',
   displayName: 'Hero',
   radius: 0.5,
   contactBox: { width: 1.47, height: 2.75 },
@@ -12,18 +21,20 @@ export const HERO: PlayerArchetype = {
   maxHp: 5
 };
 
+export const PLAYER_ARCHETYPE_SPECS = [HERO_SANDBOX, HERO_TRAINING] as const satisfies ReadonlyArray<PlayerArchetype>;
+
 export const SANDBOX_PLAYER: PlayerSpawn = {
   position: { x: 0, y: 0 },
-  radius: HERO.radius,
-  contactBox: HERO.contactBox,
-  maxSpeed: HERO.maxSpeed,
-  maxHp: HERO.maxHp
+  radius: HERO_SANDBOX.radius,
+  contactBox: HERO_SANDBOX.contactBox,
+  maxSpeed: HERO_SANDBOX.maxSpeed,
+  maxHp: HERO_SANDBOX.maxHp
 };
 
 export const TRAINING_PLAYER: PlayerSpawn = {
   position: { x: 0, y: 0 },
-  radius: HERO.radius,
-  contactBox: HERO.contactBox,
-  maxSpeed: HERO.maxSpeed,
-  maxHp: HERO.maxHp
+  radius: HERO_TRAINING.radius,
+  contactBox: HERO_TRAINING.contactBox,
+  maxSpeed: HERO_TRAINING.maxSpeed,
+  maxHp: HERO_TRAINING.maxHp
 };

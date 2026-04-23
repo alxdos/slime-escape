@@ -9,13 +9,14 @@ import {
 } from '../util/render';
 
 export function renderPlayerContent(area: ParsedPlayersArea): string {
-  const hero = requireHero(area);
+  const sandboxHero = requirePlayer(area, 'hero-sandbox');
+  const trainingHero = requirePlayer(area, 'hero-training');
   return `${renderHeader(area.sourcePath)}${renderImport()}${area.players
     .map((player) => renderPlayer(area, player))
-    .join('\n\n')}\n\n${renderPlayerSpawn('SANDBOX_PLAYER', hero)}\n\n${renderPlayerSpawn(
-    'TRAINING_PLAYER',
-    hero
-  )}\n`;
+    .join('\n\n')}\n\n${renderPlayerArchetypeSpecs(area.players)}\n\n${renderPlayerSpawn(
+    'SANDBOX_PLAYER',
+    sandboxHero
+  )}\n\n${renderPlayerSpawn('TRAINING_PLAYER', trainingHero)}\n`;
 }
 
 function renderImport(): string {
@@ -38,6 +39,11 @@ function renderPlayer(area: ParsedPlayersArea, player: ParsedPlayer): string {
 };`;
 }
 
+function renderPlayerArchetypeSpecs(players: ReadonlyArray<ParsedPlayer>): string {
+  const constNames = players.map((player) => toConstName(player.id));
+  return `export const PLAYER_ARCHETYPE_SPECS = [${constNames.join(', ')}] as const satisfies ReadonlyArray<PlayerArchetype>;`;
+}
+
 function renderPlayerSpawn(constName: string, player: ParsedPlayer): string {
   const sourceConstName = toConstName(player.id);
   return `export const ${constName}: PlayerSpawn = {
@@ -49,10 +55,10 @@ function renderPlayerSpawn(constName: string, player: ParsedPlayer): string {
 };`;
 }
 
-function requireHero(area: ParsedPlayersArea): ParsedPlayer {
-  const hero = area.players.find((player) => player.id === 'hero');
-  if (hero === undefined) {
-    throw new ContentBuildError(`${area.sourcePath}: player "hero" is required`);
+function requirePlayer(area: ParsedPlayersArea, playerId: string): ParsedPlayer {
+  const player = area.players.find((entry) => entry.id === playerId);
+  if (player === undefined) {
+    throw new ContentBuildError(`${area.sourcePath}: player "${playerId}" is required`);
   }
-  return hero;
+  return player;
 }

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-23 (follow-up: `projectiles-and-combat.md` переиспользует тот же `contactBox` контракт для projectile hit detection по `player` / `enemy` / `boss`)
+- Updated: 2026-04-23 (follow-up: `projectiles-and-combat.md` переиспользует тот же `contactBox` контракт для projectile hit detection по `player` / `enemy` / `boss`; session-builder static/boss spawn fit больше не относится к radius-based переходному долгу)
 
 ## Context
 
@@ -74,7 +74,7 @@
 
 - Это решение **не удаляет** существующие `radius` поля из `PlayerSpawn` / `EnemyArchetype` / `BossArchetype` в рамках данного прохода.
 - После принятия этого решения `radius` больше не является источником правды для body-contact `player ↔ enemy/boss`, для projectile hit detection по `player` / `enemy` / `boss` и для player clamp.
-- Системы, которые этим решением не мигрируются (например spawn inset, boss melee checks или drop overlap), могут продолжать использовать `radius` до отдельного пересмотра. Это осознанный переходный долг, а не скрытая семантика.
+- Системы, которые этим решением не мигрируются (например wave edge inset в `SpawnSystem`, boss melee checks или drop overlap), могут продолжать использовать `radius` до отдельного пересмотра. Это осознанный переходный долг, а не скрытая семантика.
 
 ## Consequences
 

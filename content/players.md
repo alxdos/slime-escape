@@ -1,6 +1,12 @@
 # Players
 
-## hero
+## hero-sandbox
+
+| field | value |
+|---|---|
+| displayName | Hero |
+
+## hero-training
 
 | field | value |
 |---|---|
@@ -12,22 +18,26 @@
 
 | id | radius |
 |---|---:|
-| hero | 0.5 |
+| hero-sandbox | 0.5 |
+| hero-training | 0.5 |
 
 ## Movement
 
 | id | maxSpeed |
 |---|---:|
-| hero | 6 |
+| hero-sandbox | 6 |
+| hero-training | 6 |
 
 ## Health
 
 | id | maxHp |
 |---|---:|
-| hero | 5 |
+| hero-sandbox | 1 |
+| hero-training | 5 |
 
 ## Visual
 
 | id | image |
 |---|---|
-| hero | /assets/hero.png |
+| hero-sandbox | /assets/hero.png |
+| hero-training | /assets/hero.png |

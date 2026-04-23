@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { HERO, PLAYER_ARCHETYPES, type PlayerArchetype } from '../../shared/content/players';
+import { PLAYER_ARCHETYPES, type PlayerArchetype } from '../../shared/content/players';
 
 import { PLAYER_VISUALS, validatePlayerVisuals } from './playerVisuals';
 
@@ -10,8 +10,12 @@ describe('validatePlayerVisuals', () => {
   });
 
   it('rejects player archetypes without a visual spec', () => {
+    const heroTraining = PLAYER_ARCHETYPES['hero-training'];
+    if (heroTraining === undefined) {
+      throw new Error('expected hero-training in player registry');
+    }
     const ghostHero: PlayerArchetype = {
-      ...HERO,
+      ...heroTraining,
       id: 'ghost-hero'
     };
 
@@ -25,7 +29,7 @@ describe('validatePlayerVisuals', () => {
 
   it('rejects orphan player visuals', () => {
     expect(() => validatePlayerVisuals({})).toThrow(
-      'player visual references unknown archetype "hero"'
+      'player visual references unknown archetype "hero-sandbox"'
     );
   });
 

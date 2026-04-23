@@ -17,7 +17,7 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 import { BOSS_VISUALS } from './bossVisuals';
 import { ENEMY_VISUALS } from './enemyVisuals';
 import { fitCanvasToViewport } from './fitToViewport';
-import { HERO_VISUAL } from './playerVisuals';
+import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
 import {
   resolveRenderScale,
   type RenderScalePreset
@@ -122,8 +122,8 @@ export function createRenderer(init: RendererInit): Renderer {
   scene.add(arenaBorder);
 
   const playerEntry = createSpriteMesh(
-    HERO_VISUAL,
-    requireSpriteTexture(init.spriteTextures, HERO_VISUAL.archetypeId, 'player'),
+    DEFAULT_PLAYER_VISUAL,
+    requireSpriteTexture(init.spriteTextures, DEFAULT_PLAYER_VISUAL.archetypeId, 'player'),
     ENEMY_Z
   );
   const playerMesh = playerEntry.mesh;

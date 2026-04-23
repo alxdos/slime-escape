@@ -1,6 +1,10 @@
 import type { ContactBox, PlayerSpawn } from '../session';
 
-import { HERO, SANDBOX_PLAYER, TRAINING_PLAYER } from './players.generated';
+import {
+  PLAYER_ARCHETYPE_SPECS,
+  SANDBOX_PLAYER,
+  TRAINING_PLAYER
+} from './players.generated';
 
 export type PlayerArchetype = Readonly<{
   id: string;
@@ -11,10 +15,23 @@ export type PlayerArchetype = Readonly<{
   maxHp: number;
 }>;
 
-export { HERO, SANDBOX_PLAYER, TRAINING_PLAYER } from './players.generated';
+export * from './players.generated';
 
 export const PLAYER_ARCHETYPES: Readonly<Record<string, PlayerArchetype>> = {
-  [HERO.id]: HERO
+  ...createPlayerRegistry(PLAYER_ARCHETYPE_SPECS)
 };
 
 export type { PlayerSpawn };
+
+function createPlayerRegistry(
+  archetypes: ReadonlyArray<PlayerArchetype>
+): Readonly<Record<string, PlayerArchetype>> {
+  const registry: Record<string, PlayerArchetype> = {};
+  for (const archetype of archetypes) {
+    if (registry[archetype.id] !== undefined) {
+      throw new Error(`duplicate player archetype "${archetype.id}"`);
+    }
+    registry[archetype.id] = archetype;
+  }
+  return registry;
+}

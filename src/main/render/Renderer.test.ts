@@ -5,7 +5,7 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 import { BOSS_GARGOYLE } from '../../shared/content/bosses';
 import { SLIME_BUG } from '../../shared/content/enemies';
-import { HERO_VISUAL } from './playerVisuals';
+import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
 import { createRenderer } from './Renderer';
 import type { TextureMap } from './spritePreload';
 
@@ -87,7 +87,7 @@ function createSpriteTextures(
   overrides: Readonly<Record<string, THREE.Texture>> = {}
 ): TextureMap {
   return {
-    [HERO_VISUAL.archetypeId]: new THREE.Texture(),
+    [DEFAULT_PLAYER_VISUAL.archetypeId]: new THREE.Texture(),
     ...overrides
   };
 }
@@ -271,7 +271,7 @@ describe('createRenderer', () => {
           dispose(): void {}
         })
       })
-    ).toThrow('player texture missing for archetype "hero"');
+    ).toThrow(`player texture missing for archetype "${DEFAULT_PLAYER_VISUAL.archetypeId}"`);
   });
 
   it('throws when an entity snapshot references an unknown visual spec', () => {

@@ -23,9 +23,19 @@ describe('content-build players area', () => {
 
     const area = await parsePlayersArea(sourcePath);
 
-    expect(renderPlayerContent(area)).toContain("export const HERO: PlayerArchetype");
+    expect(renderPlayerContent(area)).toContain("export const HERO_SANDBOX: PlayerArchetype");
+    expect(renderPlayerContent(area)).toContain("export const HERO_TRAINING: PlayerArchetype");
+    expect(renderPlayerContent(area)).toContain(
+      'export const PLAYER_ARCHETYPE_SPECS = [HERO_SANDBOX, HERO_TRAINING]'
+    );
+    expect(renderPlayerContent(area)).toContain('maxHp: HERO_SANDBOX.maxHp');
     expect(renderPlayerContent(area)).toContain('contactBox: { width:');
     expect(renderPlayerContent(area)).toContain("export const TRAINING_PLAYER: PlayerSpawn");
+    expect(renderPlayerVisuals(area)).toContain("export const HERO_SANDBOX_VISUAL: SpriteVisualSpec");
+    expect(renderPlayerVisuals(area)).toContain("export const HERO_TRAINING_VISUAL: SpriteVisualSpec");
+    expect(renderPlayerVisuals(area)).toContain(
+      'export const PLAYER_VISUAL_SPECS = [HERO_SANDBOX_VISUAL, HERO_TRAINING_VISUAL]'
+    );
     expect(renderPlayerVisuals(area)).toContain("image: '/assets/hero.png'");
     expect(renderPlayerVisuals(area)).toContain('sourceSizePx: { width:');
     expect(renderPlayerVisuals(area)).toContain('worldSize: { width:');
@@ -39,10 +49,12 @@ describe('content-build players area', () => {
       makePlayersMarkdown().replace(
         `| id | image |
 |---|---|
-| hero | /assets/hero.png |`,
+| hero-sandbox | /assets/hero.png |
+| hero-training | /assets/hero.png |`,
         `| id | image | worldSize |
 |---|---|---|
-| hero | /assets/hero.png | { width: 1, height: 1 } |`
+| hero-sandbox | /assets/hero.png | { width: 1, height: 1 } |
+| hero-training | /assets/hero.png | { width: 1, height: 1 } |`
       ),
       'utf8'
     );
@@ -78,7 +90,13 @@ function makeArea(name: string, render: ContentArea['render']): ContentArea {
 function makePlayersMarkdown(): string {
   return `# Players
 
-## hero
+## hero-sandbox
+
+| field | value |
+|---|---|
+| displayName | Hero |
+
+## hero-training
 
 | field | value |
 |---|---|
@@ -90,24 +108,28 @@ function makePlayersMarkdown(): string {
 
 | id | radius |
 |---|---:|
-| hero | 0.5 |
+| hero-sandbox | 0.5 |
+| hero-training | 0.5 |
 
 ## Movement
 
 | id | maxSpeed |
 |---|---:|
-| hero | 6 |
+| hero-sandbox | 6 |
+| hero-training | 6 |
 
 ## Health
 
 | id | maxHp |
 |---|---:|
-| hero | 5 |
+| hero-sandbox | 1 |
+| hero-training | 5 |
 
 ## Visual
 
 | id | image |
 |---|---|
-| hero | /assets/hero.png |
+| hero-sandbox | /assets/hero.png |
+| hero-training | /assets/hero.png |
 `;
 }

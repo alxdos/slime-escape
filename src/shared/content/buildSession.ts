@@ -2,6 +2,7 @@ import { log } from '../log';
 import { assertNever } from '../protocol';
 import type {
   ArenaConfig,
+  ContactBox,
   EncounterDefinition,
   SessionDefinition,
   StaticSpawn,
@@ -85,7 +86,7 @@ function buildSandboxWithCombatSession(options: BuildOptions): SessionDefinition
     archetypeId: SLIME_BUG.id,
     position: { x: 5, y: 0 }
   };
-  assertSpawnInsideArena(targetSpawn.position, SLIME_BUG.radius, SANDBOX_ARENA);
+  assertSpawnInsideArena(targetSpawn.position, SLIME_BUG.contactBox, SANDBOX_ARENA);
   warnIfWeaponMayTunnel(PISTOL.id);
 
   const encounter: EncounterDefinition = {
@@ -315,8 +316,12 @@ function buildCampaignSession(options: BuildOptions): SessionDefinition {
 
   /** Matches wave spawn `edgeMargin` — boss enters from top center like edge-spawned slimes. */
   const bossEdgeMargin = 0.5;
-  const bossSpawnPos = bossTopCenterSpawnInArena(SANDBOX_ARENA, BOSS_SCRAP_KING.radius, bossEdgeMargin);
-  assertSpawnInsideArena(bossSpawnPos, BOSS_SCRAP_KING.radius, SANDBOX_ARENA);
+  const bossSpawnPos = bossTopCenterSpawnInArena(
+    SANDBOX_ARENA,
+    BOSS_SCRAP_KING.contactBox,
+    bossEdgeMargin
+  );
+  assertSpawnInsideArena(bossSpawnPos, BOSS_SCRAP_KING.contactBox, SANDBOX_ARENA);
 
   const campaignPreBossBreak: EncounterDefinition = {
     id: 'campaign-pre-boss-break',
@@ -367,22 +372,24 @@ function buildCampaignSession(options: BuildOptions): SessionDefinition {
 /** Boss spawn: horizontally centered, as high as allowed inside arena (same inset as wave edge margin). */
 function bossTopCenterSpawnInArena(
   arena: ArenaConfig,
-  bossRadius: number,
+  bossContactBox: ContactBox,
   edgeMargin: number
 ): Vec2 {
   const halfH = arena.height / 2;
-  return { x: 0, y: halfH - edgeMargin - bossRadius };
+  return { x: 0, y: halfH - edgeMargin - bossContactBox.height / 2 };
 }
 
-function assertSpawnInsideArena(position: Vec2, radius: number, arena: ArenaConfig): void {
+function assertSpawnInsideArena(position: Vec2, contactBox: ContactBox, arena: ArenaConfig): void {
   const halfW = arena.width / 2;
   const halfH = arena.height / 2;
-  const insideX = position.x - radius >= -halfW && position.x + radius <= halfW;
-  const insideY = position.y - radius >= -halfH && position.y + radius <= halfH;
+  const halfContactW = contactBox.width / 2;
+  const halfContactH = contactBox.height / 2;
+  const insideX = position.x - halfContactW >= -halfW && position.x + halfContactW <= halfW;
+  const insideY = position.y - halfContactH >= -halfH && position.y + halfContactH <= halfH;
   if (!insideX || !insideY) {
     throw new Error(
-      `static spawn at (${position.x}, ${position.y}) with radius ${radius} ` +
-        `does not fit into arena ${arena.width}x${arena.height}`
+      `static spawn at (${position.x}, ${position.y}) with contactBox ` +
+        `${contactBox.width}x${contactBox.height} does not fit into arena ${arena.width}x${arena.height}`
     );
   }
 }

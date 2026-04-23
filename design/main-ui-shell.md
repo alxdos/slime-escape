@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-23 (для истории 013 добавлены стартовая фаза `loading` и финальная фаза `error('preload')`: видимый splash + sprite preload до меню, hard-error при провале загрузки, недоступность Renderer/InputController/Settings/SimWorkerHost в этих фазах)
+- Updated: 2026-04-23 (для истории 013 добавлены стартовая фаза `loading` и финальная фаза `error('preload')`: видимый splash + sprite preload до меню, hard-error при провале загрузки, недоступность Renderer/InputController/Settings/SimWorkerHost в этих фазах; follow-up: minimum splash duration зафиксирован как контракт `STARTUP_PRELOAD_MIN_DURATION_MS = 1500`)
 
 ## Context
 
@@ -157,6 +157,7 @@
 ### Startup preload в фазе `loading`
 
 - `UiShell` стартует с фазы `loading` и **до** перехода в `menu` обязан выполнить sprite preload по контракту [sprite-assets.md](sprite-assets.md): загрузить и декодировать все textures из объединения generated visual registries (player/enemy/boss). Lazy-load в фазах `running`/`paused`/`result` запрещён.
+- Splash в фазе `loading` обязан оставаться видимым **минимум 1.5 секунды**, даже если preload ассетов завершился раньше. Это контракт UI, а не UX-эвристика «по месту»: константа `STARTUP_PRELOAD_MIN_DURATION_MS = 1500` живёт в `src/main/ui/UiShell.ts`, и её изменение требует обновления этого файла.
 - Источник списка ассетов — visual registries в `src/main/render/**`; preload не знает про content registry напрямую и не парсит MD: `image` уже зафиксирован в generated данных.
 - Прогресс preload-а (количество загруженных / общее) пробрасывается callback-ом в `StartupOverlay`. Текстуры считаются «готовыми» только после успешного декодирования — частично декодированный bitmap не отдаётся renderer-у даже на короткое время.
 - Любая ошибка загрузки или декодирования хотя бы одного обязательного ассета — единственный сан­кц­ио­ни­ро­ва­ный триггер `loading → error('preload')`. `UiShell` запоминает первое поражение (URL + браузерное сообщение) и передаёт его в `StartupErrorOverlay`. Параллельно идущие загрузки прерываются; partial-success-режима нет.
