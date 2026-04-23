@@ -14,7 +14,7 @@ type SpriteFetchFn = (
   init: Readonly<{ signal: AbortSignal }>
 ) => Promise<SpriteFetchResponse>;
 
-type DecodeBitmapFn = (blob: Blob) => Promise<ImageBitmap>;
+type DecodeBitmapFn = (blob: Blob, options: ImageBitmapOptions) => Promise<ImageBitmap>;
 type CreateTextureFn = (bitmap: ImageBitmap, imageUrl: string) => THREE.Texture;
 
 export type TextureMap = Readonly<Record<string, THREE.Texture>>;
@@ -29,6 +29,9 @@ type UniqueImageEntry = Readonly<{
   image: string;
   archetypeIds: ReadonlyArray<string>;
 }>;
+const SPRITE_BITMAP_OPTIONS: ImageBitmapOptions = {
+  imageOrientation: 'flipY'
+};
 
 export async function preloadSprites(
   specs: Iterable<SpriteVisualSpec>,
@@ -148,7 +151,7 @@ async function decodeSpriteBitmap(
   }
 
   try {
-    return await decodeBitmap(blob);
+    return await decodeBitmap(blob, SPRITE_BITMAP_OPTIONS);
   } catch (error: unknown) {
     throw new Error(`Failed to decode sprite "${imageUrl}": ${formatError(error)}`);
   }
@@ -181,8 +184,8 @@ function createDefaultDependencies(): SpritePreloadDependencies {
     fetch(imageUrl, init) {
       return fetchSprite(imageUrl, init);
     },
-    decodeBitmap(blob) {
-      return decodeBitmap(blob);
+    decodeBitmap(blob, options) {
+      return decodeBitmap(blob, options);
     },
     createTexture(bitmap, imageUrl) {
       const texture = new THREE.Texture(bitmap);

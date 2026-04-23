@@ -6,6 +6,6 @@ export const HERO_VISUAL: SpriteVisualSpec = {
   archetypeId: 'hero',
   image: '/assets/hero.png',
   sourceSizePx: { width: 294, height: 550 },
-  worldSize: { width: 4.2, height: 7.857142857142857 },
+  worldSize: { width: 1.47, height: 2.75 },
   anchor: { x: 0.5, y: 0.5 }
 };

@@ -36,7 +36,10 @@ describe('preloadSprites', () => {
           blob: async () => new Blob([imageUrl], { type: 'image/png' })
         };
       },
-      decodeBitmap: async (_blob) => ({}) as ImageBitmap,
+      decodeBitmap: async (_blob, options) => {
+        expect(options).toEqual({ imageOrientation: 'flipY' });
+        return {} as ImageBitmap;
+      },
       createTexture: (_bitmap, imageUrl) => {
         const texture = new THREE.Texture();
         texture.name = imageUrl;
@@ -80,7 +83,10 @@ describe('preloadSprites', () => {
               });
             });
           },
-          decodeBitmap: async (_blob) => ({}) as ImageBitmap,
+          decodeBitmap: async (_blob, options) => {
+            expect(options).toEqual({ imageOrientation: 'flipY' });
+            return {} as ImageBitmap;
+          },
           createTexture: () => new THREE.Texture()
         }
       )
