@@ -1,5 +1,4 @@
-import type { PlayableModeEntry } from '../../shared/content/playableModes';
-import type { ModePresetId } from '../../shared/content/presets';
+import type { ModePresetId, PlayableModeEntry } from '../../shared/content/sessions';
 
 export type MenuOverlayInit = Readonly<{
   parent: HTMLElement;

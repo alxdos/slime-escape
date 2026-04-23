@@ -55,6 +55,15 @@ export type ModePreset = Readonly<{
   id: ModePresetId;
 }>;
 
+export function resolveModePreset(presetId: ModePresetId): ModePreset {
+  return { id: presetId };
+}
+
+export const SANDBOX_PRESET = resolveModePreset('sandbox');
+export const SANDBOX_WITH_COMBAT_PRESET = resolveModePreset('sandbox-with-combat');
+export const TRAINING_PRESET = resolveModePreset('training');
+export const CAMPAIGN_PRESET = resolveModePreset('campaign');
+
 export type PlayableModeEntry = Readonly<{
   presetId: ModePresetId;
   displayName: string;

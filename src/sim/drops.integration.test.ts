@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildSessionDefinition } from '../shared/content/buildSession';
 import { HEAL_ORB } from '../shared/content/drops';
-import { TRAINING_PRESET } from '../shared/content/presets';
+import { TRAINING_PRESET } from '../shared/content/sessions';
 import type { RuntimeEvent } from '../shared/events';
 import { SIM_STEP_MS } from '../shared/timing';
 

@@ -7,11 +7,12 @@ import { SLIME_BUG, SLIME_ONE_EYE, SLIME_SHELL } from './enemies';
 import {
   CAMPAIGN_PRESET,
   resolveModePreset,
+  SESSION_PRESET_TEMPLATES,
   SANDBOX_PRESET,
   SANDBOX_WITH_COMBAT_PRESET,
-  TRAINING_PRESET
-} from './presets';
-import { SESSION_PRESET_TEMPLATES, type ModePresetId } from './sessions';
+  TRAINING_PRESET,
+  type ModePresetId
+} from './sessions';
 import { PISTOL } from './weapons';
 
 const ACCEPTANCE_PRESET_IDS = Object.keys(SESSION_PRESET_TEMPLATES) as ModePresetId[];

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { buildSessionDefinition } from '../shared/content/buildSession';
-import { SANDBOX_PRESET } from '../shared/content/presets';
+import { SANDBOX_PRESET } from '../shared/content/sessions';
 import type { RuntimeEvent } from '../shared/events';
 import type { EntityId } from './EntityStore';
 import type { SimulationClock } from './SimulationClock';

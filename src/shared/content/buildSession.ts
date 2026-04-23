@@ -12,11 +12,11 @@ import { SIM_STEP_MS } from '../timing';
 
 import { BOSS_ARCHETYPES } from './bosses';
 import { ENEMY_ARCHETYPES, validateEnemyRegistry } from './enemies';
-import type { ModePreset } from './presets';
 import { SESSION_PRESET_TEMPLATES } from './sessions.generated';
 import type {
   BossSpawnPlanTemplate,
   BossSpawnPositionTemplate,
+  ModePreset,
   SessionPresetEncounterTemplate,
   SessionPresetTemplate
 } from './sessions';
