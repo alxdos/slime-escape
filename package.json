@@ -9,7 +9,7 @@
     "content:build": "tsx scripts/content-build/index.ts",
     "content:check": "tsx scripts/content-build/index.ts --check",
     "predev": "npm run content:build",
-    "build": "npm run content:check && tsc -p tsconfig.json && tsc -p tsconfig.worker.json && tsc -p tsconfig.scripts.json && vite build",
+    "build": "tsc -p tsconfig.scripts.json && npm run content:check && tsc -p tsconfig.json && tsc -p tsconfig.worker.json && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
     "test": "vitest run",
