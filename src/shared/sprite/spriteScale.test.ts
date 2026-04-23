@@ -6,7 +6,7 @@ import { PX_PER_WU } from './spriteScale';
 
 describe('PX_PER_WU', () => {
   it('uses the design sprite scale value', () => {
-    expect(PX_PER_WU).toBe(200);
+    expect(PX_PER_WU).toBe(240);
   });
 
   it('has a single initialization across runtime and content-build sources', () => {
