@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 
-import { PX_PER_WU } from '../../../src/main/render/spriteScale';
+import { PX_PER_WU } from '../../../src/shared/sprite/spriteScale';
 
 import { formatPngSizeContentError, readPngSize, type PngRowContext } from './pngSize';
 import { ContentBuildError } from './require';

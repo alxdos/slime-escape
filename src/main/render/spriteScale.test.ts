@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { PX_PER_WU } from './spriteScale';
+import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 
 describe('PX_PER_WU', () => {
   it('uses the design sprite scale value', () => {
@@ -13,7 +13,7 @@ describe('PX_PER_WU', () => {
   it('has a single initialization across runtime and content-build sources', async () => {
     const matches = await findScaleInitializations(['src', 'scripts']);
 
-    expect(matches).toEqual(['src/main/render/spriteScale.ts']);
+    expect(matches).toEqual(['src/shared/sprite/spriteScale.ts']);
   });
 });
 
