@@ -2,12 +2,16 @@
 
 ## boss-gargoyle
 
+![Gargoyle Slime](../public/assets/boss-01.png)
+
 | field | value |
 |---|---|
 | displayName | Gargoyle Slime |
 | color | #aa44ff |
 
 ## boss-saw-cyclops
+
+![Saw Cyclops](../public/assets/boss-02.png)
 
 | field | value |
 |---|---|
@@ -16,6 +20,8 @@
 
 ## boss-scrap-king
 
+![Scrap King](../public/assets/boss-03.png)
+
 | field | value |
 |---|---|
 | displayName | Scrap King |
@@ -23,12 +29,16 @@
 
 ## boss-tower-sentinel
 
+![Tower Sentinel](../public/assets/boss-04.png)
+
 | field | value |
 |---|---|
 | displayName | Tower Sentinel |
 | color | #aa44ff |
 
 ## boss-bubble-hog
+
+![Bubble Hog](../public/assets/boss-05.png)
 
 | field | value |
 |---|---|
@@ -121,13 +131,3 @@
 | boss-scrap-king | boss/boss-fireball | boss/boss-ahaha |
 | boss-tower-sentinel | boss/boss-fireball | boss/boss-ahaha |
 | boss-bubble-hog | boss/boss-fireball | boss/boss-ahaha |
-
-## Visual
-
-| id | image |
-|---|---|
-| boss-gargoyle | /assets/boss-01.png |
-| boss-saw-cyclops | /assets/boss-02.png |
-| boss-scrap-king | /assets/boss-03.png |
-| boss-tower-sentinel | /assets/boss-04.png |
-| boss-bubble-hog | /assets/boss-05.png |

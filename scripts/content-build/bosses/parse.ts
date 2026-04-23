@@ -5,6 +5,7 @@ import {
   type MarkdownTableRow
 } from '../parse';
 import { requireCell, requireNumber, requireRow, requireSection } from '../util/require';
+import { requireInlineImage } from '../util/inlineMedia';
 import {
   assertKnownReferences,
   cellError,
@@ -15,7 +16,8 @@ import {
   requireField,
   requireFieldHexColor,
   requireIdList,
-  requireSingleTable
+  requireSingleTable,
+  sectionError
 } from '../util/markdown';
 
 export type ParsedBossPhase = Readonly<{
@@ -67,15 +69,8 @@ type BossDefinition = Readonly<{
   id: string;
   displayName: string;
   color: number;
+  visual: ParsedBossVisual;
 }>;
-
-const FORBIDDEN_VISUAL_COLUMNS = new Set([
-  'sourceSizePx',
-  'displayWidthPx',
-  'displayHeightPx',
-  'displaySizePx',
-  'worldSize'
-]);
 
 export async function parseBossesArea(sourcePath: string): Promise<ParsedBossesArea> {
   const document = await readMarkdownDocument(sourcePath);
@@ -96,7 +91,7 @@ function parseBossesDocument(document: MarkdownDocument): ParsedBossesArea {
   const phasesSection = requireSection(balanceSection, 'Phases');
   const attacksSection = requireSection(balanceSection, 'Attacks');
   const soundsSection = requireSection(balanceSection, 'Sounds');
-  const visualSection = requireSection(balanceSection, 'Visual');
+  assertNoForbiddenVisualGroup(balanceSection);
 
   const bodyTable = requireSingleTable(bodySection);
   const movementTable = requireSingleTable(movementSection);
@@ -105,7 +100,6 @@ function parseBossesDocument(document: MarkdownDocument): ParsedBossesArea {
   const phasesTable = requireSingleTable(phasesSection);
   const attacksTable = requireSingleTable(attacksSection);
   const soundsTable = requireSingleTable(soundsSection);
-  const visualTable = requireSingleTable(visualSection);
 
   assertKnownReferences(bodySection, bodyTable, knownBossIds, 'boss');
   assertKnownReferences(movementSection, movementTable, knownBossIds, 'boss');
@@ -114,8 +108,6 @@ function parseBossesDocument(document: MarkdownDocument): ParsedBossesArea {
   assertKnownReferences(phasesSection, phasesTable, knownBossIds, 'boss');
   assertKnownReferences(attacksSection, attacksTable, knownBossIds, 'boss');
   assertKnownReferences(soundsSection, soundsTable, knownBossIds, 'boss');
-  assertKnownReferences(visualSection, visualTable, knownBossIds, 'boss');
-  assertNoForbiddenVisualColumns(visualSection, visualTable);
 
   return {
     sourcePath: document.filePath,
@@ -134,9 +126,7 @@ function parseBossesDocument(document: MarkdownDocument): ParsedBossesArea {
         attacksSection,
         attacksTable,
         soundsSection,
-        soundsTable,
-        visualSection,
-        visualTable
+        soundsTable
       })
     )
   };
@@ -147,7 +137,10 @@ function parseBossDefinition(section: MarkdownSection): BossDefinition {
   return {
     id: section.title,
     displayName: requireField(section, table, 'displayName'),
-    color: requireFieldHexColor(section, table, 'color')
+    color: requireFieldHexColor(section, table, 'color'),
+    visual: {
+      image: requireInlineImage(section).url
+    }
   };
 }
 
@@ -168,8 +161,6 @@ function parseBoss(
     attacksTable: MarkdownTable;
     soundsSection: MarkdownSection;
     soundsTable: MarkdownTable;
-    visualSection: MarkdownSection;
-    visualTable: MarkdownTable;
   }>
 ): ParsedBoss {
   const bodyRow = requireRow(tables.bodySection, tables.bodyTable, definition.id);
@@ -179,7 +170,6 @@ function parseBoss(
   const phaseRows = requireRows(tables.phasesSection, tables.phasesTable, definition.id);
   const attackRows = requireRows(tables.attacksSection, tables.attacksTable, definition.id);
   const soundsRow = requireRow(tables.soundsSection, tables.soundsTable, definition.id);
-  const visualRow = requireRow(tables.visualSection, tables.visualTable, definition.id);
   const attacks = parseAttacks(tables.attacksSection, tables.attacksTable, attackRows);
   const phases = parsePhases(
     tables.phasesSection,
@@ -234,22 +224,14 @@ function parseBoss(
         'phaseChange'
       )
     },
-    visual: {
-      image: requireCell(tables.visualSection, tables.visualTable, visualRow, 'image')
-    }
+    visual: definition.visual
   };
 }
 
-function assertNoForbiddenVisualColumns(section: MarkdownSection, table: MarkdownTable): void {
-  for (const header of table.header) {
-    if (!FORBIDDEN_VISUAL_COLUMNS.has(header.value)) continue;
-    throw cellError(
-      section,
-      header.position,
-      '<header>',
-      header.value,
-      'derive visual field is generated from the PNG asset'
-    );
+function assertNoForbiddenVisualGroup(balanceSection: MarkdownSection): void {
+  const visualSection = balanceSection.sections.find((section) => section.title === 'Visual');
+  if (visualSection !== undefined) {
+    throw sectionError(visualSection, 'group "## Visual" is replaced by inline image under boss H2');
   }
 }
 
