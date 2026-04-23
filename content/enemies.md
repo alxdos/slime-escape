@@ -67,12 +67,12 @@
 | id | hit | death |
 |---|---|---|
 | training-target | | |
-| slime-fast | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 |
-| slime-tank | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 |
+| slime-fast | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
+| slime-tank | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
 
 ## Voice
 
 | id | sampleIds | intervalMinMs | intervalMaxMs |
 |---|---|---:|---:|
-| slime-fast | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | 3000 | 6000 |
-| slime-tank | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | 3500 | 7000 |
+| slime-fast | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
+| slime-tank | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3500 | 7000 |
