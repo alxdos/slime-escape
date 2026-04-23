@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
+import { ENEMIES_AREA } from './enemies';
 import { atomicWrite, type GeneratedFile } from './util/atomicWrite';
 import { ContentBuildError } from './util/require';
 
@@ -10,7 +11,7 @@ type ContentArea = Readonly<{
   render(): Promise<ReadonlyArray<GeneratedFile>>;
 }>;
 
-const AREAS: ReadonlyArray<ContentArea> = [];
+const AREAS: ReadonlyArray<ContentArea> = [ENEMIES_AREA];
 
 async function main(argv: ReadonlyArray<string>): Promise<void> {
   const mode = parseMode(argv);
