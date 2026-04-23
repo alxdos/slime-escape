@@ -92,6 +92,7 @@ function makeSession(id = 'test-session'): SessionDefinition {
       maxHp: 5
     },
     loadout: { primaryWeaponArchetypeId: 'pistol' },
+    backgrounds: [],
     modifiers: [],
     rules: null,
     encounters: [],

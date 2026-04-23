@@ -7,6 +7,7 @@ import {
   requireInlineAudioLink,
   requireInlineAudioLinkCell,
   requireInlineImage,
+  requireInlineImageCell,
   type InlineMediaSampleRegistry
 } from './inlineMedia';
 
@@ -61,6 +62,33 @@ describe('inline media content-build helpers', () => {
     });
   });
 
+  it('resolves inline media from nested content folders with an extra ../ segment', () => {
+    const section = parseMarkdown(
+      'content/sessions/campaign.md',
+      [
+        '# Session',
+        '',
+        '| backgroundId | image |',
+        '|--------------|-------|',
+        '| set-1 | ![Set 1](../../public/images/bg/bg-01.jpg) |'
+      ].join('\n')
+    ).sections[0];
+    const cell = section?.tables[0]?.rows[0]?.cells[1];
+    if (cell === undefined) {
+      throw new Error('test markdown did not produce a background image cell');
+    }
+
+    expect(
+      requireInlineImageCell(cell, {
+        sourcePath: 'content/sessions/campaign.md',
+        context: 'background "set-1" image'
+      })
+    ).toEqual({
+      url: '/images/bg/bg-01.jpg',
+      absolutePath: resolve(process.cwd(), 'public/images/bg/bg-01.jpg')
+    });
+  });
+
   it('validates an inline audio-link table cell and ignores plain cells', () => {
     const linkedCell = firstDataCell(
       [
@@ -92,10 +120,10 @@ describe('inline media content-build helpers', () => {
     expect(requireInlineAudioLinkCell(plainCell, SAMPLE_REGISTRY)).toBeNull();
   });
 
-  it('rejects URLs outside the required ../public/ prefix', () => {
+  it('rejects URLs outside the required public-relative prefix', () => {
     const section = firstH2(['# Players', '', '## hero-sandbox', '', '![Hero](/assets/hero.png)']);
 
-    expect(() => requireInlineImage(section)).toThrow(/expected URL starting with "\.\.\/public\/"/);
+    expect(() => requireInlineImage(section)).toThrow(/expected URL starting/);
   });
 
   it('rejects missing files under public', () => {
@@ -110,7 +138,7 @@ describe('inline media content-build helpers', () => {
     expect(() => requireInlineImage(section)).toThrow(/media file does not exist "\/assets\/missing\.png"/);
   });
 
-  it('rejects path rewrites inside the ../public/ URL', () => {
+  it('rejects path rewrites inside the public URL', () => {
     const section = firstH2([
       '# Players',
       '',
@@ -119,7 +147,7 @@ describe('inline media content-build helpers', () => {
       '![Hero](../public/assets/../assets/hero.png)'
     ]);
 
-    expect(() => requireInlineImage(section)).toThrow(/expected normalized path under \.\.\/public\//);
+    expect(() => requireInlineImage(section)).toThrow(/expected normalized path under public\//);
   });
 
   it('rejects unknown sample ids', () => {

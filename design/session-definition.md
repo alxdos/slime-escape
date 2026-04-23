@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (story 015: метаданные playable preset — `displayName`, `description`, `visibleInMenu`, `order` — переезжают в `content library` и хранятся как поля партиции `# Session` в `content/sessions/<presetId>.md` (см. [content-authoring.md](content-authoring.md), раздел «Multi-file области»). Форма `SessionDefinition`, `EncounterDefinition`, `SpawnPlan`, `ZoneBehavior`, `TransitionRules`, `Loadout`, `WinCondition`, `LossCondition` в `src/shared/session.ts` — **не меняется**. Ранее: добавлен `player.contactBox` по [body-contact-boxes.md](body-contact-boxes.md); семантика `winCondition: bossDefeated` — [boss-encounter.md](boss-encounter.md); ранее: формализованы `ZoneBehavior`/`TransitionRules`, `allEncountersComplete`/`playerDeath`, preset `training`, поле `player.maxHp`)
+- Updated: 2026-04-23 (story 015 follow-up: `SessionDefinition.backgrounds` и `EncounterDefinition.backgroundId` добавляют session-level набор фоновых изображений и encounter-level ссылку на фон; renderer в `main` переключает фон по активному encounter без расширения snapshot, см. [main-ui-shell.md](main-ui-shell.md). story 015: метаданные playable preset — `displayName`, `description`, `visibleInMenu`, `order` — переезжают в `content library` и хранятся как поля партиции `# Session` в `content/sessions/<presetId>.md` (см. [content-authoring.md](content-authoring.md), раздел «Multi-file области»). Ранее: добавлен `player.contactBox` по [body-contact-boxes.md](body-contact-boxes.md); семантика `winCondition: bossDefeated` — [boss-encounter.md](boss-encounter.md); ранее: формализованы `ZoneBehavior`/`TransitionRules`, `allEncountersComplete`/`playerDeath`, preset `training`, поле `player.maxHp`)
 
 ## Context
 
@@ -24,6 +24,7 @@
   arena,
   player,
   loadout,
+  backgrounds,
   modifiers,
   encounters,
   rules,
@@ -34,6 +35,7 @@
 ```
 
 - `encounters` - это упорядоченный список `EncounterDefinition`.
+- `backgrounds` — session-level таблица визуальных фонов, доступных encounter'ам. Элемент имеет форму `{ id: string; imageUrl: string }`, где `imageUrl` — уже public-relative URL (`/images/bg/...`), пришедший из content library. Список immutable на время сессии, так же как остальные поля `SessionDefinition`.
 - `SessionDefinition` после старта сессии считается immutable runtime-контрактом.
 - Стабильными частями контракта считаются имена верхнеуровневых полей, общий смысл `EncounterDefinition`, а также модели `winCondition` / `lossCondition`.
 - Допускается эволюция внутренних структур вроде `spawnPlan`, `rewardRules` и `tuning`, если она не ломает верхнеуровневую модель сборки сессии.
@@ -52,6 +54,7 @@
 {
   id,
   type,          // wave | break | boss | survivalTimer | sandbox
+  backgroundId,
   spawnPlan,
   zoneBehavior,
   objectives,
@@ -62,6 +65,7 @@
 ```
 
 - `spawnPlan` описывает данные для `SpawnSystem`, а не конкретный код спавна. Форма `spawnPlan` (дискриминированный union, набор `kind`, правила расширения, `'empty'`/`'static'`/`'wave'`) фиксируется отдельным решением [spawn-plan.md](spawn-plan.md). Будущие категории (`'boss'` и т.п.) добавляются туда же новыми `kind`, без изменения этого файла.
+- `backgroundId` — явная ссылка на один из `SessionDefinition.backgrounds[].id` или `null`, если encounter не задаёт фон. Для player-facing `wave`/`break`/`boss` encounter'ов background обязателен на уровне content-authoring; sandbox/bring-up encounter'ы могут использовать `null` или тестовый фон. Симуляция не читает это поле; оно принадлежит presentation/runtime-конфигу, который main уже получил вместе с immutable `SessionDefinition`.
 - `zoneBehavior` — дискриминированный union по `kind`. Конкретная семантика и поведение `ZoneSystem` фиксируются в [zone.md](zone.md); этот файл закрепляет только форму поля и набор `kind`:
   - `{ kind: 'disabled' }` — зона отступлена и не двигается, `margin = 0` весь encounter;
   - `{ kind: 'shrinkLinear'; fromMargin: number; toMargin: number; durationMs: number }` — линейное сжатие за `durationMs`, `from`/`to` в `[0, maxMargin]`, `durationMs > 0`;

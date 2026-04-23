@@ -18,12 +18,14 @@ function makeSession(): SessionDefinition {
       maxHp: 5
     },
     loadout: { primaryWeaponArchetypeId: 'pistol' },
+    backgrounds: [],
     modifiers: [],
     rules: null,
     encounters: [
       {
         id: 'wave-1',
         type: 'wave',
+        backgroundId: null,
         spawnPlan: { kind: 'wave', spawns: [], spawnIntervalMs: 1000, maxAlive: 2 },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -34,6 +36,7 @@ function makeSession(): SessionDefinition {
       {
         id: 'break-1',
         type: 'break',
+        backgroundId: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -44,6 +47,7 @@ function makeSession(): SessionDefinition {
       {
         id: 'wave-2',
         type: 'wave',
+        backgroundId: null,
         spawnPlan: { kind: 'wave', spawns: [], spawnIntervalMs: 1000, maxAlive: 2 },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],

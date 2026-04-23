@@ -105,6 +105,7 @@ function makeEncounter(plan: EncounterDefinition['spawnPlan']): EncounterDefinit
   return {
     id: 'test-encounter',
     type: 'sandbox',
+    backgroundId: null,
     spawnPlan: plan,
     zoneBehavior: { kind: 'disabled' },
     objectives: [],

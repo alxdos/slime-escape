@@ -55,6 +55,7 @@ const BOSS_TOP_Y = SANDBOX_ARENA.height / 2 - 0.5 - BOSS_SCRAP_KING.radius;
 const BOSS_ENCOUNTER: EncounterDefinition = {
   id: 'test-boss',
   type: 'boss',
+  backgroundId: null,
   spawnPlan: {
     kind: 'boss',
     bossArchetypeId: BOSS_SCRAP_KING.id,
@@ -74,6 +75,7 @@ function bossOnlySession(seed: number): SessionDefinition {
     arena: SANDBOX_ARENA,
     player: TRAINING_PLAYER,
     loadout: { primaryWeaponArchetypeId: PISTOL.id },
+    backgrounds: [],
     modifiers: [],
     rules: null,
     encounters: [BOSS_ENCOUNTER],

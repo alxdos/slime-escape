@@ -56,6 +56,11 @@ export type Loadout = Readonly<{
   primaryWeaponArchetypeId: string;
 }>;
 
+export type SessionBackground = Readonly<{
+  id: string;
+  imageUrl: string;
+}>;
+
 export type ZoneBehavior =
   | Readonly<{ kind: 'disabled' }>
   | Readonly<{
@@ -83,6 +88,7 @@ export type TransitionRules =
 export type EncounterDefinition = Readonly<{
   id: string;
   type: EncounterType;
+  backgroundId: string | null;
   spawnPlan: SpawnPlan;
   zoneBehavior: ZoneBehavior;
   objectives: ReadonlyArray<Objective>;
@@ -111,6 +117,7 @@ export type SessionDefinition = Readonly<{
   arena: ArenaConfig;
   player: PlayerSpawn;
   loadout: Loadout | null;
+  backgrounds: ReadonlyArray<SessionBackground>;
   modifiers: ReadonlyArray<Modifier>;
   rules: null;
   encounters: ReadonlyArray<EncounterDefinition>;

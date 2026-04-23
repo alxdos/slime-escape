@@ -33,6 +33,7 @@ export function buildSessionDefinition(
 ): SessionDefinition {
   const template = SESSION_PRESET_TEMPLATES[preset.id];
   validateEnemyRegistry(ENEMY_ARCHETYPES, template.player.contactBox);
+  validateEncounterBackgroundReferences(template);
   if (template.loadout !== null) {
     warnIfWeaponMayTunnel(template.loadout.primaryWeaponArchetypeId);
   }
@@ -42,6 +43,7 @@ export function buildSessionDefinition(
     arena: template.arena,
     player: template.player,
     loadout: template.loadout,
+    backgrounds: template.backgrounds,
     modifiers: [],
     rules: null,
     encounters: resolveEncounterTemplates(template),
@@ -49,6 +51,18 @@ export function buildSessionDefinition(
     lossCondition: template.lossCondition,
     uiMeta: null
   };
+}
+
+function validateEncounterBackgroundReferences(template: SessionPresetTemplate): void {
+  const backgroundIds = new Set(template.backgrounds.map((background) => background.id));
+  for (const encounter of template.encounters) {
+    if (encounter.backgroundId !== null && !backgroundIds.has(encounter.backgroundId)) {
+      throw new Error(
+        `session preset "${template.presetId}" encounter "${encounter.id}" ` +
+          `references unknown background "${encounter.backgroundId}"`
+      );
+    }
+  }
 }
 
 function resolveEncounterTemplates(

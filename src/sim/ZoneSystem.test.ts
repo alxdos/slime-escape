@@ -9,6 +9,7 @@ function encounter(zoneBehavior: ZoneBehavior): EncounterDefinition {
   return {
     id: 'test',
     type: 'wave',
+    backgroundId: null,
     spawnPlan: { kind: 'empty' },
     zoneBehavior,
     objectives: [],

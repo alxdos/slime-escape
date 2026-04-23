@@ -162,6 +162,30 @@ describe('content-build sessions area', () => {
     );
   });
 
+  it('rejects an encounter background id that is not declared in the session table', async () => {
+    await expectParseRejects(
+      {
+        'campaign.md': (source) =>
+          replaceExact(source, '| backgroundId | set-1 |', '| backgroundId | set-missing |')
+      },
+      /unknown backgroundId "set-missing"/
+    );
+  });
+
+  it('rejects a session background image cell without an inline image', async () => {
+    await expectParseRejects(
+      {
+        'campaign.md': (source) =>
+          replaceExact(
+            source,
+            '| set-1 | ![Set 1](../../public/images/bg/bg-01.jpg) |',
+            '| set-1 | /images/bg/bg-01.jpg |'
+          )
+      },
+      /expected inline image/
+    );
+  });
+
   it('rejects duplicate preset ids', () => {
     expect(() =>
       validateUniqueSessionPresetIds([

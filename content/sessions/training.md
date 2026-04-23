@@ -12,6 +12,10 @@
 | winCondition | allEncountersComplete |
 | lossCondition | playerDeath |
 
+| backgroundId | image |
+|---|---|
+| training | ![Training](../../public/images/bg/bg-01.jpg) |
+
 # Encounters
 
 ## training-wave-1
@@ -19,6 +23,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | training |
 | spawnKind | wave |
 | spawnIntervalMs | 1500 |
 | maxAlive | 4 |
@@ -44,6 +49,7 @@
 | field | value |
 |---|---|
 | type | break |
+| backgroundId | training |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 4 |
@@ -58,6 +64,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | training |
 | spawnKind | wave |
 | spawnIntervalMs | 1200 |
 | maxAlive | 5 |

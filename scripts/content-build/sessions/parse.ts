@@ -20,9 +20,9 @@ import {
   cellError,
   getRowId,
   readMarkdownDocument,
-  requireSingleTable,
   sectionError
 } from '../util/markdown';
+import { type InlineImage, requireInlineImageCell } from '../util/inlineMedia';
 import {
   type ResolvedContentRef,
   requireArenaRef,
@@ -65,9 +65,15 @@ export type ParsedTransitionRules =
 export type ParsedEncounter = Readonly<{
   id: string;
   type: EncounterType;
+  backgroundId: string | null;
   spawnPlan: ParsedSpawnPlan;
   zoneBehavior: ZoneBehavior;
   transitionRules: ParsedTransitionRules;
+}>;
+
+export type ParsedSessionBackground = Readonly<{
+  id: string;
+  image: InlineImage;
 }>;
 
 export type ParsedSessionPreset = Readonly<{
@@ -80,6 +86,7 @@ export type ParsedSessionPreset = Readonly<{
   arena: ParsedRef;
   player: ParsedRef;
   loadoutWeapon: ParsedRef | null;
+  backgrounds: ReadonlyArray<ParsedSessionBackground>;
   winCondition: ParsedWinCondition;
   lossCondition: ParsedLossCondition;
   encounters: ReadonlyArray<ParsedEncounter>;
@@ -99,11 +106,17 @@ type EncounterTables = Readonly<{
   spawns: MarkdownTable | null;
 }>;
 
+type SessionTables = Readonly<{
+  fields: MarkdownTable;
+  backgrounds: MarkdownTable;
+}>;
+
 type FieldReader = Readonly<{
   section: MarkdownSection;
   table: MarkdownTable;
   read(fieldName: string): string;
   readCell(fieldName: string): MarkdownCell;
+  readOptionalCell(fieldName: string): MarkdownCell | null;
   readNumber(fieldName: string): number;
 }>;
 
@@ -163,8 +176,10 @@ async function parseSessionFile(sourcePath: string): Promise<ParsedSessionPreset
 function parseSessionDocument(document: MarkdownDocument, presetId: string): ParsedSessionPreset {
   const sessionSection = requireSection(document, 'Session');
   const encountersSection = requireSection(document, 'Encounters');
-  const sessionTable = requireSingleTable(sessionSection);
-  const sessionFields = fieldReader(sessionSection, sessionTable);
+  const sessionTables = requireSessionTables(sessionSection);
+  const sessionFields = fieldReader(sessionSection, sessionTables.fields);
+  const backgrounds = parseSessionBackgrounds(sessionSection, sessionTables.backgrounds);
+  const backgroundIds = new Set(backgrounds.map((background) => background.id));
 
   return {
     sourcePath: document.filePath,
@@ -176,25 +191,80 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
     arena: parseArenaRef(sessionFields, 'arenaId'),
     player: parsePlayerRef(sessionFields, 'playerId'),
     loadoutWeapon: parseLoadoutWeapon(sessionFields, 'loadoutWeaponId'),
+    backgrounds,
     winCondition: parseWinCondition(sessionFields, 'winCondition'),
     lossCondition: parseLossCondition(sessionFields, 'lossCondition'),
-    encounters: encountersSection.sections.map(parseEncounterSection)
+    encounters: encountersSection.sections.map((section) =>
+      parseEncounterSection(section, backgroundIds)
+    )
   };
 }
 
-function parseEncounterSection(section: MarkdownSection): ParsedEncounter {
+function parseEncounterSection(
+  section: MarkdownSection,
+  backgroundIds: ReadonlySet<string>
+): ParsedEncounter {
   const firstTable = requireFirstEncounterTable(section);
   const field = fieldReader(section, firstTable);
   const spawnKind = parseEnumField(field, 'spawnKind', ['empty', 'wave', 'static', 'boss']);
   const tables = requireEncounterTables(section, spawnKind);
+  const type = parseEncounterType(field);
 
   return {
     id: section.title,
-    type: parseEncounterType(field),
+    type,
+    backgroundId: parseEncounterBackgroundId(field, type, backgroundIds),
     spawnPlan: parseSpawnPlan(field, tables),
     zoneBehavior: parseZoneBehavior(field),
     transitionRules: parseTransitionRules(field)
   };
+}
+
+function requireSessionTables(section: MarkdownSection): SessionTables {
+  const fields = section.tables[0];
+  const backgrounds = section.tables[1];
+  if (fields === undefined) {
+    throw sectionError(section, 'expected field/value table');
+  }
+  assertFieldValueHeader(section, fields);
+  if (backgrounds === undefined) {
+    throw sectionError(section, 'expected backgroundId/image table');
+  }
+  assertBackgroundTableHeader(section, backgrounds);
+  if (section.tables.length > 2) {
+    throw sectionError(section, 'expected exactly two GFM tables');
+  }
+  return { fields, backgrounds };
+}
+
+function parseSessionBackgrounds(
+  section: MarkdownSection,
+  table: MarkdownTable
+): ReadonlyArray<ParsedSessionBackground> {
+  if (table.rows.length === 0) {
+    throw cellError(section, table.position, '<body>', 'backgroundId', 'expected at least one background');
+  }
+  const seen = new Set<string>();
+  return table.rows.map((row) => {
+    const idCell = requireColumnCell(section, table, row, 'backgroundId');
+    const imageCell = requireColumnCellAllowEmpty(section, table, row, 'image');
+    const id = idCell.value;
+    if (id === 'none') {
+      throw cellError(section, idCell.position, getRowId(row), 'backgroundId', 'reserved id "none"');
+    }
+    if (seen.has(id)) {
+      throw cellError(section, idCell.position, getRowId(row), 'backgroundId', `duplicate backgroundId "${id}"`);
+    }
+    seen.add(id);
+    const image = requireInlineImageCell(imageCell, {
+      sourcePath: section.filePath,
+      context: `background "${id}" image`
+    });
+    if (image === null) {
+      throw cellError(section, imageCell.position, getRowId(row), 'image', 'expected inline image ![…](../.../public/…)');
+    }
+    return { id, image };
+  });
 }
 
 function requireFirstEncounterTable(section: MarkdownSection): MarkdownTable {
@@ -361,6 +431,49 @@ function parseEncounterType(field: FieldReader): EncounterType {
   return parseEnumField(field, 'type', ['wave', 'break', 'boss', 'survivalTimer', 'sandbox']);
 }
 
+function parseEncounterBackgroundId(
+  field: FieldReader,
+  type: EncounterType,
+  backgroundIds: ReadonlySet<string>
+): string | null {
+  const cell = field.readOptionalCell('backgroundId');
+  if (cell === null) {
+    if (requiresBackgroundId(type)) {
+      throw fieldError(field, 'backgroundId', 'expected field "backgroundId"');
+    }
+    return null;
+  }
+
+  if (cell.value === 'none') {
+    if (requiresBackgroundId(type)) {
+      throw cellError(
+        field.section,
+        cell.position,
+        'backgroundId',
+        'value',
+        `encounter type "${type}" requires a background id`
+      );
+    }
+    return null;
+  }
+
+  if (!backgroundIds.has(cell.value)) {
+    throw cellError(
+      field.section,
+      cell.position,
+      'backgroundId',
+      'value',
+      `unknown backgroundId "${cell.value}"`
+    );
+  }
+
+  return cell.value;
+}
+
+function requiresBackgroundId(type: EncounterType): boolean {
+  return type === 'wave' || type === 'break' || type === 'boss';
+}
+
 function parseBossSpawnPosition(field: FieldReader): 'top-center' {
   const raw = field.read('bossSpawnPosition');
   if (raw !== 'top-center') {
@@ -452,6 +565,23 @@ function fieldReader(section: MarkdownSection, table: MarkdownTable): FieldReade
     readCell(fieldName: string): MarkdownCell {
       return readFieldCell(section, table, fieldName);
     },
+    readOptionalCell(fieldName: string): MarkdownCell | null {
+      const row = findFieldRow(table, fieldName);
+      if (row === null) {
+        return null;
+      }
+      const cell = row.cells[1];
+      if (cell === undefined || cell.value.length === 0) {
+        throw cellError(
+          section,
+          cell?.position ?? row.position,
+          fieldName,
+          'value',
+          'expected non-empty value'
+        );
+      }
+      return cell;
+    },
     readNumber(fieldName: string): number {
       const cell = readFieldCell(section, table, fieldName);
       const value = Number(cell.value);
@@ -508,6 +638,18 @@ function assertFieldValueHeader(section: MarkdownSection, table: MarkdownTable):
   }
 }
 
+function assertBackgroundTableHeader(section: MarkdownSection, table: MarkdownTable): void {
+  const expected = ['backgroundId', 'image'];
+  for (const [index, columnName] of expected.entries()) {
+    if (table.header[index]?.value !== columnName) {
+      throw cellError(section, table.position, '<header>', columnName, `expected ${expected.join(' | ')} table`);
+    }
+  }
+  if (table.header.length !== expected.length) {
+    throw cellError(section, table.position, '<header>', 'image', `expected ${expected.join(' | ')} table`);
+  }
+}
+
 function assertSpawnTableHeader(
   section: MarkdownSection,
   table: MarkdownTable,
@@ -543,6 +685,23 @@ function requireColumnCell(
       columnName,
       'expected non-empty value'
     );
+  }
+  return cell;
+}
+
+function requireColumnCellAllowEmpty(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow,
+  columnName: string
+): MarkdownCell {
+  const columnIndex = table.header.findIndex((cell) => cell.value === columnName);
+  if (columnIndex < 0) {
+    throw cellError(section, row.position, getRowId(row), columnName, `expected column "${columnName}"`);
+  }
+  const cell = row.cells[columnIndex];
+  if (cell === undefined) {
+    throw cellError(section, row.position, getRowId(row), columnName, 'expected cell');
   }
   return cell;
 }

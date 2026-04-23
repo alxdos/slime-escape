@@ -62,6 +62,9 @@ function renderPreset(preset: ParsedSessionPreset): string {
     arena: ${preset.arena.constName},
     player: ${preset.player.constName},
     loadout: ${renderLoadout(preset.loadoutWeapon)},
+    backgrounds: [
+${preset.backgrounds.map(renderBackground).join(',\n')}
+    ],
     winCondition: ${renderWinCondition(preset.winCondition)},
     lossCondition: ${renderLossCondition(preset.lossCondition)},
     encounters: [
@@ -74,12 +77,20 @@ function renderEncounter(encounter: ParsedEncounter): string {
   return `      {
         id: '${escapeString(encounter.id)}',
         type: '${encounter.type}',
+        backgroundId: ${renderNullableString(encounter.backgroundId)},
         spawnPlan: ${renderSpawnPlan(encounter.spawnPlan)},
         zoneBehavior: ${renderZoneBehavior(encounter)},
         objectives: [],
         rewardRules: null,
         transitionRules: ${renderTransitionRules(encounter.transitionRules)},
         tuning: null
+      }`;
+}
+
+function renderBackground(background: ParsedSessionPreset['backgrounds'][number]): string {
+  return `      {
+        id: '${escapeString(background.id)}',
+        imageUrl: '${escapeString(background.image.url)}'
       }`;
 }
 
@@ -153,6 +164,13 @@ function renderLoadout(loadoutWeapon: ParsedRef | null): string {
     return 'null';
   }
   return `{ primaryWeaponArchetypeId: ${loadoutWeapon.constName}.id }`;
+}
+
+function renderNullableString(value: string | null): string {
+  if (value === null) {
+    return 'null';
+  }
+  return `'${escapeString(value)}'`;
 }
 
 function renderWinCondition(winCondition: ParsedWinCondition): string {

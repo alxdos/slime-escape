@@ -3,6 +3,7 @@ import type {
   EncounterDefinition,
   Loadout,
   PlayerSpawn,
+  SessionBackground,
   StaticSpawnPlan,
   Vec2,
   WaveSpawnPlan,
@@ -44,6 +45,7 @@ export type SessionPresetTemplate = Readonly<{
   arena: ArenaConfig;
   player: PlayerSpawn;
   loadout: Loadout | null;
+  backgrounds: ReadonlyArray<SessionBackground>;
   winCondition: WinCondition;
   lossCondition: LossCondition;
   encounters: ReadonlyArray<SessionPresetEncounterTemplate>;

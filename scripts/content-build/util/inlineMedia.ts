@@ -1,5 +1,5 @@
 import { statSync } from 'node:fs';
-import { relative, resolve } from 'node:path';
+import { dirname, relative, resolve, sep } from 'node:path';
 
 import type { MarkdownCell, MarkdownMediaNode, MarkdownSection, SourcePosition } from '../parse';
 import { ContentBuildError } from './require';
@@ -25,16 +25,22 @@ export type InlineAudioLinkCellOptions = InlineMediaOptions &
     context?: string;
   }>;
 
+export type InlineImageCellOptions = InlineMediaOptions &
+  Readonly<{
+    sourcePath?: string;
+    context?: string;
+  }>;
+
 export type InlineMediaSampleRegistry = Readonly<{
   get(sampleId: string): Readonly<{ url: string }> | null;
 }>;
-
-const PUBLIC_PREFIX = '../public/';
 
 type ErrorContext = Readonly<{
   sourcePath: string;
   label: string;
 }>;
+
+const PUBLIC_URL_PATTERN = /^(?:\.\.\/)+public\/(.+)$/;
 
 export function requireInlineImage(
   section: MarkdownSection,
@@ -92,6 +98,22 @@ export function requireInlineAudioLinkCell(
   });
 }
 
+export function requireInlineImageCell(
+  cell: MarkdownCell,
+  opts: InlineImageCellOptions = {}
+): InlineImage | null {
+  if (cell.inlineImage === null) {
+    return null;
+  }
+
+  return resolvePublicMediaUrl({
+    rawUrl: cell.inlineImage.url,
+    position: cell.position,
+    context: cellContext(cell, opts),
+    repositoryRoot: opts.repositoryRoot
+  });
+}
+
 function requireSingleSectionMediaNode<K extends MarkdownMediaNode['kind']>(
   section: MarkdownSection,
   kind: K,
@@ -145,25 +167,40 @@ function resolvePublicMediaUrl(
     repositoryRoot?: string;
   }>
 ): InlineImage {
-  if (!input.rawUrl.startsWith(PUBLIC_PREFIX)) {
-    throw mediaError(
-      input.context,
-      input.position,
-      `expected URL starting with "${PUBLIC_PREFIX}", got "${input.rawUrl}"`
-    );
-  }
-
-  const publicPath = input.rawUrl.slice(PUBLIC_PREFIX.length);
-  if (!isNormalizedPublicPath(publicPath)) {
-    throw mediaError(input.context, input.position, 'expected normalized path under ../public/');
-  }
-
   const repositoryRoot = input.repositoryRoot ?? process.cwd();
   const publicRoot = resolve(repositoryRoot, 'public');
+  const publicPrefix = publicPrefixFromSourcePath(input.context.sourcePath, repositoryRoot, publicRoot);
+  let publicPath: string;
+  if (publicPrefix !== null) {
+    if (!input.rawUrl.startsWith(publicPrefix)) {
+      throw mediaError(
+        input.context,
+        input.position,
+        `expected URL starting with "${publicPrefix}", got "${input.rawUrl}"`
+      );
+    }
+    publicPath = input.rawUrl.slice(publicPrefix.length);
+  } else {
+    const match = input.rawUrl.match(PUBLIC_URL_PATTERN);
+    const matchedPublicPath = match?.[1];
+    if (matchedPublicPath === undefined) {
+      throw mediaError(
+        input.context,
+        input.position,
+        `expected URL pointing to public via "../public/" or "../../public/", got "${input.rawUrl}"`
+      );
+    }
+    publicPath = matchedPublicPath;
+  }
+
+  if (!isNormalizedPublicPath(publicPath)) {
+    throw mediaError(input.context, input.position, 'expected normalized path under public/');
+  }
+
   const absolutePath = resolve(publicRoot, publicPath);
   const relativeToPublic = relative(publicRoot, absolutePath);
   if (relativeToPublic.length === 0 || relativeToPublic === '..' || relativeToPublic.startsWith('../')) {
-    throw mediaError(input.context, input.position, 'expected path under ../public/');
+    throw mediaError(input.context, input.position, 'expected path under public/');
   }
 
   assertExistingFile({
@@ -177,6 +214,25 @@ function resolvePublicMediaUrl(
     url: `/${publicPath}`,
     absolutePath
   };
+}
+
+function publicPrefixFromSourcePath(
+  sourcePath: string,
+  repositoryRoot: string,
+  publicRoot: string
+): string | null {
+  const absoluteSourcePath = resolve(repositoryRoot, sourcePath);
+  const relativeSourcePath = relative(repositoryRoot, absoluteSourcePath);
+  if (
+    relativeSourcePath.length === 0 ||
+    relativeSourcePath === '..' ||
+    relativeSourcePath.startsWith(`..${sep}`)
+  ) {
+    return null;
+  }
+  const sourceDir = dirname(absoluteSourcePath);
+  const relativeToPublic = relative(sourceDir, publicRoot).split(sep).join('/');
+  return `${relativeToPublic}/`;
 }
 
 function isNormalizedPublicPath(publicPath: string): boolean {
@@ -215,10 +271,10 @@ function sectionContext(section: MarkdownSection): ErrorContext {
   };
 }
 
-function cellContext(_cell: MarkdownCell, opts: InlineAudioLinkCellOptions): ErrorContext {
+function cellContext(_cell: MarkdownCell, opts: InlineAudioLinkCellOptions | InlineImageCellOptions): ErrorContext {
   return {
     sourcePath: opts.sourcePath ?? 'content/<unknown>.md',
-    label: opts.context ?? 'inline audio-link cell'
+    label: opts.context ?? 'inline media cell'
   };
 }
 

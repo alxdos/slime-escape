@@ -174,6 +174,7 @@ function emptyEncounter(id: string, transitionRules: EncounterDefinition['transi
   return {
     id,
     type: 'wave',
+    backgroundId: null,
     spawnPlan: { kind: 'empty' },
     zoneBehavior: { kind: 'disabled' },
     objectives: [],
@@ -187,6 +188,7 @@ function waveEncounter(id: string, transitionRules: EncounterDefinition['transit
   return {
     id,
     type: 'wave',
+    backgroundId: null,
     spawnPlan: {
       kind: 'wave',
       spawns: [{ archetypeId: 'test-wave-enemy' }],
@@ -217,6 +219,7 @@ function makeSession(encounters: ReadonlyArray<EncounterDefinition>, options?: {
       maxHp: 1
     },
     loadout: null,
+    backgrounds: [],
     modifiers: [],
     rules: null,
     encounters,
@@ -370,6 +373,7 @@ describe('SessionFlowSystem bossDefeated', () => {
   ): EncounterDefinition => ({
     id,
     type: 'boss',
+    backgroundId: null,
     spawnPlan: {
       kind: 'boss',
       bossArchetypeId: 'test-boss',

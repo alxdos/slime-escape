@@ -371,6 +371,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         canvas: init.canvas,
         renderScalePreset: clientSettings.renderScalePreset,
         arena: session.arena,
+        session,
         spriteTextures,
         getSnapshotPair: sim.snapshotPair,
         getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)

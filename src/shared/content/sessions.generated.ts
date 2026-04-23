@@ -17,12 +17,35 @@ export const SESSION_PRESET_TEMPLATES = {
     arena: SANDBOX_ARENA,
     player: TRAINING_PLAYER,
     loadout: { primaryWeaponArchetypeId: PISTOL.id },
+    backgrounds: [
+      {
+        id: 'set-1',
+        imageUrl: '/images/bg/bg-01.jpg'
+      },
+      {
+        id: 'set-2',
+        imageUrl: '/images/bg/bg-02.jpg'
+      },
+      {
+        id: 'set-3',
+        imageUrl: '/images/bg/bg-03.jpg'
+      },
+      {
+        id: 'set-4',
+        imageUrl: '/images/bg/bg-04.jpg'
+      },
+      {
+        id: 'set-5',
+        imageUrl: '/images/bg/bg-05.jpg'
+      }
+    ],
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     encounters: [
       {
         id: 'campaign-set-1-wave-1',
         type: 'wave',
+        backgroundId: 'set-1',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -46,6 +69,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-1-wave-2',
         type: 'wave',
+        backgroundId: 'set-1',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -72,6 +96,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-1-wave-3',
         type: 'wave',
+        backgroundId: 'set-1',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -101,6 +126,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-1-pre-boss-break',
         type: 'break',
+        backgroundId: 'set-1',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -111,6 +137,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-1-boss',
         type: 'boss',
+        backgroundId: 'set-1',
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_GARGOYLE.id,
@@ -126,6 +153,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-1-after-boss-break',
         type: 'break',
+        backgroundId: 'set-1',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -136,6 +164,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-2-wave-1',
         type: 'wave',
+        backgroundId: 'set-2',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -160,6 +189,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-2-wave-2',
         type: 'wave',
+        backgroundId: 'set-2',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -187,6 +217,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-2-wave-3',
         type: 'wave',
+        backgroundId: 'set-2',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -217,6 +248,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-2-pre-boss-break',
         type: 'break',
+        backgroundId: 'set-2',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -227,6 +259,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-2-boss',
         type: 'boss',
+        backgroundId: 'set-2',
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_SAW_CYCLOPS.id,
@@ -242,6 +275,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-2-after-boss-break',
         type: 'break',
+        backgroundId: 'set-2',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -252,6 +286,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-3-wave-1',
         type: 'wave',
+        backgroundId: 'set-3',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -277,6 +312,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-3-wave-2',
         type: 'wave',
+        backgroundId: 'set-3',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -305,6 +341,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-3-wave-3',
         type: 'wave',
+        backgroundId: 'set-3',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -336,6 +373,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-3-pre-boss-break',
         type: 'break',
+        backgroundId: 'set-3',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -346,6 +384,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-3-boss',
         type: 'boss',
+        backgroundId: 'set-3',
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_SCRAP_KING.id,
@@ -361,6 +400,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-3-after-boss-break',
         type: 'break',
+        backgroundId: 'set-3',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -371,6 +411,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-4-wave-1',
         type: 'wave',
+        backgroundId: 'set-4',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -396,6 +437,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-4-wave-2',
         type: 'wave',
+        backgroundId: 'set-4',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -425,6 +467,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-4-wave-3',
         type: 'wave',
+        backgroundId: 'set-4',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -457,6 +500,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-4-pre-boss-break',
         type: 'break',
+        backgroundId: 'set-4',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -467,6 +511,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-4-boss',
         type: 'boss',
+        backgroundId: 'set-4',
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_TOWER_SENTINEL.id,
@@ -482,6 +527,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-4-after-boss-break',
         type: 'break',
+        backgroundId: 'set-4',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -492,6 +538,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-5-wave-1',
         type: 'wave',
+        backgroundId: 'set-5',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -518,6 +565,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-5-wave-2',
         type: 'wave',
+        backgroundId: 'set-5',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -548,6 +596,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-5-wave-3',
         type: 'wave',
+        backgroundId: 'set-5',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -581,6 +630,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-5-pre-boss-break',
         type: 'break',
+        backgroundId: 'set-5',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -591,6 +641,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'campaign-set-5-boss',
         type: 'boss',
+        backgroundId: 'set-5',
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_BUBBLE_HOG.id,
@@ -614,12 +665,19 @@ export const SESSION_PRESET_TEMPLATES = {
     arena: SANDBOX_ARENA,
     player: SANDBOX_PLAYER,
     loadout: null,
+    backgrounds: [
+      {
+        id: 'sandbox',
+        imageUrl: '/images/bg/bg-01.jpg'
+      }
+    ],
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
     encounters: [
       {
         id: 'sandbox-encounter',
         type: 'sandbox',
+        backgroundId: 'sandbox',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -638,12 +696,19 @@ export const SESSION_PRESET_TEMPLATES = {
     arena: SANDBOX_ARENA,
     player: SANDBOX_PLAYER,
     loadout: { primaryWeaponArchetypeId: PISTOL.id },
+    backgrounds: [
+      {
+        id: 'sandbox',
+        imageUrl: '/images/bg/bg-01.jpg'
+      }
+    ],
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
     encounters: [
       {
         id: 'sandbox-with-combat-encounter',
         type: 'sandbox',
+        backgroundId: 'sandbox',
         spawnPlan: {
           kind: 'static',
           spawns: [
@@ -670,12 +735,19 @@ export const SESSION_PRESET_TEMPLATES = {
     arena: SANDBOX_ARENA,
     player: TRAINING_PLAYER,
     loadout: { primaryWeaponArchetypeId: PISTOL.id },
+    backgrounds: [
+      {
+        id: 'training',
+        imageUrl: '/images/bg/bg-01.jpg'
+      }
+    ],
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     encounters: [
       {
         id: 'training-wave-1',
         type: 'wave',
+        backgroundId: 'training',
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -699,6 +771,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'training-break',
         type: 'break',
+        backgroundId: 'training',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 4, toMargin: 0, durationMs: 2500 },
         objectives: [],
@@ -709,6 +782,7 @@ export const SESSION_PRESET_TEMPLATES = {
       {
         id: 'training-wave-2',
         type: 'wave',
+        backgroundId: 'training',
         spawnPlan: {
           kind: 'wave',
           spawns: [

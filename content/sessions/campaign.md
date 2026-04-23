@@ -12,6 +12,14 @@
 | winCondition | allEncountersComplete |
 | lossCondition | playerDeath |
 
+| backgroundId | image |
+|---|---|
+| set-1 | ![Set 1](../../public/images/bg/bg-01.jpg) |
+| set-2 | ![Set 2](../../public/images/bg/bg-02.jpg) |
+| set-3 | ![Set 3](../../public/images/bg/bg-03.jpg) |
+| set-4 | ![Set 4](../../public/images/bg/bg-04.jpg) |
+| set-5 | ![Set 5](../../public/images/bg/bg-05.jpg) |
+
 # Encounters
 
 ## campaign-set-1-wave-1
@@ -19,6 +27,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-1 |
 | spawnKind | wave |
 | spawnIntervalMs | 1500 |
 | maxAlive | 4 |
@@ -44,6 +53,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-1 |
 | spawnKind | wave |
 | spawnIntervalMs | 1250 |
 | maxAlive | 5 |
@@ -72,6 +82,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-1 |
 | spawnKind | wave |
 | spawnIntervalMs | 1100 |
 | maxAlive | 6 |
@@ -103,6 +114,7 @@
 | field | value |
 |---|---|
 | type | break |
+| backgroundId | set-1 |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 3.5 |
@@ -117,6 +129,7 @@
 | field | value |
 |---|---|
 | type | boss |
+| backgroundId | set-1 |
 | spawnKind | boss |
 | bossArchetypeId | boss-gargoyle |
 | bossSpawnPosition | top-center |
@@ -130,6 +143,7 @@
 | field | value |
 |---|---|
 | type | break |
+| backgroundId | set-1 |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -141,6 +155,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-2 |
 | spawnKind | wave |
 | spawnIntervalMs | 1400 |
 | maxAlive | 5 |
@@ -167,6 +182,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-2 |
 | spawnKind | wave |
 | spawnIntervalMs | 1150 |
 | maxAlive | 6 |
@@ -196,6 +212,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-2 |
 | spawnKind | wave |
 | spawnIntervalMs | 1000 |
 | maxAlive | 6 |
@@ -228,6 +245,7 @@
 | field | value |
 |---|---|
 | type | break |
+| backgroundId | set-2 |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 3.5 |
@@ -242,6 +260,7 @@
 | field | value |
 |---|---|
 | type | boss |
+| backgroundId | set-2 |
 | spawnKind | boss |
 | bossArchetypeId | boss-saw-cyclops |
 | bossSpawnPosition | top-center |
@@ -255,6 +274,7 @@
 | field | value |
 |---|---|
 | type | break |
+| backgroundId | set-2 |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -266,6 +286,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-3 |
 | spawnKind | wave |
 | spawnIntervalMs | 1300 |
 | maxAlive | 5 |
@@ -293,6 +314,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-3 |
 | spawnKind | wave |
 | spawnIntervalMs | 1050 |
 | maxAlive | 6 |
@@ -323,6 +345,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-3 |
 | spawnKind | wave |
 | spawnIntervalMs | 900 |
 | maxAlive | 7 |
@@ -356,6 +379,7 @@
 | field | value |
 |---|---|
 | type | break |
+| backgroundId | set-3 |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 3.5 |
@@ -370,6 +394,7 @@
 | field | value |
 |---|---|
 | type | boss |
+| backgroundId | set-3 |
 | spawnKind | boss |
 | bossArchetypeId | boss-scrap-king |
 | bossSpawnPosition | top-center |
@@ -383,6 +408,7 @@
 | field | value |
 |---|---|
 | type | break |
+| backgroundId | set-3 |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -394,6 +420,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-4 |
 | spawnKind | wave |
 | spawnIntervalMs | 1200 |
 | maxAlive | 6 |
@@ -421,6 +448,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-4 |
 | spawnKind | wave |
 | spawnIntervalMs | 950 |
 | maxAlive | 7 |
@@ -452,6 +480,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-4 |
 | spawnKind | wave |
 | spawnIntervalMs | 800 |
 | maxAlive | 8 |
@@ -486,6 +515,7 @@
 | field | value |
 |---|---|
 | type | break |
+| backgroundId | set-4 |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 3.5 |
@@ -500,6 +530,7 @@
 | field | value |
 |---|---|
 | type | boss |
+| backgroundId | set-4 |
 | spawnKind | boss |
 | bossArchetypeId | boss-tower-sentinel |
 | bossSpawnPosition | top-center |
@@ -513,6 +544,7 @@
 | field | value |
 |---|---|
 | type | break |
+| backgroundId | set-4 |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -524,6 +556,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-5 |
 | spawnKind | wave |
 | spawnIntervalMs | 1100 |
 | maxAlive | 7 |
@@ -552,6 +585,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-5 |
 | spawnKind | wave |
 | spawnIntervalMs | 850 |
 | maxAlive | 8 |
@@ -584,6 +618,7 @@
 | field | value |
 |---|---|
 | type | wave |
+| backgroundId | set-5 |
 | spawnKind | wave |
 | spawnIntervalMs | 700 |
 | maxAlive | 9 |
@@ -619,6 +654,7 @@
 | field | value |
 |---|---|
 | type | break |
+| backgroundId | set-5 |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 3.5 |
@@ -633,6 +669,7 @@
 | field | value |
 |---|---|
 | type | boss |
+| backgroundId | set-5 |
 | spawnKind | boss |
 | bossArchetypeId | boss-bubble-hog |
 | bossSpawnPosition | top-center |

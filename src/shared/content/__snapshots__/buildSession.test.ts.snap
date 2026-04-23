@@ -6,8 +6,31 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "set-1",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "set-2",
+      "imageUrl": "/images/bg/bg-02.jpg",
+    },
+    {
+      "id": "set-3",
+      "imageUrl": "/images/bg/bg-03.jpg",
+    },
+    {
+      "id": "set-4",
+      "imageUrl": "/images/bg/bg-04.jpg",
+    },
+    {
+      "id": "set-5",
+      "imageUrl": "/images/bg/bg-05.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -51,6 +74,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -103,6 +127,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -164,6 +189,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -185,6 +211,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-boss",
       "objectives": [],
       "rewardRules": null,
@@ -193,7 +220,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 7.075,
+          "y": 7.3125,
         },
       },
       "transitionRules": {
@@ -207,6 +234,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -225,6 +253,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -271,6 +300,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -326,6 +356,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -390,6 +421,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -411,6 +443,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-boss",
       "objectives": [],
       "rewardRules": null,
@@ -419,7 +452,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 7.175,
+          "y": 7.395833333333333,
         },
       },
       "transitionRules": {
@@ -433,6 +466,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -451,6 +485,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -500,6 +535,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -558,6 +594,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -625,6 +662,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -646,6 +684,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-boss",
       "objectives": [],
       "rewardRules": null,
@@ -654,7 +693,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 6.5325,
+          "y": 6.860416666666667,
         },
       },
       "transitionRules": {
@@ -668,6 +707,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -686,6 +726,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -735,6 +776,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -796,6 +838,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -866,6 +909,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -887,6 +931,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-boss",
       "objectives": [],
       "rewardRules": null,
@@ -895,7 +940,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 6.73,
+          "y": 7.025,
         },
       },
       "transitionRules": {
@@ -909,6 +954,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -927,6 +973,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -979,6 +1026,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -1043,6 +1091,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -1116,6 +1165,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -1137,6 +1187,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-boss",
       "objectives": [],
       "rewardRules": null,
@@ -1145,7 +1196,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 7.0649999999999995,
+          "y": 7.304166666666667,
         },
       },
       "transitionRules": {
@@ -1169,8 +1220,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 5,
     "maxSpeed": 6,
@@ -1195,8 +1246,31 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "set-1",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "set-2",
+      "imageUrl": "/images/bg/bg-02.jpg",
+    },
+    {
+      "id": "set-3",
+      "imageUrl": "/images/bg/bg-03.jpg",
+    },
+    {
+      "id": "set-4",
+      "imageUrl": "/images/bg/bg-04.jpg",
+    },
+    {
+      "id": "set-5",
+      "imageUrl": "/images/bg/bg-05.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -1240,6 +1314,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -1292,6 +1367,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -1353,6 +1429,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -1374,6 +1451,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-boss",
       "objectives": [],
       "rewardRules": null,
@@ -1382,7 +1460,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 7.075,
+          "y": 7.3125,
         },
       },
       "transitionRules": {
@@ -1396,6 +1474,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -1414,6 +1493,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -1460,6 +1540,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -1515,6 +1596,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -1579,6 +1661,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -1600,6 +1683,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-boss",
       "objectives": [],
       "rewardRules": null,
@@ -1608,7 +1692,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 7.175,
+          "y": 7.395833333333333,
         },
       },
       "transitionRules": {
@@ -1622,6 +1706,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -1640,6 +1725,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -1689,6 +1775,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -1747,6 +1834,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -1814,6 +1902,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -1835,6 +1924,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-boss",
       "objectives": [],
       "rewardRules": null,
@@ -1843,7 +1933,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 6.5325,
+          "y": 6.860416666666667,
         },
       },
       "transitionRules": {
@@ -1857,6 +1947,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -1875,6 +1966,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -1924,6 +2016,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -1985,6 +2078,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -2055,6 +2149,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -2076,6 +2171,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-boss",
       "objectives": [],
       "rewardRules": null,
@@ -2084,7 +2180,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 6.73,
+          "y": 7.025,
         },
       },
       "transitionRules": {
@@ -2098,6 +2194,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -2116,6 +2213,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -2168,6 +2266,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -2232,6 +2331,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -2305,6 +2405,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -2326,6 +2427,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-boss",
       "objectives": [],
       "rewardRules": null,
@@ -2334,7 +2436,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 7.0649999999999995,
+          "y": 7.304166666666667,
         },
       },
       "transitionRules": {
@@ -2358,8 +2460,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 5,
     "maxSpeed": 6,
@@ -2384,8 +2486,31 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "set-1",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "set-2",
+      "imageUrl": "/images/bg/bg-02.jpg",
+    },
+    {
+      "id": "set-3",
+      "imageUrl": "/images/bg/bg-03.jpg",
+    },
+    {
+      "id": "set-4",
+      "imageUrl": "/images/bg/bg-04.jpg",
+    },
+    {
+      "id": "set-5",
+      "imageUrl": "/images/bg/bg-05.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -2429,6 +2554,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -2481,6 +2607,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -2542,6 +2669,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -2563,6 +2691,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-boss",
       "objectives": [],
       "rewardRules": null,
@@ -2571,7 +2700,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 7.075,
+          "y": 7.3125,
         },
       },
       "transitionRules": {
@@ -2585,6 +2714,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-1",
       "id": "campaign-set-1-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -2603,6 +2733,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -2649,6 +2780,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -2704,6 +2836,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -2768,6 +2901,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -2789,6 +2923,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-boss",
       "objectives": [],
       "rewardRules": null,
@@ -2797,7 +2932,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 7.175,
+          "y": 7.395833333333333,
         },
       },
       "transitionRules": {
@@ -2811,6 +2946,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-2",
       "id": "campaign-set-2-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -2829,6 +2965,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -2878,6 +3015,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -2936,6 +3074,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -3003,6 +3142,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -3024,6 +3164,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-boss",
       "objectives": [],
       "rewardRules": null,
@@ -3032,7 +3173,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 6.5325,
+          "y": 6.860416666666667,
         },
       },
       "transitionRules": {
@@ -3046,6 +3187,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-3",
       "id": "campaign-set-3-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -3064,6 +3206,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -3113,6 +3256,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -3174,6 +3318,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -3244,6 +3389,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -3265,6 +3411,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-boss",
       "objectives": [],
       "rewardRules": null,
@@ -3273,7 +3420,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 6.73,
+          "y": 7.025,
         },
       },
       "transitionRules": {
@@ -3287,6 +3434,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-4",
       "id": "campaign-set-4-after-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -3305,6 +3453,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -3357,6 +3506,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -3421,6 +3571,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
       "objectives": [],
       "rewardRules": null,
@@ -3494,6 +3645,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-pre-boss-break",
       "objectives": [],
       "rewardRules": null,
@@ -3515,6 +3667,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
+      "backgroundId": "set-5",
       "id": "campaign-set-5-boss",
       "objectives": [],
       "rewardRules": null,
@@ -3523,7 +3676,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "boss",
         "position": {
           "x": 0,
-          "y": 7.0649999999999995,
+          "y": 7.304166666666667,
         },
       },
       "transitionRules": {
@@ -3547,8 +3700,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 5,
     "maxSpeed": 6,
@@ -3573,8 +3726,15 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "sandbox",
       "id": "sandbox-encounter",
       "objectives": [],
       "rewardRules": null,
@@ -3600,8 +3760,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 1,
     "maxSpeed": 6,
@@ -3626,8 +3786,15 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "sandbox",
       "id": "sandbox-encounter",
       "objectives": [],
       "rewardRules": null,
@@ -3653,8 +3820,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 1,
     "maxSpeed": 6,
@@ -3679,8 +3846,15 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "sandbox",
       "id": "sandbox-encounter",
       "objectives": [],
       "rewardRules": null,
@@ -3706,8 +3880,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 1,
     "maxSpeed": 6,
@@ -3732,8 +3906,15 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "sandbox",
       "id": "sandbox-with-combat-encounter",
       "objectives": [],
       "rewardRules": null,
@@ -3770,8 +3951,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 1,
     "maxSpeed": 6,
@@ -3796,8 +3977,15 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "sandbox",
       "id": "sandbox-with-combat-encounter",
       "objectives": [],
       "rewardRules": null,
@@ -3834,8 +4022,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 1,
     "maxSpeed": 6,
@@ -3860,8 +4048,15 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "sandbox",
       "id": "sandbox-with-combat-encounter",
       "objectives": [],
       "rewardRules": null,
@@ -3898,8 +4093,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 1,
     "maxSpeed": 6,
@@ -3924,8 +4119,15 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "training",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "training",
       "id": "training-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -3969,6 +4171,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       },
     },
     {
+      "backgroundId": "training",
       "id": "training-break",
       "objectives": [],
       "rewardRules": null,
@@ -3990,6 +4193,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       },
     },
     {
+      "backgroundId": "training",
       "id": "training-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -4055,8 +4259,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 5,
     "maxSpeed": 6,
@@ -4081,8 +4285,15 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "training",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "training",
       "id": "training-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -4126,6 +4337,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       },
     },
     {
+      "backgroundId": "training",
       "id": "training-break",
       "objectives": [],
       "rewardRules": null,
@@ -4147,6 +4359,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       },
     },
     {
+      "backgroundId": "training",
       "id": "training-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -4212,8 +4425,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 5,
     "maxSpeed": 6,
@@ -4238,8 +4451,15 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     "height": 18,
     "width": 32,
   },
+  "backgrounds": [
+    {
+      "id": "training",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
   "encounters": [
     {
+      "backgroundId": "training",
       "id": "training-wave-1",
       "objectives": [],
       "rewardRules": null,
@@ -4283,6 +4503,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       },
     },
     {
+      "backgroundId": "training",
       "id": "training-break",
       "objectives": [],
       "rewardRules": null,
@@ -4304,6 +4525,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       },
     },
     {
+      "backgroundId": "training",
       "id": "training-wave-2",
       "objectives": [],
       "rewardRules": null,
@@ -4369,8 +4591,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   "modifiers": [],
   "player": {
     "contactBox": {
-      "height": 2.75,
-      "width": 1.47,
+      "height": 2.2916666666666665,
+      "width": 1.225,
     },
     "maxHp": 5,
     "maxSpeed": 6,
