@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-23 (для истории 011 явно зафиксировано, что buildtime-инструменты живут вне `src/**`; разрешение на корневой каталог `scripts/` оформлено отдельным решением — `content-authoring.md`)
 
 ## Context
 
@@ -58,3 +58,4 @@
 - [session-definition.md](session-definition.md)
 - [testing.md](testing.md)
 - [logging.md](logging.md)
+- [content-authoring.md](content-authoring.md)

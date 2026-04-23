@@ -1,5 +1,6 @@
 import { log as defaultLog, type Log } from '../../shared/log';
 
+import { ENEMY_AUDIO_MAPPINGS } from './enemyAudio.generated';
 import type { SampleRegistry } from './SampleRegistry';
 import type { AudioUiEventId } from './AudioUiEventId';
 
@@ -56,13 +57,6 @@ export type AudioMappings = Readonly<{
   resolveUiSample(eventId: AudioUiEventId): string | null;
 }>;
 
-const SLIME_VARIANTS = Object.freeze([
-  'slimes/hit-1',
-  'slimes/hit-2',
-  'slimes/hit-3',
-  'slimes/hit-4'
-]);
-
 const WEAPON_AUDIO_MAPPINGS: Readonly<Record<string, Readonly<{ fire: SampleSpec }>>> =
   Object.freeze({
   pistol: Object.freeze({ fire: 'weapons/pistol' }),
@@ -71,28 +65,6 @@ const WEAPON_AUDIO_MAPPINGS: Readonly<Record<string, Readonly<{ fire: SampleSpec
   sniper: Object.freeze({ fire: 'weapons/sniper' }),
   laser: Object.freeze({ fire: 'weapons/laser' })
   });
-
-const ENEMY_AUDIO_MAPPINGS: Readonly<Record<string, EnemyAudioMapping>> = Object.freeze({
-  'training-target': Object.freeze({}),
-  'slime-fast': Object.freeze({
-    hit: SLIME_VARIANTS,
-    death: SLIME_VARIANTS,
-    voice: Object.freeze({
-      sample: SLIME_VARIANTS,
-      intervalMinMs: 3000,
-      intervalMaxMs: 6000
-    })
-  }),
-  'slime-tank': Object.freeze({
-    hit: SLIME_VARIANTS,
-    death: SLIME_VARIANTS,
-    voice: Object.freeze({
-      sample: SLIME_VARIANTS,
-      intervalMinMs: 3500,
-      intervalMaxMs: 7000
-    })
-  })
-});
 
 const BOSS_AUDIO_MAPPINGS: Readonly<Record<string, BossAudioMapping>> = Object.freeze({
   'slime-king': Object.freeze({

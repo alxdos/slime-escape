@@ -81,4 +81,5 @@
 | [client-settings.md](client-settings.md) | accepted | `ClientSettingsStore` в `src/main/settings/**`: поля 009 (`masterVolume`, `renderScalePreset`), `localStorage` с `schemaVersion`, валидация/clamp, subscriber-модель, владение `UiShell` |
 | [render-scale.md](render-scale.md) | accepted | Render scale policy в `src/main/render/**`: три пресета `low`/`medium`/`high`, чистая `resolveRenderScale`, `Renderer.applyScalePolicy`, инварианты «без преимущества от железа» |
 | [decision-log-format.md](decision-log-format.md) | accepted | Вспомогательная выжимка формата решений; правила слоя задаются этим `README` |
+| [content-authoring.md](content-authoring.md) | accepted | Авторская поверхность контента в Markdown: `content/<area>.md` как источник правды, генератор `scripts/content-build/`, пары `<area>.ts ↔ <area>.generated.ts` в потребляющих слоях, атомарная запись и CI-чек дрейфа |
 | [_template.md](_template.md) | template | Минимальный шаблон нового решения |
