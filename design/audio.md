@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-23 (story 013 расширяет `ENEMY_AUDIO_MAPPINGS` на все 30 slime-архетипов и `BOSS_AUDIO_MAPPINGS` на все 5 boss-архетипов через те же три пула `slimes/hit-*`/`slimes/death-*`/`slimes/voice-*` и существующие boss sample id; формы маппингов и `SampleRegistry` не меняются. story 012 покрывает MD-генерацией weapon/boss audio-маппинги и дозаполнение enemy sound по пулам из `SampleRegistry`; типы и валидации не меняются)
+- Updated: 2026-04-23 (story 014: авторская поверхность для `WEAPON_AUDIO_MAPPINGS[*].fire` переезжает на inline audio-link-узел под H2 weapon в `content/weapons.md`, для `ENEMY_AUDIO_MAPPINGS[*].hit/death/voice` — на новую партицию `# Sound sets` в `content/enemies.md` с `## Members` (`setId | slimes`) и узкими group-таблицами `## Hit`/`## Death`/`## Voice`, чьи `sampleId`-ячейки тоже допускают inline audio-link-форму (см. разделы «Inline media-узлы как derive-источники» и «Shared resource set partition» в [content-authoring.md](content-authoring.md)); рантайм-формы `EnemyAudioMapping`, `BOSS_AUDIO_MAPPINGS`, `WEAPON_AUDIO_MAPPINGS`, `SampleRegistry`, `createAudioMappings` и валидаторы — не меняются, генератор разворачивает sound-set N→1 в тот же `Record<enemyArchetypeId, EnemyAudioMapping>` байт-в-байт. story 013 расширяет `ENEMY_AUDIO_MAPPINGS` на все 30 slime-архетипов и `BOSS_AUDIO_MAPPINGS` на все 5 boss-архетипов через те же три пула `slimes/hit-*`/`slimes/death-*`/`slimes/voice-*` и существующие boss sample id; формы маппингов и `SampleRegistry` не меняются. story 012 покрывает MD-генерацией weapon/boss audio-маппинги и дозаполнение enemy sound по пулам из `SampleRegistry`; типы и валидации не меняются)
 
 ## Context
 
