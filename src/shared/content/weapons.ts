@@ -1,4 +1,4 @@
-import { PISTOL } from './weapons.generated';
+import { LASER, PISTOL, SHOTGUN, SMG, SNIPER } from './weapons.generated';
 
 export type WeaponArchetype = Readonly<{
   id: string;
@@ -11,8 +11,12 @@ export type WeaponArchetype = Readonly<{
   color: number;
 }>;
 
-export { PISTOL };
+export { LASER, PISTOL, SHOTGUN, SMG, SNIPER };
 
 export const WEAPON_ARCHETYPES: Readonly<Record<string, WeaponArchetype>> = {
-  [PISTOL.id]: PISTOL
+  [PISTOL.id]: PISTOL,
+  [SHOTGUN.id]: SHOTGUN,
+  [SMG.id]: SMG,
+  [SNIPER.id]: SNIPER,
+  [LASER.id]: LASER
 };
