@@ -92,11 +92,79 @@ describe('content-build enemies area', () => {
     const sourcePath = join(directory, 'enemies.md');
     await writeFile(
       sourcePath,
-      `${makeEnemiesMarkdown()}\n## Visual\n\n| id | image |\n|---|---|\n| slime-one-eye | /assets/slime-01.png |\n`,
+      addLegacyBalanceGroup(
+        makeEnemiesMarkdown(),
+        'Visual',
+        '| id | image |\n|---|---|\n| slime-one-eye | /assets/slime-01.png |'
+      ),
       'utf8'
     );
 
     await expect(parseEnemiesArea(sourcePath)).rejects.toThrow(/replaced by inline image/);
+  });
+
+  it('rejects legacy enemy Sounds balance groups', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-enemy-sounds-group-'));
+    const sourcePath = join(directory, 'enemies.md');
+    await writeFile(
+      sourcePath,
+      addLegacyBalanceGroup(
+        makeEnemiesMarkdown(),
+        'Sounds',
+        '| id | hit | death |\n|---|---|---|\n| slime-one-eye | slimes/hit-1 | slimes/death-1 |'
+      ),
+      'utf8'
+    );
+
+    await expect(parseEnemiesArea(sourcePath)).rejects.toThrow(/replaced by # Sound sets/);
+  });
+
+  it('rejects legacy enemy Voice balance groups', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-enemy-voice-group-'));
+    const sourcePath = join(directory, 'enemies.md');
+    await writeFile(
+      sourcePath,
+      addLegacyBalanceGroup(
+        makeEnemiesMarkdown(),
+        'Voice',
+        '| id | sampleIds | intervalMinMs | intervalMaxMs |\n|---|---|---:|---:|\n| slime-one-eye | slimes/voice-1 | 3000 | 6000 |'
+      ),
+      'utf8'
+    );
+
+    await expect(parseEnemiesArea(sourcePath)).rejects.toThrow(/replaced by # Sound sets/);
+  });
+
+  it('rejects unexpected enemy sound-set groups', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-enemy-extra-sound-set-'));
+    const sourcePath = join(directory, 'enemies.md');
+    await writeFile(
+      sourcePath,
+      addSoundSetGroup(
+        makeEnemiesMarkdown(),
+        'Preview',
+        '| setId | s1 |\n|---|---|\n| default | [slimes/hit-1](../public/sfx/slimes/slime-1.mp3) |'
+      ),
+      'utf8'
+    );
+
+    await expect(parseEnemiesArea(sourcePath)).rejects.toThrow(/unexpected sound-set section/);
+  });
+
+  it('rejects duplicate enemy sound-set groups', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-enemy-duplicate-sound-set-'));
+    const sourcePath = join(directory, 'enemies.md');
+    await writeFile(
+      sourcePath,
+      addSoundSetGroup(
+        makeEnemiesMarkdown(),
+        'Hit',
+        '| setId | s1 | s2 | s3 | s4 |\n|---|---|---|---|---|\n| default | [slimes/hit-1](../public/sfx/slimes/slime-1.mp3) | [slimes/hit-2](../public/sfx/slimes/slime-2.mp3) | [slimes/hit-3](../public/sfx/slimes/slime-3.mp3) | [slimes/hit-4](../public/sfx/slimes/slime-4.mp3) |'
+      ),
+      'utf8'
+    );
+
+    await expect(parseEnemiesArea(sourcePath)).rejects.toThrow(/duplicate sound-set section/);
   });
 
   it('rejects duplicate enemy/drop pairs in the drops table', async () => {
@@ -141,6 +209,14 @@ describe('content-build enemies area', () => {
 
 function makeArea(name: string, render: ContentArea['render']): ContentArea {
   return { name, render };
+}
+
+function addLegacyBalanceGroup(markdown: string, title: string, table: string): string {
+  return markdown.replace('\n# Sound sets\n', `\n## ${title}\n\n${table}\n\n# Sound sets\n`);
+}
+
+function addSoundSetGroup(markdown: string, title: string, table: string): string {
+  return `${markdown}\n## ${title}\n\n${table}\n`;
 }
 
 function makeEnemiesMarkdown(
@@ -217,17 +293,30 @@ ${extraBodyRow}
 | slime-one-eye | heal-orb | 0.25 |
 ${extraRunnerDropRow}
 
-## Sounds
+# Sound sets
 
-| id | hit | death |
-|---|---|---|
-| test-stationary | | |
-| slime-one-eye | slimes/hit-1, slimes/hit-2 | slimes/hit-1, slimes/hit-2 |
+## Members
+
+| setId | slimes |
+|---|---|
+| default | test-stationary, slime-one-eye |
+
+## Hit
+
+| setId | s1 | s2 | s3 | s4 |
+|---|---|---|---|---|
+| default | [slimes/hit-1](../public/sfx/slimes/slime-1.mp3) | [slimes/hit-2](../public/sfx/slimes/slime-2.mp3) | [slimes/hit-3](../public/sfx/slimes/slime-3.mp3) | [slimes/hit-4](../public/sfx/slimes/slime-4.mp3) |
+
+## Death
+
+| setId | s1 | s2 | s3 | s4 |
+|---|---|---|---|---|
+| default | [slimes/death-1](../public/sfx/slimes/slime-1.mp3) | [slimes/death-2](../public/sfx/slimes/slime-2.mp3) | [slimes/death-3](../public/sfx/slimes/slime-3.mp3) | [slimes/death-4](../public/sfx/slimes/slime-4.mp3) |
 
 ## Voice
 
-| id | sampleIds | intervalMinMs | intervalMaxMs |
-|---|---|---:|---:|
-| slime-one-eye | slimes/hit-1, slimes/hit-2 | 3000 | 6000 |
+| setId | s1 | s2 | s3 | s4 |
+|---|---|---|---|---|
+| default | [slimes/voice-1](../public/sfx/slimes/slime-1.mp3) | [slimes/voice-2](../public/sfx/slimes/slime-2.mp3) | [slimes/voice-3](../public/sfx/slimes/slime-3.mp3) | [slimes/voice-4](../public/sfx/slimes/slime-4.mp3) |
 `;
 }

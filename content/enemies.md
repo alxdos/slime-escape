@@ -447,72 +447,28 @@
 | slime-obelisk | heal-orb | 0.40 |
 | slime-ninja | heal-orb | 0.35 |
 
-## Sounds
+# Sound sets
 
-| id | hit | death |
-|---|---|---|
-| slime-one-eye | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-hornling | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-many-eye | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-stonehead | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-sleeper | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-spark | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-wraith | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-shell | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-flame | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-mech-crab | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-stack | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-trickster | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-bug | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-lifter | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-saw | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-drone | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-star | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-echo | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-splitter | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-prince | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-kingling | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-fortress | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-dasher | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-tadpole | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-door | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-mech | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-clamper | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-candle | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-obelisk | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
-| slime-ninja | slimes/hit-1, slimes/hit-2, slimes/hit-3, slimes/hit-4 | slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4 |
+## Members
+
+| setId | slimes |
+|---|---|
+| default | slime-one-eye, slime-hornling, slime-many-eye, slime-stonehead, slime-sleeper, slime-spark, slime-wraith, slime-shell, slime-flame, slime-mech-crab, slime-stack, slime-trickster, slime-bug, slime-lifter, slime-saw, slime-drone, slime-star, slime-echo, slime-splitter, slime-prince, slime-kingling, slime-fortress, slime-dasher, slime-tadpole, slime-door, slime-mech, slime-clamper, slime-candle, slime-obelisk, slime-ninja |
+
+## Hit
+
+| setId | s1 | s2 | s3 | s4 |
+|---|---|---|---|---|
+| default | [slimes/hit-1](../public/sfx/slimes/slime-1.mp3) | [slimes/hit-2](../public/sfx/slimes/slime-2.mp3) | [slimes/hit-3](../public/sfx/slimes/slime-3.mp3) | [slimes/hit-4](../public/sfx/slimes/slime-4.mp3) |
+
+## Death
+
+| setId | s1 | s2 | s3 | s4 |
+|---|---|---|---|---|
+| default | [slimes/death-1](../public/sfx/slimes/slime-1.mp3) | [slimes/death-2](../public/sfx/slimes/slime-2.mp3) | [slimes/death-3](../public/sfx/slimes/slime-3.mp3) | [slimes/death-4](../public/sfx/slimes/slime-4.mp3) |
 
 ## Voice
 
-| id | sampleIds | intervalMinMs | intervalMaxMs |
-|---|---|---:|---:|
-| slime-one-eye | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-hornling | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-many-eye | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-stonehead | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-sleeper | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-spark | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-wraith | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-shell | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-flame | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-mech-crab | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-stack | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-trickster | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-bug | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-lifter | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-saw | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-drone | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-star | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-echo | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-splitter | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-prince | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-kingling | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-fortress | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-dasher | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-tadpole | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-door | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-mech | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-clamper | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-candle | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-obelisk | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
-| slime-ninja | slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4 | 3000 | 6000 |
+| setId | s1 | s2 | s3 | s4 |
+|---|---|---|---|---|
+| default | [slimes/voice-1](../public/sfx/slimes/slime-1.mp3) | [slimes/voice-2](../public/sfx/slimes/slime-2.mp3) | [slimes/voice-3](../public/sfx/slimes/slime-3.mp3) | [slimes/voice-4](../public/sfx/slimes/slime-4.mp3) |
