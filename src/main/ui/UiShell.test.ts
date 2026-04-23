@@ -8,6 +8,7 @@ import type { ModePresetId } from '../../shared/content/presets';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import type { Renderer, RendererInit } from '../render/Renderer';
+import type { TextureMap } from '../render/spritePreload';
 import {
   DEFAULT_CLIENT_SETTINGS,
   type ClientSettings,
@@ -17,7 +18,7 @@ import {
 import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/SimWorkerHost';
 
 import type { Hud, HudInit } from './Hud';
-import { createUiShell } from './UiShell';
+import { createUiShell, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
 import type { PauseOverlay, PauseOverlayInit } from './PauseOverlay';
 import type { ResultOutcome, ResultOverlay, ResultOverlayInit } from './ResultOverlay';
@@ -100,15 +101,17 @@ function makeSession(id = 'test-session'): SessionDefinition {
   };
 }
 
+const EMPTY_TEXTURE_MAP = Object.freeze({}) satisfies TextureMap;
+
 async function flushUiShellStartup(): Promise<void> {
   await Promise.resolve();
   await Promise.resolve();
 }
 
 function createDeferredPreload() {
-  let resolvePromise: (() => void) | null = null;
+  let resolvePromise: ((value: TextureMap) => void) | null = null;
   let rejectPromise: ((error: unknown) => void) | null = null;
-  const promise = new Promise<void>((resolve, reject) => {
+  const promise = new Promise<TextureMap>((resolve, reject) => {
     resolvePromise = resolve;
     rejectPromise = reject;
   });
@@ -116,12 +119,19 @@ function createDeferredPreload() {
   return {
     promise,
     resolve(): void {
-      resolvePromise?.();
+      resolvePromise?.(EMPTY_TEXTURE_MAP);
     },
     reject(error: unknown): void {
       rejectPromise?.(error);
     }
   };
+}
+
+function createUiShellForTest(init: UiShellInit) {
+  return createUiShell({
+    runStartupPreload: () => Promise.resolve(EMPTY_TEXTURE_MAP),
+    ...init
+  });
 }
 
 function createMenuHarness() {
@@ -762,7 +772,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: parent as unknown as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       buildSessionDefinition: () => makeSession(),
@@ -826,7 +836,7 @@ describe('UiShell', () => {
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
     let reloadCalls = 0;
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: parent as unknown as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       buildSessionDefinition: () => makeSession(),
@@ -895,7 +905,7 @@ describe('UiShell', () => {
       return makeSession('running-session');
     });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 123,
@@ -961,7 +971,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1021,7 +1031,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1078,7 +1088,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1142,7 +1152,7 @@ describe('UiShell', () => {
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
     const preventDefault = vi.fn();
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1221,7 +1231,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1265,7 +1275,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    createUiShell({
+    createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1315,7 +1325,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: parent as unknown as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1370,7 +1380,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: parent as unknown as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1435,7 +1445,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: new FakeDomElement() as unknown as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1480,7 +1490,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1537,7 +1547,7 @@ describe('UiShell', () => {
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
     const preventDefault = vi.fn();
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1611,7 +1621,7 @@ describe('UiShell', () => {
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
     const preventDefault = vi.fn();
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1716,7 +1726,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,
@@ -1766,7 +1776,7 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
 
-    const shell = createUiShell({
+    const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       makeSeed: () => 1,

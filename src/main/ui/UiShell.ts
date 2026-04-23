@@ -7,7 +7,11 @@ import { assertNever } from '../../shared/protocol';
 import type { SessionDefinition } from '../../shared/session';
 import { createAudio, type Audio } from '../audio/Audio';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
+import { BOSS_VISUALS } from '../render/bossVisuals';
+import { ENEMY_VISUALS } from '../render/enemyVisuals';
+import { PLAYER_VISUALS } from '../render/playerVisuals';
 import { createRenderer, type Renderer, type RendererInit } from '../render/Renderer';
+import { preloadSprites, type TextureMap } from '../render/spritePreload';
 import {
   createClientSettingsStore,
   type ClientSettingsStore
@@ -69,7 +73,9 @@ type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
 type CreateAudioFn = () => Audio;
 type CreateClientSettingsStoreFn = () => ClientSettingsStore;
-type RunStartupPreloadFn = (onProgress: (loaded: number, total: number) => void) => Promise<void>;
+type RunStartupPreloadFn = (
+  onProgress: (loaded: number, total: number) => void
+) => Promise<TextureMap>;
 type ReloadPageFn = () => void;
 
 export type UiShellInit = Readonly<{
@@ -105,6 +111,11 @@ const LOADING_PHASE: UiShellPhase = { kind: 'loading' };
 const MENU_PHASE: UiShellPhase = { kind: 'menu' };
 const RUNNING_PHASE: UiShellPhase = { kind: 'running' };
 const PAUSED_PHASE: UiShellPhase = { kind: 'paused' };
+const STARTUP_SPRITE_SPECS = [
+  ...Object.values(PLAYER_VISUALS),
+  ...Object.values(ENEMY_VISUALS),
+  ...Object.values(BOSS_VISUALS)
+];
 
 export function createUiShell(init: UiShellInit): UiShell {
   const builder = init.buildSessionDefinition ?? buildSessionDefinition;
@@ -134,6 +145,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const documentTarget = init.documentTarget ?? document;
 
   let activeSession: SessionDefinition | null = null;
+  let preloadedTextures: TextureMap | null = null;
   let renderer: Renderer | null = null;
   let input: InputController | null = null;
   let unsubscribeRendererSettings: (() => void) | null = null;
@@ -509,13 +521,25 @@ export function createUiShell(init: UiShellInit): UiShell {
     startupOverlay.setProgress(loaded, total);
   }
 
+  function releasePreloadedTextures(): void {
+    if (preloadedTextures === null) {
+      return;
+    }
+    for (const texture of new Set(Object.values(preloadedTextures))) {
+      texture.dispose();
+    }
+    preloadedTextures = null;
+  }
+
   async function startStartupPreload(): Promise<void> {
     startupOverlay.setProgress(0, 0);
     try {
-      await runStartupPreload(onStartupPreloadProgress);
+      const textures = await runStartupPreload(onStartupPreloadProgress);
       if (disposed) {
+        disposeTextureMap(textures);
         return;
       }
+      preloadedTextures = textures;
       setPhase(MENU_PHASE);
     } catch (error: unknown) {
       if (disposed) {
@@ -549,6 +573,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       disposed = true;
       detach();
       tearDownClientSession();
+      releasePreloadedTextures();
       startupOverlay.dispose();
       startupErrorOverlay.dispose();
       menu.dispose();
@@ -565,8 +590,10 @@ export function createUiShell(init: UiShellInit): UiShell {
 }
 
 async function defaultRunStartupPreload(
-  _onProgress: (loaded: number, total: number) => void
-): Promise<void> {}
+  onProgress: (loaded: number, total: number) => void
+): Promise<TextureMap> {
+  return preloadSprites(STARTUP_SPRITE_SPECS, onProgress);
+}
 
 function defaultReloadPage(): void {
   location.reload();
@@ -605,6 +632,12 @@ function createNullStartupErrorOverlay(
     },
     dispose(): void {}
   };
+}
+
+function disposeTextureMap(textures: TextureMap): void {
+  for (const texture of new Set(Object.values(textures))) {
+    texture.dispose();
+  }
 }
 
 function defaultMakeSeed(): number {
