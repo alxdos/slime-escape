@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-20 (для истории 006 добавлен `BossArchetype`, реестр `bosses` и правила фаз; полный контекст босс-энкаунтера — [boss-encounter.md](boss-encounter.md))
+- Updated: 2026-04-23 (для истории 011 добавлена обратная ссылка на `content-authoring.md`: формы архетипов и правила реестров остаются единственным источником правды; MD-генератор пишет литералы под эти формы, не меняя их)
 
 ## Context
 
@@ -178,3 +178,4 @@
 - [simulation-timing.md](simulation-timing.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
 - [boss-encounter.md](boss-encounter.md)
+- [content-authoring.md](content-authoring.md)

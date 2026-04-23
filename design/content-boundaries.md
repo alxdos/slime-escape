@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (для истории 005 добавлены `DropArchetype` в `content library`; «таблицы дропа» из общего перечня уточнены как поле `dropTable` на `EnemyArchetype`, см. `content-archetypes.md` и `drops.md`)
+- Updated: 2026-04-23 (для истории 011 добавлена обратная ссылка на `content-authoring.md`: для областей, управляемых MD-источником, литералы `content library` собираются генератором по тем же правилам разделения слоёв, без смены этого документа)
 
 ## Context
 
@@ -64,3 +64,4 @@
 - [content-archetypes.md](content-archetypes.md)
 - [spawn-plan.md](spawn-plan.md)
 - [drops.md](drops.md)
+- [content-authoring.md](content-authoring.md)

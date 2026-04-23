@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-20 (для истории 009 зафиксирован API `setMasterGain` и декомпозиция формулы effective gain по узлам графа; см. разделы «Двухслойная громкость», «Жизненный цикл и API», «Settings integration (009)»)
+- Updated: 2026-04-23 (для истории 011 добавлена обратная ссылка на `content-authoring.md`: маппинг enemy → sample реестр становится сгенерённым из MD, типы и валидации остаются)
 
 ## Context
 
@@ -261,3 +261,4 @@
 - [../docs/VISION.md](../docs/VISION.md)
 - [../stories/008-audio-baseline.md](../stories/008-audio-baseline.md)
 - [../stories/009-settings.md](../stories/009-settings.md)
+- [content-authoring.md](content-authoring.md)
