@@ -1,9 +1,10 @@
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { runContentBuild, type ContentArea } from '../index';
 import { parsePlayersArea } from './parse';
 import { renderPlayerContent } from './renderContent';
 import { renderPlayerVisuals } from './renderVisuals';
@@ -47,7 +48,31 @@ describe('content-build players area', () => {
 
     await expect(parsePlayersArea(sourcePath)).rejects.toThrow(/derive visual field/);
   });
+
+  it('fails check mode when PNG-derived player visual output drifts from the committed target', async () => {
+    const area = await parsePlayersArea('content/players.md');
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-players-visual-drift-'));
+    const targetPath = join(directory, 'playerVisuals.generated.ts');
+    const staleTarget = renderPlayerVisuals(area).replace(
+      'sourceSizePx: { width: 294, height: 550 }',
+      'sourceSizePx: { width: 295, height: 550 }'
+    );
+    await writeFile(targetPath, staleTarget, 'utf8');
+
+    const driftArea = makeArea('players-visual-drift', async () => [
+      { path: targetPath, contents: renderPlayerVisuals(area) }
+    ]);
+
+    await expect(runContentBuild('check', [driftArea])).rejects.toThrow(/294/);
+    await expect(readFile(targetPath, 'utf8')).resolves.toContain(
+      'sourceSizePx: { width: 295, height: 550 }'
+    );
+  });
 });
+
+function makeArea(name: string, render: ContentArea['render']): ContentArea {
+  return { name, render };
+}
 
 function makePlayersMarkdown(): string {
   return `# Players
