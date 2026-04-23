@@ -1,8 +1,8 @@
 # Content Archetypes from Markdown
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-23
-- Updated: 2026-04-23 (T12: demo mutation smoke через MD → `content:build` → generated output; dev server ответил HTTP 200; demo-правки откатаны)
+- Updated: 2026-04-23 (done; T12 demo mutation smoke через MD → `content:build` → generated output; dev server ответил HTTP 200; demo-правки откатаны)
 
 ## Game designer
 
@@ -75,7 +75,7 @@
 | T10 | [x] | Дозаполнить `content/enemies.md`: в `## Sounds` колонка `death` для `slime-fast`/`slime-tank` → `slimes/death-1, slimes/death-2, slimes/death-3, slimes/death-4`; в `## Voice` колонка `sampleIds` для `slime-fast`/`slime-tank` → `slimes/voice-1, slimes/voice-2, slimes/voice-3, slimes/voice-4`. Пересобрать через `npm run content:build`: в `src/main/audio/enemyAudio.generated.ts` `SLIME_VARIANTS` исчезает, маппинги `hit`/`death`/`voice` ссылаются на свои пулы. Обновить пинмятные тесты из 011 (`enemyAudio.generated.ts` happy-path), которые сравнивают результат генерации с закоммиченным файлом. `npm test` зелёный. | опоры: `design/content-authoring.md`, `design/audio.md` |
 | T11 | [x] | Тесты: расширить vitest-тесты генератора (рядом с `scripts/content-build/**`) на три новые области — happy path (парсинг `content/<area>.md` даёт выход, идентичный закоммиченным `.generated.ts`), отсутствующая обязательная ячейка → exit non-zero, ссылка на неизвестный `id` в balance → exit non-zero, cross-reference внутри bosses (`allowedAttackIds` с неизвестным `attackKey`) → exit non-zero, drift через `--check`. Атомарность (одна область падает — никакой другой целевой файл не модифицируется) проверяется одним общим тестом, не дублируется per-area. | опоры: `design/content-authoring.md`, `design/testing.md` |
 | T12 | [x] | Demo проверка acceptance: (1) `pistol.cooldownMs` `250 → 120` в `content/weapons.md`, пересборка, наблюдать частую стрельбу в `Тренировке`; (2) `heal-orb.effect.amount` `1 → 3` в `content/drops.md`, пересборка, подобрать дроп и увидеть восстановление 3 HP; (3) `slime-king.maxHp` `40 → 20` в `content/bosses.md`, пересборка, пройти финал `Побега` быстрее; (4) запустить `Тренировку` после T10, услышать заметно более тихий voice слаймов по сравнению с hit. После всех проверок — откатить демо-правки. Зафиксировать факт прогона в `Updated` истории. | опоры: `design/content-authoring.md` |
-| T13 | [ ] | Закрытие истории: чек-лист закрытия из `stories/README.md`; проверка `Index` в `design/README.md`; перевод `Status` истории в `done` и обновление таблицы в `stories/README.md`. | архитектор |
+| T13 | [x] | Закрытие истории: чек-лист закрытия из `stories/README.md`; проверка `Index` в `design/README.md`; перевод `Status` истории в `done` и обновление таблицы в `stories/README.md`. | архитектор |
 
 ## Related
 
