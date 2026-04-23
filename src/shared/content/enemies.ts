@@ -1,12 +1,8 @@
 import { log } from '../log';
 import { SIM_STEP_MS } from '../timing';
 
-import {
-  SLIME_FAST,
-  SLIME_TANK,
-  TRAINING_TARGET
-} from './enemies.generated';
 import { DROP_ARCHETYPES, type DropArchetype } from './drops';
+import * as generatedEnemies from './enemies.generated';
 
 export type EnemyBehavior = 'stationary' | 'chase';
 
@@ -31,13 +27,23 @@ export type EnemyArchetype = Readonly<{
   dropTable: ReadonlyArray<DropTableEntry>;
 }>;
 
-export { SLIME_FAST, SLIME_TANK, TRAINING_TARGET } from './enemies.generated';
+export * from './enemies.generated';
 
-export const ENEMY_ARCHETYPES: Readonly<Record<string, EnemyArchetype>> = {
-  [TRAINING_TARGET.id]: TRAINING_TARGET,
-  [SLIME_FAST.id]: SLIME_FAST,
-  [SLIME_TANK.id]: SLIME_TANK
-};
+export const ENEMY_ARCHETYPES: Readonly<Record<string, EnemyArchetype>> =
+  createEnemyRegistry(Object.values(generatedEnemies));
+
+function createEnemyRegistry(
+  archetypes: ReadonlyArray<EnemyArchetype>
+): Readonly<Record<string, EnemyArchetype>> {
+  const registry: Record<string, EnemyArchetype> = {};
+  for (const archetype of archetypes) {
+    if (registry[archetype.id] !== undefined) {
+      throw new Error(`duplicate enemy archetype "${archetype.id}"`);
+    }
+    registry[archetype.id] = archetype;
+  }
+  return registry;
+}
 
 export function validateEnemyRegistry(
   registry: Readonly<Record<string, EnemyArchetype>>,

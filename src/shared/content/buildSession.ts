@@ -10,18 +10,20 @@ import type {
 import { SIM_STEP_MS } from '../timing';
 
 import { SANDBOX_ARENA } from './arenas';
-import { SLIME_KING } from './bosses';
+import { BOSS_SCRAP_KING } from './bosses';
 import {
   ENEMY_ARCHETYPES,
-  SLIME_FAST,
-  SLIME_TANK,
-  TRAINING_TARGET,
+  SLIME_BUG,
+  SLIME_ONE_EYE,
+  SLIME_SHELL,
   validateEnemyRegistry
 } from './enemies';
 import { SANDBOX_PLAYER, TRAINING_PLAYER } from './players';
 import type { ModePreset } from './presets';
 import { PISTOL, WEAPON_ARCHETYPES } from './weapons';
 
+// Story 013 content migration: training-target -> slime-bug,
+// slime-fast -> slime-one-eye, slime-tank -> slime-shell, slime-king -> boss-scrap-king.
 export type BuildOptions = Readonly<{
   seed: number;
   id?: string;
@@ -80,10 +82,10 @@ function buildSandboxWithCombatSession(options: BuildOptions): SessionDefinition
   validateEnemyRegistry(ENEMY_ARCHETYPES, SANDBOX_PLAYER.radius);
 
   const targetSpawn: StaticSpawn = {
-    archetypeId: TRAINING_TARGET.id,
+    archetypeId: SLIME_BUG.id,
     position: { x: 5, y: 0 }
   };
-  assertSpawnInsideArena(targetSpawn.position, TRAINING_TARGET.radius, SANDBOX_ARENA);
+  assertSpawnInsideArena(targetSpawn.position, SLIME_BUG.radius, SANDBOX_ARENA);
   warnIfWeaponMayTunnel(PISTOL.id);
 
   const encounter: EncounterDefinition = {
@@ -119,12 +121,12 @@ function makeTrainingRunEncounters(): ReadonlyArray<EncounterDefinition> {
     spawnPlan: {
       kind: 'wave',
       spawns: [
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id }
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id }
       ],
       spawnIntervalMs: 1500,
       maxAlive: 4,
@@ -154,16 +156,16 @@ function makeTrainingRunEncounters(): ReadonlyArray<EncounterDefinition> {
     spawnPlan: {
       kind: 'wave',
       spawns: [
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id }
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id },
+        { archetypeId: SLIME_ONE_EYE.id }
       ],
       spawnIntervalMs: 1200,
       maxAlive: 5,
@@ -187,12 +189,12 @@ function makeCampaignRunEncounters(): ReadonlyArray<EncounterDefinition> {
     spawnPlan: {
       kind: 'wave',
       spawns: [
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id }
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id }
       ],
       spawnIntervalMs: 1500,
       maxAlive: 4,
@@ -222,16 +224,16 @@ function makeCampaignRunEncounters(): ReadonlyArray<EncounterDefinition> {
     spawnPlan: {
       kind: 'wave',
       spawns: [
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id }
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id },
+        { archetypeId: SLIME_ONE_EYE.id }
       ],
       spawnIntervalMs: 1200,
       maxAlive: 5,
@@ -261,18 +263,18 @@ function makeCampaignRunEncounters(): ReadonlyArray<EncounterDefinition> {
     spawnPlan: {
       kind: 'wave',
       spawns: [
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id }
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_ONE_EYE.id },
+        { archetypeId: SLIME_SHELL.id }
       ],
       spawnIntervalMs: 1000,
       maxAlive: 6,
@@ -313,8 +315,8 @@ function buildCampaignSession(options: BuildOptions): SessionDefinition {
 
   /** Matches wave spawn `edgeMargin` — boss enters from top center like edge-spawned slimes. */
   const bossEdgeMargin = 0.5;
-  const bossSpawnPos = bossTopCenterSpawnInArena(SANDBOX_ARENA, SLIME_KING.radius, bossEdgeMargin);
-  assertSpawnInsideArena(bossSpawnPos, SLIME_KING.radius, SANDBOX_ARENA);
+  const bossSpawnPos = bossTopCenterSpawnInArena(SANDBOX_ARENA, BOSS_SCRAP_KING.radius, bossEdgeMargin);
+  assertSpawnInsideArena(bossSpawnPos, BOSS_SCRAP_KING.radius, SANDBOX_ARENA);
 
   const campaignPreBossBreak: EncounterDefinition = {
     id: 'campaign-pre-boss-break',
@@ -337,7 +339,7 @@ function buildCampaignSession(options: BuildOptions): SessionDefinition {
     type: 'boss',
     spawnPlan: {
       kind: 'boss',
-      bossArchetypeId: SLIME_KING.id,
+      bossArchetypeId: BOSS_SCRAP_KING.id,
       position: bossSpawnPos
     },
     zoneBehavior: { kind: 'disabled' },

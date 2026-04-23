@@ -1,4 +1,4 @@
-import { SLIME_KING } from './bosses.generated';
+import * as generatedBosses from './bosses.generated';
 
 export type BossPhaseSpec = Readonly<{
   id: string;
@@ -28,8 +28,20 @@ export type BossArchetype = Readonly<{
   attacks: Readonly<Record<string, BossAttackSpec>>;
 }>;
 
-export { SLIME_KING };
+export * from './bosses.generated';
 
-export const BOSS_ARCHETYPES: Readonly<Record<string, BossArchetype>> = {
-  [SLIME_KING.id]: SLIME_KING
-};
+export const BOSS_ARCHETYPES: Readonly<Record<string, BossArchetype>> =
+  createBossRegistry(Object.values(generatedBosses));
+
+function createBossRegistry(
+  archetypes: ReadonlyArray<BossArchetype>
+): Readonly<Record<string, BossArchetype>> {
+  const registry: Record<string, BossArchetype> = {};
+  for (const archetype of archetypes) {
+    if (registry[archetype.id] !== undefined) {
+      throw new Error(`duplicate boss archetype "${archetype.id}"`);
+    }
+    registry[archetype.id] = archetype;
+  }
+  return registry;
+}
