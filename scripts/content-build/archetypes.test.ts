@@ -118,6 +118,25 @@ describe('content-build archetype areas', () => {
     });
   });
 
+  it('rejects weapon audio without the required inline H2 link', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) => replaceExact(source, '[weapons/pistol](../public/sfx/weapons/pistol.mp3)\n\n', ''),
+      parse: parseWeaponsArea,
+      pattern: /expected \[<sample-id>\]/
+    });
+  });
+
+  it('rejects legacy weapon Sound balance groups', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        `${source}\n\n## Sound\n\n| id | fire |\n|---|---|\n| pistol | weapons/pistol |\n`,
+      parse: parseWeaponsArea,
+      pattern: /replaced by inline audio-link/
+    });
+  });
+
   it('renders boss visual specs from PNG image paths', async () => {
     const area = await parseBossesArea('content/bosses.md');
     const visuals = renderBossVisuals(area);
