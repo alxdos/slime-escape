@@ -72,6 +72,7 @@ function setupWorld() {
       entities.clear();
       exporter.reset();
       combat.clear();
+      zone.reset();
       spawn.setRng(rng);
       drops.setRng(rng);
       const player = entities.spawnPlayer(session.player);
@@ -83,6 +84,7 @@ function setupWorld() {
       entities.clear();
       exporter.reset();
       combat.clear();
+      zone.reset();
       spawn.setRng(null);
       drops.setRng(null);
     },

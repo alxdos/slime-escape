@@ -248,6 +248,27 @@ describe('buildSessionDefinition (campaign)', () => {
     ]);
     expect(bossIds).toEqual([...CAMPAIGN_SET_BOSSES]);
   });
+
+  it('campaign: pre-boss breaks finish zone expansion with the timer', () => {
+    const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
+    let preBossBreaks = 0;
+
+    for (const encounter of session.encounters) {
+      if (!/^campaign-set-\d-pre-boss-break$/.test(encounter.id)) continue;
+      if (
+        encounter.zoneBehavior.kind !== 'expandLinear' ||
+        encounter.transitionRules.kind !== 'timer'
+      ) {
+        throw new Error(`expected timer expand pre-boss break, got ${encounter.id}`);
+      }
+
+      preBossBreaks += 1;
+      expect(encounter.zoneBehavior.toMargin).toBe(0);
+      expect(encounter.transitionRules.durationMs).toBe(encounter.zoneBehavior.durationMs);
+    }
+
+    expect(preBossBreaks).toBe(5);
+  });
 });
 
 function campaignSetIndex(encounterId: string): number {

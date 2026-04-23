@@ -109,7 +109,7 @@
 | zoneToMargin | 0 |
 | zoneDurationMs | 3500 |
 | transitionKind | timer |
-| transitionDurationMs | 3000 |
+| transitionDurationMs | 3500 |
 | next | sequential |
 
 ## campaign-set-1-boss
@@ -234,7 +234,7 @@
 | zoneToMargin | 0 |
 | zoneDurationMs | 3500 |
 | transitionKind | timer |
-| transitionDurationMs | 3000 |
+| transitionDurationMs | 3500 |
 | next | sequential |
 
 ## campaign-set-2-boss
@@ -362,7 +362,7 @@
 | zoneToMargin | 0 |
 | zoneDurationMs | 3500 |
 | transitionKind | timer |
-| transitionDurationMs | 3000 |
+| transitionDurationMs | 3500 |
 | next | sequential |
 
 ## campaign-set-3-boss
@@ -492,7 +492,7 @@
 | zoneToMargin | 0 |
 | zoneDurationMs | 3500 |
 | transitionKind | timer |
-| transitionDurationMs | 3000 |
+| transitionDurationMs | 3500 |
 | next | sequential |
 
 ## campaign-set-4-boss
@@ -625,7 +625,7 @@
 | zoneToMargin | 0 |
 | zoneDurationMs | 3500 |
 | transitionKind | timer |
-| transitionDurationMs | 3000 |
+| transitionDurationMs | 3500 |
 | next | sequential |
 
 ## campaign-set-5-boss

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-23
 
 ## Context
 
@@ -37,22 +37,23 @@
 
 - `EncounterDefinition.zoneBehavior` — дискриминированный union, конкретные kind фиксируются в [session-definition.md](session-definition.md). Для зоны определены три kind:
   - `{ kind: 'disabled' }` — зона полностью отступлена и не двигается; `margin = 0` весь encounter;
-  - `{ kind: 'shrinkLinear'; fromMargin; toMargin; durationMs }` — линейное сжатие от `fromMargin` к `toMargin` за `durationMs`;
-  - `{ kind: 'expandLinear'; fromMargin; toMargin; durationMs }` — линейное расширение от `fromMargin` к `toMargin` за `durationMs`.
+  - `{ kind: 'shrinkLinear'; fromMargin; toMargin; durationMs }` — линейное сжатие к `toMargin` за `durationMs`; `fromMargin` — номинальное авторское начало;
+  - `{ kind: 'expandLinear'; fromMargin; toMargin; durationMs }` — линейное расширение к `toMargin` за `durationMs`; `fromMargin` — номинальное авторское начало.
 - Для `shrinkLinear`/`expandLinear` `fromMargin` и `toMargin` — оба в `[0, maxMargin]`; направление (сжатие vs расширение) задаётся именно `kind`, а не знаком разности. Это исключает скрытое «расширение через shrink с отрицательным значением».
+- `fromMargin` описывает авторское ожидаемое начало интерполяции и используется content/builder-слоем для проверки связности настроек. Runtime не обязан прыгать к `fromMargin`: фактическая интерполяция всегда стартует из текущего `ZoneSystem.margin`, чтобы переход между encounter оставался гладким, если предыдущая зона ещё не дошла до своего `toMargin`.
 - `durationMs > 0`. Если `durationMs` меньше длительности encounter — после достижения `toMargin` `margin` остаётся равен `toMargin` до `encounterEnd` (clamp, не циклическая интерполяция).
 - Конкретные числовые значения (`fromMargin`, `toMargin`, `durationMs` для `wave`/`break`) задаются в `content library` ([content-boundaries.md](content-boundaries.md)) при сборке `SessionDefinition`. Это контент, а не часть design-решения.
 
 ### Жизненный цикл `ZoneSystem`
 
-- На `encounterStart` `ZoneSystem` инициализируется из `encounter.zoneBehavior`:
+- На `encounterStart` `ZoneSystem` инициализируется из `encounter.zoneBehavior` и текущего runtime-состояния:
   - `disabled` → `mode = 'disabled'`, `margin = 0`, внутренний `elapsedMs = 0`;
-  - `shrinkLinear` → `mode = 'shrink'`, `margin = fromMargin`, `elapsedMs = 0`, запоминаются `fromMargin`/`toMargin`/`durationMs`;
-  - `expandLinear` → `mode = 'expand'`, `margin = fromMargin`, `elapsedMs = 0`, аналогично.
+  - `shrinkLinear` → `mode = 'shrink'`, `startMargin = current margin`, `margin = startMargin`, `elapsedMs = 0`, запоминаются `startMargin`/`toMargin`/`durationMs`;
+  - `expandLinear` → `mode = 'expand'`, `startMargin = current margin`, `margin = startMargin`, `elapsedMs = 0`, аналогично.
 - На каждом тике (по [simulation-timing.md](simulation-timing.md), `SIM_STEP_MS`):
   - для `disabled` — no-op;
-  - иначе `elapsedMs += SIM_STEP_MS`, `t = clamp(elapsedMs / durationMs, 0, 1)`, `margin = lerp(fromMargin, toMargin, t)`. После `t == 1` дальнейших изменений нет (clamp сохраняется).
-- На `encounterEnd` весь внутренний state `ZoneSystem` сбрасывается; «остатки» между encounter не переносятся, как и для `SpawnSystem`.
+  - иначе `t = clamp(elapsedMs / durationMs, 0, 1)`, `margin = lerp(startMargin, toMargin, t)`, затем `elapsedMs += SIM_STEP_MS`. Первый snapshot нового encounter поэтому остаётся на фактическом `startMargin`; после `t == 1` дальнейших изменений нет (clamp сохраняется).
+- На `encounterEnd` активная интерполяция останавливается (`mode = 'disabled'`), но текущий `margin` сохраняется как фактическое начало для следующего encounter. Полный сброс к `margin = 0` происходит на lifecycle-границе сессии (`sessionStart`/`sessionStop`) или при старте encounter с `zoneBehavior: { kind: 'disabled' }`.
 - `ZoneSystem` встроен в update order по [runtime-systems.md](runtime-systems.md): тикает каждый sim tick, после `HealthDeathSystem`/`DropSystem` и до `SnapshotExportSystem`. Никакая другая система от текущего значения `margin` не зависит, поэтому конкретное место «после `HealthDeathSystem`» — деталь порядка, не gameplay-зависимость.
 
 ### Экспорт в snapshot
@@ -75,9 +76,10 @@
 
 ## Consequences
 
-- История 004 получает компактный контракт: «один scalar `margin`, линейная интерполяция от `fromMargin` к `toMargin` за `durationMs`», без дополнительных правил и без побочных эффектов.
+- История 004 получает компактный контракт: «один scalar `margin`, линейная интерполяция от фактического текущего margin к `toMargin` за `durationMs`», без дополнительных правил и без побочных эффектов.
 - История 006 (босс) реализуется через `zoneBehavior: { kind: 'disabled' }` без специального флага «зона выключена в боссе»; `ZoneSystem` ничем не отличается между режимами.
 - HUD из 007 и render из 010 могут полагаться на стабильную форму `zone` в snapshot и не вынуждены договариваться с `sim` о «как именно нарисовать тьму».
+- Быстрые завершения волн не создают визуальных скачков зоны: следующий активный encounter продолжает интерполяцию от фактически видимого `margin`, а не от авторского номинального `fromMargin`.
 - Любая будущая «зона, которая бьёт игрока» сразу обозначает себя как **другая** система; этот файл и его инвариант «zone не наносит урон» не размывается.
 - Расширение до per-side margin или окружности затрагивает форму snapshot и `ZoneBehavior`, но не контракт «zone не делает gameplay-решений».
 

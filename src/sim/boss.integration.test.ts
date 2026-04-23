@@ -105,6 +105,7 @@ function setupBossWorld() {
       entities.clear();
       exporter.reset();
       combat.clear();
+      zone.reset();
       spawn.setRng(rng);
       const player = entities.spawnPlayer(session.player);
       if (session.loadout !== null) {
@@ -115,6 +116,7 @@ function setupBossWorld() {
       entities.clear();
       exporter.reset();
       combat.clear();
+      zone.reset();
       spawn.setRng(null);
     },
     onEncounterStart(encounter) {

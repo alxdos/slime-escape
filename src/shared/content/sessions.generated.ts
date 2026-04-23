@@ -105,7 +105,7 @@ export const SESSION_PRESET_TEMPLATES = {
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
         rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+        transitionRules: { kind: 'timer', durationMs: 3500, next: 'sequential' },
         tuning: null
       },
       {
@@ -221,7 +221,7 @@ export const SESSION_PRESET_TEMPLATES = {
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
         rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+        transitionRules: { kind: 'timer', durationMs: 3500, next: 'sequential' },
         tuning: null
       },
       {
@@ -340,7 +340,7 @@ export const SESSION_PRESET_TEMPLATES = {
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
         rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+        transitionRules: { kind: 'timer', durationMs: 3500, next: 'sequential' },
         tuning: null
       },
       {
@@ -461,7 +461,7 @@ export const SESSION_PRESET_TEMPLATES = {
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
         rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+        transitionRules: { kind: 'timer', durationMs: 3500, next: 'sequential' },
         tuning: null
       },
       {
@@ -585,7 +585,7 @@ export const SESSION_PRESET_TEMPLATES = {
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
         rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+        transitionRules: { kind: 'timer', durationMs: 3500, next: 'sequential' },
         tuning: null
       },
       {

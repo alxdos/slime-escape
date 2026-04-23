@@ -171,7 +171,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -397,7 +397,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -632,7 +632,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -873,7 +873,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -1123,7 +1123,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -1360,7 +1360,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -1586,7 +1586,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -1821,7 +1821,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -2062,7 +2062,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -2312,7 +2312,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -2549,7 +2549,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -2775,7 +2775,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -3010,7 +3010,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -3251,7 +3251,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
@@ -3501,7 +3501,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
         "kind": "empty",
       },
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 3500,
         "kind": "timer",
         "next": "sequential",
       },
