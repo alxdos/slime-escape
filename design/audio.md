@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-23 (для истории 011 добавлена обратная ссылка на `content-authoring.md`: маппинг enemy → sample реестр становится сгенерённым из MD, типы и валидации остаются)
+- Updated: 2026-04-23 (story 012 покрывает MD-генерацией weapon/boss audio-маппинги и дозаполнение enemy sound по пулам из `SampleRegistry`; типы и валидации не меняются)
 
 ## Context
 
