@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (story 012 покрывает MD-генерацией weapons/drops/bosses; формы архетипов и правила реестров не меняются)
+- Updated: 2026-04-23 (story 013: после ввода [sprite-assets.md](sprite-assets.md) renderer для player/enemy/boss перестаёт читать `EnemyArchetype.color`/`BossArchetype.color`; форма архетипов не меняется, поле остаётся как content-плейсхолдер для не-renderer сценариев. story 012 покрывает MD-генерацией weapons/drops/bosses; формы архетипов и правила реестров не меняются)
 
 ## Context
 
@@ -56,7 +56,7 @@
 - `behavior: 'chase'` означает, что `MovementSystem` двигает врага к текущей позиции игрока с скоростью `maxSpeed`; конкретный alg (прямая линия / steering) — деталь реализации, контракт — «в среднем сокращает расстояние до игрока за тик». Дальнейшие поведения (`'wander'`, `'orbit'`, …) добавляются дописыванием в `EnemyBehavior` union, а не ветвями в `MovementSystem`.
 - `contactDamage` и `contactCooldownMs` — единственный источник правды для контактного урона; правила обработки — в [enemy-contact.md](enemy-contact.md). Если `contactDamage === 0`, кулдаун всё равно задаётся явно — отсутствие поля запрещено по тому же правилу единственности «нет данных».
 - `knockbackBaseImpulse`, `knockbackVelocityScale`, `knockbackDurationMs` — параметры контактного knockback враг → от игрока; правила обработки — в [enemy-contact.md](enemy-contact.md), раздел `Knockback at contact`. Поля задаются всегда: «knockback'а нет» выражается явными нулями `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0`, а не пропуском полей.
-- `color` — плейсхолдер до появления полноценных ассетов. Это контентное поле, не decision рендера.
+- `color` — плейсхолдер до появления полноценных ассетов. Это контентное поле, не decision рендера. После [sprite-assets.md](sprite-assets.md) renderer для `player`/`enemy`/`boss` поле не читает (визуал — preloaded sprite), но поле остаётся в архетипе как content-плейсхолдер для не-renderer сценариев (debug overlay, мини-карта, tooling). Удаление — отдельное решение, когда появится фактический consumer или подтверждение, что его не будет.
 - Числовые ограничения, обязательные на стороне content/builder:
   - `maxSpeed * SIM_STEP_SEC <= radius + minPlayerRadius` ([enemy-contact.md](enemy-contact.md): запрет touring через игрока), warning через единый log-модуль ([logging.md](logging.md));
   - для `'stationary'` обязан быть `maxSpeed === 0`, `contactDamage === 0` и `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0` (стационарная мишень не должна неявно бить и не должна прыгать); валидация на стороне content/builder.
@@ -127,6 +127,7 @@
   ```
 - Контакт с игроком и knockback следуют тем же правилам, что и `EnemyArchetype` ([enemy-contact.md](enemy-contact.md)); числа задаются в архетипе босса.
 - Минимум **две** записи в `phases` и минимум **два** различимых ключа в `attacks` для acceptance истории 006 ([../stories/006-boss-encounter.md](../stories/006-boss-encounter.md)); конкретный выбор атаки из `allowedAttackIds` и паттерна — `BossPhaseSystem` ([boss-encounter.md](boss-encounter.md)).
+- `color` следует тому же правилу, что и `EnemyArchetype.color` после [sprite-assets.md](sprite-assets.md): renderer для `boss` его не читает, поле остаётся как content-плейсхолдер для не-renderer сценариев.
 
 ### PlayerSpawn.maxHp
 
@@ -179,3 +180,4 @@
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
 - [boss-encounter.md](boss-encounter.md)
 - [content-authoring.md](content-authoring.md)
+- [sprite-assets.md](sprite-assets.md)

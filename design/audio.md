@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-23 (story 012 покрывает MD-генерацией weapon/boss audio-маппинги и дозаполнение enemy sound по пулам из `SampleRegistry`; типы и валидации не меняются)
+- Updated: 2026-04-23 (story 013 расширяет `ENEMY_AUDIO_MAPPINGS` на все 30 slime-архетипов и `BOSS_AUDIO_MAPPINGS` на все 5 boss-архетипов через те же три пула `slimes/hit-*`/`slimes/death-*`/`slimes/voice-*` и существующие boss sample id; формы маппингов и `SampleRegistry` не меняются. story 012 покрывает MD-генерацией weapon/boss audio-маппинги и дозаполнение enemy sound по пулам из `SampleRegistry`; типы и валидации не меняются)
 
 ## Context
 
