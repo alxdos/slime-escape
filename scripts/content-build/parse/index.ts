@@ -3,6 +3,8 @@ export {
   parseMarkdownFile,
   type MarkdownCell,
   type MarkdownDocument,
+  type MarkdownInlineLink,
+  type MarkdownMediaNode,
   type MarkdownSection,
   type MarkdownTable,
   type MarkdownTableRow,
