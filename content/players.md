@@ -2,11 +2,15 @@
 
 ## hero-sandbox
 
+![Hero](../public/assets/hero.png)
+
 | field | value |
 |---|---|
 | displayName | Hero |
 
 ## hero-training
+
+![Hero](../public/assets/hero.png)
 
 | field | value |
 |---|---|
@@ -34,10 +38,3 @@
 |---|---:|
 | hero-sandbox | 1 |
 | hero-training | 5 |
-
-## Visual
-
-| id | image |
-|---|---|
-| hero-sandbox | /assets/hero.png |
-| hero-training | /assets/hero.png |

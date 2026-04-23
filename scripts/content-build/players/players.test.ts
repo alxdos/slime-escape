@@ -41,25 +41,24 @@ describe('content-build players area', () => {
     expect(renderPlayerVisuals(area)).toContain('worldSize: { width:');
   });
 
-  it('rejects visual derive columns in markdown', async () => {
+  it('rejects players without required inline image nodes', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'content-build-players-derived-'));
+    const sourcePath = join(directory, 'players.md');
+    await writeFile(sourcePath, makePlayersMarkdown().replace('![Hero](../public/assets/hero.png)\n\n', ''), 'utf8');
+
+    await expect(parsePlayersArea(sourcePath)).rejects.toThrow(/expected !\[…\]/);
+  });
+
+  it('rejects legacy player Visual balance groups', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-players-visual-group-'));
     const sourcePath = join(directory, 'players.md');
     await writeFile(
       sourcePath,
-      makePlayersMarkdown().replace(
-        `| id | image |
-|---|---|
-| hero-sandbox | /assets/hero.png |
-| hero-training | /assets/hero.png |`,
-        `| id | image | worldSize |
-|---|---|---|
-| hero-sandbox | /assets/hero.png | { width: 1, height: 1 } |
-| hero-training | /assets/hero.png | { width: 1, height: 1 } |`
-      ),
+      `${makePlayersMarkdown()}\n## Visual\n\n| id | image |\n|---|---|\n| hero-sandbox | /assets/hero.png |\n`,
       'utf8'
     );
 
-    await expect(parsePlayersArea(sourcePath)).rejects.toThrow(/derive visual field/);
+    await expect(parsePlayersArea(sourcePath)).rejects.toThrow(/replaced by inline image/);
   });
 
   it('fails check mode when PNG-derived player visual output drifts from the committed target', async () => {
@@ -92,11 +91,15 @@ function makePlayersMarkdown(): string {
 
 ## hero-sandbox
 
+![Hero](../public/assets/hero.png)
+
 | field | value |
 |---|---|
 | displayName | Hero |
 
 ## hero-training
+
+![Hero](../public/assets/hero.png)
 
 | field | value |
 |---|---|
@@ -124,12 +127,5 @@ function makePlayersMarkdown(): string {
 |---|---:|
 | hero-sandbox | 1 |
 | hero-training | 5 |
-
-## Visual
-
-| id | image |
-|---|---|
-| hero-sandbox | /assets/hero.png |
-| hero-training | /assets/hero.png |
 `;
 }
