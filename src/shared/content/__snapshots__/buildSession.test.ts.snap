@@ -1,0 +1,1669 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "campaign-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 8000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 4,
+      },
+    },
+    {
+      "id": "campaign-break-after-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "campaign-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 10000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+    {
+      "id": "campaign-break-after-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "campaign-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 12000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+    {
+      "id": "campaign-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "campaign-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-scrap-king",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 6.5325,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "campaign-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "bossDefeated",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "campaign-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 8000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 4,
+      },
+    },
+    {
+      "id": "campaign-break-after-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "campaign-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 10000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+    {
+      "id": "campaign-break-after-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "campaign-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 12000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+    {
+      "id": "campaign-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "campaign-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-scrap-king",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 6.5325,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "campaign-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "bossDefeated",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "campaign-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 8000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 4,
+      },
+    },
+    {
+      "id": "campaign-break-after-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "campaign-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 10000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+    {
+      "id": "campaign-break-after-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "campaign-wave-3",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 12000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+    {
+      "id": "campaign-pre-boss-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 5,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "campaign-boss",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-scrap-king",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 6.5325,
+        },
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "campaign-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "bossDefeated",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "sandbox-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-session",
+  "loadout": null,
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "sandbox-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-session",
+  "loadout": null,
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "sandbox-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-session",
+  "loadout": null,
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-with-combat session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "sandbox-with-combat-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "static",
+        "spawns": [
+          {
+            "archetypeId": "slime-bug",
+            "position": {
+              "x": 5,
+              "y": 0,
+            },
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-with-combat-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-with-combat session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "sandbox-with-combat-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "static",
+        "spawns": [
+          {
+            "archetypeId": "slime-bug",
+            "position": {
+              "x": 5,
+              "y": 0,
+            },
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-with-combat-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-with-combat session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "sandbox-with-combat-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "static",
+        "spawns": [
+          {
+            "archetypeId": "slime-bug",
+            "position": {
+              "x": 5,
+              "y": 0,
+            },
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "sandbox-with-combat-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted training session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "training-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 8000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 4,
+      },
+    },
+    {
+      "id": "training-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "training-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 10000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+  ],
+  "id": "training-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "allEncountersComplete",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted training session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "training-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 8000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 4,
+      },
+    },
+    {
+      "id": "training-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "training-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 10000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+  ],
+  "id": "training-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "allEncountersComplete",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted training session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "encounters": [
+    {
+      "id": "training-wave-1",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1500,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 8000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 4,
+      },
+    },
+    {
+      "id": "training-break",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "id": "training-wave-2",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1200,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 10000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 5,
+      },
+    },
+  ],
+  "id": "training-session",
+  "loadout": {
+    "primaryWeaponArchetypeId": "pistol",
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.75,
+      "width": 1.47,
+    },
+    "maxHp": 5,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": null,
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "allEncountersComplete",
+  },
+}
+`;
