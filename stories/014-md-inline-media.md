@@ -27,7 +27,37 @@
 
 - В `content/{enemies,bosses,players}.md` каждый `## <id>` содержит inline `![alt](../public/assets/<file>.png)` строкой между H2 и `field|value` таблицей. Раньше такого нет — добавить во все живые архетипы. Колонки/группы вида `## Visual` с `image` в `# Balance` исчезают: путь к спрайту берётся из inline-image-узла, не из таблицы.
 - В `content/weapons.md` каждый `## <id>` содержит inline markdown-link `[sample-id](../public/audio/...)` строкой между H2 и `field|value` таблицей. Группа `## Sound` в `# Balance` исчезает: sample-id для `fire` берётся из inline-link-узла.
-- В `content/enemies.md` появляется новая партиция `# Sound sets` с тремя/четырьмя узкими таблицами: `## Members` (`setId | slimes`), `## Hit` (`setId | s1 | s2 | s3 | s4`), `## Death` (то же), `## Voice` (то же). Группы `## Sounds` и `## Voice` из `# Balance` удалены. На MVP — один set `default`, перечисляющий всех 30 слаймов; runtime-mapping каждого слайма после генерации байт-в-байт совпадает с тем, что было до этой истории.
+- В `content/enemies.md` появляется новая партиция `# Sound sets` с четырьмя узкими таблицами: `## Members` (`setId | slimes`), `## Hit` (`setId | s1 | s2 | s3 | s4`), `## Death` (то же), `## Voice` (то же). Группы `## Sounds` и `## Voice` из `# Balance` удалены. На MVP — один set `default`, перечисляющий всех 30 слаймов; runtime-mapping каждого слайма после генерации байт-в-байт совпадает с тем, что было до этой истории. Шаблон партиции:
+
+  ```markdown
+  # Sound sets
+
+  ## Members
+
+  | setId   | slimes |
+  |---------|--------|
+  | default | slime-one-eye, slime-hornling, slime-many-eye, … (всех 30) |
+
+  ## Hit
+
+  | setId   | s1                                                          | s2                                                          | s3                                                          | s4                                                          |
+  |---------|-------------------------------------------------------------|-------------------------------------------------------------|-------------------------------------------------------------|-------------------------------------------------------------|
+  | default | [slimes/hit-1](../public/audio/slimes/hit-1.mp3)            | [slimes/hit-2](../public/audio/slimes/hit-2.mp3)            | [slimes/hit-3](../public/audio/slimes/hit-3.mp3)            | [slimes/hit-4](../public/audio/slimes/hit-4.mp3)            |
+
+  ## Death
+
+  | setId   | s1                                                          | s2                                                          | s3                                                          | s4                                                          |
+  |---------|-------------------------------------------------------------|-------------------------------------------------------------|-------------------------------------------------------------|-------------------------------------------------------------|
+  | default | [slimes/death-1](../public/audio/slimes/death-1.mp3)        | [slimes/death-2](../public/audio/slimes/death-2.mp3)        | [slimes/death-3](../public/audio/slimes/death-3.mp3)        | [slimes/death-4](../public/audio/slimes/death-4.mp3)        |
+
+  ## Voice
+
+  | setId   | s1                                                          | s2                                                          | s3                                                          | s4                                                          |
+  |---------|-------------------------------------------------------------|-------------------------------------------------------------|-------------------------------------------------------------|-------------------------------------------------------------|
+  | default | [slimes/voice-1](../public/audio/slimes/voice-1.mp3)        | [slimes/voice-2](../public/audio/slimes/voice-2.mp3)        | [slimes/voice-3](../public/audio/slimes/voice-3.mp3)        | [slimes/voice-4](../public/audio/slimes/voice-4.mp3)        |
+  ```
+
+  Добавление второго пака — одна новая строка в каждой из четырёх таблиц с тем же `setId`. Перевод слайма в другой пак — перенос его `id` из строки `## Members` одного `setId` в строку другого.
 - Генератор валидирует:
   - `id` из `## Members.slimes` существует в `# Enemies`;
   - каждый `id` из `# Enemies` принадлежит **ровно одному** sound-set'у (ни нулю, ни двум);
