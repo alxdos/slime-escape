@@ -44,10 +44,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 8000,
+        "durationMs": 14000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -96,10 +96,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 9000,
-        "fromMargin": 3.5,
+        "durationMs": 16000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -157,10 +157,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 11000,
-        "fromMargin": 4.5,
+        "durationMs": 18000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -178,8 +178,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -264,10 +264,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 8500,
+        "durationMs": 15000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -319,10 +319,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10000,
-        "fromMargin": 3.5,
+        "durationMs": 17000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -383,10 +383,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 12000,
-        "fromMargin": 4.5,
+        "durationMs": 19000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -404,8 +404,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -493,10 +493,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 9000,
+        "durationMs": 16000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -551,10 +551,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10500,
-        "fromMargin": 3.5,
+        "durationMs": 18000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -618,10 +618,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 12500,
-        "fromMargin": 4.5,
+        "durationMs": 20000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -639,8 +639,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -728,10 +728,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 9500,
+        "durationMs": 17000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -789,10 +789,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 11000,
-        "fromMargin": 3.5,
+        "durationMs": 19000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -859,10 +859,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 13000,
-        "fromMargin": 4.5,
+        "durationMs": 21000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -880,8 +880,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -972,10 +972,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10000,
+        "durationMs": 18000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -1036,10 +1036,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 12000,
-        "fromMargin": 3.5,
+        "durationMs": 20000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -1109,10 +1109,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 14000,
-        "fromMargin": 4.5,
+        "durationMs": 22000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -1130,8 +1130,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -1233,10 +1233,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 8000,
+        "durationMs": 14000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -1285,10 +1285,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 9000,
-        "fromMargin": 3.5,
+        "durationMs": 16000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -1346,10 +1346,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 11000,
-        "fromMargin": 4.5,
+        "durationMs": 18000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -1367,8 +1367,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -1453,10 +1453,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 8500,
+        "durationMs": 15000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -1508,10 +1508,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10000,
-        "fromMargin": 3.5,
+        "durationMs": 17000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -1572,10 +1572,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 12000,
-        "fromMargin": 4.5,
+        "durationMs": 19000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -1593,8 +1593,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -1682,10 +1682,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 9000,
+        "durationMs": 16000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -1740,10 +1740,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10500,
-        "fromMargin": 3.5,
+        "durationMs": 18000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -1807,10 +1807,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 12500,
-        "fromMargin": 4.5,
+        "durationMs": 20000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -1828,8 +1828,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -1917,10 +1917,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 9500,
+        "durationMs": 17000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -1978,10 +1978,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 11000,
-        "fromMargin": 3.5,
+        "durationMs": 19000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -2048,10 +2048,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 13000,
-        "fromMargin": 4.5,
+        "durationMs": 21000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -2069,8 +2069,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -2161,10 +2161,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10000,
+        "durationMs": 18000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -2225,10 +2225,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 12000,
-        "fromMargin": 3.5,
+        "durationMs": 20000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -2298,10 +2298,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 14000,
-        "fromMargin": 4.5,
+        "durationMs": 22000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -2319,8 +2319,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -2422,10 +2422,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 8000,
+        "durationMs": 14000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -2474,10 +2474,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 9000,
-        "fromMargin": 3.5,
+        "durationMs": 16000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -2535,10 +2535,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 11000,
-        "fromMargin": 4.5,
+        "durationMs": 18000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -2556,8 +2556,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -2642,10 +2642,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 8500,
+        "durationMs": 15000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -2697,10 +2697,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10000,
-        "fromMargin": 3.5,
+        "durationMs": 17000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -2761,10 +2761,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 12000,
-        "fromMargin": 4.5,
+        "durationMs": 19000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -2782,8 +2782,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -2871,10 +2871,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 9000,
+        "durationMs": 16000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -2929,10 +2929,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10500,
-        "fromMargin": 3.5,
+        "durationMs": 18000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -2996,10 +2996,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 12500,
-        "fromMargin": 4.5,
+        "durationMs": 20000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -3017,8 +3017,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -3106,10 +3106,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 9500,
+        "durationMs": 17000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -3167,10 +3167,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 11000,
-        "fromMargin": 3.5,
+        "durationMs": 19000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -3237,10 +3237,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 13000,
-        "fromMargin": 4.5,
+        "durationMs": 21000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -3258,8 +3258,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },
@@ -3350,10 +3350,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10000,
+        "durationMs": 18000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 3.5,
+        "toMargin": 2,
       },
     },
     {
@@ -3414,10 +3414,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 12000,
-        "fromMargin": 3.5,
+        "durationMs": 20000,
+        "fromMargin": 2,
         "kind": "shrinkLinear",
-        "toMargin": 4.5,
+        "toMargin": 2.8,
       },
     },
     {
@@ -3487,10 +3487,10 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 14000,
-        "fromMargin": 4.5,
+        "durationMs": 22000,
+        "fromMargin": 2.8,
         "kind": "shrinkLinear",
-        "toMargin": 5.5,
+        "toMargin": 3.5,
       },
     },
     {
@@ -3508,8 +3508,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 5.5,
+        "durationMs": 3500,
+        "fromMargin": 3.5,
         "kind": "expandLinear",
         "toMargin": 0,
       },

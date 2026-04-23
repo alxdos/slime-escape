@@ -25,8 +25,8 @@
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
 | zoneFromMargin | 0 |
-| zoneToMargin | 3.5 |
-| zoneDurationMs | 8000 |
+| zoneToMargin | 2 |
+| zoneDurationMs | 14000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -49,9 +49,9 @@
 | maxAlive | 5 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 3.5 |
-| zoneToMargin | 4.5 |
-| zoneDurationMs | 9000 |
+| zoneFromMargin | 2 |
+| zoneToMargin | 2.8 |
+| zoneDurationMs | 16000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -77,9 +77,9 @@
 | maxAlive | 6 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 4.5 |
-| zoneToMargin | 5.5 |
-| zoneDurationMs | 11000 |
+| zoneFromMargin | 2.8 |
+| zoneToMargin | 3.5 |
+| zoneDurationMs | 18000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -105,9 +105,9 @@
 | type | break |
 | spawnKind | empty |
 | zoneKind | expandLinear |
-| zoneFromMargin | 5.5 |
+| zoneFromMargin | 3.5 |
 | zoneToMargin | 0 |
-| zoneDurationMs | 2500 |
+| zoneDurationMs | 3500 |
 | transitionKind | timer |
 | transitionDurationMs | 3000 |
 | next | sequential |
@@ -147,8 +147,8 @@
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
 | zoneFromMargin | 0 |
-| zoneToMargin | 3.5 |
-| zoneDurationMs | 8500 |
+| zoneToMargin | 2 |
+| zoneDurationMs | 15000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -172,9 +172,9 @@
 | maxAlive | 6 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 3.5 |
-| zoneToMargin | 4.5 |
-| zoneDurationMs | 10000 |
+| zoneFromMargin | 2 |
+| zoneToMargin | 2.8 |
+| zoneDurationMs | 17000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -201,9 +201,9 @@
 | maxAlive | 6 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 4.5 |
-| zoneToMargin | 5.5 |
-| zoneDurationMs | 12000 |
+| zoneFromMargin | 2.8 |
+| zoneToMargin | 3.5 |
+| zoneDurationMs | 19000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -230,9 +230,9 @@
 | type | break |
 | spawnKind | empty |
 | zoneKind | expandLinear |
-| zoneFromMargin | 5.5 |
+| zoneFromMargin | 3.5 |
 | zoneToMargin | 0 |
-| zoneDurationMs | 2500 |
+| zoneDurationMs | 3500 |
 | transitionKind | timer |
 | transitionDurationMs | 3000 |
 | next | sequential |
@@ -272,8 +272,8 @@
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
 | zoneFromMargin | 0 |
-| zoneToMargin | 3.5 |
-| zoneDurationMs | 9000 |
+| zoneToMargin | 2 |
+| zoneDurationMs | 16000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -298,9 +298,9 @@
 | maxAlive | 6 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 3.5 |
-| zoneToMargin | 4.5 |
-| zoneDurationMs | 10500 |
+| zoneFromMargin | 2 |
+| zoneToMargin | 2.8 |
+| zoneDurationMs | 18000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -328,9 +328,9 @@
 | maxAlive | 7 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 4.5 |
-| zoneToMargin | 5.5 |
-| zoneDurationMs | 12500 |
+| zoneFromMargin | 2.8 |
+| zoneToMargin | 3.5 |
+| zoneDurationMs | 20000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -358,9 +358,9 @@
 | type | break |
 | spawnKind | empty |
 | zoneKind | expandLinear |
-| zoneFromMargin | 5.5 |
+| zoneFromMargin | 3.5 |
 | zoneToMargin | 0 |
-| zoneDurationMs | 2500 |
+| zoneDurationMs | 3500 |
 | transitionKind | timer |
 | transitionDurationMs | 3000 |
 | next | sequential |
@@ -400,8 +400,8 @@
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
 | zoneFromMargin | 0 |
-| zoneToMargin | 3.5 |
-| zoneDurationMs | 9500 |
+| zoneToMargin | 2 |
+| zoneDurationMs | 17000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -426,9 +426,9 @@
 | maxAlive | 7 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 3.5 |
-| zoneToMargin | 4.5 |
-| zoneDurationMs | 11000 |
+| zoneFromMargin | 2 |
+| zoneToMargin | 2.8 |
+| zoneDurationMs | 19000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -457,9 +457,9 @@
 | maxAlive | 8 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 4.5 |
-| zoneToMargin | 5.5 |
-| zoneDurationMs | 13000 |
+| zoneFromMargin | 2.8 |
+| zoneToMargin | 3.5 |
+| zoneDurationMs | 21000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -488,9 +488,9 @@
 | type | break |
 | spawnKind | empty |
 | zoneKind | expandLinear |
-| zoneFromMargin | 5.5 |
+| zoneFromMargin | 3.5 |
 | zoneToMargin | 0 |
-| zoneDurationMs | 2500 |
+| zoneDurationMs | 3500 |
 | transitionKind | timer |
 | transitionDurationMs | 3000 |
 | next | sequential |
@@ -530,8 +530,8 @@
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
 | zoneFromMargin | 0 |
-| zoneToMargin | 3.5 |
-| zoneDurationMs | 10000 |
+| zoneToMargin | 2 |
+| zoneDurationMs | 18000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -557,9 +557,9 @@
 | maxAlive | 8 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 3.5 |
-| zoneToMargin | 4.5 |
-| zoneDurationMs | 12000 |
+| zoneFromMargin | 2 |
+| zoneToMargin | 2.8 |
+| zoneDurationMs | 20000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -589,9 +589,9 @@
 | maxAlive | 9 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 4.5 |
-| zoneToMargin | 5.5 |
-| zoneDurationMs | 14000 |
+| zoneFromMargin | 2.8 |
+| zoneToMargin | 3.5 |
+| zoneDurationMs | 22000 |
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
@@ -621,9 +621,9 @@
 | type | break |
 | spawnKind | empty |
 | zoneKind | expandLinear |
-| zoneFromMargin | 5.5 |
+| zoneFromMargin | 3.5 |
 | zoneToMargin | 0 |
-| zoneDurationMs | 2500 |
+| zoneDurationMs | 3500 |
 | transitionKind | timer |
 | transitionDurationMs | 3000 |
 | next | sequential |
