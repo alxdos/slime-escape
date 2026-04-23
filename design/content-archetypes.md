@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (story 013: после ввода [sprite-assets.md](sprite-assets.md) renderer для player/enemy/boss перестаёт читать `EnemyArchetype.color`/`BossArchetype.color`; форма архетипов не меняется, поле остаётся как content-плейсхолдер для не-renderer сценариев. story 012 покрывает MD-генерацией weapons/drops/bosses; формы архетипов и правила реестров не меняются)
+- Updated: 2026-04-23 (story 013: после ввода [sprite-assets.md](sprite-assets.md) renderer для player/enemy/boss перестаёт читать `EnemyArchetype.color`/`BossArchetype.color`; добавлен derive `contactBox` для body-contact по [body-contact-boxes.md](body-contact-boxes.md). story 012 покрывает MD-генерацией weapons/drops/bosses; формы архетипов и правила реестров не меняются)
 
 ## Context
 
@@ -39,7 +39,8 @@
   type EnemyArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;                  // wu, для коллизий и рендера
+    radius: number;                  // wu, legacy circle metric для не-мигрированных consumers; body-contact не читает его после body-contact-boxes.md
+    contactBox: Readonly<{ width: number; height: number }>;  // wu, derive из sprite asset; owner body-contact `player ↔ enemy/boss`
     maxHp: number;                   // целое > 0
     behavior: EnemyBehavior;
     maxSpeed: number;                // wu/s, >= 0; для 'stationary' обязан быть 0
@@ -54,6 +55,7 @@
   ```
 - `behavior: 'stationary'` означает, что `MovementSystem` не двигает врага этого архетипа; `maxSpeed` для `'stationary'` обязан быть 0 — это правило валидируется на стороне content/builder, не runtime.
 - `behavior: 'chase'` означает, что `MovementSystem` двигает врага к текущей позиции игрока с скоростью `maxSpeed`; конкретный alg (прямая линия / steering) — деталь реализации, контракт — «в среднем сокращает расстояние до игрока за тик». Дальнейшие поведения (`'wander'`, `'orbit'`, …) добавляются дописыванием в `EnemyBehavior` union, а не ветвями в `MovementSystem`.
+- `contactBox` — axis-aligned footprint тела врага для body-contact по [body-contact-boxes.md](body-contact-boxes.md). На горизонте 013 не авторится руками в MD и derive-ится из sprite asset тем же scale pipeline, что и visual `worldSize`.
 - `contactDamage` и `contactCooldownMs` — единственный источник правды для контактного урона; правила обработки — в [enemy-contact.md](enemy-contact.md). Если `contactDamage === 0`, кулдаун всё равно задаётся явно — отсутствие поля запрещено по тому же правилу единственности «нет данных».
 - `knockbackBaseImpulse`, `knockbackVelocityScale`, `knockbackDurationMs` — параметры контактного knockback враг → от игрока; правила обработки — в [enemy-contact.md](enemy-contact.md), раздел `Knockback at contact`. Поля задаются всегда: «knockback'а нет» выражается явными нулями `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0`, а не пропуском полей.
 - `color` — плейсхолдер до появления полноценных ассетов. Это контентное поле, не decision рендера. После [sprite-assets.md](sprite-assets.md) renderer для `player`/`enemy`/`boss` поле не читает (визуал — preloaded sprite), но поле остаётся в архетипе как content-плейсхолдер для не-renderer сценариев (debug overlay, мини-карта, tooling). Удаление — отдельное решение, когда появится фактический consumer или подтверждение, что его не будет.
@@ -107,7 +109,8 @@
   type BossArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;                      // wu
+    radius: number;                      // wu, legacy circle metric для не-мигрированных consumers
+    contactBox: Readonly<{ width: number; height: number }>;  // wu, derive body footprint
     maxHp: number;                       // целое > 0
     maxSpeed: number;                    // wu/s, >= 0; базовая скорость перемещения, если босс двигается
     color: number;                       // 0xRRGGBB
@@ -126,8 +129,25 @@
   }>;
   ```
 - Контакт с игроком и knockback следуют тем же правилам, что и `EnemyArchetype` ([enemy-contact.md](enemy-contact.md)); числа задаются в архетипе босса.
+- `contactBox` для босса следует тому же правилу, что и у `EnemyArchetype`: derive из sprite asset, owner body-contact `player ↔ boss`.
 - Минимум **две** записи в `phases` и минимум **два** различимых ключа в `attacks` для acceptance истории 006 ([../stories/006-boss-encounter.md](../stories/006-boss-encounter.md)); конкретный выбор атаки из `allowedAttackIds` и паттерна — `BossPhaseSystem` ([boss-encounter.md](boss-encounter.md)).
 - `color` следует тому же правилу, что и `EnemyArchetype.color` после [sprite-assets.md](sprite-assets.md): renderer для `boss` его не читает, поле остаётся как content-плейсхолдер для не-renderer сценариев.
+
+### PlayerArchetype
+
+- Для content-area `players` (история 013) минимальная форма:
+  ```ts
+  type PlayerArchetype = Readonly<{
+    id: string;
+    displayName: string;
+    radius: number;                                       // wu, legacy circle metric для не-мигрированных consumers
+    contactBox: Readonly<{ width: number; height: number }>;  // wu, derive body footprint
+    maxSpeed: number;                                     // wu/s
+    maxHp: number;                                        // целое > 0
+  }>;
+  ```
+- `contactBox` у игрока следует тому же правилу, что и у `EnemyArchetype` / `BossArchetype`: derive из sprite asset по [body-contact-boxes.md](body-contact-boxes.md), без ручных MD-колонок на горизонте 013.
+- `PlayerSpawn` в `SessionDefinition.player` собирается из `PlayerArchetype`, но остаётся отдельным контрактом уровня сессии, потому что хранит стартовую позицию и session-local форму.
 
 ### PlayerSpawn.maxHp
 
@@ -166,6 +186,7 @@
 
 ## Related
 
+- [body-contact-boxes.md](body-contact-boxes.md)
 - [content-boundaries.md](content-boundaries.md)
 - [session-definition.md](session-definition.md)
 - [spawn-plan.md](spawn-plan.md)

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-20 (семантика `winCondition: bossDefeated` — [boss-encounter.md](boss-encounter.md); ранее: формализованы `ZoneBehavior`/`TransitionRules`, `allEncountersComplete`/`playerDeath`, preset `training`, поле `player.maxHp`)
+- Updated: 2026-04-23 (добавлен `player.contactBox` по [body-contact-boxes.md](body-contact-boxes.md); семантика `winCondition: bossDefeated` — [boss-encounter.md](boss-encounter.md); ранее: формализованы `ZoneBehavior`/`TransitionRules`, `allEncountersComplete`/`playerDeath`, preset `training`, поле `player.maxHp`)
 
 ## Context
 
@@ -39,7 +39,7 @@
 - Допускается эволюция внутренних структур вроде `spawnPlan`, `rewardRules` и `tuning`, если она не ломает верхнеуровневую модель сборки сессии.
 - Минимальная форма обязательных полей:
   - `arena` — прямоугольник `{ width, height }` в world-units (см. [arena-and-coordinates.md](arena-and-coordinates.md)). Конкретные значения задаются в `content library` ([content-boundaries.md](content-boundaries.md)).
-  - `player` — стартовое описание игрока в виде `{ position: { x, y }, radius, maxSpeed, maxHp }`, где координаты и радиус — в world-units, скорость — в world-units в секунду, `maxHp` — целое > 0 (источник `HasHealth` из [health-and-death.md](health-and-death.md)). Для preset, в которых игрок не damageable (sandbox без боя), `maxHp` всё равно задаётся явно — отсутствие поля запрещено по тому же правилу «без двух разных «нет данных», что и для других обязательных полей. Дополнительные поля (статус-эффекты, инвентарь) могут добавляться отдельными решениями без слома верхнеуровневой модели.
+- `player` — стартовое описание игрока в виде `{ position: { x, y }, radius, contactBox, maxSpeed, maxHp }`, где координаты и размеры — в world-units, скорость — в world-units в секунду, `maxHp` — целое > 0 (источник `HasHealth` из [health-and-death.md](health-and-death.md)). `contactBox` — axis-aligned body footprint для body-contact и player clamp по [body-contact-boxes.md](body-contact-boxes.md). Для preset, в которых игрок не damageable (sandbox без боя), `maxHp` всё равно задаётся явно — отсутствие поля запрещено по тому же правилу «без двух разных «нет данных», что и для других обязательных полей. Дополнительные поля (статус-эффекты, инвентарь) могут добавляться отдельными решениями без слома верхнеуровневой модели.
   - `seed` — целочисленное значение, единственный источник детерминизма для RNG в симуляции; источники недетерминированного времени/случайности вне `seed` запрещены.
   - `id` — стабильный строковый идентификатор сессии для логов и debug.
 - Поля `loadout`, `modifiers`, `rules`, `uiMeta` остаются в контракте как стабильные имена; их внутренняя структура и обязательность зависят от preset и могут эволюционировать. Builder обязан явно выставить осмысленное значение или `null`/пустой объект — отсутствие поля как такового запрещено, чтобы потребители не разбирали два разных «нет данных».
@@ -125,3 +125,4 @@
 - [health-and-death.md](health-and-death.md)
 - [snapshot-shape.md](snapshot-shape.md)
 - [boss-encounter.md](boss-encounter.md)
+- [body-contact-boxes.md](body-contact-boxes.md)

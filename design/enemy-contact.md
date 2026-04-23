@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (добавлен раздел `Knockback at contact`: враг получает временный импульс от игрока, скорость зависит от взаимной скорости сближения; player не отталкивается)
+- Updated: 2026-04-23 (body-contact player ↔ enemy/boss переведён с circle-vs-circle на `contactBox` по [body-contact-boxes.md](body-contact-boxes.md); broadphase использует derived bounds radius; раздел `Knockback at contact` сохранён)
 
 ## Context
 
@@ -39,10 +39,10 @@
 
 - На фазе `CombatSystem`:
   1. Берёт текущего игрока из `EntityStore`. Если игрок отсутствует или не имеет `HasHealth` ([health-and-death.md](health-and-death.md)) — фаза no-op.
-  2. Через `SpatialIndex` ([runtime-systems.md](runtime-systems.md)) запрашивает соседей игрока в радиусе `player.radius + maxEnemyContactRadius`, где `maxEnemyContactRadius` — оценочная верхняя граница `enemy.radius` среди живых врагов. Конкретный способ оценки — деталь реализации (например, поддерживать `EntityStore.maxEnemyRadius()` или просто пройтись по результатам и отфильтровать по фактическому `enemy.radius`).
+  2. Через `SpatialIndex` ([runtime-systems.md](runtime-systems.md)) запрашивает соседей игрока в радиусе `playerBoundsRadius + maxEnemyContactBoundsRadius`, где оба значения derive-ятся из `contactBox` по [body-contact-boxes.md](body-contact-boxes.md) как circumscribed circle для прямоугольника. Конкретный способ кэширования/оценки — деталь реализации.
   3. Для каждого кандидата `enemy`:
      - если `enemy.contactDamage <= 0` — пропустить;
-     - проверить circle-vs-circle overlap: `dist(player.position, enemy.position) <= player.radius + enemy.radius`;
+     - проверить axis-aligned box-vs-box overlap по `contactBox` игрока и врага/босса;
      - если перекрытия нет — пропустить;
      - если `simTime < enemy.nextContactSimMs` — пропустить (на кулдауне);
      - иначе сформировать `DamageIntent` с `source.kind: 'enemyContact', enemyId: enemy.id`, `amount: enemy.contactDamage`, `hitPosition: player.position`. Поднять `enemy.nextContactSimMs = simTime + enemy.contactCooldownMs`.
@@ -89,7 +89,7 @@
 - Игрок не наносит контактный урон врагам. Поле `contactDamage` живёт только на `EnemyArchetype` ([content-archetypes.md](content-archetypes.md)); у игрока его нет. Если такая механика когда-нибудь появится, это будет новое решение, а не «дописывание» этого.
 - Контракт расширяется на босса 006 без правок: `BossArchetype` (когда появится) получит те же поля `contactDamage`/`contactCooldownMs`, и `CombatSystem` не отличает источник по типу сущности — он смотрит на `contactDamage > 0`.
 - Контактный урон между двумя врагами (friendly fire) не реализуется: фаза смотрит только на пару «враг ↔ игрок». Это соответствует общему правилу `ownerKind`-based friendly fire из [projectiles-and-combat.md](projectiles-and-combat.md).
-- Sweep-collision (быстрый враг прошёл через игрока за один тик) не вводится. Аналогично снарядам ([projectiles-and-combat.md](projectiles-and-combat.md): «без туннелирования»), это **контракт контента**: `enemy.maxSpeed * SIM_STEP_SEC <= enemy.radius + player.radius` обязан соблюдаться автором архетипа. Превышение фиксируется warning через единый log-модуль ([logging.md](logging.md)) на стороне content/builder.
+- Sweep-collision (быстрый враг прошёл через игрока за один тик) не вводится. Это по-прежнему **контракт контента**: `enemy.maxSpeed * SIM_STEP_SEC` не должен существенно превышать минимальный характерный размер body-contact пары. Конкретная warning-эвристика может оставаться консервативной; она не подменяет overlap-правило.
 
 ## Consequences
 
@@ -109,4 +109,5 @@
 - [content-archetypes.md](content-archetypes.md)
 - [snapshot-shape.md](snapshot-shape.md)
 - [logging.md](logging.md)
+- [body-contact-boxes.md](body-contact-boxes.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)

@@ -6,7 +6,7 @@
 
 ## Context
 
-[arena-and-coordinates.md](arena-and-coordinates.md) фиксирует мир в world units (wu), запрещает gameplay-системам оперировать пикселями и закрепляет инвариант «без преимущества от железа»: видимая часть арены, FOV, спавн, скорости — не зависят от размера окна, DPR и render scale из 009. [render-scale.md](render-scale.md) разводит «policy backing-pixels» и «логические/css-размеры canvas» так, что пресет влияет только на пиксельную плотность. [content-archetypes.md](content-archetypes.md) фиксирует `EnemyArchetype.color`/`BossArchetype.color` как «плейсхолдер для рендера, контентное поле, не decision рендера», а также `radius` как gameplay/collision-параметр. [content-boundaries.md](content-boundaries.md) разводит `content library` и presentation. [main-ui-shell.md](main-ui-shell.md) фиксирует, что `Renderer` создаётся `UiShell` при `menu → running` и владеет canvas-пикселями. [content-authoring.md](content-authoring.md) задаёт правила пар `<area>.ts ↔ <area>.generated.ts` рядом с потребителем и атомарную генерацию.
+[arena-and-coordinates.md](arena-and-coordinates.md) фиксирует мир в world units (wu), запрещает gameplay-системам оперировать пикселями и закрепляет инвариант «без преимущества от железа»: видимая часть арены, FOV, спавн, скорости — не зависят от размера окна, DPR и render scale из 009. [render-scale.md](render-scale.md) разводит «policy backing-pixels» и «логические/css-размеры canvas» так, что пресет влияет только на пиксельную плотность. [content-archetypes.md](content-archetypes.md) фиксирует `EnemyArchetype.color`/`BossArchetype.color` как «плейсхолдер для рендера, контентное поле, не decision рендера», а [body-contact-boxes.md](body-contact-boxes.md) разводит visual sprite plane и gameplay body-contact для `player` / `enemy` / `boss`. [content-boundaries.md](content-boundaries.md) разводит `content library` и presentation. [main-ui-shell.md](main-ui-shell.md) фиксирует, что `Renderer` создаётся `UiShell` при `menu → running` и владеет canvas-пикселями. [content-authoring.md](content-authoring.md) задаёт правила пар `<area>.ts ↔ <area>.generated.ts` рядом с потребителем и атомарную генерацию.
 
 Сегодня [src/main/render/Renderer.ts](../src/main/render/Renderer.ts) рисует `player`/`enemy`/`boss` цветными `THREE.CircleGeometry` с цветом из `EnemyArchetype.color`/`BossArchetype.color` и радиусом из соответствующего архетипа. Появление PNG-ассетов под `public/assets/**` (история 013) одновременно вводит:
 
@@ -76,7 +76,7 @@
 
 - В [src/main/render/Renderer.ts](../src/main/render/Renderer.ts) ветки для `player`/`enemy`/`boss` создают `THREE.Mesh` с `THREE.PlaneGeometry(worldSize.width, worldSize.height)` и `THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false })`. `THREE.CircleGeometry` для этих kinds не используется.
 - Источник `map` — `THREE.Texture` из preloaded набора, ключ — `archetypeId`. Renderer **не** инициирует загрузку текстуры; если её нет — это hard error (см. ниже).
-- `radius` из `EnemyArchetype`/`BossArchetype`/`PlayerSpawn` остаётся **только** gameplay/collision-параметром (`MovementSystem`, `CombatSystem`, `enemy-contact.md`, `projectiles-and-combat.md`). `radius` и `worldSize` могут не совпадать визуально: спрайт может быть больше или меньше collision-круга. Это намеренно: визуальная плотность ассета и хитбокс — разные оси, и решение их не связывает.
+- Gameplay body-contact для `player` / `enemy` / `boss` не живёт в этом файле: после [body-contact-boxes.md](body-contact-boxes.md) его owner — derive `contactBox` в shared/runtime-слое. `worldSize` и `contactBox` на горизонте 013 совпадают по producer-правилу, но остаются разными контрактами: первый presentation-only, второй gameplay.
 - Anchor `{0.5, 0.5}` для MVP означает, что центр PlaneGeometry совпадает с position сущности из снапшота. Если в будущем потребуется иная привязка (например, ноги вместо центра) — это правка `anchor` в visual spec и применение его в renderer; контракт `position` снапшота не трогается.
 - Z-order не меняется: player/enemy/boss остаются на том же `z`, что сейчас (`ENEMY_Z` из renderer-а), projectile выше, drop ниже, zone overlay поверх.
 - `transparent: true` нужен для PNG с альфа-каналом; `depthWrite: false` — чтобы прозрачные края не клипали друг друга при пересечении (спрайты лежат на одинаковом z-плоскости, порядок отрисовки задаётся z-координатой и `renderOrder`).
@@ -125,6 +125,7 @@
 - [content-archetypes.md](content-archetypes.md)
 - [content-authoring.md](content-authoring.md)
 - [content-boundaries.md](content-boundaries.md)
+- [body-contact-boxes.md](body-contact-boxes.md)
 - [main-ui-shell.md](main-ui-shell.md)
 - [web-stack.md](web-stack.md)
 - [testing.md](testing.md)
