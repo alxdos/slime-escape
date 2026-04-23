@@ -129,7 +129,7 @@ async function listSessionMarkdownFiles(sourceDirectory: string): Promise<Readon
   const sourcePaths = entries
     .filter((entry) => entry.isFile() && extname(entry.name) === '.md')
     .map((entry) => join(sourceDirectory, entry.name))
-    .sort((left, right) => left.localeCompare(right));
+    .sort(compareSessionSourcePaths);
 
   if (sourcePaths.length === 0) {
     throw new ContentBuildError(`${sourceDirectory}: expected at least one .md source file`);
@@ -532,6 +532,14 @@ function requireColumnCell(
 
 function presetIdFromSourcePath(sourcePath: string): string {
   return basename(sourcePath, extname(sourcePath));
+}
+
+function compareSessionSourcePaths(left: string, right: string): number {
+  const leftPresetId = presetIdFromSourcePath(left);
+  const rightPresetId = presetIdFromSourcePath(right);
+  if (leftPresetId < rightPresetId) return -1;
+  if (leftPresetId > rightPresetId) return 1;
+  return 0;
 }
 
 function assertNever(value: never): never {
