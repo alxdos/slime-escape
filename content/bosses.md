@@ -53,3 +53,9 @@
 | id | fire | phaseChange |
 |---|---|---|
 | slime-king | boss/boss-fireball | boss/boss-ahaha |
+
+## Visual
+
+| id | image |
+|---|---|
+| slime-king | /assets/boss-03.png |
