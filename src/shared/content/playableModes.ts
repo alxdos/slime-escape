@@ -1,31 +1,10 @@
 import { buildSessionDefinition } from './buildSession';
 import { resolveModePreset, type ModePresetId } from './presets';
+import { getPlayableModeCatalog, type PlayableModeEntry } from './sessions';
 
-export type PlayableModeEntry = Readonly<{
-  presetId: ModePresetId;
-  displayName: string;
-  description: string;
-  order: number;
-}>;
+export type { PlayableModeEntry } from './sessions';
 
-const PLAYABLE_MODE_CATALOG_UNSORTED: ReadonlyArray<PlayableModeEntry> = [
-  {
-    presetId: 'campaign',
-    displayName: 'Побег',
-    description: 'Основной забег: три волны, передышки и финальный босс.',
-    order: 0
-  },
-  {
-    presetId: 'training',
-    displayName: 'Тренировка',
-    description: 'Короткая сессия без босса, чтобы размяться и проверить сборку.',
-    order: 1
-  }
-];
-
-export const PLAYABLE_MODE_CATALOG: ReadonlyArray<PlayableModeEntry> = [
-  ...PLAYABLE_MODE_CATALOG_UNSORTED
-].sort((left, right) => left.order - right.order);
+export const PLAYABLE_MODE_CATALOG: ReadonlyArray<PlayableModeEntry> = getPlayableModeCatalog();
 
 validatePlayableModeCatalog(PLAYABLE_MODE_CATALOG);
 
