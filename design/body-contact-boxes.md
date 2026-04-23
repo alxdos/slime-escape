@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-23
+- Updated: 2026-04-23 (follow-up: `projectiles-and-combat.md` переиспользует тот же `contactBox` контракт для projectile hit detection по `player` / `enemy` / `boss`)
 
 ## Context
 
@@ -18,8 +18,9 @@
 
 ### Scope
 
-- Решение касается только **body-contact** для `player`, `enemy`, `boss` и player clamp по границам арены.
-- `projectile`, `drop`, zone/hazard overlap и прочие circle-based проверки этим решением **не** мигрируются; они остаются отдельной задачей.
+- Исходный owner решения — **body-contact** для `player`, `enemy`, `boss` и player clamp по границам арены.
+- После follow-up в [projectiles-and-combat.md](projectiles-and-combat.md) тот же `contactBox` также используется как target shape для projectile hit detection по `player` / `enemy` / `boss`.
+- `drop`, zone/hazard overlap и прочие circle-based проверки этим решением по-прежнему **не** мигрируются; они остаются отдельной задачей.
 - Форма body-contact — axis-aligned rectangle (`contactBox`), без rotation и без skew. Центр box совпадает с `entity.position`.
 
 ### ContactBox contract
@@ -72,13 +73,13 @@
 ### Relationship with existing radius fields
 
 - Это решение **не удаляет** существующие `radius` поля из `PlayerSpawn` / `EnemyArchetype` / `BossArchetype` в рамках данного прохода.
-- После принятия этого решения `radius` больше не является источником правды для body-contact `player ↔ enemy/boss` и для player clamp.
-- Системы, которые этим решением не мигрируются (например projectile overlap или spawn inset), могут продолжать использовать `radius` до отдельного пересмотра. Это осознанный переходный долг, а не скрытая семантика.
+- После принятия этого решения `radius` больше не является источником правды для body-contact `player ↔ enemy/boss`, для projectile hit detection по `player` / `enemy` / `boss` и для player clamp.
+- Системы, которые этим решением не мигрируются (например spawn inset, boss melee checks или drop overlap), могут продолжать использовать `radius` до отдельного пересмотра. Это осознанный переходный долг, а не скрытая семантика.
 
 ## Consequences
 
 - История 013 получает body-contact, который лучше совпадает с прямоугольными спрайтами без перехода на ellipses или pixel-perfect masks.
-- Asset pipeline 013 расширяется: одно и то же derive-правило из PNG теперь кормит не только visual registry, но и gameplay `contactBox` в shared content.
+- Asset pipeline 013 расширяется: одно и то же derive-правило из PNG теперь кормит не только visual registry, но и gameplay `contactBox` в shared content, причём и для body-contact, и для projectile target overlap.
 - `radius` остаётся переходным полем для не-мигрированных consumers. Это честный компромисс: текущая правка лечит главное визуальное расхождение, не притворяясь полной заменой всех collision rules.
 - Будущий tighter-fit вариант (trimmed opaque bounds, ручной override, эллипсы) может расширить producer `contactBox`, не ломая `CombatSystem` и `MovementSystem`.
 

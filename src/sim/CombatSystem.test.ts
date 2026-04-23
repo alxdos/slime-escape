@@ -48,14 +48,14 @@ const CONTACT_TEST_ENEMY = {
 } as const;
 
 function stationaryEnemySpec(position: { x: number; y: number }): EnemySpawnSpec {
-    return {
-      archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
-      position,
-      radius: STATIONARY_TEST_ENEMY.radius,
-      contactBox: STATIONARY_TEST_ENEMY.contactBox,
-      behavior: STATIONARY_TEST_ENEMY.behavior,
-      maxHp: STATIONARY_TEST_ENEMY.maxHp,
-      maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
+  return {
+    archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
+    position,
+    radius: STATIONARY_TEST_ENEMY.radius,
+    contactBox: STATIONARY_TEST_ENEMY.contactBox,
+    behavior: STATIONARY_TEST_ENEMY.behavior,
+    maxHp: STATIONARY_TEST_ENEMY.maxHp,
+    maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
     contactDamage: STATIONARY_TEST_ENEMY.contactDamage,
     contactCooldownMs: STATIONARY_TEST_ENEMY.contactCooldownMs,
     knockbackBaseImpulse: STATIONARY_TEST_ENEMY.knockbackBaseImpulse,
@@ -128,7 +128,7 @@ describe('CombatSystem', () => {
 
   it('produces a damage intent and hit event when projectile reaches an enemy', () => {
     const { store, index, combat } = setupCombat();
-    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 1, y: 0 }));
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 0.75, y: 0 }));
     const input = makeInput({ aimWorld: { x: 5, y: 0 }, firing: true });
     const events: RuntimeEvent[] = [];
 
@@ -141,6 +141,22 @@ describe('CombatSystem', () => {
     const hitEvents = events.filter((e) => e.kind === 'hit');
     expect(hitEvents).toHaveLength(1);
     expect(store.projectileCount()).toBe(0);
+  });
+
+  it('hits an enemy by contactBox even when the legacy radius would miss', () => {
+    const { store, index, combat } = setupCombat();
+    const enemy = store.spawnEnemy({
+      ...stationaryEnemySpec({ x: 0.85, y: 0 }),
+      radius: 0.3,
+      contactBox: { width: 1.4, height: 0.4 }
+    });
+    const input = makeInput({ aimWorld: { x: 5, y: 0 }, firing: true });
+
+    const intents = combat.tick(input, store, index, 0, ARENA, () => {});
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(enemy.id);
+    expect(intents[0]?.source.kind).toBe('projectile');
   });
 
   it('removes projectiles that exceed projectileTtlMs without producing a damage intent', () => {
@@ -197,6 +213,29 @@ describe('CombatSystem', () => {
       return enemy !== null;
     });
     expect(targetsEnemy).toBe(false);
+  });
+
+  it('hits the player by contactBox for enemy projectiles even outside the player radius', () => {
+    const { store, index, combat, player } = setupCombat();
+    store.spawnProjectile({
+      weaponArchetypeId: PISTOL.id,
+      ownerKind: 'enemy',
+      position: {
+        x: player.position.x + player.contactBox.width / 2 - 0.01,
+        y: player.position.y + player.contactBox.height / 2 - 0.08
+      },
+      velocity: { vx: 0, vy: 0 },
+      radius: PISTOL.projectileRadius,
+      damage: PISTOL.damage,
+      expireAtSimMs: 10_000
+    });
+
+    const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, () => {});
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(player.id);
+    expect(intents[0]?.source.kind).toBe('projectile');
+    expect(store.projectileCount()).toBe(0);
   });
 
   it('clear() drops registered loadout so player no longer fires', () => {

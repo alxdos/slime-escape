@@ -10,7 +10,7 @@ import type {
 import { SIM_STEP_MS } from '../timing';
 
 import { SANDBOX_ARENA } from './arenas';
-import { BOSS_SCRAP_KING } from './bosses';
+import { BOSS_ARCHETYPES, BOSS_SCRAP_KING } from './bosses';
 import {
   ENEMY_ARCHETYPES,
   SLIME_BUG,
@@ -392,20 +392,29 @@ function warnIfWeaponMayTunnel(weaponId: string): void {
   if (weapon === undefined) {
     throw new Error(`unknown weapon archetype: ${weaponId}`);
   }
-  let minEnemyRadius = Number.POSITIVE_INFINITY;
+  let minTargetInsetRadius = Number.POSITIVE_INFINITY;
   for (const archetype of Object.values(ENEMY_ARCHETYPES)) {
-    if (archetype.radius < minEnemyRadius) minEnemyRadius = archetype.radius;
+    minTargetInsetRadius = Math.min(
+      minTargetInsetRadius,
+      Math.min(archetype.contactBox.width, archetype.contactBox.height) / 2
+    );
   }
-  if (!Number.isFinite(minEnemyRadius)) return;
+  for (const archetype of Object.values(BOSS_ARCHETYPES)) {
+    minTargetInsetRadius = Math.min(
+      minTargetInsetRadius,
+      Math.min(archetype.contactBox.width, archetype.contactBox.height) / 2
+    );
+  }
+  if (!Number.isFinite(minTargetInsetRadius)) return;
 
   const stepDistance = weapon.projectileSpeed * (SIM_STEP_MS / 1000);
-  const reach = weapon.projectileRadius + minEnemyRadius;
+  const reach = weapon.projectileRadius + minTargetInsetRadius;
   if (stepDistance > reach) {
     log.warn('weapon may tunnel through smallest target per design/projectiles-and-combat.md', {
       weaponId: weapon.id,
       stepDistance,
       reach,
-      minEnemyRadius
+      minTargetInsetRadius
     });
   }
 }

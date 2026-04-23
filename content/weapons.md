@@ -51,7 +51,7 @@
 
 | id | projectileSpeed | projectileRadius | projectileTtlMs |
 |---|---:|---:|---:|
-| pistol | 24 | 0.1 | 2000 |
+| pistol | 12 | 0.1 | 2000 |
 | shotgun | 14 | 0.18 | 500 |
 | smg | 22 | 0.08 | 1600 |
 | sniper | 28 | 0.08 | 2400 |

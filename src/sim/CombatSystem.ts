@@ -1,3 +1,4 @@
+import { BOSS_ARCHETYPES } from '../shared/content/bosses';
 import { ENEMY_ARCHETYPES } from '../shared/content/enemies';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
@@ -67,7 +68,7 @@ export function createCombatSystem(
     },
     tick(input, store, index, simTimeMs, arena, emit): ReadonlyArray<DamageIntent> {
       const maxContactBoundsRadius = computeMaxContactBoundsRadius(store);
-      const maxProjectileTargetRadius = computeMaxProjectileTargetRadius(store);
+      const maxProjectileTargetBoundsRadius = computeMaxProjectileTargetBoundsRadius(store);
       runFiringDecisions(input, store, simTimeMs, shooterWeapons, emit);
       runProjectileMovement(store);
       runLifetimeCleanup(store, simTimeMs, arena);
@@ -77,7 +78,7 @@ export function createCombatSystem(
         store,
         index,
         simTimeMs,
-        maxProjectileTargetRadius,
+        maxProjectileTargetBoundsRadius,
         emit
       );
       return contactIntents.length === 0
@@ -230,14 +231,14 @@ function runHitDetection(
   store: EntityStore,
   index: SpatialIndex,
   simTimeMs: number,
-  maxEnemyRadius: number,
+  maxProjectileTargetBoundsRadius: number,
   emit: (event: RuntimeEvent) => void
 ): ReadonlyArray<DamageIntent> {
   const intents: DamageIntent[] = [];
   const hitProjectileIds: EntityId[] = [];
 
   for (const projectile of store.projectiles()) {
-    const target = findFirstHit(projectile, index, maxEnemyRadius);
+    const target = findFirstHit(projectile, index, maxProjectileTargetBoundsRadius);
     if (target === null) continue;
 
     intents.push({
@@ -274,20 +275,17 @@ function runHitDetection(
 function findFirstHit(
   projectile: Projectile,
   index: SpatialIndex,
-  maxEnemyRadius: number
+  maxProjectileTargetBoundsRadius: number
 ): Enemy | Boss | Player | null {
   const candidates = index.queryRadius(
     projectile.position.x,
     projectile.position.y,
-    projectile.radius + maxEnemyRadius
+    projectile.radius + maxProjectileTargetBoundsRadius
   );
   for (const candidate of candidates) {
     const target = asValidTarget(candidate, projectile.ownerKind);
     if (target === null) continue;
-    const dx = target.position.x - projectile.position.x;
-    const dy = target.position.y - projectile.position.y;
-    const reach = projectile.radius + target.radius;
-    if (dx * dx + dy * dy <= reach * reach) {
+    if (circleOverlapsBox(projectile, target)) {
       return target;
     }
   }
@@ -305,13 +303,17 @@ function asValidTarget(
   return null;
 }
 
-function computeMaxProjectileTargetRadius(store: EntityStore): number {
+function computeMaxProjectileTargetBoundsRadius(store: EntityStore): number {
   let max = 0;
-  for (const archetype of Object.values(ENEMY_ARCHETYPES)) {
-    if (archetype.radius > max) max = archetype.radius;
+  const player = store.player();
+  if (player !== null) {
+    max = Math.max(max, contactBoundsRadius(player));
   }
-  for (const boss of store.bosses()) {
-    if (boss.radius > max) max = boss.radius;
+  for (const archetype of Object.values(ENEMY_ARCHETYPES)) {
+    max = Math.max(max, contactBoundsRadius(archetype));
+  }
+  for (const archetype of Object.values(BOSS_ARCHETYPES)) {
+    max = Math.max(max, contactBoundsRadius(archetype));
   }
   return max;
 }
@@ -341,4 +343,29 @@ function boxesOverlap(
     Math.abs(left.position.y - right.position.y) <=
       (left.contactBox.height + right.contactBox.height) / 2
   );
+}
+
+function circleOverlapsBox(
+  circle: { position: Vec2; radius: number },
+  box: { position: Vec2; contactBox: { width: number; height: number } }
+): boolean {
+  const halfWidth = box.contactBox.width / 2;
+  const halfHeight = box.contactBox.height / 2;
+  const closestX = clamp(
+    circle.position.x,
+    box.position.x - halfWidth,
+    box.position.x + halfWidth
+  );
+  const closestY = clamp(
+    circle.position.y,
+    box.position.y - halfHeight,
+    box.position.y + halfHeight
+  );
+  const dx = circle.position.x - closestX;
+  const dy = circle.position.y - closestY;
+  return dx * dx + dy * dy <= circle.radius * circle.radius;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
