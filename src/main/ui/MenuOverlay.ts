@@ -20,13 +20,14 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   root.dataset['role'] = 'menu-overlay';
   root.style.cssText = baseOverlayStyle();
 
+  const titleImage = document.createElement('img');
+  titleImage.alt = 'Slime Escape';
+  titleImage.src = '/images/title-1000.png';
+  titleImage.style.cssText = titleImageStyle();
+  root.appendChild(titleImage);
+
   const card = document.createElement('div');
   card.style.cssText = cardStyle();
-
-  const title = document.createElement('h1');
-  title.textContent = 'Slime Escape';
-  title.style.cssText = titleStyle();
-  card.appendChild(title);
 
   const subtitle = document.createElement('p');
   subtitle.textContent = 'Выбери режим и запусти новый забег.';
@@ -81,11 +82,30 @@ function baseOverlayStyle(): string {
     'position:fixed',
     'inset:0',
     'display:flex',
+    'flex-direction:column',
     'align-items:center',
     'justify-content:center',
-    'background:rgba(5,6,10,0.85)',
+    'gap:24px',
+    'box-sizing:border-box',
+    'padding:32px 24px',
+    'overflow:auto',
+    'background-image:linear-gradient(180deg, rgba(5,6,10,0.28) 0%, rgba(5,6,10,0.64) 100%), url("/images/bg/bg-menu.jpg")',
+    'background-size:cover',
+    'background-position:center bottom',
+    'background-repeat:no-repeat',
     'z-index:100',
     'cursor:default'
+  ].join(';');
+}
+
+function titleImageStyle(): string {
+  return [
+    'display:block',
+    'width:min(500px, calc(100vw - 48px))',
+    'height:auto',
+    'filter:drop-shadow(0 16px 28px rgba(0,0,0,0.45))',
+    'pointer-events:none',
+    'user-select:none'
   ].join(';');
 }
 
@@ -101,17 +121,6 @@ function cardStyle(): string {
     'border:1px solid #2a3142',
     'border-radius:8px',
     'box-shadow:0 12px 40px rgba(0,0,0,0.6)'
-  ].join(';');
-}
-
-function titleStyle(): string {
-  return [
-    'margin:0',
-    'font-size:28px',
-    'font-weight:600',
-    'color:#e6e8ef',
-    'letter-spacing:0.04em',
-    'text-align:center'
   ].join(';');
 }
 
