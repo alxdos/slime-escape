@@ -75,6 +75,30 @@ describe('content-build enemies area', () => {
     expect(visuals).toContain('ENEMY_VISUAL_SPECS');
   });
 
+  it('rejects enemies without required inline image nodes', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-enemy-missing-image-'));
+    const sourcePath = join(directory, 'enemies.md');
+    await writeFile(
+      sourcePath,
+      makeEnemiesMarkdown().replace('![One-Eye Slime](../public/assets/slime-01.png)\n\n', ''),
+      'utf8'
+    );
+
+    await expect(parseEnemiesArea(sourcePath)).rejects.toThrow(/expected !\[…\]/);
+  });
+
+  it('rejects legacy enemy Visual balance groups', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-enemy-visual-group-'));
+    const sourcePath = join(directory, 'enemies.md');
+    await writeFile(
+      sourcePath,
+      `${makeEnemiesMarkdown()}\n## Visual\n\n| id | image |\n|---|---|\n| slime-one-eye | /assets/slime-01.png |\n`,
+      'utf8'
+    );
+
+    await expect(parseEnemiesArea(sourcePath)).rejects.toThrow(/replaced by inline image/);
+  });
+
   it('rejects duplicate enemy/drop pairs in the drops table', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'content-build-duplicate-drop-'));
     const sourcePath = join(directory, 'enemies.md');
@@ -140,12 +164,16 @@ function makeEnemiesMarkdown(
 
 ## test-stationary
 
+![Test Stationary](../public/assets/slime-05.png)
+
 | field | value |
 |---|---|
 | displayName | Test Stationary |
 | color | #ff7766 |
 
 ## slime-one-eye
+
+![One-Eye Slime](../public/assets/slime-01.png)
 
 | field | value |
 |---|---|
@@ -201,12 +229,5 @@ ${extraRunnerDropRow}
 | id | sampleIds | intervalMinMs | intervalMaxMs |
 |---|---|---:|---:|
 | slime-one-eye | slimes/hit-1, slimes/hit-2 | 3000 | 6000 |
-
-## Visual
-
-| id | image |
-|---|---|
-| test-stationary | /assets/slime-05.png |
-| slime-one-eye | /assets/slime-01.png |
 `;
 }
