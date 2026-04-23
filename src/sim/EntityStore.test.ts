@@ -17,7 +17,7 @@ const SPEC = {
 };
 
 const ENEMY_SPEC: EnemySpawnSpec = {
-  archetypeId: 'training-target',
+  archetypeId: 'test-stationary-enemy',
   position: { x: 3, y: 4 },
   radius: 0.6,
   behavior: 'stationary',

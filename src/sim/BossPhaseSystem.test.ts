@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SLIME_KING } from '../shared/content/bosses';
+import { BOSS_SCRAP_KING } from '../shared/content/bosses';
 import type { RuntimeEvent } from '../shared/events';
 
 import { createBossPhaseSystem } from './BossPhaseSystem';
@@ -19,7 +19,7 @@ describe('BossPhaseSystem', () => {
         type: 'boss',
         spawnPlan: {
           kind: 'boss',
-          bossArchetypeId: SLIME_KING.id,
+          bossArchetypeId: BOSS_SCRAP_KING.id,
           position: { x: 0, y: 0 }
         },
         zoneBehavior: { kind: 'disabled' },
@@ -35,7 +35,9 @@ describe('BossPhaseSystem', () => {
     const boss = [...store.bosses()][0]!;
     expect(boss.phaseId).toBe('crown-intact');
 
-    boss.hp = Math.floor(SLIME_KING.maxHp * SLIME_KING.phases[0]!.exitWhenHpFractionAtOrBelow);
+    boss.hp = Math.floor(
+      BOSS_SCRAP_KING.maxHp * BOSS_SCRAP_KING.phases[0]!.exitWhenHpFractionAtOrBelow
+    );
 
     const events: RuntimeEvent[] = [];
     const bossPhase = createBossPhaseSystem();

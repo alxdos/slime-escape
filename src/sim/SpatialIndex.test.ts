@@ -9,7 +9,7 @@ import { createSpatialIndex } from './SpatialIndex';
 
 const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
 
-function enemyAt(x: number, y: number, archetypeId = 'training-target'): EnemySpawnSpec {
+function enemyAt(x: number, y: number, archetypeId = 'test-stationary-enemy'): EnemySpawnSpec {
   return {
     archetypeId,
     position: { x, y },

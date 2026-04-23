@@ -1,12 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { DROP_ARCHETYPES, HEAL_ORB } from '../shared/content/drops';
-import {
-  SLIME_FAST,
-  SLIME_TANK,
-  TRAINING_TARGET,
-  type EnemyArchetype
-} from '../shared/content/enemies';
+import type { EnemyArchetype } from '../shared/content/enemies';
 import type { RuntimeEvent } from '../shared/events';
 import { createRng, type Rng } from '../shared/rng';
 import { SIM_STEP_MS } from '../shared/timing';
@@ -17,16 +12,61 @@ import { createEntityStore, type EntityId } from './EntityStore';
 import { createHealthDeathSystem, type DeathContext } from './HealthDeathSystem';
 
 const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 5 };
+const NO_DROP_TEST_ENEMY: EnemyArchetype = {
+  id: 'test-no-drop-enemy',
+  displayName: 'Test No Drop Enemy',
+  radius: 0.6,
+  maxHp: 3,
+  behavior: 'stationary',
+  maxSpeed: 0,
+  contactDamage: 0,
+  contactCooldownMs: 1,
+  knockbackBaseImpulse: 0,
+  knockbackVelocityScale: 0,
+  knockbackDurationMs: 1,
+  color: 0xff7766,
+  dropTable: []
+};
+const LIGHT_DROPPER: EnemyArchetype = {
+  ...NO_DROP_TEST_ENEMY,
+  id: 'test-light-dropper',
+  displayName: 'Test Light Dropper',
+  radius: 0.4,
+  maxHp: 1,
+  behavior: 'chase',
+  maxSpeed: 4,
+  contactDamage: 1,
+  contactCooldownMs: 800,
+  knockbackBaseImpulse: 8,
+  knockbackVelocityScale: 1.5,
+  knockbackDurationMs: 350,
+  dropTable: [{ archetypeId: HEAL_ORB.id, chance: 0.25 }]
+};
+const HEAVY_DROPPER: EnemyArchetype = {
+  ...NO_DROP_TEST_ENEMY,
+  id: 'test-heavy-dropper',
+  displayName: 'Test Heavy Dropper',
+  radius: 0.65,
+  maxHp: 5,
+  behavior: 'chase',
+  maxSpeed: 1.7,
+  contactDamage: 2,
+  contactCooldownMs: 1000,
+  knockbackBaseImpulse: 3,
+  knockbackVelocityScale: 0.5,
+  knockbackDurationMs: 220,
+  dropTable: [{ archetypeId: HEAL_ORB.id, chance: 0.55 }]
+};
 const REGISTRY: Readonly<Record<string, EnemyArchetype>> = {
-  [TRAINING_TARGET.id]: TRAINING_TARGET,
-  [SLIME_FAST.id]: SLIME_FAST,
-  [SLIME_TANK.id]: SLIME_TANK
+  [NO_DROP_TEST_ENEMY.id]: NO_DROP_TEST_ENEMY,
+  [LIGHT_DROPPER.id]: LIGHT_DROPPER,
+  [HEAVY_DROPPER.id]: HEAVY_DROPPER
 };
 
 // Enemy archetype with chance:1 for guaranteed-drop tests; keeps the rest of
 // the tests independent from concrete mulberry32 values for any single seed.
 const GUARANTEED_DROPPER: EnemyArchetype = {
-  ...SLIME_TANK,
+  ...HEAVY_DROPPER,
   id: 'test-guaranteed-dropper',
   dropTable: [{ archetypeId: HEAL_ORB.id, chance: 1 }]
 };
@@ -83,7 +123,7 @@ describe('DropSystem death hook (RNG discipline)', () => {
     drops.onDeathHook(
       makeDeathContext({
         entityId: 7,
-        archetypeId: TRAINING_TARGET.id, // dropTable: []
+        archetypeId: NO_DROP_TEST_ENEMY.id,
         position: { x: 1, y: 2 },
         simTime: 100
       }),
@@ -106,7 +146,7 @@ describe('DropSystem death hook (RNG discipline)', () => {
     drops.onDeathHook(
       makeDeathContext({
         entityId: 8,
-        archetypeId: SLIME_TANK.id,
+        archetypeId: HEAVY_DROPPER.id,
         position: { x: 3, y: -1 },
         simTime: 200
       }),
@@ -124,7 +164,7 @@ describe('DropSystem death hook (RNG discipline)', () => {
       drops.onDeathHook(
         makeDeathContext({
           entityId: 1,
-          archetypeId: SLIME_FAST.id,
+          archetypeId: LIGHT_DROPPER.id,
           position: { x: 0, y: 0 },
           simTime: 0
         }),
@@ -200,10 +240,10 @@ describe('DropSystem death hook (spawn semantics)', () => {
       const drops = createDropSystem(REGISTRY_WITH_GUARANTEED);
       drops.setRng(createRng(seed));
       const deaths: Array<{ archetypeId: string; position: { x: number; y: number } }> = [
-        { archetypeId: SLIME_FAST.id, position: { x: 1, y: 1 } },
+        { archetypeId: LIGHT_DROPPER.id, position: { x: 1, y: 1 } },
         { archetypeId: GUARANTEED_DROPPER.id, position: { x: -2, y: 3 } },
-        { archetypeId: SLIME_TANK.id, position: { x: 0, y: -4 } },
-        { archetypeId: SLIME_FAST.id, position: { x: 5, y: 5 } },
+        { archetypeId: HEAVY_DROPPER.id, position: { x: 0, y: -4 } },
+        { archetypeId: LIGHT_DROPPER.id, position: { x: 5, y: 5 } },
         { archetypeId: GUARANTEED_DROPPER.id, position: { x: -3, y: -1 } }
       ];
       let nextEntity = 100;

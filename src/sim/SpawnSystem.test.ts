@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { SLIME_KING } from '../shared/content/bosses';
-import {
-  SLIME_FAST,
-  SLIME_TANK,
-  TRAINING_TARGET,
-  type EnemyArchetype
-} from '../shared/content/enemies';
+import type { BossArchetype } from '../shared/content/bosses';
+import type { EnemyArchetype } from '../shared/content/enemies';
 import { createRng } from '../shared/rng';
 import type { ArenaConfig, EncounterDefinition } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
@@ -15,11 +10,87 @@ import { createEntityStore } from './EntityStore';
 import { createSpawnSystem } from './SpawnSystem';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
+const STATIONARY_TEST_ENEMY: EnemyArchetype = {
+  id: 'test-stationary-enemy',
+  displayName: 'Test Stationary Enemy',
+  radius: 0.6,
+  maxHp: 3,
+  behavior: 'stationary',
+  maxSpeed: 0,
+  contactDamage: 0,
+  contactCooldownMs: 1,
+  knockbackBaseImpulse: 0,
+  knockbackVelocityScale: 0,
+  knockbackDurationMs: 1,
+  color: 0xff7766,
+  dropTable: []
+};
+const FAST_TEST_ENEMY: EnemyArchetype = {
+  ...STATIONARY_TEST_ENEMY,
+  id: 'test-fast-enemy',
+  displayName: 'Test Fast Enemy',
+  radius: 0.4,
+  maxHp: 1,
+  behavior: 'chase',
+  maxSpeed: 4,
+  contactDamage: 1,
+  contactCooldownMs: 800,
+  knockbackBaseImpulse: 8,
+  knockbackVelocityScale: 1.5,
+  knockbackDurationMs: 350
+};
+const TANK_TEST_ENEMY: EnemyArchetype = {
+  ...STATIONARY_TEST_ENEMY,
+  id: 'test-tank-enemy',
+  displayName: 'Test Tank Enemy',
+  radius: 0.65,
+  maxHp: 5,
+  behavior: 'chase',
+  maxSpeed: 1.7,
+  contactDamage: 2,
+  contactCooldownMs: 1000,
+  knockbackBaseImpulse: 3,
+  knockbackVelocityScale: 0.5,
+  knockbackDurationMs: 220
+};
+const TEST_BOSS: BossArchetype = {
+  id: 'test-boss',
+  displayName: 'Test Boss',
+  radius: 1.35,
+  maxHp: 40,
+  maxSpeed: 3,
+  color: 0xaa44ff,
+  contactDamage: 2,
+  contactCooldownMs: 800,
+  knockbackBaseImpulse: 5,
+  knockbackVelocityScale: 0.4,
+  knockbackDurationMs: 220,
+  phases: [
+    {
+      id: 'crown-intact',
+      allowedAttackIds: ['coneBurst', 'spawnAdds'],
+      exitWhenHpFractionAtOrBelow: 0.55
+    },
+    {
+      id: 'desperation',
+      allowedAttackIds: ['coneBurst', 'dashSlam'],
+      exitWhenHpFractionAtOrBelow: 0
+    }
+  ],
+  attacks: {
+    coneBurst: { pattern: 'coneBurst', cooldownMs: 1400, damage: 2 },
+    spawnAdds: { pattern: 'spawnAdds', cooldownMs: 3500, damage: 0 },
+    dashSlam: { pattern: 'dashSlam', cooldownMs: 1800, damage: 4 }
+  }
+};
 
-const REGISTRY: Readonly<Record<string, EnemyArchetype>> = {
-  [TRAINING_TARGET.id]: TRAINING_TARGET,
-  [SLIME_FAST.id]: SLIME_FAST,
-  [SLIME_TANK.id]: SLIME_TANK
+const ENEMY_REGISTRY: Readonly<Record<string, EnemyArchetype>> = {
+  [STATIONARY_TEST_ENEMY.id]: STATIONARY_TEST_ENEMY,
+  [FAST_TEST_ENEMY.id]: FAST_TEST_ENEMY,
+  [TANK_TEST_ENEMY.id]: TANK_TEST_ENEMY
+};
+const BOSS_REGISTRY: Readonly<Record<string, BossArchetype>> = {
+  [TEST_BOSS.id]: TEST_BOSS
 };
 
 function makeEncounter(plan: EncounterDefinition['spawnPlan']): EncounterDefinition {
@@ -38,7 +109,7 @@ function makeEncounter(plan: EncounterDefinition['spawnPlan']): EncounterDefinit
 describe('SpawnSystem static / empty', () => {
   it("'empty' plan spawns nothing", () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(REGISTRY);
+    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
     spawn.onEncounterStart(makeEncounter({ kind: 'empty' }), store, ARENA);
 
     expect(store.enemyCount()).toBe(0);
@@ -46,13 +117,13 @@ describe('SpawnSystem static / empty', () => {
 
   it("'static' plan resolves archetype by id and spawns enemies via the store", () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(REGISTRY);
+    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
     spawn.onEncounterStart(
       makeEncounter({
         kind: 'static',
         spawns: [
-          { archetypeId: TRAINING_TARGET.id, position: { x: 5, y: 0 } },
-          { archetypeId: TRAINING_TARGET.id, position: { x: -3, y: 2 } }
+          { archetypeId: STATIONARY_TEST_ENEMY.id, position: { x: 5, y: 0 } },
+          { archetypeId: STATIONARY_TEST_ENEMY.id, position: { x: -3, y: 2 } }
         ]
       }),
       store,
@@ -66,17 +137,17 @@ describe('SpawnSystem static / empty', () => {
       { x: -3, y: 2 }
     ]);
     for (const enemy of store.enemies()) {
-      expect(enemy.archetypeId).toBe(TRAINING_TARGET.id);
-      expect(enemy.maxHp).toBe(TRAINING_TARGET.maxHp);
-      expect(enemy.hp).toBe(TRAINING_TARGET.maxHp);
-      expect(enemy.radius).toBe(TRAINING_TARGET.radius);
-      expect(enemy.behavior).toBe(TRAINING_TARGET.behavior);
+      expect(enemy.archetypeId).toBe(STATIONARY_TEST_ENEMY.id);
+      expect(enemy.maxHp).toBe(STATIONARY_TEST_ENEMY.maxHp);
+      expect(enemy.hp).toBe(STATIONARY_TEST_ENEMY.maxHp);
+      expect(enemy.radius).toBe(STATIONARY_TEST_ENEMY.radius);
+      expect(enemy.behavior).toBe(STATIONARY_TEST_ENEMY.behavior);
     }
   });
 
   it('throws on unknown archetypeId', () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(REGISTRY);
+    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
 
     expect(() =>
       spawn.onEncounterStart(
@@ -92,7 +163,7 @@ describe('SpawnSystem static / empty', () => {
 
   it('rejects unknown SpawnPlan.kind via assertNever', () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(REGISTRY);
+    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
     const bogus = { kind: 'unknown-kind' } as unknown as EncounterDefinition['spawnPlan'];
 
     expect(() => spawn.onEncounterStart(makeEncounter(bogus), store, ARENA)).toThrow(
@@ -110,15 +181,15 @@ describe('SpawnSystem wave', () => {
     seed?: number;
   }) {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(REGISTRY);
+    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
     spawn.setRng(createRng(opts?.seed ?? 1));
     const plan: EncounterDefinition['spawnPlan'] = {
       kind: 'wave',
       spawns: opts?.spawns ?? [
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_FAST.id },
-        { archetypeId: SLIME_TANK.id },
-        { archetypeId: SLIME_FAST.id }
+        { archetypeId: FAST_TEST_ENEMY.id },
+        { archetypeId: FAST_TEST_ENEMY.id },
+        { archetypeId: TANK_TEST_ENEMY.id },
+        { archetypeId: FAST_TEST_ENEMY.id }
       ],
       spawnIntervalMs: opts?.spawnIntervalMs ?? 100,
       maxAlive: opts?.maxAlive ?? 10,
@@ -172,7 +243,7 @@ describe('SpawnSystem wave', () => {
 
   it('stops dispatching once spawns budget is exhausted', () => {
     const { store, spawn } = setupWave({
-      spawns: [{ archetypeId: SLIME_FAST.id }, { archetypeId: SLIME_TANK.id }],
+      spawns: [{ archetypeId: FAST_TEST_ENEMY.id }, { archetypeId: TANK_TEST_ENEMY.id }],
       spawnIntervalMs: 0
     });
     spawn.onTick(0, store);
@@ -185,7 +256,7 @@ describe('SpawnSystem wave', () => {
 
   it('waveProgress reflects dispatched/total/alive in real time', () => {
     const { store, spawn } = setupWave({
-      spawns: [{ archetypeId: SLIME_FAST.id }, { archetypeId: SLIME_FAST.id }],
+      spawns: [{ archetypeId: FAST_TEST_ENEMY.id }, { archetypeId: FAST_TEST_ENEMY.id }],
       spawnIntervalMs: 0
     });
     expect(spawn.waveProgress()).toEqual({ dispatched: 0, total: 2, alive: 0 });
@@ -237,11 +308,11 @@ describe('SpawnSystem wave', () => {
 
   it('throws on tick if RNG was not provided', () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(REGISTRY);
+    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
     spawn.onEncounterStart(
       makeEncounter({
         kind: 'wave',
-        spawns: [{ archetypeId: SLIME_FAST.id }],
+        spawns: [{ archetypeId: FAST_TEST_ENEMY.id }],
         spawnIntervalMs: 0,
         maxAlive: 1
       }),
@@ -266,11 +337,11 @@ describe('SpawnSystem wave', () => {
 describe('SpawnSystem boss', () => {
   it('boss plan spawns exactly one boss; waveProgress tracks alive until onBossDeath', () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(REGISTRY);
+    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
     spawn.onEncounterStart(
       makeEncounter({
         kind: 'boss',
-        bossArchetypeId: SLIME_KING.id,
+        bossArchetypeId: TEST_BOSS.id,
         position: { x: 2, y: -1 }
       }),
       store,
@@ -280,7 +351,7 @@ describe('SpawnSystem boss', () => {
     expect(store.bossCount()).toBe(1);
     expect(spawn.waveProgress()).toEqual({ dispatched: 1, total: 1, alive: 1 });
     const boss = [...store.bosses()][0]!;
-    expect(boss.archetypeId).toBe(SLIME_KING.id);
+    expect(boss.archetypeId).toBe(TEST_BOSS.id);
     expect(boss.position).toEqual({ x: 2, y: -1 });
 
     spawn.onBossDeath(boss.id);
@@ -292,7 +363,7 @@ describe('SpawnSystem boss', () => {
 
   it('throws on unknown boss archetype id', () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(REGISTRY);
+    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
 
     expect(() =>
       spawn.onEncounterStart(

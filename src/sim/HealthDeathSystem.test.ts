@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { TRAINING_TARGET } from '../shared/content/enemies';
 import { PISTOL } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import { SIM_STEP_MS } from '../shared/timing';
@@ -8,6 +7,18 @@ import { SIM_STEP_MS } from '../shared/timing';
 import type { DamageIntent } from './CombatSystem';
 import { createEntityStore, type EntityId } from './EntityStore';
 import { createHealthDeathSystem, type DeathContext } from './HealthDeathSystem';
+
+const STATIONARY_TEST_ENEMY = {
+  archetypeId: 'test-stationary-enemy',
+  radius: 0.6,
+  maxSpeed: 0,
+  contactDamage: 0,
+  contactCooldownMs: 1,
+  knockbackBaseImpulse: 0,
+  knockbackVelocityScale: 0,
+  knockbackDurationMs: 1,
+  color: 0xff7766
+} as const;
 
 function makeIntent(targetId: EntityId, amount: number): DamageIntent {
   return {
@@ -25,18 +36,18 @@ function makeIntent(targetId: EntityId, amount: number): DamageIntent {
 
 function spawnTarget(store: ReturnType<typeof createEntityStore>, hp = 3) {
   return store.spawnEnemy({
-    archetypeId: TRAINING_TARGET.id,
+    archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
     position: { x: 1, y: 0 },
-    radius: TRAINING_TARGET.radius,
+    radius: STATIONARY_TEST_ENEMY.radius,
     behavior: 'stationary',
     maxHp: hp,
-    maxSpeed: TRAINING_TARGET.maxSpeed,
-    contactDamage: TRAINING_TARGET.contactDamage,
-    contactCooldownMs: TRAINING_TARGET.contactCooldownMs,
-    knockbackBaseImpulse: TRAINING_TARGET.knockbackBaseImpulse,
-    knockbackVelocityScale: TRAINING_TARGET.knockbackVelocityScale,
-    knockbackDurationMs: TRAINING_TARGET.knockbackDurationMs,
-    color: TRAINING_TARGET.color
+    maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
+    contactDamage: STATIONARY_TEST_ENEMY.contactDamage,
+    contactCooldownMs: STATIONARY_TEST_ENEMY.contactCooldownMs,
+    knockbackBaseImpulse: STATIONARY_TEST_ENEMY.knockbackBaseImpulse,
+    knockbackVelocityScale: STATIONARY_TEST_ENEMY.knockbackVelocityScale,
+    knockbackDurationMs: STATIONARY_TEST_ENEMY.knockbackDurationMs,
+    color: STATIONARY_TEST_ENEMY.color
   });
 }
 
@@ -125,7 +136,7 @@ describe('HealthDeathSystem', () => {
     expect(captured).toHaveLength(1);
     const ctx = captured[0]!;
     expect(ctx.entityKind).toBe('enemy');
-    expect(ctx.archetypeId).toBe(TRAINING_TARGET.id);
+    expect(ctx.archetypeId).toBe(STATIONARY_TEST_ENEMY.archetypeId);
     expect(ctx.position).toEqual({ x: 1, y: 0 });
     expect(ctx.cause.kind).toBe('projectile');
     expect(ctx.simTime).toBe(12345);

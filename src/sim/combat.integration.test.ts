@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { TRAINING_TARGET } from '../shared/content/enemies';
 import { PISTOL } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig } from '../shared/session';
@@ -13,6 +12,17 @@ import { createSpatialIndex } from './SpatialIndex';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
 const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
+const STATIONARY_TEST_ENEMY = {
+  archetypeId: 'test-stationary-enemy',
+  radius: 0.6,
+  maxSpeed: 0,
+  contactDamage: 0,
+  contactCooldownMs: 1,
+  knockbackBaseImpulse: 0,
+  knockbackVelocityScale: 0,
+  knockbackDurationMs: 1,
+  color: 0xff7766
+} as const;
 
 describe('combat integration (CombatSystem + HealthDeathSystem)', () => {
   it('chains hit -> damage -> death in a single sim tick', () => {
@@ -24,18 +34,18 @@ describe('combat integration (CombatSystem + HealthDeathSystem)', () => {
     const player = store.spawnPlayer(PLAYER_SPEC);
     combat.setPlayerLoadout(player.id, { primaryWeaponArchetypeId: PISTOL.id }, 0);
     const enemy = store.spawnEnemy({
-      archetypeId: TRAINING_TARGET.id,
+      archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
       position: { x: 0.3, y: 0 },
-      radius: TRAINING_TARGET.radius,
+      radius: STATIONARY_TEST_ENEMY.radius,
       behavior: 'stationary',
       maxHp: 1,
-      maxSpeed: TRAINING_TARGET.maxSpeed,
-      contactDamage: TRAINING_TARGET.contactDamage,
-      contactCooldownMs: TRAINING_TARGET.contactCooldownMs,
-      knockbackBaseImpulse: TRAINING_TARGET.knockbackBaseImpulse,
-      knockbackVelocityScale: TRAINING_TARGET.knockbackVelocityScale,
-      knockbackDurationMs: TRAINING_TARGET.knockbackDurationMs,
-      color: TRAINING_TARGET.color
+      maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
+      contactDamage: STATIONARY_TEST_ENEMY.contactDamage,
+      contactCooldownMs: STATIONARY_TEST_ENEMY.contactCooldownMs,
+      knockbackBaseImpulse: STATIONARY_TEST_ENEMY.knockbackBaseImpulse,
+      knockbackVelocityScale: STATIONARY_TEST_ENEMY.knockbackVelocityScale,
+      knockbackDurationMs: STATIONARY_TEST_ENEMY.knockbackDurationMs,
+      color: STATIONARY_TEST_ENEMY.color
     });
 
     const input = createRuntimeInputState();
