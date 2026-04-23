@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-23 (для T4 истории 011 уточнено, что GFM-таблицы требуют пары `micromark-extension-gfm-table` + `mdast-util-gfm-table`: первый даёт syntax extension, второй — mdast projection)
+- Updated: 2026-04-23 (review 011: generator source проверяется отдельным `tsconfig.scripts.json`, а CLI фиксирует repo root независимо от текущей директории запуска)
 
 ## Context
 
@@ -75,7 +75,9 @@
 - `content:build` запускает генератор. При успехе — атомарно перезаписывает все `.generated.ts`. При любой ошибке — пишет ничего, выходит с ненулевым кодом и сообщением `content/<area>.md:…`.
 - `content:check` запускает генератор во временную директорию и сравнивает результат с закоммиченными `.generated.ts`. Любой дифф = exit non-zero. Это «дрейфовый» гейт.
 - `predev` = `content:build`. Благодаря npm-lifecycle он автоматически запускается перед `npm run dev`, и dev-цикл геймдизайнера — «поправил MD → `npm run dev` → видит» — без отдельной команды.
-- `build` расширяется до `npm run content:check && tsc -p tsconfig.json && tsc -p tsconfig.worker.json && vite build`. Три исходных шага остаются в том же порядке. `content:check` встаёт **строго первым**, чтобы стейл-конфиг не доходил ни до `tsc`, ни до `vite`, и чтобы Vercel-деплой падал на дрейфе явным сообщением, а не превращал дрейф в тихую регенерацию.
+- `tsconfig.scripts.json` проверяет buildtime-код генератора в `scripts/**` теми же strict-правилами TypeScript, что и runtime-проекты. Генератор запускается через `tsx`, но `tsx` не заменяет `tsc`-проверку источников генератора.
+- `build` расширяется до `npm run content:check && tsc -p tsconfig.json && tsc -p tsconfig.worker.json && tsc -p tsconfig.scripts.json && vite build`. Три исходных runtime-шага остаются в том же порядке, проверка `scripts/**` стоит перед `vite build`. `content:check` встаёт **строго первым**, чтобы стейл-конфиг не доходил ни до `tsc`, ни до `vite`, и чтобы Vercel-деплой падал на дрейфе явным сообщением, а не превращал дрейф в тихую регенерацию.
+- CLI генератора фиксирует repository root относительно `scripts/content-build/index.ts` перед чтением `content/**` и записью `.generated.ts`. Поэтому прямой запуск `tsx /path/to/repo/scripts/content-build/index.ts` не зависит от текущей директории shell.
 - Сами `.generated.ts` файлы **коммитятся** в репозиторий. Это нужно одновременно для трёх вещей: чтобы `npm install && npm run dev` работал на свежем чекауте без отдельного шага; чтобы PR-ревью видел и diff MD, и diff литералов; чтобы `content:check` имел против чего сравнивать.
 
 ### Запрещённые шаблоны

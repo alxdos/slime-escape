@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { ENEMIES_AREA } from './enemies';
@@ -13,6 +14,7 @@ export type ContentArea = Readonly<{
 }>;
 
 const AREAS: ReadonlyArray<ContentArea> = [ENEMIES_AREA];
+const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
 export async function runContentBuild(
   mode: ContentBuildMode,
@@ -29,6 +31,7 @@ export async function runContentBuild(
 }
 
 async function main(argv: ReadonlyArray<string>): Promise<void> {
+  process.chdir(REPOSITORY_ROOT);
   const mode = parseMode(argv);
   await runContentBuild(mode);
 }

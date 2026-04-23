@@ -164,7 +164,7 @@ function parseEnemy(
   const contactRow = requireRow(tables.contactSection, tables.contactTable, definition.id);
   const knockbackRow = requireRow(tables.knockbackSection, tables.knockbackTable, definition.id);
   const soundsRow = requireRow(tables.soundsSection, tables.soundsTable, definition.id);
-  const dropsRow = findRowById(tables.dropsSection, tables.dropsTable, definition.id);
+  const dropRows = findRowsById(tables.dropsSection, tables.dropsTable, definition.id);
   const voiceRow = findRowById(tables.voiceSection, tables.voiceTable, definition.id);
 
   return {
@@ -203,21 +203,40 @@ function parseEnemy(
       knockbackRow,
       'durationMs'
     ),
-    dropTable:
-      dropsRow === null
-        ? []
-        : [
-            {
-              archetypeId: requireCell(tables.dropsSection, tables.dropsTable, dropsRow, 'dropArchetypeId'),
-              chance: requireNumber(tables.dropsSection, tables.dropsTable, dropsRow, 'chance')
-            }
-          ],
+    dropTable: parseDropTable(tables.dropsSection, tables.dropsTable, dropRows),
     audio: {
       hit: readOptionalSampleIdList(tables.soundsSection, tables.soundsTable, soundsRow, 'hit'),
       death: readOptionalSampleIdList(tables.soundsSection, tables.soundsTable, soundsRow, 'death'),
       voice: voiceRow === null ? null : parseVoice(tables.voiceSection, tables.voiceTable, voiceRow)
     }
   };
+}
+
+function parseDropTable(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  rows: ReadonlyArray<MarkdownTableRow>
+): ReadonlyArray<ParsedDropTableEntry> {
+  const seenPairs = new Set<string>();
+  return rows.map((row) => {
+    const archetypeId = requireCell(section, table, row, 'dropArchetypeId');
+    const pairKey = `${getRowId(row)}\u0000${archetypeId}`;
+    if (seenPairs.has(pairKey)) {
+      throw cellError(
+        section,
+        row.position,
+        getRowId(row),
+        'dropArchetypeId',
+        `duplicate drop pair "${getRowId(row)}" + "${archetypeId}"`
+      );
+    }
+    seenPairs.add(pairKey);
+
+    return {
+      archetypeId,
+      chance: requireNumber(section, table, row, 'chance')
+    };
+  });
 }
 
 function parseVoice(
@@ -295,6 +314,15 @@ function findRowById(
 ): MarkdownTableRow | null {
   requireIdHeader(section, table);
   return table.rows.find((row) => getRowId(row) === id) ?? null;
+}
+
+function findRowsById(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  id: string
+): ReadonlyArray<MarkdownTableRow> {
+  requireIdHeader(section, table);
+  return table.rows.filter((row) => getRowId(row) === id);
 }
 
 function assertKnownReferences(

@@ -45,6 +45,28 @@ describe('content-build enemies area', () => {
     await expect(parseEnemiesArea(sourcePath)).rejects.toThrow(/unknown enemy id "slime-ghost"/);
   });
 
+  it('allows multiple drop rows for one enemy', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-multi-drop-'));
+    const sourcePath = join(directory, 'enemies.md');
+    await writeFile(sourcePath, makeEnemiesMarkdown({ extraFastDropArchetypeId: 'coin' }), 'utf8');
+
+    const area = await parseEnemiesArea(sourcePath);
+    const fastSlime = area.enemies.find((enemy) => enemy.id === 'slime-fast');
+
+    expect(fastSlime?.dropTable).toEqual([
+      { archetypeId: 'heal-orb', chance: 0.25 },
+      { archetypeId: 'coin', chance: 0.1 }
+    ]);
+  });
+
+  it('rejects duplicate enemy/drop pairs in the drops table', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-duplicate-drop-'));
+    const sourcePath = join(directory, 'enemies.md');
+    await writeFile(sourcePath, makeEnemiesMarkdown({ extraFastDropArchetypeId: 'heal-orb' }), 'utf8');
+
+    await expect(parseEnemiesArea(sourcePath)).rejects.toThrow(/duplicate drop pair/);
+  });
+
   it('fails check mode when a generated target has drifted', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'content-build-drift-'));
     const targetPath = join(directory, 'target.generated.ts');
@@ -81,6 +103,7 @@ function makeEnemiesMarkdown(
   options: Readonly<{
     fastMaxSpeed?: string;
     extraBodyRowId?: string;
+    extraFastDropArchetypeId?: string;
   }> = {}
 ): string {
   const fastMaxSpeed = options.fastMaxSpeed ?? '4';
@@ -88,6 +111,10 @@ function makeEnemiesMarkdown(
     options.extraBodyRowId === undefined
       ? ''
       : `| ${options.extraBodyRowId} | 0.5 | 1 | chase |\n`;
+  const extraFastDropRow =
+    options.extraFastDropArchetypeId === undefined
+      ? ''
+      : `| slime-fast | ${options.extraFastDropArchetypeId} | 0.1 |\n`;
 
   return `# Enemies
 
@@ -140,6 +167,7 @@ ${extraBodyRow}
 | id | dropArchetypeId | chance |
 |---|---|---:|
 | slime-fast | heal-orb | 0.25 |
+${extraFastDropRow}
 
 ## Sounds
 
