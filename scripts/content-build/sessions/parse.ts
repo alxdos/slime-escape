@@ -109,10 +109,27 @@ type FieldReader = Readonly<{
 
 export async function parseSessionsArea(sourceDirectory: string): Promise<ParsedSessionsArea> {
   const sourcePaths = await listSessionMarkdownFiles(sourceDirectory);
+  const presets = await Promise.all(sourcePaths.map(parseSessionFile));
+  validateUniqueSessionPresetIds(presets);
   return {
     sourceDirectory,
-    presets: await Promise.all(sourcePaths.map(parseSessionFile))
+    presets
   };
+}
+
+export function validateUniqueSessionPresetIds(
+  presets: ReadonlyArray<Readonly<Pick<ParsedSessionPreset, 'presetId' | 'sourcePath'>>>
+): void {
+  const sourcePathByPresetId = new Map<string, string>();
+  for (const preset of presets) {
+    const previousSourcePath = sourcePathByPresetId.get(preset.presetId);
+    if (previousSourcePath !== undefined) {
+      throw new ContentBuildError(
+        `${preset.sourcePath}: duplicate session presetId "${preset.presetId}" first defined in ${previousSourcePath}`
+      );
+    }
+    sourcePathByPresetId.set(preset.presetId, preset.sourcePath);
+  }
 }
 
 async function listSessionMarkdownFiles(sourceDirectory: string): Promise<ReadonlyArray<string>> {
