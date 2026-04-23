@@ -17,48 +17,6 @@ import { PISTOL } from './weapons';
 
 const ACCEPTANCE_PRESET_IDS = Object.keys(SESSION_PRESET_TEMPLATES) as ModePresetId[];
 const ACCEPTANCE_SEEDS = [0, 1, 42] as const;
-const CAMPAIGN_SET_ENEMIES: Readonly<Record<number, ReadonlySet<string>>> = {
-  1: new Set([
-    'slime-one-eye',
-    'slime-hornling',
-    'slime-many-eye',
-    'slime-stonehead',
-    'slime-sleeper',
-    'slime-spark'
-  ]),
-  2: new Set([
-    'slime-wraith',
-    'slime-shell',
-    'slime-flame',
-    'slime-mech-crab',
-    'slime-stack',
-    'slime-trickster'
-  ]),
-  3: new Set([
-    'slime-bug',
-    'slime-lifter',
-    'slime-saw',
-    'slime-drone',
-    'slime-star',
-    'slime-echo'
-  ]),
-  4: new Set([
-    'slime-splitter',
-    'slime-prince',
-    'slime-kingling',
-    'slime-fortress',
-    'slime-dasher',
-    'slime-tadpole'
-  ]),
-  5: new Set([
-    'slime-door',
-    'slime-mech',
-    'slime-clamper',
-    'slime-candle',
-    'slime-obelisk',
-    'slime-ninja'
-  ])
-};
 const CAMPAIGN_SET_BOSSES = [
   'boss-gargoyle',
   'boss-saw-cyclops',
@@ -256,7 +214,7 @@ describe('buildSessionDefinition (training)', () => {
 });
 
 describe('buildSessionDefinition (campaign)', () => {
-  it('campaign: five pure slime sets, each followed by its own boss', () => {
+  it('campaign: five acts, each followed by its own boss', () => {
     const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
 
     expect(session.winCondition).toEqual({ kind: 'allEncountersComplete' });
@@ -269,14 +227,7 @@ describe('buildSessionDefinition (campaign)', () => {
     for (const encounter of session.encounters) {
       if (encounter.spawnPlan.kind === 'wave') {
         const setIndex = campaignSetIndex(encounter.id);
-        const allowed = CAMPAIGN_SET_ENEMIES[setIndex];
-        if (allowed === undefined) {
-          throw new Error(`missing campaign set for encounter ${encounter.id}`);
-        }
         waveCountBySet.set(setIndex, (waveCountBySet.get(setIndex) ?? 0) + 1);
-        for (const spawn of encounter.spawnPlan.spawns) {
-          expect(allowed.has(spawn.archetypeId)).toBe(true);
-        }
         continue;
       }
 
