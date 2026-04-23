@@ -52,7 +52,6 @@
 
 - Единственное число, переводящее «исходные пиксели PNG» в world units, — константа `PX_PER_WU = 200`. Живёт в `src/shared/sprite/spriteScale.ts` как `export const PX_PER_WU = 200` и больше нигде не дублируется.
 - Reference scale **не зависит** от `arena.width`, `arena.height`, `canvas.width`, `canvas.height`, `devicePixelRatio` и `renderScalePreset`. Если кто-то поменяет `SANDBOX_ARENA` с `32×18` на другой размер — мировой размер каждого спрайта останется тем же, на экране он займёт ту же долю арены ровно как любой другой объект с фиксированным `radius`.
-- 70 выбрано так, чтобы 16:9 reference 2240×1260 px попадал в текущую `SANDBOX_ARENA` 32×18 wu без масштабирования (`2240 / 70 = 32`, `1260 / 70 = 18`). Это объяснение происхождения числа, не контракт: упоминаний `2240×1260` в коде, тестах и MD быть не должно — арена объявлена в [src/shared/content/arenas.ts](../src/shared/content/arenas.ts), и менять её через «reference arena» нельзя.
 - Любая корректировка `PX_PER_WU` = правка этого решения и `spriteScale.ts`. Не «по месту» в renderer-е, не в области генератора, не в MD.
 
 ### Visual registries
