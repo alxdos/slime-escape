@@ -66,6 +66,7 @@ describe('content-build enemies area', () => {
     await writeFile(sourcePath, makeEnemiesMarkdown(), 'utf8');
 
     const area = await parseEnemiesArea(sourcePath);
+    expect(renderEnemyContent(area)).toContain('contactBox: { width:');
     const visuals = renderEnemyVisuals(area);
 
     expect(visuals).toContain("export const SLIME_ONE_EYE_VISUAL: SpriteVisualSpec");

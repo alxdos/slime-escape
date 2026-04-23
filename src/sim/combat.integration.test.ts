@@ -11,10 +11,21 @@ import { createRuntimeInputState } from './RuntimeInputState';
 import { createSpatialIndex } from './SpatialIndex';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
-const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
+function squareContactBox(radius: number) {
+  return { width: radius * 2, height: radius * 2 };
+}
+
+const PLAYER_SPEC = {
+  position: { x: 0, y: 0 },
+  radius: 0.5,
+  contactBox: squareContactBox(0.5),
+  maxSpeed: 6,
+  maxHp: 1
+};
 const STATIONARY_TEST_ENEMY = {
   archetypeId: 'test-stationary-enemy',
   radius: 0.6,
+  contactBox: squareContactBox(0.6),
   maxSpeed: 0,
   contactDamage: 0,
   contactCooldownMs: 1,
@@ -37,6 +48,7 @@ describe('combat integration (CombatSystem + HealthDeathSystem)', () => {
       archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
       position: { x: 0.3, y: 0 },
       radius: STATIONARY_TEST_ENEMY.radius,
+      contactBox: STATIONARY_TEST_ENEMY.contactBox,
       behavior: 'stationary',
       maxHp: 1,
       maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,

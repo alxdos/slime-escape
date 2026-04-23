@@ -10,10 +10,15 @@ import { createEntityStore } from './EntityStore';
 import { createSpawnSystem } from './SpawnSystem';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
+function squareContactBox(radius: number) {
+  return { width: radius * 2, height: radius * 2 };
+}
+
 const STATIONARY_TEST_ENEMY: EnemyArchetype = {
   id: 'test-stationary-enemy',
   displayName: 'Test Stationary Enemy',
   radius: 0.6,
+  contactBox: squareContactBox(0.6),
   maxHp: 3,
   behavior: 'stationary',
   maxSpeed: 0,
@@ -30,6 +35,7 @@ const FAST_TEST_ENEMY: EnemyArchetype = {
   id: 'test-fast-enemy',
   displayName: 'Test Fast Enemy',
   radius: 0.4,
+  contactBox: squareContactBox(0.4),
   maxHp: 1,
   behavior: 'chase',
   maxSpeed: 4,
@@ -44,6 +50,7 @@ const TANK_TEST_ENEMY: EnemyArchetype = {
   id: 'test-tank-enemy',
   displayName: 'Test Tank Enemy',
   radius: 0.65,
+  contactBox: squareContactBox(0.65),
   maxHp: 5,
   behavior: 'chase',
   maxSpeed: 1.7,
@@ -57,6 +64,7 @@ const TEST_BOSS: BossArchetype = {
   id: 'test-boss',
   displayName: 'Test Boss',
   radius: 1.35,
+  contactBox: squareContactBox(1.35),
   maxHp: 40,
   maxSpeed: 3,
   color: 0xaa44ff,

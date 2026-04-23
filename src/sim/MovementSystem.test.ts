@@ -8,11 +8,18 @@ import { createMovementSystem } from './MovementSystem';
 import { createRuntimeInputState } from './RuntimeInputState';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
-const PLAYER: PlayerSpawn = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
+const PLAYER: PlayerSpawn = {
+  position: { x: 0, y: 0 },
+  radius: 0.5,
+  contactBox: { width: 1.2, height: 2 },
+  maxSpeed: 6,
+  maxHp: 1
+};
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const STATIONARY_TEST_ENEMY = {
   archetypeId: 'test-stationary-enemy',
   radius: 0.6,
+  contactBox: { width: 1.2, height: 1.2 },
   behavior: 'stationary',
   maxHp: 3,
   maxSpeed: 0,
@@ -26,6 +33,7 @@ const STATIONARY_TEST_ENEMY = {
 const CHASE_TEST_ENEMY = {
   archetypeId: 'test-chase-enemy',
   radius: 0.4,
+  contactBox: { width: 0.8, height: 0.8 },
   behavior: 'chase',
   maxHp: 1,
   maxSpeed: 4,
@@ -50,6 +58,7 @@ function trainingTargetAt(x: number, y: number): EnemySpawnSpec {
     archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
     position: { x, y },
     radius: STATIONARY_TEST_ENEMY.radius,
+    contactBox: STATIONARY_TEST_ENEMY.contactBox,
     behavior: STATIONARY_TEST_ENEMY.behavior,
     maxHp: STATIONARY_TEST_ENEMY.maxHp,
     maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
@@ -67,6 +76,7 @@ function slimeFastAt(x: number, y: number): EnemySpawnSpec {
     archetypeId: CHASE_TEST_ENEMY.archetypeId,
     position: { x, y },
     radius: CHASE_TEST_ENEMY.radius,
+    contactBox: CHASE_TEST_ENEMY.contactBox,
     behavior: CHASE_TEST_ENEMY.behavior,
     maxHp: CHASE_TEST_ENEMY.maxHp,
     maxSpeed: CHASE_TEST_ENEMY.maxSpeed,
@@ -124,6 +134,8 @@ describe('MovementSystem player', () => {
     const { store, movement, input } = setup();
     const halfW = ARENA.width / 2;
     const halfH = ARENA.height / 2;
+    const halfContactWidth = PLAYER.contactBox.width / 2;
+    const halfContactHeight = PLAYER.contactBox.height / 2;
     input.moveDir.dx = 1;
     input.moveDir.dy = 1;
     for (let i = 0; i < 10000; i += 1) {
@@ -132,16 +144,16 @@ describe('MovementSystem player', () => {
     const p = store.player();
     expect(p).not.toBeNull();
     if (p === null) throw new Error('unreachable');
-    expect(p.position.x).toBeLessThanOrEqual(halfW - PLAYER.radius);
-    expect(p.position.y).toBeLessThanOrEqual(halfH - PLAYER.radius);
+    expect(p.position.x).toBeLessThanOrEqual(halfW - halfContactWidth);
+    expect(p.position.y).toBeLessThanOrEqual(halfH - halfContactHeight);
 
     input.moveDir.dx = -1;
     input.moveDir.dy = -1;
     for (let i = 0; i < 10000; i += 1) {
       movement.tick(ARENA, store, input, i * SIM_STEP_MS);
     }
-    expect(p.position.x).toBeGreaterThanOrEqual(-halfW + PLAYER.radius);
-    expect(p.position.y).toBeGreaterThanOrEqual(-halfH + PLAYER.radius);
+    expect(p.position.x).toBeGreaterThanOrEqual(-halfW + halfContactWidth);
+    expect(p.position.y).toBeGreaterThanOrEqual(-halfH + halfContactHeight);
   });
 
   it('is a no-op when no player is spawned', () => {

@@ -88,6 +88,7 @@ function makeSession(id = 'test-session'): SessionDefinition {
     player: {
       position: { x: 0, y: 0 },
       radius: 0.5,
+      contactBox: { width: 1, height: 1 },
       maxSpeed: 5,
       maxHp: 5
     },

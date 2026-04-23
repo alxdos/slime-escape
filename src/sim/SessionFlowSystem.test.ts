@@ -209,7 +209,13 @@ function makeSession(encounters: ReadonlyArray<EncounterDefinition>, options?: {
     id: 'flow-test',
     seed: 1,
     arena: { width: 32, height: 18 },
-    player: { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 },
+    player: {
+      position: { x: 0, y: 0 },
+      radius: 0.5,
+      contactBox: { width: 1, height: 1 },
+      maxSpeed: 6,
+      maxHp: 1
+    },
     loadout: null,
     modifiers: [],
     rules: null,

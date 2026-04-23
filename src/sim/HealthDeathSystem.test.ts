@@ -8,9 +8,14 @@ import type { DamageIntent } from './CombatSystem';
 import { createEntityStore, type EntityId } from './EntityStore';
 import { createHealthDeathSystem, type DeathContext } from './HealthDeathSystem';
 
+function squareContactBox(radius: number) {
+  return { width: radius * 2, height: radius * 2 };
+}
+
 const STATIONARY_TEST_ENEMY = {
   archetypeId: 'test-stationary-enemy',
   radius: 0.6,
+  contactBox: squareContactBox(0.6),
   maxSpeed: 0,
   contactDamage: 0,
   contactCooldownMs: 1,
@@ -39,6 +44,7 @@ function spawnTarget(store: ReturnType<typeof createEntityStore>, hp = 3) {
     archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
     position: { x: 1, y: 0 },
     radius: STATIONARY_TEST_ENEMY.radius,
+    contactBox: STATIONARY_TEST_ENEMY.contactBox,
     behavior: 'stationary',
     maxHp: hp,
     maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
@@ -158,6 +164,7 @@ describe('HealthDeathSystem player damage', () => {
     const player = store.spawnPlayer({
       position: { x: 0, y: 0 },
       radius: 0.5,
+      contactBox: squareContactBox(0.5),
       maxSpeed: 6,
       maxHp: 5
     });
@@ -174,6 +181,7 @@ describe('HealthDeathSystem player damage', () => {
     const player = store.spawnPlayer({
       position: { x: 1, y: 2 },
       radius: 0.5,
+      contactBox: squareContactBox(0.5),
       maxSpeed: 6,
       maxHp: 1
     });
@@ -201,6 +209,7 @@ describe('HealthDeathSystem player damage', () => {
     const player = store.spawnPlayer({
       position: { x: 0, y: 0 },
       radius: 0.5,
+      contactBox: squareContactBox(0.5),
       maxSpeed: 6,
       maxHp: 1
     });
@@ -230,6 +239,7 @@ describe('HealthDeathSystem player damage', () => {
     const player = store.spawnPlayer({
       position: { x: 0, y: 0 },
       radius: 0.5,
+      contactBox: squareContactBox(0.5),
       maxSpeed: 6,
       maxHp: 1
     });

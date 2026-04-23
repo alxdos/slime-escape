@@ -7,6 +7,7 @@ export const HERO: PlayerArchetype = {
   id: 'hero',
   displayName: 'Hero',
   radius: 0.5,
+  contactBox: { width: 1.47, height: 2.75 },
   maxSpeed: 6,
   maxHp: 5
 };
@@ -14,6 +15,7 @@ export const HERO: PlayerArchetype = {
 export const SANDBOX_PLAYER: PlayerSpawn = {
   position: { x: 0, y: 0 },
   radius: HERO.radius,
+  contactBox: HERO.contactBox,
   maxSpeed: HERO.maxSpeed,
   maxHp: HERO.maxHp
 };
@@ -21,6 +23,7 @@ export const SANDBOX_PLAYER: PlayerSpawn = {
 export const TRAINING_PLAYER: PlayerSpawn = {
   position: { x: 0, y: 0 },
   radius: HERO.radius,
+  contactBox: HERO.contactBox,
   maxSpeed: HERO.maxSpeed,
   maxHp: HERO.maxHp
 };

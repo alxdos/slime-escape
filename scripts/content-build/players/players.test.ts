@@ -24,6 +24,7 @@ describe('content-build players area', () => {
     const area = await parsePlayersArea(sourcePath);
 
     expect(renderPlayerContent(area)).toContain("export const HERO: PlayerArchetype");
+    expect(renderPlayerContent(area)).toContain('contactBox: { width:');
     expect(renderPlayerContent(area)).toContain("export const TRAINING_PLAYER: PlayerSpawn");
     expect(renderPlayerVisuals(area)).toContain("image: '/assets/hero.png'");
     expect(renderPlayerVisuals(area)).toContain('sourceSizePx: { width:');

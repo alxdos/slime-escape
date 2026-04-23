@@ -1,4 +1,5 @@
 import { log } from '../log';
+import type { ContactBox } from '../session';
 import { SIM_STEP_MS } from '../timing';
 
 import { DROP_ARCHETYPES, type DropArchetype } from './drops';
@@ -15,6 +16,7 @@ export type EnemyArchetype = Readonly<{
   id: string;
   displayName: string;
   radius: number;
+  contactBox: ContactBox;
   maxHp: number;
   behavior: EnemyBehavior;
   maxSpeed: number;
@@ -47,12 +49,12 @@ function createEnemyRegistry(
 
 export function validateEnemyRegistry(
   registry: Readonly<Record<string, EnemyArchetype>>,
-  playerRadius: number,
+  playerContactBox: ContactBox,
   dropRegistry: Readonly<Record<string, DropArchetype>> = DROP_ARCHETYPES
 ): void {
   for (const archetype of Object.values(registry)) {
     warnIfStationaryInvariantsBroken(archetype);
-    warnIfEnemyMayTunnelThroughPlayer(archetype, playerRadius);
+    warnIfEnemyMayTunnelThroughPlayer(archetype, playerContactBox);
     warnIfDropTableInvalid(archetype);
     assertDropTableArchetypesResolve(archetype, dropRegistry);
   }
@@ -77,18 +79,22 @@ function warnIfStationaryInvariantsBroken(archetype: EnemyArchetype): void {
 
 function warnIfEnemyMayTunnelThroughPlayer(
   archetype: EnemyArchetype,
-  playerRadius: number
+  playerContactBox: ContactBox
 ): void {
   if (archetype.maxSpeed <= 0) return;
   const stepDistance = archetype.maxSpeed * (SIM_STEP_MS / 1000);
-  const reach = archetype.radius + playerRadius;
+  const reachX = (archetype.contactBox.width + playerContactBox.width) / 2;
+  const reachY = (archetype.contactBox.height + playerContactBox.height) / 2;
+  const reach = Math.min(reachX, reachY);
   if (stepDistance > reach) {
     log.warn('enemy may tunnel through player per design/enemy-contact.md', {
       archetypeId: archetype.id,
       stepDistance,
       reach,
-      enemyRadius: archetype.radius,
-      playerRadius
+      reachX,
+      reachY,
+      enemyContactBox: archetype.contactBox,
+      playerContactBox
     });
   }
 }

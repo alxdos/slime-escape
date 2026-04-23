@@ -10,6 +10,10 @@ import { createSnapshotExportSystem, type SnapshotSources } from './SnapshotExpo
 
 const TICKS_PER_SNAPSHOT = Math.round(SNAPSHOT_INTERVAL_MS / SIM_STEP_MS);
 const IDLE_ZONE: ZoneSnapshot = { mode: 'disabled', margin: 0 };
+function squareContactBox(radius: number) {
+  return { width: radius * 2, height: radius * 2 };
+}
+
 const NO_SOURCES: SnapshotSources = {
   encounter: null,
   zone: IDLE_ZONE,
@@ -18,6 +22,7 @@ const NO_SOURCES: SnapshotSources = {
 const STATIONARY_TEST_ENEMY = {
   archetypeId: 'test-stationary-enemy',
   radius: 0.6,
+  contactBox: squareContactBox(0.6),
   maxHp: 3,
   maxSpeed: 0,
   contactDamage: 0,
@@ -31,7 +36,13 @@ const STATIONARY_TEST_ENEMY = {
 describe('SnapshotExportSystem', () => {
   it('emits the player entity with kind "player"', () => {
     const store = createEntityStore();
-    store.spawnPlayer({ position: { x: 3, y: -2 }, radius: 0.5, maxSpeed: 6, maxHp: 1 });
+    store.spawnPlayer({
+      position: { x: 3, y: -2 },
+      radius: 0.5,
+      contactBox: squareContactBox(0.5),
+      maxSpeed: 6,
+      maxHp: 1
+    });
     const exporter = createSnapshotExportSystem();
 
     const snapshot = exporter.onTick(0, store, NO_SOURCES);
@@ -57,7 +68,13 @@ describe('SnapshotExportSystem', () => {
 
   it('emits exactly once per TICKS_PER_SNAPSHOT', () => {
     const store = createEntityStore();
-    store.spawnPlayer({ position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 });
+    store.spawnPlayer({
+      position: { x: 0, y: 0 },
+      radius: 0.5,
+      contactBox: squareContactBox(0.5),
+      maxSpeed: 6,
+      maxHp: 1
+    });
     const exporter = createSnapshotExportSystem();
 
     let emitted = 0;
@@ -71,7 +88,13 @@ describe('SnapshotExportSystem', () => {
 
   it('reset() restores the cadence so the next call emits', () => {
     const store = createEntityStore();
-    store.spawnPlayer({ position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 });
+    store.spawnPlayer({
+      position: { x: 0, y: 0 },
+      radius: 0.5,
+      contactBox: squareContactBox(0.5),
+      maxSpeed: 6,
+      maxHp: 1
+    });
     const exporter = createSnapshotExportSystem();
 
     exporter.onTick(0, store, NO_SOURCES);
@@ -87,6 +110,7 @@ describe('SnapshotExportSystem', () => {
       archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
       position: { x: 5, y: 0 },
       radius: STATIONARY_TEST_ENEMY.radius,
+      contactBox: STATIONARY_TEST_ENEMY.contactBox,
       behavior: 'stationary',
       maxHp: STATIONARY_TEST_ENEMY.maxHp,
       maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
@@ -130,6 +154,7 @@ describe('SnapshotExportSystem', () => {
       archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
       position: { x: 0, y: 0 },
       radius: STATIONARY_TEST_ENEMY.radius,
+      contactBox: STATIONARY_TEST_ENEMY.contactBox,
       behavior: 'stationary',
       maxHp: 1,
       maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
@@ -157,6 +182,7 @@ describe('SnapshotExportSystem top-level fields', () => {
     return store.spawnPlayer({
       position: { x: 0, y: 0 },
       radius: 0.5,
+      contactBox: squareContactBox(0.5),
       maxSpeed: 6,
       maxHp: 5
     });

@@ -1,15 +1,11 @@
-import { resolve } from 'node:path';
-
-import { PX_PER_WU } from '../../../src/main/render/spriteScale';
 import type { ParsedBoss, ParsedBossesArea } from './parse';
-import { formatPngSizeContentError, readPngSize } from '../util/pngSize';
+import { readSpriteAssetMetrics } from '../util/spriteMetrics';
 import {
   escapeString,
   formatNumber,
   renderHeader,
   toConstName
 } from '../util/render';
-import { ContentBuildError } from '../util/require';
 
 export function renderBossVisuals(area: ParsedBossesArea): string {
   const constants = area.bosses.map((boss) => renderBossVisual(area, boss));
@@ -26,43 +22,16 @@ function renderImport(): string {
 }
 
 function renderBossVisual(area: ParsedBossesArea, boss: ParsedBoss): string {
-  const sourceSizePx = readVisualSourceSize(area, boss);
+  const { sourceSizePx, worldSize } = readSpriteAssetMetrics({
+    sourcePath: area.sourcePath,
+    rowId: boss.id,
+    imagePath: boss.visual.image
+  });
   return `export const ${toConstName(boss.id)}_VISUAL: SpriteVisualSpec = {
   archetypeId: '${escapeString(boss.id)}',
   image: '${escapeString(boss.visual.image)}',
   sourceSizePx: { width: ${formatNumber(sourceSizePx.width)}, height: ${formatNumber(sourceSizePx.height)} },
-  worldSize: { width: ${formatNumber(sourceSizePx.width / PX_PER_WU)}, height: ${formatNumber(sourceSizePx.height / PX_PER_WU)} },
+  worldSize: { width: ${formatNumber(worldSize.width)}, height: ${formatNumber(worldSize.height)} },
   anchor: { x: 0.5, y: 0.5 }
 };`;
-}
-
-function readVisualSourceSize(
-  area: ParsedBossesArea,
-  boss: ParsedBoss
-): Readonly<{ width: number; height: number }> {
-  try {
-    return readPngSize(publicAssetAbsPath(boss.visual.image));
-  } catch (error) {
-    throw formatPngSizeContentError(
-      {
-        sourcePath: area.sourcePath,
-        rowId: boss.id,
-        imagePath: boss.visual.image
-      },
-      error
-    );
-  }
-}
-
-function publicAssetAbsPath(imagePath: string): string {
-  if (!imagePath.startsWith('/')) {
-    throw new ContentBuildError(`expected public asset path starting with "/", got "${imagePath}"`);
-  }
-
-  const relativePath = imagePath.slice(1);
-  if (relativePath.split('/').includes('..')) {
-    throw new ContentBuildError(`expected public asset path to stay inside public/, got "${imagePath}"`);
-  }
-
-  return resolve('public', relativePath);
 }

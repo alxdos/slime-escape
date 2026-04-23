@@ -5,9 +5,15 @@ export type ArenaConfig = Readonly<{
   height: number;
 }>;
 
+export type ContactBox = Readonly<{
+  width: number;
+  height: number;
+}>;
+
 export type PlayerSpawn = Readonly<{
   position: Vec2;
   radius: number;
+  contactBox: ContactBox;
   maxSpeed: number;
   maxHp: number;
 }>;

@@ -1,7 +1,10 @@
 import type { ParsedEnemiesArea, ParsedEnemy, ParsedDropTableEntry } from './parse';
+import { readSpriteAssetMetrics } from '../util/spriteMetrics';
 
 export function renderEnemyContent(area: ParsedEnemiesArea): string {
-  return `${renderHeader()}${renderImport()}${area.enemies.map(renderEnemy).join('\n\n')}\n`;
+  return `${renderHeader()}${renderImport()}${area.enemies
+    .map((enemy) => renderEnemy(area, enemy))
+    .join('\n\n')}\n`;
 }
 
 function renderHeader(): string {
@@ -16,11 +19,17 @@ function renderImport(): string {
   return "import type { EnemyArchetype } from './enemies';\n\n";
 }
 
-function renderEnemy(enemy: ParsedEnemy): string {
+function renderEnemy(area: ParsedEnemiesArea, enemy: ParsedEnemy): string {
+  const { worldSize } = readSpriteAssetMetrics({
+    sourcePath: area.sourcePath,
+    rowId: enemy.id,
+    imagePath: enemy.visual.image
+  });
   return `export const ${toConstName(enemy.id)}: EnemyArchetype = {
   id: '${enemy.id}',
   displayName: '${escapeString(enemy.displayName)}',
   radius: ${formatNumber(enemy.radius)},
+  contactBox: { width: ${formatNumber(worldSize.width)}, height: ${formatNumber(worldSize.height)} },
   maxHp: ${formatNumber(enemy.maxHp)},
   behavior: '${enemy.behavior}',
   maxSpeed: ${formatNumber(enemy.maxSpeed)},

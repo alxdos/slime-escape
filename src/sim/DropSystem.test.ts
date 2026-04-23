@@ -11,11 +11,22 @@ import { createDropSystem } from './DropSystem';
 import { createEntityStore, type EntityId } from './EntityStore';
 import { createHealthDeathSystem, type DeathContext } from './HealthDeathSystem';
 
-const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 5 };
+function squareContactBox(radius: number) {
+  return { width: radius * 2, height: radius * 2 };
+}
+
+const PLAYER_SPEC = {
+  position: { x: 0, y: 0 },
+  radius: 0.5,
+  contactBox: squareContactBox(0.5),
+  maxSpeed: 6,
+  maxHp: 5
+};
 const NO_DROP_TEST_ENEMY: EnemyArchetype = {
   id: 'test-no-drop-enemy',
   displayName: 'Test No Drop Enemy',
   radius: 0.6,
+  contactBox: squareContactBox(0.6),
   maxHp: 3,
   behavior: 'stationary',
   maxSpeed: 0,
@@ -32,6 +43,7 @@ const LIGHT_DROPPER: EnemyArchetype = {
   id: 'test-light-dropper',
   displayName: 'Test Light Dropper',
   radius: 0.4,
+  contactBox: squareContactBox(0.4),
   maxHp: 1,
   behavior: 'chase',
   maxSpeed: 4,
@@ -47,6 +59,7 @@ const HEAVY_DROPPER: EnemyArchetype = {
   id: 'test-heavy-dropper',
   displayName: 'Test Heavy Dropper',
   radius: 0.65,
+  contactBox: squareContactBox(0.65),
   maxHp: 5,
   behavior: 'chase',
   maxSpeed: 1.7,

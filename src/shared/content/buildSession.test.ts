@@ -50,6 +50,8 @@ describe('buildSessionDefinition (sandbox)', () => {
     expect(session.arena.width).toBeGreaterThan(0);
     expect(session.arena.height).toBeGreaterThan(0);
     expect(session.player.position).toEqual({ x: 0, y: 0 });
+    expect(session.player.contactBox.width).toBeGreaterThan(0);
+    expect(session.player.contactBox.height).toBeGreaterThan(0);
     expect(session.player.maxSpeed).toBeGreaterThan(0);
   });
 
@@ -86,6 +88,8 @@ describe('buildSessionDefinition (sandbox-with-combat)', () => {
     if (plan?.kind !== 'static') throw new Error('expected static spawn plan');
     expect(plan.spawns).toHaveLength(1);
     expect(plan.spawns[0]?.archetypeId).toBe(SLIME_BUG.id);
+    expect(SLIME_BUG.contactBox.width).toBeGreaterThan(0);
+    expect(SLIME_BUG.contactBox.height).toBeGreaterThan(0);
 
     const halfW = session.arena.width / 2;
     const halfH = session.arena.height / 2;
@@ -202,6 +206,8 @@ describe('buildSessionDefinition (campaign)', () => {
     const bossEnc = session.encounters[6];
     expect(bossEnc?.type).toBe('boss');
     expect(bossEnc?.zoneBehavior).toEqual({ kind: 'disabled' });
+    expect(BOSS_SCRAP_KING.contactBox.width).toBeGreaterThan(0);
+    expect(BOSS_SCRAP_KING.contactBox.height).toBeGreaterThan(0);
     const plan = bossEnc?.spawnPlan;
     expect(plan?.kind).toBe('boss');
     if (plan?.kind !== 'boss') throw new Error('expected boss spawn plan');

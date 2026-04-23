@@ -1,4 +1,4 @@
-import type { PlayerSpawn } from '../session';
+import type { ContactBox, PlayerSpawn } from '../session';
 
 import { HERO, SANDBOX_PLAYER, TRAINING_PLAYER } from './players.generated';
 
@@ -6,6 +6,7 @@ export type PlayerArchetype = Readonly<{
   id: string;
   displayName: string;
   radius: number;
+  contactBox: ContactBox;
   maxSpeed: number;
   maxHp: number;
 }>;

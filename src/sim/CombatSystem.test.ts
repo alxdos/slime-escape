@@ -11,10 +11,17 @@ import { createRuntimeInputState, type RuntimeInputState } from './RuntimeInputS
 import { createSpatialIndex } from './SpatialIndex';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
-const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
+const PLAYER_SPEC = {
+  position: { x: 0, y: 0 },
+  radius: 0.5,
+  contactBox: { width: 1.2, height: 2 },
+  maxSpeed: 6,
+  maxHp: 1
+};
 const STATIONARY_TEST_ENEMY = {
   archetypeId: 'test-stationary-enemy',
   radius: 0.6,
+  contactBox: { width: 1.2, height: 1.2 },
   behavior: 'stationary',
   maxHp: 3,
   maxSpeed: 0,
@@ -28,6 +35,7 @@ const STATIONARY_TEST_ENEMY = {
 const CONTACT_TEST_ENEMY = {
   archetypeId: 'test-contact-enemy',
   radius: 0.4,
+  contactBox: { width: 1.4, height: 0.4 },
   behavior: 'chase',
   maxHp: 1,
   maxSpeed: 4,
@@ -40,13 +48,14 @@ const CONTACT_TEST_ENEMY = {
 } as const;
 
 function stationaryEnemySpec(position: { x: number; y: number }): EnemySpawnSpec {
-  return {
-    archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
-    position,
-    radius: STATIONARY_TEST_ENEMY.radius,
-    behavior: STATIONARY_TEST_ENEMY.behavior,
-    maxHp: STATIONARY_TEST_ENEMY.maxHp,
-    maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
+    return {
+      archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
+      position,
+      radius: STATIONARY_TEST_ENEMY.radius,
+      contactBox: STATIONARY_TEST_ENEMY.contactBox,
+      behavior: STATIONARY_TEST_ENEMY.behavior,
+      maxHp: STATIONARY_TEST_ENEMY.maxHp,
+      maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
     contactDamage: STATIONARY_TEST_ENEMY.contactDamage,
     contactCooldownMs: STATIONARY_TEST_ENEMY.contactCooldownMs,
     knockbackBaseImpulse: STATIONARY_TEST_ENEMY.knockbackBaseImpulse,
@@ -217,6 +226,7 @@ describe('CombatSystem contact intents', () => {
       archetypeId: CONTACT_TEST_ENEMY.archetypeId,
       position,
       radius: CONTACT_TEST_ENEMY.radius,
+      contactBox: CONTACT_TEST_ENEMY.contactBox,
       behavior: CONTACT_TEST_ENEMY.behavior,
       maxHp: CONTACT_TEST_ENEMY.maxHp,
       maxSpeed: CONTACT_TEST_ENEMY.maxSpeed,
@@ -239,7 +249,7 @@ describe('CombatSystem contact intents', () => {
 
   it('forms enemyContact DamageIntent for an overlapping enemy with contactDamage > 0', () => {
     const { store, index, combat } = setupContact();
-    const enemy = store.spawnEnemy(contactEnemySpec({ x: 0.5, y: 0 }));
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
 
     const intents = combat.tick(makeInput(), store, index, 0, ARENA, () => {});
 
@@ -253,7 +263,7 @@ describe('CombatSystem contact intents', () => {
 
   it('does not emit a runtime event for the contact', () => {
     const { store, index, combat } = setupContact();
-    store.spawnEnemy(contactEnemySpec({ x: 0.5, y: 0 }));
+    store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
     const events: RuntimeEvent[] = [];
 
     combat.tick(makeInput(), store, index, 0, ARENA, (e) => events.push(e));
@@ -263,7 +273,7 @@ describe('CombatSystem contact intents', () => {
 
   it('skips contact if cooldown not elapsed and re-fires once it does', () => {
     const { store, index, combat } = setupContact();
-    store.spawnEnemy(contactEnemySpec({ x: 0.5, y: 0 }));
+    store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
 
     const first = combat.tick(makeInput(), store, index, 0, ARENA, () => {});
     expect(first).toHaveLength(1);
@@ -295,6 +305,7 @@ describe('CombatSystem contact intents', () => {
       archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
       position: { x: 0.5, y: 0 },
       radius: STATIONARY_TEST_ENEMY.radius,
+      contactBox: STATIONARY_TEST_ENEMY.contactBox,
       behavior: STATIONARY_TEST_ENEMY.behavior,
       maxHp: STATIONARY_TEST_ENEMY.maxHp,
       maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
@@ -321,14 +332,14 @@ describe('CombatSystem contact intents', () => {
 
   it('knocks the enemy back along (enemy - player) and writes a positive duration', () => {
     const { store, index, combat } = setupContact();
-    const enemy = store.spawnEnemy(contactEnemySpec({ x: 0.5, y: 0 }));
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
 
     combat.tick(makeInput(), store, index, 0, ARENA, () => {});
 
     expect(enemy.knockback).not.toBeNull();
     if (enemy.knockback === null) throw new Error('unreachable');
     expect(enemy.knockback.vx).toBeGreaterThan(0);
-    expect(enemy.knockback.vy).toBe(0);
+    expect(enemy.knockback.vy).toBeGreaterThan(0);
     expect(enemy.knockback.endSimMs - enemy.knockback.startSimMs).toBe(
       CONTACT_TEST_ENEMY.knockbackDurationMs
     );
@@ -336,7 +347,7 @@ describe('CombatSystem contact intents', () => {
 
   it('with zero approach speed the knockback magnitude equals knockbackBaseImpulse', () => {
     const { store, index, combat } = setupContact();
-    const enemy = store.spawnEnemy(contactEnemySpec({ x: 0.5, y: 0 }));
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
     store.player()!.velocity.vx = 0;
     store.player()!.velocity.vy = 0;
     enemy.velocity.vx = 0;
@@ -351,7 +362,7 @@ describe('CombatSystem contact intents', () => {
 
   it('approach speed adds knockbackVelocityScale * approach to base impulse', () => {
     const { store, index, combat } = setupContact();
-    const enemy = store.spawnEnemy(contactEnemySpec({ x: 0.5, y: 0 }));
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
     store.player()!.velocity.vx = 3;
     enemy.velocity.vx = -2;
 
@@ -360,13 +371,13 @@ describe('CombatSystem contact intents', () => {
     if (enemy.knockback === null) throw new Error('expected knockback');
     const speed = Math.hypot(enemy.knockback.vx, enemy.knockback.vy);
     const expected =
-      CONTACT_TEST_ENEMY.knockbackBaseImpulse + CONTACT_TEST_ENEMY.knockbackVelocityScale * 5;
+      CONTACT_TEST_ENEMY.knockbackBaseImpulse + CONTACT_TEST_ENEMY.knockbackVelocityScale * 4;
     expect(speed).toBeCloseTo(expected, 10);
   });
 
   it('repeated contact (after cooldown) overwrites knockback rather than summing', () => {
     const { store, index, combat } = setupContact();
-    const enemy = store.spawnEnemy(contactEnemySpec({ x: 0.5, y: 0 }));
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));
 
     combat.tick(makeInput(), store, index, 0, ARENA, () => {});
     if (enemy.knockback === null) throw new Error('expected knockback');

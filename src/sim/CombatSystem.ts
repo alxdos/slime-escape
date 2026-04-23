@@ -66,13 +66,20 @@ export function createCombatSystem(
       shooterWeapons.clear();
     },
     tick(input, store, index, simTimeMs, arena, emit): ReadonlyArray<DamageIntent> {
-      const maxThreatRadius = computeMaxThreatRadius(store);
+      const maxContactBoundsRadius = computeMaxContactBoundsRadius(store);
+      const maxProjectileTargetRadius = computeMaxProjectileTargetRadius(store);
       runFiringDecisions(input, store, simTimeMs, shooterWeapons, emit);
       runProjectileMovement(store);
       runLifetimeCleanup(store, simTimeMs, arena);
       index.rebuild(store);
-      const contactIntents = runContactIntents(store, index, simTimeMs, maxThreatRadius);
-      const projectileIntents = runHitDetection(store, index, simTimeMs, maxThreatRadius, emit);
+      const contactIntents = runContactIntents(store, index, simTimeMs, maxContactBoundsRadius);
+      const projectileIntents = runHitDetection(
+        store,
+        index,
+        simTimeMs,
+        maxProjectileTargetRadius,
+        emit
+      );
       return contactIntents.length === 0
         ? projectileIntents
         : [...contactIntents, ...projectileIntents];
@@ -161,22 +168,19 @@ function runContactIntents(
   store: EntityStore,
   index: SpatialIndex,
   simTimeMs: number,
-  maxEnemyRadius: number
+  maxEnemyContactBoundsRadius: number
 ): DamageIntent[] {
   const player = store.player();
   if (player === null) return [];
   const intents: DamageIntent[] = [];
-  const range = player.radius + maxEnemyRadius;
+  const range = contactBoundsRadius(player) + maxEnemyContactBoundsRadius;
   const candidates = index.queryRadius(player.position.x, player.position.y, range);
   for (const candidate of candidates) {
     if (candidate.kind !== 'enemy' && candidate.kind !== 'boss') continue;
     const enemy = candidate;
     if (enemy.contactDamage <= 0) continue;
     if (simTimeMs < enemy.nextContactSimMs) continue;
-    const dx = enemy.position.x - player.position.x;
-    const dy = enemy.position.y - player.position.y;
-    const reach = enemy.radius + player.radius;
-    if (dx * dx + dy * dy > reach * reach) continue;
+    if (!boxesOverlap(player, enemy)) continue;
     intents.push({
       targetId: player.id,
       amount: enemy.contactDamage,
@@ -301,7 +305,7 @@ function asValidTarget(
   return null;
 }
 
-function computeMaxThreatRadius(store: EntityStore): number {
+function computeMaxProjectileTargetRadius(store: EntityStore): number {
   let max = 0;
   for (const archetype of Object.values(ENEMY_ARCHETYPES)) {
     if (archetype.radius > max) max = archetype.radius;
@@ -310,4 +314,31 @@ function computeMaxThreatRadius(store: EntityStore): number {
     if (boss.radius > max) max = boss.radius;
   }
   return max;
+}
+
+function computeMaxContactBoundsRadius(store: EntityStore): number {
+  let max = 0;
+  for (const archetype of Object.values(ENEMY_ARCHETYPES)) {
+    max = Math.max(max, contactBoundsRadius(archetype));
+  }
+  for (const boss of store.bosses()) {
+    max = Math.max(max, contactBoundsRadius(boss));
+  }
+  return max;
+}
+
+function contactBoundsRadius(entity: { contactBox: { width: number; height: number } }): number {
+  return Math.hypot(entity.contactBox.width / 2, entity.contactBox.height / 2);
+}
+
+function boxesOverlap(
+  left: { position: Vec2; contactBox: { width: number; height: number } },
+  right: { position: Vec2; contactBox: { width: number; height: number } }
+): boolean {
+  return (
+    Math.abs(left.position.x - right.position.x) <=
+      (left.contactBox.width + right.contactBox.width) / 2 &&
+    Math.abs(left.position.y - right.position.y) <=
+      (left.contactBox.height + right.contactBox.height) / 2
+  );
 }

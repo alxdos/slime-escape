@@ -1,3 +1,5 @@
+import type { ContactBox } from '../session';
+
 import * as generatedBosses from './bosses.generated';
 
 export type BossPhaseSpec = Readonly<{
@@ -16,6 +18,7 @@ export type BossArchetype = Readonly<{
   id: string;
   displayName: string;
   radius: number;
+  contactBox: ContactBox;
   maxHp: number;
   maxSpeed: number;
   color: number;

@@ -7,13 +7,24 @@ import {
 } from './EntityStore';
 import { createSpatialIndex } from './SpatialIndex';
 
-const PLAYER_SPEC = { position: { x: 0, y: 0 }, radius: 0.5, maxSpeed: 6, maxHp: 1 };
+function squareContactBox(radius: number) {
+  return { width: radius * 2, height: radius * 2 };
+}
+
+const PLAYER_SPEC = {
+  position: { x: 0, y: 0 },
+  radius: 0.5,
+  contactBox: squareContactBox(0.5),
+  maxSpeed: 6,
+  maxHp: 1
+};
 
 function enemyAt(x: number, y: number, archetypeId = 'test-stationary-enemy'): EnemySpawnSpec {
   return {
     archetypeId,
     position: { x, y },
     radius: 0.6,
+    contactBox: squareContactBox(0.6),
     behavior: 'stationary',
     maxHp: 3,
     maxSpeed: 0,

@@ -50,7 +50,7 @@ export function buildSessionDefinition(
 }
 
 function buildSandboxSession(options: BuildOptions): SessionDefinition {
-  validateEnemyRegistry(ENEMY_ARCHETYPES, SANDBOX_PLAYER.radius);
+  validateEnemyRegistry(ENEMY_ARCHETYPES, SANDBOX_PLAYER.contactBox);
 
   const encounter: EncounterDefinition = {
     id: 'sandbox-encounter',
@@ -79,7 +79,7 @@ function buildSandboxSession(options: BuildOptions): SessionDefinition {
 }
 
 function buildSandboxWithCombatSession(options: BuildOptions): SessionDefinition {
-  validateEnemyRegistry(ENEMY_ARCHETYPES, SANDBOX_PLAYER.radius);
+  validateEnemyRegistry(ENEMY_ARCHETYPES, SANDBOX_PLAYER.contactBox);
 
   const targetSpawn: StaticSpawn = {
     archetypeId: SLIME_BUG.id,
@@ -291,7 +291,7 @@ function makeCampaignRunEncounters(): ReadonlyArray<EncounterDefinition> {
 }
 
 function buildTrainingSession(options: BuildOptions): SessionDefinition {
-  validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.radius);
+  validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.contactBox);
   warnIfWeaponMayTunnel(PISTOL.id);
 
   return {
@@ -310,7 +310,7 @@ function buildTrainingSession(options: BuildOptions): SessionDefinition {
 }
 
 function buildCampaignSession(options: BuildOptions): SessionDefinition {
-  validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.radius);
+  validateEnemyRegistry(ENEMY_ARCHETYPES, TRAINING_PLAYER.contactBox);
   warnIfWeaponMayTunnel(PISTOL.id);
 
   /** Matches wave spawn `edgeMargin` — boss enters from top center like edge-spawned slimes. */
