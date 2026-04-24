@@ -17,6 +17,7 @@ export const PISTOL: WeaponArchetype = {
     ttlMs: 2000,
     groundOnImpact: false,
     groundedLifetimeMs: null,
+    detonationTrigger: null,
     explosion: null,
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
@@ -37,6 +38,7 @@ export const SHOTGUN: WeaponArchetype = {
     ttlMs: 500,
     groundOnImpact: false,
     groundedLifetimeMs: null,
+    detonationTrigger: null,
     explosion: null,
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
@@ -57,6 +59,7 @@ export const SMG: WeaponArchetype = {
     ttlMs: 1600,
     groundOnImpact: false,
     groundedLifetimeMs: null,
+    detonationTrigger: null,
     explosion: null,
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
@@ -77,6 +80,7 @@ export const SNIPER: WeaponArchetype = {
     ttlMs: 2400,
     groundOnImpact: false,
     groundedLifetimeMs: null,
+    detonationTrigger: null,
     explosion: null,
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
@@ -97,6 +101,7 @@ export const LASER: WeaponArchetype = {
     ttlMs: 900,
     groundOnImpact: false,
     groundedLifetimeMs: null,
+    detonationTrigger: null,
     explosion: null,
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
@@ -117,6 +122,7 @@ export const ROCK_THROWER: WeaponArchetype = {
     ttlMs: 1300,
     groundOnImpact: true,
     groundedLifetimeMs: 350,
+    detonationTrigger: null,
     explosion: null,
     visual: { spinRadiansPerSec: 8, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
@@ -137,12 +143,15 @@ export const GRENADE_LAUNCHER: WeaponArchetype = {
     ttlMs: 2200,
     groundOnImpact: true,
     groundedLifetimeMs: 1200,
+    detonationTrigger: { kind: 'timer' },
     explosion: {
       delayMs: 1000,
       radius: 1.8,
       damage: 4,
       knockbackImpulse: 16,
-      fragments: null
+      fragments: null,
+      fieldEffect: null,
+      effects: []
     },
     visual: { spinRadiansPerSec: 6, rotateWhileFlying: true, pulseWhenGrounded: true, explosionRadiusIndicator: true }
   }
@@ -163,12 +172,15 @@ export const BOMB_PLACER: WeaponArchetype = {
     ttlMs: 2200,
     groundOnImpact: true,
     groundedLifetimeMs: 1800,
+    detonationTrigger: { kind: 'timer' },
     explosion: {
       delayMs: 1800,
       radius: 2.2,
       damage: 5,
       knockbackImpulse: 20,
-      fragments: null
+      fragments: null,
+      fieldEffect: null,
+      effects: []
     },
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: false, pulseWhenGrounded: true, explosionRadiusIndicator: true }
   }
@@ -189,6 +201,7 @@ export const FIREBALL_STAFF: WeaponArchetype = {
     ttlMs: 1400,
     groundOnImpact: false,
     groundedLifetimeMs: null,
+    detonationTrigger: null,
     explosion: null,
     visual: { spinRadiansPerSec: 4, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }

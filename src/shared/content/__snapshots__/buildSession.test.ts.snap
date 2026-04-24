@@ -1243,6 +1243,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },
@@ -2498,6 +2504,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },
@@ -3753,6 +3765,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },
@@ -3817,6 +3835,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },
@@ -3881,6 +3905,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },
@@ -3945,6 +3975,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },
@@ -4027,6 +4063,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },
@@ -4109,6 +4151,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },
@@ -4191,6 +4239,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },
@@ -4366,6 +4420,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },
@@ -4541,6 +4601,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },
@@ -4716,6 +4782,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     "radius": 0.5,
   },
   "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
     "damage": {
       "slimeFriendlyFire": false,
     },

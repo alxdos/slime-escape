@@ -1,9 +1,13 @@
 import type {
+  ActorEffectApplication,
+  DetonationTrigger,
   ExplosionSpec,
+  FieldEffectSpec,
   FirePattern,
   FragmentSpec,
   ProjectileArchetype,
   ProjectileMotion,
+  StatusEffectSpec,
   ProjectileVisualSpec
 } from '../../../src/shared/content/weapons';
 
@@ -52,6 +56,7 @@ function renderProjectile(projectile: ProjectileArchetype): string {
     ttlMs: ${formatNumber(projectile.ttlMs)},
     groundOnImpact: ${projectile.groundOnImpact ? 'true' : 'false'},
     groundedLifetimeMs: ${renderNullableNumber(projectile.groundedLifetimeMs)},
+    detonationTrigger: ${renderDetonationTrigger(projectile.detonationTrigger)},
     explosion: ${renderExplosion(projectile.explosion)},
     visual: ${renderProjectileVisual(projectile.visual)}
   }`;
@@ -77,8 +82,51 @@ function renderExplosion(explosion: ExplosionSpec | null): string {
       radius: ${formatNumber(explosion.radius)},
       damage: ${formatNumber(explosion.damage)},
       knockbackImpulse: ${formatNumber(explosion.knockbackImpulse)},
-      fragments: ${renderFragment(explosion.fragments)}
+      fragments: ${renderFragment(explosion.fragments)},
+      fieldEffect: ${renderFieldEffect(explosion.fieldEffect)},
+      effects: [${explosion.effects.map(renderActorEffect).join(', ')}]
     }`;
+}
+
+function renderDetonationTrigger(trigger: DetonationTrigger | null): string {
+  if (trigger === null) return 'null';
+  switch (trigger.kind) {
+    case 'timer':
+      return "{ kind: 'timer' }";
+    case 'proximity':
+    case 'timerOrProximity':
+      return `{ kind: '${trigger.kind}', radius: ${formatNumber(trigger.radius)}, armDelayMs: ${formatNumber(trigger.armDelayMs)} }`;
+    default:
+      return assertNever(trigger);
+  }
+}
+
+function renderFieldEffect(fieldEffect: FieldEffectSpec | null): string {
+  if (fieldEffect === null) return 'null';
+  return `{ archetypeId: '${escapeString(fieldEffect.archetypeId)}', radius: ${formatNumber(fieldEffect.radius)}, durationMs: ${formatNumber(fieldEffect.durationMs)}, applyEveryMs: ${formatNumber(fieldEffect.applyEveryMs)}, effects: [${fieldEffect.effects.map(renderActorEffect).join(', ')}] }`;
+}
+
+function renderActorEffect(effect: ActorEffectApplication): string {
+  switch (effect.kind) {
+    case 'damage':
+      return `{ kind: 'damage', amount: ${formatNumber(effect.amount)} }`;
+    case 'status':
+      return `{ kind: 'status', status: ${renderStatusEffect(effect.status)} }`;
+    default:
+      return assertNever(effect);
+  }
+}
+
+function renderStatusEffect(status: StatusEffectSpec): string {
+  switch (status.kind) {
+    case 'burn':
+    case 'poison':
+      return `{ kind: '${status.kind}', damagePerTick: ${formatNumber(status.damagePerTick)}, tickEveryMs: ${formatNumber(status.tickEveryMs)}, durationMs: ${formatNumber(status.durationMs)} }`;
+    case 'slow':
+      return `{ kind: 'slow', speedMultiplier: ${formatNumber(status.speedMultiplier)}, durationMs: ${formatNumber(status.durationMs)} }`;
+    default:
+      return assertNever(status);
+  }
 }
 
 function renderFragment(fragment: FragmentSpec | null): string {

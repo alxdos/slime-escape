@@ -168,7 +168,8 @@ function renderLoadout(loadout: ParsedLoadout | null): string {
 }
 
 function renderRules(preset: ParsedSessionPreset): string {
-  return `{ damage: { slimeFriendlyFire: ${preset.rules.damage.slimeFriendlyFire ? 'true' : 'false'} } }`;
+  const aimAssist = preset.rules.aimAssist;
+  return `{ damage: { slimeFriendlyFire: ${preset.rules.damage.slimeFriendlyFire ? 'true' : 'false'} }, aimAssist: { enabled: ${aimAssist.enabled ? 'true' : 'false'}, maxAngleRadians: ${formatNumber(aimAssist.maxAngleRadians)}, maxDistance: ${formatNumber(aimAssist.maxDistance)}, strength: ${formatNumber(aimAssist.strength)} } }`;
 }
 
 function renderNullableString(value: string | null): string {

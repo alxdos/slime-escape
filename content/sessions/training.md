@@ -11,6 +11,10 @@
 | loadoutWeaponIds | pistol, shotgun, smg |
 | selectedWeaponIndex | 0 |
 | slimeFriendlyFire | false |
+| aimAssistEnabled | false |
+| aimAssistMaxAngleRadians | 0 |
+| aimAssistMaxDistance | 0 |
+| aimAssistStrength | 0 |
 | winCondition | allEncountersComplete |
 | lossCondition | playerDeath |
 

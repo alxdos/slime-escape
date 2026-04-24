@@ -58,4 +58,12 @@ export const OVERDRIVE_DROP_VISUAL: SpriteVisualSpec = {
   anchor: { x: 0.5, y: 0.5 }
 };
 
-export const DROP_VISUAL_SPECS = [HEAL_ORB_DROP_VISUAL, SIZE_UP_DROP_VISUAL, SPEED_UP_DROP_VISUAL, MULTI_SHOT_DROP_VISUAL, PIERCE_DROP_VISUAL, FRAGMENT_DROP_VISUAL, OVERDRIVE_DROP_VISUAL] as const satisfies ReadonlyArray<SpriteVisualSpec>;
+export const MAGNET_DROP_VISUAL: SpriteVisualSpec = {
+  archetypeId: 'magnet',
+  image: '/assets/drops/speed-up.png',
+  sourceSizePx: { width: 125, height: 171 },
+  worldSize: { width: 0.5208333333333334, height: 0.7125 },
+  anchor: { x: 0.5, y: 0.5 }
+};
+
+export const DROP_VISUAL_SPECS = [HEAL_ORB_DROP_VISUAL, SIZE_UP_DROP_VISUAL, SPEED_UP_DROP_VISUAL, MULTI_SHOT_DROP_VISUAL, PIERCE_DROP_VISUAL, FRAGMENT_DROP_VISUAL, OVERDRIVE_DROP_VISUAL, MAGNET_DROP_VISUAL] as const satisfies ReadonlyArray<SpriteVisualSpec>;

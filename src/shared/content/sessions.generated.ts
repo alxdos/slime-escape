@@ -39,7 +39,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-05.jpg'
       }
     ],
-    rules: { damage: { slimeFriendlyFire: false } },
+    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     encounters: [
@@ -672,7 +672,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
-    rules: { damage: { slimeFriendlyFire: false } },
+    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
     encounters: [
@@ -704,7 +704,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
-    rules: { damage: { slimeFriendlyFire: false } },
+    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
     encounters: [
@@ -744,7 +744,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
-    rules: { damage: { slimeFriendlyFire: false } },
+    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     encounters: [

@@ -689,7 +689,9 @@ describe('CombatSystem', () => {
             weaponArchetypeId: PISTOL.id,
             count: 3,
             spreadRadians: Math.PI * 2
-          }
+          },
+          fieldEffect: null,
+          effects: []
         }
       }
     };

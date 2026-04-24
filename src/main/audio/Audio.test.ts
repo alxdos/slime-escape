@@ -203,7 +203,10 @@ function makeBossSession(): SessionDefinition {
     loadout: { weapons: ['pistol'], selectedIndex: 0 },
     backgrounds: [],
     modifiers: [],
-    rules: { damage: { slimeFriendlyFire: false } },
+    rules: {
+      damage: { slimeFriendlyFire: false },
+      aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 }
+    },
     encounters: [
       {
         id: 'boss-encounter',

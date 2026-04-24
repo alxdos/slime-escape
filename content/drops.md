@@ -63,6 +63,15 @@
 | displayName | Overdrive |
 | color | #77ff95 |
 
+## magnet
+
+![Magnet](../public/assets/drops/speed-up.png)
+
+| field | value |
+|---|---|
+| displayName | Magnet |
+| color | #5ee6ff |
+
 # Balance
 
 ## Body
@@ -76,18 +85,20 @@
 | pierce | 10000 |
 | fragment | 10000 |
 | overdrive | 8000 |
+| magnet | 10000 |
 
 ## Effect
 
-| id | kind | target | value | durationMs |
-|---|---|---|---:|---:|
-| heal-orb | heal | none | 1 | none |
-| size-up | addWeaponModifier | selectedWeapon | none | none |
-| speed-up | addWeaponModifier | selectedWeapon | none | none |
-| multi-shot | addWeaponModifier | selectedWeapon | none | none |
-| pierce | addWeaponModifier | selectedWeapon | none | none |
-| fragment | addWeaponModifier | selectedWeapon | none | none |
-| overdrive | temporaryOverdrive | selectedWeapon | 0.5 | 5000 |
+| id | kind | target | value | durationMs | attractSpeed |
+|---|---|---|---:|---:|---:|
+| heal-orb | heal | none | 1 | none | none |
+| size-up | addWeaponModifier | selectedWeapon | none | none | none |
+| speed-up | addWeaponModifier | selectedWeapon | none | none | none |
+| multi-shot | addWeaponModifier | selectedWeapon | none | none | none |
+| pierce | addWeaponModifier | selectedWeapon | none | none | none |
+| fragment | addWeaponModifier | selectedWeapon | none | none | none |
+| overdrive | temporaryOverdrive | selectedWeapon | 0.5 | 5000 | none |
+| magnet | pickupModifier | none | 1.8 | none | 8 |
 
 ## Weapon Modifier
 

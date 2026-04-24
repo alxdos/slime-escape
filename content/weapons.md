@@ -148,6 +148,20 @@
 | bomb-placer | 0.25 | 2200 | true | 1800 |
 | fireball-staff | 0.2 | 1400 | false | none |
 
+## Detonation Trigger
+
+| id | kind | radius | armDelayMs |
+|---|---|---:|---:|
+| pistol | none | 0 | 0 |
+| shotgun | none | 0 | 0 |
+| smg | none | 0 | 0 |
+| sniper | none | 0 | 0 |
+| laser | none | 0 | 0 |
+| rock-thrower | none | 0 | 0 |
+| grenade-launcher | timer | 0 | 0 |
+| bomb-placer | timer | 0 | 0 |
+| fireball-staff | none | 0 | 0 |
+
 ## Projectile Impact
 
 | id | impactDamage | knockbackImpulse | pierceCount |
@@ -189,6 +203,34 @@
 | grenade-launcher | none | 0 | 0 |
 | bomb-placer | none | 0 | 0 |
 | fireball-staff | none | 0 | 0 |
+
+## Explosion Field Effect
+
+| id | fieldArchetypeId | radius | durationMs | applyEveryMs | damage | statusKind | statusValue | tickEveryMs | statusDurationMs |
+|---|---|---:|---:|---:|---:|---|---:|---:|---:|
+| pistol | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
+| shotgun | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
+| smg | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
+| sniper | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
+| laser | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
+| rock-thrower | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
+| grenade-launcher | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
+| bomb-placer | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
+| fireball-staff | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
+
+## Explosion Status
+
+| id | statusKind | statusValue | tickEveryMs | statusDurationMs |
+|---|---|---:|---:|---:|
+| pistol | none | 0 | 0 | 0 |
+| shotgun | none | 0 | 0 | 0 |
+| smg | none | 0 | 0 | 0 |
+| sniper | none | 0 | 0 | 0 |
+| laser | none | 0 | 0 | 0 |
+| rock-thrower | none | 0 | 0 | 0 |
+| grenade-launcher | none | 0 | 0 | 0 |
+| bomb-placer | none | 0 | 0 | 0 |
+| fireball-staff | none | 0 | 0 | 0 |
 
 ## Projectile Visual
 

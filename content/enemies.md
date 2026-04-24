@@ -447,6 +447,76 @@
 | slime-obelisk | heal-orb | 0.40 |
 | slime-ninja | heal-orb | 0.35 |
 
+## Carrier Drops
+
+| id | guaranteedDropArchetypeIds |
+|---|---|
+| slime-one-eye | none |
+| slime-hornling | none |
+| slime-many-eye | none |
+| slime-stonehead | none |
+| slime-sleeper | none |
+| slime-spark | none |
+| slime-wraith | none |
+| slime-shell | none |
+| slime-flame | none |
+| slime-mech-crab | none |
+| slime-stack | none |
+| slime-trickster | none |
+| slime-bug | none |
+| slime-lifter | none |
+| slime-saw | none |
+| slime-drone | none |
+| slime-star | none |
+| slime-echo | none |
+| slime-splitter | none |
+| slime-prince | none |
+| slime-kingling | none |
+| slime-fortress | none |
+| slime-dasher | none |
+| slime-tadpole | none |
+| slime-door | none |
+| slime-mech | none |
+| slime-clamper | none |
+| slime-candle | none |
+| slime-obelisk | none |
+| slime-ninja | none |
+
+## Retaliation
+
+| id | enabled | durationMs |
+|---|---|---:|
+| slime-one-eye | false | 0 |
+| slime-hornling | false | 0 |
+| slime-many-eye | false | 0 |
+| slime-stonehead | false | 0 |
+| slime-sleeper | false | 0 |
+| slime-spark | false | 0 |
+| slime-wraith | false | 0 |
+| slime-shell | false | 0 |
+| slime-flame | false | 0 |
+| slime-mech-crab | false | 0 |
+| slime-stack | false | 0 |
+| slime-trickster | false | 0 |
+| slime-bug | false | 0 |
+| slime-lifter | false | 0 |
+| slime-saw | false | 0 |
+| slime-drone | false | 0 |
+| slime-star | false | 0 |
+| slime-echo | false | 0 |
+| slime-splitter | false | 0 |
+| slime-prince | false | 0 |
+| slime-kingling | false | 0 |
+| slime-fortress | false | 0 |
+| slime-dasher | false | 0 |
+| slime-tadpole | false | 0 |
+| slime-door | false | 0 |
+| slime-mech | false | 0 |
+| slime-clamper | false | 0 |
+| slime-candle | false | 0 |
+| slime-obelisk | false | 0 |
+| slime-ninja | false | 0 |
+
 # Sound sets
 
 ## Members

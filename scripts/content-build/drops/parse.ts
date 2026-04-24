@@ -213,8 +213,31 @@ function parseDropEffect(
         cooldownMultiplier: parsePositiveNumber(section, table, row, 'value'),
         durationMs: parsePositiveNumber(section, table, row, 'durationMs')
       };
+    case 'pickupModifier':
+      parseNoneTarget(section, table, row);
+      return {
+        kind,
+        modifier: {
+          kind: 'dropMagnet',
+          pickupRadiusMultiplier: parsePositiveNumber(section, table, row, 'value'),
+          attractSpeed: parsePositiveNumber(section, table, row, 'attractSpeed')
+        }
+      };
     default:
-      throw cellError(section, row.position, getRowId(row), 'kind', 'expected heal, addWeaponModifier or temporaryOverdrive');
+      throw cellError(
+        section,
+        row.position,
+        getRowId(row),
+        'kind',
+        'expected heal, addWeaponModifier, temporaryOverdrive or pickupModifier'
+      );
+  }
+}
+
+function parseNoneTarget(section: MarkdownSection, table: MarkdownTable, row: MarkdownTableRow): void {
+  const target = requireCell(section, table, row, 'target');
+  if (target !== 'none') {
+    throw cellError(section, row.position, getRowId(row), 'target', 'expected none');
   }
 }
 

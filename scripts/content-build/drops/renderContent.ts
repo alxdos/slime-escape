@@ -38,7 +38,7 @@ function renderDropEffect(effect: DropEffect): string {
     case 'temporaryOverdrive':
       return `{ kind: 'temporaryOverdrive', cooldownMultiplier: ${formatNumber(effect.cooldownMultiplier)}, durationMs: ${formatNumber(effect.durationMs)}, target: 'selectedWeapon' }`;
     case 'pickupModifier':
-      return assertNever(effect.modifier);
+      return `{ kind: 'pickupModifier', modifier: { kind: 'dropMagnet', pickupRadiusMultiplier: ${formatNumber(effect.modifier.pickupRadiusMultiplier)}, attractSpeed: ${formatNumber(effect.modifier.attractSpeed)} } }`;
     default:
       return assertNever(effect);
   }

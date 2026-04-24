@@ -64,3 +64,12 @@ export const OVERDRIVE: DropArchetype = {
   effect: { kind: 'temporaryOverdrive', cooldownMultiplier: 0.5, durationMs: 5000, target: 'selectedWeapon' },
   color: 0x77ff95
 };
+
+export const MAGNET: DropArchetype = {
+  id: 'magnet',
+  displayName: 'Magnet',
+  radius: 0.2604166666666667,
+  ttlMs: 10000,
+  effect: { kind: 'pickupModifier', modifier: { kind: 'dropMagnet', pickupRadiusMultiplier: 1.8, attractSpeed: 8 } },
+  color: 0x5ee6ff
+};
