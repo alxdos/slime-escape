@@ -1240,7 +1240,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -2501,7 +2501,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -3762,7 +3762,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -3869,7 +3869,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -3976,7 +3976,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -4083,7 +4083,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -4153,7 +4153,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -4223,7 +4223,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -4293,7 +4293,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -4381,7 +4381,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -4469,7 +4469,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -4557,7 +4557,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -4738,7 +4738,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -4919,7 +4919,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {
@@ -5100,7 +5100,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "x": 0,
       "y": 0,
     },
-    "radius": 0.5,
+    "radius": 1.1458333333333333,
   },
   "rules": {
     "aimAssist": {

@@ -3,14 +3,17 @@ import { requireNumber, requireRow, requireSection } from '../util/require';
 import { requireInlineImage } from '../util/inlineMedia';
 import {
   assertKnownReferences,
+  cellError,
   readMarkdownDocument,
   requireField,
   requireSingleTable,
   sectionError
 } from '../util/markdown';
+import { readSpriteAssetMetrics, type SpriteAssetMetrics } from '../util/spriteMetrics';
 
 export type ParsedPlayerVisual = Readonly<{
   image: string;
+  metrics: SpriteAssetMetrics;
 }>;
 
 export type ParsedPlayer = Readonly<{
@@ -45,16 +48,14 @@ function parsePlayersDocument(document: MarkdownDocument): ParsedPlayersArea {
   const definitions = playersSection.sections.map(parsePlayerDefinition);
   const knownPlayerIds = new Set(definitions.map((player) => player.id));
 
-  const bodySection = requireSection(balanceSection, 'Body');
   const movementSection = requireSection(balanceSection, 'Movement');
   const healthSection = requireSection(balanceSection, 'Health');
+  assertNoForbiddenBodyGroup(balanceSection);
   assertNoForbiddenVisualGroup(balanceSection);
 
-  const bodyTable = requireSingleTable(bodySection);
   const movementTable = requireSingleTable(movementSection);
   const healthTable = requireSingleTable(healthSection);
 
-  assertKnownReferences(bodySection, bodyTable, knownPlayerIds, 'player');
   assertKnownReferences(movementSection, movementTable, knownPlayerIds, 'player');
   assertKnownReferences(healthSection, healthTable, knownPlayerIds, 'player');
 
@@ -62,8 +63,6 @@ function parsePlayersDocument(document: MarkdownDocument): ParsedPlayersArea {
     sourcePath: document.filePath,
     players: definitions.map((definition) =>
       parsePlayer(definition, {
-        bodySection,
-        bodyTable,
         movementSection,
         movementTable,
         healthSection,
@@ -75,11 +74,19 @@ function parsePlayersDocument(document: MarkdownDocument): ParsedPlayersArea {
 
 function parsePlayerDefinition(section: MarkdownSection): PlayerDefinition {
   const table = requireSingleTable(section);
+  assertNoForbiddenSpriteFields(section, table);
+  const image = requireInlineImage(section);
+  const metrics = readSpriteAssetMetrics({
+    sourcePath: section.filePath,
+    rowId: section.title,
+    imagePath: image.url
+  });
   return {
     id: section.title,
     displayName: requireField(section, table, 'displayName'),
     visual: {
-      image: requireInlineImage(section).url
+      image: image.url,
+      metrics
     }
   };
 }
@@ -87,25 +94,55 @@ function parsePlayerDefinition(section: MarkdownSection): PlayerDefinition {
 function parsePlayer(
   definition: PlayerDefinition,
   tables: Readonly<{
-    bodySection: MarkdownSection;
-    bodyTable: MarkdownTable;
     movementSection: MarkdownSection;
     movementTable: MarkdownTable;
     healthSection: MarkdownSection;
     healthTable: MarkdownTable;
   }>
 ): ParsedPlayer {
-  const bodyRow = requireRow(tables.bodySection, tables.bodyTable, definition.id);
   const movementRow = requireRow(tables.movementSection, tables.movementTable, definition.id);
   const healthRow = requireRow(tables.healthSection, tables.healthTable, definition.id);
+  const { width, height } = definition.visual.metrics.worldSize;
 
   return {
     ...definition,
-    radius: requireNumber(tables.bodySection, tables.bodyTable, bodyRow, 'radius'),
+    radius: Math.max(width, height) / 2,
     maxSpeed: requireNumber(tables.movementSection, tables.movementTable, movementRow, 'maxSpeed'),
     maxHp: requireNumber(tables.healthSection, tables.healthTable, healthRow, 'maxHp'),
     visual: definition.visual
   };
+}
+
+function assertNoForbiddenSpriteFields(section: MarkdownSection, table: MarkdownTable): void {
+  for (const row of table.rows) {
+    const field = row.cells[0]?.value;
+    if (
+      field === 'image' ||
+      field === 'sourceSizePx' ||
+      field === 'worldSize' ||
+      field === 'anchor' ||
+      field === 'contactBox' ||
+      field === 'radius'
+    ) {
+      throw cellError(
+        section,
+        row.position,
+        field,
+        'field',
+        'sprite body fields are derived from the inline image under player H2'
+      );
+    }
+  }
+}
+
+function assertNoForbiddenBodyGroup(balanceSection: MarkdownSection): void {
+  const bodySection = balanceSection.sections.find((section) => section.title === 'Body');
+  if (bodySection !== undefined) {
+    throw sectionError(
+      bodySection,
+      'group "## Body" is derived from inline player images; remove manual player radius rows'
+    );
+  }
 }
 
 function assertNoForbiddenVisualGroup(balanceSection: MarkdownSection): void {

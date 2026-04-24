@@ -1,6 +1,5 @@
 import type { ParsedPlayer, ParsedPlayersArea } from './parse';
 import { ContentBuildError } from '../util/require';
-import { readSpriteAssetMetrics } from '../util/spriteMetrics';
 import {
   escapeString,
   formatNumber,
@@ -12,7 +11,7 @@ export function renderPlayerContent(area: ParsedPlayersArea): string {
   const sandboxHero = requirePlayer(area, 'hero-sandbox');
   const trainingHero = requirePlayer(area, 'hero-training');
   return `${renderHeader(area.sourcePath)}${renderImport()}${area.players
-    .map((player) => renderPlayer(area, player))
+    .map(renderPlayer)
     .join('\n\n')}\n\n${renderPlayerArchetypeSpecs(area.players)}\n\n${renderPlayerSpawn(
     'SANDBOX_PLAYER',
     sandboxHero
@@ -23,12 +22,8 @@ function renderImport(): string {
   return "import type { PlayerSpawn } from '../session';\nimport type { PlayerArchetype } from './players';\n\n";
 }
 
-function renderPlayer(area: ParsedPlayersArea, player: ParsedPlayer): string {
-  const { worldSize } = readSpriteAssetMetrics({
-    sourcePath: area.sourcePath,
-    rowId: player.id,
-    imagePath: player.visual.image
-  });
+function renderPlayer(player: ParsedPlayer): string {
+  const { worldSize } = player.visual.metrics;
   return `export const ${toConstName(player.id)}: PlayerArchetype = {
   id: '${escapeString(player.id)}',
   displayName: '${escapeString(player.displayName)}',

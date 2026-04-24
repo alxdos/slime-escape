@@ -28,6 +28,7 @@ describe('content-build players area', () => {
     expect(renderPlayerContent(area)).toContain(
       'export const PLAYER_ARCHETYPE_SPECS = [HERO_SANDBOX, HERO_TRAINING]'
     );
+    expect(renderPlayerContent(area)).toContain('radius: 1.1458333333333333');
     expect(renderPlayerContent(area)).toContain('maxHp: HERO_SANDBOX.maxHp');
     expect(renderPlayerContent(area)).toContain('contactBox: { width:');
     expect(renderPlayerContent(area)).toContain("export const TRAINING_PLAYER: PlayerSpawn");
@@ -59,6 +60,30 @@ describe('content-build players area', () => {
     );
 
     await expect(parsePlayersArea(sourcePath)).rejects.toThrow(/replaced by inline image/);
+  });
+
+  it('rejects legacy player Body balance groups', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-players-body-group-'));
+    const sourcePath = join(directory, 'players.md');
+    await writeFile(
+      sourcePath,
+      `${makePlayersMarkdown()}\n## Body\n\n| id | radius |\n|---|---:|\n| hero-sandbox | 0.5 |\n`,
+      'utf8'
+    );
+
+    await expect(parsePlayersArea(sourcePath)).rejects.toThrow(/derived from inline player images/);
+  });
+
+  it('rejects legacy player sprite fields under player definitions', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'content-build-players-radius-field-'));
+    const sourcePath = join(directory, 'players.md');
+    await writeFile(
+      sourcePath,
+      makePlayersMarkdown().replace('| displayName | Hero |', '| displayName | Hero |\n| radius | 0.5 |'),
+      'utf8'
+    );
+
+    await expect(parsePlayersArea(sourcePath)).rejects.toThrow(/sprite body fields are derived/);
   });
 
   it('fails check mode when PNG-derived player visual output drifts from the committed target', async () => {
@@ -106,13 +131,6 @@ function makePlayersMarkdown(): string {
 | displayName | Hero |
 
 # Balance
-
-## Body
-
-| id | radius |
-|---|---:|
-| hero-sandbox | 0.5 |
-| hero-training | 0.5 |
 
 ## Movement
 

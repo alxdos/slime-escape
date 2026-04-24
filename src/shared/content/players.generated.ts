@@ -6,7 +6,7 @@ import type { PlayerArchetype } from './players';
 export const HERO_SANDBOX: PlayerArchetype = {
   id: 'hero-sandbox',
   displayName: 'Hero',
-  radius: 0.5,
+  radius: 1.1458333333333333,
   contactBox: { width: 1.225, height: 2.2916666666666665 },
   maxSpeed: 6,
   maxHp: 1
@@ -15,7 +15,7 @@ export const HERO_SANDBOX: PlayerArchetype = {
 export const HERO_TRAINING: PlayerArchetype = {
   id: 'hero-training',
   displayName: 'Hero',
-  radius: 0.5,
+  radius: 1.1458333333333333,
   contactBox: { width: 1.225, height: 2.2916666666666665 },
   maxSpeed: 6,
   maxHp: 5
