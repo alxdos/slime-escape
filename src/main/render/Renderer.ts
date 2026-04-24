@@ -23,6 +23,7 @@ import { ENEMY_VISUALS } from './enemyVisuals';
 import { fitCanvasToViewport } from './fitToViewport';
 import {
   createImpactEffectStore,
+  type DeathGhostEffect,
   type HitImpulseEffect,
   type SlimeDropletEffect
 } from './ImpactEffectStore';
@@ -97,6 +98,7 @@ const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
 const DROP_Z = 0.03;
 const SLIME_STAIN_Z = 0.015;
+const DEATH_GHOST_Z = 0.045;
 const DROP_PULSE_HZ = 1.6;
 const DROP_PULSE_AMPLITUDE = 0.15;
 const SLIME_BREATH_HZ = 0.85;
@@ -194,6 +196,7 @@ export function createRenderer(init: RendererInit): Renderer {
   const projectileMeshes = new Map<number, EntityMeshEntry>();
   const dropMeshes = new Map<number, EntityMeshEntry>();
   const slimeDropletMeshes = new Map<number, EntityMeshEntry>();
+  const deathGhostMeshes = new Map<number, EntityMeshEntry>();
 
   function applyResolvedScalePolicy(
     preset: RenderScalePreset,
@@ -371,6 +374,13 @@ export function createRenderer(init: RendererInit): Renderer {
         scene,
         disposeEntityMesh
       );
+      updateDeathGhostMeshes(
+        impactSnapshot.deathGhosts,
+        deathGhostMeshes,
+        scene,
+        init.spriteTextures,
+        disposeEntityMesh
+      );
       arenaBackground.setEncounterId(pair.curr?.encounter?.id ?? null);
       debugHud.update(pair.curr);
       renderer.render(scene, camera);
@@ -397,6 +407,8 @@ export function createRenderer(init: RendererInit): Renderer {
       dropMeshes.clear();
       for (const entry of slimeDropletMeshes.values()) disposeEntityMesh(entry);
       slimeDropletMeshes.clear();
+      for (const entry of deathGhostMeshes.values()) disposeEntityMesh(entry);
+      deathGhostMeshes.clear();
       arenaGeometry.dispose();
       arenaMaterial.dispose();
       arenaBackground.dispose();
@@ -830,6 +842,55 @@ function createIrregularBlobGeometry(droplet: SlimeDropletEffect): THREE.ShapeGe
   }
   shape.closePath();
   return new THREE.ShapeGeometry(shape);
+}
+
+function updateDeathGhostMeshes(
+  ghosts: ReadonlyArray<DeathGhostEffect>,
+  table: Map<number, EntityMeshEntry>,
+  scene: THREE.Scene,
+  spriteTextures: TextureMap,
+  dispose: (entry: EntityMeshEntry) => void
+): void {
+  const aliveIds = new Set<number>();
+  for (const ghost of ghosts) {
+    aliveIds.add(ghost.id);
+    const entry = ensureDeathGhostMesh(ghost, table, scene, spriteTextures);
+    const material = entry.material;
+    if (material instanceof THREE.MeshBasicMaterial) {
+      material.opacity = ghost.opacity;
+    }
+    entry.mesh.position.set(ghost.x, ghost.y, DEATH_GHOST_Z);
+  }
+  for (const [id, entry] of table) {
+    if (!aliveIds.has(id)) {
+      dispose(entry);
+      table.delete(id);
+    }
+  }
+}
+
+function ensureDeathGhostMesh(
+  ghost: DeathGhostEffect,
+  table: Map<number, EntityMeshEntry>,
+  scene: THREE.Scene,
+  spriteTextures: TextureMap
+): EntityMeshEntry {
+  const existing = table.get(ghost.id);
+  if (existing !== undefined) return existing;
+  const visual =
+    ghost.entityKind === 'enemy'
+      ? requireVisualSpec(ENEMY_VISUALS, ghost.archetypeId, 'enemy')
+      : requireVisualSpec(BOSS_VISUALS, ghost.archetypeId, 'boss');
+  const texture = requireSpriteTexture(spriteTextures, ghost.archetypeId, ghost.entityKind);
+  const entry = createSpriteMesh(visual, texture, DEATH_GHOST_Z);
+  const material = entry.material;
+  if (material instanceof THREE.MeshBasicMaterial) {
+    material.opacity = ghost.opacity;
+    material.color.setHex(0xd7efe5);
+  }
+  scene.add(entry.mesh);
+  table.set(ghost.id, entry);
+  return entry;
 }
 
 function applySlimePresentation(

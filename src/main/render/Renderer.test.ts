@@ -292,6 +292,63 @@ describe('createRenderer', () => {
     expect(blobs[0]?.geometry).toBeInstanceOf(THREE.ShapeGeometry);
   });
 
+  it('renders death ghosts from event data even when the dead entity is absent from snapshots', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const enemyTexture = new THREE.Texture();
+    let pair: SnapshotPair = {
+      ...createEmptySnapshotPair(),
+      curr: createSnapshot([]),
+      nowMs: 700
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({
+        [SLIME_BUG.id]: enemyTexture
+      }),
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 1
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.handleEvent({
+      kind: 'death',
+      simTime: 0,
+      entityId: 2,
+      entityKind: 'enemy',
+      archetypeId: SLIME_BUG.id,
+      weaponArchetypeId: 'pistol',
+      impactDirX: 1,
+      impactDirY: 0,
+      x: 2,
+      y: 3
+    });
+    renderer.render();
+
+    const ghostMesh = findMeshWithMaterialMap(backend.lastScene(), enemyTexture);
+    const material = ghostMesh?.material;
+    expect(ghostMesh).not.toBeNull();
+    expect(ghostMesh?.position.x).toBeGreaterThan(2);
+    expect(ghostMesh?.position.y).toBeGreaterThan(3);
+    expect(material).toBeInstanceOf(THREE.MeshBasicMaterial);
+    expect((material as THREE.MeshBasicMaterial).opacity).toBeLessThan(1);
+
+    pair = { ...pair, nowMs: 2000 };
+    renderer.render();
+    expect(findMeshWithMaterialMap(backend.lastScene(), enemyTexture)).toBeNull();
+  });
+
   it('reapplies the current preset after resize in pixelRatio -> size order', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();

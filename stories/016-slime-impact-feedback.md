@@ -50,7 +50,7 @@
 | T6 | [x] | Собрать render-only impact effect store | Отслеживать transient hit impulses, droplets/stains и death ghosts с bounded budgets, TTL и per-frame updates. |
 | T7 | [x] | Нарисовать slime droplets и floor stains | Генерировать irregular blob geometry, spawn-ить hit/death bursts из event data, коротко settle/grow stains, затем fade/remove. |
 | T8 | [x] | Добавить live hit response | Наложить короткий flash и/или squash impulse на enemy/boss sprites без влияния на breathing, position interpolation или player rendering. |
-| T9 | [ ] | Добавить death ghost feedback | Spawn transient sprite copy из death event archetype/texture, двигать вверх плюс impact direction, быстро fade-out-ить и безопасно работать без live mesh. |
+| T9 | [x] | Добавить death ghost feedback | Spawn transient sprite copy из death event archetype/texture, двигать вверх плюс impact direction, быстро fade-out-ить и безопасно работать без live mesh. |
 | T10 | [ ] | Проверить и настроить общее ощущение | Прогнать unit/build checks и manual browser QA по доступным weapons: direction, force difference, color, cleanup, отсутствие leftovers после выхода из run. |
 
 ## Related

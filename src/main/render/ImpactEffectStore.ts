@@ -42,6 +42,7 @@ export type SlimeDropletEffect = Readonly<{
 }>;
 
 export type DeathGhostEffect = Readonly<{
+  id: number;
   entityId: number;
   entityKind: SlimeKind;
   archetypeId: string;
@@ -87,6 +88,7 @@ export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffe
   let droplets: SlimeDropletEffect[] = [];
   let deathGhosts: DeathGhostEffect[] = [];
   let nextDropletId = 1;
+  let nextGhostId = 1;
 
   function handleEvent(event: RuntimeEvent, nowMs: number): void {
     switch (event.kind) {
@@ -141,6 +143,7 @@ export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffe
     const dir = normalizeOrFallback(event.impactDirX, event.impactDirY, 0, 1);
     hitImpulses.delete(event.entityId);
     deathGhosts.push({
+      id: nextGhostId,
       entityId: event.entityId,
       entityKind: event.entityKind,
       archetypeId: event.archetypeId,
@@ -154,6 +157,7 @@ export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffe
       expiresAtMs: nowMs + DEATH_GHOST_TTL_MS,
       opacity: 1
     });
+    nextGhostId += 1;
     cullArrayToBudget(deathGhosts, MAX_DEATH_GHOSTS);
     spawnDroplets({
       seed: hashEventSeed(event.simTime, event.entityId, event.entityId, event.archetypeId),
