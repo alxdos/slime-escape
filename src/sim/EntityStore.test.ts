@@ -44,6 +44,7 @@ const PROJECTILE_SPEC: ProjectileSpawnSpec = {
   velocity: { vx: 10, vy: 0 },
   radius: 0.1,
   damage: 1,
+  knockbackImpulse: 5,
   expireAtSimMs: 2000
 };
 
@@ -120,6 +121,7 @@ describe('EntityStore', () => {
     expect(projectile.velocity).toEqual(PROJECTILE_SPEC.velocity);
     expect(projectile.radius).toBe(PROJECTILE_SPEC.radius);
     expect(projectile.damage).toBe(PROJECTILE_SPEC.damage);
+    expect(projectile.knockbackImpulse).toBe(PROJECTILE_SPEC.knockbackImpulse);
     expect(projectile.expireAtSimMs).toBe(PROJECTILE_SPEC.expireAtSimMs);
     expect(store.projectileById(projectile.id)).toBe(projectile);
     expect(store.projectileCount()).toBe(1);

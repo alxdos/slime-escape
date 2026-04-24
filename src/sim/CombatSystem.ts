@@ -125,6 +125,7 @@ function runFiringDecisions(
     },
     radius: archetype.projectileRadius,
     damage: archetype.damage,
+    knockbackImpulse: archetype.knockbackImpulse,
     expireAtSimMs: simTimeMs + archetype.projectileTtlMs
   });
 
@@ -243,6 +244,9 @@ function runHitDetection(
     const target = findFirstHit(projectile, index, maxProjectileTargetBoundsRadius);
     if (target === null) continue;
     const impactDir = normalizedProjectileDirection(projectile);
+    if (target.kind === 'enemy' || target.kind === 'boss') {
+      applyProjectileKnockback(target, projectile, impactDir, simTimeMs);
+    }
 
     intents.push({
       targetId: target.id,
@@ -284,6 +288,21 @@ function normalizedProjectileDirection(projectile: Projectile): Vec2 {
   const len = Math.hypot(projectile.velocity.vx, projectile.velocity.vy);
   if (len === 0) return { x: 1, y: 0 };
   return { x: projectile.velocity.vx / len, y: projectile.velocity.vy / len };
+}
+
+function applyProjectileKnockback(
+  target: Enemy | Boss,
+  projectile: Projectile,
+  impactDir: Vec2,
+  simTimeMs: number
+): void {
+  const impulseSpeed = projectile.knockbackImpulse * target.knockbackVelocityScale;
+  target.knockback = {
+    vx: impulseSpeed * impactDir.x,
+    vy: impulseSpeed * impactDir.y,
+    startSimMs: simTimeMs,
+    endSimMs: simTimeMs + target.knockbackDurationMs
+  };
 }
 
 function findFirstHit(

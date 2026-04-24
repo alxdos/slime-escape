@@ -45,7 +45,7 @@
 | T1 | [x] | Зафиксировать архитектуру impact feedback | Добавлены `design/impact-feedback.md` и обновления связанных design-контрактов до кодовой работы. |
 | T2 | [x] | Расширить runtime event и damage intent payloads | Обновить `RuntimeEvent.hit`, `RuntimeEvent.death`, projectile `DamageIntent.source` и тесты под archetype/direction data. |
 | T3 | [x] | Добавить weapon force в content | Добавить обязательный `WeaponArchetype.knockbackImpulse`, обновить MD parsing/rendering/generated content и выставить начальные значения существующим weapons. |
-| T4 | [ ] | Применить projectile knockback в симуляции | Переиспользовать enemy/boss knockback state на projectile hits, учесть susceptibility/duration цели и оставить HP mutation внутри `HealthDeathSystem`. |
+| T4 | [x] | Применить projectile knockback в симуляции | Переиспользовать enemy/boss knockback state на projectile hits, учесть susceptibility/duration цели и оставить HP mutation внутри `HealthDeathSystem`. |
 | T5 | [ ] | Пробросить runtime events в renderer | Добавить `Renderer.handleEvent`, route events из `UiShell`, очистку renderer effects на dispose/session transitions. |
 | T6 | [ ] | Собрать render-only impact effect store | Отслеживать transient hit impulses, droplets/stains и death ghosts с bounded budgets, TTL и per-frame updates. |
 | T7 | [ ] | Нарисовать slime droplets и floor stains | Генерировать irregular blob geometry, spawn-ить hit/death bursts из event data, коротко settle/grow stains, затем fade/remove. |
