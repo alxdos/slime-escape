@@ -84,4 +84,5 @@
 | [content-authoring.md](content-authoring.md) | accepted | Авторская поверхность контента в Markdown: `content/<area>.md` как источник правды, генератор `scripts/content-build/`, пары `<area>.ts ↔ <area>.generated.ts` в потребляющих слоях, атомарная запись и CI-чек дрейфа |
 | [sprite-assets.md](sprite-assets.md) | accepted | Sprite-визуал для `player`/`enemy`/`boss`: `SpriteVisualSpec`, три раздельных visual registry рядом с renderer, `PX_PER_WU = 240`, asset-only renderer без circle-fallback, render-only breathing для `enemy`/`boss`, hard-error policy, preload до меню |
 | [body-contact-boxes.md](body-contact-boxes.md) | accepted | `contactBox` как derive shape для body-contact `player`/`enemy`/`boss`: box-vs-box overlap, broadphase через derived bounds radius, clamp игрока по box |
+| [impact-feedback.md](impact-feedback.md) | accepted | Juicy projectile feedback: self-contained `hit`/`death` event payloads, projectile knockback from weapon force, renderer-owned slime droplets/stains, hit squash/flash and death ghost |
 | [_template.md](_template.md) | template | Минимальный шаблон нового решения |

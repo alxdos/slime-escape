@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (story 013: после ввода [sprite-assets.md](sprite-assets.md) renderer для player/enemy/boss перестаёт читать `EnemyArchetype.color`/`BossArchetype.color`; добавлен derive `contactBox` для body-contact и projectile hit detection по [body-contact-boxes.md](body-contact-boxes.md) и [projectiles-and-combat.md](projectiles-and-combat.md). story 012 покрывает MD-генерацией weapons/drops/bosses; формы архетипов и правила реестров не меняются)
+- Updated: 2026-04-24 (story 016: `WeaponArchetype` получает `knockbackImpulse` как физическую силу projectile hit, а `EnemyArchetype.color`/`BossArchetype.color` становятся источником цвета render-only slime impact effects; см. [impact-feedback.md](impact-feedback.md). Ранее: story 013: после ввода [sprite-assets.md](sprite-assets.md) renderer для base player/enemy/boss sprite перестаёт читать `EnemyArchetype.color`/`BossArchetype.color`; добавлен derive `contactBox` для body-contact и projectile hit detection по [body-contact-boxes.md](body-contact-boxes.md) и [projectiles-and-combat.md](projectiles-and-combat.md). story 012 покрывает MD-генерацией weapons/drops/bosses и сохраняет правила реестров)
 
 ## Context
 
@@ -49,7 +49,7 @@
     knockbackBaseImpulse: number;    // wu/s, >= 0; базовая скорость отскока при нулевом сближении
     knockbackVelocityScale: number;  // безразмерный, >= 0; множитель добавки от approachSpeed
     knockbackDurationMs: number;     // целое > 0; длительность затухания knockback
-    color: number;                   // 0xRRGGBB, плейсхолдер для рендера
+    color: number;                   // 0xRRGGBB, slime material color for impact effects; base sprite remains PNG-driven
     dropTable: ReadonlyArray<DropTableEntry>;  // [] = враг ничего не дропает; правила выбора — drops.md
   }>;
   ```
@@ -58,7 +58,7 @@
 - `contactBox` — axis-aligned footprint тела врага для body-contact и projectile hit detection по [body-contact-boxes.md](body-contact-boxes.md) и [projectiles-and-combat.md](projectiles-and-combat.md). На горизонте 013 не авторится руками в MD и derive-ится из sprite asset тем же scale pipeline, что и visual `worldSize`.
 - `contactDamage` и `contactCooldownMs` — единственный источник правды для контактного урона; правила обработки — в [enemy-contact.md](enemy-contact.md). Если `contactDamage === 0`, кулдаун всё равно задаётся явно — отсутствие поля запрещено по тому же правилу единственности «нет данных».
 - `knockbackBaseImpulse`, `knockbackVelocityScale`, `knockbackDurationMs` — параметры контактного knockback враг → от игрока; правила обработки — в [enemy-contact.md](enemy-contact.md), раздел `Knockback at contact`. Поля задаются всегда: «knockback'а нет» выражается явными нулями `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0`, а не пропуском полей.
-- `color` — плейсхолдер до появления полноценных ассетов. Это контентное поле, не decision рендера. После [sprite-assets.md](sprite-assets.md) renderer для `player`/`enemy`/`boss` поле не читает (визуал — preloaded sprite), но поле остаётся в архетипе как content-плейсхолдер для не-renderer сценариев (debug overlay, мини-карта, tooling). Удаление — отдельное решение, когда появится фактический consumer или подтверждение, что его не будет.
+- `color` — slime material color for render-only impact effects ([impact-feedback.md](impact-feedback.md)): droplets/stains take their hue from the hit `enemy` / `boss`. Base sprite rendering still does not tint player/enemy/boss PNGs; visual identity remains the preloaded sprite from [sprite-assets.md](sprite-assets.md). Non-renderer consumers (debug overlay, мини-карта, tooling) may also use the field.
 - Числовые ограничения, обязательные на стороне content/builder:
   - `maxSpeed * SIM_STEP_SEC <= min((contactBox.width + player.contactBox.width) / 2, (contactBox.height + player.contactBox.height) / 2)` ([enemy-contact.md](enemy-contact.md): запрет touring через игрока), warning через единый log-модуль ([logging.md](logging.md));
   - для `'stationary'` обязан быть `maxSpeed === 0`, `contactDamage === 0` и `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0` (стационарная мишень не должна неявно бить и не должна прыгать); валидация на стороне content/builder.
@@ -76,12 +76,14 @@
     projectileRadius: number;     // wu, > 0
     projectileTtlMs: number;      // ms, > 0; despawn по истечении
     damage: number;               // целое > 0
+    knockbackImpulse: number;      // wu/s, >= 0; projectile hit force, separate from damage
     color: number;                // 0xRRGGBB, плейсхолдер для рендера снаряда
   }>;
   ```
 - `cooldownMs` — минимальный интервал между двумя последовательными выстрелами; конкретное использование (per-shooter timer) — в [projectiles-and-combat.md](projectiles-and-combat.md).
 - Поле «бесконечный боезапас» из [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md) не выражается в архетипе: отсутствие поля `ammo` и есть его реализация. Когда (если) появится конечный боезапас, он добавится отдельным полем и отдельным design-решением.
 - Скорости и `projectileRadius` должны соблюдать инвариант «без туннелирования» из [projectiles-and-combat.md](projectiles-and-combat.md) относительно `contactBox`-целей; проверка — на стороне content/builder, не на стороне рантайма.
+- `knockbackImpulse` — физическая сила projectile hit по [impact-feedback.md](impact-feedback.md). Она намеренно не derive-ится из `damage`: контент может задать мощный толчок с малым уроном или высокий урон с небольшим толчком.
 
 ### DropArchetype
 
@@ -113,7 +115,7 @@
     contactBox: Readonly<{ width: number; height: number }>;  // wu, derive body footprint / projectile target shape
     maxHp: number;                       // целое > 0
     maxSpeed: number;                    // wu/s, >= 0; базовая скорость перемещения, если босс двигается
-    color: number;                       // 0xRRGGBB
+    color: number;                       // 0xRRGGBB, slime material color for impact effects; base sprite remains PNG-driven
     contactDamage: number;
     contactCooldownMs: number;
     knockbackBaseImpulse: number;
@@ -131,7 +133,7 @@
 - Контакт с игроком и knockback следуют тем же правилам, что и `EnemyArchetype` ([enemy-contact.md](enemy-contact.md)); числа задаются в архетипе босса.
 - `contactBox` для босса следует тому же правилу, что и у `EnemyArchetype`: derive из sprite asset, owner body-contact и projectile target overlap.
 - Минимум **две** записи в `phases` и минимум **два** различимых ключа в `attacks` для acceptance истории 006 ([../stories/006-boss-encounter.md](../stories/006-boss-encounter.md)); конкретный выбор атаки из `allowedAttackIds` и паттерна — `BossPhaseSystem` ([boss-encounter.md](boss-encounter.md)).
-- `color` следует тому же правилу, что и `EnemyArchetype.color` после [sprite-assets.md](sprite-assets.md): renderer для `boss` его не читает, поле остаётся как content-плейсхолдер для не-renderer сценариев.
+- `color` следует тому же правилу, что и `EnemyArchetype.color`: render-only slime impact effects читают его как цвет материала, base sprite renderer для `boss` его не читает, поле остаётся доступным и для non-renderer сценариев.
 
 ### PlayerArchetype
 
@@ -202,3 +204,4 @@
 - [boss-encounter.md](boss-encounter.md)
 - [content-authoring.md](content-authoring.md)
 - [sprite-assets.md](sprite-assets.md)
+- [impact-feedback.md](impact-feedback.md)

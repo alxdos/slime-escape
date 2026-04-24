@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (013 follow-up: hit detection по `target.contactBox` для `player` / `enemy` / `boss`, broadphase по derived bounds radius; ранее: 006 `projectile.ownerKind` и `fire`/`hit` — см. [boss-encounter.md](boss-encounter.md), [snapshot-shape.md](snapshot-shape.md); friendly fire с сущностью `kind: 'boss'`; ранее: contact intents)
+- Updated: 2026-04-24 (016: projectile hit теперь несёт normalized impact direction, публикует self-contained `hit` payload и применяет projectile knockback к `enemy`/`boss` через `WeaponArchetype.knockbackImpulse`; см. [impact-feedback.md](impact-feedback.md). Ранее: 013 follow-up: hit detection по `target.contactBox` для `player` / `enemy` / `boss`, broadphase по derived bounds radius; ранее: 006 `projectile.ownerKind` и `fire`/`hit` — см. [boss-encounter.md](boss-encounter.md), [snapshot-shape.md](snapshot-shape.md); friendly fire с сущностью `kind: 'boss'`; ранее: contact intents)
 
 ## Context
 
@@ -31,10 +31,11 @@
     velocity: { vx: number; vy: number }; // wu/s
     radius: number;                   // wu, копия из WeaponArchetype.projectileRadius
     damage: number;                   // целое > 0, копия из WeaponArchetype.damage
+    knockbackImpulse: number;          // wu/s, копия из WeaponArchetype.knockbackImpulse
     expireAtSimMs: number;            // момент снятия с арены
   };
   ```
-- Поля `radius`, `damage`, `expireAtSimMs` копируются из архетипа в момент создания, чтобы tick не зависел от лишних lookup-ов и оставался стабильным даже при будущих мутациях архетипа в редакторе/тестах.
+- Поля `radius`, `damage`, `knockbackImpulse`, `expireAtSimMs` копируются из архетипа в момент создания, чтобы tick не зависел от лишних lookup-ов и оставался стабильным даже при будущих мутациях архетипа в редакторе/тестах.
 - `velocity` фиксируется в момент выстрела и далее не меняется. Гравитации, наведения и эффектов «тянет к цели» нет.
 - Снаряды визуализируются по `kind: 'projectile'` (см. [snapshot-shape.md](snapshot-shape.md)); рендер не знает про их тип оружия дальше, чем по `weaponArchetypeId`.
 
@@ -83,9 +84,12 @@
   - снаряд с `ownerKind: 'boss'` поражает только игрока (атаки босса через снаряд — [boss-encounter.md](boss-encounter.md));
   - проверка реализована как фильтр по `target.kind` относительно `projectile.ownerKind`; отдельных team-id в MVP не вводим.
 - При попадании:
-  1. формируется damage intent `{ targetId, amount: projectile.damage, source: { kind: 'projectile', projectileId, ownerKind, weaponArchetypeId }, hitPosition }`;
-  2. снаряд **сразу** помечается на удаление (один снаряд = одно попадание);
-  3. публикуется runtime event `hit` (поля — в [snapshot-shape.md](snapshot-shape.md)).
+  1. вычисляется `impactDir = normalize(projectile.velocity)`; если velocity вырождена, попадание считается ошибкой runtime-состояния и использует fallback `(1, 0)` только для сохранения total event shape;
+  2. если цель имеет `kind: 'enemy' | 'boss'`, применяется projectile knockback по [impact-feedback.md](impact-feedback.md): `projectile.knockbackImpulse * target.knockbackVelocityScale` вдоль `impactDir`, с duration из `target.knockbackDurationMs`;
+  3. формируется damage intent `{ targetId, amount: projectile.damage, source: { kind: 'projectile', projectileId, ownerKind, weaponArchetypeId, impactDirX, impactDirY }, hitPosition }`;
+  4. публикуется runtime event `hit` с `targetArchetypeId`, `impactDirX/Y`, `weaponArchetypeId`, `damage` и позицией попадания (полная форма — в [snapshot-shape.md](snapshot-shape.md));
+  5. снаряд **сразу** помечается на удаление (один снаряд = одно попадание).
+- Projectile knockback — единственный санкционированный side effect `CombatSystem` на damageable-цель, кроме формирования damage intent. `CombatSystem` по-прежнему не читает и не мутирует HP; смерть и удаление остаются в [health-and-death.md](health-and-death.md).
 - Damage intents этой фазы передаются в `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) как явный список; общая шина damage не вводится — один кадр, один набор intents.
 
 ### Туннелирование и ограничение скорости
@@ -136,3 +140,4 @@
 - [simulation-timing.md](simulation-timing.md)
 - [logging.md](logging.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
+- [impact-feedback.md](impact-feedback.md)

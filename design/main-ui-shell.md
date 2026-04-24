@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-23 (story 015 follow-up: `Renderer` получает immutable `SessionDefinition` при создании, читает `session.backgrounds` + `encounters[].backgroundId` и переключает фон арены по `snapshot.encounter.id`; snapshot не расширяется, потому что активный encounter уже присутствует. story 015: playable preset catalog становится derived view над `SESSION_PRESET_TEMPLATES` из `content library`; метаданные пресета (`displayName`/`description`/`visibleInMenu`/`order`) живут в партиции `# Session` каждого `content/sessions/<presetId>.md`, рядом с самим описанием пресета (см. [content-authoring.md](content-authoring.md), раздел «Multi-file области»); отдельный `playableModes.ts` исчезает; форма `PlayableModeEntry` сворачивается в derived view, без отдельного реестра. Story 013: для истории 013 добавлены стартовая фаза `loading` и финальная фаза `error('preload')`: видимый splash + sprite preload до меню, hard-error при провале загрузки, недоступность Renderer/InputController/Settings/SimWorkerHost в этих фазах; follow-up: minimum splash duration зафиксирован как контракт `STARTUP_PRELOAD_MIN_DURATION_MS = 1500`)
+- Updated: 2026-04-24 (story 016: `UiShell` fans simulation runtime events out to `Renderer.handleEvent` while keeping `UiShell` as the only `SimWorkerHost.onEvent` owner; see [impact-feedback.md](impact-feedback.md). Ранее: story 015 follow-up: `Renderer` получает immutable `SessionDefinition` при создании, читает `session.backgrounds` + `encounters[].backgroundId` и переключает фон арены по `snapshot.encounter.id`; snapshot не расширяется, потому что активный encounter уже присутствует. story 015: playable preset catalog становится derived view над `SESSION_PRESET_TEMPLATES` из `content library`; метаданные пресета (`displayName`/`description`/`visibleInMenu`/`order`) живут в партиции `# Session` каждого `content/sessions/<presetId>.md`, рядом с самим описанием пресета (см. [content-authoring.md](content-authoring.md), раздел «Multi-file области»); отдельный `playableModes.ts` исчезает; форма `PlayableModeEntry` сворачивается в derived view, без отдельного реестра. Story 013: для истории 013 добавлены стартовая фаза `loading` и финальная фаза `error('preload')`: видимый splash + sprite preload до меню, hard-error при провале загрузки, недоступность Renderer/InputController/Settings/SimWorkerHost в этих фазах; follow-up: minimum splash duration зафиксирован как контракт `STARTUP_PRELOAD_MIN_DURATION_MS = 1500`)
 
 ## Context
 
@@ -162,6 +162,7 @@
 - В фазе `paused` `Renderer` продолжает рендер каждый кадр (картинка не «замирает в моменте получения паузы», а отрисовывает последний интерполированный кадр), `InputController` остаётся подключён, но Pointer Lock снят браузером ([input-commands.md](input-commands.md)). HUD заморожен (см. выше).
 - В фазе `result` `Renderer` и `InputController` уничтожаются: на экране только Result UI; canvas под ним может остаться пустым/чёрным. Это явно: после смерти игрока «арена сзади продолжает шевелиться» — нежелательный артефакт, и контракт его исключает.
 - Смена render backend в 010 (main vs render worker через `OffscreenCanvas`) живёт внутри `Renderer` и не ломает фазовую модель `UiShell`.
+- Runtime events из `SimWorkerHost.onEvent` остаются централизованы в `UiShell`. Для render-only impact feedback `UiShell` пробрасывает event в `renderer.handleEvent(event)`, если renderer существует, после audio routing и до shell-level transition handling. `Renderer` сам фильтрует интересующие его `kind` и не подписывается на `SimWorkerHost` напрямую. Полный контракт impact event fan-out — [impact-feedback.md](impact-feedback.md).
 
 ### Startup preload в фазе `loading`
 
@@ -213,3 +214,4 @@
 - [../stories/009-settings.md](../stories/009-settings.md)
 - [../stories/013-sprite-assets-and-loader.md](../stories/013-sprite-assets-and-loader.md)
 - [../stories/015-sessions-from-md.md](../stories/015-sessions-from-md.md)
+- [impact-feedback.md](impact-feedback.md)
