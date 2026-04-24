@@ -17,6 +17,10 @@ import type { TextureMap } from './spritePreload';
 
 const AIM_RING_OUTLINE_COLOR = 0xd97706;
 const PROJECTILE_RADIUS_OUTLINE_OPACITY = 0.54;
+const CROSSHAIR_OPACITY = 0.78;
+const CROSSHAIR_OUTLINE_OPACITY = 1;
+const CROSSHAIR_OUTLINE_RENDER_ORDER = 20;
+const CROSSHAIR_RENDER_ORDER = 21;
 
 type FakeRendererOp =
   | Readonly<{ kind: 'pixelRatio'; value: number }>
@@ -925,7 +929,29 @@ describe('createRenderer', () => {
     expect(preview?.position.x).toBeCloseTo(ROCK_THROWER.projectile.motion.range);
     expect(preview?.position.y).toBeCloseTo(0);
     expect(crosshair?.visible).toBe(true);
-    expect(crosshair?.children).toHaveLength(2);
+    expect(crosshair?.children).toHaveLength(3);
+    expect(crosshair?.renderOrder).toBe(CROSSHAIR_RENDER_ORDER);
+    const crosshairOutline = crosshair?.children.find(
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh && child.name === 'crosshair-outline'
+    );
+    expect(crosshairOutline).toBeDefined();
+    expect(crosshairOutline?.renderOrder).toBe(CROSSHAIR_OUTLINE_RENDER_ORDER);
+    expect(crosshairOutline?.geometry).toBeInstanceOf(THREE.ShapeGeometry);
+    expect((crosshairOutline?.material as THREE.MeshBasicMaterial | undefined)?.opacity).toBe(
+      CROSSHAIR_OUTLINE_OPACITY
+    );
+    for (const mesh of crosshair?.children.filter((child): child is THREE.Mesh => child instanceof THREE.Mesh) ?? []) {
+      expect((mesh.material as THREE.MeshBasicMaterial).depthTest).toBe(false);
+    }
+    const crosshairMarks = crosshair?.children.filter((child): child is THREE.Mesh => {
+      return child instanceof THREE.Mesh && child.name !== 'crosshair-outline';
+    }) ?? [];
+    expect(crosshairMarks).toHaveLength(2);
+    for (const mark of crosshairMarks) {
+      expect(mark.renderOrder).toBe(CROSSHAIR_RENDER_ORDER);
+      expect((mark.material as THREE.MeshBasicMaterial).opacity).toBe(CROSSHAIR_OPACITY);
+      expect((mark.material as THREE.MeshBasicMaterial).transparent).toBe(true);
+    }
   });
 
   it('adds render-only squash and stretch to slime sprites without scaling the player', () => {
