@@ -68,7 +68,7 @@ export const OVERDRIVE: DropArchetype = {
 export const MAGNET: DropArchetype = {
   id: 'magnet',
   displayName: 'Magnet',
-  radius: 0.2604166666666667,
+  radius: 0.325,
   ttlMs: 10000,
   effect: { kind: 'pickupModifier', modifier: { kind: 'dropMagnet', pickupRadiusMultiplier: 1.8, attractSpeed: 8 } },
   color: 0x5ee6ff

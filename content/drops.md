@@ -65,7 +65,7 @@
 
 ## magnet
 
-![Magnet](../public/assets/drops/speed-up.png)
+![Magnet](../public/assets/drops/magnet.png)
 
 | field | value |
 |---|---|

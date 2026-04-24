@@ -60,9 +60,9 @@ export const OVERDRIVE_DROP_VISUAL: SpriteVisualSpec = {
 
 export const MAGNET_DROP_VISUAL: SpriteVisualSpec = {
   archetypeId: 'magnet',
-  image: '/assets/drops/speed-up.png',
-  sourceSizePx: { width: 125, height: 171 },
-  worldSize: { width: 0.5208333333333334, height: 0.7125 },
+  image: '/assets/drops/magnet.png',
+  sourceSizePx: { width: 162, height: 156 },
+  worldSize: { width: 0.675, height: 0.65 },
   anchor: { x: 0.5, y: 0.5 }
 };
 
