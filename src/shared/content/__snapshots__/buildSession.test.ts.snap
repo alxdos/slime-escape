@@ -3783,6 +3783,327 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
 }
 `;
 
+exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-modifiers-demo session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "sandbox",
+      "id": "combat-modifiers-demo-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "static",
+        "spawns": [
+          {
+            "archetypeId": "demo-carrier-slime",
+            "position": {
+              "x": 4,
+              "y": 1.5,
+            },
+          },
+          {
+            "archetypeId": "demo-retaliator-slime",
+            "position": {
+              "x": 5,
+              "y": -1,
+            },
+          },
+          {
+            "archetypeId": "demo-retaliator-slime",
+            "position": {
+              "x": 7,
+              "y": -1,
+            },
+          },
+          {
+            "archetypeId": "slime-bug",
+            "position": {
+              "x": 6,
+              "y": 2.5,
+            },
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "combat-modifiers-demo-session",
+  "loadout": {
+    "selectedIndex": 0,
+    "weapons": [
+      "demo-hazard-grenade",
+      "demo-proximity-mine",
+      "pistol",
+    ],
+  },
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": {
+    "aimAssist": {
+      "enabled": true,
+      "maxAngleRadians": 0.35,
+      "maxDistance": 8,
+      "strength": 0.65,
+    },
+    "damage": {
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-modifiers-demo session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "sandbox",
+      "id": "combat-modifiers-demo-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "static",
+        "spawns": [
+          {
+            "archetypeId": "demo-carrier-slime",
+            "position": {
+              "x": 4,
+              "y": 1.5,
+            },
+          },
+          {
+            "archetypeId": "demo-retaliator-slime",
+            "position": {
+              "x": 5,
+              "y": -1,
+            },
+          },
+          {
+            "archetypeId": "demo-retaliator-slime",
+            "position": {
+              "x": 7,
+              "y": -1,
+            },
+          },
+          {
+            "archetypeId": "slime-bug",
+            "position": {
+              "x": 6,
+              "y": 2.5,
+            },
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "combat-modifiers-demo-session",
+  "loadout": {
+    "selectedIndex": 0,
+    "weapons": [
+      "demo-hazard-grenade",
+      "demo-proximity-mine",
+      "pistol",
+    ],
+  },
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": {
+    "aimAssist": {
+      "enabled": true,
+      "maxAngleRadians": 0.35,
+      "maxDistance": 8,
+      "strength": 0.65,
+    },
+    "damage": {
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-modifiers-demo session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "sandbox",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "sandbox",
+      "id": "combat-modifiers-demo-encounter",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "static",
+        "spawns": [
+          {
+            "archetypeId": "demo-carrier-slime",
+            "position": {
+              "x": 4,
+              "y": 1.5,
+            },
+          },
+          {
+            "archetypeId": "demo-retaliator-slime",
+            "position": {
+              "x": 5,
+              "y": -1,
+            },
+          },
+          {
+            "archetypeId": "demo-retaliator-slime",
+            "position": {
+              "x": 7,
+              "y": -1,
+            },
+          },
+          {
+            "archetypeId": "slime-bug",
+            "position": {
+              "x": 6,
+              "y": 2.5,
+            },
+          },
+        ],
+      },
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "combat-modifiers-demo-session",
+  "loadout": {
+    "selectedIndex": 0,
+    "weapons": [
+      "demo-hazard-grenade",
+      "demo-proximity-mine",
+      "pistol",
+    ],
+  },
+  "lossCondition": {
+    "kind": "none",
+  },
+  "modifiers": [],
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 1,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 0.5,
+  },
+  "rules": {
+    "aimAssist": {
+      "enabled": true,
+      "maxAngleRadians": 0.35,
+      "maxDistance": 8,
+      "strength": 0.65,
+    },
+    "damage": {
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
 exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox session for seed 0 1`] = `
 {
   "arena": {

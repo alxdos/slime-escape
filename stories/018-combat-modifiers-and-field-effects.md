@@ -1,6 +1,6 @@
 # Combat Modifiers And Field Effects
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-24
 - Updated: 2026-04-24 (architecture cleanup: drop magnet binding via new `DropEffect.kind: 'pickupModifier'` made explicit; aim assist owner fixed to `main thread`; tasks updated.)
 
@@ -46,7 +46,7 @@
 | T4 | [x] | Extend `CombatSystem` for mine proximity triggers and explosion-spawned field effects/status applications. | Reuse universal projectile/explosion ownership and shared damage rules; proximity checks use `SpatialIndex` and deterministic ordering. |
 | T5 | [x] | Extend `DropSystem`, enemy content and renderer for carrier drops and magnet attraction. | Carrier rewards still use death hooks; magnet movement/pickup expansion remains deterministic and owned by `DropSystem`. |
 | T6 | [x] | Add friendly-fire retaliation behavior and optional aim-assist targeting. | Add aggro memory/behavior consumption in sim; implement aim assist on `main thread` per `design/combat-modifiers-and-field-effects.md` (corrects `aim` before sending the existing `InputCommand`, sim sees only a regular `aim` value); use deterministic target tie-breakers. |
-| T7 | [ ] | Add demo content, visual/audio feedback and regression tests for all enabled mechanics. | Cover no-effect sessions as non-regression plus field lifecycle, status ticks, mine triggers, drop magnet, retaliation and aim-assist target selection. |
+| T7 | [x] | Add demo content, visual/audio feedback and regression tests for all enabled mechanics. | Cover no-effect sessions as non-regression plus field lifecycle, status ticks, mine triggers, drop magnet, retaliation and aim-assist target selection. |
 
 ## Related
 

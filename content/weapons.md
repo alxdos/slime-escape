@@ -90,6 +90,26 @@
 |---|---|
 | displayName | Fireball Staff |
 
+## demo-hazard-grenade
+
+![Demo Hazard Grenade projectile](../public/assets/projectiles/grenade-launcher.png)
+
+[weapons/shotgun](../public/sfx/weapons/shotgun.mp3)
+
+| field | value |
+|---|---|
+| displayName | Demo Hazard Grenade |
+
+## demo-proximity-mine
+
+![Demo Proximity Mine projectile](../public/assets/projectiles/bomb-placer.png)
+
+[weapons/shotgun](../public/sfx/weapons/shotgun.mp3)
+
+| field | value |
+|---|---|
+| displayName | Demo Proximity Mine |
+
 # Balance
 
 ## Cooldown
@@ -105,6 +125,8 @@
 | grenade-launcher | 1100 |
 | bomb-placer | 1600 |
 | fireball-staff | 850 |
+| demo-hazard-grenade | 650 |
+| demo-proximity-mine | 700 |
 
 ## Fire Pattern
 
@@ -119,6 +141,8 @@
 | grenade-launcher | single | 1 | 0 | none |
 | bomb-placer | place | 0 | 0 | none |
 | fireball-staff | multiDirection | 0 | 0 | 0, 1.5707963268, 3.1415926536, 4.7123889804 |
+| demo-hazard-grenade | single | 1 | 0 | none |
+| demo-proximity-mine | place | 0 | 0 | none |
 
 ## Projectile Motion
 
@@ -133,6 +157,8 @@
 | grenade-launcher | arc | 7 | 6 | 700 |
 | bomb-placer | placed | none | none | none |
 | fireball-staff | linear | 9 | none | none |
+| demo-hazard-grenade | arc | 7 | 5 | 550 |
+| demo-proximity-mine | placed | none | none | none |
 
 ## Projectile Lifecycle
 
@@ -147,6 +173,8 @@
 | grenade-launcher | 0.22 | 2200 | true | 1200 |
 | bomb-placer | 0.25 | 2200 | true | 1800 |
 | fireball-staff | 0.2 | 1400 | false | none |
+| demo-hazard-grenade | 0.22 | 2400 | true | 1600 |
+| demo-proximity-mine | 0.25 | 10000 | true | 10000 |
 
 ## Detonation Trigger
 
@@ -161,6 +189,8 @@
 | grenade-launcher | timer | 0 | 0 |
 | bomb-placer | timer | 0 | 0 |
 | fireball-staff | none | 0 | 0 |
+| demo-hazard-grenade | timer | 0 | 0 |
+| demo-proximity-mine | timerOrProximity | 2.2 | 250 |
 
 ## Projectile Impact
 
@@ -175,6 +205,8 @@
 | grenade-launcher | 1 | 6 | 0 |
 | bomb-placer | 0 | 0 | 0 |
 | fireball-staff | 2 | 5 | 0 |
+| demo-hazard-grenade | 1 | 6 | 0 |
+| demo-proximity-mine | 0 | 0 | 0 |
 
 ## Explosion
 
@@ -189,6 +221,8 @@
 | grenade-launcher | 1000 | 1.8 | 4 | 16 |
 | bomb-placer | 1800 | 2.2 | 5 | 20 |
 | fireball-staff | none | 0 | 0 | 0 |
+| demo-hazard-grenade | 150 | 1.8 | 2 | 10 |
+| demo-proximity-mine | 4500 | 2.2 | 4 | 16 |
 
 ## Explosion Fragments
 
@@ -203,6 +237,8 @@
 | grenade-launcher | none | 0 | 0 |
 | bomb-placer | none | 0 | 0 |
 | fireball-staff | none | 0 | 0 |
+| demo-hazard-grenade | none | 0 | 0 |
+| demo-proximity-mine | none | 0 | 0 |
 
 ## Explosion Field Effect
 
@@ -217,6 +253,8 @@
 | grenade-launcher | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
 | bomb-placer | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
 | fireball-staff | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
+| demo-hazard-grenade | demo-burning-puddle | 1.6 | 2200 | 450 | 1 | burn | 1 | 600 | 1800 |
+| demo-proximity-mine | demo-slow-field | 1.9 | 1800 | 300 | none | slow | 0.45 | 0 | 1200 |
 
 ## Explosion Status
 
@@ -231,6 +269,8 @@
 | grenade-launcher | none | 0 | 0 | 0 |
 | bomb-placer | none | 0 | 0 | 0 |
 | fireball-staff | none | 0 | 0 | 0 |
+| demo-hazard-grenade | slow | 0.55 | 0 | 1600 |
+| demo-proximity-mine | poison | 1 | 700 | 1800 |
 
 ## Projectile Visual
 
@@ -245,3 +285,5 @@
 | grenade-launcher | 6 | true | true | true |
 | bomb-placer | 0 | false | true | true |
 | fireball-staff | 4 | true | false | false |
+| demo-hazard-grenade | 6 | true | true | true |
+| demo-proximity-mine | 0 | false | true | true |

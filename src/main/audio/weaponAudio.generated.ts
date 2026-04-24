@@ -11,5 +11,7 @@ export const WEAPON_AUDIO_MAPPINGS: Readonly<Record<string, WeaponAudioMapping>>
   'rock-thrower': Object.freeze({ fire: 'weapons/pistol' }),
   'grenade-launcher': Object.freeze({ fire: 'weapons/shotgun' }),
   'bomb-placer': Object.freeze({ fire: 'weapons/shotgun' }),
-  'fireball-staff': Object.freeze({ fire: 'weapons/laser' })
+  'fireball-staff': Object.freeze({ fire: 'weapons/laser' }),
+  'demo-hazard-grenade': Object.freeze({ fire: 'weapons/shotgun' }),
+  'demo-proximity-mine': Object.freeze({ fire: 'weapons/shotgun' })
 });

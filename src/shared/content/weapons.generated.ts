@@ -206,3 +206,61 @@ export const FIREBALL_STAFF: WeaponArchetype = {
     visual: { spinRadiansPerSec: 4, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
 };
+
+export const DEMO_HAZARD_GRENADE: WeaponArchetype = {
+  id: 'demo-hazard-grenade',
+  displayName: 'Demo Hazard Grenade',
+  cooldownMs: 650,
+  firePattern: { kind: 'single', spreadRadians: 0, count: 1 },
+  projectile: {
+    motion: { kind: 'arc', speed: 7, range: 5, flightMs: 550 },
+    size: { width: 0.3333333333333333, height: 0.3875 },
+    hitRadius: 0.22,
+    impactDamage: 1,
+    knockbackImpulse: 6,
+    pierceCount: 0,
+    ttlMs: 2400,
+    groundOnImpact: true,
+    groundedLifetimeMs: 1600,
+    detonationTrigger: { kind: 'timer' },
+    explosion: {
+      delayMs: 150,
+      radius: 1.8,
+      damage: 2,
+      knockbackImpulse: 10,
+      fragments: null,
+      fieldEffect: { archetypeId: 'demo-burning-puddle', radius: 1.6, durationMs: 2200, applyEveryMs: 450, effects: [{ kind: 'damage', amount: 1 }, { kind: 'status', status: { kind: 'burn', damagePerTick: 1, tickEveryMs: 600, durationMs: 1800 } }] },
+      effects: [{ kind: 'status', status: { kind: 'slow', speedMultiplier: 0.55, durationMs: 1600 } }]
+    },
+    visual: { spinRadiansPerSec: 6, rotateWhileFlying: true, pulseWhenGrounded: true, explosionRadiusIndicator: true }
+  }
+};
+
+export const DEMO_PROXIMITY_MINE: WeaponArchetype = {
+  id: 'demo-proximity-mine',
+  displayName: 'Demo Proximity Mine',
+  cooldownMs: 700,
+  firePattern: { kind: 'place' },
+  projectile: {
+    motion: { kind: 'placed' },
+    size: { width: 0.7666666666666667, height: 0.7291666666666666 },
+    hitRadius: 0.25,
+    impactDamage: 0,
+    knockbackImpulse: 0,
+    pierceCount: 0,
+    ttlMs: 10000,
+    groundOnImpact: true,
+    groundedLifetimeMs: 10000,
+    detonationTrigger: { kind: 'timerOrProximity', radius: 2.2, armDelayMs: 250 },
+    explosion: {
+      delayMs: 4500,
+      radius: 2.2,
+      damage: 4,
+      knockbackImpulse: 16,
+      fragments: null,
+      fieldEffect: { archetypeId: 'demo-slow-field', radius: 1.9, durationMs: 1800, applyEveryMs: 300, effects: [{ kind: 'status', status: { kind: 'slow', speedMultiplier: 0.45, durationMs: 1200 } }] },
+      effects: [{ kind: 'status', status: { kind: 'poison', damagePerTick: 1, tickEveryMs: 700, durationMs: 1800 } }]
+    },
+    visual: { spinRadiansPerSec: 0, rotateWhileFlying: false, pulseWhenGrounded: true, explosionRadiusIndicator: true }
+  }
+};

@@ -249,6 +249,44 @@ export const SLIME_BUG: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
+export const DEMO_CARRIER_SLIME: EnemyArchetype = {
+  id: 'demo-carrier-slime',
+  displayName: 'Demo Carrier Slime',
+  radius: 0.5,
+  contactBox: { width: 1.4, height: 1.6125 },
+  maxHp: 2,
+  behavior: 'chase',
+  maxSpeed: 2.4,
+  contactDamage: 1,
+  contactCooldownMs: 800,
+  knockbackBaseImpulse: 5,
+  knockbackVelocityScale: 1,
+  knockbackDurationMs: 280,
+  color: 0x5ee6ff,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['magnet', 'heal-orb'] },
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
+export const DEMO_RETALIATOR_SLIME: EnemyArchetype = {
+  id: 'demo-retaliator-slime',
+  displayName: 'Demo Retaliator Slime',
+  radius: 0.52,
+  contactBox: { width: 1.1583333333333334, height: 1.2541666666666667 },
+  maxHp: 3,
+  behavior: 'chase',
+  maxSpeed: 2.6,
+  contactDamage: 1,
+  contactCooldownMs: 800,
+  knockbackBaseImpulse: 5,
+  knockbackVelocityScale: 1,
+  knockbackDurationMs: 280,
+  color: 0xff6b35,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.2 }],
+  carrierDrop: null,
+  retaliation: { enabled: true, durationMs: 2500 }
+};
+
 export const SLIME_LIFTER: EnemyArchetype = {
   id: 'slime-lifter',
   displayName: 'Lifter Slime',

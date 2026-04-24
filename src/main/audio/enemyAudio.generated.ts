@@ -141,6 +141,24 @@ export const ENEMY_AUDIO_MAPPINGS: Readonly<Record<string, EnemyAudioMapping>> =
       intervalMaxMs: 6000
     })
   }),
+  'demo-carrier-slime': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'demo-retaliator-slime': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
   'slime-lifter': Object.freeze({
     hit: SLIME_HIT_VARIANTS,
     death: SLIME_DEATH_VARIANTS,

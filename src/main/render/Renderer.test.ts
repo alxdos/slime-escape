@@ -532,6 +532,50 @@ describe('createRenderer', () => {
     expect(marker?.visible).toBe(true);
   });
 
+  it('shows status markers on statused actors', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const enemyTexture = new THREE.Texture();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [SLIME_BUG.id]: enemyTexture }),
+      getSnapshotPair: () =>
+        createSnapshotPairWithEntities([
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+          {
+            id: 2,
+            kind: 'enemy',
+            archetypeId: SLIME_BUG.id,
+            x: 1,
+            y: 1,
+            hp: 2,
+            maxHp: 2,
+            statusEffects: [{ kind: 'burn', expiresAtSimMs: 1000 }]
+          }
+        ]),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const enemyMesh = findMeshWithMaterialMap(backend.lastScene(), enemyTexture);
+    const marker = enemyMesh?.children.find((child) => child.name === 'status-effect-marker');
+    expect(marker).toBeInstanceOf(THREE.Mesh);
+    expect(marker?.visible).toBe(true);
+  });
+
   it('applies projectile visual state and grounded explosion radius indicators', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();
@@ -626,6 +670,104 @@ describe('createRenderer', () => {
     expect(dropMesh).not.toBeNull();
     expect(dropMesh?.geometry).toBeInstanceOf(THREE.PlaneGeometry);
     expect(dropMesh?.geometry).not.toBeInstanceOf(THREE.CircleGeometry);
+  });
+
+  it('renders field effects as translucent radius circles', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () =>
+        createSnapshotPairWithEntities([
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+          {
+            id: 44,
+            kind: 'fieldEffect',
+            archetypeId: 'demo-burning-puddle',
+            x: 2,
+            y: -1,
+            radius: 1.6,
+            expiresAtSimMs: 1000
+          }
+        ]),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const fieldMesh = backend
+      .lastScene()
+      ?.children.find(
+        (child): child is THREE.Mesh =>
+          child instanceof THREE.Mesh && child.geometry instanceof THREE.CircleGeometry
+      );
+    expect(fieldMesh).toBeDefined();
+    expect(fieldMesh?.position.x).toBeCloseTo(2);
+    expect(fieldMesh?.position.y).toBeCloseTo(-1);
+    expect(fieldMesh?.scale.x).toBeCloseTo(1.6);
+  });
+
+  it('animates picked-up drops toward the current picker position while shrinking', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const dropTexture = new THREE.Texture();
+    let pair = createSnapshotPairWithEntities([
+      { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 }
+    ]);
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [HEAL_ORB.id]: dropTexture }),
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+    renderer.handleEvent({
+      kind: 'dropPickup',
+      simTime: 0,
+      entityId: 50,
+      archetypeId: HEAL_ORB.id,
+      pickerId: 1,
+      x: 2,
+      y: 0
+    });
+    pair = {
+      ...pair,
+      curr: createSnapshot([{ id: 1, kind: 'player', x: 1, y: 0, hp: 5, maxHp: 5 }]),
+      nowMs: 140
+    };
+    renderer.render();
+
+    const ghost = findMeshWithMaterialMap(backend.lastScene(), dropTexture);
+    expect(ghost).not.toBeNull();
+    expect(ghost?.position.x).toBeLessThan(2);
+    expect(ghost?.position.x).toBeGreaterThan(1);
+    expect(ghost?.scale.x).toBeLessThan(1);
   });
 
   it('shows an arc landing preview for the selected arc weapon', () => {

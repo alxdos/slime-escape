@@ -117,6 +117,24 @@
 | displayName | Bug Slime |
 | color | #8ee03a |
 
+## demo-carrier-slime
+
+![Demo Carrier Slime](../public/assets/slime-25.png)
+
+| field | value |
+|---|---|
+| displayName | Demo Carrier Slime |
+| color | #5ee6ff |
+
+## demo-retaliator-slime
+
+![Demo Retaliator Slime](../public/assets/slime-23.png)
+
+| field | value |
+|---|---|
+| displayName | Demo Retaliator Slime |
+| color | #ff6b35 |
+
 ## slime-lifter
 
 ![Lifter Slime](../public/assets/slime-22.png)
@@ -289,6 +307,8 @@
 | slime-stack | 0.58 | 3 | chase |
 | slime-trickster | 0.52 | 3 | chase |
 | slime-bug | 0.48 | 2 | chase |
+| demo-carrier-slime | 0.50 | 2 | chase |
+| demo-retaliator-slime | 0.52 | 3 | chase |
 | slime-lifter | 0.70 | 6 | chase |
 | slime-saw | 0.55 | 3 | chase |
 | slime-drone | 0.42 | 1 | chase |
@@ -324,6 +344,8 @@
 | slime-stack | 2.2 |
 | slime-trickster | 2.5 |
 | slime-bug | 2.6 |
+| demo-carrier-slime | 2.4 |
+| demo-retaliator-slime | 2.6 |
 | slime-lifter | 1.6 |
 | slime-saw | 2.5 |
 | slime-drone | 2.8 |
@@ -359,6 +381,8 @@
 | slime-stack | 1 | 900 |
 | slime-trickster | 1 | 850 |
 | slime-bug | 1 | 800 |
+| demo-carrier-slime | 1 | 800 |
+| demo-retaliator-slime | 1 | 800 |
 | slime-lifter | 3 | 1100 |
 | slime-saw | 2 | 900 |
 | slime-drone | 1 | 750 |
@@ -394,6 +418,8 @@
 | slime-stack | 5 | 1.0 | 280 |
 | slime-trickster | 5 | 1.0 | 280 |
 | slime-bug | 5 | 1.0 | 280 |
+| demo-carrier-slime | 5 | 1.0 | 280 |
+| demo-retaliator-slime | 5 | 1.0 | 280 |
 | slime-lifter | 3 | 0.5 | 220 |
 | slime-saw | 5 | 1.0 | 280 |
 | slime-drone | 8 | 1.5 | 350 |
@@ -429,6 +455,8 @@
 | slime-stack | heal-orb | 0.35 |
 | slime-trickster | heal-orb | 0.30 |
 | slime-bug | heal-orb | 0.25 |
+| demo-carrier-slime | heal-orb | 0 |
+| demo-retaliator-slime | heal-orb | 0.20 |
 | slime-lifter | heal-orb | 0.60 |
 | slime-saw | heal-orb | 0.40 |
 | slime-drone | heal-orb | 0.20 |
@@ -464,6 +492,8 @@
 | slime-stack | none |
 | slime-trickster | none |
 | slime-bug | none |
+| demo-carrier-slime | magnet, heal-orb |
+| demo-retaliator-slime | none |
 | slime-lifter | none |
 | slime-saw | none |
 | slime-drone | none |
@@ -499,6 +529,8 @@
 | slime-stack | false | 0 |
 | slime-trickster | false | 0 |
 | slime-bug | false | 0 |
+| demo-carrier-slime | false | 0 |
+| demo-retaliator-slime | true | 2500 |
 | slime-lifter | false | 0 |
 | slime-saw | false | 0 |
 | slime-drone | false | 0 |
@@ -523,7 +555,7 @@
 
 | setId | slimes |
 |---|---|
-| default | slime-one-eye, slime-hornling, slime-many-eye, slime-stonehead, slime-sleeper, slime-spark, slime-wraith, slime-shell, slime-flame, slime-mech-crab, slime-stack, slime-trickster, slime-bug, slime-lifter, slime-saw, slime-drone, slime-star, slime-echo, slime-splitter, slime-prince, slime-kingling, slime-fortress, slime-dasher, slime-tadpole, slime-door, slime-mech, slime-clamper, slime-candle, slime-obelisk, slime-ninja |
+| default | slime-one-eye, slime-hornling, slime-many-eye, slime-stonehead, slime-sleeper, slime-spark, slime-wraith, slime-shell, slime-flame, slime-mech-crab, slime-stack, slime-trickster, slime-bug, demo-carrier-slime, demo-retaliator-slime, slime-lifter, slime-saw, slime-drone, slime-star, slime-echo, slime-splitter, slime-prince, slime-kingling, slime-fortress, slime-dasher, slime-tadpole, slime-door, slime-mech, slime-clamper, slime-candle, slime-obelisk, slime-ninja |
 
 ## Hit
 

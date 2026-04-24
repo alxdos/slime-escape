@@ -46,7 +46,7 @@ describe('validateEnemyVisuals', () => {
   });
 
   it('covers every committed enemy archetype id', () => {
-    expect(Object.keys(ENEMY_VISUALS)).toHaveLength(30);
+    expect(Object.keys(ENEMY_VISUALS)).toHaveLength(32);
     expect(Object.keys(ENEMY_VISUALS).sort()).toEqual(Object.keys(ENEMY_ARCHETYPES).sort());
   });
 });

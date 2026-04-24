@@ -11,6 +11,7 @@ import type {
   DropSnapshot,
   EnemySnapshot,
   EntitySnapshot,
+  FieldEffectSnapshot,
   PlayerSnapshot,
   ProjectileSnapshot,
   Snapshot
@@ -100,7 +101,10 @@ const PROJECTILE_Z = 0.05;
 const PROJECTILE_RADIUS_Z = -0.01;
 const PROJECTILE_RADIUS_INDICATOR_NAME = 'projectile-radius-indicator';
 const CARRIER_REWARD_MARKER_NAME = 'carrier-reward-marker';
+const STATUS_MARKER_NAME = 'status-effect-marker';
 const DROP_Z = 0.03;
+const FIELD_EFFECT_Z = -0.03;
+const PICKUP_GHOST_Z = 0.12;
 const ARC_PREVIEW_Z = 0.04;
 const ARC_PREVIEW_RADIUS_WU = 0.18;
 const SLIME_STAIN_Z = -0.25;
@@ -115,11 +119,21 @@ const BOSS_BREATH_AMPLITUDE = 0.045;
 const ZONE_OVERLAY_Z = 0.2;
 const ZONE_CORNER_RADIUS_FACTOR = 0.25;
 const ZONE_FEATHER_WU = 1.5;
+const PICKUP_GHOST_TTL_MS = 280;
 
 type EntityMeshEntry = {
   mesh: THREE.Mesh;
   geometry: THREE.BufferGeometry;
   material: THREE.Material;
+};
+
+type PickupGhostEntry = EntityMeshEntry & {
+  readonly id: number;
+  readonly pickerId: number;
+  readonly startX: number;
+  readonly startY: number;
+  readonly startedAtMs: number;
+  readonly expiresAtMs: number;
 };
 
 type CharacterSnapGrid = Readonly<{
@@ -177,6 +191,7 @@ export function createRenderer(init: RendererInit): Renderer {
     ENEMY_Z
   );
   const playerMesh = playerEntry.mesh;
+  playerMesh.add(createStatusMarker(DEFAULT_PLAYER_VISUAL.worldSize.height));
   playerMesh.visible = false;
   scene.add(playerMesh);
 
@@ -204,6 +219,8 @@ export function createRenderer(init: RendererInit): Renderer {
   const bossMeshes = new Map<number, EntityMeshEntry>();
   const projectileMeshes = new Map<number, EntityMeshEntry>();
   const dropMeshes = new Map<number, EntityMeshEntry>();
+  const fieldEffectMeshes = new Map<number, EntityMeshEntry>();
+  const pickupGhostMeshes = new Map<number, PickupGhostEntry>();
   const slimeDropletMeshes = new Map<number, EntityMeshEntry>();
   const deathGhostMeshes = new Map<number, EntityMeshEntry>();
 
@@ -259,11 +276,13 @@ export function createRenderer(init: RendererInit): Renderer {
   function ensureBossMesh(snap: BossSnapshot): EntityMeshEntry {
     const existing = bossMeshes.get(snap.id);
     if (existing !== undefined) return existing;
+    const visual = requireVisualSpec(BOSS_VISUALS, snap.archetypeId, 'boss');
     const entry = createSpriteMesh(
-      requireVisualSpec(BOSS_VISUALS, snap.archetypeId, 'boss'),
+      visual,
       requireSpriteTexture(init.spriteTextures, snap.archetypeId, 'boss'),
       ENEMY_Z
     );
+    entry.mesh.add(createStatusMarker(visual.worldSize.height));
     scene.add(entry.mesh);
     bossMeshes.set(snap.id, entry);
     return entry;
@@ -279,6 +298,7 @@ export function createRenderer(init: RendererInit): Renderer {
       ENEMY_Z
     );
     entry.mesh.add(createCarrierRewardMarker(visual.worldSize.height));
+    entry.mesh.add(createStatusMarker(visual.worldSize.height));
     scene.add(entry.mesh);
     enemyMeshes.set(snap.id, entry);
     return entry;
@@ -309,6 +329,47 @@ export function createRenderer(init: RendererInit): Renderer {
     scene.add(entry.mesh);
     dropMeshes.set(snap.id, entry);
     return entry;
+  }
+
+  function ensureFieldEffectMesh(snap: FieldEffectSnapshot): EntityMeshEntry {
+    const existing = fieldEffectMeshes.get(snap.id);
+    if (existing !== undefined) return existing;
+    const geometry = new THREE.CircleGeometry(1, 64);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x5ee6ff,
+      transparent: true,
+      opacity: 0.18,
+      depthWrite: false
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.z = FIELD_EFFECT_Z;
+    scene.add(mesh);
+    const entry = { mesh, geometry, material };
+    fieldEffectMeshes.set(snap.id, entry);
+    return entry;
+  }
+
+  function spawnPickupGhost(
+    event: Extract<RuntimeEvent, { kind: 'dropPickup' }>,
+    nowMs: number
+  ): void {
+    const entry = createSpriteMesh(
+      requireVisualSpec(DROP_VISUALS, event.archetypeId, 'drop'),
+      requireSpriteTexture(init.spriteTextures, event.archetypeId, 'drop'),
+      PICKUP_GHOST_Z
+    );
+    entry.mesh.position.x = event.x;
+    entry.mesh.position.y = event.y;
+    scene.add(entry.mesh);
+    pickupGhostMeshes.set(event.entityId, {
+      ...entry,
+      id: event.entityId,
+      pickerId: event.pickerId,
+      startX: event.x,
+      startY: event.y,
+      startedAtMs: nowMs,
+      expiresAtMs: nowMs + PICKUP_GHOST_TTL_MS
+    });
   }
 
   return {
@@ -344,14 +405,16 @@ export function createRenderer(init: RendererInit): Renderer {
         ensureBossMesh,
         disposeEntityMesh,
         characterSnapGrid,
-        (entry, entity) =>
+        (entry, entity) => {
           applySlimePresentation(
             entry.mesh,
             pair.nowMs,
             entity.id,
             BOSS_BREATH_AMPLITUDE,
             hitImpulsesByTarget.get(entity.id)
-          )
+          );
+          applyStatusMarker(entry.mesh, entity.statusEffects ?? [], pair.nowMs);
+        }
       );
       updateEntities(
         pair,
@@ -371,7 +434,18 @@ export function createRenderer(init: RendererInit): Renderer {
         ensureDropMesh,
         disposeEntityMesh
       );
+      updateEntities(
+        pair,
+        alpha,
+        (e): e is FieldEffectSnapshot => e.kind === 'fieldEffect',
+        fieldEffectMeshes,
+        ensureFieldEffectMesh,
+        disposeEntityMesh,
+        null,
+        (entry, entity) => applyFieldEffectPresentation(entry.mesh, entity, pair.nowMs)
+      );
       pulseDropMeshes(dropMeshes, pair.nowMs);
+      updatePickupGhostMeshes(pickupGhostMeshes, pair.curr, pair.nowMs, disposeEntityMesh);
       updateCrosshair(crosshair, init.getAim);
       updateArcPreview(arcPreview, pair.curr, init.getAim, weaponRegistry);
       updateZoneOverlay(zoneOverlay, pair, alpha);
@@ -394,6 +468,9 @@ export function createRenderer(init: RendererInit): Renderer {
     },
     handleEvent(event: RuntimeEvent): void {
       impactEffects.handleEvent(event, lastRenderNowMs);
+      if (event.kind === 'dropPickup') {
+        spawnPickupGhost(event, lastRenderNowMs);
+      }
     },
     fitToWindow,
     applyScalePolicy,
@@ -413,6 +490,10 @@ export function createRenderer(init: RendererInit): Renderer {
       projectileMeshes.clear();
       for (const entry of dropMeshes.values()) disposeEntityMesh(entry);
       dropMeshes.clear();
+      for (const entry of fieldEffectMeshes.values()) disposeEntityMesh(entry);
+      fieldEffectMeshes.clear();
+      for (const entry of pickupGhostMeshes.values()) disposeEntityMesh(entry);
+      pickupGhostMeshes.clear();
       for (const entry of slimeDropletMeshes.values()) disposeEntityMesh(entry);
       slimeDropletMeshes.clear();
       for (const entry of deathGhostMeshes.values()) disposeEntityMesh(entry);
@@ -602,6 +683,22 @@ function createCarrierRewardMarker(enemyHeight: number): THREE.Mesh {
   return mesh;
 }
 
+function createStatusMarker(entityHeight: number): THREE.Mesh {
+  const geometry = new THREE.RingGeometry(0.16, 0.21, 24);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xff6b35,
+    transparent: true,
+    opacity: 0.88,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = STATUS_MARKER_NAME;
+  mesh.position.y = entityHeight / 2 + 0.42;
+  mesh.position.z = 0.05;
+  mesh.visible = false;
+  return mesh;
+}
+
 function applyEnemyPresentation(
   mesh: THREE.Mesh,
   entity: EnemySnapshot,
@@ -611,6 +708,50 @@ function applyEnemyPresentation(
   applySlimePresentation(mesh, nowMs, entity.id, SLIME_BREATH_AMPLITUDE, hitImpulse);
   const marker = mesh.children.find((child) => child.name === CARRIER_REWARD_MARKER_NAME);
   if (marker !== undefined) marker.visible = entity.carrierDropMarker === 'reward';
+  applyStatusMarker(mesh, entity.statusEffects ?? [], nowMs);
+}
+
+function applyStatusMarker(
+  mesh: THREE.Mesh,
+  statusEffects: ReadonlyArray<Readonly<{ kind: 'burn' | 'slow' | 'poison' }>>,
+  nowMs: number
+): void {
+  const marker = mesh.children.find(
+    (child): child is THREE.Mesh =>
+      child instanceof THREE.Mesh && child.name === STATUS_MARKER_NAME
+  );
+  if (marker === undefined) return;
+  const first = statusEffects[0] ?? null;
+  marker.visible = first !== null;
+  if (first === null) return;
+  const material = marker.material;
+  if (!Array.isArray(material) && material instanceof THREE.MeshBasicMaterial) {
+    material.color.setHex(statusColor(first.kind));
+    material.opacity = 0.62 + 0.26 * (0.5 + 0.5 * Math.sin(nowMs / 90));
+  }
+}
+
+function statusColor(kind: 'burn' | 'slow' | 'poison'): number {
+  switch (kind) {
+    case 'burn':
+      return 0xff6b35;
+    case 'slow':
+      return 0x5ee6ff;
+    case 'poison':
+      return 0xa7f070;
+  }
+}
+
+function applyFieldEffectPresentation(
+  mesh: THREE.Mesh,
+  snap: FieldEffectSnapshot,
+  nowMs: number
+): void {
+  mesh.scale.set(snap.radius, snap.radius, 1);
+  const material = mesh.material;
+  if (!Array.isArray(material) && material instanceof THREE.MeshBasicMaterial) {
+    material.opacity = 0.13 + 0.07 * (0.5 + 0.5 * Math.sin(nowMs / 140 + snap.id));
+  }
 }
 
 function applyProjectilePresentation(
@@ -829,12 +970,14 @@ function updatePlayer(
   if (!prevPlayer) {
     mesh.visible = true;
     setSnappedMeshPosition(mesh, player.x, player.y, 0, snapGrid);
+    applyStatusMarker(mesh, player.statusEffects ?? [], pair.nowMs);
     return;
   }
   const x = prevPlayer.x + (player.x - prevPlayer.x) * alpha;
   const y = prevPlayer.y + (player.y - prevPlayer.y) * alpha;
   mesh.visible = true;
   setSnappedMeshPosition(mesh, x, y, 0, snapGrid);
+  applyStatusMarker(mesh, player.statusEffects ?? [], pair.nowMs);
 }
 
 function updateEntities<S extends EntitySnapshot>(
@@ -913,6 +1056,40 @@ function pulseDropMeshes(
   for (const entry of table.values()) {
     entry.mesh.scale.set(scale, scale, 1);
   }
+}
+
+function updatePickupGhostMeshes(
+  ghosts: Map<number, PickupGhostEntry>,
+  snapshot: Snapshot | null,
+  nowMs: number,
+  dispose: (entry: EntityMeshEntry) => void
+): void {
+  for (const [id, ghost] of ghosts) {
+    if (nowMs >= ghost.expiresAtMs) {
+      dispose(ghost);
+      ghosts.delete(id);
+      continue;
+    }
+    const picker = snapshot?.entities.find((entity) => entity.id === ghost.pickerId) ?? null;
+    const targetX = picker?.x ?? ghost.startX;
+    const targetY = picker?.y ?? ghost.startY;
+    const span = ghost.expiresAtMs - ghost.startedAtMs;
+    const t = span <= 0 ? 1 : Math.max(0, Math.min(1, (nowMs - ghost.startedAtMs) / span));
+    const eased = easeOutCubic(t);
+    ghost.mesh.position.x = ghost.startX + (targetX - ghost.startX) * eased;
+    ghost.mesh.position.y = ghost.startY + (targetY - ghost.startY) * eased;
+    ghost.mesh.position.z = PICKUP_GHOST_Z;
+    const scale = Math.max(0.08, 1 - 0.85 * eased);
+    ghost.mesh.scale.set(scale, scale, 1);
+    if (ghost.material instanceof THREE.MeshBasicMaterial) {
+      ghost.material.opacity = Math.max(0, 1 - eased);
+    }
+  }
+}
+
+function easeOutCubic(t: number): number {
+  const inv = 1 - t;
+  return 1 - inv * inv * inv;
 }
 
 function updateSlimeDropletMeshes(

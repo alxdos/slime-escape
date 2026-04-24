@@ -4,11 +4,15 @@ import { buildSessionDefinition } from './buildSession';
 import { getPlayableModeCatalog, resolveModePreset } from './sessions';
 
 describe('getPlayableModeCatalog', () => {
-  it('contains only player-facing campaign and training entries sorted by order', () => {
+  it('contains player-facing entries sorted by order', () => {
     const catalog = getPlayableModeCatalog();
 
-    expect(catalog).toHaveLength(2);
-    expect(catalog.map((entry) => entry.presetId)).toEqual(['campaign', 'training']);
+    expect(catalog).toHaveLength(3);
+    expect(catalog.map((entry) => entry.presetId)).toEqual([
+      'campaign',
+      'combat-modifiers-demo',
+      'training'
+    ]);
     expect([...catalog].sort((left, right) => left.order - right.order)).toEqual(catalog);
   });
 
