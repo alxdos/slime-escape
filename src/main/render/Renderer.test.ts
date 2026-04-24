@@ -15,6 +15,9 @@ import { PROJECTILE_VISUALS } from './projectileVisuals';
 import { createRenderer } from './Renderer';
 import type { TextureMap } from './spritePreload';
 
+const AIM_RING_OUTLINE_COLOR = 0xd97706;
+const PROJECTILE_RADIUS_OUTLINE_OPACITY = 0.54;
+
 type FakeRendererOp =
   | Readonly<{ kind: 'pixelRatio'; value: number }>
   | Readonly<{ kind: 'size'; width: number; height: number; updateStyle: boolean }>
@@ -185,6 +188,13 @@ function findArcPreviewMesh(scene: THREE.Scene | null): THREE.Mesh | null {
   if (scene === null) return null;
   return scene.children.find((child): child is THREE.Mesh => {
     return child instanceof THREE.Mesh && child.geometry instanceof THREE.RingGeometry;
+  }) ?? null;
+}
+
+function findCrosshairGroup(scene: THREE.Scene | null): THREE.Group | null {
+  if (scene === null) return null;
+  return scene.children.find((child): child is THREE.Group => {
+    return child instanceof THREE.Group && child.position.z === 0.1;
   }) ?? null;
 }
 
@@ -637,6 +647,16 @@ describe('createRenderer', () => {
     expect(projectileMesh?.scale.x).toBeCloseTo(1.1);
     expect(radiusIndicator?.visible).toBe(true);
     expect(radiusIndicator?.scale.x).toBeCloseTo(BOMB_PLACER.projectile.explosion!.radius);
+    const outline = radiusIndicator?.children.find(
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh && child.name === 'projectile-radius-outline'
+    );
+    expect(outline).toBeDefined();
+    expect((outline?.material as THREE.MeshBasicMaterial | undefined)?.color.getHex()).toBe(
+      AIM_RING_OUTLINE_COLOR
+    );
+    expect((outline?.material as THREE.MeshBasicMaterial | undefined)?.opacity).toBe(
+      PROJECTILE_RADIUS_OUTLINE_OPACITY
+    );
   });
 
   it('hides newly fired projectiles until they travel the player radius from the fire origin', () => {
@@ -892,10 +912,20 @@ describe('createRenderer', () => {
     renderer.render();
 
     const preview = findArcPreviewMesh(backend.lastScene());
+    const crosshair = findCrosshairGroup(backend.lastScene());
     if (ROCK_THROWER.projectile.motion.kind !== 'arc') throw new Error('expected arc weapon');
     expect(preview?.visible).toBe(true);
+    const outline = preview?.children.find(
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh && child.name === 'arc-preview-outline'
+    );
+    expect(outline).toBeDefined();
+    expect((outline?.material as THREE.MeshBasicMaterial | undefined)?.color.getHex()).toBe(
+      AIM_RING_OUTLINE_COLOR
+    );
     expect(preview?.position.x).toBeCloseTo(ROCK_THROWER.projectile.motion.range);
     expect(preview?.position.y).toBeCloseTo(0);
+    expect(crosshair?.visible).toBe(true);
+    expect(crosshair?.children).toHaveLength(2);
   });
 
   it('adds render-only squash and stretch to slime sprites without scaling the player', () => {

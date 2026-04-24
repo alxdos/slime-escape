@@ -89,6 +89,9 @@ export type Renderer = Readonly<{
 const ARENA_FLOOR_COLOR = 0x1b1f29;
 const ARENA_BORDER_COLOR = 0x2a3142;
 const CROSSHAIR_COLOR = 0xffe066;
+const AIM_RING_OUTLINE_COLOR = 0xd97706;
+const AIM_RING_OUTLINE_OPACITY = 0.72;
+const PROJECTILE_RADIUS_OUTLINE_OPACITY = 0.54;
 const CROSSHAIR_SIZE_WU = 0.6;
 const CROSSHAIR_THICKNESS_WU = 0.05;
 const SCENE_BG = 0x05060a;
@@ -100,6 +103,7 @@ const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
 const PROJECTILE_RADIUS_Z = -0.01;
 const PROJECTILE_RADIUS_INDICATOR_NAME = 'projectile-radius-indicator';
+const PROJECTILE_RADIUS_OUTLINE_NAME = 'projectile-radius-outline';
 const CARRIER_REWARD_MARKER_NAME = 'carrier-reward-marker';
 const STATUS_MARKER_NAME = 'status-effect-marker';
 const DROP_Z = 0.03;
@@ -672,7 +676,38 @@ function createProjectileRadiusIndicator(): THREE.Mesh {
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = PROJECTILE_RADIUS_INDICATOR_NAME;
   mesh.position.z = PROJECTILE_RADIUS_Z;
+  mesh.add(createRadiusOutlineMesh(1.01, 1.09, PROJECTILE_RADIUS_OUTLINE_NAME));
   mesh.visible = false;
+  return mesh;
+}
+
+function createRadiusOutlineMesh(innerRadius: number, outerRadius: number, name: string): THREE.Mesh {
+  return createRadiusOutlineMeshWithColor(
+    innerRadius,
+    outerRadius,
+    name,
+    AIM_RING_OUTLINE_COLOR,
+    PROJECTILE_RADIUS_OUTLINE_OPACITY
+  );
+}
+
+function createRadiusOutlineMeshWithColor(
+  innerRadius: number,
+  outerRadius: number,
+  name: string,
+  color: number,
+  opacity: number
+): THREE.Mesh {
+  const geometry = new THREE.RingGeometry(innerRadius, outerRadius, 48);
+  const material = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = name;
+  mesh.position.z = -0.002;
   return mesh;
 }
 
@@ -907,7 +942,10 @@ function computeAlpha(pair: SnapshotPair): number {
 }
 
 function createCrosshair(): THREE.Group {
-  const material = new THREE.MeshBasicMaterial({ color: CROSSHAIR_COLOR });
+  const material = new THREE.MeshBasicMaterial({
+    color: CROSSHAIR_COLOR,
+    depthWrite: false
+  });
   const horizontal = new THREE.Mesh(
     new THREE.PlaneGeometry(CROSSHAIR_SIZE_WU, CROSSHAIR_THICKNESS_WU),
     material
@@ -933,6 +971,15 @@ function createArcPreview(): THREE.Mesh {
   });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.z = ARC_PREVIEW_Z;
+  mesh.add(
+    createRadiusOutlineMeshWithColor(
+      0.62,
+      1.1,
+      'arc-preview-outline',
+      AIM_RING_OUTLINE_COLOR,
+      AIM_RING_OUTLINE_OPACITY
+    )
+  );
   mesh.scale.set(ARC_PREVIEW_RADIUS_WU, ARC_PREVIEW_RADIUS_WU, 1);
   mesh.visible = false;
   return mesh;
@@ -940,13 +987,7 @@ function createArcPreview(): THREE.Mesh {
 
 function disposeArcPreview(mesh: THREE.Mesh): void {
   mesh.removeFromParent();
-  mesh.geometry.dispose();
-  const material = mesh.material;
-  if (Array.isArray(material)) {
-    for (const entry of material) entry.dispose();
-  } else {
-    material.dispose();
-  }
+  disposeObjectTree(mesh);
 }
 
 function disposeCrosshair(group: THREE.Group): void {
