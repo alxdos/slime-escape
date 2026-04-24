@@ -865,6 +865,7 @@ function updateDeathGhostMeshes(
       }
     }
     entry.mesh.position.set(ghost.x, ghost.y, DEATH_GHOST_Z);
+    entry.mesh.scale.set(ghost.scale, ghost.scale, 1);
   }
   for (const [id, entry] of table) {
     if (!aliveIds.has(id)) {

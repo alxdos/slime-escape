@@ -352,11 +352,13 @@ describe('createRenderer', () => {
     expect(ghostMesh).not.toBeNull();
     expect(ghostMesh?.position.x).toBeGreaterThan(2);
     expect(ghostMesh?.position.y).toBeGreaterThan(3);
+    expect(ghostMesh?.scale.x).toBeGreaterThan(1);
     expect(material).toBeInstanceOf(THREE.ShaderMaterial);
     expect((material as THREE.ShaderMaterial).uniforms.uOpacity?.value).toBeLessThan(1);
+    expect((material as THREE.ShaderMaterial).uniforms.uOpacity?.value).toBeLessThan(0.42);
     expect((material as THREE.ShaderMaterial).fragmentShader).toContain('dot(texel.rgb');
 
-    pair = { ...pair, nowMs: 2000 };
+    pair = { ...pair, nowMs: 2700 };
     renderer.render();
     expect(findShaderMeshWithMap(backend.lastScene(), enemyTexture)).toBeNull();
   });

@@ -107,8 +107,38 @@ describe('ImpactEffectStore', () => {
       archetypeId: BOSS_GARGOYLE.id
     });
     expect(snapshot.deathGhosts[0]?.vy).toBeGreaterThan(snapshot.deathGhosts[0]?.vx ?? 0);
+    expect(snapshot.deathGhosts[0]?.opacity).toBeLessThan(0.5);
+    expect(snapshot.deathGhosts[0]?.scale).toBe(1);
     expect(snapshot.droplets.length).toBeGreaterThan(18);
     expect(snapshot.droplets.every((droplet) => droplet.color === BOSS_GARGOYLE.color)).toBe(true);
+  });
+
+  it('keeps death ghosts airy while they grow and fade slowly', () => {
+    const store = createStore();
+
+    store.handleEvent(
+      {
+        kind: 'death',
+        simTime: 200,
+        entityId: 30,
+        entityKind: 'enemy',
+        archetypeId: SLIME_BUG.id,
+        weaponArchetypeId: 'pistol',
+        impactDirX: 1,
+        impactDirY: 0,
+        x: 0,
+        y: 0
+      },
+      1000
+    );
+
+    const spawned = store.snapshot().deathGhosts[0];
+    expect(spawned?.opacity).toBeLessThan(0.5);
+    store.update(1800);
+    const lifted = store.snapshot().deathGhosts[0];
+    expect(lifted?.opacity).toBeLessThan(spawned?.opacity ?? 0);
+    expect(lifted?.scale).toBeGreaterThan(1);
+    expect(lifted?.scale).toBeLessThan(1.38);
   });
 
   it('expires transient effects and clears all render-only state on dispose/session teardown', () => {

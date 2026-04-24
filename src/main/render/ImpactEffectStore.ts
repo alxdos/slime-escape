@@ -55,6 +55,7 @@ export type DeathGhostEffect = Readonly<{
   startedAtMs: number;
   expiresAtMs: number;
   opacity: number;
+  scale: number;
 }>;
 
 export type ImpactEffectSnapshot = Readonly<{
@@ -78,7 +79,9 @@ const DROPLET_FLIGHT_MAX_MS = 360;
 const STAIN_GROW_MS = 2000;
 const STAIN_TTL_MS = 60_000;
 const STAIN_FADE_MS = 8000;
-const DEATH_GHOST_TTL_MS = 1400;
+const DEATH_GHOST_TTL_MS = 2000;
+const DEATH_GHOST_START_OPACITY = 0.42;
+const DEATH_GHOST_END_SCALE = 1.38;
 const MAX_HIT_IMPULSES = 128;
 const MAX_DROPLETS = 420;
 const MAX_DEATH_GHOSTS = 32;
@@ -155,7 +158,8 @@ export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffe
       vy: 1.8 + Math.max(0, dir.y) * 0.35 + force * 0.025,
       startedAtMs: nowMs,
       expiresAtMs: nowMs + DEATH_GHOST_TTL_MS,
-      opacity: 1
+      opacity: DEATH_GHOST_START_OPACITY,
+      scale: 1
     });
     nextGhostId += 1;
     cullArrayToBudget(deathGhosts, MAX_DEATH_GHOSTS);
@@ -303,8 +307,14 @@ function updateDeathGhost(ghost: DeathGhostEffect, nowMs: number): DeathGhostEff
     ...ghost,
     x: ghost.startX + ghost.vx * (elapsedMs / 1000),
     y: ghost.startY + ghost.vy * (elapsedMs / 1000),
-    opacity: Math.max(0, 1 - t)
+    opacity: DEATH_GHOST_START_OPACITY * Math.max(0, 1 - t * t),
+    scale: 1 + (DEATH_GHOST_END_SCALE - 1) * easeOutCubic(t)
   };
+}
+
+function easeOutCubic(t: number): number {
+  const inv = 1 - t;
+  return 1 - inv * inv * inv;
 }
 
 function isSlimeKind(kind: string): kind is SlimeKind {
