@@ -725,6 +725,121 @@ describe('CombatSystem', () => {
     expect(fragments.every((p) => p.ownerKind === 'player')).toBe(true);
   });
 
+  it('detonates armed proximity mines before their timer when a valid target enters range', () => {
+    const proximityBomb: WeaponArchetype = {
+      ...BOMB_PLACER,
+      id: 'test-proximity-bomb',
+      projectile: {
+        ...BOMB_PLACER.projectile,
+        detonationTrigger: { kind: 'timerOrProximity', radius: 2, armDelayMs: 100 },
+        explosion: {
+          ...BOMB_PLACER.projectile.explosion!,
+          delayMs: 10_000,
+          damage: 2,
+          fieldEffect: null,
+          effects: []
+        }
+      }
+    };
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem({ [proximityBomb.id]: proximityBomb });
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 1, y: 0 }));
+    combat.setPlayerLoadout(player.id, { weapons: [proximityBomb.id], selectedIndex: 0 }, 0);
+
+    combat.tick(
+      makeInput({
+        aimWorld: { x: 1, y: 0 },
+        firing: true,
+        loadout: { weapons: [proximityBomb.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      () => {}
+    );
+    expect(store.projectileCount()).toBe(1);
+
+    const beforeArm = combat.tick(makeInput(), store, index, 99, ARENA, () => {});
+    expect(beforeArm).toHaveLength(0);
+    expect(store.projectileCount()).toBe(1);
+
+    const afterArm = combat.tick(makeInput(), store, index, 100, ARENA, () => {});
+    expect(afterArm).toHaveLength(1);
+    expect(afterArm[0]?.targetId).toBe(enemy.id);
+    expect(store.projectileCount()).toBe(0);
+  });
+
+  it('spawns explosion field effects and queues explosion status applications', () => {
+    const hazardBomb: WeaponArchetype = {
+      ...BOMB_PLACER,
+      id: 'test-hazard-bomb',
+      projectile: {
+        ...BOMB_PLACER.projectile,
+        detonationTrigger: { kind: 'timer' },
+        explosion: {
+          delayMs: 0,
+          radius: 2,
+          damage: 0,
+          knockbackImpulse: 0,
+          fragments: null,
+          fieldEffect: {
+            archetypeId: 'test-fire-field',
+            radius: 1.5,
+            durationMs: 500,
+            applyEveryMs: 100,
+            effects: [{ kind: 'damage', amount: 1 }]
+          },
+          effects: [
+            {
+              kind: 'status',
+              status: { kind: 'slow', speedMultiplier: 0.5, durationMs: 300 }
+            }
+          ]
+        }
+      }
+    };
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem({ [hazardBomb.id]: hazardBomb });
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 1, y: 0 }));
+    combat.setPlayerLoadout(player.id, { weapons: [hazardBomb.id], selectedIndex: 0 }, 0);
+
+    const damageIntents = combat.tick(
+      makeInput({
+        aimWorld: { x: 1, y: 0 },
+        firing: true,
+        loadout: { weapons: [hazardBomb.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      () => {}
+    );
+    const actorEffectIntents = combat.drainActorEffectIntents();
+
+    expect(damageIntents).toHaveLength(0);
+    expect(store.fieldEffectCount()).toBe(1);
+    const fieldEffect = [...store.fieldEffects()][0]!;
+    expect(fieldEffect.archetypeId).toBe('test-fire-field');
+    expect(fieldEffect.ownerId).toBe(player.id);
+    expect(fieldEffect.expireAtSimMs).toBe(500);
+    expect(actorEffectIntents).toHaveLength(1);
+    expect(actorEffectIntents[0]).toEqual({
+      targetId: enemy.id,
+      source: {
+        kind: 'explosion',
+        projectileId: expect.any(Number),
+        weaponArchetypeId: hazardBomb.id
+      },
+      application: hazardBomb.projectile.explosion!.effects[0]
+    });
+  });
+
   it('produces a damage intent and hit event when projectile reaches an enemy', () => {
     const { store, index, combat } = setupCombat();
     const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 0.75, y: 0 }));

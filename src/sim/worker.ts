@@ -66,6 +66,7 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     session.arena,
     emitEvent
   );
+  const combatActorEffectIntents = combat.drainActorEffectIntents();
   const intents = [
     ...pendingFieldDamageIntents,
     ...pendingStatusDamageIntents,
@@ -76,6 +77,7 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
   pendingStatusDamageIntents = [];
   healthDeath.tick(intents, entities, simTimeMs, emitEvent);
   spatialIndex.rebuild(entities);
+  statusEffects.apply(combatActorEffectIntents, simTimeMs, entities);
   const fieldEffectResult = fieldEffects.tick(simTimeMs, entities, spatialIndex);
   statusEffects.apply(fieldEffectResult.actorEffectIntents, simTimeMs, entities);
   pendingStatusDamageIntents = statusEffects.tick(simTimeMs, entities);

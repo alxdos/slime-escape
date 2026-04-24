@@ -2,6 +2,8 @@ import { BOSS_ARCHETYPES } from '../shared/content/bosses';
 import { ENEMY_ARCHETYPES } from '../shared/content/enemies';
 import {
   WEAPON_ARCHETYPES,
+  type ActorEffectApplication,
+  type DetonationTrigger,
   type FirePattern,
   type FragmentSpec,
   type ProjectileArchetype,
@@ -16,6 +18,7 @@ import { SIM_STEP_MS } from '../shared/timing';
 
 import type { Boss, Enemy, EntityId, EntityStore, Player, Projectile } from './EntityStore';
 import { canDamageTarget, DEFAULT_DAMAGE_RULES } from './DamageRules';
+import type { ActorEffectIntent } from './FieldEffectSystem';
 import type { RuntimeInputState } from './RuntimeInputState';
 import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
 
@@ -75,6 +78,7 @@ export type CombatSystem = Readonly<{
     simTimeMs: number
   ): boolean;
   weaponHudFor(playerId: EntityId | null): WeaponHudSnapshot | null;
+  drainActorEffectIntents(): ReadonlyArray<ActorEffectIntent>;
   clear(): void;
   tick(
     input: RuntimeInputState,
@@ -91,6 +95,7 @@ export function createCombatSystem(
 ): CombatSystem {
   const shooterWeapons = new Map<EntityId, ShooterWeapons>();
   let damageRules: DamageRules = DEFAULT_DAMAGE_RULES;
+  let pendingActorEffectIntents: ActorEffectIntent[] = [];
 
   return {
     setDamageRules(rules): void {
@@ -159,11 +164,18 @@ export function createCombatSystem(
         }))
       };
     },
+    drainActorEffectIntents(): ReadonlyArray<ActorEffectIntent> {
+      const drained = pendingActorEffectIntents;
+      pendingActorEffectIntents = [];
+      return drained;
+    },
     clear(): void {
       shooterWeapons.clear();
       damageRules = DEFAULT_DAMAGE_RULES;
+      pendingActorEffectIntents = [];
     },
     tick(input, store, index, simTimeMs, arena, emit): ReadonlyArray<DamageIntent> {
+      pendingActorEffectIntents = [];
       const maxContactBoundsRadius = computeMaxContactBoundsRadius(store);
       const maxProjectileTargetBoundsRadius = computeMaxProjectileTargetBoundsRadius(store);
       const projectileRemovals = new Set<EntityId>();
@@ -171,6 +183,13 @@ export function createCombatSystem(
       runProjectileMovement(store, simTimeMs, projectileRemovals);
       markLifetimeCleanup(store, simTimeMs, arena, projectileRemovals);
       index.rebuild(store);
+      markProximityDetonations(
+        store,
+        index,
+        simTimeMs,
+        maxProjectileTargetBoundsRadius,
+        damageRules
+      );
       const contactIntents = runContactIntents(store, index, simTimeMs, maxContactBoundsRadius);
       const projectileIntents = runHitDetection(
         store,
@@ -189,6 +208,7 @@ export function createCombatSystem(
         damageRules,
         weaponRegistry,
         projectileRemovals,
+        pendingActorEffectIntents,
         emit
       );
       for (const id of projectileRemovals) store.removeProjectile(id);
@@ -537,6 +557,7 @@ function spawnProjectileForDirection(
         pierceRemaining: projectile.pierceCount,
         groundOnImpact: projectile.groundOnImpact,
         groundedLifetimeMs: projectile.groundedLifetimeMs,
+        detonationTrigger: projectile.detonationTrigger,
         explosion: projectile.explosion,
         groundAtSimMs: null,
         expireAtSimMs
@@ -573,6 +594,7 @@ function spawnProjectileForDirection(
         pierceRemaining: projectile.pierceCount,
         groundOnImpact: projectile.groundOnImpact,
         groundedLifetimeMs: projectile.groundedLifetimeMs,
+        detonationTrigger: projectile.detonationTrigger,
         explosion: projectile.explosion,
         groundAtSimMs: null,
         expireAtSimMs
@@ -581,7 +603,13 @@ function spawnProjectileForDirection(
     }
     case 'placed': {
       const detonateAtSimMs =
-        projectile.explosion === null ? null : simTimeMs + projectile.explosion.delayMs;
+        projectile.explosion === null
+          ? null
+          : detonateAtSimMsForTrigger(
+              projectile.detonationTrigger,
+              projectile.explosion.delayMs,
+              simTimeMs
+            );
       store.spawnProjectile({
         weaponArchetypeId,
         ownerId,
@@ -596,6 +624,7 @@ function spawnProjectileForDirection(
         pierceRemaining: projectile.pierceCount,
         groundOnImpact: projectile.groundOnImpact,
         groundedLifetimeMs: projectile.groundedLifetimeMs,
+        detonationTrigger: projectile.detonationTrigger,
         explosion: projectile.explosion,
         state: 'grounded',
         groundAtSimMs: simTimeMs,
@@ -678,6 +707,60 @@ function markLifetimeCleanup(
       projectileRemovals.add(projectile.id);
     }
   }
+}
+
+function markProximityDetonations(
+  store: EntityStore,
+  index: SpatialIndex,
+  simTimeMs: number,
+  maxProjectileTargetBoundsRadius: number,
+  damageRules: DamageRules
+): void {
+  for (const projectile of store.projectiles()) {
+    if (projectile.state !== 'grounded') continue;
+    if (projectile.explosion === null) continue;
+    const trigger = projectile.detonationTrigger;
+    if (trigger === null || trigger.kind === 'timer') continue;
+    if (projectile.groundAtSimMs === null) continue;
+    if (simTimeMs < projectile.groundAtSimMs + trigger.armDelayMs) continue;
+    if (
+      projectile.detonateAtSimMs !== null &&
+      simTimeMs >= projectile.detonateAtSimMs
+    ) {
+      continue;
+    }
+    if (
+      hasProximityTarget(
+        projectile,
+        trigger.radius,
+        index,
+        maxProjectileTargetBoundsRadius,
+        damageRules
+      )
+    ) {
+      projectile.detonateAtSimMs = simTimeMs;
+    }
+  }
+}
+
+function hasProximityTarget(
+  projectile: Projectile,
+  radius: number,
+  index: SpatialIndex,
+  maxProjectileTargetBoundsRadius: number,
+  damageRules: DamageRules
+): boolean {
+  const candidates = index.queryRadius(
+    projectile.position.x,
+    projectile.position.y,
+    radius + maxProjectileTargetBoundsRadius
+  );
+  for (const candidate of candidates) {
+    const target = asExplosionTarget(candidate, projectile, damageRules);
+    if (target === null) continue;
+    if (circleOverlapsBox({ position: projectile.position, radius }, target)) return true;
+  }
+  return false;
 }
 
 function runContactIntents(
@@ -885,13 +968,28 @@ function groundProjectile(projectile: Projectile, simTimeMs: number): void {
   projectile.state = 'grounded';
   projectile.groundAtSimMs = simTimeMs;
   projectile.detonateAtSimMs =
-    projectile.explosion === null ? null : simTimeMs + projectile.explosion.delayMs;
+    projectile.explosion === null
+      ? null
+      : detonateAtSimMsForTrigger(
+          projectile.detonationTrigger,
+          projectile.explosion.delayMs,
+          simTimeMs
+        );
   if (projectile.groundedLifetimeMs !== null) {
     projectile.expireAtSimMs = Math.min(
       projectile.expireAtSimMs,
       simTimeMs + projectile.groundedLifetimeMs
     );
   }
+}
+
+function detonateAtSimMsForTrigger(
+  trigger: DetonationTrigger | null,
+  delayMs: number,
+  simTimeMs: number
+): number | null {
+  if (trigger?.kind === 'proximity') return null;
+  return simTimeMs + delayMs;
 }
 
 function runGroundedDetonations(
@@ -902,6 +1000,7 @@ function runGroundedDetonations(
   damageRules: DamageRules,
   weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
   projectileRemovals: Set<EntityId>,
+  actorEffectIntents: ActorEffectIntent[],
   emit: (event: RuntimeEvent) => void
 ): ReadonlyArray<DamageIntent> {
   const intents: DamageIntent[] = [];
@@ -928,8 +1027,10 @@ function runGroundedDetonations(
       simTimeMs,
       maxProjectileTargetBoundsRadius,
       damageRules,
-      intents
+      intents,
+      actorEffectIntents
     );
+    spawnExplosionFieldEffect(store, projectile, simTimeMs);
     spawnExplosionFragments(store, projectile, weaponRegistry, simTimeMs);
     projectileRemovals.add(projectile.id);
   }
@@ -942,7 +1043,8 @@ function addExplosionIntents(
   simTimeMs: number,
   maxProjectileTargetBoundsRadius: number,
   damageRules: DamageRules,
-  intents: DamageIntent[]
+  intents: DamageIntent[],
+  actorEffectIntents: ActorEffectIntent[]
 ): void {
   const explosion = projectile.explosion;
   if (explosion === null || explosion.radius <= 0) return;
@@ -960,6 +1062,7 @@ function addExplosionIntents(
     if (target.kind === 'enemy' || target.kind === 'boss') {
       applyExplosionKnockback(target, projectile, simTimeMs);
     }
+    addExplosionActorEffects(projectile, target, actorEffectIntents);
     if (explosion.damage <= 0) continue;
     intents.push({
       targetId: target.id,
@@ -972,6 +1075,42 @@ function addExplosionIntents(
       },
       hitPosition: { x: projectile.position.x, y: projectile.position.y }
     });
+  }
+}
+
+function addExplosionActorEffects(
+  projectile: Projectile,
+  target: DamageableTarget,
+  actorEffectIntents: ActorEffectIntent[]
+): void {
+  const effects = projectile.explosion?.effects ?? [];
+  for (const effect of effects) {
+    applyExplosionActorEffect(projectile, target, effect, actorEffectIntents);
+  }
+}
+
+function applyExplosionActorEffect(
+  projectile: Projectile,
+  target: DamageableTarget,
+  effect: ActorEffectApplication,
+  actorEffectIntents: ActorEffectIntent[]
+): void {
+  switch (effect.kind) {
+    case 'damage':
+      return;
+    case 'status':
+      actorEffectIntents.push({
+        targetId: target.id,
+        source: {
+          kind: 'explosion',
+          projectileId: projectile.id,
+          weaponArchetypeId: projectile.weaponArchetypeId
+        },
+        application: effect
+      });
+      return;
+    default:
+      assertNever(effect);
   }
 }
 
@@ -1000,6 +1139,26 @@ function applyExplosionKnockback(
     startSimMs: simTimeMs,
     endSimMs: simTimeMs + target.knockbackDurationMs
   };
+}
+
+function spawnExplosionFieldEffect(
+  store: EntityStore,
+  projectile: Projectile,
+  simTimeMs: number
+): void {
+  const fieldEffect = projectile.explosion?.fieldEffect ?? null;
+  if (fieldEffect === null) return;
+  store.spawnFieldEffect({
+    archetypeId: fieldEffect.archetypeId,
+    ownerId: projectile.ownerId,
+    ownerKind: projectile.ownerKind,
+    position: projectile.position,
+    radius: fieldEffect.radius,
+    applyEveryMs: fieldEffect.applyEveryMs,
+    nextApplySimMs: simTimeMs,
+    expireAtSimMs: simTimeMs + fieldEffect.durationMs,
+    effects: fieldEffect.effects
+  });
 }
 
 function normalizedExplosionDirection(projectile: Projectile, target: Enemy | Boss): Vec2 {

@@ -1,6 +1,10 @@
 import type { DropEffect } from '../shared/content/drops';
 import type { EnemyBehavior } from '../shared/content/enemies';
-import type { ActorEffectApplication, ExplosionSpec } from '../shared/content/weapons';
+import type {
+  ActorEffectApplication,
+  DetonationTrigger,
+  ExplosionSpec
+} from '../shared/content/weapons';
 import type { ContactBox, PlayerSpawn, Vec2 } from '../shared/session';
 
 export type EntityId = number & { readonly __brand: 'EntityId' };
@@ -98,11 +102,17 @@ export type ActorStatusEffect =
       source: StatusEffectSource;
     };
 
-export type StatusEffectSource = Readonly<{
-  kind: 'fieldEffect';
-  fieldEffectId: EntityId;
-  archetypeId: string;
-}>;
+export type StatusEffectSource =
+  | Readonly<{
+      kind: 'fieldEffect';
+      fieldEffectId: EntityId;
+      archetypeId: string;
+    }>
+  | Readonly<{
+      kind: 'explosion';
+      projectileId: EntityId;
+      weaponArchetypeId: string;
+    }>;
 
 export type Projectile = {
   readonly id: EntityId;
@@ -122,6 +132,7 @@ export type Projectile = {
   pierceRemaining: number;
   readonly groundOnImpact: boolean;
   readonly groundedLifetimeMs: number | null;
+  readonly detonationTrigger: DetonationTrigger | null;
   readonly explosion: ExplosionSpec | null;
   state: 'flying' | 'grounded';
   readonly hitEntityIds: Set<EntityId>;
@@ -191,6 +202,7 @@ export type ProjectileSpawnSpec = Readonly<{
   pierceRemaining: number;
   groundOnImpact: boolean;
   groundedLifetimeMs: number | null;
+  detonationTrigger?: DetonationTrigger | null;
   explosion: ExplosionSpec | null;
   state?: 'flying' | 'grounded';
   hitEntityIds?: ReadonlySet<EntityId>;
@@ -390,6 +402,10 @@ export function createEntityStore(): EntityStore {
         pierceRemaining: spec.pierceRemaining,
         groundOnImpact: spec.groundOnImpact,
         groundedLifetimeMs: spec.groundedLifetimeMs,
+        detonationTrigger:
+          spec.detonationTrigger === undefined || spec.detonationTrigger === null
+            ? null
+            : structuredClone(spec.detonationTrigger),
         explosion: spec.explosion === null ? null : structuredClone(spec.explosion),
         state:
           spec.state ??

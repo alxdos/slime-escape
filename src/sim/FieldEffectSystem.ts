@@ -8,13 +8,21 @@ import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
 
 export type ActorEffectIntent = Readonly<{
   targetId: EntityId;
-  source: Readonly<{
-    kind: 'fieldEffect';
-    fieldEffectId: EntityId;
-    archetypeId: string;
-  }>;
+  source: ActorEffectSource;
   application: ActorEffectApplication;
 }>;
+
+export type ActorEffectSource =
+  | Readonly<{
+      kind: 'fieldEffect';
+      fieldEffectId: EntityId;
+      archetypeId: string;
+    }>
+  | Readonly<{
+      kind: 'explosion';
+      projectileId: EntityId;
+      weaponArchetypeId: string;
+    }>;
 
 export type FieldEffectTickResult = Readonly<{
   damageIntents: ReadonlyArray<DamageIntent>;

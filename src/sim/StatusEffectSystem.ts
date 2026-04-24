@@ -1,7 +1,7 @@
 import type { StatusEffectSpec } from '../shared/content/weapons';
 
 import type { DamageIntent } from './CombatSystem';
-import type { ActorEffectIntent } from './FieldEffectSystem';
+import type { ActorEffectIntent, ActorEffectSource } from './FieldEffectSystem';
 import type { ActorStatusEffect, Boss, Enemy, EntityId, EntityStore, Player } from './EntityStore';
 
 type StatusCarrier = Player | Enemy | Boss;
@@ -44,14 +44,21 @@ export function resolveMovementSpeedMultiplier(actor: StatusCarrier): number {
 
 function makeStatusEffect(
   status: StatusEffectSpec,
-  sourceIntent: ActorEffectIntent['source'],
+  sourceIntent: ActorEffectSource,
   simTimeMs: number
 ): ActorStatusEffect {
-  const source = {
-    kind: 'fieldEffect' as const,
-    fieldEffectId: sourceIntent.fieldEffectId,
-    archetypeId: sourceIntent.archetypeId
-  };
+  const source =
+    sourceIntent.kind === 'fieldEffect'
+      ? {
+          kind: 'fieldEffect' as const,
+          fieldEffectId: sourceIntent.fieldEffectId,
+          archetypeId: sourceIntent.archetypeId
+        }
+      : {
+          kind: 'explosion' as const,
+          projectileId: sourceIntent.projectileId,
+          weaponArchetypeId: sourceIntent.weaponArchetypeId
+        };
   switch (status.kind) {
     case 'burn':
     case 'poison':
@@ -108,7 +115,10 @@ function tickEffect(
         source: {
           kind: 'statusEffect',
           statusKind: effect.kind,
-          sourceEntityId: effect.source.fieldEffectId
+          sourceEntityId:
+            effect.source.kind === 'fieldEffect'
+              ? effect.source.fieldEffectId
+              : effect.source.projectileId
         },
         hitPosition: { x: carrier.position.x, y: carrier.position.y }
       });
