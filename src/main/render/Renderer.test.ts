@@ -210,6 +210,31 @@ describe('createRenderer', () => {
     ]);
   });
 
+  it('accepts runtime events through the renderer event sink', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: createEmptySnapshotPair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 1
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    expect(() => renderer.handleEvent({ kind: 'sessionStart', simTime: 0 })).not.toThrow();
+  });
+
   it('reapplies the current preset after resize in pixelRatio -> size order', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();

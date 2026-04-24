@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 import { DROP_ARCHETYPES, type DropArchetype } from '../../shared/content/drops';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
+import type { RuntimeEvent } from '../../shared/events';
 import type { ArenaConfig, SessionDefinition } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import type {
@@ -69,6 +70,7 @@ export type RendererInit = Readonly<{
 
 export type Renderer = Readonly<{
   render(): void;
+  handleEvent(event: RuntimeEvent): void;
   fitToWindow(): void;
   applyScalePolicy(preset: RenderScalePreset): void;
   dispose(): void;
@@ -336,6 +338,7 @@ export function createRenderer(init: RendererInit): Renderer {
       debugHud.update(pair.curr);
       renderer.render(scene, camera);
     },
+    handleEvent(_event: RuntimeEvent): void {},
     fitToWindow,
     applyScalePolicy,
     dispose(): void {

@@ -240,6 +240,7 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function handleSimEvent(event: RuntimeEvent): void {
     audio.handleEvent(event);
+    renderer?.handleEvent(event);
     if (event.kind === 'win' || event.kind === 'loss') {
       handleRunEnd(event.kind, event.simTime);
       return;
