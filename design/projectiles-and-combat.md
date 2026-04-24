@@ -2,133 +2,130 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (016: projectile hit теперь несёт normalized impact direction, публикует self-contained `hit` payload и применяет projectile knockback к `enemy`/`boss` через `WeaponArchetype.knockbackImpulse`; см. [impact-feedback.md](impact-feedback.md). Ранее: 013 follow-up: hit detection по `target.contactBox` для `player` / `enemy` / `boss`, broadphase по derived bounds radius; ранее: 006 `projectile.ownerKind` и `fire`/`hit` — см. [boss-encounter.md](boss-encounter.md), [snapshot-shape.md](snapshot-shape.md); friendly fire с сущностью `kind: 'boss'`; ранее: contact intents)
+- Updated: 2026-04-24 (017 alignment: the former single-primary linear projectile contract is replaced by [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md); this file now owns the stable `CombatSystem` responsibilities, tick order, hit/damage pipeline and integration boundaries. 018 alignment: mines and field/status follow-ups are delegated to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
 
 ## Context
 
-[runtime-systems.md](runtime-systems.md) фиксирует существование `CombatSystem`, его соседство с `HealthDeathSystem`, `SpatialIndex` и `SnapshotExportSystem`, но не задаёт ни модель снарядов, ни правила кулдауна, ни форму обмена с `HealthDeathSystem`. История 003 вводит первый бой в проекте: одно оружие, один враг-мишень. Без явного контракта:
+[runtime-systems.md](runtime-systems.md) fixes `CombatSystem` as the owner of combat simulation inside the worker. Earlier stories introduced the first narrow version of that system: one player weapon, linear bullets, impact-only damage, and owner-kind filtering.
 
-- история 003 неявно зафиксирует «снаряд = что-то внутри `CombatSystem`», без чёткой границы с `EntityStore` и снапшотами;
-- история 004 (волны) и 005 (дроп) переоткроют те же вопросы для большего количества врагов;
-- история 006 (босс) добавит второй источник снарядов (босс стреляет в игрока) и потребует переосмыслить ownership и friendly fire;
-- runtime events `fire`/`hit` появятся в нескольких местах с разной формой.
+Story 017 replaces that narrow model with universal weapons and projectiles:
 
-`SnapshotExportSystem` уже несёт обязательство публиковать сущности с дискриминатором `kind` ([thread-model.md](thread-model.md)), так что снаряды как сущности — самый прямой путь, но это нужно зафиксировать.
+- ordered weapon loadouts and owner-local weapon instances;
+- weapon archetypes with fire patterns and embedded projectile specs;
+- linear, arc and placed projectile motion;
+- impact damage, grounded projectiles, timed explosions, fragments, pierce and knockback;
+- permissive default damage with explicit session rules such as `slimeFriendlyFire`;
+- weapon modifier drops that affect future projectile spawn parameters.
+
+This file remains necessary because [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) defines the data model and feature contract, while this file defines where that contract runs in the simulation and how it exchanges work with neighboring systems.
 
 ## Decision
 
-### Снаряд как runtime-сущность
+### Current projectile contract
 
-- Снаряд — отдельная runtime-сущность с собственным `id` и `kind: 'projectile'`. Хранится в `EntityStore` рядом с игроком и врагами; собственного «пула снарядов» в обход store не вводим.
-- Минимальный runtime state снаряда:
+- The active projectile, weapon, loadout, fire-pattern, explosion, fragment, modifier and friendly-fire data contracts are defined in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
+- Any older implementation shape with only `primaryWeaponArchetypeId`, `projectileSpeed`, `projectileRadius`, `damage` and `projectileTtlMs` is migration input only. It is not the current target contract.
+- A legacy single-primary weapon must migrate as an ordered loadout with one selected weapon:
   ```ts
-  type Projectile = {
-    id: EntityId;
-    kind: 'projectile';
-    weaponArchetypeId: string;        // ссылка в content library
-    ownerKind: 'player' | 'enemy' | 'boss';   // кто стреляет (см. friendly fire)
-    position: { x: number; y: number };
-    velocity: { vx: number; vy: number }; // wu/s
-    radius: number;                   // wu, копия из WeaponArchetype.projectileRadius
-    damage: number;                   // целое > 0, копия из WeaponArchetype.damage
-    knockbackImpulse: number;          // wu/s, копия из WeaponArchetype.knockbackImpulse
-    expireAtSimMs: number;            // момент снятия с арены
-  };
+  { weapons: [primaryWeaponArchetypeId], selectedIndex: 0 }
   ```
-- Поля `radius`, `damage`, `knockbackImpulse`, `expireAtSimMs` копируются из архетипа в момент создания, чтобы tick не зависел от лишних lookup-ов и оставался стабильным даже при будущих мутациях архетипа в редакторе/тестах.
-- `velocity` фиксируется в момент выстрела и далее не меняется. Гравитации, наведения и эффектов «тянет к цели» нет.
-- Снаряды визуализируются по `kind: 'projectile'` (см. [snapshot-shape.md](snapshot-shape.md)); рендер не знает про их тип оружия дальше, чем по `weaponArchetypeId`.
+- A legacy linear bullet weapon must migrate as a `WeaponArchetype` with `firePattern: { kind: 'single', count: 1, spreadRadians: 0 }` and `projectile.motion.kind: 'linear'`.
 
-### Оружие и кулдаун
+### CombatSystem ownership
 
-- Стрельбой владеет `CombatSystem`. Кулдаун хранится **per-shooter**, в runtime state стрелка, например для игрока:
-  ```ts
-  type PlayerWeapons = {
-    primary: { archetypeId: string; nextFireSimMs: number };
-  };
-  ```
-- На каждом тике для активного стрелка `CombatSystem` проверяет:
-  1. есть ли намерение стрелять (для игрока — `input.firing` из [input-commands.md](input-commands.md));
-  2. `simTime >= nextFireSimMs`;
-  3. валиден ли вектор прицела: `aimWorld − shooterPos` ненулевой; иначе выстрел пропускается без снижения кулдауна и без runtime event.
-- При успешной проверке:
-  1. выбирается архетип оружия по `archetypeId`;
-  2. позиция спавна снаряда — текущая позиция стрелка (без muzzle-offset; внести позже отдельным решением, если потребуется);
-  3. направление — единичный вектор `(aim − pos)`;
-  4. `velocity = direction * archetype.projectileSpeed`;
-  5. `expireAtSimMs = simTime + archetype.projectileTtlMs`;
-  6. `nextFireSimMs = simTime + archetype.cooldownMs`;
-  7. публикуется runtime event `fire` (поля — в [snapshot-shape.md](snapshot-shape.md)).
-- Удержание `firing: true` приводит к серии выстрелов с темпом `cooldownMs`. Никаких отдельных «авто-фаер таймеров» сверх per-shooter `nextFireSimMs` нет.
-- Темп стрельбы — единственный лимитер; конечного боезапаса в MVP нет ([../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)).
+- `CombatSystem` owns:
+  - firing decisions for any active combat actor that has a selected/usable weapon instance;
+  - cooldown checks and `nextFireSimMs` updates on owner-local `WeaponInstance` state;
+  - fire-pattern expansion into one or more projectile spawn requests;
+  - application of weapon modifiers at spawn time;
+  - projectile movement for `linear`, `arc` and `placed`/grounded projectiles;
+  - projectile hit detection, pierce bookkeeping and impact damage-intent creation;
+  - transition from flying to grounded when a projectile has `groundOnImpact`;
+  - timed detonation of grounded/explosive projectiles;
+  - radial explosion damage-intent creation;
+  - fragment projectile spawning;
+  - projectile lifecycle removal.
+- `MovementSystem` still does not move projectiles. Actor movement, chase behavior and player controls remain outside `CombatSystem`.
+- `HealthDeathSystem` remains the only owner of HP decrement and death. `CombatSystem` never mutates `hp`; it emits damage intents.
+- `DropSystem` owns pickup and drop-effect application. For weapon upgrade drops, `DropSystem` may call the narrow runtime API that mutates owner-local `WeaponInstance` modifiers; it must not spawn projectiles.
+- `BossPhaseSystem` and future enemy behavior systems may request firing, choose weapon instances, or set aim/targeting state, but projectile creation still routes through `CombatSystem`.
 
-### Движение снаряда и границы арены
+### Projectile as runtime entity
 
-- Перемещение снарядов выполняется внутри `CombatSystem`, а не `MovementSystem`:
-  - `MovementSystem` владеет инвариантом «сущность не выходит за границы арены» только для **управляемых актёров** (игрок, враги с поведением). Снаряды наоборот должны иметь право выйти за арену и быть удалены.
-  - Это сохраняет границу ответственности: `MovementSystem` не делает ветку «если это снаряд — не клампать».
-- На каждом тике для каждого снаряда:
-  1. `position += velocity * SIM_STEP_SEC`;
-  2. если `position` вышла за границы арены ([arena-and-coordinates.md](arena-and-coordinates.md)) — пометить на удаление;
-  3. если `simTime >= expireAtSimMs` — пометить на удаление.
-- Помеченные снаряды удаляются в той же фазе `CombatSystem` до следующего шага хит-теста, чтобы они не успели нанести урон после фактического исчерпания.
+- Projectile remains a runtime entity in `EntityStore` with `kind: 'projectile'`.
+- Runtime projectile state is copied from content and current modifiers at spawn time, per [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Tick logic must not depend on mutable content objects after spawn.
+- `ownerId` and `ownerKind` are both copied. The projectile owner is excluded from damage by default; other filtering is controlled by session damage rules.
+- `hitEntityIds` or equivalent deterministic bookkeeping is required for pierce so a projectile cannot hit the same entity repeatedly unless a future design explicitly adds multi-hit behavior.
+- Grounded explosive projectiles remain projectile entities until they expire or detonate. They are not converted into drops or field effects.
 
-### Хит-тест и damage intents
+### Firing and input integration
 
-- Хит-тест выполняется после движения снарядов, в той же фазе `CombatSystem`:
-  - кандидаты — соседи снаряда из `SpatialIndex` ([runtime-systems.md](runtime-systems.md)) в радиусе `projectile.radius + maxTargetBoundsRadius`, где `maxTargetBoundsRadius` derive-ится как circumscribed circle для `target.contactBox` по [body-contact-boxes.md](body-contact-boxes.md);
-  - проверка коллизии для `player` / `enemy` / `boss` — circle-vs-axis-aligned-box между текущей позицией снаряда и `target.contactBox`, центрированным в `target.position`.
-- Friendly fire:
-  - снаряд с `ownerKind: 'player'` поражает сущности с `kind: 'enemy'` и `kind: 'boss'` (урон со стороны игрока);
-  - снаряд с `ownerKind: 'enemy'` поражает только игрока;
-  - снаряд с `ownerKind: 'boss'` поражает только игрока (атаки босса через снаряд — [boss-encounter.md](boss-encounter.md));
-  - проверка реализована как фильтр по `target.kind` относительно `projectile.ownerKind`; отдельных team-id в MVP не вводим.
-- При попадании:
-  1. вычисляется `impactDir = normalize(projectile.velocity)`; если velocity вырождена, попадание считается ошибкой runtime-состояния и использует fallback `(1, 0)` только для сохранения total event shape;
-  2. если цель имеет `kind: 'enemy' | 'boss'`, применяется projectile knockback по [impact-feedback.md](impact-feedback.md): `projectile.knockbackImpulse * target.knockbackVelocityScale` вдоль `impactDir`, с duration из `target.knockbackDurationMs`;
-  3. формируется damage intent `{ targetId, amount: projectile.damage, source: { kind: 'projectile', projectileId, ownerKind, weaponArchetypeId, impactDirX, impactDirY }, hitPosition }`;
-  4. публикуется runtime event `hit` с `targetArchetypeId`, `impactDirX/Y`, `weaponArchetypeId`, `damage` и позицией попадания (полная форма — в [snapshot-shape.md](snapshot-shape.md));
-  5. снаряд **сразу** помечается на удаление (один снаряд = одно попадание).
-- Projectile knockback — единственный санкционированный side effect `CombatSystem` на damageable-цель, кроме формирования damage intent. `CombatSystem` по-прежнему не читает и не мутирует HP; смерть и удаление остаются в [health-and-death.md](health-and-death.md).
-- Damage intents этой фазы передаются в `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) как явный список; общая шина damage не вводится — один кадр, один набор intents.
+- Player firing still starts from `RuntimeInputState.firing` and current `aimWorld`.
+- Weapon slot and holster input are defined in [input-commands.md](input-commands.md). `CombatSystem` reads the current selected weapon state; it does not parse keyboard slots directly.
+- A valid firing decision requires:
+  1. an actor with a selected usable weapon instance;
+  2. `simTime >= weaponInstance.nextFireSimMs`;
+  3. a valid aim direction for aimed patterns, or a pattern that does not require aim (`multiDirection`, `place`);
+  4. a content-resolved `WeaponArchetype`.
+- Fire-pattern expansion must be deterministic. Symmetric projectile count and spread calculations must use stable ordering so tests can assert exact projectile directions.
+- Random spread is not part of the current contract. If it is added later, it must use session RNG and update [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
 
-### Туннелирование и ограничение скорости
+### Motion and hit tests
 
-- Хит-тест по текущей позиции снаряда корректен только при условии:
-  ```
-  projectile.projectileSpeed * SIM_STEP_SEC <= projectile.radius + minTargetInsetRadius
-  ```
-  где `minTargetInsetRadius = min(contactBox.width, contactBox.height) / 2` для самой узкой сущности, которую этот снаряд может поразить.
-- Это **контракт контента**: автор `WeaponArchetype` обязан соблюдать ограничение относительно ожидаемых целей. Превышение фиксируется warning через единый log-модуль ([logging.md](logging.md)) при сборке/старте сессии и не должно поддерживаться в content review.
-- Свёрнутый sweep-тест (segment vs circle) — будущее улучшение и оформляется отдельным design-решением, если контент перестанет влезать в ограничение.
+- `linear` projectiles integrate position by velocity.
+- `arc` projectiles use deterministic interpolation from spawn point to landing point over configured flight time/range. The simulation collision point is the 2D ground/shadow position; visual height is render-only.
+- `placed` projectiles start grounded at spawn and do not move.
+- Hit detection against `player` / `enemy` / `boss` uses projectile `hitRadius` against target `contactBox` as fixed by [body-contact-boxes.md](body-contact-boxes.md).
+- Broadphase may use `SpatialIndex` but `EntityStore` remains the source of truth.
+- The no-tunneling content invariant still applies to each projectile motion profile. Builder/content validation must warn or fail when speed, radius and expected target box sizes cannot be checked safely without sweep tests. Sweep tests are still a separate future design.
 
-### Порядок внутри тика
+### Damage rules
 
-- В рамках общего update-order из [runtime-systems.md](runtime-systems.md) `CombatSystem` за один тик выполняет фазы строго в этом порядке:
-  1. firing decisions: для каждого активного стрелка — спавн новых снарядов в `EntityStore`;
-  2. projectile movement: интеграция позиций существующих снарядов;
-  3. lifetime cleanup: пометка просроченных и вышедших за арену;
-  4. contact intents: формирование `DamageIntent` от врагов в контакте с игроком; полный контракт — [enemy-contact.md](enemy-contact.md);
-  5. hit detection: damage intents от снарядов и пометка снарядов-поражений;
-  6. removal: удаление помеченных снарядов из `EntityStore`.
-- Контактные и снарядные intents складываются в **один** список `DamageIntent` за тик и передаются в `HealthDeathSystem` единым вызовом ([health-and-death.md](health-and-death.md)). Отдельной шины contact-damage нет.
-- `HealthDeathSystem` запускается **после** `CombatSystem` и применяет полученные damage intents (см. [health-and-death.md](health-and-death.md)). Снапшот публикует уже консистентное состояние: умершие сущности в нём отсутствуют, а runtime event `death` уже сгенерирован.
+- Default rule: a projectile or explosion can damage any damageable entity except its owner.
+- The active session's `rules.damage.slimeFriendlyFire` filters enemy-to-enemy damage as defined in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) and [session-definition.md](session-definition.md).
+- Damage filtering must be centralized in one helper used by impact, explosion, proximity-trigger checks and future field effects. Per-feature ad hoc target filters are not allowed.
+- Friendly-fire retaliation is not a damage rule. It is behavior/aggro state defined in [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).
 
-### Интеграция с input
+### Damage intents and events
 
-- На 003 единственный стрелок — игрок; источник `firing`/`aimWorld` — `RuntimeInputState`, который наполняется через `InputCommand` ([input-commands.md](input-commands.md)).
-- В историях с врагами-стрелками (006) ownership смещается от input к AI, но контракт «firing decision → spawn → movement → hit» не меняется.
+- Impact and explosion damage both become `DamageIntent` entries for `HealthDeathSystem`.
+- Projectile impact may also apply non-HP side effects already owned by combat, such as projectile knockback from [impact-feedback.md](impact-feedback.md). Those side effects must remain deterministic and must not read/mutate HP.
+- `fire`, `hit`, explosion-related events and death metadata must follow [snapshot-shape.md](snapshot-shape.md). Presentation consumers must not reconstruct authoritative combat facts from nearby snapshots.
+- If a projectile has `impactDamage === 0`, `CombatSystem` may still publish presentation events when useful, but must not emit zero-amount damage intents unless [health-and-death.md](health-and-death.md) explicitly allows them. Current damage intents require positive `amount`.
+
+### Tick order inside CombatSystem
+
+Within the global order from [runtime-systems.md](runtime-systems.md), `CombatSystem` executes these phases:
+
+1. Firing decisions: read actor weapon state and spawn new projectiles.
+2. Projectile motion: update flying/arc projectile positions and transition landed arc projectiles to grounded state.
+3. Lifetime cleanup: mark expired harmless projectiles.
+4. Contact damage intents: create enemy contact intents as defined by [enemy-contact.md](enemy-contact.md).
+5. Projectile impact hit detection: create impact damage intents, apply pierce/ground/remove decisions.
+6. Grounded projectile detonation: trigger timed explosions, create radial damage intents and spawn fragments.
+7. Removal: remove projectiles that expired, were consumed by impact, or detonated.
+
+The order is intentional: fragments spawned by an explosion do not hit in the same phase that created them unless a future design explicitly changes same-tick projectile processing.
+
+### Extension boundary for story 018
+
+- Mines are grounded projectiles with proximity/timer triggers; trigger checks stay in `CombatSystem`, but the trigger contract is in [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).
+- Explosion-spawned puddles/fields are `fieldEffect` entities. `CombatSystem` may spawn them, but lifetime and periodic application belong to `FieldEffectSystem`.
+- Burn/slow/poison and similar actor statuses belong to `StatusEffectSystem`; `CombatSystem` only creates the application requests.
+- Aim assist chooses or adjusts aim before a firing decision. Its ownership must be fixed by the implementing story, following [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).
 
 ## Consequences
 
-- Снаряды попадают в общий контракт `EntityStore` и снапшотов; рендер и HUD получают их как обычные сущности по `kind`.
-- `CombatSystem` владеет полным жизненным циклом снаряда; `MovementSystem` остаётся системой «управляемых актёров» и сохраняет инвариант границ арены без специальных веток.
-- Друг-враг-разделение реализуется через `ownerKind`, а не через team-id; это масштабируется до 006 без переписывания типов.
-- Численная корректность хит-теста сводится к одному явному ограничению на контент; текущая модель выдерживает все weapon-archetype-ы из 003–005 без sweep-теста.
-- HP, смерть и death hooks остаются за пределами этого решения и описаны в [health-and-death.md](health-and-death.md); `CombatSystem` ничего не знает про HP цели.
+- The code migration for story 017 must replace the current primary-only weapon state and old projectile fields with the universal contracts. Keeping both models active after 017 is not allowed.
+- `CombatSystem` becomes broader, but remains the single owner of projectile lifecycle and damage-intent production.
+- The old owner-kind target table is no longer current. Tests must cover permissive non-owner damage plus `slimeFriendlyFire`.
+- Presentation contracts must grow in [snapshot-shape.md](snapshot-shape.md) before renderer/HUD code depends on new projectile state.
+- Future field/status mechanics from 018 have a clean boundary and do not need to re-open the basic weapon/projectile model.
 
 ## Related
 
+- [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
+- [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
 - [runtime-systems.md](runtime-systems.md)
 - [health-and-death.md](health-and-death.md)
 - [enemy-contact.md](enemy-contact.md)
@@ -139,5 +136,6 @@
 - [boss-encounter.md](boss-encounter.md)
 - [simulation-timing.md](simulation-timing.md)
 - [logging.md](logging.md)
-- [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
 - [impact-feedback.md](impact-feedback.md)
+- [body-contact-boxes.md](body-contact-boxes.md)
+- [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-24 (017 alignment: `DropEffect` includes weapon modifier and temporary overdrive effects from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: drop magnet and carrier drops are defined by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
 
 ## Context
 
@@ -36,7 +36,7 @@
   };
   ```
 - Поля `radius`, `effect`, `color`, `expireAtSimMs` копируются из архетипа в момент создания, чтобы tick не зависел от лишних lookup-ов и оставался стабильным даже при будущих мутациях архетипа в редакторе/тестах. Это та же модель, что у `Projectile` ([projectiles-and-combat.md](projectiles-and-combat.md)).
-- Drop не имеет `velocity`, `hp`, `behavior`. Drop не двигается ни одной системой; «магнит/притяжение к игроку» — отдельное будущее решение, не часть этого файла.
+- Drop не имеет `hp` или `behavior`. Baseline drops do not move. Story 018 adds deterministic magnet attraction owned by `DropSystem`; that extension is defined in [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) and does not change drop ownership.
 - Drop **не damageable**: `HasHealth` ([health-and-death.md](health-and-death.md)) у дропа нет, `HealthDeathSystem` дроп не трогает. Удалением дропа владеет только `DropSystem` — это согласовано с уже принятым правилом «для снарядов и дропа удалением владеют их собственные системы» ([projectiles-and-combat.md](projectiles-and-combat.md)).
 - Drop попадает в snapshot отдельным `kind` (см. [snapshot-shape.md](snapshot-shape.md)). Рендер выбирает визуал по `archetypeId`, а не по `id` сущности.
 
@@ -46,7 +46,9 @@
 - Минимальная форма на горизонт 005:
   ```ts
   type DropEffect =
-    | { kind: 'heal'; amount: number };   // amount > 0; future: weapon swap, modifier, и т. п.
+    | { kind: 'heal'; amount: number }
+    | { kind: 'addWeaponModifier'; modifier: WeaponModifier; target: 'selectedWeapon' }
+    | { kind: 'temporaryOverdrive'; cooldownMultiplier: number; durationMs: number; target: 'selectedWeapon' };
 
   type DropArchetype = Readonly<{
     id: string;
@@ -58,7 +60,7 @@
   }>;
   ```
 - `DropEffect` — дискриминированный union по `kind`. Расширение только добавлением новых `kind` (новые слои силы и боеприпасов в будущем); переименование/смена семантики поля = новое решение и обновление этого файла.
-- `DropEffect.kind: 'heal'` — единственный реализованный эффект на 005. Семантика — в разделе «Применение эффекта» ниже.
+- `DropEffect.kind: 'heal'` keeps the 005 healing semantics below. Weapon-related effects are owned by story 017 and defined in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Pickup comfort effects such as magnet are owned by story 018 and defined in [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).
 - Реестр `DropArchetype` в `content library` имеет ту же форму, что и реестры `EnemyArchetype`/`WeaponArchetype` из [content-archetypes.md](content-archetypes.md): словарь `Record<string, DropArchetype>` с ключом, равным `archetype.id`. Конкретный файл (например, `src/shared/content/drops.ts`) — деталь реализации, не контракт.
 
 ### Drop table на EnemyArchetype
@@ -78,7 +80,7 @@
   1. `roll = rng.nextFloat()` — ровно один вызов session RNG на каждое срабатывание hook ([rng.md](rng.md));
   2. идём по `dropTable` в порядке индексов, аккумулируя `chance`. Первый entry, у которого `accumulated > roll`, выигрывает;
   3. если суммарный `chance` в таблице меньше единицы и `roll >= sum(chances)`, дропа на этой смерти **нет** — это и есть способ выразить «ничего не выпало».
-- Один враг даёт **не более одного дропа** за смерть. «Несколько дропов на убийство» (вторичные шансы, гарантированный «глиф» поверх таблицы) — отдельное будущее решение.
+- Baseline death processing gives **не более одного weighted-pick дропа** за смерть. Story 018 may add explicit guaranteed carrier rewards; those must still be spawned by `DropSystem` from death hooks and must not replace the baseline weighted-pick rule silently.
 - Числовые ограничения, обязательные на стороне content/builder:
   - `chance` каждого entry в `[0, 1]`;
   - суммарный `chance` по таблице `<= 1` (нарушение — warning через `log.warn` при сборке/старте сессии, [logging.md](logging.md); это контентная ошибка, а не runtime-фолбэк);
@@ -129,6 +131,7 @@
 - `HealthDeathSystem` остаётся **единственным владельцем decrement HP** ([health-and-death.md](health-and-death.md): «`CombatSystem` не имеет права читать или мутировать HP. Все вычитания выполняет только `HealthDeathSystem`.»). Heal — это **increment**, и его явно владеет `DropSystem`. Отдельной системы «buff/heal application» в MVP не вводим: одна точка «положительной мутации HP» — `DropSystem`. Если появятся другие источники heal (например, регенерация со временем или эффект от босса), это будет отдельное решение, и тогда же обсуждается общая «эффект-шина».
 - `DropSystem` **не** формирует `DamageIntent` и **не** вызывает `HealthDeathSystem`. Heal не должен порождать death event, не должен запускать death hook и не должен попадать в общий `applyDamage`-тик.
 - Никакая другая система не имеет права применять `DropEffect`. `DropEffect` — это контракт «что делает дроп при подборе», а не общий `EffectIntent` для произвольных источников.
+- Weapon modifier and overdrive effects mutate owner-local weapon state through the narrow runtime API defined by [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). `DropSystem` still owns pickup and removal; it does not spawn projectiles.
 
 ### Друг-враг и ownership
 
@@ -169,3 +172,5 @@
 - [zone.md](zone.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
 - [../docs/GDD_CORE.md](../docs/GDD_CORE.md)
+- [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
+- [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)

@@ -190,7 +190,7 @@ Without a new contract, each new weapon would either add special branches to `Co
   ```
 - Weapon modifiers apply at fire time when a projectile is spawned. Already spawned projectiles are not retroactively changed.
 - `projectileSizeMultiplier` modifies `ProjectileArchetype.size` and `hitRadius`.
-- `projectileSpeedMultiplier` modifies `linear.speed` or `arc.speed`; for `arc`, content may keep `flightMs` authoritative and let range/landing timing remain stable. The implementation must document which scalar is modified in story tasks.
+- `projectileSpeedMultiplier` modifies `linear.speed`. For `arc`, it keeps the authored landing point/range and divides effective `flightMs` by the multiplier, so upgraded thrown projectiles arrive sooner without changing the aimed landing position. `placed` projectiles ignore speed modifiers.
 - `symmetricProjectileMultiplier` multiplies the number of emitted projectiles around the firing axis. With a single projectile and multiplier `2`, the result is two projectiles symmetrically offset from the axis. With existing spread counts, the final count stays symmetric around the same axis.
 - `pierceBonus` increases copied `pierceRemaining`.
 - `temporaryOverdrive` reduces cooldown for `durationMs` on the selected weapon only.

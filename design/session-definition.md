@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (story 015 follow-up: `SessionDefinition.backgrounds` и `EncounterDefinition.backgroundId` добавляют session-level набор фоновых изображений и encounter-level ссылку на фон; renderer в `main` переключает фон по активному encounter без расширения snapshot, см. [main-ui-shell.md](main-ui-shell.md). story 015: метаданные playable preset — `displayName`, `description`, `visibleInMenu`, `order` — переезжают в `content library` и хранятся как поля партиции `# Session` в `content/sessions/<presetId>.md` (см. [content-authoring.md](content-authoring.md), раздел «Multi-file области»). Ранее: добавлен `player.contactBox` по [body-contact-boxes.md](body-contact-boxes.md); семантика `winCondition: bossDefeated` — [boss-encounter.md](boss-encounter.md); ранее: формализованы `ZoneBehavior`/`TransitionRules`, `allEncountersComplete`/`playerDeath`, preset `training`, поле `player.maxHp`)
+- Updated: 2026-04-24 (017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules and player maxHp.)
 
 ## Context
 
@@ -47,7 +47,17 @@
 - Поля `loadout`, `modifiers`, `rules`, `uiMeta` остаются в контракте как стабильные имена; их внутренняя структура и обязательность зависят от preset и могут эволюционировать. Builder обязан явно выставить осмысленное значение или `null`/пустой объект — отсутствие поля как такового запрещено, чтобы потребители не разбирали два разных «нет данных».
 - Минимальная форма `loadout`:
   - `null` — у preset-а нет встроенного оружия (sandbox без боя, чисто исследовательские bring-up);
-  - `Loadout` — preset имеет хотя бы основное оружие; форма `Loadout` фиксируется в [content-archetypes.md](content-archetypes.md). На горизонт MVP это `{ primaryWeaponArchetypeId: string }`; расширения (вторичное оружие, granat-слот, пассивные модификаторы) добавляются дописыванием полей.
+  - `Loadout` — preset имеет хотя бы одно оружие; форма `Loadout` фиксируется в [content-archetypes.md](content-archetypes.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md): `{ weapons: string[]; selectedIndex: number | null }`.
+- The old `{ primaryWeaponArchetypeId: string }` loadout is not current after story 017. Builders must migrate old content to the ordered form by wrapping the id into a single-item array.
+- `rules` remains the session-owned place for gameplay switches. Story 017 requires:
+  ```ts
+  type SessionRules = Readonly<{
+    damage: {
+      slimeFriendlyFire: boolean;
+    };
+  }>;
+  ```
+  `slimeFriendlyFire` is immutable for the run and is consumed by `CombatSystem` and future field/status systems via the shared damage-rule helper.
 - Базовый набор полей `EncounterDefinition`:
 
 ```js
@@ -91,10 +101,10 @@
 - `ModePreset` - это внешний preset, который готовит дефолтную сессию, но не исполняется сам по себе.
 - Минимальные preset-режимы:
   - `campaign` - 3 волны, передышки, финальный босс;
-  - `training` - короткий тренировочный забег без босса. На горизонт истории 004 фиксируется минимальная форма: ровно два wave-encounter с break-encounter между ними (`wave1 → break → wave2`), `loadout: { primaryWeaponArchetypeId }`, `winCondition: { kind: 'allEncountersComplete' }`, `lossCondition: { kind: 'playerDeath' }`. Конкретные числовые параметры волн (состав, темп, лимит, длительность break, числа `zoneBehavior`) — содержимое `content library` ([content-boundaries.md](content-boundaries.md)) и не часть этого решения. Расширение `training` на 3+ волн или другую структуру допустимо без правки этого файла, если форма preset-id остаётся прежней;
+  - `training` - короткий тренировочный забег без босса. На горизонт истории 004 фиксируется минимальная форма: ровно два wave-encounter с break-encounter между ними (`wave1 → break → wave2`), боевой `loadout` в актуальной ordered-форме, `winCondition: { kind: 'allEncountersComplete' }`, `lossCondition: { kind: 'playerDeath' }`. Конкретные числовые параметры волн (состав, темп, лимит, длительность break, числа `zoneBehavior`) — содержимое `content library` ([content-boundaries.md](content-boundaries.md)) и не часть этого решения. Расширение `training` на 3+ волн или другую структуру допустимо без правки этого файла, если форма preset-id остаётся прежней;
   - `pistolOnly` - стартовая экипировка ограничена пистолетом;
   - `sandbox` - один encounter типа `sandbox` без win/loss-условий и без встроенного оружия (`loadout: null`), используется для bring-up историй, не требующих боевого стека;
-  - `sandbox-with-combat` - вариант sandbox, у которого есть `Loadout` (минимально — `{ primaryWeaponArchetypeId }`) и `spawnPlan: { kind: 'static' }` для bring-up боевых сущностей (например, тренировочной мишени из [../stories/003-combat-foundation.md](../stories/003-combat-foundation.md)). Соблюдает все правила sandbox-encounter ниже: `winCondition: none`, `lossCondition: none`, единственный способ выйти — внешний `stopSession`.
+  - `sandbox-with-combat` - вариант sandbox, у которого есть ordered `Loadout` и `spawnPlan: { kind: 'static' }` для bring-up боевых сущностей (например, тренировочной мишени из [../stories/003-combat-foundation.md](../stories/003-combat-foundation.md)). Соблюдает все правила sandbox-encounter ниже: `winCondition: none`, `lossCondition: none`, единственный способ выйти — внешний `stopSession`.
 - Список «Минимальных preset-режимов» расширяется по мере появления историй; новые preset-режимы фиксируются в этом файле и не вводятся «по месту» в `src/shared/content/**`. Удаление существующего preset-id оформляется через `superseded`/обновление этого файла.
 - Encounter типа `sandbox` имеет следующую минимальную форму:
   - `spawnPlan` — `{ kind: 'empty' }` или `{ kind: 'static' }` (см. [spawn-plan.md](spawn-plan.md)); другие `kind` (`'wave'`, `'boss'`, …) в sandbox-encounter запрещены, потому что подразумевают автоматические переходы и завершение, которые sandbox-семантика исключает.
@@ -133,3 +143,4 @@
 - [content-authoring.md](content-authoring.md)
 - [main-ui-shell.md](main-ui-shell.md)
 - [../stories/015-sessions-from-md.md](../stories/015-sessions-from-md.md)
+- [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)

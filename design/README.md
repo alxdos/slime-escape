@@ -68,7 +68,7 @@
 | [testing.md](testing.md) | accepted | Test runner (`vitest`), команды, обязательные инварианты под тестом |
 | [spawn-plan.md](spawn-plan.md) | accepted | Форма `SpawnPlan` (`empty`/`static` + расширения), ответственность `SpawnSystem` |
 | [content-archetypes.md](content-archetypes.md) | accepted | Минимальные `EnemyArchetype`, `WeaponArchetype`, `Loadout` и резолв архетипов по `id` |
-| [projectiles-and-combat.md](projectiles-and-combat.md) | accepted | Снаряды как сущности, кулдаун, движение/хит-тест, damage intents |
+| [projectiles-and-combat.md](projectiles-and-combat.md) | accepted | `CombatSystem` ownership for universal weapon/projectile lifecycle, hit tests, damage rules, explosions and damage intents |
 | [health-and-death.md](health-and-death.md) | accepted | HP на сущностях, damage intents, death hooks, удаление сущностей |
 | [snapshot-shape.md](snapshot-shape.md) | accepted | Per-kind поля сущностей в снапшоте, top-level `encounter`/`zone`/`waveProgress`, форма combat и lifecycle runtime events |
 | [zone.md](zone.md) | accepted | `ZoneSystem`: scalar `margin`, режимы `disabled`/`shrinkLinear`/`expandLinear`, экспорт в snapshot, разделение gameplay-формы и визуализации |

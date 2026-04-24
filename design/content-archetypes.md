@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (story 016: `WeaponArchetype` получает `knockbackImpulse` как физическую силу projectile hit, а `EnemyArchetype.color`/`BossArchetype.color` становятся источником цвета render-only slime impact effects; см. [impact-feedback.md](impact-feedback.md). Ранее: story 013: после ввода [sprite-assets.md](sprite-assets.md) renderer для base player/enemy/boss sprite перестаёт читать `EnemyArchetype.color`/`BossArchetype.color`; добавлен derive `contactBox` для body-contact и projectile hit detection по [body-contact-boxes.md](body-contact-boxes.md) и [projectiles-and-combat.md](projectiles-and-combat.md). story 012 покрывает MD-генерацией weapons/drops/bosses и сохраняет правила реестров)
+- Updated: 2026-04-24 (017 alignment: `WeaponArchetype`, `DropEffect` and `Loadout` are replaced by the universal weapon contracts in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: optional field/status/drop-magnet/carrier extensions are owned by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: story 016 impact feedback, story 013 sprite/contact boxes, story 012 MD-generated weapons/drops/bosses.)
 
 ## Context
 
@@ -66,7 +66,7 @@
 
 ### WeaponArchetype
 
-- Минимальная форма для 003:
+- Current weapon archetype shape is defined by [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). The old scalar form below is historical migration input only and must not remain the target shape after story 017:
   ```ts
   type WeaponArchetype = Readonly<{
     id: string;
@@ -80,17 +80,30 @@
     color: number;                // 0xRRGGBB, плейсхолдер для рендера снаряда
   }>;
   ```
-- `cooldownMs` — минимальный интервал между двумя последовательными выстрелами; конкретное использование (per-shooter timer) — в [projectiles-and-combat.md](projectiles-and-combat.md).
+- Story 017 code must replace that scalar form with:
+  ```ts
+  type WeaponArchetype = Readonly<{
+    id: string;
+    displayName: string;
+    cooldownMs: number;
+    firePattern: FirePattern;
+    projectile: ProjectileArchetype;
+    audio?: WeaponAudioSpec;
+  }>;
+  ```
+- `cooldownMs` — минимальный интервал между двумя последовательными выстрелами; конкретное использование через owner-local `WeaponInstance` — в [projectiles-and-combat.md](projectiles-and-combat.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
 - Поле «бесконечный боезапас» из [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md) не выражается в архетипе: отсутствие поля `ammo` и есть его реализация. Когда (если) появится конечный боезапас, он добавится отдельным полем и отдельным design-решением.
-- Скорости и `projectileRadius` должны соблюдать инвариант «без туннелирования» из [projectiles-and-combat.md](projectiles-and-combat.md) относительно `contactBox`-целей; проверка — на стороне content/builder, не на стороне рантайма.
-- `knockbackImpulse` — физическая сила projectile hit по [impact-feedback.md](impact-feedback.md). Она намеренно не derive-ится из `damage`: контент может задать мощный толчок с малым уроном или высокий урон с небольшим толчком.
+- Projectile speed, hit radius, impact damage, pierce, explosion and visual fields live under `WeaponArchetype.projectile`. Builder validation must validate the nested projectile spec, including no-tunneling constraints for each motion profile.
+- `knockbackImpulse` moves from a top-level weapon scalar to projectile impact/explosion specs. It remains intentionally independent from damage.
 
 ### DropArchetype
 
 - Минимальная форма для 005:
   ```ts
   type DropEffect =
-    | { kind: 'heal'; amount: number };   // amount > 0; future: weapon swap, modifier и т. п.
+    | { kind: 'heal'; amount: number }
+    | { kind: 'addWeaponModifier'; modifier: WeaponModifier; target: 'selectedWeapon' }
+    | { kind: 'temporaryOverdrive'; cooldownMultiplier: number; durationMs: number; target: 'selectedWeapon' };
 
   type DropArchetype = Readonly<{
     id: string;
@@ -101,7 +114,7 @@
     color: number;           // 0xRRGGBB, плейсхолдер для рендера
   }>;
   ```
-- `DropEffect` — дискриминированный union по `kind`. Расширение происходит **добавлением** новых `kind` (новые слои силы и боеприпасов в будущем); переименование/смена семантики поля — новое решение и обновление этого файла, не «дописывание по месту».
+- `DropEffect` — дискриминированный union по `kind`. `heal` remains the health effect from [drops.md](drops.md). Weapon-related effects and `WeaponModifier` are defined in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Pickup magnet/carrier follow-ups are defined in [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).
 - Полный контракт «как именно дроп спавнится, живёт и подбирается, и как применяется `DropEffect`» — в [drops.md](drops.md); здесь фиксируется только форма архетипа и его место в `content library`.
 
 ### BossArchetype
@@ -159,15 +172,16 @@
 
 ### Loadout в SessionDefinition
 
-- `SessionDefinition.loadout` для preset-режимов с боем имеет минимальную форму:
+- Current `SessionDefinition.loadout` shape is the ordered loadout from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md):
   ```ts
   type Loadout = Readonly<{
-    primaryWeaponArchetypeId: string;  // ссылка в content library: weapons
+    weapons: ReadonlyArray<string>; // WeaponArchetype.id values
+    selectedIndex: number | null;
   }>;
   ```
 - Для sandbox-режима без боя `loadout` остаётся `null`; сборщик сессии явно различает «бой не предусмотрен» (`null`) и «есть оружие» (объект Loadout).
-- Расширения (вторичное оружие, granat-слот, пассивные модификаторы) добавляются дописыванием полей. Удалять `primaryWeaponArchetypeId` нельзя без `superseded` этого решения.
-- `Loadout` остаётся неизменным после старта сессии; смена оружия в run в MVP не предусмотрена.
+- The old `{ primaryWeaponArchetypeId: string }` shape is migration input only. It must be converted to `{ weapons: [primaryWeaponArchetypeId], selectedIndex: 0 }`.
+- `Loadout.weapons` is immutable session configuration. Runtime selection, cooldowns and upgrades live in owner-local weapon state; slot switching does not mutate the session definition.
 
 ### Реестры в content library
 
@@ -205,3 +219,5 @@
 - [content-authoring.md](content-authoring.md)
 - [sprite-assets.md](sprite-assets.md)
 - [impact-feedback.md](impact-feedback.md)
+- [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
+- [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)

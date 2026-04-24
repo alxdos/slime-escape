@@ -42,11 +42,13 @@
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Migrate weapon/session/drop content contracts and builders to ordered loadouts, projectile specs, weapon modifiers and `slimeFriendlyFire`. | Keep old single-primary content expressible as one selected weapon during migration. |
-| T2 | [ ] | Extend input, runtime weapon instances and `CombatSystem` for slot switching, holster, fire patterns, linear/arc/placed projectile state, impact, grounding, explosions, fragments, pierce and knockback. | Preserve deterministic ordering and route all HP loss through damage intents. |
-| T3 | [ ] | Extend snapshot/render/HUD/audio presentation for selected weapon, projectile sprites, spin, grounded pulse, radius indicator, arc preview and distinct fire/hit/explosion events. | Presentation hints must not become authoritative gameplay state. |
-| T4 | [ ] | Implement weapon-upgrade drops for size, speed, symmetric count, pierce, fragment explosion and temporary overdrive. | Modifiers apply only to future shots from the target weapon instance. |
-| T5 | [ ] | Add regression and integration tests for universal ownership, friendly-fire rules, projectile lifecycles, modifiers, content validation and demo-session behavior. | Include at least one slime-to-slime enabled and disabled case. |
+| T1 | [ ] | Replace shared content types and generated content for weapons, loadouts, drops and session rules. | Update `src/shared/content/**`, `scripts/content-build/{weapons,drops,sessions}/**`, `content/weapons.md`, `content/drops.md`, `content/sessions/*.md`; migrate old primary weapons to ordered loadouts and add `rules.damage.slimeFriendlyFire`. |
+| T2 | [ ] | Extend `InputCommand`, input handling and runtime input/loadout state for `selectWeaponSlot` and `holsterWeapon`. | Update `src/shared/protocol.ts`, `src/main/input/**`, `src/sim/RuntimeInputState.ts` and session-start initialization from `SessionDefinition.loadout.selectedIndex`. |
+| T3 | [ ] | Replace primary-only combat runtime with owner-local `WeaponInstance` state and universal projectile entities. | Update `EntityStore`, session startup, player/enemy/boss firing state, `CombatSystem` fire decisions and deterministic fire-pattern expansion. |
+| T4 | [ ] | Implement universal projectile lifecycle in `CombatSystem`: linear/arc/placed motion, impact, grounding, pierce, timed explosions, radial damage, fragments and knockback. | All HP loss goes through `DamageIntent`; use shared damage-rule filtering for impact/explosion and route explosion deaths through `HealthDeathSystem`. |
+| T5 | [ ] | Extend snapshots, runtime events, renderer, HUD and audio for selected weapons and projectile presentation. | Update `SnapshotExportSystem`, `src/shared/snapshot.ts`, `src/shared/events.ts`, `Renderer`, `Hud`, audio mappings; include spin, grounded pulse, radius indicator, arc preview and `explosion` events. |
+| T6 | [ ] | Implement weapon-upgrade drops for size, speed, symmetric count, pierce, fragment explosion and temporary overdrive. | Update `DropSystem` pickup effect handling through the weapon-state API; modifiers apply only to future shots from the selected weapon instance. |
+| T7 | [ ] | Add content validation, unit tests and integration tests for the migration. | Cover loadout validation, projectile motion, grounding/explosion lifecycle, fragments, friendly-fire enabled/disabled, modifier application, snapshot/event shape and demo-session behavior. |
 
 ## Related
 

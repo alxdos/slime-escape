@@ -40,12 +40,13 @@
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Add content and session contracts for field effects, status applications, mine triggers, carrier markers, drop magnet, retaliation policy and aim assist. | All features must be opt-in and validate cross-area references. |
-| T2 | [ ] | Implement `FieldEffectSystem` and `StatusEffectSystem` with damage-intent output and snapshot presentation fields. | HP loss still flows through `HealthDeathSystem`. |
-| T3 | [ ] | Extend `CombatSystem` for mine proximity triggers and explosion-spawned field effects. | Reuse universal projectile/explosion ownership and damage rules. |
-| T4 | [ ] | Extend `DropSystem` and renderer for carrier drops and magnet attraction. | Carrier reward still uses death hooks; magnet remains deterministic. |
-| T5 | [ ] | Add friendly-fire retaliation behavior and optional aim-assist targeting. | Keep owner boundaries explicit: behavior layer owns aggro, chosen aim-assist owner is documented before implementation. |
-| T6 | [ ] | Add demo content, visual/audio feedback and regression tests for all enabled mechanics. | Existing no-effect sessions must be covered as non-regression. |
+| T1 | [ ] | Add content/session types and builders for opt-in field effects, status applications, mine triggers, carrier markers, drop magnet, retaliation policy and aim assist. | Touch `src/shared/content/**`, `scripts/content-build/**`, `content/{weapons,drops,enemies,sessions}/**`; validate all cross-area references. |
+| T2 | [ ] | Add `fieldEffect` runtime entities, snapshots and `FieldEffectSystem`. | Update `EntityStore`, `runtime-systems` wiring, `SnapshotExportSystem`, snapshot types and tests; field effects produce damage intents/status applications, never direct HP changes. |
+| T3 | [ ] | Add actor status runtime state and `StatusEffectSystem`. | Update damageable actor types, movement speed resolution, status tick/expiry logic, `DamageIntent.source`, snapshot/status presentation hints and stacking tests. |
+| T4 | [ ] | Extend `CombatSystem` for mine proximity triggers and explosion-spawned field effects/status applications. | Reuse universal projectile/explosion ownership and shared damage rules; proximity checks use `SpatialIndex` and deterministic ordering. |
+| T5 | [ ] | Extend `DropSystem`, enemy content and renderer for carrier drops and magnet attraction. | Carrier rewards still use death hooks; magnet movement/pickup expansion remains deterministic and owned by `DropSystem`. |
+| T6 | [ ] | Add friendly-fire retaliation behavior and optional aim-assist targeting. | Add aggro memory/behavior consumption in sim, choose and document the aim-assist owner before code, and use deterministic target tie-breakers. |
+| T7 | [ ] | Add demo content, visual/audio feedback and regression tests for all enabled mechanics. | Cover no-effect sessions as non-regression plus field lifecycle, status ticks, mine triggers, drop magnet, retaliation and aim-assist target selection. |
 
 ## Related
 

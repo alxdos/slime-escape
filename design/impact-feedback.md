@@ -108,13 +108,13 @@ gameplay state. Projectile knockback меняет позицию enemy/boss, п�
 
 ### Weapon force и projectile knockback
 
-- `WeaponArchetype` получает обязательное поле `knockbackImpulse: number` в wu/s.
-- `damage` и `knockbackImpulse` намеренно разные поля. Оружие может наносить большой урон с
+- Projectile impact spec получает обязательное поле `knockbackImpulse: number` в wu/s через [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
+- `impactDamage` и `knockbackImpulse` намеренно разные поля. Оружие может наносить большой урон с
   маленьким толчком или малый урон с сильным shove.
 - При projectile hit по `enemy` или `boss` `CombatSystem` применяет target knockback до передачи
   damage intent в `HealthDeathSystem`:
   ```ts
-  impulseSpeed = weapon.knockbackImpulse * target.knockbackVelocityScale;
+  impulseSpeed = projectile.knockbackImpulse * target.knockbackVelocityScale;
   target.knockback = {
     vx: impulseSpeed * impactDirX,
     vy: impulseSpeed * impactDirY,
@@ -138,8 +138,8 @@ gameplay state. Projectile knockback меняет позицию enemy/boss, п�
 - Капли от `hit` летят в forward-biased cone вокруг `impactDirX/Y`.
 - Капли от `death` дают больший burst: больше частиц, шире cone/radial component, крупнее пятна,
   чем у обычного hit.
-- Per-weapon variation derive-ится из `WeaponArchetype`. Основной force-сигнал —
-  `knockbackImpulse`; `damage` и `projectileRadius` могут быть вторичными visual inputs.
+- Per-weapon variation derive-ится из `WeaponArchetype.projectile`. Основной force-сигнал —
+  `knockbackImpulse`; `impactDamage`, `hitRadius` and projectile `size` can be secondary visual inputs.
   Конкретные counts, speeds и spread curves — renderer-owned tuning constants.
 - Цвет капель берётся из `EnemyArchetype.color` или `BossArchetype.color`. Base sprite остаётся
   PNG-driven; `color` используется здесь как slime material color для impact effects.
@@ -193,7 +193,7 @@ gameplay state. Projectile knockback меняет позицию enemy/boss, п�
 - Health/death tests покрывают propagation projectile impact direction и weapon id в `death`.
 - Renderer tests покрывают `handleEvent`, создание effects по `hit`/`death`, фильтр player-hit,
   cleanup/TTL effects и инвариант, что visual droplets не появляются в snapshots.
-- Content checks покрывают обязательные значения `WeaponArchetype.knockbackImpulse`.
+- Content checks покрывают обязательные значения projectile `knockbackImpulse`.
 - Manual visual QA проверяет pistol-like, shotgun-like, laser-like и sniper-like weapons, если они
   есть в текущем content set; иначе проверяет доступные weapons и фиксирует оставшийся tuning follow-up.
 
@@ -205,8 +205,8 @@ gameplay state. Projectile knockback меняет позицию enemy/boss, п�
   зато renderer не делает fragile lookup-и против snapshot-ов, где цель уже могла исчезнуть.
 - `CombatSystem` получает один новый authoritative side effect на projectile hit: target knockback.
   Граница HP сохраняется, потому что damage всё ещё проходит через `HealthDeathSystem`.
-- `WeaponArchetype` теперь отвечает и за damage, и за physical force. Existing weapon content
-  должен получить явные `knockbackImpulse` values.
+- `WeaponArchetype.projectile` теперь отвечает и за impact damage, и за physical force. Existing
+  weapon content должен получить явные projectile `knockbackImpulse` values.
 - `EnemyArchetype.color` и `BossArchetype.color` перестают быть только future-placeholder-ами:
   теперь их читает render-only slime material effects, но base sprite rendering остаётся
   asset-driven.
@@ -226,3 +226,4 @@ gameplay state. Projectile knockback меняет позицию enemy/boss, п�
 - [main-ui-shell.md](main-ui-shell.md)
 - [rng.md](rng.md)
 - [testing.md](testing.md)
+- [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)

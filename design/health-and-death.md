@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (016: projectile damage source несёт normalized impact direction, а `death` runtime event получает final weapon/direction для render-only death feedback; см. [impact-feedback.md](impact-feedback.md). Ранее: активирован `DamageIntent.source.kind: 'boss'` для 006; `DeathContext.entityKind` включает `'boss'`; см. [boss-encounter.md](boss-encounter.md); ранее: heal от `DropSystem`, контракт death hook под дроп)
+- Updated: 2026-04-24 (017 alignment: projectile and explosion damage both flow through `DamageIntent`; 018 alignment: field/status damage sources are added for future `FieldEffectSystem`/`StatusEffectSystem`. Earlier: 016 impact direction, 006 boss, 005 drops.)
 
 ## Context
 
@@ -39,13 +39,16 @@
     amount: number;     // целое > 0
     source:
       | { kind: 'projectile'; projectileId: EntityId; ownerKind: 'player' | 'enemy' | 'boss'; weaponArchetypeId: string; impactDirX: number; impactDirY: number }
+      | { kind: 'explosion'; projectileId: EntityId; ownerKind: 'player' | 'enemy' | 'boss'; weaponArchetypeId: string }
       | { kind: 'enemyContact'; enemyId: EntityId }                  // активен с 004; контракт — enemy-contact.md
-      | { kind: 'environment'; tag: string }                         // зарезервировано: газ, поджог и т.п.
+      | { kind: 'fieldEffect'; fieldEffectId: EntityId; archetypeId: string }
+      | { kind: 'statusEffect'; statusKind: string; sourceEntityId: EntityId | null }
+      | { kind: 'environment'; tag: string }                         // зарезервировано: зона/скриптовый урон
       | { kind: 'boss'; bossId: EntityId; attackId: string };        // активен с 006, [boss-encounter.md](boss-encounter.md)
     hitPosition: { x: number; y: number };
   }>;
   ```
-- На 003 единственный реальный `source.kind` — `'projectile'`. Историей 004 активируется `'enemyContact'` (формирует `CombatSystem` в новой фазе по [enemy-contact.md](enemy-contact.md)). Историей 006 активируется `'boss'` для урона от атак босса ([boss-encounter.md](boss-encounter.md)). Остальные зарезервированные kind активируются соответствующими историями расширением union, а не переименованием поля.
+- Active source kinds after story 017 are projectile impact and explosion from `CombatSystem`, enemy contact from [enemy-contact.md](enemy-contact.md), and boss attack damage from [boss-encounter.md](boss-encounter.md). Story 018 activates `fieldEffect` and `statusEffect` sources through dedicated systems. New sources must extend this union explicitly.
 - Damage intents за тик передаются в `HealthDeathSystem` явным списком (по конкретному signature метода), без отдельной глобальной шины событий: один тик — один список.
 - `CombatSystem` не имеет права читать или мутировать HP. Все вычитания выполняет только `HealthDeathSystem`.
 - `HealthDeathSystem` владеет **только decrement HP и death**. Heal (увеличение `hp` в пределах `[0, maxHp]`) под этот контракт не подпадает: единственный санкционированный источник heal на горизонт MVP — `DropSystem` ([drops.md](drops.md)), который мутирует `player.hp` напрямую в фазе pickup, не строит `DamageIntent` и не вызывает `HealthDeathSystem.applyDamage`. Heal не может породить `death`-event, не запускает death hooks и не попадает в общий per-tick damage-список. Если когда-нибудь появится второй источник heal (регенерация, эффект босса), вводится отдельное design-решение об общем heal-канале — но не обходом этого правила «по месту».
@@ -57,7 +60,7 @@
   2. при переходе `hp > 0 → hp == 0` сущность помечается как «умерла на этом тике»;
   3. повторные intents в ту же цель в том же тике, пришедшие после её смерти, **игнорируются** — это исключает «пере-убийство» и двойной запуск death hooks.
 - Сущности, помеченные как «умерла на этом тике», образуют упорядоченный список death events для текущего тика.
-- При публикации `death` runtime event `HealthDeathSystem` копирует из финальной `DamageIntent.source` только presentation-safe impact metadata: для projectile-смерти `weaponArchetypeId` и normalized `impactDirX/Y`, для остальных источников — `null`. Полная форма события зафиксирована в [snapshot-shape.md](snapshot-shape.md), а потребительский смысл — в [impact-feedback.md](impact-feedback.md).
+- При публикации `death` runtime event `HealthDeathSystem` копирует из финальной `DamageIntent.source` только presentation-safe impact metadata: для projectile-смерти `weaponArchetypeId` и normalized `impactDirX/Y`, для explosion-смерти `weaponArchetypeId` без directional impact, для остальных источников — `null`. Полная форма события зафиксирована в [snapshot-shape.md](snapshot-shape.md), а потребительский смысл — в [impact-feedback.md](impact-feedback.md).
 
 ### Death hooks
 
@@ -129,3 +132,5 @@
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
 - [boss-encounter.md](boss-encounter.md)
 - [impact-feedback.md](impact-feedback.md)
+- [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
+- [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)

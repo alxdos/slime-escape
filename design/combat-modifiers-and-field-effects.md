@@ -46,7 +46,7 @@ The next layer of combat juice should be designed separately so the universal we
   ```
 - `fieldEffect` lives in `EntityStore` and is exported in snapshots only with presentation fields needed by renderer.
 - `CombatSystem` can spawn a field effect as part of projectile explosion resolution, but the lifetime and periodic application belong to a dedicated `FieldEffectSystem`.
-- `FieldEffectSystem` runs after `HealthDeathSystem` and before `DropSystem`, unless a later implementation proves pickup ordering needs adjustment. It produces damage intents and actor-effect applications; it does not mutate HP directly.
+- `FieldEffectSystem` runs after `HealthDeathSystem` and before `StatusEffectSystem`/`DropSystem` per [runtime-systems.md](runtime-systems.md). It produces damage intents and actor-effect applications; it does not mutate HP directly.
 - Field effects use the same damage rules as explosions from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md), including owner exclusion and `slimeFriendlyFire`.
 
 ### Actor status effects
@@ -142,7 +142,7 @@ The next layer of combat juice should be designed separately so the universal we
 
 ## Consequences
 
-- This story introduces at least two new runtime systems (`FieldEffectSystem`, `StatusEffectSystem`) unless implementation proves a smaller split keeps ownership clear.
+- This story introduces two runtime systems: `FieldEffectSystem` and `StatusEffectSystem`.
 - Damage intents remain the single route to HP loss, preserving `HealthDeathSystem` ownership.
 - Drop behavior grows without changing the rule that `DropSystem` owns drop lifecycle.
 - AI reactions become data-driven and can evolve without modifying projectile damage rules.

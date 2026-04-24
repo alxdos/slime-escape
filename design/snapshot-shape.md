@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (016: `hit` и `death` расширены impact payload-ом для render-only slime feedback и projectile knockback; см. [impact-feedback.md](impact-feedback.md). Ранее: 006 `BossSnapshot`, top-level `bossHud`, расширение `death`/`hit`/`fire` под `boss`; см. [boss-encounter.md](boss-encounter.md); ранее: дроп и события дропа)
+- Updated: 2026-04-24 (017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
 
 ## Context
 
@@ -33,7 +33,8 @@ type EntitySnapshot =
   | EnemySnapshot
   | ProjectileSnapshot
   | DropSnapshot
-  | BossSnapshot;
+  | BossSnapshot
+  | FieldEffectSnapshot;
 ```
 
 - `PlayerSnapshot`:
@@ -66,13 +67,20 @@ type EntitySnapshot =
     id: number;
     kind: 'projectile';
     weaponArchetypeId: string;
-    ownerKind: 'player' | 'enemy';
+    ownerKind: 'player' | 'enemy' | 'boss';
     x: number;
     y: number;
-    // направление снаряда восстанавливается из соседних снапшотов (интерполяцией);
-    // отдельное поле dir/angle вводится только если потребует контент с ориентированным спрайтом
+    state: 'flying' | 'grounded';
+    visualState: {
+      angleRadians: number;
+      spinRadians: number;
+      pulsePhase: number;
+    };
+    explosionRadius: number | null;
+    detonateAtSimMs: number | null;
   }
   ```
+- `state`, `visualState`, `explosionRadius` and `detonateAtSimMs` are required by story 017 presentation: sprite orientation/spin, grounded pulse and radius indicators must not be inferred from hidden sim state. `detonateAtSimMs` is presentation timing; gameplay detonation remains owned by `CombatSystem`.
 - `DropSnapshot` (история 005, см. [drops.md](drops.md)):
   ```ts
   {
@@ -100,6 +108,19 @@ type EntitySnapshot =
     activeAttackIds: ReadonlyArray<string>;
   }
   ```
+- `FieldEffectSnapshot` (018, [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)):
+  ```ts
+  {
+    id: number;
+    kind: 'fieldEffect';
+    archetypeId: string;
+    x: number;
+    y: number;
+    radius: number;
+    expiresAtSimMs: number;
+  }
+  ```
+  Field effect snapshots expose presentation state only. Periodic damage/status application remains in `FieldEffectSystem`.
 
 ### Top-level snapshot
 
@@ -112,6 +133,7 @@ type EntitySnapshot =
     zone: ZoneSnapshot;
     waveProgress: WaveProgressSnapshot | null;
     bossHud: BossHudSnapshot | null;
+    weaponHud: WeaponHudSnapshot | null;
   }>;
   ```
 - HUD-агрегаты уровня run (HP игрока, прогресс волны, состояние босса) живут как отдельные top-level поля, а не складываются в `entities`. Каждое такое расширение фиксируется здесь.
@@ -127,6 +149,19 @@ type EntitySnapshot =
   }>;
   ```
   Для encounter, у которых `encounter.type !== 'boss'` или активного босса нет, поле **`null`**. Значения дублируют ключевые поля сущности босса для дешёвого чтения HUD без поиска по `entities`; консистентность с сущностью обеспечивает `SnapshotExportSystem`.
+- `weaponHud` (017):
+  ```ts
+  type WeaponHudSnapshot = Readonly<{
+    selectedIndex: number | null;
+    weapons: ReadonlyArray<Readonly<{
+      index: number;
+      weaponArchetypeId: string;
+      cooldownReadyAtSimMs: number;
+      overdriveUntilSimMs: number | null;
+    }>>;
+  }>;
+  ```
+  `null` means the active session has no player loadout. HUD reads selected weapon and cooldown readiness from this field instead of inspecting runtime weapon instances directly.
 - Поля 004:
   - `encounter`:
     ```ts
@@ -195,6 +230,17 @@ type EntitySnapshot =
         y: number;
       }
     | {
+        kind: 'explosion';
+        simTime: number;
+        projectileId: number;
+        ownerKind: 'player' | 'enemy' | 'boss';
+        weaponArchetypeId: string;
+        damage: number;
+        radius: number;
+        x: number;
+        y: number;
+      }
+    | {
         kind: 'death';
         simTime: number;
         entityId: number;
@@ -246,17 +292,28 @@ type EntitySnapshot =
 - `win`/`loss` несут только `simTime`. Дополнительные поля (статистика забега, причина) — будущие расширения, появятся вместе с потребителями (HUD-итог из 007). Минимальная форма достаточна, чтобы `main` отреагировал переходом в результат-экран.
 - `hit.targetArchetypeId` и `death.weaponArchetypeId`/`impactDir*` существуют для main-thread presentation consumers ([impact-feedback.md](impact-feedback.md)): renderer не должен реконструировать цвет цели, направление пули или причину смерти из соседних snapshot-ов, потому что цель может быть удалена до следующего кадра. Для `targetKind: 'player'` target archetype отсутствует и поле равно `null`; для смерти не от projectile weapon/direction поля равны `null`.
 - Owner-системы (см. [runtime-systems.md](runtime-systems.md)):
-  - `fire`, `hit` публикует `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md));
+  - `fire`, `hit`, `explosion` публикует `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md));
   - `death` публикует `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) сразу после фиксации смерти и до запуска death hooks;
   - `win`, `loss` публикует `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md), [session-definition.md](session-definition.md)) ровно один раз за run;
   - `dropSpawn`, `dropPickup`, `dropExpire` публикует `DropSystem` ([drops.md](drops.md)): `dropSpawn` — внутри death hook, синхронно после `EntityStore.spawnDrop`; `dropPickup` и `dropExpire` — в фазе `DropSystem` тика, по правилам [drops.md](drops.md) (на один дроп — ровно одно из них).
-- Никакая другая система не имеет права публиковать события `fire`/`hit`/`death`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`/`bossPhaseChange`. Исключение: `BossPhaseSystem` публикует только `bossPhaseChange`; `DropSystem` подписан на death hook для дропа и не подменяет `death`. Обе системы не публикуют альтернативное событие смерти или победы.
+- Никакая другая система не имеет права публиковать события `fire`/`hit`/`explosion`/`death`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`/`bossPhaseChange`. Исключение: `BossPhaseSystem` публикует только `bossPhaseChange`; `DropSystem` подписан на death hook для дропа и не подменяет `death`. Обе системы не публикуют альтернативное событие смерти или победы.
 
 ### Гарантии и приоритеты
 
 - Снапшоты публикуются по расписанию из [simulation-timing.md](simulation-timing.md) (`SNAPSHOT_HZ = 30`).
 - Runtime events публикуются по факту, без агрегации между тиками. Если поток перегружен, [thread-model.md](thread-model.md) уже фиксирует приоритет снапшотов — combat-events деградируют как и любые другие events.
 - HUD/audio не должны восстанавливать authoritative state только из combat-events: между двумя `hit`-ами на одного врага HP читается из снапшота, а не из суммы damage в events.
+
+## Related
+
+- [thread-model.md](thread-model.md)
+- [runtime-systems.md](runtime-systems.md)
+- [projectiles-and-combat.md](projectiles-and-combat.md)
+- [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
+- [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
+- [drops.md](drops.md)
+- [boss-encounter.md](boss-encounter.md)
+- [impact-feedback.md](impact-feedback.md)
 
 ### Расширение
 

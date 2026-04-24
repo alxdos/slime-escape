@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-20 (007: финализирована роль Space как dev-pause без overlay; маршрутизация Esc/Space — через `UiShell` из [main-ui-shell.md](main-ui-shell.md))
+- Updated: 2026-04-24 (017 alignment: weapon slot selection and holster commands are added for ordered loadouts; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: 007 finalized Space as dev-pause through `UiShell`.)
 
 ## Context
 
@@ -78,11 +78,14 @@
   type InputCommand =
     | { kind: 'move'; dx: number; dy: number }       // нормализованный вектор, |v| ∈ [0, 1]
     | { kind: 'aim';  x: number;  y: number  }       // world-координаты
-    | { kind: 'fire'; phase: 'start' | 'stop' };
+    | { kind: 'fire'; phase: 'start' | 'stop' }
+    | { kind: 'selectWeaponSlot'; slotIndex: number } // 0-based slot for keyboard 1..9
+    | { kind: 'holsterWeapon' };
   ```
 - Семантика:
   - `move` и `aim` — **state**: последняя полученная команда отменяет предыдущую того же `kind`; `sim` хранит «текущее желание» игрока и применяет его на каждом тике.
   - `fire` — **edge**: каждое сообщение значимо, но дополнительные сообщения того же `phase` подряд не должны менять gameplay-state.
+  - `selectWeaponSlot` and `holsterWeapon` are **edge** commands. `selectWeaponSlot` changes runtime selected weapon if the index exists in the current ordered loadout; invalid indices are ignored with warning and do not alter selection. `holsterWeapon` sets selected weapon to `null`.
 - Команды `start/stop/pause/resume/debug` остаются на верхнем уровне `MainToSim` ([thread-model.md](thread-model.md)) и не входят в `InputCommand`.
 
 ### Частота отправки
@@ -97,6 +100,7 @@
 - `sim` хранит per-session «input state» как часть runtime state ([content-boundaries.md](content-boundaries.md)): `{ moveDir, aimWorld, firing }`.
 - При `startSession` input state сбрасывается в нейтральное значение (`moveDir = (0,0)`, `aimWorld = player.position`, `firing = false`).
 - При `stopSession` input state выбрасывается вместе с остальным runtime state.
+- При `startSession` selected weapon state is initialized from `SessionDefinition.loadout.selectedIndex` when `loadout !== null`.
 - Команды, пришедшие до `startSession` или после `stopSession`, отбрасываются с warning через единый log-модуль; молчаливое игнорирование запрещено.
 
 ## Consequences
@@ -117,3 +121,4 @@
 - [content-boundaries.md](content-boundaries.md)
 - [main-ui-shell.md](main-ui-shell.md)
 - [../docs/GDD_CORE.md](../docs/GDD_CORE.md)
+- [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
