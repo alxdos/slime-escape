@@ -138,8 +138,16 @@ describe('CombatSystem', () => {
     expect(intents[0]?.targetId).toBe(enemy.id);
     expect(intents[0]?.amount).toBe(PISTOL.damage);
     expect(intents[0]?.source.kind).toBe('projectile');
+    if (intents[0]?.source.kind !== 'projectile') throw new Error('expected projectile source');
+    expect(intents[0].source.impactDirX).toBeCloseTo(1);
+    expect(intents[0].source.impactDirY).toBeCloseTo(0);
     const hitEvents = events.filter((e) => e.kind === 'hit');
     expect(hitEvents).toHaveLength(1);
+    const hit = hitEvents[0]!;
+    if (hit.kind !== 'hit') throw new Error('expected hit event');
+    expect(hit.targetArchetypeId).toBe(STATIONARY_TEST_ENEMY.archetypeId);
+    expect(hit.impactDirX).toBeCloseTo(1);
+    expect(hit.impactDirY).toBeCloseTo(0);
     expect(store.projectileCount()).toBe(0);
   });
 
@@ -217,6 +225,7 @@ describe('CombatSystem', () => {
 
   it('hits the player by contactBox for enemy projectiles even outside the player radius', () => {
     const { store, index, combat, player } = setupCombat();
+    const events: RuntimeEvent[] = [];
     store.spawnProjectile({
       weaponArchetypeId: PISTOL.id,
       ownerKind: 'enemy',
@@ -230,11 +239,19 @@ describe('CombatSystem', () => {
       expireAtSimMs: 10_000
     });
 
-    const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, () => {});
+    const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, (e) =>
+      events.push(e)
+    );
 
     expect(intents).toHaveLength(1);
     expect(intents[0]?.targetId).toBe(player.id);
     expect(intents[0]?.source.kind).toBe('projectile');
+    if (intents[0]?.source.kind !== 'projectile') throw new Error('expected projectile source');
+    expect(intents[0].source.impactDirX).toBeCloseTo(1);
+    expect(intents[0].source.impactDirY).toBeCloseTo(0);
+    const hit = events.find((e) => e.kind === 'hit');
+    if (hit?.kind !== 'hit') throw new Error('expected hit event');
+    expect(hit.targetArchetypeId).toBeNull();
     expect(store.projectileCount()).toBe(0);
   });
 

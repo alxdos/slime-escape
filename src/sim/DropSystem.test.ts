@@ -120,7 +120,14 @@ function makeDeathContext(opts: {
     entityKind: opts.entityKind ?? 'enemy',
     archetypeId: opts.archetypeId,
     position: opts.position,
-    cause: { kind: 'projectile', projectileId: 0 as EntityId, ownerKind: 'player', weaponArchetypeId: 'pistol' },
+    cause: {
+      kind: 'projectile',
+      projectileId: 0 as EntityId,
+      ownerKind: 'player',
+      weaponArchetypeId: 'pistol',
+      impactDirX: 1,
+      impactDirY: 0
+    },
     simTime: opts.simTime
   };
 }

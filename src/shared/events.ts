@@ -22,8 +22,11 @@ export type RuntimeEvent =
       projectileId: number;
       targetId: number;
       targetKind: 'enemy' | 'player' | 'boss';
+      targetArchetypeId: string | null;
       weaponArchetypeId: string;
       damage: number;
+      impactDirX: number;
+      impactDirY: number;
       x: number;
       y: number;
     }
@@ -33,6 +36,9 @@ export type RuntimeEvent =
       entityId: number;
       entityKind: 'enemy' | 'player' | 'boss';
       archetypeId: string | null;
+      weaponArchetypeId: string | null;
+      impactDirX: number | null;
+      impactDirY: number | null;
       x: number;
       y: number;
     }

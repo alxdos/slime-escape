@@ -43,7 +43,7 @@
 | ID | Status | Task | Note |
 |----|--------|------|------|
 | T1 | [x] | Зафиксировать архитектуру impact feedback | Добавлены `design/impact-feedback.md` и обновления связанных design-контрактов до кодовой работы. |
-| T2 | [ ] | Расширить runtime event и damage intent payloads | Обновить `RuntimeEvent.hit`, `RuntimeEvent.death`, projectile `DamageIntent.source` и тесты под archetype/direction data. |
+| T2 | [x] | Расширить runtime event и damage intent payloads | Обновить `RuntimeEvent.hit`, `RuntimeEvent.death`, projectile `DamageIntent.source` и тесты под archetype/direction data. |
 | T3 | [ ] | Добавить weapon force в content | Добавить обязательный `WeaponArchetype.knockbackImpulse`, обновить MD parsing/rendering/generated content и выставить начальные значения существующим weapons. |
 | T4 | [ ] | Применить projectile knockback в симуляции | Переиспользовать enemy/boss knockback state на projectile hits, учесть susceptibility/duration цели и оставить HP mutation внутри `HealthDeathSystem`. |
 | T5 | [ ] | Пробросить runtime events в renderer | Добавить `Renderer.handleEvent`, route events из `UiShell`, очистку renderer effects на dispose/session transitions. |
