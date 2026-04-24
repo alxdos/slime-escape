@@ -1,16 +1,23 @@
-import { DROP_ARCHETYPES, type DropArchetype, type DropEffect } from '../shared/content/drops';
+import {
+  DROP_ARCHETYPES,
+  type DropArchetype,
+  type DropEffect,
+  type PickupModifier
+} from '../shared/content/drops';
 import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../shared/content/enemies';
 import type { WeaponModifier } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import { log } from '../shared/log';
 import { assertNever } from '../shared/protocol';
 import type { Rng } from '../shared/rng';
+import { SIM_STEP_MS } from '../shared/timing';
 
 import type { EntityId, EntityStore } from './EntityStore';
 import type { DeathContext } from './HealthDeathSystem';
 
 export type DropSystem = Readonly<{
   setRng(rng: Rng | null): void;
+  clear(): void;
   onDeathHook(ctx: DeathContext, store: EntityStore, emit: (event: RuntimeEvent) => void): void;
   tick(simTimeMs: number, store: EntityStore, emit: (event: RuntimeEvent) => void): void;
 }>;
@@ -31,10 +38,15 @@ export function createDropSystem(
   weaponEffects: WeaponDropEffectSink | null = null
 ): DropSystem {
   let rng: Rng | null = null;
+  const pickupModifiers = new Map<EntityId, PickupModifier>();
 
   return {
     setRng(next): void {
       rng = next;
+    },
+    clear(): void {
+      rng = null;
+      pickupModifiers.clear();
     },
     onDeathHook(ctx, store, emit): void {
       if (ctx.entityKind !== 'enemy') return;
@@ -49,33 +61,16 @@ export function createDropSystem(
         return;
       }
 
-      if (enemyArchetype.dropTable.length === 0) return;
+      spawnCarrierDrops(enemyArchetype, ctx, store, emit, dropRegistry);
 
-      if (rng === null) {
-        throw new Error('drop hook fired without a session Rng (see design/rng.md)');
-      }
+      if (enemyArchetype.dropTable.length === 0) return;
+      if (rng === null) throw new Error('drop hook fired without a session Rng (see design/rng.md)');
 
       const roll = rng.nextFloat();
       const picked = pickDropFromTable(enemyArchetype.dropTable, roll, dropRegistry);
       if (picked === null) return;
 
-      const drop = store.spawnDrop({
-        archetypeId: picked.id,
-        position: { x: ctx.position.x, y: ctx.position.y },
-        radius: picked.radius,
-        effect: picked.effect,
-        color: picked.color,
-        expireAtSimMs: ctx.simTime + picked.ttlMs
-      });
-
-      emit({
-        kind: 'dropSpawn',
-        simTime: ctx.simTime,
-        entityId: drop.id,
-        archetypeId: drop.archetypeId,
-        x: drop.position.x,
-        y: drop.position.y
-      });
+      spawnDropAtDeath(picked, ctx, store, emit);
     },
     tick(simTimeMs, store, emit): void {
       const expired = new Set<EntityId>();
@@ -97,14 +92,16 @@ export function createDropSystem(
 
       const player = store.player();
       if (player !== null) {
+        attractDropsToPlayer(store, player.id, player.position, player.radius, pickupModifiers);
+        const activeModifier = pickupModifiers.get(player.id) ?? null;
         for (const drop of store.drops()) {
           if (expired.has(drop.id)) continue;
           const dx = drop.position.x - player.position.x;
           const dy = drop.position.y - player.position.y;
-          const reach = drop.radius + player.radius;
+          const reach = pickupReach(drop.radius + player.radius, activeModifier);
           if (dx * dx + dy * dy > reach * reach) continue;
 
-          applyDropEffect(drop.effect, store, simTimeMs, weaponEffects);
+          applyDropEffect(drop.effect, store, simTimeMs, weaponEffects, pickupModifiers);
           pickedUp.add(drop.id);
           emit({
             kind: 'dropPickup',
@@ -149,11 +146,86 @@ function pickDropFromTable(
   return null;
 }
 
+function spawnCarrierDrops(
+  enemyArchetype: EnemyArchetype,
+  ctx: DeathContext,
+  store: EntityStore,
+  emit: (event: RuntimeEvent) => void,
+  dropRegistry: Readonly<Record<string, DropArchetype>>
+): void {
+  const carrierDrop = enemyArchetype.carrierDrop;
+  if (carrierDrop === null) return;
+  for (const archetypeId of carrierDrop.guaranteedDropArchetypeIds) {
+    const drop = dropRegistry[archetypeId];
+    if (drop === undefined) {
+      throw new Error(
+        `carrier drop references unknown drop archetype at runtime: "${archetypeId}"`
+      );
+    }
+    spawnDropAtDeath(drop, ctx, store, emit);
+  }
+}
+
+function spawnDropAtDeath(
+  picked: DropArchetype,
+  ctx: DeathContext,
+  store: EntityStore,
+  emit: (event: RuntimeEvent) => void
+): void {
+  const drop = store.spawnDrop({
+    archetypeId: picked.id,
+    position: { x: ctx.position.x, y: ctx.position.y },
+    radius: picked.radius,
+    effect: picked.effect,
+    color: picked.color,
+    expireAtSimMs: ctx.simTime + picked.ttlMs
+  });
+
+  emit({
+    kind: 'dropSpawn',
+    simTime: ctx.simTime,
+    entityId: drop.id,
+    archetypeId: drop.archetypeId,
+    x: drop.position.x,
+    y: drop.position.y
+  });
+}
+
+function attractDropsToPlayer(
+  store: EntityStore,
+  playerId: EntityId,
+  playerPosition: Readonly<{ x: number; y: number }>,
+  playerRadius: number,
+  pickupModifiers: ReadonlyMap<EntityId, PickupModifier>
+): void {
+  const modifier = pickupModifiers.get(playerId);
+  if (modifier === undefined) return;
+  const stepDistance = modifier.attractSpeed * (SIM_STEP_MS / 1000);
+  if (stepDistance <= 0) return;
+  for (const drop of store.drops()) {
+    const dx = playerPosition.x - drop.position.x;
+    const dy = playerPosition.y - drop.position.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance <= 0) continue;
+    const baseReach = drop.radius + playerRadius;
+    const attractionReach = pickupReach(baseReach, modifier) + stepDistance * 2;
+    if (distance > attractionReach) continue;
+    const move = Math.min(stepDistance, Math.max(0, distance - baseReach));
+    drop.position.x += (dx / distance) * move;
+    drop.position.y += (dy / distance) * move;
+  }
+}
+
+function pickupReach(baseReach: number, modifier: PickupModifier | null): number {
+  return modifier === null ? baseReach : baseReach * modifier.pickupRadiusMultiplier;
+}
+
 function applyDropEffect(
   effect: DropEffect,
   store: EntityStore,
   simTimeMs: number,
-  weaponEffects: WeaponDropEffectSink | null
+  weaponEffects: WeaponDropEffectSink | null,
+  pickupModifiers: Map<EntityId, PickupModifier>
 ): void {
   switch (effect.kind) {
     case 'heal': {
@@ -179,9 +251,34 @@ function applyDropEffect(
       );
       return;
     }
-    case 'pickupModifier':
+    case 'pickupModifier': {
+      const player = store.player();
+      if (player === null) return;
+      pickupModifiers.set(
+        player.id,
+        mergePickupModifier(pickupModifiers.get(player.id), effect.modifier)
+      );
       return;
+    }
     default:
       assertNever(effect);
+  }
+}
+
+function mergePickupModifier(
+  current: PickupModifier | undefined,
+  next: PickupModifier
+): PickupModifier {
+  if (current === undefined) return next;
+  switch (next.kind) {
+    case 'dropMagnet':
+      return {
+        kind: 'dropMagnet',
+        pickupRadiusMultiplier: Math.max(
+          current.pickupRadiusMultiplier,
+          next.pickupRadiusMultiplier
+        ),
+        attractSpeed: Math.max(current.attractSpeed, next.attractSpeed)
+      };
   }
 }

@@ -36,6 +36,7 @@ export type Enemy = {
   readonly radius: number;
   readonly contactBox: ContactBox;
   readonly behavior: EnemyBehavior;
+  readonly carrierDropMarker: 'reward' | null;
   readonly maxHp: number;
   readonly maxSpeed: number;
   readonly contactDamage: number;
@@ -174,6 +175,7 @@ export type EnemySpawnSpec = Readonly<{
   radius: number;
   contactBox: ContactBox;
   behavior: EnemyBehavior;
+  carrierDropMarker?: 'reward' | null;
   maxHp: number;
   maxSpeed: number;
   contactDamage: number;
@@ -326,6 +328,7 @@ export function createEntityStore(): EntityStore {
         radius: spec.radius,
         contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
         behavior: spec.behavior,
+        carrierDropMarker: spec.carrierDropMarker ?? null,
         maxHp: spec.maxHp,
         maxSpeed: spec.maxSpeed,
         contactDamage: spec.contactDamage,

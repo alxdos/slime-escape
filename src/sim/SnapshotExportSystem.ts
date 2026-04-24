@@ -59,6 +59,7 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           y: enemy.position.y,
           hp: enemy.hp,
           maxHp: enemy.maxHp,
+          carrierDropMarker: enemy.carrierDropMarker,
           statusEffects: enemy.statusEffects.map((effect) => ({
             kind: effect.kind,
             expiresAtSimMs: effect.expireAtSimMs

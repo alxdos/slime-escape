@@ -113,6 +113,7 @@ describe('SnapshotExportSystem', () => {
       radius: STATIONARY_TEST_ENEMY.radius,
       contactBox: STATIONARY_TEST_ENEMY.contactBox,
       behavior: 'stationary',
+      carrierDropMarker: 'reward',
       maxHp: STATIONARY_TEST_ENEMY.maxHp,
       maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
       contactDamage: STATIONARY_TEST_ENEMY.contactDamage,
@@ -150,6 +151,7 @@ describe('SnapshotExportSystem', () => {
     expect(enemy.archetypeId).toBe(STATIONARY_TEST_ENEMY.archetypeId);
     expect(enemy.hp).toBe(STATIONARY_TEST_ENEMY.maxHp);
     expect(enemy.maxHp).toBe(STATIONARY_TEST_ENEMY.maxHp);
+    expect(enemy.carrierDropMarker).toBe('reward');
 
     const projectile = snapshot?.entities.find((e) => e.kind === 'projectile');
     expect(projectile).toBeDefined();

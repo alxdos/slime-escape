@@ -99,6 +99,7 @@ const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
 const PROJECTILE_RADIUS_Z = -0.01;
 const PROJECTILE_RADIUS_INDICATOR_NAME = 'projectile-radius-indicator';
+const CARRIER_REWARD_MARKER_NAME = 'carrier-reward-marker';
 const DROP_Z = 0.03;
 const ARC_PREVIEW_Z = 0.04;
 const ARC_PREVIEW_RADIUS_WU = 0.18;
@@ -271,11 +272,13 @@ export function createRenderer(init: RendererInit): Renderer {
   function ensureEnemyMesh(snap: EnemySnapshot): EntityMeshEntry {
     const existing = enemyMeshes.get(snap.id);
     if (existing !== undefined) return existing;
+    const visual = requireVisualSpec(ENEMY_VISUALS, snap.archetypeId, 'enemy');
     const entry = createSpriteMesh(
-      requireVisualSpec(ENEMY_VISUALS, snap.archetypeId, 'enemy'),
+      visual,
       requireSpriteTexture(init.spriteTextures, snap.archetypeId, 'enemy'),
       ENEMY_Z
     );
+    entry.mesh.add(createCarrierRewardMarker(visual.worldSize.height));
     scene.add(entry.mesh);
     enemyMeshes.set(snap.id, entry);
     return entry;
@@ -326,11 +329,10 @@ export function createRenderer(init: RendererInit): Renderer {
         disposeEntityMesh,
         characterSnapGrid,
         (entry, entity) =>
-          applySlimePresentation(
+          applyEnemyPresentation(
             entry.mesh,
+            entity,
             pair.nowMs,
-            entity.id,
-            SLIME_BREATH_AMPLITUDE,
             hitImpulsesByTarget.get(entity.id)
           )
       );
@@ -581,6 +583,34 @@ function createProjectileRadiusIndicator(): THREE.Mesh {
   mesh.position.z = PROJECTILE_RADIUS_Z;
   mesh.visible = false;
   return mesh;
+}
+
+function createCarrierRewardMarker(enemyHeight: number): THREE.Mesh {
+  const geometry = new THREE.CircleGeometry(0.13, 4);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffd166,
+    transparent: true,
+    opacity: 0.92,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = CARRIER_REWARD_MARKER_NAME;
+  mesh.position.y = enemyHeight / 2 + 0.18;
+  mesh.position.z = 0.04;
+  mesh.rotation.z = Math.PI / 4;
+  mesh.visible = false;
+  return mesh;
+}
+
+function applyEnemyPresentation(
+  mesh: THREE.Mesh,
+  entity: EnemySnapshot,
+  nowMs: number,
+  hitImpulse: HitImpulseEffect | undefined
+): void {
+  applySlimePresentation(mesh, nowMs, entity.id, SLIME_BREATH_AMPLITUDE, hitImpulse);
+  const marker = mesh.children.find((child) => child.name === CARRIER_REWARD_MARKER_NAME);
+  if (marker !== undefined) marker.visible = entity.carrierDropMarker === 'reward';
 }
 
 function applyProjectilePresentation(

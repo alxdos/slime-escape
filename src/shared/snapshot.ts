@@ -18,6 +18,7 @@ export type EnemySnapshot = Readonly<{
   y: number;
   hp: number;
   maxHp: number;
+  carrierDropMarker?: 'reward' | null;
   statusEffects?: ReadonlyArray<StatusEffectSnapshot>;
 }>;
 

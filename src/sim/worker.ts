@@ -111,6 +111,7 @@ const sessionFlow = createSessionFlowSystem({
     combat.clear();
     fieldEffects.clear();
     statusEffects.clear();
+    drops.clear();
     zone.reset();
     pendingFieldDamageIntents = [];
     pendingStatusDamageIntents = [];
@@ -129,11 +130,11 @@ const sessionFlow = createSessionFlowSystem({
     combat.clear();
     fieldEffects.clear();
     statusEffects.clear();
+    drops.clear();
     zone.reset();
     pendingFieldDamageIntents = [];
     pendingStatusDamageIntents = [];
     spawn.setRng(null);
-    drops.setRng(null);
   },
   onEncounterStart(encounter) {
     const session = sessionFlow.activeSession();

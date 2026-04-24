@@ -488,6 +488,50 @@ describe('createRenderer', () => {
     expect(backend.ops).toEqual([{ kind: 'render' }]);
   });
 
+  it('shows a reward marker on carrier enemies', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const enemyTexture = new THREE.Texture();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [SLIME_BUG.id]: enemyTexture }),
+      getSnapshotPair: () =>
+        createSnapshotPairWithEntities([
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+          {
+            id: 2,
+            kind: 'enemy',
+            archetypeId: SLIME_BUG.id,
+            x: 1,
+            y: 1,
+            hp: 2,
+            maxHp: 2,
+            carrierDropMarker: 'reward'
+          }
+        ]),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const enemyMesh = findMeshWithMaterialMap(backend.lastScene(), enemyTexture);
+    const marker = enemyMesh?.children.find((child) => child.name === 'carrier-reward-marker');
+    expect(marker).toBeInstanceOf(THREE.Mesh);
+    expect(marker?.visible).toBe(true);
+  });
+
   it('applies projectile visual state and grounded explosion radius indicators', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();
