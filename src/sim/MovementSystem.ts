@@ -19,7 +19,7 @@ export type MovementSystem = Readonly<{
 
 export function createMovementSystem(): MovementSystem {
   return {
-      tick(arena, store, input, simTimeMs): void {
+    tick(arena, store, input, simTimeMs): void {
       const player = store.player();
       if (player !== null) tickPlayer(arena, player, input);
       tickEnemies(store, player, simTimeMs);
@@ -51,7 +51,7 @@ function tickPlayer(arena: ArenaConfig, player: Player, input: RuntimeInputState
 function tickEnemies(store: EntityStore, player: Player | null, simTimeMs: number): void {
   for (const enemy of store.enemies()) {
     if (tickKnockbackCarrier(enemy, simTimeMs)) continue;
-    tickEnemyBehavior(enemy, player);
+    tickEnemyBehavior(enemy, resolveEnemyTarget(enemy, store, player, simTimeMs));
   }
 }
 
@@ -62,19 +62,19 @@ function tickBosses(store: EntityStore, player: Player | null, simTimeMs: number
   }
 }
 
-function chaseTowardPlayer(actor: Enemy | Boss, player: Player | null): void {
+function chaseTowardPlayer(actor: Enemy | Boss, target: Player | Enemy | Boss | null): void {
   if ('behavior' in actor && actor.behavior === 'stationary') {
     actor.velocity.vx = 0;
     actor.velocity.vy = 0;
     return;
   }
-  if (player === null) {
+  if (target === null) {
     actor.velocity.vx = 0;
     actor.velocity.vy = 0;
     return;
   }
-  const dx = player.position.x - actor.position.x;
-  const dy = player.position.y - actor.position.y;
+  const dx = target.position.x - actor.position.x;
+  const dy = target.position.y - actor.position.y;
   const dist = Math.hypot(dx, dy);
   if (dist === 0) {
     actor.velocity.vx = 0;
@@ -111,18 +111,40 @@ function tickKnockbackCarrier(actor: Enemy | Boss, simTimeMs: number): boolean {
   return true;
 }
 
-function tickEnemyBehavior(enemy: Enemy, player: Player | null): void {
+function tickEnemyBehavior(enemy: Enemy, target: Player | Enemy | Boss | null): void {
   switch (enemy.behavior) {
     case 'stationary':
       enemy.velocity.vx = 0;
       enemy.velocity.vy = 0;
       return;
     case 'chase':
-      chaseTowardPlayer(enemy, player);
+      chaseTowardPlayer(enemy, target);
       return;
     default:
       assertNever(enemy.behavior);
   }
+}
+
+function resolveEnemyTarget(
+  enemy: Enemy,
+  store: EntityStore,
+  player: Player | null,
+  simTimeMs: number
+): Player | Enemy | Boss | null {
+  const aggro = enemy.aggroMemory;
+  if (aggro === null) return player;
+  if (simTimeMs >= aggro.expireAtSimMs) {
+    enemy.aggroMemory = null;
+    return player;
+  }
+  const aggroEnemy = store.enemyById(aggro.targetId);
+  if (aggroEnemy !== null) return aggroEnemy;
+  const aggroBoss = store.bossById(aggro.targetId);
+  if (aggroBoss !== null) return aggroBoss;
+  const currentPlayer = store.player();
+  if (currentPlayer !== null && currentPlayer.id === aggro.targetId) return currentPlayer;
+  enemy.aggroMemory = null;
+  return player;
 }
 
 function clamp(value: number, min: number, max: number): number {

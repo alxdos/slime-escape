@@ -45,7 +45,7 @@
 | T3 | [x] | Add actor status runtime state and `StatusEffectSystem`. | Update damageable actor types, movement speed resolution, status tick/expiry logic, `DamageIntent.source`, snapshot/status presentation hints and stacking tests. |
 | T4 | [x] | Extend `CombatSystem` for mine proximity triggers and explosion-spawned field effects/status applications. | Reuse universal projectile/explosion ownership and shared damage rules; proximity checks use `SpatialIndex` and deterministic ordering. |
 | T5 | [x] | Extend `DropSystem`, enemy content and renderer for carrier drops and magnet attraction. | Carrier rewards still use death hooks; magnet movement/pickup expansion remains deterministic and owned by `DropSystem`. |
-| T6 | [ ] | Add friendly-fire retaliation behavior and optional aim-assist targeting. | Add aggro memory/behavior consumption in sim; implement aim assist on `main thread` per `design/combat-modifiers-and-field-effects.md` (corrects `aim` before sending the existing `InputCommand`, sim sees only a regular `aim` value); use deterministic target tie-breakers. |
+| T6 | [x] | Add friendly-fire retaliation behavior and optional aim-assist targeting. | Add aggro memory/behavior consumption in sim; implement aim assist on `main thread` per `design/combat-modifiers-and-field-effects.md` (corrects `aim` before sending the existing `InputCommand`, sim sees only a regular `aim` value); use deterministic target tie-breakers. |
 | T7 | [ ] | Add demo content, visual/audio feedback and regression tests for all enabled mechanics. | Cover no-effect sessions as non-regression plus field lifecycle, status ticks, mine triggers, drop magnet, retaliation and aim-assist target selection. |
 
 ## Related

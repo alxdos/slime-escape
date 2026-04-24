@@ -15,8 +15,21 @@ export type DeathContext = Readonly<{
 
 export type DeathHook = (ctx: DeathContext) => void;
 
+export type DamageContext = Readonly<{
+  targetId: EntityId;
+  targetKind: 'enemy' | 'player' | 'boss';
+  targetArchetypeId: string | null;
+  amount: number;
+  source: DamageSource;
+  hitPosition: Vec2;
+  simTime: number;
+}>;
+
+export type DamageHook = (ctx: DamageContext) => void;
+
 export type HealthDeathSystem = Readonly<{
   registerHook(hook: DeathHook): void;
+  registerDamageHook(hook: DamageHook): void;
   tick(
     intents: ReadonlyArray<DamageIntent>,
     store: EntityStore,
@@ -27,13 +40,20 @@ export type HealthDeathSystem = Readonly<{
 
 export function createHealthDeathSystem(): HealthDeathSystem {
   const hooks: DeathHook[] = [];
+  const damageHooks: DamageHook[] = [];
 
   return {
     registerHook(hook): void {
       hooks.push(hook);
     },
+    registerDamageHook(hook): void {
+      damageHooks.push(hook);
+    },
     tick(intents, store, simTimeMs, emit): void {
-      const deaths = applyDamage(intents, store, simTimeMs);
+      const { deaths, damages } = applyDamage(intents, store, simTimeMs);
+      for (const damage of damages) {
+        for (const hook of damageHooks) hook(damage);
+      }
       for (const death of deaths) {
         emit({
           kind: 'death',
@@ -69,18 +89,21 @@ function applyDamage(
   intents: ReadonlyArray<DamageIntent>,
   store: EntityStore,
   simTimeMs: number
-): DeathContext[] {
+): Readonly<{ deaths: DeathContext[]; damages: DamageContext[] }> {
   const deaths: DeathContext[] = [];
+  const damages: DamageContext[] = [];
   for (const intent of intents) {
+    if (intent.amount <= 0) continue;
     const target = resolveTarget(intent.targetId, store);
     if (target === null) continue;
     if (target.hp === 0) continue;
     target.hp = Math.max(0, target.hp - intent.amount);
+    damages.push(makeDamageContext(target, intent, simTimeMs));
     if (target.hp === 0) {
       deaths.push(makeDeathContext(target, intent.source, simTimeMs));
     }
   }
-  return deaths;
+  return { deaths, damages };
 }
 
 function resolveTarget(id: EntityId, store: EntityStore): Enemy | Boss | Player | null {
@@ -104,6 +127,24 @@ function makeDeathContext(
     archetypeId,
     position: { x: target.position.x, y: target.position.y },
     cause,
+    simTime: simTimeMs
+  };
+}
+
+function makeDamageContext(
+  target: Enemy | Boss | Player,
+  intent: DamageIntent,
+  simTimeMs: number
+): DamageContext {
+  const archetypeId =
+    target.kind === 'enemy' || target.kind === 'boss' ? target.archetypeId : null;
+  return {
+    targetId: target.id,
+    targetKind: target.kind,
+    targetArchetypeId: archetypeId,
+    amount: intent.amount,
+    source: intent.source,
+    hitPosition: { x: intent.hitPosition.x, y: intent.hitPosition.y },
     simTime: simTimeMs
   };
 }

@@ -6,7 +6,11 @@ import { SIM_STEP_MS } from '../shared/timing';
 
 import type { DamageIntent } from './CombatSystem';
 import { createEntityStore, type EntityId } from './EntityStore';
-import { createHealthDeathSystem, type DeathContext } from './HealthDeathSystem';
+import {
+  createHealthDeathSystem,
+  type DamageContext,
+  type DeathContext
+} from './HealthDeathSystem';
 
 function squareContactBox(radius: number) {
   return { width: radius * 2, height: radius * 2 };
@@ -135,6 +139,41 @@ describe('HealthDeathSystem', () => {
     expect(death.weaponArchetypeId).toBe(PISTOL.id);
     expect(death.impactDirX).toBe(1);
     expect(death.impactDirY).toBe(0);
+  });
+
+  it('runs damage hooks before death hooks and before entity removal', () => {
+    const store = createEntityStore();
+    const enemy = spawnTarget(store, 1);
+    const sys = createHealthDeathSystem();
+    const trace: string[] = [];
+    const damages: DamageContext[] = [];
+    sys.registerDamageHook((ctx) => {
+      damages.push(ctx);
+      trace.push(`damage:alive=${store.enemyById(ctx.targetId) !== null}`);
+    });
+    sys.registerHook((ctx) => {
+      trace.push(`death:alive=${store.enemyById(ctx.entityId) !== null}`);
+    });
+
+    sys.tick([makeIntent(enemy.id, 1)], store, 77, () => {});
+
+    expect(trace).toEqual(['damage:alive=true', 'death:alive=true']);
+    expect(damages[0]?.targetId).toBe(enemy.id);
+    expect(damages[0]?.targetKind).toBe('enemy');
+    expect(damages[0]?.simTime).toBe(77);
+  });
+
+  it('does not run damage hooks for non-positive damage intents', () => {
+    const store = createEntityStore();
+    const enemy = spawnTarget(store, 3);
+    const sys = createHealthDeathSystem();
+    const hook = vi.fn();
+    sys.registerDamageHook(hook);
+
+    sys.tick([makeIntent(enemy.id, 0), makeIntent(enemy.id, -1)], store, 0, () => {});
+
+    expect(hook).not.toHaveBeenCalled();
+    expect(enemy.hp).toBe(3);
   });
 
   it('copies explosion weapon into death events without an impact direction', () => {

@@ -1,5 +1,5 @@
 import type { DropEffect } from '../shared/content/drops';
-import type { EnemyBehavior } from '../shared/content/enemies';
+import type { EnemyBehavior, RetaliationPolicy } from '../shared/content/enemies';
 import type {
   ActorEffectApplication,
   DetonationTrigger,
@@ -37,6 +37,7 @@ export type Enemy = {
   readonly contactBox: ContactBox;
   readonly behavior: EnemyBehavior;
   readonly carrierDropMarker: 'reward' | null;
+  readonly retaliation: RetaliationPolicy;
   readonly maxHp: number;
   readonly maxSpeed: number;
   readonly contactDamage: number;
@@ -50,7 +51,14 @@ export type Enemy = {
   hp: number;
   nextContactSimMs: number;
   knockback: KnockbackState | null;
+  aggroMemory: AggroMemory | null;
   statusEffects: ActorStatusEffect[];
+};
+
+export type AggroMemory = {
+  targetId: EntityId;
+  reason: 'friendlyFire' | 'playerDamage' | 'scripted';
+  expireAtSimMs: number;
 };
 
 export type Boss = {
@@ -176,6 +184,7 @@ export type EnemySpawnSpec = Readonly<{
   contactBox: ContactBox;
   behavior: EnemyBehavior;
   carrierDropMarker?: 'reward' | null;
+  retaliation?: RetaliationPolicy;
   maxHp: number;
   maxSpeed: number;
   contactDamage: number;
@@ -329,6 +338,7 @@ export function createEntityStore(): EntityStore {
         contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
         behavior: spec.behavior,
         carrierDropMarker: spec.carrierDropMarker ?? null,
+        retaliation: spec.retaliation ?? { enabled: false, durationMs: 0 },
         maxHp: spec.maxHp,
         maxSpeed: spec.maxSpeed,
         contactDamage: spec.contactDamage,
@@ -342,6 +352,7 @@ export function createEntityStore(): EntityStore {
         hp: spec.maxHp,
         nextContactSimMs: 0,
         knockback: null,
+        aggroMemory: null,
         statusEffects: []
       };
       enemies.set(next.id, next);

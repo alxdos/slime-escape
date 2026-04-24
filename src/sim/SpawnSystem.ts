@@ -214,6 +214,7 @@ function makeEnemySpawnSpec(archetype: EnemyArchetype, position: Vec2): EnemySpa
     contactBox: archetype.contactBox,
     behavior: archetype.behavior,
     carrierDropMarker: archetype.carrierDrop?.marker ?? null,
+    retaliation: archetype.retaliation,
     maxHp: archetype.maxHp,
     maxSpeed: archetype.maxSpeed,
     contactDamage: archetype.contactDamage,

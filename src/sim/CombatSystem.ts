@@ -29,6 +29,7 @@ export type DamageSource =
   | {
       kind: 'projectile';
       projectileId: EntityId;
+      ownerId?: EntityId;
       ownerKind: 'player' | 'enemy' | 'boss';
       weaponArchetypeId: string;
       impactDirX: number;
@@ -37,6 +38,7 @@ export type DamageSource =
   | {
       kind: 'explosion';
       projectileId: EntityId;
+      ownerId?: EntityId;
       ownerKind: 'player' | 'enemy' | 'boss';
       weaponArchetypeId: string;
     }
@@ -856,6 +858,7 @@ function runHitDetection(
         source: {
           kind: 'projectile',
           projectileId: projectile.id,
+          ownerId: projectile.ownerId,
           ownerKind: projectile.ownerKind,
           weaponArchetypeId: projectile.weaponArchetypeId,
           impactDirX: impactDir.x,
@@ -1070,6 +1073,7 @@ function addExplosionIntents(
       source: {
         kind: 'explosion',
         projectileId: projectile.id,
+        ownerId: projectile.ownerId,
         ownerKind: projectile.ownerKind,
         weaponArchetypeId: projectile.weaponArchetypeId
       },

@@ -10,6 +10,7 @@ import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type { SessionDefinition } from '../../shared/session';
 import { createAudio, type Audio } from '../audio/Audio';
+import { applyAimAssist } from '../input/AimAssist';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
 import { BOSS_VISUALS } from '../render/bossVisuals';
 import { DROP_VISUALS } from '../render/dropVisuals';
@@ -396,7 +397,9 @@ export function createUiShell(init: UiShellInit): UiShell {
         arena: session.arena,
         pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height,
         initialAim: session.player.position,
-        onCommand: sim.sendInput
+        onCommand(command) {
+          sim.sendInput(applyAimAssist(command, session.rules.aimAssist, sim.snapshotPair().curr));
+        }
       });
     } catch (error: unknown) {
       nextUnsubscribeRendererSettings?.();

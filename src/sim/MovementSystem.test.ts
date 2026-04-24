@@ -249,6 +249,39 @@ describe('MovementSystem enemies', () => {
     expect(enemy.velocity.vx).toBeCloseTo(-CHASE_TEST_ENEMY.maxSpeed * 0.25, 10);
   });
 
+  it('retaliation aggro makes a chase enemy target the remembered attacker', () => {
+    const { store, movement, input } = setup();
+    const victim = store.spawnEnemy(slimeFastAt(5, 0));
+    const attacker = store.spawnEnemy(slimeFastAt(7, 0));
+    victim.aggroMemory = {
+      targetId: attacker.id,
+      reason: 'friendlyFire',
+      expireAtSimMs: 1000
+    };
+
+    movement.tick(ARENA, store, input, 0);
+
+    expect(victim.position.x).toBeGreaterThan(5);
+    expect(victim.velocity.vx).toBeCloseTo(CHASE_TEST_ENEMY.maxSpeed, 10);
+  });
+
+  it('expired retaliation aggro falls back to chasing the player', () => {
+    const { store, movement, input } = setup();
+    const victim = store.spawnEnemy(slimeFastAt(5, 0));
+    const attacker = store.spawnEnemy(slimeFastAt(7, 0));
+    victim.aggroMemory = {
+      targetId: attacker.id,
+      reason: 'friendlyFire',
+      expireAtSimMs: 100
+    };
+
+    movement.tick(ARENA, store, input, 100);
+
+    expect(victim.aggroMemory).toBeNull();
+    expect(victim.position.x).toBeLessThan(5);
+    expect(victim.velocity.vx).toBeCloseTo(-CHASE_TEST_ENEMY.maxSpeed, 10);
+  });
+
   it('a chase enemy without a player keeps still and zeroes velocity', () => {
     const store = createEntityStore();
     const enemy = store.spawnEnemy(slimeFastAt(3, 0));

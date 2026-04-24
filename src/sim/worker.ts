@@ -15,6 +15,7 @@ import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
 import { createStatusEffectSystem } from './StatusEffectSystem';
+import { createRetaliationSystem } from './RetaliationSystem';
 import { createZoneSystem } from './ZoneSystem';
 
 const entities = createEntityStore();
@@ -26,6 +27,7 @@ const combat = createCombatSystem();
 const fieldEffects = createFieldEffectSystem();
 const healthDeath = createHealthDeathSystem();
 const statusEffects = createStatusEffectSystem();
+const retaliation = createRetaliationSystem();
 const spatialIndex = createSpatialIndex();
 const zone = createZoneSystem();
 let pendingFieldDamageIntents: ReturnType<typeof fieldEffects.tick>['damageIntents'] = [];
@@ -155,6 +157,8 @@ healthDeath.registerHook((ctx) => {
   if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
   if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
 });
+
+healthDeath.registerDamageHook((ctx) => retaliation.onDamage(ctx, entities));
 
 self.addEventListener('message', (event: MessageEvent<MainToSim>) => {
   const msg = event.data;
