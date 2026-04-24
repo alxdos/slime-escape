@@ -460,7 +460,46 @@ describe('CombatSystem', () => {
     expect(store.projectileCount()).toBe(0);
   });
 
-  it('expands multi-direction fire patterns without requiring aim direction', () => {
+  it('rotates multi-direction fire patterns around the aim direction', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [FIREBALL_STAFF.id], selectedIndex: 0 }, 0);
+    const input = makeInput({
+      aimWorld: { x: player.position.x, y: player.position.y + 5 },
+      firing: true,
+      loadout: { weapons: [FIREBALL_STAFF.id], selectedIndex: 0 }
+    });
+    const events: RuntimeEvent[] = [];
+
+    combat.tick(input, store, index, 0, ARENA, (event) => events.push(event));
+
+    const projectiles = [...store.projectiles()];
+    if (FIREBALL_STAFF.projectile.motion.kind !== 'linear') {
+      throw new Error('expected fireball linear motion');
+    }
+    const speed = FIREBALL_STAFF.projectile.motion.speed;
+    expect(projectiles).toHaveLength(4);
+    expect(projectiles.map((p) => cleanZero(Math.round(p.velocity.vx)))).toEqual([
+      0,
+      -speed,
+      0,
+      speed
+    ]);
+    expect(projectiles.map((p) => cleanZero(Math.round(p.velocity.vy)))).toEqual([
+      speed,
+      0,
+      -speed,
+      0
+    ]);
+    const fireEvent = events.find((event) => event.kind === 'fire');
+    if (fireEvent?.kind !== 'fire') throw new Error('expected fire event');
+    expect(fireEvent.dirX).toBeCloseTo(0);
+    expect(fireEvent.dirY).toBeCloseTo(1);
+  });
+
+  it('skips multi-direction fire patterns without an aim direction', () => {
     const store = createEntityStore();
     const index = createSpatialIndex();
     const combat = createCombatSystem();
@@ -471,27 +510,12 @@ describe('CombatSystem', () => {
       firing: true,
       loadout: { weapons: [FIREBALL_STAFF.id], selectedIndex: 0 }
     });
+    const events: RuntimeEvent[] = [];
 
-    combat.tick(input, store, index, 0, ARENA, () => {});
+    combat.tick(input, store, index, 0, ARENA, (event) => events.push(event));
 
-    const projectiles = [...store.projectiles()];
-    if (FIREBALL_STAFF.projectile.motion.kind !== 'linear') {
-      throw new Error('expected fireball linear motion');
-    }
-    const speed = Math.round(FIREBALL_STAFF.projectile.motion.speed);
-    expect(projectiles).toHaveLength(4);
-    expect(projectiles.map((p) => cleanZero(Math.round(p.velocity.vx)))).toEqual([
-      speed,
-      0,
-      -speed,
-      0
-    ]);
-    expect(projectiles.map((p) => cleanZero(Math.round(p.velocity.vy)))).toEqual([
-      0,
-      speed,
-      0,
-      -speed
-    ]);
+    expect(store.projectileCount()).toBe(0);
+    expect(events.filter((event) => event.kind === 'fire')).toHaveLength(0);
   });
 
   it('moves arc projectiles to their landing point, grounds them, then expires them', () => {

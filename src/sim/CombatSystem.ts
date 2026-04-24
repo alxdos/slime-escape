@@ -367,12 +367,26 @@ function firePatternDirections(
     case 'single':
       return aimedSpreadDirections(aimDx, aimDy, pattern.count, pattern.spreadRadians);
     case 'multiDirection':
-      return pattern.directions.map((angle) => ({ x: Math.cos(angle), y: Math.sin(angle) }));
+      return aimedOffsetDirections(aimDx, aimDy, pattern.directions);
     case 'place':
       return [{ x: 0, y: 0 }];
     default:
       return assertNever(pattern);
   }
+}
+
+function aimedOffsetDirections(
+  aimDx: number,
+  aimDy: number,
+  offsetsRadians: ReadonlyArray<number>
+): ReadonlyArray<Vec2> {
+  const len = Math.hypot(aimDx, aimDy);
+  if (len === 0) return [];
+  const baseAngle = Math.atan2(aimDy, aimDx);
+  return offsetsRadians.map((offset) => {
+    const angle = baseAngle + offset;
+    return { x: Math.cos(angle), y: Math.sin(angle) };
+  });
 }
 
 function applyFirePatternModifiers(

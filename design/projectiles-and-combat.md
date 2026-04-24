@@ -60,7 +60,7 @@ This file remains necessary because [universal-weapons-and-projectiles.md](unive
 - A valid firing decision requires:
   1. an actor with a selected usable weapon instance;
   2. `simTime >= weaponInstance.nextFireSimMs`;
-  3. a valid aim direction for aimed patterns, or a pattern that does not require aim (`multiDirection`, `place`);
+  3. a valid aim direction for aimed patterns (`single`, `multiDirection`), or a pattern that does not require aim (`place`);
   4. a content-resolved `WeaponArchetype`.
 - Fire-pattern expansion must be deterministic. Symmetric projectile count and spread calculations must use stable ordering so tests can assert exact projectile directions.
 - Random spread is not part of the current contract. If it is added later, it must use session RNG and update [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
