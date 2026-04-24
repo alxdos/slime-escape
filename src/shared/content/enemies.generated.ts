@@ -15,7 +15,7 @@ export const SLIME_ONE_EYE: EnemyArchetype = {
   knockbackBaseImpulse: 8,
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
-  color: 0x77ff99,
+  color: 0x7cf36a,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.25 }]
 };
 
@@ -32,7 +32,7 @@ export const SLIME_HORNLING: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0xf06a24,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.3 }]
 };
 
@@ -49,7 +49,7 @@ export const SLIME_MANY_EYE: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0x9b67d8,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.35 }]
 };
 
@@ -66,7 +66,7 @@ export const SLIME_STONEHEAD: EnemyArchetype = {
   knockbackBaseImpulse: 3,
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
-  color: 0x77ff99,
+  color: 0x8e8f95,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.6 }]
 };
 
@@ -83,7 +83,7 @@ export const SLIME_SLEEPER: EnemyArchetype = {
   knockbackBaseImpulse: 3,
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
-  color: 0x77ff99,
+  color: 0x9e7fd8,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.2 }]
 };
 
@@ -100,7 +100,7 @@ export const SLIME_SPARK: EnemyArchetype = {
   knockbackBaseImpulse: 8,
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
-  color: 0x77ff99,
+  color: 0xf2e84a,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.18 }]
 };
 
@@ -117,7 +117,7 @@ export const SLIME_WRAITH: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0xd9dce1,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.25 }]
 };
 
@@ -134,7 +134,7 @@ export const SLIME_SHELL: EnemyArchetype = {
   knockbackBaseImpulse: 3,
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
-  color: 0x77ff99,
+  color: 0xa6e34a,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.55 }]
 };
 
@@ -151,7 +151,7 @@ export const SLIME_FLAME: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0xf6c06d,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.3 }]
 };
 
@@ -168,7 +168,7 @@ export const SLIME_MECH_CRAB: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0xe85245,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.45 }]
 };
 
@@ -185,7 +185,7 @@ export const SLIME_STACK: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0xcdeb84,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.35 }]
 };
 
@@ -202,7 +202,7 @@ export const SLIME_TRICKSTER: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0xbdb4f4,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.3 }]
 };
 
@@ -219,7 +219,7 @@ export const SLIME_BUG: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0x8ee03a,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.25 }]
 };
 
@@ -236,7 +236,7 @@ export const SLIME_LIFTER: EnemyArchetype = {
   knockbackBaseImpulse: 3,
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
-  color: 0x77ff99,
+  color: 0xe6e8ea,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.6 }]
 };
 
@@ -253,7 +253,7 @@ export const SLIME_SAW: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0xf0523e,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.4 }]
 };
 
@@ -270,7 +270,7 @@ export const SLIME_DRONE: EnemyArchetype = {
   knockbackBaseImpulse: 8,
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
-  color: 0x77ff99,
+  color: 0xafc4ea,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.2 }]
 };
 
@@ -287,7 +287,7 @@ export const SLIME_STAR: EnemyArchetype = {
   knockbackBaseImpulse: 8,
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
-  color: 0x77ff99,
+  color: 0xe8a8bc,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.18 }]
 };
 
@@ -304,7 +304,7 @@ export const SLIME_ECHO: EnemyArchetype = {
   knockbackBaseImpulse: 8,
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
-  color: 0x77ff99,
+  color: 0x4b5365,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.15 }]
 };
 
@@ -321,7 +321,7 @@ export const SLIME_SPLITTER: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0x7bd1ae,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.35 }]
 };
 
@@ -338,7 +338,7 @@ export const SLIME_PRINCE: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0xf1b294,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.45 }]
 };
 
@@ -355,7 +355,7 @@ export const SLIME_KINGLING: EnemyArchetype = {
   knockbackBaseImpulse: 3,
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
-  color: 0x77ff99,
+  color: 0xb7f3a6,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.65 }]
 };
 
@@ -372,7 +372,7 @@ export const SLIME_FORTRESS: EnemyArchetype = {
   knockbackBaseImpulse: 3,
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
-  color: 0x77ff99,
+  color: 0x8f836e,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.7 }]
 };
 
@@ -389,7 +389,7 @@ export const SLIME_DASHER: EnemyArchetype = {
   knockbackBaseImpulse: 8,
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
-  color: 0x77ff99,
+  color: 0xef6a38,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.25 }]
 };
 
@@ -406,7 +406,7 @@ export const SLIME_TADPOLE: EnemyArchetype = {
   knockbackBaseImpulse: 8,
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
-  color: 0x77ff99,
+  color: 0xd9dde2,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.15 }]
 };
 
@@ -423,7 +423,7 @@ export const SLIME_DOOR: EnemyArchetype = {
   knockbackBaseImpulse: 3,
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
-  color: 0x77ff99,
+  color: 0xa7e5d2,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.65 }]
 };
 
@@ -440,7 +440,7 @@ export const SLIME_MECH: EnemyArchetype = {
   knockbackBaseImpulse: 3,
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
-  color: 0x77ff99,
+  color: 0xef7168,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.55 }]
 };
 
@@ -457,7 +457,7 @@ export const SLIME_CLAMPER: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0xf2c0a6,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.35 }]
 };
 
@@ -474,7 +474,7 @@ export const SLIME_CANDLE: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0xa62922,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.25 }]
 };
 
@@ -491,7 +491,7 @@ export const SLIME_OBELISK: EnemyArchetype = {
   knockbackBaseImpulse: 5,
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
-  color: 0x77ff99,
+  color: 0x5522a7,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.4 }]
 };
 
@@ -508,6 +508,6 @@ export const SLIME_NINJA: EnemyArchetype = {
   knockbackBaseImpulse: 8,
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
-  color: 0x77ff99,
+  color: 0xa4e982,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.35 }]
 };

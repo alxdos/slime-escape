@@ -147,6 +147,16 @@ function findSlimeBlobMeshes(scene: THREE.Scene | null, color: number): THREE.Me
   });
 }
 
+function findShaderMeshWithMap(scene: THREE.Scene | null, texture: THREE.Texture): THREE.Mesh | null {
+  if (scene === null) return null;
+  return scene.children.find((child): child is THREE.Mesh => {
+    if (!(child instanceof THREE.Mesh)) return false;
+    const material = child.material;
+    if (Array.isArray(material) || !(material instanceof THREE.ShaderMaterial)) return false;
+    return material.uniforms.uMap?.value === texture;
+  }) ?? null;
+}
+
 function setTextureImageSize(texture: THREE.Texture, width: number, height: number): void {
   Object.defineProperty(texture, 'image', {
     value: { width, height },
@@ -290,6 +300,7 @@ describe('createRenderer', () => {
     const blobs = findSlimeBlobMeshes(backend.lastScene(), SLIME_BUG.color);
     expect(blobs.length).toBeGreaterThan(0);
     expect(blobs[0]?.geometry).toBeInstanceOf(THREE.ShapeGeometry);
+    expect(blobs[0]?.position.z).toBeLessThan(0);
   });
 
   it('renders death ghosts from event data even when the dead entity is absent from snapshots', () => {
@@ -336,17 +347,18 @@ describe('createRenderer', () => {
     });
     renderer.render();
 
-    const ghostMesh = findMeshWithMaterialMap(backend.lastScene(), enemyTexture);
+    const ghostMesh = findShaderMeshWithMap(backend.lastScene(), enemyTexture);
     const material = ghostMesh?.material;
     expect(ghostMesh).not.toBeNull();
     expect(ghostMesh?.position.x).toBeGreaterThan(2);
     expect(ghostMesh?.position.y).toBeGreaterThan(3);
-    expect(material).toBeInstanceOf(THREE.MeshBasicMaterial);
-    expect((material as THREE.MeshBasicMaterial).opacity).toBeLessThan(1);
+    expect(material).toBeInstanceOf(THREE.ShaderMaterial);
+    expect((material as THREE.ShaderMaterial).uniforms.uOpacity?.value).toBeLessThan(1);
+    expect((material as THREE.ShaderMaterial).fragmentShader).toContain('dot(texel.rgb');
 
     pair = { ...pair, nowMs: 2000 };
     renderer.render();
-    expect(findMeshWithMaterialMap(backend.lastScene(), enemyTexture)).toBeNull();
+    expect(findShaderMeshWithMap(backend.lastScene(), enemyTexture)).toBeNull();
   });
 
   it('reapplies the current preset after resize in pixelRatio -> size order', () => {

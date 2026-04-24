@@ -7,7 +7,7 @@
 | field | value |
 |---|---|
 | displayName | One-Eye Slime |
-| color | #77ff99 |
+| color | #7cf36a |
 
 ## slime-hornling
 
@@ -16,7 +16,7 @@
 | field | value |
 |---|---|
 | displayName | Hornling Slime |
-| color | #77ff99 |
+| color | #f06a24 |
 
 ## slime-many-eye
 
@@ -25,7 +25,7 @@
 | field | value |
 |---|---|
 | displayName | Many-Eye Slime |
-| color | #77ff99 |
+| color | #9b67d8 |
 
 ## slime-stonehead
 
@@ -34,7 +34,7 @@
 | field | value |
 |---|---|
 | displayName | Stonehead Slime |
-| color | #77ff99 |
+| color | #8e8f95 |
 
 ## slime-sleeper
 
@@ -43,7 +43,7 @@
 | field | value |
 |---|---|
 | displayName | Sleeper Slime |
-| color | #77ff99 |
+| color | #9e7fd8 |
 
 ## slime-spark
 
@@ -52,7 +52,7 @@
 | field | value |
 |---|---|
 | displayName | Spark Slime |
-| color | #77ff99 |
+| color | #f2e84a |
 
 ## slime-wraith
 
@@ -61,7 +61,7 @@
 | field | value |
 |---|---|
 | displayName | Wraith Slime |
-| color | #77ff99 |
+| color | #d9dce1 |
 
 ## slime-shell
 
@@ -70,7 +70,7 @@
 | field | value |
 |---|---|
 | displayName | Shell Slime |
-| color | #77ff99 |
+| color | #a6e34a |
 
 ## slime-flame
 
@@ -79,7 +79,7 @@
 | field | value |
 |---|---|
 | displayName | Flame Slime |
-| color | #77ff99 |
+| color | #f6c06d |
 
 ## slime-mech-crab
 
@@ -88,7 +88,7 @@
 | field | value |
 |---|---|
 | displayName | Mech Crab Slime |
-| color | #77ff99 |
+| color | #e85245 |
 
 ## slime-stack
 
@@ -97,7 +97,7 @@
 | field | value |
 |---|---|
 | displayName | Stack Slime |
-| color | #77ff99 |
+| color | #cdeb84 |
 
 ## slime-trickster
 
@@ -106,7 +106,7 @@
 | field | value |
 |---|---|
 | displayName | Trickster Slime |
-| color | #77ff99 |
+| color | #bdb4f4 |
 
 ## slime-bug
 
@@ -115,7 +115,7 @@
 | field | value |
 |---|---|
 | displayName | Bug Slime |
-| color | #77ff99 |
+| color | #8ee03a |
 
 ## slime-lifter
 
@@ -124,7 +124,7 @@
 | field | value |
 |---|---|
 | displayName | Lifter Slime |
-| color | #77ff99 |
+| color | #e6e8ea |
 
 ## slime-saw
 
@@ -133,7 +133,7 @@
 | field | value |
 |---|---|
 | displayName | Saw Slime |
-| color | #77ff99 |
+| color | #f0523e |
 
 ## slime-drone
 
@@ -142,7 +142,7 @@
 | field | value |
 |---|---|
 | displayName | Drone Slime |
-| color | #77ff99 |
+| color | #afc4ea |
 
 ## slime-star
 
@@ -151,7 +151,7 @@
 | field | value |
 |---|---|
 | displayName | Star Slime |
-| color | #77ff99 |
+| color | #e8a8bc |
 
 ## slime-echo
 
@@ -160,7 +160,7 @@
 | field | value |
 |---|---|
 | displayName | Echo Slime |
-| color | #77ff99 |
+| color | #4b5365 |
 
 ## slime-splitter
 
@@ -169,7 +169,7 @@
 | field | value |
 |---|---|
 | displayName | Splitter Slime |
-| color | #77ff99 |
+| color | #7bd1ae |
 
 ## slime-prince
 
@@ -178,7 +178,7 @@
 | field | value |
 |---|---|
 | displayName | Prince Slime |
-| color | #77ff99 |
+| color | #f1b294 |
 
 ## slime-kingling
 
@@ -187,7 +187,7 @@
 | field | value |
 |---|---|
 | displayName | Kingling Slime |
-| color | #77ff99 |
+| color | #b7f3a6 |
 
 ## slime-fortress
 
@@ -196,7 +196,7 @@
 | field | value |
 |---|---|
 | displayName | Fortress Slime |
-| color | #77ff99 |
+| color | #8f836e |
 
 ## slime-dasher
 
@@ -205,7 +205,7 @@
 | field | value |
 |---|---|
 | displayName | Dasher Slime |
-| color | #77ff99 |
+| color | #ef6a38 |
 
 ## slime-tadpole
 
@@ -214,7 +214,7 @@
 | field | value |
 |---|---|
 | displayName | Tadpole Slime |
-| color | #77ff99 |
+| color | #d9dde2 |
 
 ## slime-door
 
@@ -223,7 +223,7 @@
 | field | value |
 |---|---|
 | displayName | Door Slime |
-| color | #77ff99 |
+| color | #a7e5d2 |
 
 ## slime-mech
 
@@ -232,7 +232,7 @@
 | field | value |
 |---|---|
 | displayName | Mech Slime |
-| color | #77ff99 |
+| color | #ef7168 |
 
 ## slime-clamper
 
@@ -241,7 +241,7 @@
 | field | value |
 |---|---|
 | displayName | Clamper Slime |
-| color | #77ff99 |
+| color | #f2c0a6 |
 
 ## slime-candle
 
@@ -250,7 +250,7 @@
 | field | value |
 |---|---|
 | displayName | Candle Slime |
-| color | #77ff99 |
+| color | #a62922 |
 
 ## slime-obelisk
 
@@ -259,7 +259,7 @@
 | field | value |
 |---|---|
 | displayName | Obelisk Slime |
-| color | #77ff99 |
+| color | #5522a7 |
 
 ## slime-ninja
 
@@ -268,7 +268,7 @@
 | field | value |
 |---|---|
 | displayName | Ninja Slime |
-| color | #77ff99 |
+| color | #a4e982 |
 
 # Balance
 

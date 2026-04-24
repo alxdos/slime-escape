@@ -97,7 +97,7 @@ const BACKGROUND_Z = -2;
 const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
 const DROP_Z = 0.03;
-const SLIME_STAIN_Z = 0.015;
+const SLIME_STAIN_Z = -0.25;
 const DEATH_GHOST_Z = 0.045;
 const DROP_PULSE_HZ = 1.6;
 const DROP_PULSE_AMPLITUDE = 0.15;
@@ -858,6 +858,11 @@ function updateDeathGhostMeshes(
     const material = entry.material;
     if (material instanceof THREE.MeshBasicMaterial) {
       material.opacity = ghost.opacity;
+    } else if (material instanceof THREE.ShaderMaterial) {
+      const uniform = material.uniforms.uOpacity;
+      if (uniform !== undefined) {
+        uniform.value = ghost.opacity;
+      }
     }
     entry.mesh.position.set(ghost.x, ghost.y, DEATH_GHOST_Z);
   }
@@ -882,15 +887,42 @@ function ensureDeathGhostMesh(
       ? requireVisualSpec(ENEMY_VISUALS, ghost.archetypeId, 'enemy')
       : requireVisualSpec(BOSS_VISUALS, ghost.archetypeId, 'boss');
   const texture = requireSpriteTexture(spriteTextures, ghost.archetypeId, ghost.entityKind);
-  const entry = createSpriteMesh(visual, texture, DEATH_GHOST_Z);
-  const material = entry.material;
-  if (material instanceof THREE.MeshBasicMaterial) {
-    material.opacity = ghost.opacity;
-    material.color.setHex(0xd7efe5);
-  }
+  const geometry = new THREE.PlaneGeometry(visual.worldSize.width, visual.worldSize.height);
+  const material = createDeathGhostMaterial(texture, ghost.opacity);
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.z = DEATH_GHOST_Z;
+  const entry: EntityMeshEntry = { mesh, geometry, material };
   scene.add(entry.mesh);
   table.set(ghost.id, entry);
   return entry;
+}
+
+function createDeathGhostMaterial(texture: THREE.Texture, opacity: number): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: {
+      uMap: { value: texture },
+      uOpacity: { value: opacity }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D uMap;
+      uniform float uOpacity;
+      varying vec2 vUv;
+      void main() {
+        vec4 texel = texture2D(uMap, vUv);
+        float lum = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+        gl_FragColor = vec4(vec3(lum), texel.a * uOpacity);
+      }
+    `
+  });
 }
 
 function applySlimePresentation(

@@ -7,7 +7,7 @@
 | field | value |
 |---|---|
 | displayName | Gargoyle Slime |
-| color | #aa44ff |
+| color | #7bef63 |
 
 ## boss-saw-cyclops
 
@@ -16,7 +16,7 @@
 | field | value |
 |---|---|
 | displayName | Saw Cyclops |
-| color | #aa44ff |
+| color | #b8e86c |
 
 ## boss-scrap-king
 
@@ -25,7 +25,7 @@
 | field | value |
 |---|---|
 | displayName | Scrap King |
-| color | #aa44ff |
+| color | #e9d13d |
 
 ## boss-tower-sentinel
 
@@ -34,7 +34,7 @@
 | field | value |
 |---|---|
 | displayName | Tower Sentinel |
-| color | #aa44ff |
+| color | #bdb8b2 |
 
 ## boss-bubble-hog
 
@@ -43,7 +43,7 @@
 | field | value |
 |---|---|
 | displayName | Bubble Hog |
-| color | #aa44ff |
+| color | #f06c9a |
 
 # Balance
 
