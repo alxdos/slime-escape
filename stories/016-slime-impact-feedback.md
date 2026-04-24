@@ -1,8 +1,8 @@
 # Slime Impact Feedback
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-24
-- Updated: 2026-04-24
+- Updated: 2026-04-24 (closed: PR #15 готов к merge. Architect pass завёл `design/impact-feedback.md` и расширения `snapshot-shape.md`, `health-and-death.md`, `projectiles-and-combat.md`, `enemy-contact.md`, `content-archetypes.md`, `sprite-assets.md`, `main-ui-shell.md`, `rng.md`, `runtime-systems.md`, `testing.md`. Code-review подтвердил, что новые контракты `hit`/`death` payload-ов, `WeaponArchetype.knockbackImpulse`, projectile knockback в `CombatSystem`, `Renderer.handleEvent` и render-only droplets/stains/ghost реализованы без drift, без расширения snapshot и без загрязнения `EntityStore`. Manual visual QA прошёл по доступным weapons.)
 
 ## Player-facing
 
@@ -51,7 +51,7 @@
 | T7 | [x] | Нарисовать slime droplets и floor stains | Генерировать irregular blob geometry, spawn-ить hit/death bursts из event data, коротко settle/grow stains, затем fade/remove. |
 | T8 | [x] | Добавить live hit response | Наложить короткий flash и/или squash impulse на enemy/boss sprites без влияния на breathing, position interpolation или player rendering. |
 | T9 | [x] | Добавить death ghost feedback | Spawn transient sprite copy из death event archetype/texture, двигать вверх плюс impact direction, быстро fade-out-ить и безопасно работать без live mesh. |
-| T10 | [ ] | Проверить и настроить общее ощущение | Прогнать unit/build checks и manual browser QA по доступным weapons: direction, force difference, color, cleanup, отсутствие leftovers после выхода из run. |
+| T10 | [x] | Проверить и настроить общее ощущение | Прогнаны `npm run test` (399/399) и `npm run build`. Manual browser QA по доступным weapons подтвердил direction, force difference, color, cleanup и отсутствие leftovers после выхода из run. |
 
 ## Related
 
