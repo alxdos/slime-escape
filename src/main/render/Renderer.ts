@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
 import { BOSS_ARCHETYPES } from '../../shared/content/bosses';
-import { DROP_ARCHETYPES, type DropArchetype } from '../../shared/content/drops';
 import { ENEMY_ARCHETYPES } from '../../shared/content/enemies';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
 import type { RuntimeEvent } from '../../shared/events';
@@ -20,6 +19,7 @@ import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 import { BOSS_VISUALS } from './bossVisuals';
+import { DROP_VISUALS } from './dropVisuals';
 import { ENEMY_VISUALS } from './enemyVisuals';
 import { fitCanvasToViewport } from './fitToViewport';
 import {
@@ -29,6 +29,7 @@ import {
   type SlimeDropletEffect
 } from './ImpactEffectStore';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
+import { PROJECTILE_VISUALS } from './projectileVisuals';
 import {
   resolveRenderScale,
   type RenderScalePreset
@@ -70,7 +71,6 @@ export type RendererInit = Readonly<{
   getSnapshotPair: () => SnapshotPair;
   getAim?: AimAccessor;
   weaponRegistry?: Readonly<Record<string, WeaponArchetype>>;
-  dropRegistry?: Readonly<Record<string, DropArchetype>>;
   windowTarget?: RendererWindowTarget;
   createRendererBackend?: CreateRendererBackendFn;
   loadBackgroundTexture?: LoadTextureFn;
@@ -128,7 +128,6 @@ type CharacterSnapGrid = Readonly<{
 
 export function createRenderer(init: RendererInit): Renderer {
   const weaponRegistry = init.weaponRegistry ?? WEAPON_ARCHETYPES;
-  const dropRegistry = init.dropRegistry ?? DROP_ARCHETYPES;
   const windowTarget = init.windowTarget ?? window;
 
   const renderer =
@@ -285,20 +284,13 @@ export function createRenderer(init: RendererInit): Renderer {
   function ensureProjectileMesh(snap: ProjectileSnapshot): EntityMeshEntry {
     const existing = projectileMeshes.get(snap.id);
     if (existing !== undefined) return existing;
-    const archetype = weaponRegistry[snap.weaponArchetypeId];
-    const size = archetype?.projectile.size ?? { width: 0.25, height: 0.25 };
-    const geometry = new THREE.PlaneGeometry(size.width, size.height);
-    const material = new THREE.MeshBasicMaterial({
-      color: projectileColor(snap.ownerKind),
-      transparent: true,
-      opacity: 0.95,
-      depthWrite: false
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.z = PROJECTILE_Z;
-    mesh.add(createProjectileRadiusIndicator());
-    scene.add(mesh);
-    const entry: EntityMeshEntry = { mesh, geometry, material };
+    const entry = createSpriteMesh(
+      requireVisualSpec(PROJECTILE_VISUALS, snap.weaponArchetypeId, 'projectile'),
+      requireSpriteTexture(init.spriteTextures, snap.weaponArchetypeId, 'projectile'),
+      PROJECTILE_Z
+    );
+    entry.mesh.add(createProjectileRadiusIndicator());
+    scene.add(entry.mesh);
     projectileMeshes.set(snap.id, entry);
     return entry;
   }
@@ -306,15 +298,12 @@ export function createRenderer(init: RendererInit): Renderer {
   function ensureDropMesh(snap: DropSnapshot): EntityMeshEntry {
     const existing = dropMeshes.get(snap.id);
     if (existing !== undefined) return existing;
-    const archetype = dropRegistry[snap.archetypeId];
-    const radius = archetype?.radius ?? 0.3;
-    const color = archetype?.color ?? 0xffffff;
-    const geometry = new THREE.CircleGeometry(radius, 24);
-    const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.z = DROP_Z;
-    scene.add(mesh);
-    const entry: EntityMeshEntry = { mesh, geometry, material };
+    const entry = createSpriteMesh(
+      requireVisualSpec(DROP_VISUALS, snap.archetypeId, 'drop'),
+      requireSpriteTexture(init.spriteTextures, snap.archetypeId, 'drop'),
+      DROP_Z
+    );
+    scene.add(entry.mesh);
     dropMeshes.set(snap.id, entry);
     return entry;
   }
@@ -594,12 +583,6 @@ function createProjectileRadiusIndicator(): THREE.Mesh {
   return mesh;
 }
 
-function projectileColor(ownerKind: 'player' | 'enemy' | 'boss'): number {
-  if (ownerKind === 'player') return 0xffffff;
-  if (ownerKind === 'enemy') return 0xff8f70;
-  return 0xd996ff;
-}
-
 function applyProjectilePresentation(
   mesh: THREE.Mesh,
   snap: ProjectileSnapshot,
@@ -661,7 +644,7 @@ function disposeObjectTree(root: THREE.Object3D): void {
 function requireVisualSpec(
   visuals: Readonly<Record<string, SpriteVisualSpec>>,
   archetypeId: string,
-  kind: 'player' | 'enemy' | 'boss'
+  kind: 'player' | 'enemy' | 'boss' | 'projectile' | 'drop'
 ): SpriteVisualSpec {
   const visual = visuals[archetypeId];
   if (visual !== undefined) {
@@ -673,7 +656,7 @@ function requireVisualSpec(
 function requireSpriteTexture(
   textures: TextureMap,
   archetypeId: string,
-  kind: 'player' | 'enemy' | 'boss'
+  kind: 'player' | 'enemy' | 'boss' | 'projectile' | 'drop'
 ): THREE.Texture {
   const texture = textures[archetypeId];
   if (texture !== undefined) {
