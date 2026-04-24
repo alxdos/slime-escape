@@ -1,6 +1,27 @@
-import { HEAL_ORB } from './drops.generated';
+import {
+  FRAGMENT,
+  HEAL_ORB,
+  MULTI_SHOT,
+  OVERDRIVE,
+  PIERCE,
+  SIZE_UP,
+  SPEED_UP
+} from './drops.generated';
 
-export type DropEffect = { kind: 'heal'; amount: number };
+import type { WeaponModifier } from './weapons';
+
+export type PickupModifier = never;
+
+export type DropEffect =
+  | Readonly<{ kind: 'heal'; amount: number }>
+  | Readonly<{ kind: 'addWeaponModifier'; modifier: WeaponModifier; target: 'selectedWeapon' }>
+  | Readonly<{
+      kind: 'temporaryOverdrive';
+      cooldownMultiplier: number;
+      durationMs: number;
+      target: 'selectedWeapon';
+    }>
+  | Readonly<{ kind: 'pickupModifier'; modifier: PickupModifier }>;
 
 export type DropArchetype = Readonly<{
   id: string;
@@ -11,8 +32,14 @@ export type DropArchetype = Readonly<{
   color: number;
 }>;
 
-export { HEAL_ORB };
+export { FRAGMENT, HEAL_ORB, MULTI_SHOT, OVERDRIVE, PIERCE, SIZE_UP, SPEED_UP };
 
 export const DROP_ARCHETYPES: Readonly<Record<string, DropArchetype>> = {
-  [HEAL_ORB.id]: HEAL_ORB
+  [HEAL_ORB.id]: HEAL_ORB,
+  [SIZE_UP.id]: SIZE_UP,
+  [SPEED_UP.id]: SPEED_UP,
+  [MULTI_SHOT.id]: MULTI_SHOT,
+  [PIERCE.id]: PIERCE,
+  [FRAGMENT.id]: FRAGMENT,
+  [OVERDRIVE.id]: OVERDRIVE
 };

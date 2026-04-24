@@ -1,7 +1,7 @@
 import type {
   ParsedEncounter,
+  ParsedLoadout,
   ParsedLossCondition,
-  ParsedRef,
   ParsedSessionPreset,
   ParsedSessionsArea,
   ParsedSpawnPlan,
@@ -61,10 +61,11 @@ function renderPreset(preset: ParsedSessionPreset): string {
     order: ${formatNumber(preset.order)},
     arena: ${preset.arena.constName},
     player: ${preset.player.constName},
-    loadout: ${renderLoadout(preset.loadoutWeapon)},
+    loadout: ${renderLoadout(preset.loadout)},
     backgrounds: [
 ${preset.backgrounds.map(renderBackground).join(',\n')}
     ],
+    rules: ${renderRules(preset)},
     winCondition: ${renderWinCondition(preset.winCondition)},
     lossCondition: ${renderLossCondition(preset.lossCondition)},
     encounters: [
@@ -159,11 +160,15 @@ function renderTransitionRules(transitionRules: ParsedTransitionRules): string {
   }
 }
 
-function renderLoadout(loadoutWeapon: ParsedRef | null): string {
-  if (loadoutWeapon === null) {
+function renderLoadout(loadout: ParsedLoadout | null): string {
+  if (loadout === null) {
     return 'null';
   }
-  return `{ primaryWeaponArchetypeId: ${loadoutWeapon.constName}.id }`;
+  return `{ weapons: [${loadout.weapons.map((weapon) => `${weapon.constName}.id`).join(', ')}], selectedIndex: ${renderNullableNumber(loadout.selectedIndex)} }`;
+}
+
+function renderRules(preset: ParsedSessionPreset): string {
+  return `{ damage: { slimeFriendlyFire: ${preset.rules.damage.slimeFriendlyFire ? 'true' : 'false'} } }`;
 }
 
 function renderNullableString(value: string | null): string {
@@ -186,8 +191,10 @@ function collectImports(area: ParsedSessionsArea): ReadonlyMap<ImportBucket, Rea
   for (const preset of area.presets) {
     addImport(imports, 'arenas', preset.arena.constName);
     addImport(imports, 'players', preset.player.constName);
-    if (preset.loadoutWeapon !== null) {
-      addImport(imports, 'weapons', preset.loadoutWeapon.constName);
+    if (preset.loadout !== null) {
+      for (const weapon of preset.loadout.weapons) {
+        addImport(imports, 'weapons', weapon.constName);
+      }
     }
     for (const encounter of preset.encounters) {
       collectSpawnImports(imports, encounter.spawnPlan);
@@ -229,4 +236,8 @@ function addImport(
 
 function assertNever(value: never): never {
   throw new Error(`unhandled sessions render value: ${String(value)}`);
+}
+
+function renderNullableNumber(value: number | null): string {
+  return value === null ? 'null' : formatNumber(value);
 }

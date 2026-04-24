@@ -266,7 +266,7 @@ export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffe
   }
 
   function resolveWeaponForce(weaponArchetypeId: string): number {
-    return init.weaponRegistry[weaponArchetypeId]?.knockbackImpulse ?? 0;
+    return init.weaponRegistry[weaponArchetypeId]?.projectile.knockbackImpulse ?? 0;
   }
 
   return {

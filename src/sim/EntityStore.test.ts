@@ -142,7 +142,7 @@ describe('EntityStore', () => {
     // design/drops.md: radius/effect/color are copied at spawn so a live drop
     // is independent from later mutations of the archetype it came from.
     const store = createEntityStore();
-    const archetypeEffect: DropEffect = { kind: 'heal', amount: 1 };
+    const archetypeEffect: { kind: 'heal'; amount: number } = { kind: 'heal', amount: 1 };
     const spec: DropSpawnSpec = {
       archetypeId: 'heal-orb',
       position: { x: 0, y: 0 },

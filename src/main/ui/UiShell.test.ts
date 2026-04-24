@@ -91,10 +91,10 @@ function makeSession(id = 'test-session'): SessionDefinition {
       maxSpeed: 5,
       maxHp: 5
     },
-    loadout: { primaryWeaponArchetypeId: 'pistol' },
+    loadout: { weapons: ['pistol'], selectedIndex: 0 },
     backgrounds: [],
     modifiers: [],
-    rules: null,
+    rules: { damage: { slimeFriendlyFire: false } },
     encounters: [],
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },

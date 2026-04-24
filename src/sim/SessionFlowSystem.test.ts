@@ -221,7 +221,7 @@ function makeSession(encounters: ReadonlyArray<EncounterDefinition>, options?: {
     loadout: null,
     backgrounds: [],
     modifiers: [],
-    rules: null,
+    rules: { damage: { slimeFriendlyFire: false } },
     encounters,
     winCondition: options?.win ?? { kind: 'allEncountersComplete' },
     lossCondition: options?.loss ?? { kind: 'playerDeath' },

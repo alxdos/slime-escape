@@ -126,9 +126,9 @@ describe('SnapshotExportSystem', () => {
       ownerKind: 'player',
       position: { x: 1, y: 0 },
       velocity: { vx: 24, vy: 0 },
-      radius: PISTOL.projectileRadius,
-      damage: PISTOL.damage,
-      knockbackImpulse: PISTOL.knockbackImpulse,
+      radius: PISTOL.projectile.hitRadius,
+      damage: PISTOL.projectile.impactDamage,
+      knockbackImpulse: PISTOL.projectile.knockbackImpulse,
       expireAtSimMs: 1000
     });
 

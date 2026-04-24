@@ -61,10 +61,10 @@ describe('content-build archetype areas', () => {
       name: 'drops-missing-cell',
       sourcePath: 'content/drops.md',
       targetName: 'drops.generated.ts',
-      mutate: (source) => replaceExact(source, '| heal-orb | 0.35 | 8000 |', '| heal-orb | | 8000 |'),
+      mutate: (source) => replaceExact(source, '| heal-orb | 8000 |', '| heal-orb | |'),
       parse: parseDropsArea,
       render: renderDropContent,
-      pattern: /column "radius"/
+      pattern: /column "ttlMs"/
     });
 
     await expectAreaRejectsBeforeWriting<ParsedBossesArea>({
@@ -91,7 +91,7 @@ describe('content-build archetype areas', () => {
     await expectParseRejects({
       sourcePath: 'content/drops.md',
       mutate: (source) =>
-        replaceExact(source, '| heal-orb | 0.35 | 8000 |', '| heal-orb | 0.35 | 8000 |\n| coin | 0.2 | 5000 |'),
+        replaceExact(source, '| heal-orb | 8000 |', '| heal-orb | 8000 |\n| coin | 5000 |'),
       parse: parseDropsArea,
       pattern: /unknown drop id "coin"/
     });
@@ -130,9 +130,37 @@ describe('content-build archetype areas', () => {
   it('rejects negative weapon force values', async () => {
     await expectParseRejects({
       sourcePath: 'content/weapons.md',
-      mutate: (source) => replaceExact(source, '| pistol | 5 |', '| pistol | -1 |'),
+      mutate: (source) => replaceExact(source, '| pistol | 1 | 5 | 0 |', '| pistol | 1 | -1 | 0 |'),
       parse: parseWeaponsArea,
-      pattern: /knockbackImpulse must be >= 0/
+      pattern: /knockbackImpulse.*expected >= 0/
+    });
+  });
+
+  it('rejects weapon fragments that reference unknown weapon ids', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| bomb-placer | none | 0 | 0 |',
+          '| bomb-placer | missing-weapon | 4 | 1 |'
+        ),
+      parse: parseWeaponsArea,
+      pattern: /fragmentWeaponId.*unknown weapon id "missing-weapon"/
+    });
+  });
+
+  it('rejects drop fragment modifiers that reference unknown weapon ids', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| fragment | fragmentExplosion | 6 | pistol | 6.2831853072 |',
+          '| fragment | fragmentExplosion | 6 | railgun | 6.2831853072 |'
+        ),
+      parse: parseDropsArea,
+      pattern: /fragmentWeaponId.*unknown weapon id "railgun"/
     });
   });
 

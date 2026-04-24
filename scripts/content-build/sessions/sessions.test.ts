@@ -94,11 +94,11 @@ describe('content-build sessions area', () => {
       pattern: /section "# Session": unknown playerId "hero-ghost"/
     },
     {
-      name: 'loadoutWeaponId',
+      name: 'loadoutWeaponIds',
       file: 'campaign.md' as const,
       mutate: (source: string) =>
-        replaceExact(source, '| loadoutWeaponId | pistol |', '| loadoutWeaponId | railgun |'),
-      pattern: /section "# Session": unknown loadoutWeaponId "railgun"/
+        replaceExact(source, '| loadoutWeaponIds | pistol, shotgun, smg |', '| loadoutWeaponIds | pistol, railgun, smg |'),
+      pattern: /section "# Session": unknown loadoutWeaponIds "railgun"/
     },
     {
       name: 'bossArchetypeId',

@@ -81,18 +81,19 @@ function runBossAttacks(
       const dirX = dx / len;
       const dirY = dy / len;
       const w = PISTOL;
+      if (w.projectile.motion.kind !== 'linear') continue;
       store.spawnProjectile({
         weaponArchetypeId: w.id,
         ownerKind: 'boss',
         position: { x: boss.position.x, y: boss.position.y },
         velocity: {
-          vx: dirX * w.projectileSpeed,
-          vy: dirY * w.projectileSpeed
+          vx: dirX * w.projectile.motion.speed,
+          vy: dirY * w.projectile.motion.speed
         },
-        radius: w.projectileRadius,
+        radius: w.projectile.hitRadius,
         damage: Math.max(1, spec.damage),
-        knockbackImpulse: w.knockbackImpulse,
-        expireAtSimMs: simTimeMs + w.projectileTtlMs
+        knockbackImpulse: w.projectile.knockbackImpulse,
+        expireAtSimMs: simTimeMs + w.projectile.ttlMs
       });
       boss.attackNextSimMs.set(attackId, simTimeMs + spec.cooldownMs);
       emit({

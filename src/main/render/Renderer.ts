@@ -278,8 +278,8 @@ export function createRenderer(init: RendererInit): Renderer {
     const existing = projectileMeshes.get(snap.id);
     if (existing !== undefined) return existing;
     const archetype = weaponRegistry[snap.weaponArchetypeId];
-    const radius = archetype?.projectileRadius ?? 0.1;
-    const color = archetype?.color ?? 0xffffff;
+    const radius = archetype?.projectile.hitRadius ?? 0.1;
+    const color = 0xffffff;
     const geometry = new THREE.CircleGeometry(radius, 12);
     const material = new THREE.MeshBasicMaterial({ color });
     const mesh = new THREE.Mesh(geometry, material);

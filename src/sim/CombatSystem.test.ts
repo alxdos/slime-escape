@@ -93,7 +93,7 @@ function setupCombat() {
   const index = createSpatialIndex();
   const combat = createCombatSystem();
   const player = store.spawnPlayer(PLAYER_SPEC);
-  combat.setPlayerLoadout(player.id, { primaryWeaponArchetypeId: PISTOL.id }, 0);
+  combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
   return { store, index, combat, player };
 }
 
@@ -159,7 +159,7 @@ describe('CombatSystem', () => {
 
     expect(intents).toHaveLength(1);
     expect(intents[0]?.targetId).toBe(enemy.id);
-    expect(intents[0]?.amount).toBe(PISTOL.damage);
+    expect(intents[0]?.amount).toBe(PISTOL.projectile.impactDamage);
     expect(intents[0]?.source.kind).toBe('projectile');
     if (intents[0]?.source.kind !== 'projectile') throw new Error('expected projectile source');
     expect(intents[0].source.impactDirX).toBeCloseTo(1);
@@ -194,7 +194,7 @@ describe('CombatSystem', () => {
     expect(enemy.hp).toBe(STATIONARY_TEST_ENEMY.maxHp);
     expect(enemy.knockback).not.toBeNull();
     if (enemy.knockback === null) throw new Error('expected projectile knockback');
-    expect(enemy.knockback.vx).toBeCloseTo(PISTOL.knockbackImpulse * 2);
+    expect(enemy.knockback.vx).toBeCloseTo(PISTOL.projectile.knockbackImpulse * 2);
     expect(enemy.knockback.vy).toBeCloseTo(0);
     expect(enemy.knockback.startSimMs).toBe(0);
     expect(enemy.knockback.endSimMs).toBe(250);
@@ -228,7 +228,7 @@ describe('CombatSystem', () => {
     expect(boss.hp).toBe(TEST_BOSS.maxHp);
     expect(boss.knockback).not.toBeNull();
     if (boss.knockback === null) throw new Error('expected boss projectile knockback');
-    expect(boss.knockback.vx).toBeCloseTo(PISTOL.knockbackImpulse * TEST_BOSS.knockbackVelocityScale);
+    expect(boss.knockback.vx).toBeCloseTo(PISTOL.projectile.knockbackImpulse * TEST_BOSS.knockbackVelocityScale);
     expect(boss.knockback.vy).toBeCloseTo(0);
     expect(boss.knockback.endSimMs - boss.knockback.startSimMs).toBe(
       TEST_BOSS.knockbackDurationMs
@@ -251,7 +251,7 @@ describe('CombatSystem', () => {
     expect(intents[0]?.source.kind).toBe('projectile');
   });
 
-  it('removes projectiles that exceed projectileTtlMs without producing a damage intent', () => {
+  it('removes projectiles that exceed ttlMs without producing a damage intent', () => {
     const { store, index, combat } = setupCombat();
     const input = makeInput({ aimWorld: { x: 1, y: 0 }, firing: true });
     let simTime = 0;
@@ -259,7 +259,7 @@ describe('CombatSystem', () => {
     combat.tick(input, store, index, simTime, ARENA, () => {});
     expect(store.projectileCount()).toBe(1);
 
-    simTime = PISTOL.projectileTtlMs;
+    simTime = PISTOL.projectile.ttlMs;
     const intents = combat.tick(makeInput(), store, index, simTime, ARENA, () => {});
 
     expect(store.projectileCount()).toBe(0);
@@ -275,14 +275,14 @@ describe('CombatSystem', () => {
 
     let simTime = SIM_STEP_MS;
     let intents: ReadonlyArray<unknown> = [];
-    while (store.projectileCount() > 0 && simTime < PISTOL.projectileTtlMs) {
+    while (store.projectileCount() > 0 && simTime < PISTOL.projectile.ttlMs) {
       intents = combat.tick(makeInput(), store, index, simTime, ARENA, () => {});
       simTime += SIM_STEP_MS;
     }
 
     expect(store.projectileCount()).toBe(0);
     expect(intents).toHaveLength(0);
-    expect(simTime).toBeLessThan(PISTOL.projectileTtlMs);
+    expect(simTime).toBeLessThan(PISTOL.projectile.ttlMs);
   });
 
   it('honours friendly-fire: enemy projectile does not target enemy', () => {
@@ -293,9 +293,9 @@ describe('CombatSystem', () => {
       ownerKind: 'enemy',
       position: { x: 0, y: 0 },
       velocity: { vx: 0, vy: 0 },
-      radius: PISTOL.projectileRadius,
-      damage: PISTOL.damage,
-      knockbackImpulse: PISTOL.knockbackImpulse,
+      radius: PISTOL.projectile.hitRadius,
+      damage: PISTOL.projectile.impactDamage,
+      knockbackImpulse: PISTOL.projectile.knockbackImpulse,
       expireAtSimMs: 10_000
     });
 
@@ -319,9 +319,9 @@ describe('CombatSystem', () => {
         y: player.position.y + player.contactBox.height / 2 - 0.08
       },
       velocity: { vx: 0, vy: 0 },
-      radius: PISTOL.projectileRadius,
-      damage: PISTOL.damage,
-      knockbackImpulse: PISTOL.knockbackImpulse,
+      radius: PISTOL.projectile.hitRadius,
+      damage: PISTOL.projectile.impactDamage,
+      knockbackImpulse: PISTOL.projectile.knockbackImpulse,
       expireAtSimMs: 10_000
     });
 
@@ -357,7 +357,7 @@ describe('CombatSystem', () => {
     const player = store.spawnPlayer(PLAYER_SPEC);
 
     expect(() =>
-      combat.setPlayerLoadout(player.id, { primaryWeaponArchetypeId: 'no-such-weapon' }, 0)
+      combat.setPlayerLoadout(player.id, { weapons: ['no-such-weapon'], selectedIndex: 0 }, 0)
     ).toThrow(/unknown weapon archetype/);
   });
 });

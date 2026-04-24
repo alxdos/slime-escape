@@ -35,6 +35,10 @@ type ShooterWeapons = {
   primary: { archetype: WeaponArchetype; nextFireSimMs: number };
 };
 
+type LinearProjectileArchetype = WeaponArchetype['projectile'] & {
+  motion: Readonly<{ kind: 'linear'; speed: number }>;
+};
+
 export type CombatSystem = Readonly<{
   setPlayerLoadout(playerId: EntityId, loadout: Loadout, simTimeMs: number): void;
   clear(): void;
@@ -55,11 +59,19 @@ export function createCombatSystem(
 
   return {
     setPlayerLoadout(playerId, loadout, simTimeMs): void {
-      const archetype = weaponRegistry[loadout.primaryWeaponArchetypeId];
-      if (archetype === undefined) {
+      if (loadout.selectedIndex === null) {
+        shooterWeapons.delete(playerId);
+        return;
+      }
+      const weaponId = loadout.weapons[loadout.selectedIndex];
+      if (weaponId === undefined) {
         throw new Error(
-          `unknown weapon archetype on session start: ${loadout.primaryWeaponArchetypeId}`
+          `invalid selected weapon index on session start: ${loadout.selectedIndex}`
         );
+      }
+      const archetype = weaponRegistry[weaponId];
+      if (archetype === undefined) {
+        throw new Error(`unknown weapon archetype on session start: ${weaponId}`);
       }
       shooterWeapons.set(playerId, {
         primary: { archetype, nextFireSimMs: simTimeMs }
@@ -106,6 +118,8 @@ function runFiringDecisions(
   if (simTimeMs < weapons.primary.nextFireSimMs) return;
 
   const { archetype } = weapons.primary;
+  const projectile = legacyLinearProjectile(archetype);
+  if (projectile === null) return;
 
   const dx = input.aimWorld.x - player.position.x;
   const dy = input.aimWorld.y - player.position.y;
@@ -120,13 +134,13 @@ function runFiringDecisions(
     ownerKind: 'player',
     position: { x: player.position.x, y: player.position.y },
     velocity: {
-      vx: dirX * archetype.projectileSpeed,
-      vy: dirY * archetype.projectileSpeed
+      vx: dirX * projectile.motion.speed,
+      vy: dirY * projectile.motion.speed
     },
-    radius: archetype.projectileRadius,
-    damage: archetype.damage,
-    knockbackImpulse: archetype.knockbackImpulse,
-    expireAtSimMs: simTimeMs + archetype.projectileTtlMs
+    radius: projectile.hitRadius,
+    damage: projectile.impactDamage,
+    knockbackImpulse: projectile.knockbackImpulse,
+    expireAtSimMs: simTimeMs + projectile.ttlMs
   });
 
   weapons.primary.nextFireSimMs = simTimeMs + archetype.cooldownMs;
@@ -142,6 +156,13 @@ function runFiringDecisions(
     dirX,
     dirY
   });
+}
+
+function legacyLinearProjectile(archetype: WeaponArchetype): LinearProjectileArchetype | null {
+  const { projectile } = archetype;
+  const { motion } = projectile;
+  if (motion.kind !== 'linear') return null;
+  return { ...projectile, motion };
 }
 
 function runProjectileMovement(store: EntityStore): void {

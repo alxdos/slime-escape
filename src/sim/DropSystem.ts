@@ -1,4 +1,4 @@
-import { DROP_ARCHETYPES, type DropArchetype } from '../shared/content/drops';
+import { DROP_ARCHETYPES, type DropArchetype, type DropEffect } from '../shared/content/drops';
 import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../shared/content/enemies';
 import type { RuntimeEvent } from '../shared/events';
 import { log } from '../shared/log';
@@ -137,7 +137,7 @@ function pickDropFromTable(
   return null;
 }
 
-function applyDropEffect(effect: { kind: 'heal'; amount: number }, store: EntityStore): void {
+function applyDropEffect(effect: DropEffect, store: EntityStore): void {
   switch (effect.kind) {
     case 'heal': {
       const player = store.player();
@@ -145,7 +145,11 @@ function applyDropEffect(effect: { kind: 'heal'; amount: number }, store: Entity
       player.hp = Math.min(player.maxHp, player.hp + effect.amount);
       return;
     }
+    case 'addWeaponModifier':
+    case 'temporaryOverdrive':
+    case 'pickupModifier':
+      return;
     default:
-      assertNever(effect.kind);
+      assertNever(effect);
   }
 }
