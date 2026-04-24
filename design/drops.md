@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (017 alignment: `DropEffect` includes weapon modifier and temporary overdrive effects from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: drop magnet and carrier drops are defined by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
+- Updated: 2026-04-24 (cleanup pass: `DropEffect` is the single source of truth for the union; `kind: 'pickupModifier'` is added explicitly here as the binding point for drop magnet from [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). 017 alignment: `DropEffect` includes weapon modifier and temporary overdrive effects from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: drop magnet uses the new `pickupModifier` kind; carrier drops are defined by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
 
 ## Context
 
@@ -43,12 +43,16 @@
 ### DropArchetype и DropEffect
 
 - `DropArchetype` живёт в `content library` (`src/shared/content/**`, [web-stack.md](web-stack.md)) и подчиняется общим правилам архетипов из [content-archetypes.md](content-archetypes.md): read-only, стабильный строковый `id`, ссылки только по `id`, расширение только дописыванием.
-- Минимальная форма на горизонт 005:
+- Полный текущий union (этот файл — единственный источник правды; другие design-файлы ссылаются сюда, не дублируют):
   ```ts
   type DropEffect =
+    // baseline (005)
     | { kind: 'heal'; amount: number }
+    // weapon modifiers (017, see universal-weapons-and-projectiles.md for WeaponModifier)
     | { kind: 'addWeaponModifier'; modifier: WeaponModifier; target: 'selectedWeapon' }
-    | { kind: 'temporaryOverdrive'; cooldownMultiplier: number; durationMs: number; target: 'selectedWeapon' };
+    | { kind: 'temporaryOverdrive'; cooldownMultiplier: number; durationMs: number; target: 'selectedWeapon' }
+    // pickup-comfort modifiers (018, see combat-modifiers-and-field-effects.md for PickupModifier)
+    | { kind: 'pickupModifier'; modifier: PickupModifier };
 
   type DropArchetype = Readonly<{
     id: string;
@@ -59,8 +63,8 @@
     color: number;           // 0xRRGGBB, плейсхолдер для рендера
   }>;
   ```
-- `DropEffect` — дискриминированный union по `kind`. Расширение только добавлением новых `kind` (новые слои силы и боеприпасов в будущем); переименование/смена семантики поля = новое решение и обновление этого файла.
-- `DropEffect.kind: 'heal'` keeps the 005 healing semantics below. Weapon-related effects are owned by story 017 and defined in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Pickup comfort effects such as magnet are owned by story 018 and defined in [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).
+- `DropEffect` — дискриминированный union по `kind`. Расширение только добавлением новых `kind`; переименование/смена семантики поля = новое решение и обновление этого файла.
+- `DropEffect.kind: 'heal'` keeps the 005 healing semantics described below. `addWeaponModifier`/`temporaryOverdrive` semantics live in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). `pickupModifier` semantics (drop magnet и будущие pickup-comfort modifier-ы) живут в [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md); `DropSystem` владеет mutating owner-local pickup-related player state по этому `kind`.
 - Реестр `DropArchetype` в `content library` имеет ту же форму, что и реестры `EnemyArchetype`/`WeaponArchetype` из [content-archetypes.md](content-archetypes.md): словарь `Record<string, DropArchetype>` с ключом, равным `archetype.id`. Конкретный файл (например, `src/shared/content/drops.ts`) — деталь реализации, не контракт.
 
 ### Drop table на EnemyArchetype
@@ -132,6 +136,7 @@
 - `DropSystem` **не** формирует `DamageIntent` и **не** вызывает `HealthDeathSystem`. Heal не должен порождать death event, не должен запускать death hook и не должен попадать в общий `applyDamage`-тик.
 - Никакая другая система не имеет права применять `DropEffect`. `DropEffect` — это контракт «что делает дроп при подборе», а не общий `EffectIntent` для произвольных источников.
 - Weapon modifier and overdrive effects mutate owner-local weapon state through the narrow runtime API defined by [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). `DropSystem` still owns pickup and removal; it does not spawn projectiles.
+- `pickupModifier` effects mutate owner-local pickup-related player state owned by `DropSystem` itself (см. [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)). `HealthDeathSystem` и `CombatSystem` этой части state не касаются.
 
 ### Друг-враг и ownership
 

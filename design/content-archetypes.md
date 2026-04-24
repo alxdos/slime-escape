@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (017 alignment: `WeaponArchetype`, `DropEffect` and `Loadout` are replaced by the universal weapon contracts in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: optional field/status/drop-magnet/carrier extensions are owned by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: story 016 impact feedback, story 013 sprite/contact boxes, story 012 MD-generated weapons/drops/bosses.)
+- Updated: 2026-04-24 (cleanup pass: legacy scalar `WeaponArchetype` and legacy `{ primaryWeaponArchetypeId }` `Loadout` removed; only the current 017 forms remain. `DropEffect` is no longer redefined here; the single source of truth is [drops.md](drops.md). `WeaponArchetype` carries no audio field by [audio.md](audio.md). 017 alignment: `WeaponArchetype` and `Loadout` follow [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: optional field/status/drop-magnet/carrier extensions are owned by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: story 016 impact feedback, story 013 sprite/contact boxes, story 012 MD-generated weapons/drops/bosses.)
 
 ## Context
 
@@ -66,21 +66,7 @@
 
 ### WeaponArchetype
 
-- Current weapon archetype shape is defined by [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). The old scalar form below is historical migration input only and must not remain the target shape after story 017:
-  ```ts
-  type WeaponArchetype = Readonly<{
-    id: string;
-    displayName: string;
-    cooldownMs: number;          // целое > 0, кратное SIM_STEP_MS не требуется
-    projectileSpeed: number;      // wu/s, > 0
-    projectileRadius: number;     // wu, > 0
-    projectileTtlMs: number;      // ms, > 0; despawn по истечении
-    damage: number;               // целое > 0
-    knockbackImpulse: number;      // wu/s, >= 0; projectile hit force, separate from damage
-    color: number;                // 0xRRGGBB, плейсхолдер для рендера снаряда
-  }>;
-  ```
-- Story 017 code must replace that scalar form with:
+- Current shape:
   ```ts
   type WeaponArchetype = Readonly<{
     id: string;
@@ -88,23 +74,19 @@
     cooldownMs: number;
     firePattern: FirePattern;
     projectile: ProjectileArchetype;
-    audio?: WeaponAudioSpec;
   }>;
   ```
-- `cooldownMs` — минимальный интервал между двумя последовательными выстрелами; конкретное использование через owner-local `WeaponInstance` — в [projectiles-and-combat.md](projectiles-and-combat.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
+- Полные определения `FirePattern`, `ProjectileArchetype`, `ExplosionSpec`, `FragmentSpec`, projectile motion и связанных правил (in particular per-projectile `impactDamage`, `knockbackImpulse`, `hitRadius`, `pierceCount`, `groundOnImpact`, `explosion`, `visual`) — в [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Здесь они не дублируются.
+- `cooldownMs` — минимальный интервал между двумя последовательными выстрелами; конкретное использование через owner-local `WeaponInstance` — в [projectiles-and-combat.md](projectiles-and-combat.md) и [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
 - Поле «бесконечный боезапас» из [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md) не выражается в архетипе: отсутствие поля `ammo` и есть его реализация. Когда (если) появится конечный боезапас, он добавится отдельным полем и отдельным design-решением.
-- Projectile speed, hit radius, impact damage, pierce, explosion and visual fields live under `WeaponArchetype.projectile`. Builder validation must validate the nested projectile spec, including no-tunneling constraints for each motion profile.
-- `knockbackImpulse` moves from a top-level weapon scalar to projectile impact/explosion specs. It remains intentionally independent from damage.
+- Builder validation проверяет вложенный `projectile` spec, включая no-tunneling constraints для каждого motion profile из [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
+- `WeaponArchetype` не несёт аудио-поля. Связь оружия со звуком идёт по строковому `archetypeId` через `WEAPON_AUDIO_MAPPINGS` в `src/main/audio/**` ([audio.md](audio.md)); расширение `WeaponArchetype` аудио-полями запрещено.
+- Миграция legacy одного-primary scalar weapon (`projectileSpeed`/`projectileRadius`/`projectileTtlMs`/`damage`/`knockbackImpulse`/`color`) — задача builder-а: scalar поля упаковываются в `firePattern: { kind: 'single', count: 1, spreadRadians: 0 }` и `projectile: { motion: { kind: 'linear', speed }, ... }` по правилам [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Старая форма не остаётся валидной после 017.
 
 ### DropArchetype
 
-- Минимальная форма для 005:
+- Минимальная форма:
   ```ts
-  type DropEffect =
-    | { kind: 'heal'; amount: number }
-    | { kind: 'addWeaponModifier'; modifier: WeaponModifier; target: 'selectedWeapon' }
-    | { kind: 'temporaryOverdrive'; cooldownMultiplier: number; durationMs: number; target: 'selectedWeapon' };
-
   type DropArchetype = Readonly<{
     id: string;
     displayName: string;
@@ -114,8 +96,8 @@
     color: number;           // 0xRRGGBB, плейсхолдер для рендера
   }>;
   ```
-- `DropEffect` — дискриминированный union по `kind`. `heal` remains the health effect from [drops.md](drops.md). Weapon-related effects and `WeaponModifier` are defined in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Pickup magnet/carrier follow-ups are defined in [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).
-- Полный контракт «как именно дроп спавнится, живёт и подбирается, и как применяется `DropEffect`» — в [drops.md](drops.md); здесь фиксируется только форма архетипа и его место в `content library`.
+- `DropEffect` (его union, `heal`, weapon-related kinds, pickup-modifier kind) — единственный источник правды [drops.md](drops.md). Здесь форма не дублируется.
+- Полный контракт «как именно дроп спавнится, живёт и подбирается, и как применяется `DropEffect`» — в [drops.md](drops.md); здесь фиксируется только форма самого архетипа и его место в `content library`.
 
 ### BossArchetype
 
@@ -172,16 +154,16 @@
 
 ### Loadout в SessionDefinition
 
-- Current `SessionDefinition.loadout` shape is the ordered loadout from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md):
+- Current shape:
   ```ts
   type Loadout = Readonly<{
     weapons: ReadonlyArray<string>; // WeaponArchetype.id values
     selectedIndex: number | null;
   }>;
   ```
-- Для sandbox-режима без боя `loadout` остаётся `null`; сборщик сессии явно различает «бой не предусмотрен» (`null`) и «есть оружие» (объект Loadout).
-- The old `{ primaryWeaponArchetypeId: string }` shape is migration input only. It must be converted to `{ weapons: [primaryWeaponArchetypeId], selectedIndex: 0 }`.
-- `Loadout.weapons` is immutable session configuration. Runtime selection, cooldowns and upgrades live in owner-local weapon state; slot switching does not mutate the session definition.
+- Для sandbox-режима без боя `loadout` остаётся `null`; сборщик сессии явно различает «бой не предусмотрен» (`null`) и «есть оружие» (объект `Loadout`).
+- `Loadout.weapons` is immutable session configuration. Runtime selection, cooldowns and upgrades live in owner-local weapon state ([universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)); slot switching does not mutate the session definition.
+- Миграция legacy `{ primaryWeaponArchetypeId: string }` — задача builder-а: значение упаковывается в `{ weapons: [primaryWeaponArchetypeId], selectedIndex: 0 }`. Старая форма не остаётся валидной после 017.
 
 ### Реестры в content library
 

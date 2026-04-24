@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (017 alignment: the former single-primary linear projectile contract is replaced by [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md); this file now owns the stable `CombatSystem` responsibilities, tick order, hit/damage pipeline and integration boundaries. 018 alignment: mines and field/status follow-ups are delegated to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
+- Updated: 2026-04-24 (cleanup pass: legacy single-primary projectile shape no longer reproduced as a typed example; only the migration rule remains in one sentence. 017 alignment: data shapes live in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md); this file owns stable `CombatSystem` responsibilities, tick order, hit/damage pipeline and integration boundaries. 018 alignment: mines and field/status follow-ups are delegated to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
 
 ## Context
 
@@ -23,13 +23,8 @@ This file remains necessary because [universal-weapons-and-projectiles.md](unive
 
 ### Current projectile contract
 
-- The active projectile, weapon, loadout, fire-pattern, explosion, fragment, modifier and friendly-fire data contracts are defined in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
-- Any older implementation shape with only `primaryWeaponArchetypeId`, `projectileSpeed`, `projectileRadius`, `damage` and `projectileTtlMs` is migration input only. It is not the current target contract.
-- A legacy single-primary weapon must migrate as an ordered loadout with one selected weapon:
-  ```ts
-  { weapons: [primaryWeaponArchetypeId], selectedIndex: 0 }
-  ```
-- A legacy linear bullet weapon must migrate as a `WeaponArchetype` with `firePattern: { kind: 'single', count: 1, spreadRadians: 0 }` and `projectile.motion.kind: 'linear'`.
+- The active projectile, weapon, loadout, fire-pattern, explosion, fragment, modifier and friendly-fire data contracts are defined in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). This file does not redefine them.
+- Migration of any pre-017 single-primary scalar weapon (e.g. `primaryWeaponArchetypeId` + flat `projectileSpeed`/`projectileRadius`/`damage`/`projectileTtlMs`) is a builder concern: the builder produces an ordered loadout and a composition-based `WeaponArchetype` per [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). The old shape is not a valid runtime contract after 017.
 
 ### CombatSystem ownership
 

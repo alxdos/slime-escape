@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-24
-- Updated: 2026-04-24
+- Updated: 2026-04-24 (cleanup pass: aim assist owner fixed to `main thread`; drop magnet binding to `DropEffect.kind: 'pickupModifier'` made explicit so the new union member is the single extension surface in this story.)
 
 ## Context
 
@@ -84,15 +84,16 @@ The next layer of combat juice should be designed separately so the universal we
   - `EnemyArchetype.dropTable` remains the baseline death-drop contract.
   - A carrier may use a guaranteed drop table entry or a new explicit `guaranteedDropArchetypeIds` extension, but the death hook remains owned by `DropSystem`.
   - Renderer may show a carrier marker using enemy archetype/content metadata, not by inspecting hidden runtime drop rolls.
-- Drop magnet is a player-affecting modifier:
+- Drop magnet is a player-affecting modifier carried by an existing drop. It binds into the system through `DropEffect` by extending the `DropEffect` union with a new member:
   ```ts
-  type PickupModifier = {
-    kind: 'dropMagnet';
-    pickupRadiusMultiplier: number;
-    attractSpeed: number;
-  };
+  type PickupModifier =
+    | { kind: 'dropMagnet'; pickupRadiusMultiplier: number; attractSpeed: number };
+
+  // extends DropEffect from drops.md / content-archetypes.md:
+  // | { kind: 'pickupModifier'; modifier: PickupModifier }
   ```
-- `DropSystem` owns attraction movement and pickup-radius expansion. It remains the only system that removes drops through pickup/expire.
+- `DropEffect.kind: 'pickupModifier'` is the single extension surface in this story. The new union member is added in [drops.md](drops.md) by 018; no other channel (session rules, separate inventory, ad hoc player flag) is introduced.
+- `DropSystem` owns the picked-up modifier as owner-local player state, owns attraction movement and pickup-radius expansion. It remains the only system that removes drops through pickup/expire and the only system that mutates pickup-related player state.
 - Attraction is deterministic and uses no random jitter.
 
 ### Friendly-fire retaliation
@@ -113,7 +114,8 @@ The next layer of combat juice should be designed separately so the universal we
 ### Aim assist
 
 - Aim assist is a player-control affordance, not a hidden damage bonus.
-- Main thread may show and apply a small corrected aim direction before sending fire/aim intent, or simulation may resolve a corrected direction at fire time from deterministic state. The implementation must choose one owner and document it in the story task before code changes.
+- Owner is **main thread**. Main computes the corrected aim before emitting `aim` (and at fire moment) using the latest snapshot it already holds for rendering, then sends the corrected vector through the existing `InputCommand.kind: 'aim'` channel from [input-commands.md](input-commands.md). `sim` is never told «assist is on»: it sees only a regular `aim` value and never reads target lists for aim correction.
+- Determinism: aim assist does not affect simulation determinism, because `sim` only consumes the same `aim` shape it already consumed before. Reproducibility under `seed` is unaffected; replays that record raw input from main reproduce the corrected aim because the corrected vector is what was actually sent.
 - Aim assist must obey session/content tuning:
   ```ts
   type AimAssistRule = {

@@ -2,7 +2,7 @@
 
 - Status: planned
 - Created: 2026-04-24
-- Updated: 2026-04-24
+- Updated: 2026-04-24 (architecture cleanup: drop magnet binding via new `DropEffect.kind: 'pickupModifier'` made explicit; aim assist owner fixed to `main thread`; tasks updated.)
 
 ## Player-facing
 
@@ -40,12 +40,12 @@
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Add content/session types and builders for opt-in field effects, status applications, mine triggers, carrier markers, drop magnet, retaliation policy and aim assist. | Touch `src/shared/content/**`, `scripts/content-build/**`, `content/{weapons,drops,enemies,sessions}/**`; validate all cross-area references. |
+| T1 | [ ] | Add content/session types and builders for opt-in field effects, status applications, mine triggers, carrier markers, drop magnet, retaliation policy and aim assist. | Touch `src/shared/content/**`, `scripts/content-build/**`, `content/{weapons,drops,enemies,sessions}/**`; extend `DropEffect` union with `kind: 'pickupModifier'` per `design/drops.md` as the single binding point for drop magnet; validate all cross-area references. |
 | T2 | [ ] | Add `fieldEffect` runtime entities, snapshots and `FieldEffectSystem`. | Update `EntityStore`, `runtime-systems` wiring, `SnapshotExportSystem`, snapshot types and tests; field effects produce damage intents/status applications, never direct HP changes. |
 | T3 | [ ] | Add actor status runtime state and `StatusEffectSystem`. | Update damageable actor types, movement speed resolution, status tick/expiry logic, `DamageIntent.source`, snapshot/status presentation hints and stacking tests. |
 | T4 | [ ] | Extend `CombatSystem` for mine proximity triggers and explosion-spawned field effects/status applications. | Reuse universal projectile/explosion ownership and shared damage rules; proximity checks use `SpatialIndex` and deterministic ordering. |
 | T5 | [ ] | Extend `DropSystem`, enemy content and renderer for carrier drops and magnet attraction. | Carrier rewards still use death hooks; magnet movement/pickup expansion remains deterministic and owned by `DropSystem`. |
-| T6 | [ ] | Add friendly-fire retaliation behavior and optional aim-assist targeting. | Add aggro memory/behavior consumption in sim, choose and document the aim-assist owner before code, and use deterministic target tie-breakers. |
+| T6 | [ ] | Add friendly-fire retaliation behavior and optional aim-assist targeting. | Add aggro memory/behavior consumption in sim; implement aim assist on `main thread` per `design/combat-modifiers-and-field-effects.md` (corrects `aim` before sending the existing `InputCommand`, sim sees only a regular `aim` value); use deterministic target tie-breakers. |
 | T7 | [ ] | Add demo content, visual/audio feedback and regression tests for all enabled mechanics. | Cover no-effect sessions as non-regression plus field lifecycle, status ticks, mine triggers, drop magnet, retaliation and aim-assist target selection. |
 
 ## Related

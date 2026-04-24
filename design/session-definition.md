@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules and player maxHp.)
+- Updated: 2026-04-24 (cleanup pass: legacy `{ primaryWeaponArchetypeId }` `loadout` no longer mentioned as a current shape; only the ordered form remains. 017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules and player maxHp.)
 
 ## Context
 
@@ -48,7 +48,6 @@
 - Минимальная форма `loadout`:
   - `null` — у preset-а нет встроенного оружия (sandbox без боя, чисто исследовательские bring-up);
   - `Loadout` — preset имеет хотя бы одно оружие; форма `Loadout` фиксируется в [content-archetypes.md](content-archetypes.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md): `{ weapons: string[]; selectedIndex: number | null }`.
-- The old `{ primaryWeaponArchetypeId: string }` loadout is not current after story 017. Builders must migrate old content to the ordered form by wrapping the id into a single-item array.
 - `rules` remains the session-owned place for gameplay switches. Story 017 requires:
   ```ts
   type SessionRules = Readonly<{

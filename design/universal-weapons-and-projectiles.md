@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-24
-- Updated: 2026-04-24
+- Updated: 2026-04-24 (cleanup pass: `audio?` field removed from `WeaponArchetype` to keep [audio.md](audio.md) invariant «no audio fields on archetypes»; no-op weapon-modifier rule reduced to a single deterministic case; `temporaryOverdrive.target` documented as single-value on this horizon; aim assist owner and pickup magnet binding moved to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) without ambiguity.)
 
 ## Context
 
@@ -32,9 +32,9 @@ Without a new contract, each new weapon would either add special branches to `Co
     cooldownMs: number;
     firePattern: FirePattern;
     projectile: ProjectileArchetype;
-    audio?: WeaponAudioSpec;
   }>;
   ```
+- `WeaponArchetype` carries no audio fields by design. Audio is bound to weapons by `archetypeId` through `WEAPON_AUDIO_MAPPINGS` in `src/main/audio/**` per [audio.md](audio.md); content-archetype shape stays presentation-free.
 - `ProjectileArchetype` is embedded in the weapon archetype on this horizon. A separate projectile registry is intentionally not introduced yet; sharing one projectile spec between many weapons can be added later as an `id` reference if duplication becomes real.
 - Minimal projectile shape:
   ```ts
@@ -174,7 +174,7 @@ Without a new contract, each new weapon would either add special branches to `Co
 
 ### Weapon modifiers from drops
 
-- `DropEffect` gains weapon-related effects by adding new `kind` values:
+- `WeaponModifier` is the set of weapon-affecting modifier kinds owned by this story:
   ```ts
   type WeaponModifier =
     | { kind: 'projectileSizeMultiplier'; multiplier: number }
@@ -182,19 +182,15 @@ Without a new contract, each new weapon would either add special branches to `Co
     | { kind: 'symmetricProjectileMultiplier'; multiplier: number }
     | { kind: 'pierceBonus'; amount: number }
     | { kind: 'fragmentExplosion'; fragmentWeaponArchetypeId: string; count: number; spreadRadians: number };
-
-  type DropEffect =
-    | { kind: 'heal'; amount: number }
-    | { kind: 'addWeaponModifier'; modifier: WeaponModifier; target: 'selectedWeapon' }
-    | { kind: 'temporaryOverdrive'; cooldownMultiplier: number; durationMs: number; target: 'selectedWeapon' };
   ```
+- The `DropEffect` union itself is owned by [drops.md](drops.md) (single source of truth). 017 contributes two new `DropEffect` kinds — `addWeaponModifier` and `temporaryOverdrive` — both wrapping the `WeaponModifier` and overdrive parameters above; both are added to the union in [drops.md](drops.md), not redefined here.
 - Weapon modifiers apply at fire time when a projectile is spawned. Already spawned projectiles are not retroactively changed.
 - `projectileSizeMultiplier` modifies `ProjectileArchetype.size` and `hitRadius`.
 - `projectileSpeedMultiplier` modifies `linear.speed`. For `arc`, it keeps the authored landing point/range and divides effective `flightMs` by the multiplier, so upgraded thrown projectiles arrive sooner without changing the aimed landing position. `placed` projectiles ignore speed modifiers.
 - `symmetricProjectileMultiplier` multiplies the number of emitted projectiles around the firing axis. With a single projectile and multiplier `2`, the result is two projectiles symmetrically offset from the axis. With existing spread counts, the final count stays symmetric around the same axis.
 - `pierceBonus` increases copied `pierceRemaining`.
-- `temporaryOverdrive` reduces cooldown for `durationMs` on the selected weapon only.
-- If no weapon is selected, weapon-modifier drops are picked up but no-op only if the drop explicitly allows no-op in content. Otherwise builder validation should reject such drops in sessions where the player can holster all weapons.
+- `temporaryOverdrive` reduces cooldown for `durationMs` on the selected weapon only. `target` is kept as a discriminator for future expansion (e.g. `'allWeapons'`, `'slot'`); on this horizon `'selectedWeapon'` is the only allowed value, and `DropSystem` rejects other values during content validation.
+- If no weapon is currently selected at pickup time, the weapon-modifier drop is consumed by `dropPickup` but produces no effect (silent no-op). No new `DropArchetype` flag is introduced for this case and builder validation does not reject sessions where the player can holster all weapons. If a future story needs «pending modifier that binds to the next selected weapon», it is added by a new design and explicit owner-local state, not implicit here.
 
 ### Presentation hooks
 
