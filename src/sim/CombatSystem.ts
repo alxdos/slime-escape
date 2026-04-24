@@ -20,6 +20,7 @@ import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const DEFAULT_DAMAGE_RULES: DamageRules = { slimeFriendlyFire: false };
+const WEAPON_MODIFIER_MIN_SPREAD_RADIANS = 0.25;
 
 export type DamageSource =
   | {
@@ -52,6 +53,7 @@ export type WeaponInstance = {
   nextFireSimMs: number;
   modifiers: WeaponModifier[];
   overdriveUntilSimMs: number | null;
+  overdriveCooldownMultiplier: number | null;
 };
 
 type ShooterWeapons = {
@@ -63,6 +65,13 @@ type ShooterWeapons = {
 export type CombatSystem = Readonly<{
   setDamageRules(rules: DamageRules): void;
   setPlayerLoadout(playerId: EntityId, loadout: Loadout, simTimeMs: number): void;
+  addModifierToSelectedWeapon(ownerId: EntityId, modifier: WeaponModifier): boolean;
+  applyTemporaryOverdriveToSelectedWeapon(
+    ownerId: EntityId,
+    cooldownMultiplier: number,
+    durationMs: number,
+    simTimeMs: number
+  ): boolean;
   weaponHudFor(playerId: EntityId | null): WeaponHudSnapshot | null;
   clear(): void;
   tick(
@@ -109,6 +118,30 @@ export function createCombatSystem(
         weapons,
         selectedIndex: loadout.selectedIndex
       });
+    },
+    addModifierToSelectedWeapon(ownerId, modifier): boolean {
+      const weapon = selectedWeaponForOwner(shooterWeapons, ownerId);
+      if (weapon === null) return false;
+      weapon.modifiers.push(copyWeaponModifier(modifier));
+      return true;
+    },
+    applyTemporaryOverdriveToSelectedWeapon(
+      ownerId,
+      cooldownMultiplier,
+      durationMs,
+      simTimeMs
+    ): boolean {
+      if (cooldownMultiplier <= 0) {
+        throw new Error(`temporaryOverdrive cooldownMultiplier must be > 0: ${cooldownMultiplier}`);
+      }
+      if (durationMs <= 0) {
+        throw new Error(`temporaryOverdrive durationMs must be > 0: ${durationMs}`);
+      }
+      const weapon = selectedWeaponForOwner(shooterWeapons, ownerId);
+      if (weapon === null) return false;
+      weapon.overdriveCooldownMultiplier = cooldownMultiplier;
+      weapon.overdriveUntilSimMs = simTimeMs + durationMs;
+      return true;
     },
     weaponHudFor(playerId): WeaponHudSnapshot | null {
       if (playerId === null) return null;
@@ -186,18 +219,27 @@ function runFiringDecisions(
 
   const archetype = weaponRegistry[selectedWeapon.archetypeId];
   if (archetype === undefined) return;
+  const effectiveFirePattern = applyFirePatternModifiers(
+    archetype.firePattern,
+    selectedWeapon.modifiers
+  );
+  const effectiveProjectile = applyProjectileModifiers(
+    archetype.projectile,
+    selectedWeapon.modifiers
+  );
 
   const dx = input.aimWorld.x - player.position.x;
   const dy = input.aimWorld.y - player.position.y;
   const aimDistance = Math.hypot(dx, dy);
-  const fireDirections = firePatternDirections(archetype.firePattern, dx, dy);
+  const fireDirections = firePatternDirections(effectiveFirePattern, dx, dy);
   if (fireDirections.length === 0) return;
-  const eventDir = fireEventDirection(archetype.firePattern, dx, dy, fireDirections);
+  const eventDir = fireEventDirection(effectiveFirePattern, dx, dy, fireDirections);
   if (eventDir === null) return;
 
   const spawned = spawnProjectilesForDirections(
     store,
-    archetype,
+    archetype.id,
+    effectiveProjectile,
     player.id,
     weapons.ownerKind,
     player.position,
@@ -207,7 +249,8 @@ function runFiringDecisions(
   );
   if (spawned === 0) return;
 
-  selectedWeapon.nextFireSimMs = simTimeMs + archetype.cooldownMs;
+  selectedWeapon.nextFireSimMs =
+    simTimeMs + effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs);
   emit({
     kind: 'fire',
     simTime: simTimeMs,
@@ -250,13 +293,45 @@ function createWeaponInstance(archetypeId: string, simTimeMs: number): WeaponIns
     archetypeId,
     nextFireSimMs: simTimeMs,
     modifiers: [],
-    overdriveUntilSimMs: null
+    overdriveUntilSimMs: null,
+    overdriveCooldownMultiplier: null
   };
 }
 
 function selectedWeaponInstance(weapons: ShooterWeapons): WeaponInstance | null {
   if (weapons.selectedIndex === null) return null;
   return weapons.weapons[weapons.selectedIndex] ?? null;
+}
+
+function selectedWeaponForOwner(
+  shooterWeapons: Map<EntityId, ShooterWeapons>,
+  ownerId: EntityId
+): WeaponInstance | null {
+  const weapons = shooterWeapons.get(ownerId);
+  if (weapons === undefined) return null;
+  return selectedWeaponInstance(weapons);
+}
+
+function copyWeaponModifier(modifier: WeaponModifier): WeaponModifier {
+  switch (modifier.kind) {
+    case 'projectileSizeMultiplier':
+      return { kind: modifier.kind, multiplier: modifier.multiplier };
+    case 'projectileSpeedMultiplier':
+      return { kind: modifier.kind, multiplier: modifier.multiplier };
+    case 'symmetricProjectileMultiplier':
+      return { kind: modifier.kind, multiplier: modifier.multiplier };
+    case 'pierceBonus':
+      return { kind: modifier.kind, amount: modifier.amount };
+    case 'fragmentExplosion':
+      return {
+        kind: modifier.kind,
+        fragmentWeaponArchetypeId: modifier.fragmentWeaponArchetypeId,
+        count: modifier.count,
+        spreadRadians: modifier.spreadRadians
+      };
+    default:
+      return assertNever(modifier);
+  }
 }
 
 function firePatternDirections(
@@ -274,6 +349,110 @@ function firePatternDirections(
     default:
       return assertNever(pattern);
   }
+}
+
+function applyFirePatternModifiers(
+  pattern: FirePattern,
+  modifiers: ReadonlyArray<WeaponModifier>
+): FirePattern {
+  if (pattern.kind !== 'single') return pattern;
+  const countMultiplier = modifiers.reduce((acc, modifier) => {
+    return modifier.kind === 'symmetricProjectileMultiplier'
+      ? acc * modifier.multiplier
+      : acc;
+  }, 1);
+  const count = Math.max(1, Math.round(pattern.count * countMultiplier));
+  const spreadRadians =
+    pattern.spreadRadians === 0 && count > 1
+      ? WEAPON_MODIFIER_MIN_SPREAD_RADIANS
+      : pattern.spreadRadians;
+  return { kind: 'single', count, spreadRadians };
+}
+
+function applyProjectileModifiers(
+  projectile: ProjectileArchetype,
+  modifiers: ReadonlyArray<WeaponModifier>
+): ProjectileArchetype {
+  let sizeMultiplier = 1;
+  let speedMultiplier = 1;
+  let pierceBonus = 0;
+  let fragmentOverride: FragmentSpec | null = null;
+  for (const modifier of modifiers) {
+    switch (modifier.kind) {
+      case 'projectileSizeMultiplier':
+        sizeMultiplier *= modifier.multiplier;
+        break;
+      case 'projectileSpeedMultiplier':
+        speedMultiplier *= modifier.multiplier;
+        break;
+      case 'pierceBonus':
+        pierceBonus += modifier.amount;
+        break;
+      case 'fragmentExplosion':
+        fragmentOverride = {
+          weaponArchetypeId: modifier.fragmentWeaponArchetypeId,
+          count: modifier.count,
+          spreadRadians: modifier.spreadRadians
+        };
+        break;
+      case 'symmetricProjectileMultiplier':
+        break;
+      default:
+        assertNever(modifier);
+    }
+  }
+
+  return {
+    ...projectile,
+    motion: applySpeedModifier(projectile.motion, speedMultiplier),
+    size: {
+      width: projectile.size.width * sizeMultiplier,
+      height: projectile.size.height * sizeMultiplier
+    },
+    hitRadius: projectile.hitRadius * sizeMultiplier,
+    pierceCount: projectile.pierceCount + pierceBonus,
+    explosion:
+      projectile.explosion === null
+        ? null
+        : {
+            ...projectile.explosion,
+            fragments: fragmentOverride ?? projectile.explosion.fragments
+          }
+  };
+}
+
+function applySpeedModifier(
+  motion: ProjectileArchetype['motion'],
+  speedMultiplier: number
+): ProjectileArchetype['motion'] {
+  switch (motion.kind) {
+    case 'linear':
+      return { kind: 'linear', speed: motion.speed * speedMultiplier };
+    case 'arc':
+      return {
+        kind: 'arc',
+        speed: motion.speed * speedMultiplier,
+        range: motion.range,
+        flightMs: Math.max(1, Math.round(motion.flightMs / speedMultiplier))
+      };
+    case 'placed':
+      return motion;
+    default:
+      return assertNever(motion);
+  }
+}
+
+function effectiveCooldownMs(
+  baseCooldownMs: number,
+  weapon: WeaponInstance,
+  simTimeMs: number
+): number {
+  const overdriveActive =
+    weapon.overdriveCooldownMultiplier !== null &&
+    weapon.overdriveUntilSimMs !== null &&
+    simTimeMs < weapon.overdriveUntilSimMs;
+  const multiplier = overdriveActive ? weapon.overdriveCooldownMultiplier! : 1;
+  return Math.max(1, Math.round(baseCooldownMs * multiplier));
 }
 
 function aimedSpreadDirections(
@@ -300,7 +479,8 @@ function aimedSpreadDirections(
 
 function spawnProjectilesForDirections(
   store: EntityStore,
-  archetype: WeaponArchetype,
+  weaponArchetypeId: string,
+  projectile: ProjectileArchetype,
   ownerId: EntityId,
   ownerKind: 'player' | 'enemy' | 'boss',
   origin: Vec2,
@@ -308,11 +488,10 @@ function spawnProjectilesForDirections(
   simTimeMs: number,
   aimDistance: number | null
 ): number {
-  const projectile = archetype.projectile;
   for (const direction of directions) {
     spawnProjectileForDirection(
       store,
-      archetype.id,
+      weaponArchetypeId,
       projectile,
       ownerId,
       ownerKind,
@@ -846,7 +1025,8 @@ function spawnExplosionFragments(
   const directions = fragmentDirections(fragment);
   spawnProjectilesForDirections(
     store,
-    archetype,
+    archetype.id,
+    archetype.projectile,
     projectile.ownerId,
     projectile.ownerKind,
     projectile.position,

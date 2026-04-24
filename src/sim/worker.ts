@@ -24,7 +24,19 @@ const combat = createCombatSystem();
 const healthDeath = createHealthDeathSystem();
 const spatialIndex = createSpatialIndex();
 const zone = createZoneSystem();
-const drops = createDropSystem();
+const drops = createDropSystem(undefined, undefined, {
+  addModifierToSelectedWeapon(ownerId, modifier) {
+    combat.addModifierToSelectedWeapon(ownerId, modifier);
+  },
+  applyTemporaryOverdriveToSelectedWeapon(ownerId, cooldownMultiplier, durationMs, simTimeMs) {
+    combat.applyTemporaryOverdriveToSelectedWeapon(
+      ownerId,
+      cooldownMultiplier,
+      durationMs,
+      simTimeMs
+    );
+  }
+});
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);

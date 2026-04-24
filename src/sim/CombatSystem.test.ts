@@ -254,6 +254,195 @@ describe('CombatSystem', () => {
     });
   });
 
+  it('applies size and speed modifiers only to future projectile spawns', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+    const input = makeInput({
+      aimWorld: { x: 5, y: 0 },
+      firing: true,
+      loadout: { weapons: [PISTOL.id], selectedIndex: 0 }
+    });
+
+    combat.tick(input, store, index, 0, ARENA, () => {});
+    expect(combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'projectileSizeMultiplier',
+      multiplier: 2
+    })).toBe(true);
+    expect(combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'projectileSpeedMultiplier',
+      multiplier: 2
+    })).toBe(true);
+    combat.tick(input, store, index, PISTOL.cooldownMs, ARENA, () => {});
+
+    const projectiles = [...store.projectiles()];
+    if (PISTOL.projectile.motion.kind !== 'linear') throw new Error('expected pistol linear motion');
+    expect(projectiles).toHaveLength(2);
+    expect(projectiles[0]?.size.width).toBeCloseTo(PISTOL.projectile.size.width);
+    expect(projectiles[0]?.hitRadius).toBeCloseTo(PISTOL.projectile.hitRadius);
+    expect(projectiles[0]?.velocity.vx).toBeCloseTo(PISTOL.projectile.motion.speed);
+    expect(projectiles[1]?.size.width).toBeCloseTo(PISTOL.projectile.size.width * 2);
+    expect(projectiles[1]?.hitRadius).toBeCloseTo(PISTOL.projectile.hitRadius * 2);
+    expect(projectiles[1]?.velocity.vx).toBeCloseTo(PISTOL.projectile.motion.speed * 2);
+  });
+
+  it('uses symmetric count and pierce modifiers when spawning future shots', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+    combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'symmetricProjectileMultiplier',
+      multiplier: 2
+    });
+    combat.addModifierToSelectedWeapon(player.id, { kind: 'pierceBonus', amount: 1 });
+
+    combat.tick(
+      makeInput({
+        aimWorld: { x: 5, y: 0 },
+        firing: true,
+        loadout: { weapons: [PISTOL.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      () => {}
+    );
+
+    const projectiles = [...store.projectiles()];
+    expect(projectiles).toHaveLength(2);
+    expect(projectiles.every((p) => p.pierceRemaining === PISTOL.projectile.pierceCount + 1)).toBe(
+      true
+    );
+    expect(projectiles[0]?.velocity.vx).toBeGreaterThan(0);
+    expect(projectiles[1]?.velocity.vx).toBeGreaterThan(0);
+    expect(projectiles[0]?.velocity.vy).toBeLessThan(0);
+    expect(projectiles[1]?.velocity.vy).toBeGreaterThan(0);
+    expect(Math.abs(projectiles[0]!.velocity.vy)).toBeCloseTo(
+      Math.abs(projectiles[1]!.velocity.vy)
+    );
+  });
+
+  it('applies arc speed modifiers by shortening flight without changing the landing point', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [ROCK_THROWER.id], selectedIndex: 0 }, 0);
+    combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'projectileSpeedMultiplier',
+      multiplier: 2
+    });
+
+    combat.tick(
+      makeInput({
+        aimWorld: { x: 3, y: 0 },
+        firing: true,
+        loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      () => {}
+    );
+
+    const projectile = [...store.projectiles()][0];
+    if (projectile === undefined) throw new Error('expected projectile');
+    if (ROCK_THROWER.projectile.motion.kind !== 'arc') throw new Error('expected arc motion');
+    expect(projectile.arcEnd).toEqual({ x: 3, y: 0 });
+    const expectedFlightMs = Math.round(ROCK_THROWER.projectile.motion.flightMs / 2);
+    expect(projectile.arcEndSimMs).toBe(expectedFlightMs);
+    expect(projectile.velocity.vx).toBeCloseTo(3 / (expectedFlightMs / 1000));
+  });
+
+  it('adds fragment explosion modifiers to explosive future shots', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [BOMB_PLACER.id], selectedIndex: 0 }, 0);
+    combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'fragmentExplosion',
+      fragmentWeaponArchetypeId: PISTOL.id,
+      count: 4,
+      spreadRadians: Math.PI * 2
+    });
+
+    combat.tick(
+      makeInput({
+        aimWorld: { x: 1, y: 0 },
+        firing: true,
+        loadout: { weapons: [BOMB_PLACER.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      () => {}
+    );
+    combat.tick(
+      makeInput(),
+      store,
+      index,
+      BOMB_PLACER.projectile.explosion!.delayMs,
+      ARENA,
+      () => {}
+    );
+
+    const fragments = [...store.projectiles()];
+    expect(fragments).toHaveLength(4);
+    expect(fragments.every((p) => p.weaponArchetypeId === PISTOL.id)).toBe(true);
+    expect(fragments.every((p) => p.ownerId === player.id)).toBe(true);
+  });
+
+  it('uses temporary overdrive for cooldowns while it is active only', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+    expect(
+      combat.applyTemporaryOverdriveToSelectedWeapon(player.id, 0.5, 100, 0)
+    ).toBe(true);
+    const input = makeInput({
+      aimWorld: { x: 5, y: 0 },
+      firing: true,
+      loadout: { weapons: [PISTOL.id], selectedIndex: 0 }
+    });
+    const events: RuntimeEvent[] = [];
+
+    combat.tick(input, store, index, 0, ARENA, (e) => events.push(e));
+    expect(combat.weaponHudFor(player.id)?.weapons[0]?.cooldownReadyAtSimMs).toBe(125);
+    expect(combat.weaponHudFor(player.id)?.weapons[0]?.overdriveUntilSimMs).toBe(100);
+    combat.tick(input, store, index, 124, ARENA, (e) => events.push(e));
+    combat.tick(input, store, index, 125, ARENA, (e) => events.push(e));
+
+    expect(events.filter((e) => e.kind === 'fire')).toHaveLength(2);
+    expect(combat.weaponHudFor(player.id)?.weapons[0]?.cooldownReadyAtSimMs).toBe(375);
+  });
+
+  it('ignores selected-weapon upgrades when the runtime loadout is holstered', () => {
+    const store = createEntityStore();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id], selectedIndex: null }, 0);
+
+    expect(
+      combat.addModifierToSelectedWeapon(player.id, {
+        kind: 'projectileSizeMultiplier',
+        multiplier: 2
+      })
+    ).toBe(false);
+    expect(
+      combat.applyTemporaryOverdriveToSelectedWeapon(player.id, 0.5, 500, 0)
+    ).toBe(false);
+  });
+
   it('does not fire while the runtime loadout is holstered', () => {
     const store = createEntityStore();
     const index = createSpatialIndex();

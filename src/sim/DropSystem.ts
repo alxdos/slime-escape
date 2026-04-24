@@ -1,5 +1,6 @@
 import { DROP_ARCHETYPES, type DropArchetype, type DropEffect } from '../shared/content/drops';
 import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../shared/content/enemies';
+import type { WeaponModifier } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import { log } from '../shared/log';
 import { assertNever } from '../shared/protocol';
@@ -14,9 +15,20 @@ export type DropSystem = Readonly<{
   tick(simTimeMs: number, store: EntityStore, emit: (event: RuntimeEvent) => void): void;
 }>;
 
+export type WeaponDropEffectSink = Readonly<{
+  addModifierToSelectedWeapon(ownerId: EntityId, modifier: WeaponModifier): void;
+  applyTemporaryOverdriveToSelectedWeapon(
+    ownerId: EntityId,
+    cooldownMultiplier: number,
+    durationMs: number,
+    simTimeMs: number
+  ): void;
+}>;
+
 export function createDropSystem(
   enemyRegistry: Readonly<Record<string, EnemyArchetype>> = ENEMY_ARCHETYPES,
-  dropRegistry: Readonly<Record<string, DropArchetype>> = DROP_ARCHETYPES
+  dropRegistry: Readonly<Record<string, DropArchetype>> = DROP_ARCHETYPES,
+  weaponEffects: WeaponDropEffectSink | null = null
 ): DropSystem {
   let rng: Rng | null = null;
 
@@ -92,7 +104,7 @@ export function createDropSystem(
           const reach = drop.radius + player.radius;
           if (dx * dx + dy * dy > reach * reach) continue;
 
-          applyDropEffect(drop.effect, store);
+          applyDropEffect(drop.effect, store, simTimeMs, weaponEffects);
           pickedUp.add(drop.id);
           emit({
             kind: 'dropPickup',
@@ -137,7 +149,12 @@ function pickDropFromTable(
   return null;
 }
 
-function applyDropEffect(effect: DropEffect, store: EntityStore): void {
+function applyDropEffect(
+  effect: DropEffect,
+  store: EntityStore,
+  simTimeMs: number,
+  weaponEffects: WeaponDropEffectSink | null
+): void {
   switch (effect.kind) {
     case 'heal': {
       const player = store.player();
@@ -145,8 +162,23 @@ function applyDropEffect(effect: DropEffect, store: EntityStore): void {
       player.hp = Math.min(player.maxHp, player.hp + effect.amount);
       return;
     }
-    case 'addWeaponModifier':
-    case 'temporaryOverdrive':
+    case 'addWeaponModifier': {
+      const player = store.player();
+      if (player === null) return;
+      weaponEffects?.addModifierToSelectedWeapon(player.id, effect.modifier);
+      return;
+    }
+    case 'temporaryOverdrive': {
+      const player = store.player();
+      if (player === null) return;
+      weaponEffects?.applyTemporaryOverdriveToSelectedWeapon(
+        player.id,
+        effect.cooldownMultiplier,
+        effect.durationMs,
+        simTimeMs
+      );
+      return;
+    }
     case 'pickupModifier':
       return;
     default:
