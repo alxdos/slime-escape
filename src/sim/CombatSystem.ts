@@ -3,12 +3,14 @@ import { ENEMY_ARCHETYPES } from '../shared/content/enemies';
 import {
   WEAPON_ARCHETYPES,
   type FirePattern,
+  type FragmentSpec,
+  type ProjectileArchetype,
   type WeaponArchetype,
   type WeaponModifier
 } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import { assertNever } from '../shared/protocol';
-import type { ArenaConfig, Loadout, Vec2 } from '../shared/session';
+import type { ArenaConfig, DamageRules, Loadout, Vec2 } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import type { Boss, Enemy, EntityId, EntityStore, Player, Projectile } from './EntityStore';
@@ -16,6 +18,7 @@ import type { RuntimeInputState } from './RuntimeInputState';
 import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
+const DEFAULT_DAMAGE_RULES: DamageRules = { slimeFriendlyFire: false };
 
 export type DamageSource =
   | {
@@ -25,6 +28,12 @@ export type DamageSource =
       weaponArchetypeId: string;
       impactDirX: number;
       impactDirY: number;
+    }
+  | {
+      kind: 'explosion';
+      projectileId: EntityId;
+      ownerKind: 'player' | 'enemy' | 'boss';
+      weaponArchetypeId: string;
     }
   | { kind: 'enemyContact'; enemyId: EntityId }
   | { kind: 'environment'; tag: string }
@@ -50,11 +59,8 @@ type ShooterWeapons = {
   selectedIndex: number | null;
 };
 
-type LinearProjectileArchetype = WeaponArchetype['projectile'] & {
-  motion: Readonly<{ kind: 'linear'; speed: number }>;
-};
-
 export type CombatSystem = Readonly<{
+  setDamageRules(rules: DamageRules): void;
   setPlayerLoadout(playerId: EntityId, loadout: Loadout, simTimeMs: number): void;
   clear(): void;
   tick(
@@ -71,8 +77,12 @@ export function createCombatSystem(
   weaponRegistry: Readonly<Record<string, WeaponArchetype>> = WEAPON_ARCHETYPES
 ): CombatSystem {
   const shooterWeapons = new Map<EntityId, ShooterWeapons>();
+  let damageRules: DamageRules = DEFAULT_DAMAGE_RULES;
 
   return {
+    setDamageRules(rules): void {
+      damageRules = { slimeFriendlyFire: rules.slimeFriendlyFire };
+    },
     setPlayerLoadout(playerId, loadout, simTimeMs): void {
       if (
         loadout.selectedIndex !== null &&
@@ -100,13 +110,15 @@ export function createCombatSystem(
     },
     clear(): void {
       shooterWeapons.clear();
+      damageRules = DEFAULT_DAMAGE_RULES;
     },
     tick(input, store, index, simTimeMs, arena, emit): ReadonlyArray<DamageIntent> {
       const maxContactBoundsRadius = computeMaxContactBoundsRadius(store);
       const maxProjectileTargetBoundsRadius = computeMaxProjectileTargetBoundsRadius(store);
+      const projectileRemovals = new Set<EntityId>();
       runFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit);
-      runProjectileMovement(store);
-      runLifetimeCleanup(store, simTimeMs, arena);
+      runProjectileMovement(store, simTimeMs, projectileRemovals);
+      markLifetimeCleanup(store, simTimeMs, arena, projectileRemovals);
       index.rebuild(store);
       const contactIntents = runContactIntents(store, index, simTimeMs, maxContactBoundsRadius);
       const projectileIntents = runHitDetection(
@@ -114,11 +126,22 @@ export function createCombatSystem(
         index,
         simTimeMs,
         maxProjectileTargetBoundsRadius,
+        damageRules,
+        projectileRemovals,
         emit
       );
-      return contactIntents.length === 0
-        ? projectileIntents
-        : [...contactIntents, ...projectileIntents];
+      const explosionIntents = runGroundedDetonations(
+        store,
+        index,
+        simTimeMs,
+        maxProjectileTargetBoundsRadius,
+        damageRules,
+        weaponRegistry,
+        projectileRemovals,
+        emit
+      );
+      for (const id of projectileRemovals) store.removeProjectile(id);
+      return mergeDamageIntents(contactIntents, projectileIntents, explosionIntents);
     }
   };
 }
@@ -150,6 +173,7 @@ function runFiringDecisions(
 
   const dx = input.aimWorld.x - player.position.x;
   const dy = input.aimWorld.y - player.position.y;
+  const aimDistance = Math.hypot(dx, dy);
   const fireDirections = firePatternDirections(archetype.firePattern, dx, dy);
   if (fireDirections.length === 0) return;
   const eventDir = fireEventDirection(archetype.firePattern, dx, dy, fireDirections);
@@ -158,10 +182,12 @@ function runFiringDecisions(
   const spawned = spawnProjectilesForDirections(
     store,
     archetype,
+    player.id,
     weapons.ownerKind,
     player.position,
     fireDirections,
-    simTimeMs
+    simTimeMs,
+    aimDistance
   );
   if (spawned === 0) return;
 
@@ -191,7 +217,7 @@ function fireEventDirection(
     case 'multiDirection':
       return fireDirections[0] ?? null;
     case 'place':
-      return null;
+      return normalizedVector(aimDx, aimDy) ?? { x: 1, y: 0 };
     default:
       return assertNever(pattern);
   }
@@ -228,7 +254,7 @@ function firePatternDirections(
     case 'multiDirection':
       return pattern.directions.map((angle) => ({ x: Math.cos(angle), y: Math.sin(angle) }));
     case 'place':
-      return [];
+      return [{ x: 0, y: 0 }];
     default:
       return assertNever(pattern);
   }
@@ -259,68 +285,202 @@ function aimedSpreadDirections(
 function spawnProjectilesForDirections(
   store: EntityStore,
   archetype: WeaponArchetype,
+  ownerId: EntityId,
   ownerKind: 'player' | 'enemy' | 'boss',
   origin: Vec2,
   directions: ReadonlyArray<Vec2>,
-  simTimeMs: number
+  simTimeMs: number,
+  aimDistance: number | null
 ): number {
-  const projectile = legacyLinearProjectile(archetype);
-  if (projectile === null) return 0;
+  const projectile = archetype.projectile;
   for (const direction of directions) {
-    store.spawnProjectile({
-      weaponArchetypeId: archetype.id,
+    spawnProjectileForDirection(
+      store,
+      archetype.id,
+      projectile,
+      ownerId,
       ownerKind,
-      motionKind: projectile.motion.kind,
-      position: origin,
-      velocity: {
-        vx: direction.x * projectile.motion.speed,
-        vy: direction.y * projectile.motion.speed
-      },
-      size: projectile.size,
-      hitRadius: projectile.hitRadius,
-      impactDamage: projectile.impactDamage,
-      knockbackImpulse: projectile.knockbackImpulse,
-      pierceRemaining: projectile.pierceCount,
-      groundOnImpact: projectile.groundOnImpact,
-      groundedLifetimeMs: projectile.groundedLifetimeMs,
-      explosion: projectile.explosion,
-      groundAtSimMs: null,
-      expireAtSimMs: simTimeMs + projectile.ttlMs
-    });
+      origin,
+      direction,
+      simTimeMs,
+      aimDistance
+    );
   }
   return directions.length;
 }
 
-function legacyLinearProjectile(archetype: WeaponArchetype): LinearProjectileArchetype | null {
-  const { projectile } = archetype;
-  const { motion } = projectile;
-  if (motion.kind !== 'linear') return null;
-  return { ...projectile, motion };
-}
-
-function runProjectileMovement(store: EntityStore): void {
-  for (const projectile of store.projectiles()) {
-    if (projectile.motionKind !== 'linear') continue;
-    projectile.position.x += projectile.velocity.vx * SIM_STEP_SEC;
-    projectile.position.y += projectile.velocity.vy * SIM_STEP_SEC;
+function spawnProjectileForDirection(
+  store: EntityStore,
+  weaponArchetypeId: string,
+  projectile: ProjectileArchetype,
+  ownerId: EntityId,
+  ownerKind: 'player' | 'enemy' | 'boss',
+  origin: Vec2,
+  direction: Vec2,
+  simTimeMs: number,
+  aimDistance: number | null
+): void {
+  const expireAtSimMs = simTimeMs + projectile.ttlMs;
+  switch (projectile.motion.kind) {
+    case 'linear':
+      store.spawnProjectile({
+        weaponArchetypeId,
+        ownerId,
+        ownerKind,
+        motionKind: 'linear',
+        position: origin,
+        velocity: {
+          vx: direction.x * projectile.motion.speed,
+          vy: direction.y * projectile.motion.speed
+        },
+        size: projectile.size,
+        hitRadius: projectile.hitRadius,
+        impactDamage: projectile.impactDamage,
+        knockbackImpulse: projectile.knockbackImpulse,
+        pierceRemaining: projectile.pierceCount,
+        groundOnImpact: projectile.groundOnImpact,
+        groundedLifetimeMs: projectile.groundedLifetimeMs,
+        explosion: projectile.explosion,
+        groundAtSimMs: null,
+        expireAtSimMs
+      });
+      return;
+    case 'arc': {
+      const travelDistance = Math.min(
+        projectile.motion.range,
+        aimDistance ?? projectile.motion.range
+      );
+      const end = {
+        x: origin.x + direction.x * travelDistance,
+        y: origin.y + direction.y * travelDistance
+      };
+      const flightMs = Math.max(1, projectile.motion.flightMs);
+      store.spawnProjectile({
+        weaponArchetypeId,
+        ownerId,
+        ownerKind,
+        motionKind: 'arc',
+        arcStart: origin,
+        arcEnd: end,
+        arcStartSimMs: simTimeMs,
+        arcEndSimMs: simTimeMs + flightMs,
+        position: origin,
+        velocity: {
+          vx: direction.x * projectile.motion.speed,
+          vy: direction.y * projectile.motion.speed
+        },
+        size: projectile.size,
+        hitRadius: projectile.hitRadius,
+        impactDamage: projectile.impactDamage,
+        knockbackImpulse: projectile.knockbackImpulse,
+        pierceRemaining: projectile.pierceCount,
+        groundOnImpact: projectile.groundOnImpact,
+        groundedLifetimeMs: projectile.groundedLifetimeMs,
+        explosion: projectile.explosion,
+        groundAtSimMs: null,
+        expireAtSimMs
+      });
+      return;
+    }
+    case 'placed': {
+      const detonateAtSimMs =
+        projectile.explosion === null ? null : simTimeMs + projectile.explosion.delayMs;
+      store.spawnProjectile({
+        weaponArchetypeId,
+        ownerId,
+        ownerKind,
+        motionKind: 'placed',
+        position: origin,
+        velocity: { vx: 0, vy: 0 },
+        size: projectile.size,
+        hitRadius: projectile.hitRadius,
+        impactDamage: projectile.impactDamage,
+        knockbackImpulse: projectile.knockbackImpulse,
+        pierceRemaining: projectile.pierceCount,
+        groundOnImpact: projectile.groundOnImpact,
+        groundedLifetimeMs: projectile.groundedLifetimeMs,
+        explosion: projectile.explosion,
+        state: 'grounded',
+        groundAtSimMs: simTimeMs,
+        detonateAtSimMs,
+        expireAtSimMs
+      });
+      return;
+    }
+    default:
+      assertNever(projectile.motion);
   }
 }
 
-function runLifetimeCleanup(store: EntityStore, simTimeMs: number, arena: ArenaConfig): void {
-  const halfW = arena.width / 2;
-  const halfH = arena.height / 2;
-  const expired: EntityId[] = [];
+function runProjectileMovement(
+  store: EntityStore,
+  simTimeMs: number,
+  projectileRemovals: Set<EntityId>
+): void {
   for (const projectile of store.projectiles()) {
-    if (simTimeMs >= projectile.expireAtSimMs) {
-      expired.push(projectile.id);
+    if (projectileRemovals.has(projectile.id)) continue;
+    if (projectile.state !== 'flying') continue;
+    if (projectile.motionKind === 'linear') {
+      projectile.position.x += projectile.velocity.vx * SIM_STEP_SEC;
+      projectile.position.y += projectile.velocity.vy * SIM_STEP_SEC;
       continue;
     }
-    const { x, y } = projectile.position;
-    if (x < -halfW || x > halfW || y < -halfH || y > halfH) {
-      expired.push(projectile.id);
+    if (projectile.motionKind === 'arc') {
+      updateArcProjectilePosition(projectile, simTimeMs);
+      if (projectile.arcEndSimMs !== null && simTimeMs >= projectile.arcEndSimMs) {
+        if (projectile.groundOnImpact) {
+          groundProjectile(projectile, simTimeMs);
+        } else {
+          projectileRemovals.add(projectile.id);
+        }
+      }
     }
   }
-  for (const id of expired) store.removeProjectile(id);
+}
+
+function updateArcProjectilePosition(projectile: Projectile, simTimeMs: number): void {
+  if (
+    projectile.arcStart === null ||
+    projectile.arcEnd === null ||
+    projectile.arcStartSimMs === null ||
+    projectile.arcEndSimMs === null
+  ) {
+    return;
+  }
+  const durationMs = Math.max(1, projectile.arcEndSimMs - projectile.arcStartSimMs);
+  const progress = clamp((simTimeMs - projectile.arcStartSimMs) / durationMs, 0, 1);
+  projectile.position.x =
+    projectile.arcStart.x + (projectile.arcEnd.x - projectile.arcStart.x) * progress;
+  projectile.position.y =
+    projectile.arcStart.y + (projectile.arcEnd.y - projectile.arcStart.y) * progress;
+  const durationSec = durationMs / 1000;
+  projectile.velocity.vx = (projectile.arcEnd.x - projectile.arcStart.x) / durationSec;
+  projectile.velocity.vy = (projectile.arcEnd.y - projectile.arcStart.y) / durationSec;
+}
+
+function markLifetimeCleanup(
+  store: EntityStore,
+  simTimeMs: number,
+  arena: ArenaConfig,
+  projectileRemovals: Set<EntityId>
+): void {
+  const halfW = arena.width / 2;
+  const halfH = arena.height / 2;
+  for (const projectile of store.projectiles()) {
+    const waitingToDetonate =
+      projectile.explosion !== null &&
+      projectile.detonateAtSimMs !== null &&
+      simTimeMs >= projectile.detonateAtSimMs;
+    if (simTimeMs >= projectile.expireAtSimMs && !waitingToDetonate) {
+      projectileRemovals.add(projectile.id);
+      continue;
+    }
+    if (projectile.state === 'grounded') continue;
+    const { x, y } = projectile.position;
+    if (x < -halfW || x > halfW || y < -halfH || y > halfH) {
+      projectileRemovals.add(projectile.id);
+    }
+  }
 }
 
 function runContactIntents(
@@ -385,58 +545,78 @@ function applyKnockbackToChaser(enemy: Enemy | Boss, player: Player, simTimeMs: 
   };
 }
 
+type DamageableTarget = Enemy | Boss | Player;
+
 function runHitDetection(
   store: EntityStore,
   index: SpatialIndex,
   simTimeMs: number,
   maxProjectileTargetBoundsRadius: number,
+  damageRules: DamageRules,
+  projectileRemovals: Set<EntityId>,
   emit: (event: RuntimeEvent) => void
 ): ReadonlyArray<DamageIntent> {
   const intents: DamageIntent[] = [];
-  const hitProjectileIds: EntityId[] = [];
 
   for (const projectile of store.projectiles()) {
-    const target = findFirstHit(projectile, index, maxProjectileTargetBoundsRadius);
+    if (projectileRemovals.has(projectile.id)) continue;
+    if (!isImpactEligible(projectile, simTimeMs)) continue;
+    const target = findFirstHit(projectile, index, maxProjectileTargetBoundsRadius, damageRules);
     if (target === null) continue;
     const impactDir = normalizedProjectileDirection(projectile);
     if (target.kind === 'enemy' || target.kind === 'boss') {
       applyProjectileKnockback(target, projectile, impactDir, simTimeMs);
     }
 
-    intents.push({
-      targetId: target.id,
-      amount: projectile.impactDamage,
-      source: {
-        kind: 'projectile',
+    projectile.hitEntityIds.add(target.id);
+    if (projectile.impactDamage > 0) {
+      intents.push({
+        targetId: target.id,
+        amount: projectile.impactDamage,
+        source: {
+          kind: 'projectile',
+          projectileId: projectile.id,
+          ownerKind: projectile.ownerKind,
+          weaponArchetypeId: projectile.weaponArchetypeId,
+          impactDirX: impactDir.x,
+          impactDirY: impactDir.y
+        },
+        hitPosition: { x: projectile.position.x, y: projectile.position.y }
+      });
+
+      emit({
+        kind: 'hit',
+        simTime: simTimeMs,
         projectileId: projectile.id,
-        ownerKind: projectile.ownerKind,
+        targetId: target.id,
+        targetKind: target.kind,
+        targetArchetypeId: target.kind === 'player' ? null : target.archetypeId,
         weaponArchetypeId: projectile.weaponArchetypeId,
+        damage: projectile.impactDamage,
         impactDirX: impactDir.x,
-        impactDirY: impactDir.y
-      },
-      hitPosition: { x: projectile.position.x, y: projectile.position.y }
-    });
+        impactDirY: impactDir.y,
+        x: projectile.position.x,
+        y: projectile.position.y
+      });
+    }
 
-    emit({
-      kind: 'hit',
-      simTime: simTimeMs,
-      projectileId: projectile.id,
-      targetId: target.id,
-      targetKind: target.kind,
-      targetArchetypeId: target.kind === 'player' ? null : target.archetypeId,
-      weaponArchetypeId: projectile.weaponArchetypeId,
-      damage: projectile.impactDamage,
-      impactDirX: impactDir.x,
-      impactDirY: impactDir.y,
-      x: projectile.position.x,
-      y: projectile.position.y
-    });
-
-    hitProjectileIds.push(projectile.id);
+    if (projectile.groundOnImpact) {
+      groundProjectile(projectile, simTimeMs);
+      continue;
+    }
+    if (projectile.pierceRemaining > 0) {
+      projectile.pierceRemaining -= 1;
+      continue;
+    }
+    projectileRemovals.add(projectile.id);
   }
 
-  for (const id of hitProjectileIds) store.removeProjectile(id);
   return intents;
+}
+
+function isImpactEligible(projectile: Projectile, simTimeMs: number): boolean {
+  if (projectile.state === 'flying') return true;
+  return projectile.motionKind === 'arc' && projectile.groundAtSimMs === simTimeMs;
 }
 
 function normalizedProjectileDirection(projectile: Projectile): Vec2 {
@@ -463,15 +643,16 @@ function applyProjectileKnockback(
 function findFirstHit(
   projectile: Projectile,
   index: SpatialIndex,
-  maxProjectileTargetBoundsRadius: number
-): Enemy | Boss | Player | null {
+  maxProjectileTargetBoundsRadius: number,
+  damageRules: DamageRules
+): DamageableTarget | null {
   const candidates = index.queryRadius(
     projectile.position.x,
     projectile.position.y,
     projectile.hitRadius + maxProjectileTargetBoundsRadius
   );
   for (const candidate of candidates) {
-    const target = asValidTarget(candidate, projectile.ownerKind);
+    const target = asValidTarget(candidate, projectile, damageRules);
     if (target === null) continue;
     if (circleOverlapsBox({ position: projectile.position, radius: projectile.hitRadius }, target)) {
       return target;
@@ -482,13 +663,205 @@ function findFirstHit(
 
 function asValidTarget(
   entity: IndexedEntity,
-  ownerKind: 'player' | 'enemy' | 'boss'
-): Enemy | Boss | Player | null {
-  if (ownerKind === 'player' && entity.kind === 'enemy') return entity;
-  if (ownerKind === 'player' && entity.kind === 'boss') return entity;
-  if (ownerKind === 'enemy' && entity.kind === 'player') return entity;
-  if (ownerKind === 'boss' && entity.kind === 'player') return entity;
-  return null;
+  projectile: Projectile,
+  damageRules: DamageRules
+): DamageableTarget | null {
+  if (entity.kind !== 'player' && entity.kind !== 'enemy' && entity.kind !== 'boss') return null;
+  if (projectile.hitEntityIds.has(entity.id)) return null;
+  if (!canProjectileDamage(projectile, entity, damageRules)) return null;
+  return entity;
+}
+
+function canProjectileDamage(
+  projectile: Projectile,
+  target: DamageableTarget,
+  damageRules: DamageRules
+): boolean {
+  if (target.id === projectile.ownerId) return false;
+  if (
+    projectile.ownerKind === 'enemy' &&
+    target.kind === 'enemy' &&
+    !damageRules.slimeFriendlyFire
+  ) {
+    return false;
+  }
+  return true;
+}
+
+function groundProjectile(projectile: Projectile, simTimeMs: number): void {
+  projectile.state = 'grounded';
+  projectile.groundAtSimMs = simTimeMs;
+  projectile.detonateAtSimMs =
+    projectile.explosion === null ? null : simTimeMs + projectile.explosion.delayMs;
+  if (projectile.groundedLifetimeMs !== null) {
+    projectile.expireAtSimMs = Math.min(
+      projectile.expireAtSimMs,
+      simTimeMs + projectile.groundedLifetimeMs
+    );
+  }
+}
+
+function runGroundedDetonations(
+  store: EntityStore,
+  index: SpatialIndex,
+  simTimeMs: number,
+  maxProjectileTargetBoundsRadius: number,
+  damageRules: DamageRules,
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
+  projectileRemovals: Set<EntityId>,
+  emit: (event: RuntimeEvent) => void
+): ReadonlyArray<DamageIntent> {
+  const intents: DamageIntent[] = [];
+  for (const projectile of store.projectiles()) {
+    if (projectileRemovals.has(projectile.id)) continue;
+    if (projectile.state !== 'grounded') continue;
+    if (projectile.explosion === null) continue;
+    if (projectile.detonateAtSimMs === null || simTimeMs < projectile.detonateAtSimMs) continue;
+
+    emit({
+      kind: 'explosion',
+      simTime: simTimeMs,
+      projectileId: projectile.id,
+      ownerKind: projectile.ownerKind,
+      weaponArchetypeId: projectile.weaponArchetypeId,
+      damage: projectile.explosion.damage,
+      radius: projectile.explosion.radius,
+      x: projectile.position.x,
+      y: projectile.position.y
+    });
+    addExplosionIntents(
+      projectile,
+      index,
+      simTimeMs,
+      maxProjectileTargetBoundsRadius,
+      damageRules,
+      intents
+    );
+    spawnExplosionFragments(store, projectile, weaponRegistry, simTimeMs);
+    projectileRemovals.add(projectile.id);
+  }
+  return intents;
+}
+
+function addExplosionIntents(
+  projectile: Projectile,
+  index: SpatialIndex,
+  simTimeMs: number,
+  maxProjectileTargetBoundsRadius: number,
+  damageRules: DamageRules,
+  intents: DamageIntent[]
+): void {
+  const explosion = projectile.explosion;
+  if (explosion === null || explosion.radius <= 0) return;
+  const candidates = index.queryRadius(
+    projectile.position.x,
+    projectile.position.y,
+    explosion.radius + maxProjectileTargetBoundsRadius
+  );
+  for (const candidate of candidates) {
+    const target = asExplosionTarget(candidate, projectile, damageRules);
+    if (target === null) continue;
+    if (!circleOverlapsBox({ position: projectile.position, radius: explosion.radius }, target)) {
+      continue;
+    }
+    if (target.kind === 'enemy' || target.kind === 'boss') {
+      applyExplosionKnockback(target, projectile, simTimeMs);
+    }
+    if (explosion.damage <= 0) continue;
+    intents.push({
+      targetId: target.id,
+      amount: explosion.damage,
+      source: {
+        kind: 'explosion',
+        projectileId: projectile.id,
+        ownerKind: projectile.ownerKind,
+        weaponArchetypeId: projectile.weaponArchetypeId
+      },
+      hitPosition: { x: projectile.position.x, y: projectile.position.y }
+    });
+  }
+}
+
+function asExplosionTarget(
+  entity: IndexedEntity,
+  projectile: Projectile,
+  damageRules: DamageRules
+): DamageableTarget | null {
+  if (entity.kind !== 'player' && entity.kind !== 'enemy' && entity.kind !== 'boss') return null;
+  if (!canProjectileDamage(projectile, entity, damageRules)) return null;
+  return entity;
+}
+
+function applyExplosionKnockback(
+  target: Enemy | Boss,
+  projectile: Projectile,
+  simTimeMs: number
+): void {
+  const explosion = projectile.explosion;
+  if (explosion === null) return;
+  const direction = normalizedExplosionDirection(projectile, target);
+  const impulseSpeed = explosion.knockbackImpulse * target.knockbackVelocityScale;
+  target.knockback = {
+    vx: impulseSpeed * direction.x,
+    vy: impulseSpeed * direction.y,
+    startSimMs: simTimeMs,
+    endSimMs: simTimeMs + target.knockbackDurationMs
+  };
+}
+
+function normalizedExplosionDirection(projectile: Projectile, target: Enemy | Boss): Vec2 {
+  const dx = target.position.x - projectile.position.x;
+  const dy = target.position.y - projectile.position.y;
+  const len = Math.hypot(dx, dy);
+  if (len > 0) return { x: dx / len, y: dy / len };
+  return normalizedProjectileDirection(projectile);
+}
+
+function spawnExplosionFragments(
+  store: EntityStore,
+  projectile: Projectile,
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
+  simTimeMs: number
+): void {
+  const fragment = projectile.explosion?.fragments ?? null;
+  if (fragment === null) return;
+  const archetype = weaponRegistry[fragment.weaponArchetypeId];
+  if (archetype === undefined) return;
+  const directions = fragmentDirections(fragment);
+  spawnProjectilesForDirections(
+    store,
+    archetype,
+    projectile.ownerId,
+    projectile.ownerKind,
+    projectile.position,
+    directions,
+    simTimeMs,
+    null
+  );
+}
+
+function fragmentDirections(fragment: FragmentSpec): ReadonlyArray<Vec2> {
+  if (fragment.count <= 0) return [];
+  if (fragment.count === 1) return [{ x: 1, y: 0 }];
+  const start = -fragment.spreadRadians / 2;
+  const step = fragment.spreadRadians / fragment.count;
+  const directions: Vec2[] = [];
+  for (let index = 0; index < fragment.count; index += 1) {
+    const angle = start + step * (index + 0.5);
+    directions.push({ x: Math.cos(angle), y: Math.sin(angle) });
+  }
+  return directions;
+}
+
+function mergeDamageIntents(
+  contactIntents: ReadonlyArray<DamageIntent>,
+  projectileIntents: ReadonlyArray<DamageIntent>,
+  explosionIntents: ReadonlyArray<DamageIntent>
+): ReadonlyArray<DamageIntent> {
+  if (contactIntents.length === 0 && projectileIntents.length === 0) return explosionIntents;
+  if (contactIntents.length === 0 && explosionIntents.length === 0) return projectileIntents;
+  if (projectileIntents.length === 0 && explosionIntents.length === 0) return contactIntents;
+  return [...contactIntents, ...projectileIntents, ...explosionIntents];
 }
 
 function computeMaxProjectileTargetBoundsRadius(store: EntityStore): number {

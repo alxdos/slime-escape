@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createEntityStore,
   type EnemySpawnSpec,
+  type EntityId,
   type ProjectileSpawnSpec
 } from './EntityStore';
 import { createSpatialIndex } from './SpatialIndex';
@@ -40,6 +41,7 @@ function enemyAt(x: number, y: number, archetypeId = 'test-stationary-enemy'): E
 function projectileAt(x: number, y: number): ProjectileSpawnSpec {
   return {
     weaponArchetypeId: 'pistol',
+    ownerId: 1 as EntityId,
     ownerKind: 'player',
     motionKind: 'linear',
     position: { x, y },

@@ -6,6 +6,7 @@ import {
   createEntityStore,
   type DropSpawnSpec,
   type EnemySpawnSpec,
+  type EntityId,
   type ProjectileSpawnSpec
 } from './EntityStore';
 
@@ -39,6 +40,7 @@ const ENEMY_SPEC: EnemySpawnSpec = {
 
 const PROJECTILE_SPEC: ProjectileSpawnSpec = {
   weaponArchetypeId: 'pistol',
+  ownerId: 1 as EntityId,
   ownerKind: 'player',
   motionKind: 'linear',
   position: { x: 0, y: 0 },

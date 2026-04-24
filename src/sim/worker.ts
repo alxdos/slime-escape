@@ -80,6 +80,7 @@ const sessionFlow = createSessionFlowSystem({
     zone.reset();
     spawn.setRng(rng);
     drops.setRng(rng);
+    combat.setDamageRules(session.rules.damage);
     const player = entities.spawnPlayer(session.player);
     if (session.loadout !== null) {
       combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());

@@ -84,6 +84,7 @@ function runBossAttacks(
       if (w.projectile.motion.kind !== 'linear') continue;
       store.spawnProjectile({
         weaponArchetypeId: w.id,
+        ownerId: boss.id,
         ownerKind: 'boss',
         motionKind: w.projectile.motion.kind,
         position: { x: boss.position.x, y: boss.position.y },

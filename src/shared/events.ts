@@ -31,6 +31,17 @@ export type RuntimeEvent =
       y: number;
     }
   | {
+      kind: 'explosion';
+      simTime: number;
+      projectileId: number;
+      ownerKind: 'player' | 'enemy' | 'boss';
+      weaponArchetypeId: string;
+      damage: number;
+      radius: number;
+      x: number;
+      y: number;
+    }
+  | {
       kind: 'death';
       simTime: number;
       entityId: number;

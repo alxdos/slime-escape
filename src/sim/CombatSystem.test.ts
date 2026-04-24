@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { FIREBALL_STAFF, PISTOL, SHOTGUN } from '../shared/content/weapons';
+import {
+  BOMB_PLACER,
+  FIREBALL_STAFF,
+  PISTOL,
+  ROCK_THROWER,
+  SHOTGUN,
+  SNIPER,
+  type WeaponArchetype
+} from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
@@ -76,6 +84,7 @@ function pistolProjectileSpawnSpec(
 ): ProjectileSpawnSpec {
   return {
     weaponArchetypeId: PISTOL.id,
+    ownerId: 0 as EntityId,
     ownerKind: 'enemy',
     motionKind: 'linear',
     position: { x: 0, y: 0 },
@@ -255,6 +264,235 @@ describe('CombatSystem', () => {
       0,
       -speed
     ]);
+  });
+
+  it('moves arc projectiles to their landing point, grounds them, then expires them', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [ROCK_THROWER.id], selectedIndex: 0 }, 0);
+    const input = makeInput({
+      aimWorld: { x: 3, y: 0 },
+      firing: true,
+      loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 }
+    });
+
+    combat.tick(input, store, index, 0, ARENA, () => {});
+
+    const projectile = [...store.projectiles()][0];
+    expect(projectile).toBeDefined();
+    if (projectile === undefined) throw new Error('expected projectile');
+    expect(projectile.motionKind).toBe('arc');
+    expect(projectile.state).toBe('flying');
+
+    if (ROCK_THROWER.projectile.motion.kind !== 'arc') throw new Error('expected arc motion');
+    combat.tick(makeInput(), store, index, ROCK_THROWER.projectile.motion.flightMs, ARENA, () => {});
+
+    expect(projectile.state).toBe('grounded');
+    expect(projectile.position.x).toBeCloseTo(3);
+    expect(projectile.position.y).toBeCloseTo(0);
+    expect(projectile.groundAtSimMs).toBe(ROCK_THROWER.projectile.motion.flightMs);
+
+    if (ROCK_THROWER.projectile.groundedLifetimeMs === null) {
+      throw new Error('expected grounded lifetime');
+    }
+    combat.tick(
+      makeInput(),
+      store,
+      index,
+      ROCK_THROWER.projectile.motion.flightMs + ROCK_THROWER.projectile.groundedLifetimeMs,
+      ARENA,
+      () => {}
+    );
+
+    expect(store.projectileCount()).toBe(0);
+  });
+
+  it('grounds arcing rocks at target impact while keeping impact damage as an intent', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [ROCK_THROWER.id], selectedIndex: 0 }, 0);
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 3, y: 0 }));
+    const events: RuntimeEvent[] = [];
+
+    combat.tick(
+      makeInput({
+        aimWorld: { x: 3, y: 0 },
+        firing: true,
+        loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      (e) => events.push(e)
+    );
+
+    if (ROCK_THROWER.projectile.motion.kind !== 'arc') throw new Error('expected arc motion');
+    const intents = combat.tick(
+      makeInput(),
+      store,
+      index,
+      ROCK_THROWER.projectile.motion.flightMs,
+      ARENA,
+      (e) => events.push(e)
+    );
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(enemy.id);
+    expect(intents[0]?.amount).toBe(ROCK_THROWER.projectile.impactDamage);
+    const projectile = [...store.projectiles()][0];
+    expect(projectile?.state).toBe('grounded');
+    expect(events.filter((e) => e.kind === 'hit')).toHaveLength(1);
+  });
+
+  it('lets piercing projectiles hit distinct targets before being removed', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [SNIPER.id], selectedIndex: 0 }, 0);
+    const first = store.spawnEnemy(stationaryEnemySpec({ x: 0.75, y: 0 }));
+    const second = store.spawnEnemy(stationaryEnemySpec({ x: 1.3, y: 0 }));
+
+    const firstTick = combat.tick(
+      makeInput({
+        aimWorld: { x: 5, y: 0 },
+        firing: true,
+        loadout: { weapons: [SNIPER.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      () => {}
+    );
+    expect(firstTick).toHaveLength(1);
+    expect(firstTick[0]?.targetId).toBe(first.id);
+    expect(store.projectileCount()).toBe(1);
+
+    const secondTick = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, () => {});
+    expect(secondTick).toHaveLength(1);
+    expect(secondTick[0]?.targetId).toBe(second.id);
+    expect(store.projectileCount()).toBe(0);
+  });
+
+  it('uses session damage rules to allow enemy projectiles to hit another enemy', () => {
+    const { store, index, combat } = setupCombat();
+    combat.setDamageRules({ slimeFriendlyFire: true });
+    const owner = store.spawnEnemy(stationaryEnemySpec({ x: -3, y: 0 }));
+    const target = store.spawnEnemy(stationaryEnemySpec({ x: 3, y: 0 }));
+    store.spawnProjectile(
+      pistolProjectileSpawnSpec({
+        ownerId: owner.id,
+        position: { x: target.position.x, y: target.position.y }
+      })
+    );
+
+    const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, () => {});
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(target.id);
+  });
+
+  it('detonates placed bombs with radial explosion damage and owner filtering', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [BOMB_PLACER.id], selectedIndex: 0 }, 0);
+    const enemy = store.spawnEnemy({
+      ...stationaryEnemySpec({ x: 1, y: 0 }),
+      knockbackVelocityScale: 1
+    });
+    const events: RuntimeEvent[] = [];
+
+    combat.tick(
+      makeInput({
+        aimWorld: { x: 1, y: 0 },
+        firing: true,
+        loadout: { weapons: [BOMB_PLACER.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      (e) => events.push(e)
+    );
+    expect(store.projectileCount()).toBe(1);
+
+    const intents = combat.tick(
+      makeInput(),
+      store,
+      index,
+      BOMB_PLACER.projectile.explosion!.delayMs,
+      ARENA,
+      (e) => events.push(e)
+    );
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(enemy.id);
+    expect(intents[0]?.amount).toBe(BOMB_PLACER.projectile.explosion!.damage);
+    expect(intents.some((intent) => intent.targetId === player.id)).toBe(false);
+    expect(intents[0]?.source.kind).toBe('explosion');
+    const explosion = events.find((e) => e.kind === 'explosion');
+    if (explosion?.kind !== 'explosion') throw new Error('expected explosion event');
+    expect(explosion.weaponArchetypeId).toBe(BOMB_PLACER.id);
+    expect(explosion.radius).toBe(BOMB_PLACER.projectile.explosion!.radius);
+    expect(enemy.knockback).not.toBeNull();
+    expect(store.projectileCount()).toBe(0);
+  });
+
+  it('spawns explosion fragments as ordinary owner-inherited projectiles', () => {
+    const fragmentBomb: WeaponArchetype = {
+      ...BOMB_PLACER,
+      id: 'test-fragment-bomb',
+      projectile: {
+        ...BOMB_PLACER.projectile,
+        explosion: {
+          delayMs: 0,
+          radius: 0,
+          damage: 0,
+          knockbackImpulse: 0,
+          fragments: {
+            weaponArchetypeId: PISTOL.id,
+            count: 3,
+            spreadRadians: Math.PI * 2
+          }
+        }
+      }
+    };
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem({
+      [fragmentBomb.id]: fragmentBomb,
+      [PISTOL.id]: PISTOL
+    });
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [fragmentBomb.id], selectedIndex: 0 }, 0);
+
+    const intents = combat.tick(
+      makeInput({
+        aimWorld: { x: 1, y: 0 },
+        firing: true,
+        loadout: { weapons: [fragmentBomb.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      () => {}
+    );
+
+    expect(intents).toHaveLength(0);
+    const fragments = [...store.projectiles()];
+    expect(fragments).toHaveLength(3);
+    expect(fragments.every((p) => p.weaponArchetypeId === PISTOL.id)).toBe(true);
+    expect(fragments.every((p) => p.ownerId === player.id)).toBe(true);
+    expect(fragments.every((p) => p.ownerKind === 'player')).toBe(true);
   });
 
   it('produces a damage intent and hit event when projectile reaches an enemy', () => {

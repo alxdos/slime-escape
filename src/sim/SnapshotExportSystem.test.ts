@@ -4,7 +4,7 @@ import { PISTOL } from '../shared/content/weapons';
 import type { ZoneSnapshot } from '../shared/snapshot';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../shared/timing';
 
-import { createEntityStore } from './EntityStore';
+import { createEntityStore, type EntityId } from './EntityStore';
 import type { EncounterContext } from './SessionFlowSystem';
 import { createSnapshotExportSystem, type SnapshotSources } from './SnapshotExportSystem';
 
@@ -123,6 +123,7 @@ describe('SnapshotExportSystem', () => {
     });
     store.spawnProjectile({
       weaponArchetypeId: PISTOL.id,
+      ownerId: 1 as EntityId,
       ownerKind: 'player',
       motionKind: 'linear',
       position: { x: 1, y: 0 },

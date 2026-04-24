@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ArenaConfig, PlayerSpawn } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
-import { createEntityStore, type EnemySpawnSpec } from './EntityStore';
+import { createEntityStore, type EnemySpawnSpec, type EntityId } from './EntityStore';
 import { createMovementSystem } from './MovementSystem';
 import { createRuntimeInputState } from './RuntimeInputState';
 
@@ -172,6 +172,7 @@ describe('MovementSystem enemies', () => {
     const enemy = store.spawnEnemy(trainingTargetAt(5, 0));
     const projectile = store.spawnProjectile({
       weaponArchetypeId: 'pistol',
+      ownerId: 1 as EntityId,
       ownerKind: 'player',
       motionKind: 'linear',
       position: { x: 1, y: 0 },

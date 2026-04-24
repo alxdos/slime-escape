@@ -541,6 +541,8 @@ export function createAudio(init: AudioInit = {}): Audio {
         }
         return;
       }
+      case 'explosion':
+        return;
       case 'bossPhaseChange': {
         const bossArchetypeId = resolveBossArchetypeId(event.bossId);
         if (bossArchetypeId === null) {
