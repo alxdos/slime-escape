@@ -18,8 +18,13 @@ import {
   requireSingleTable
 } from '../util/markdown';
 import { requireInlineImage } from '../util/inlineMedia';
-import { readSpriteAssetMetrics } from '../util/spriteMetrics';
+import { readSpriteAssetMetrics, type SpriteAssetMetrics } from '../util/spriteMetrics';
 import { WEAPON_IDS } from '../sessions/crossAreaRefs';
+
+export type ParsedDropSpriteVisual = SpriteAssetMetrics &
+  Readonly<{
+    image: string;
+  }>;
 
 export type ParsedDrop = Readonly<{
   id: string;
@@ -27,10 +32,12 @@ export type ParsedDrop = Readonly<{
   radius: number;
   ttlMs: number;
   effect: DropEffect;
+  spriteVisual: ParsedDropSpriteVisual;
   color: number;
 }>;
 
 export type ParsedDropsArea = Readonly<{
+  sourcePath: string;
   drops: ReadonlyArray<ParsedDrop>;
 }>;
 
@@ -38,6 +45,7 @@ type DropDefinition = Readonly<{
   id: string;
   displayName: string;
   radius: number;
+  spriteVisual: ParsedDropSpriteVisual;
   color: number;
 }>;
 
@@ -61,11 +69,15 @@ function parseDropsDocument(document: MarkdownDocument): ParsedDropsArea {
   const effectTable = requireSingleTable(effectSection);
   const modifierTable = requireSingleTable(modifierSection);
 
+  assertNoForbiddenSpriteColumns(bodySection, bodyTable);
+  assertNoForbiddenSpriteColumns(effectSection, effectTable);
+  assertNoForbiddenSpriteColumns(modifierSection, modifierTable);
   assertKnownReferences(bodySection, bodyTable, knownDropIds, 'drop');
   assertKnownReferences(effectSection, effectTable, knownDropIds, 'drop');
   assertKnownReferences(modifierSection, modifierTable, knownDropIds, 'drop');
 
   return {
+    sourcePath: document.filePath,
     drops: definitions.map((definition) =>
       parseDrop(definition, {
         bodySection,
@@ -81,6 +93,7 @@ function parseDropsDocument(document: MarkdownDocument): ParsedDropsArea {
 
 function parseDropDefinition(section: MarkdownSection): DropDefinition {
   const table = requireSingleTable(section);
+  assertNoForbiddenSpriteFields(section, table);
   const image = requireInlineImage(section);
   const metrics = readSpriteAssetMetrics({
     sourcePath: section.filePath,
@@ -91,8 +104,55 @@ function parseDropDefinition(section: MarkdownSection): DropDefinition {
     id: section.title,
     displayName: requireField(section, table, 'displayName'),
     radius: Math.min(metrics.worldSize.width, metrics.worldSize.height) / 2,
+    spriteVisual: {
+      image: image.url,
+      sourceSizePx: metrics.sourceSizePx,
+      worldSize: metrics.worldSize
+    },
     color: requireFieldHexColor(section, table, 'color')
   };
+}
+
+function assertNoForbiddenSpriteFields(section: MarkdownSection, table: MarkdownTable): void {
+  for (const row of table.rows) {
+    const field = row.cells[0]?.value;
+    if (
+      field === 'image' ||
+      field === 'sourceSizePx' ||
+      field === 'worldSize' ||
+      field === 'anchor' ||
+      field === 'radius'
+    ) {
+      throw cellError(
+        section,
+        row.position,
+        field,
+        'field',
+        'sprite fields are derived from the inline image under drop H2'
+      );
+    }
+  }
+}
+
+function assertNoForbiddenSpriteColumns(section: MarkdownSection, table: MarkdownTable): void {
+  for (const headerCell of table.header) {
+    const column = headerCell.value;
+    if (
+      column === 'image' ||
+      column === 'sourceSizePx' ||
+      column === 'worldSize' ||
+      column === 'anchor' ||
+      column === 'radius'
+    ) {
+      throw cellError(
+        section,
+        headerCell.position,
+        '<header>',
+        column,
+        'sprite fields are derived from the inline image under drop H2'
+      );
+    }
+  }
 }
 
 function parseDrop(

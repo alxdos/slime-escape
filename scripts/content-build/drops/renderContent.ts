@@ -11,7 +11,7 @@ import {
 } from '../util/render';
 
 export function renderDropContent(area: ParsedDropsArea): string {
-  return `${renderHeader('content/drops.md')}${renderImport()}${area.drops.map(renderDrop).join('\n\n')}\n`;
+  return `${renderHeader(area.sourcePath)}${renderImport()}${area.drops.map(renderDrop).join('\n\n')}\n`;
 }
 
 function renderImport(): string {

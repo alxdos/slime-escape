@@ -20,11 +20,16 @@ import {
   sectionError
 } from '../util/markdown';
 import { BUILD_SAMPLE_REGISTRY } from '../util/sampleRegistry';
-import { readSpriteAssetMetrics } from '../util/spriteMetrics';
+import { readSpriteAssetMetrics, type SpriteAssetMetrics } from '../util/spriteMetrics';
 
 export type ParsedWeaponAudio = Readonly<{
   fire: ReadonlyArray<string>;
 }>;
+
+export type ParsedProjectileSpriteVisual = SpriteAssetMetrics &
+  Readonly<{
+    image: string;
+  }>;
 
 export type ParsedWeapon = Readonly<{
   id: string;
@@ -32,10 +37,12 @@ export type ParsedWeapon = Readonly<{
   cooldownMs: number;
   firePattern: FirePattern;
   projectile: ProjectileArchetype;
+  projectileSpriteVisual: ParsedProjectileSpriteVisual;
   audio: ParsedWeaponAudio;
 }>;
 
 export type ParsedWeaponsArea = Readonly<{
+  sourcePath: string;
   weapons: ReadonlyArray<ParsedWeapon>;
 }>;
 
@@ -43,6 +50,7 @@ type WeaponDefinition = Readonly<{
   id: string;
   displayName: string;
   projectileSize: Readonly<{ width: number; height: number }>;
+  projectileSpriteVisual: ParsedProjectileSpriteVisual;
   audio: ParsedWeaponAudio;
 }>;
 
@@ -87,10 +95,12 @@ function parseWeaponsDocument(document: MarkdownDocument): ParsedWeaponsArea {
     [fragmentSection, fragmentTable],
     [visualSection, visualTable]
   ] as const) {
+    assertNoForbiddenSpriteColumns(section, table);
     assertKnownReferences(section, table, knownWeaponIds, 'weapon');
   }
 
   return {
+    sourcePath: document.filePath,
     weapons: definitions.map((definition) =>
       parseWeapon(definition, {
         cooldownSection,
@@ -117,6 +127,7 @@ function parseWeaponsDocument(document: MarkdownDocument): ParsedWeaponsArea {
 
 function parseWeaponDefinition(section: MarkdownSection): WeaponDefinition {
   const table = requireSingleTable(section);
+  assertNoForbiddenSpriteFields(section, table);
   const image = requireInlineImage(section);
   const metrics = readSpriteAssetMetrics({
     sourcePath: section.filePath,
@@ -127,10 +138,59 @@ function parseWeaponDefinition(section: MarkdownSection): WeaponDefinition {
     id: section.title,
     displayName: requireField(section, table, 'displayName'),
     projectileSize: metrics.worldSize,
+    projectileSpriteVisual: {
+      image: image.url,
+      sourceSizePx: metrics.sourceSizePx,
+      worldSize: metrics.worldSize
+    },
     audio: {
       fire: [requireInlineAudioLink(section, BUILD_SAMPLE_REGISTRY).sampleId]
     }
   };
+}
+
+function assertNoForbiddenSpriteFields(section: MarkdownSection, table: MarkdownTable): void {
+  for (const row of table.rows) {
+    const field = row.cells[0]?.value;
+    if (
+      field === 'image' ||
+      field === 'sourceSizePx' ||
+      field === 'worldSize' ||
+      field === 'anchor' ||
+      field === 'size' ||
+      field === 'projectileSize'
+    ) {
+      throw cellError(
+        section,
+        row.position,
+        field,
+        'field',
+        'sprite fields are derived from the inline image under weapon H2'
+      );
+    }
+  }
+}
+
+function assertNoForbiddenSpriteColumns(section: MarkdownSection, table: MarkdownTable): void {
+  for (const headerCell of table.header) {
+    const column = headerCell.value;
+    if (
+      column === 'image' ||
+      column === 'sourceSizePx' ||
+      column === 'worldSize' ||
+      column === 'anchor' ||
+      column === 'size' ||
+      column === 'projectileSize'
+    ) {
+      throw cellError(
+        section,
+        headerCell.position,
+        '<header>',
+        column,
+        'sprite fields are derived from the inline image under weapon H2'
+      );
+    }
+  }
 }
 
 function parseWeapon(
@@ -191,6 +251,7 @@ function parseWeapon(
     displayName: definition.displayName,
     cooldownMs,
     firePattern: parseFirePattern(tables.firePatternSection, tables.firePatternTable, firePatternRow),
+    projectileSpriteVisual: definition.projectileSpriteVisual,
     projectile: {
       motion: parseProjectileMotion(tables.motionSection, tables.motionTable, motionRow),
       size: definition.projectileSize,

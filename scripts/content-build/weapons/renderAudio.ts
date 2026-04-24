@@ -2,7 +2,7 @@ import type { ParsedWeapon, ParsedWeaponsArea } from './parse';
 import { renderHeader, renderObjectKey, renderSampleSpec } from '../util/render';
 
 export function renderWeaponAudio(area: ParsedWeaponsArea): string {
-  return `${renderHeader('content/weapons.md')}${renderImport()}${renderMappings(area.weapons)}\n`;
+  return `${renderHeader(area.sourcePath)}${renderImport()}${renderMappings(area.weapons)}\n`;
 }
 
 function renderImport(): string {

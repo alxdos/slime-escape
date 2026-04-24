@@ -1,12 +1,14 @@
 import { parseWeaponsArea } from './parse';
 import { renderWeaponAudio } from './renderAudio';
 import { renderWeaponContent } from './renderContent';
+import { renderProjectileVisuals } from './renderVisuals';
 
 import type { GeneratedFile } from '../util/atomicWrite';
 
 const SOURCE_PATH = 'content/weapons.md';
 const CONTENT_TARGET_PATH = 'src/shared/content/weapons.generated.ts';
 const AUDIO_TARGET_PATH = 'src/main/audio/weaponAudio.generated.ts';
+const PROJECTILE_VISUALS_TARGET_PATH = 'src/main/render/projectileVisuals.generated.ts';
 
 export const WEAPONS_AREA = {
   name: 'weapons',
@@ -20,6 +22,10 @@ export const WEAPONS_AREA = {
       {
         path: AUDIO_TARGET_PATH,
         contents: renderWeaponAudio(weaponsArea)
+      },
+      {
+        path: PROJECTILE_VISUALS_TARGET_PATH,
+        contents: renderProjectileVisuals(weaponsArea)
       }
     ];
   }

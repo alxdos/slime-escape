@@ -10,10 +10,12 @@ import { renderBossContent } from './bosses/renderContent';
 import { renderBossVisuals } from './bosses/renderVisuals';
 import { parseDropsArea, type ParsedDropsArea } from './drops/parse';
 import { renderDropContent } from './drops/renderContent';
+import { renderDropVisuals } from './drops/renderVisuals';
 import { runContentBuild, type ContentArea } from './index';
 import { parseWeaponsArea, type ParsedWeaponsArea } from './weapons/parse';
 import { renderWeaponAudio } from './weapons/renderAudio';
 import { renderWeaponContent } from './weapons/renderContent';
+import { renderProjectileVisuals } from './weapons/renderVisuals';
 
 describe('content-build archetype areas', () => {
   it('renders committed weapons markdown to committed generated files', async () => {
@@ -25,6 +27,9 @@ describe('content-build archetype areas', () => {
     await expect(readFile('src/main/audio/weaponAudio.generated.ts', 'utf8')).resolves.toBe(
       renderWeaponAudio(area)
     );
+    await expect(readFile('src/main/render/projectileVisuals.generated.ts', 'utf8')).resolves.toBe(
+      renderProjectileVisuals(area)
+    );
   });
 
   it('renders committed drops markdown to committed generated files', async () => {
@@ -32,6 +37,9 @@ describe('content-build archetype areas', () => {
 
     await expect(readFile('src/shared/content/drops.generated.ts', 'utf8')).resolves.toBe(
       renderDropContent(area)
+    );
+    await expect(readFile('src/main/render/dropVisuals.generated.ts', 'utf8')).resolves.toBe(
+      renderDropVisuals(area)
     );
   });
 
@@ -124,6 +132,81 @@ describe('content-build archetype areas', () => {
       mutate: (source) => replaceExact(source, '[weapons/pistol](../public/sfx/weapons/pistol.mp3)\n\n', ''),
       parse: parseWeaponsArea,
       pattern: /expected \[<sample-id>\]/
+    });
+  });
+
+  it('rejects weapon projectile visuals without the required inline H2 image', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(source, '![Pistol projectile](../public/assets/projectiles/pistol.png)\n\n', ''),
+      parse: parseWeaponsArea,
+      pattern: /expected !\[.*\]\(/
+    });
+  });
+
+  it('rejects manual weapon sprite fields in definition tables', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| displayName | Pistol |',
+          '| displayName | Pistol |\n| image | ../public/assets/projectiles/pistol.png |'
+        ),
+      parse: parseWeaponsArea,
+      pattern: /sprite fields are derived from the inline image/
+    });
+  });
+
+  it('rejects manual weapon sprite columns in balance tables', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| id | cooldownMs |\n|---|---:|',
+          '| id | cooldownMs | image |\n|---|---:|---|'
+        ),
+      parse: parseWeaponsArea,
+      pattern: /sprite fields are derived from the inline image/
+    });
+  });
+
+  it('rejects drop visuals without the required inline H2 image', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) => replaceExact(source, '![Heal orb](../public/assets/drops/heal-orb.png)\n\n', ''),
+      parse: parseDropsArea,
+      pattern: /expected !\[.*\]\(/
+    });
+  });
+
+  it('rejects manual drop sprite fields in definition tables', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| displayName | Heal Orb |',
+          '| displayName | Heal Orb |\n| radius | 0.25 |'
+        ),
+      parse: parseDropsArea,
+      pattern: /sprite fields are derived from the inline image/
+    });
+  });
+
+  it('rejects manual drop sprite columns in balance tables', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| id | ttlMs |\n|---|---:|',
+          '| id | ttlMs | image |\n|---|---:|---|'
+        ),
+      parse: parseDropsArea,
+      pattern: /sprite fields are derived from the inline image/
     });
   });
 

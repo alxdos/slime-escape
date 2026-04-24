@@ -11,7 +11,7 @@ import type { ParsedWeapon, ParsedWeaponsArea } from './parse';
 import { escapeString, formatNumber, renderHeader, toConstName } from '../util/render';
 
 export function renderWeaponContent(area: ParsedWeaponsArea): string {
-  return `${renderHeader('content/weapons.md')}${renderImport()}${area.weapons.map(renderWeapon).join('\n\n')}\n`;
+  return `${renderHeader(area.sourcePath)}${renderImport()}${area.weapons.map(renderWeapon).join('\n\n')}\n`;
 }
 
 function renderImport(): string {
