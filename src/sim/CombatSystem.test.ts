@@ -288,6 +288,30 @@ describe('CombatSystem', () => {
     expect(projectiles[1]?.velocity.vx).toBeCloseTo(PISTOL.projectile.motion.speed * 2);
   });
 
+  it('caps identical weapon modifier pickups at two stacks per selected weapon', () => {
+    const combat = createCombatSystem();
+    const store = createEntityStore();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+
+    expect(combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'projectileSizeMultiplier',
+      multiplier: 1.25
+    })).toBe(true);
+    expect(combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'projectileSizeMultiplier',
+      multiplier: 1.25
+    })).toBe(true);
+    expect(combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'projectileSizeMultiplier',
+      multiplier: 1.25
+    })).toBe(false);
+    expect(combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'projectileSpeedMultiplier',
+      multiplier: 1.25
+    })).toBe(true);
+  });
+
   it('uses symmetric count and pierce modifiers when spawning future shots', () => {
     const store = createEntityStore();
     const index = createSpatialIndex();

@@ -24,6 +24,7 @@ import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const WEAPON_MODIFIER_MIN_SPREAD_RADIANS = 0.25;
+const MAX_STACKS_PER_WEAPON_MODIFIER = 2;
 
 export type DamageSource =
   | {
@@ -136,6 +137,9 @@ export function createCombatSystem(
     addModifierToSelectedWeapon(ownerId, modifier): boolean {
       const weapon = selectedWeaponForOwner(shooterWeapons, ownerId);
       if (weapon === null) return false;
+      if (modifierStackCount(weapon.modifiers, modifier.kind) >= MAX_STACKS_PER_WEAPON_MODIFIER) {
+        return false;
+      }
       weapon.modifiers.push(copyWeaponModifier(modifier));
       return true;
     },
@@ -356,6 +360,13 @@ function selectedWeaponForOwner(
   const weapons = shooterWeapons.get(ownerId);
   if (weapons === undefined) return null;
   return selectedWeaponInstance(weapons);
+}
+
+function modifierStackCount(
+  modifiers: ReadonlyArray<WeaponModifier>,
+  kind: WeaponModifier['kind']
+): number {
+  return modifiers.filter((modifier) => modifier.kind === kind).length;
 }
 
 function copyWeaponModifier(modifier: WeaponModifier): WeaponModifier {
