@@ -50,7 +50,7 @@
 
 ### Reference scale
 
-- Единственное число, переводящее «исходные пиксели PNG» в world units, — константа `PX_PER_WU = 200`. Живёт в `src/shared/sprite/spriteScale.ts` как `export const PX_PER_WU = 200` и больше нигде не дублируется.
+- Единственное число, переводящее «исходные пиксели PNG» в world units, — константа `PX_PER_WU = 240`. Живёт в `src/shared/sprite/spriteScale.ts` как `export const PX_PER_WU = 240` и больше нигде не дублируется.
 - Reference scale **не зависит** от `arena.width`, `arena.height`, `canvas.width`, `canvas.height`, `devicePixelRatio` и `renderScalePreset`. Если кто-то поменяет `SANDBOX_ARENA` с `32×18` на другой размер — мировой размер каждого спрайта останется тем же, на экране он займёт ту же долю арены ровно как любой другой объект с фиксированным `radius`.
 - Любая корректировка `PX_PER_WU` = правка этого решения и `spriteScale.ts`. Не «по месту» в renderer-е, не в области генератора, не в MD.
 
@@ -118,7 +118,7 @@
 
 ### Тесты
 
-- Unit-тест на `PX_PER_WU`: значение равно 70, и оно — единственный source-of-truth (grep по `src/**` и `scripts/**` находит ровно одну инициализацию).
+- Unit-тест на `PX_PER_WU`: значение равно 240, и оно — единственный source-of-truth (grep по `src/**` и `scripts/**` находит ровно одну инициализацию).
 - `validateEnemyVisuals` / `validateBossVisuals` / `validatePlayerVisuals`: happy path проходит на live registries; mismatch (orphan visual / orphan archetype) бросает с понятным сообщением, в котором есть `archetypeId` и название области.
 - Renderer hard-error: создание enemy mesh для `archetypeId`, отсутствующего в visual registry, → `throw`; отсутствие текстуры в preloaded наборе → `throw`. Регрессионный тест «`Renderer` для player/enemy/boss не создаёт `CircleGeometry`» (любой импорт `CircleGeometry` в этих ветках — ошибка).
 - Тест «независимость от арены»: при изменении `arena.width`/`arena.height` `worldSize` любого spec остаётся прежним (фиксируется как unit-тест над `SpriteVisualSpec` структурой, не над renderer-ом).
@@ -126,7 +126,7 @@
 
 ## Consequences
 
-- 013 получает компактный контракт: один общий тип `SpriteVisualSpec`, три раздельных registry, одна константа `PX_PER_WU = 200`, один путь к hard-error-у. Renderer перестаёт быть местом, где живут «магические» цвета и радиусы для рисования.
+- 013 получает компактный контракт: один общий тип `SpriteVisualSpec`, три раздельных registry, одна константа `PX_PER_WU = 240`, один путь к hard-error-у. Renderer перестаёт быть местом, где живут «магические» цвета и радиусы для рисования.
 - Будущие истории «уникальный visual для босса», «directional frames», «atlas» расширяют именно этот файл (новые поля в `SpriteVisualSpec`, новое решение про atlas как отдельный слой), а не переоткрывают контракт «как описать спрайт» по месту.
 - Procedural breathing даёт статическим PNG минимальную жизнь без расширения content/snapshot контракта. Цена — ещё один renderer-owned polish pass и необходимость держать амплитуды достаточно малыми, чтобы визуальный контур не обещал игроку другие хитбоксы.
 - `EnemyArchetype.color`/`BossArchetype.color` теряют половину аудитории. Это сознательный долг: пока не появится consumer (debug overlay/мини-карта), поле — placeholder. Удаление — отдельное решение, когда появится фактический consumer или подтверждение, что его не будет.
