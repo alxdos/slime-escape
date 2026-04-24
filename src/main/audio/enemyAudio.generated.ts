@@ -159,6 +159,51 @@ export const ENEMY_AUDIO_MAPPINGS: Readonly<Record<string, EnemyAudioMapping>> =
       intervalMaxMs: 6000
     })
   }),
+  'campaign-set-1-carrier-slime': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'campaign-set-2-carrier-slime': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'campaign-set-3-carrier-slime': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'campaign-set-4-carrier-slime': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
+  'campaign-set-5-carrier-slime': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
   'slime-lifter': Object.freeze({
     hit: SLIME_HIT_VARIANTS,
     death: SLIME_DEATH_VARIANTS,

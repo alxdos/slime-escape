@@ -287,6 +287,101 @@ export const DEMO_RETALIATOR_SLIME: EnemyArchetype = {
   retaliation: { enabled: true, durationMs: 2500 }
 };
 
+export const CAMPAIGN_SET_1_CARRIER_SLIME: EnemyArchetype = {
+  id: 'campaign-set-1-carrier-slime',
+  displayName: 'Set 1 Carrier Slime',
+  radius: 0.42,
+  contactBox: { width: 1.1958333333333333, height: 1.1875 },
+  maxHp: 3,
+  behavior: 'chase',
+  maxSpeed: 2.6,
+  contactDamage: 1,
+  contactCooldownMs: 800,
+  knockbackBaseImpulse: 8,
+  knockbackVelocityScale: 1.5,
+  knockbackDurationMs: 350,
+  color: 0xffd166,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['size-up'] },
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
+export const CAMPAIGN_SET_2_CARRIER_SLIME: EnemyArchetype = {
+  id: 'campaign-set-2-carrier-slime',
+  displayName: 'Set 2 Carrier Slime',
+  radius: 0.58,
+  contactBox: { width: 1.0166666666666666, height: 1.1083333333333334 },
+  maxHp: 4,
+  behavior: 'chase',
+  maxSpeed: 2.2,
+  contactDamage: 1,
+  contactCooldownMs: 900,
+  knockbackBaseImpulse: 5,
+  knockbackVelocityScale: 1,
+  knockbackDurationMs: 280,
+  color: 0xffd166,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['multi-shot'] },
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
+export const CAMPAIGN_SET_3_CARRIER_SLIME: EnemyArchetype = {
+  id: 'campaign-set-3-carrier-slime',
+  displayName: 'Set 3 Carrier Slime',
+  radius: 0.42,
+  contactBox: { width: 0.75, height: 1.0583333333333333 },
+  maxHp: 3,
+  behavior: 'chase',
+  maxSpeed: 2.6,
+  contactDamage: 1,
+  contactCooldownMs: 750,
+  knockbackBaseImpulse: 8,
+  knockbackVelocityScale: 1.5,
+  knockbackDurationMs: 350,
+  color: 0x5ee6ff,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['magnet'] },
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
+export const CAMPAIGN_SET_4_CARRIER_SLIME: EnemyArchetype = {
+  id: 'campaign-set-4-carrier-slime',
+  displayName: 'Set 4 Carrier Slime',
+  radius: 0.62,
+  contactBox: { width: 1.05, height: 1.1958333333333333 },
+  maxHp: 5,
+  behavior: 'chase',
+  maxSpeed: 2.2,
+  contactDamage: 2,
+  contactCooldownMs: 950,
+  knockbackBaseImpulse: 5,
+  knockbackVelocityScale: 1,
+  knockbackDurationMs: 280,
+  color: 0xffd166,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['fragment'] },
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
+export const CAMPAIGN_SET_5_CARRIER_SLIME: EnemyArchetype = {
+  id: 'campaign-set-5-carrier-slime',
+  displayName: 'Set 5 Carrier Slime',
+  radius: 0.5,
+  contactBox: { width: 0.6875, height: 2.0833333333333335 },
+  maxHp: 5,
+  behavior: 'chase',
+  maxSpeed: 2,
+  contactDamage: 2,
+  contactCooldownMs: 1000,
+  knockbackBaseImpulse: 5,
+  knockbackVelocityScale: 1,
+  knockbackDurationMs: 280,
+  color: 0xffd166,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['overdrive'] },
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
 export const SLIME_LIFTER: EnemyArchetype = {
   id: 'slime-lifter',
   displayName: 'Lifter Slime',

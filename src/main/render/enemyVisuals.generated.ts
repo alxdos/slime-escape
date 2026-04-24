@@ -122,6 +122,46 @@ export const DEMO_RETALIATOR_SLIME_VISUAL: SpriteVisualSpec = {
   anchor: { x: 0.5, y: 0.5 }
 };
 
+export const CAMPAIGN_SET_1_CARRIER_SLIME_VISUAL: SpriteVisualSpec = {
+  archetypeId: 'campaign-set-1-carrier-slime',
+  image: '/assets/slime-06.png',
+  sourceSizePx: { width: 287, height: 285 },
+  worldSize: { width: 1.1958333333333333, height: 1.1875 },
+  anchor: { x: 0.5, y: 0.5 }
+};
+
+export const CAMPAIGN_SET_2_CARRIER_SLIME_VISUAL: SpriteVisualSpec = {
+  archetypeId: 'campaign-set-2-carrier-slime',
+  image: '/assets/slime-15.png',
+  sourceSizePx: { width: 244, height: 266 },
+  worldSize: { width: 1.0166666666666666, height: 1.1083333333333334 },
+  anchor: { x: 0.5, y: 0.5 }
+};
+
+export const CAMPAIGN_SET_3_CARRIER_SLIME_VISUAL: SpriteVisualSpec = {
+  archetypeId: 'campaign-set-3-carrier-slime',
+  image: '/assets/slime-26.png',
+  sourceSizePx: { width: 180, height: 254 },
+  worldSize: { width: 0.75, height: 1.0583333333333333 },
+  anchor: { x: 0.5, y: 0.5 }
+};
+
+export const CAMPAIGN_SET_4_CARRIER_SLIME_VISUAL: SpriteVisualSpec = {
+  archetypeId: 'campaign-set-4-carrier-slime',
+  image: '/assets/slime-32.png',
+  sourceSizePx: { width: 252, height: 287 },
+  worldSize: { width: 1.05, height: 1.1958333333333333 },
+  anchor: { x: 0.5, y: 0.5 }
+};
+
+export const CAMPAIGN_SET_5_CARRIER_SLIME_VISUAL: SpriteVisualSpec = {
+  archetypeId: 'campaign-set-5-carrier-slime',
+  image: '/assets/slime-45.png',
+  sourceSizePx: { width: 165, height: 500 },
+  worldSize: { width: 0.6875, height: 2.0833333333333335 },
+  anchor: { x: 0.5, y: 0.5 }
+};
+
 export const SLIME_LIFTER_VISUAL: SpriteVisualSpec = {
   archetypeId: 'slime-lifter',
   image: '/assets/slime-22.png',
@@ -258,4 +298,4 @@ export const SLIME_NINJA_VISUAL: SpriteVisualSpec = {
   anchor: { x: 0.5, y: 0.5 }
 };
 
-export const ENEMY_VISUAL_SPECS = [SLIME_ONE_EYE_VISUAL, SLIME_HORNLING_VISUAL, SLIME_MANY_EYE_VISUAL, SLIME_STONEHEAD_VISUAL, SLIME_SLEEPER_VISUAL, SLIME_SPARK_VISUAL, SLIME_WRAITH_VISUAL, SLIME_SHELL_VISUAL, SLIME_FLAME_VISUAL, SLIME_MECH_CRAB_VISUAL, SLIME_STACK_VISUAL, SLIME_TRICKSTER_VISUAL, SLIME_BUG_VISUAL, DEMO_CARRIER_SLIME_VISUAL, DEMO_RETALIATOR_SLIME_VISUAL, SLIME_LIFTER_VISUAL, SLIME_SAW_VISUAL, SLIME_DRONE_VISUAL, SLIME_STAR_VISUAL, SLIME_ECHO_VISUAL, SLIME_SPLITTER_VISUAL, SLIME_PRINCE_VISUAL, SLIME_KINGLING_VISUAL, SLIME_FORTRESS_VISUAL, SLIME_DASHER_VISUAL, SLIME_TADPOLE_VISUAL, SLIME_DOOR_VISUAL, SLIME_MECH_VISUAL, SLIME_CLAMPER_VISUAL, SLIME_CANDLE_VISUAL, SLIME_OBELISK_VISUAL, SLIME_NINJA_VISUAL] as const satisfies ReadonlyArray<SpriteVisualSpec>;
+export const ENEMY_VISUAL_SPECS = [SLIME_ONE_EYE_VISUAL, SLIME_HORNLING_VISUAL, SLIME_MANY_EYE_VISUAL, SLIME_STONEHEAD_VISUAL, SLIME_SLEEPER_VISUAL, SLIME_SPARK_VISUAL, SLIME_WRAITH_VISUAL, SLIME_SHELL_VISUAL, SLIME_FLAME_VISUAL, SLIME_MECH_CRAB_VISUAL, SLIME_STACK_VISUAL, SLIME_TRICKSTER_VISUAL, SLIME_BUG_VISUAL, DEMO_CARRIER_SLIME_VISUAL, DEMO_RETALIATOR_SLIME_VISUAL, CAMPAIGN_SET_1_CARRIER_SLIME_VISUAL, CAMPAIGN_SET_2_CARRIER_SLIME_VISUAL, CAMPAIGN_SET_3_CARRIER_SLIME_VISUAL, CAMPAIGN_SET_4_CARRIER_SLIME_VISUAL, CAMPAIGN_SET_5_CARRIER_SLIME_VISUAL, SLIME_LIFTER_VISUAL, SLIME_SAW_VISUAL, SLIME_DRONE_VISUAL, SLIME_STAR_VISUAL, SLIME_ECHO_VISUAL, SLIME_SPLITTER_VISUAL, SLIME_PRINCE_VISUAL, SLIME_KINGLING_VISUAL, SLIME_FORTRESS_VISUAL, SLIME_DASHER_VISUAL, SLIME_TADPOLE_VISUAL, SLIME_DOOR_VISUAL, SLIME_MECH_VISUAL, SLIME_CLAMPER_VISUAL, SLIME_CANDLE_VISUAL, SLIME_OBELISK_VISUAL, SLIME_NINJA_VISUAL] as const satisfies ReadonlyArray<SpriteVisualSpec>;

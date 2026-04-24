@@ -97,7 +97,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-spark",
           },
           {
-            "archetypeId": "slime-one-eye",
+            "archetypeId": "campaign-set-1-carrier-slime",
           },
           {
             "archetypeId": "slime-hornling",
@@ -323,7 +323,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-stack",
           },
           {
-            "archetypeId": "slime-wraith",
+            "archetypeId": "campaign-set-2-carrier-slime",
           },
           {
             "archetypeId": "slime-shell",
@@ -558,7 +558,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-lifter",
           },
           {
-            "archetypeId": "slime-bug",
+            "archetypeId": "campaign-set-3-carrier-slime",
           },
           {
             "archetypeId": "slime-star",
@@ -799,7 +799,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-prince",
           },
           {
-            "archetypeId": "slime-fortress",
+            "archetypeId": "campaign-set-4-carrier-slime",
           },
           {
             "archetypeId": "slime-splitter",
@@ -1049,7 +1049,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-clamper",
           },
           {
-            "archetypeId": "slime-candle",
+            "archetypeId": "campaign-set-5-carrier-slime",
           },
           {
             "archetypeId": "slime-mech",
@@ -1358,7 +1358,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-spark",
           },
           {
-            "archetypeId": "slime-one-eye",
+            "archetypeId": "campaign-set-1-carrier-slime",
           },
           {
             "archetypeId": "slime-hornling",
@@ -1584,7 +1584,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-stack",
           },
           {
-            "archetypeId": "slime-wraith",
+            "archetypeId": "campaign-set-2-carrier-slime",
           },
           {
             "archetypeId": "slime-shell",
@@ -1819,7 +1819,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-lifter",
           },
           {
-            "archetypeId": "slime-bug",
+            "archetypeId": "campaign-set-3-carrier-slime",
           },
           {
             "archetypeId": "slime-star",
@@ -2060,7 +2060,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-prince",
           },
           {
-            "archetypeId": "slime-fortress",
+            "archetypeId": "campaign-set-4-carrier-slime",
           },
           {
             "archetypeId": "slime-splitter",
@@ -2310,7 +2310,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-clamper",
           },
           {
-            "archetypeId": "slime-candle",
+            "archetypeId": "campaign-set-5-carrier-slime",
           },
           {
             "archetypeId": "slime-mech",
@@ -2619,7 +2619,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-spark",
           },
           {
-            "archetypeId": "slime-one-eye",
+            "archetypeId": "campaign-set-1-carrier-slime",
           },
           {
             "archetypeId": "slime-hornling",
@@ -2845,7 +2845,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-stack",
           },
           {
-            "archetypeId": "slime-wraith",
+            "archetypeId": "campaign-set-2-carrier-slime",
           },
           {
             "archetypeId": "slime-shell",
@@ -3080,7 +3080,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-lifter",
           },
           {
-            "archetypeId": "slime-bug",
+            "archetypeId": "campaign-set-3-carrier-slime",
           },
           {
             "archetypeId": "slime-star",
@@ -3321,7 +3321,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-prince",
           },
           {
-            "archetypeId": "slime-fortress",
+            "archetypeId": "campaign-set-4-carrier-slime",
           },
           {
             "archetypeId": "slime-splitter",
@@ -3571,7 +3571,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-clamper",
           },
           {
-            "archetypeId": "slime-candle",
+            "archetypeId": "campaign-set-5-carrier-slime",
           },
           {
             "archetypeId": "slime-mech",
