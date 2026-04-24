@@ -7,6 +7,7 @@ import {
   type DropSpawnSpec,
   type EnemySpawnSpec,
   type EntityId,
+  type FieldEffectSpawnSpec,
   type ProjectileSpawnSpec
 } from './EntityStore';
 
@@ -55,6 +56,18 @@ const PROJECTILE_SPEC: ProjectileSpawnSpec = {
   explosion: null,
   groundAtSimMs: null,
   expireAtSimMs: 2000
+};
+
+const FIELD_EFFECT_SPEC: FieldEffectSpawnSpec = {
+  archetypeId: 'test-puddle',
+  ownerId: null,
+  ownerKind: null,
+  position: { x: 2, y: 3 },
+  radius: 1.25,
+  applyEveryMs: 500,
+  nextApplySimMs: 100,
+  expireAtSimMs: 2000,
+  effects: [{ kind: 'damage', amount: 1 }]
 };
 
 describe('EntityStore', () => {
@@ -171,6 +184,22 @@ describe('EntityStore', () => {
     expect(drop.effect.amount).toBe(1);
   });
 
+  it('spawns a field effect and isolates its effect list from the spec', () => {
+    const store = createEntityStore();
+    const spec: FieldEffectSpawnSpec = {
+      ...FIELD_EFFECT_SPEC,
+      effects: [{ kind: 'damage', amount: 1 }]
+    };
+    const fieldEffect = store.spawnFieldEffect(spec);
+
+    expect(fieldEffect.kind).toBe('fieldEffect');
+    expect(fieldEffect.archetypeId).toBe(FIELD_EFFECT_SPEC.archetypeId);
+    expect(fieldEffect.position).toEqual(FIELD_EFFECT_SPEC.position);
+    expect(fieldEffect.radius).toBe(FIELD_EFFECT_SPEC.radius);
+    expect(store.fieldEffectById(fieldEffect.id)).toBe(fieldEffect);
+    expect(store.fieldEffectCount()).toBe(1);
+  });
+
   it('hands out unique ids across kinds', () => {
     const store = createEntityStore();
     const player = store.spawnPlayer(SPEC);
@@ -206,12 +235,14 @@ describe('EntityStore', () => {
     store.spawnPlayer(SPEC);
     store.spawnEnemy(ENEMY_SPEC);
     store.spawnProjectile(PROJECTILE_SPEC);
+    store.spawnFieldEffect(FIELD_EFFECT_SPEC);
 
     store.clear();
 
     expect(store.player()).toBeNull();
     expect(store.enemyCount()).toBe(0);
     expect(store.projectileCount()).toBe(0);
+    expect(store.fieldEffectCount()).toBe(0);
     const playerAfter = store.spawnPlayer(SPEC);
     expect(playerAfter.id).toBe(1);
   });

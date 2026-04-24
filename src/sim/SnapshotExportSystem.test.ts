@@ -191,6 +191,34 @@ describe('SnapshotExportSystem', () => {
     const after = exporter.onTick(0, store, NO_SOURCES);
     expect(after?.entities).toHaveLength(0);
   });
+
+  it('emits field effect presentation fields', () => {
+    const store = createEntityStore();
+    const fieldEffect = store.spawnFieldEffect({
+      archetypeId: 'acid-puddle',
+      ownerId: null,
+      ownerKind: null,
+      position: { x: 2, y: -1 },
+      radius: 1.5,
+      applyEveryMs: 500,
+      nextApplySimMs: 0,
+      expireAtSimMs: 2500,
+      effects: [{ kind: 'damage', amount: 1 }]
+    });
+    const exporter = createSnapshotExportSystem();
+
+    const snapshot = exporter.onTick(0, store, NO_SOURCES);
+    const entity = snapshot?.entities.find((e) => e.kind === 'fieldEffect');
+
+    expect(entity).toBeDefined();
+    if (entity?.kind !== 'fieldEffect') throw new Error('expected field effect snapshot');
+    expect(entity.id).toBe(fieldEffect.id);
+    expect(entity.archetypeId).toBe('acid-puddle');
+    expect(entity.x).toBe(2);
+    expect(entity.y).toBe(-1);
+    expect(entity.radius).toBe(1.5);
+    expect(entity.expiresAtSimMs).toBe(2500);
+  });
 });
 
 describe('SnapshotExportSystem top-level fields', () => {

@@ -57,12 +57,23 @@ export type BossSnapshot = Readonly<{
   activeAttackIds: ReadonlyArray<string>;
 }>;
 
+export type FieldEffectSnapshot = Readonly<{
+  id: number;
+  kind: 'fieldEffect';
+  archetypeId: string;
+  x: number;
+  y: number;
+  radius: number;
+  expiresAtSimMs: number;
+}>;
+
 export type EntitySnapshot =
   | PlayerSnapshot
   | EnemySnapshot
   | ProjectileSnapshot
   | DropSnapshot
-  | BossSnapshot;
+  | BossSnapshot
+  | FieldEffectSnapshot;
 
 export type EntityKind = EntitySnapshot['kind'];
 

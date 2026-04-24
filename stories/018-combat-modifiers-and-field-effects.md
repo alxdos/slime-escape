@@ -41,7 +41,7 @@
 | ID | Status | Task | Note |
 |----|--------|------|------|
 | T1 | [x] | Add content/session types and builders for opt-in field effects, status applications, mine triggers, carrier markers, drop magnet, retaliation policy and aim assist. | Touch `src/shared/content/**`, `scripts/content-build/**`, `content/{weapons,drops,enemies,sessions}/**`; extend `DropEffect` union with `kind: 'pickupModifier'` per `design/drops.md` as the single binding point for drop magnet; validate all cross-area references. |
-| T2 | [ ] | Add `fieldEffect` runtime entities, snapshots and `FieldEffectSystem`. | Update `EntityStore`, `runtime-systems` wiring, `SnapshotExportSystem`, snapshot types and tests; field effects produce damage intents/status applications, never direct HP changes. |
+| T2 | [x] | Add `fieldEffect` runtime entities, snapshots and `FieldEffectSystem`. | Update `EntityStore`, `runtime-systems` wiring, `SnapshotExportSystem`, snapshot types and tests; field effects produce damage intents/status applications, never direct HP changes. |
 | T3 | [ ] | Add actor status runtime state and `StatusEffectSystem`. | Update damageable actor types, movement speed resolution, status tick/expiry logic, `DamageIntent.source`, snapshot/status presentation hints and stacking tests. |
 | T4 | [ ] | Extend `CombatSystem` for mine proximity triggers and explosion-spawned field effects/status applications. | Reuse universal projectile/explosion ownership and shared damage rules; proximity checks use `SpatialIndex` and deterministic ordering. |
 | T5 | [ ] | Extend `DropSystem`, enemy content and renderer for carrier drops and magnet attraction. | Carrier rewards still use death hooks; magnet movement/pickup expansion remains deterministic and owned by `DropSystem`. |

@@ -6,6 +6,7 @@ import { createBossPhaseSystem } from './BossPhaseSystem';
 import { createCombatSystem } from './CombatSystem';
 import { createDropSystem } from './DropSystem';
 import { createEntityStore } from './EntityStore';
+import { createFieldEffectSystem } from './FieldEffectSystem';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createSessionFlowSystem } from './SessionFlowSystem';
@@ -21,9 +22,11 @@ const movement = createMovementSystem();
 const spawn = createSpawnSystem();
 const bossPhase = createBossPhaseSystem();
 const combat = createCombatSystem();
+const fieldEffects = createFieldEffectSystem();
 const healthDeath = createHealthDeathSystem();
 const spatialIndex = createSpatialIndex();
 const zone = createZoneSystem();
+let pendingFieldDamageIntents: ReturnType<typeof fieldEffects.tick>['damageIntents'] = [];
 const drops = createDropSystem(undefined, undefined, {
   addModifierToSelectedWeapon(ownerId, modifier) {
     combat.addModifierToSelectedWeapon(ownerId, modifier);
@@ -60,9 +63,12 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     session.arena,
     emitEvent
   );
-  const intents =
-    bossIntents.length === 0 ? combatIntents : [...bossIntents, ...combatIntents];
+  const intents = [...pendingFieldDamageIntents, ...bossIntents, ...combatIntents];
+  pendingFieldDamageIntents = [];
   healthDeath.tick(intents, entities, simTimeMs, emitEvent);
+  spatialIndex.rebuild(entities);
+  const fieldEffectResult = fieldEffects.tick(simTimeMs, entities, spatialIndex);
+  pendingFieldDamageIntents = fieldEffectResult.damageIntents;
   drops.tick(simTimeMs, entities, emitEvent);
   sessionFlow.checkTransitions(simTimeMs);
   zone.onTick();
@@ -90,10 +96,13 @@ const sessionFlow = createSessionFlowSystem({
     entities.clear();
     exporter.reset();
     combat.clear();
+    fieldEffects.clear();
     zone.reset();
+    pendingFieldDamageIntents = [];
     spawn.setRng(rng);
     drops.setRng(rng);
     combat.setDamageRules(session.rules.damage);
+    fieldEffects.setDamageRules(session.rules.damage);
     const player = entities.spawnPlayer(session.player);
     if (session.loadout !== null) {
       combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
@@ -103,7 +112,9 @@ const sessionFlow = createSessionFlowSystem({
     entities.clear();
     exporter.reset();
     combat.clear();
+    fieldEffects.clear();
     zone.reset();
+    pendingFieldDamageIntents = [];
     spawn.setRng(null);
     drops.setRng(null);
   },

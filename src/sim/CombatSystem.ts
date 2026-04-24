@@ -15,11 +15,11 @@ import type { WeaponHudSnapshot } from '../shared/snapshot';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import type { Boss, Enemy, EntityId, EntityStore, Player, Projectile } from './EntityStore';
+import { canDamageTarget, DEFAULT_DAMAGE_RULES } from './DamageRules';
 import type { RuntimeInputState } from './RuntimeInputState';
 import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
-const DEFAULT_DAMAGE_RULES: DamageRules = { slimeFriendlyFire: false };
 const WEAPON_MODIFIER_MIN_SPREAD_RADIANS = 0.25;
 
 export type DamageSource =
@@ -38,6 +38,7 @@ export type DamageSource =
       weaponArchetypeId: string;
     }
   | { kind: 'enemyContact'; enemyId: EntityId }
+  | { kind: 'fieldEffect'; fieldEffectId: EntityId; archetypeId: string }
   | { kind: 'environment'; tag: string }
   | { kind: 'boss'; bossId: EntityId; attackId: string };
 
@@ -872,15 +873,11 @@ function canProjectileDamage(
   target: DamageableTarget,
   damageRules: DamageRules
 ): boolean {
-  if (target.id === projectile.ownerId) return false;
-  if (
-    projectile.ownerKind === 'enemy' &&
-    target.kind === 'enemy' &&
-    !damageRules.slimeFriendlyFire
-  ) {
-    return false;
-  }
-  return true;
+  return canDamageTarget(
+    { ownerId: projectile.ownerId, ownerKind: projectile.ownerKind },
+    target,
+    damageRules
+  );
 }
 
 function groundProjectile(projectile: Projectile, simTimeMs: number): void {

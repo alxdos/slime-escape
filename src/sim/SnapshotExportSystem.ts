@@ -80,6 +80,17 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           y: drop.position.y
         });
       }
+      for (const fieldEffect of store.fieldEffects()) {
+        entities.push({
+          id: fieldEffect.id,
+          kind: 'fieldEffect',
+          archetypeId: fieldEffect.archetypeId,
+          x: fieldEffect.position.x,
+          y: fieldEffect.position.y,
+          radius: fieldEffect.radius,
+          expiresAtSimMs: fieldEffect.expireAtSimMs
+        });
+      }
       let bossHud: BossHudSnapshot | null = null;
       for (const boss of store.bosses()) {
         entities.push({
