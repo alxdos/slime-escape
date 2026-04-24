@@ -63,6 +63,11 @@ export type WeaponInstance = {
   overdriveCooldownMultiplier: number | null;
 };
 
+export type WeaponFireResult = Readonly<{
+  spawned: number;
+  eventDirection: Vec2;
+}>;
+
 type ShooterWeapons = {
   ownerKind: 'player' | 'enemy' | 'boss';
   weapons: WeaponInstance[];
@@ -243,35 +248,17 @@ function runFiringDecisions(
 
   const archetype = weaponRegistry[selectedWeapon.archetypeId];
   if (archetype === undefined) return;
-  const effectiveFirePattern = applyFirePatternModifiers(
-    archetype.firePattern,
-    selectedWeapon.modifiers
-  );
-  const effectiveProjectile = applyProjectileModifiers(
-    archetype.projectile,
-    selectedWeapon.modifiers
-  );
-
-  const dx = input.aimWorld.x - player.position.x;
-  const dy = input.aimWorld.y - player.position.y;
-  const aimDistance = Math.hypot(dx, dy);
-  const fireDirections = firePatternDirections(effectiveFirePattern, dx, dy);
-  if (fireDirections.length === 0) return;
-  const eventDir = fireEventDirection(effectiveFirePattern, dx, dy, fireDirections);
-  if (eventDir === null) return;
-
-  const spawned = spawnProjectilesForDirections(
+  const result = fireWeaponProjectiles(
     store,
-    archetype.id,
-    effectiveProjectile,
+    archetype,
+    selectedWeapon.modifiers,
     player.id,
     weapons.ownerKind,
     player.position,
-    fireDirections,
-    simTimeMs,
-    aimDistance
+    input.aimWorld,
+    simTimeMs
   );
-  if (spawned === 0) return;
+  if (result === null) return;
 
   selectedWeapon.nextFireSimMs =
     simTimeMs + effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs);
@@ -283,9 +270,44 @@ function runFiringDecisions(
     weaponArchetypeId: archetype.id,
     originX: player.position.x,
     originY: player.position.y,
-    dirX: eventDir.x,
-    dirY: eventDir.y
+    dirX: result.eventDirection.x,
+    dirY: result.eventDirection.y
   });
+}
+
+export function fireWeaponProjectiles(
+  store: EntityStore,
+  archetype: WeaponArchetype,
+  modifiers: ReadonlyArray<WeaponModifier>,
+  ownerId: EntityId,
+  ownerKind: 'player' | 'enemy' | 'boss',
+  origin: Vec2,
+  aimWorld: Vec2,
+  simTimeMs: number
+): WeaponFireResult | null {
+  const effectiveFirePattern = applyFirePatternModifiers(archetype.firePattern, modifiers);
+  const effectiveProjectile = applyProjectileModifiers(archetype.projectile, modifiers);
+  const dx = aimWorld.x - origin.x;
+  const dy = aimWorld.y - origin.y;
+  const aimDistance = Math.hypot(dx, dy);
+  const fireDirections = firePatternDirections(effectiveFirePattern, dx, dy);
+  if (fireDirections.length === 0) return null;
+  const eventDirection = fireEventDirection(effectiveFirePattern, dx, dy, fireDirections);
+  if (eventDirection === null) return null;
+
+  const spawned = spawnProjectilesForDirections(
+    store,
+    archetype.id,
+    effectiveProjectile,
+    ownerId,
+    ownerKind,
+    origin,
+    fireDirections,
+    simTimeMs,
+    aimDistance
+  );
+  if (spawned === 0) return null;
+  return { spawned, eventDirection };
 }
 
 function fireEventDirection(

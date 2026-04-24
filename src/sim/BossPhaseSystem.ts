@@ -3,7 +3,7 @@ import { FIREBALL_STAFF } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig } from '../shared/session';
 
-import type { DamageIntent } from './CombatSystem';
+import { fireWeaponProjectiles, type DamageIntent } from './CombatSystem';
 import type { Boss, EntityStore } from './EntityStore';
 
 export type BossPhaseSystem = Readonly<{
@@ -74,36 +74,18 @@ function runBossAttacks(
 
     if (attackId === 'coneBurst') {
       if (player === null) continue;
-      const dx = player.position.x - boss.position.x;
-      const dy = player.position.y - boss.position.y;
-      const len = Math.hypot(dx, dy);
-      if (len === 0) continue;
-      const dirX = dx / len;
-      const dirY = dy / len;
       const w = FIREBALL_STAFF;
-      if (w.projectile.motion.kind !== 'linear') continue;
-      store.spawnProjectile({
-        weaponArchetypeId: w.id,
-        ownerId: boss.id,
-        ownerKind: 'boss',
-        motionKind: w.projectile.motion.kind,
-        origin: { x: boss.position.x, y: boss.position.y },
-        position: { x: boss.position.x, y: boss.position.y },
-        velocity: {
-          vx: dirX * w.projectile.motion.speed,
-          vy: dirY * w.projectile.motion.speed
-        },
-        size: w.projectile.size,
-        hitRadius: w.projectile.hitRadius,
-        impactDamage: w.projectile.impactDamage,
-        knockbackImpulse: w.projectile.knockbackImpulse,
-        pierceRemaining: w.projectile.pierceCount,
-        groundOnImpact: w.projectile.groundOnImpact,
-        groundedLifetimeMs: w.projectile.groundedLifetimeMs,
-        explosion: w.projectile.explosion,
-        groundAtSimMs: null,
-        expireAtSimMs: simTimeMs + w.projectile.ttlMs
-      });
+      const result = fireWeaponProjectiles(
+        store,
+        w,
+        [],
+        boss.id,
+        'boss',
+        boss.position,
+        player.position,
+        simTimeMs
+      );
+      if (result === null) continue;
       boss.attackNextSimMs.set(attackId, simTimeMs + spec.cooldownMs);
       emit({
         kind: 'fire',
@@ -113,8 +95,8 @@ function runBossAttacks(
         weaponArchetypeId: w.id,
         originX: boss.position.x,
         originY: boss.position.y,
-        dirX,
-        dirY
+        dirX: result.eventDirection.x,
+        dirY: result.eventDirection.y
       });
       return intents;
     }
