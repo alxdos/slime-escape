@@ -68,23 +68,23 @@ function createEmptySnapshotPair(): SnapshotPair {
   };
 }
 
-function createSnapshotPairWithEntities(
-  entities: SnapshotPair['curr'] extends infer T
-    ? T extends { entities: infer E }
-      ? E
-      : never
-    : never
-): SnapshotPair {
+type SnapshotEntities = NonNullable<SnapshotPair['curr']>['entities'];
+
+function createSnapshot(entities: SnapshotEntities): NonNullable<SnapshotPair['curr']> {
+  return {
+    simTimeMs: 0,
+    entities,
+    encounter: null,
+    zone: { mode: 'disabled', margin: 0 },
+    waveProgress: null,
+    bossHud: null
+  };
+}
+
+function createSnapshotPairWithEntities(entities: SnapshotEntities): SnapshotPair {
   return {
     prev: null,
-    curr: {
-      simTimeMs: 0,
-      entities,
-      encounter: null,
-      zone: { mode: 'disabled', margin: 0 },
-      waveProgress: null,
-      bossHud: null
-    },
+    curr: createSnapshot(entities),
     currReceivedAtMs: 0,
     nowMs: 0
   };
@@ -302,6 +302,102 @@ describe('createRenderer', () => {
     renderer.render();
 
     expect(backend.ops).toEqual([{ kind: 'render' }]);
+  });
+
+  it('snaps character positions to the low backing-pixel grid', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const playerTexture = new THREE.Texture();
+    const enemyTexture = new THREE.Texture();
+    const bossTexture = new THREE.Texture();
+    const pair: SnapshotPair = {
+      prev: createSnapshot([
+        { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+        {
+          id: 2,
+          kind: 'enemy',
+          archetypeId: SLIME_BUG.id,
+          x: 0,
+          y: 0,
+          hp: 2,
+          maxHp: 2
+        },
+        {
+          id: 3,
+          kind: 'boss',
+          archetypeId: BOSS_GARGOYLE.id,
+          x: 0,
+          y: 0,
+          hp: 10,
+          maxHp: 10,
+          phaseIndex: 0,
+          phaseId: 'phase-0',
+          activeAttackIds: []
+        }
+      ]),
+      curr: createSnapshot([
+        { id: 1, kind: 'player', x: 0.11, y: -0.11, hp: 5, maxHp: 5 },
+        {
+          id: 2,
+          kind: 'enemy',
+          archetypeId: SLIME_BUG.id,
+          x: 1.23,
+          y: -1.23,
+          hp: 2,
+          maxHp: 2
+        },
+        {
+          id: 3,
+          kind: 'boss',
+          archetypeId: BOSS_GARGOYLE.id,
+          x: -2.37,
+          y: 2.37,
+          hp: 10,
+          maxHp: 10,
+          phaseIndex: 0,
+          phaseId: 'phase-0',
+          activeAttackIds: []
+        }
+      ]),
+      currReceivedAtMs: 0,
+      nowMs: 0
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'low',
+      arena: { width: 16, height: 8 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({
+        [DEFAULT_PLAYER_VISUAL.archetypeId]: playerTexture,
+        [SLIME_BUG.id]: enemyTexture,
+        [BOSS_GARGOYLE.id]: bossTexture
+      }),
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const scene = backend.lastScene();
+    const playerMesh = findMeshWithMaterialMap(scene, playerTexture);
+    const enemyMesh = findMeshWithMaterialMap(scene, enemyTexture);
+    const bossMesh = findMeshWithMaterialMap(scene, bossTexture);
+
+    expect(playerMesh?.position.x).toBeCloseTo(0.08);
+    expect(playerMesh?.position.y).toBeCloseTo(-0.08);
+    expect(enemyMesh?.position.x).toBeCloseTo(1.2);
+    expect(enemyMesh?.position.y).toBeCloseTo(-1.2);
+    expect(bossMesh?.position.x).toBeCloseTo(-2.4);
+    expect(bossMesh?.position.y).toBeCloseTo(2.4);
   });
 
   it('switches and tiles the arena background from the active encounter configuration', () => {

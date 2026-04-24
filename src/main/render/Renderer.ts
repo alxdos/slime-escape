@@ -99,6 +99,11 @@ type EntityMeshEntry = {
   material: THREE.Material;
 };
 
+type CharacterSnapGrid = Readonly<{
+  stepX: number;
+  stepY: number;
+}>;
+
 export function createRenderer(init: RendererInit): Renderer {
   const weaponRegistry = init.weaponRegistry ?? WEAPON_ARCHETYPES;
   const dropRegistry = init.dropRegistry ?? DROP_ARCHETYPES;
@@ -162,6 +167,7 @@ export function createRenderer(init: RendererInit): Renderer {
 
   const debugHud = (init.createDebugHud ?? createDebugHud)();
   let currentRenderScalePreset = init.renderScalePreset;
+  let characterSnapGrid: CharacterSnapGrid | null = null;
 
   const enemyMeshes = new Map<number, EntityMeshEntry>();
   const bossMeshes = new Map<number, EntityMeshEntry>();
@@ -180,6 +186,14 @@ export function createRenderer(init: RendererInit): Renderer {
       cssHeightPx,
       devicePixelRatio: windowTarget.devicePixelRatio
     });
+    characterSnapGrid =
+      preset === 'low'
+        ? createCharacterSnapGrid(
+            init.arena,
+            resolution.backingWidthPx,
+            resolution.backingHeightPx
+          )
+        : null;
     init.canvas.style.imageRendering = resolution.imageRendering;
     renderer.setPixelRatio(resolution.pixelRatio);
     renderer.setSize(resolution.backingWidthPx, resolution.backingHeightPx, false);
@@ -272,14 +286,15 @@ export function createRenderer(init: RendererInit): Renderer {
     render(): void {
       const pair = init.getSnapshotPair();
       const alpha = computeAlpha(pair);
-      updatePlayer(playerMesh, pair, alpha);
+      updatePlayer(playerMesh, pair, alpha, characterSnapGrid);
       updateEntities(
         pair,
         alpha,
         (e): e is EnemySnapshot => e.kind === 'enemy',
         enemyMeshes,
         ensureEnemyMesh,
-        disposeEntityMesh
+        disposeEntityMesh,
+        characterSnapGrid
       );
       updateEntities(
         pair,
@@ -287,7 +302,8 @@ export function createRenderer(init: RendererInit): Renderer {
         (e): e is BossSnapshot => e.kind === 'boss',
         bossMeshes,
         ensureBossMesh,
-        disposeEntityMesh
+        disposeEntityMesh,
+        characterSnapGrid
       );
       updateEntities(
         pair,
@@ -523,6 +539,17 @@ function readCanvasCssSize(canvas: HTMLCanvasElement): Readonly<{
   };
 }
 
+function createCharacterSnapGrid(
+  arena: ArenaConfig,
+  backingWidthPx: number,
+  backingHeightPx: number
+): CharacterSnapGrid {
+  return {
+    stepX: arena.width / backingWidthPx,
+    stepY: arena.height / backingHeightPx
+  };
+}
+
 function parseCssPixels(value: string): number {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -582,7 +609,12 @@ function findById<S extends EntitySnapshot>(
   return null;
 }
 
-function updatePlayer(mesh: THREE.Mesh, pair: SnapshotPair, alpha: number): void {
+function updatePlayer(
+  mesh: THREE.Mesh,
+  pair: SnapshotPair,
+  alpha: number,
+  snapGrid: CharacterSnapGrid | null
+): void {
   const { prev, curr } = pair;
   if (!curr) {
     mesh.visible = false;
@@ -596,13 +628,13 @@ function updatePlayer(mesh: THREE.Mesh, pair: SnapshotPair, alpha: number): void
   const prevPlayer = prev ? prev.entities.find((e) => e.kind === 'player') : undefined;
   if (!prevPlayer) {
     mesh.visible = true;
-    mesh.position.set(player.x, player.y, 0);
+    setSnappedMeshPosition(mesh, player.x, player.y, 0, snapGrid);
     return;
   }
   const x = prevPlayer.x + (player.x - prevPlayer.x) * alpha;
   const y = prevPlayer.y + (player.y - prevPlayer.y) * alpha;
   mesh.visible = true;
-  mesh.position.set(x, y, 0);
+  setSnappedMeshPosition(mesh, x, y, 0, snapGrid);
 }
 
 function updateEntities<S extends EntitySnapshot>(
@@ -611,7 +643,8 @@ function updateEntities<S extends EntitySnapshot>(
   matches: (e: EntitySnapshot) => e is S,
   table: Map<number, EntityMeshEntry>,
   ensure: (snap: S) => EntityMeshEntry,
-  dispose: (entry: EntityMeshEntry) => void
+  dispose: (entry: EntityMeshEntry) => void,
+  snapGrid: CharacterSnapGrid | null = null
 ): void {
   const { prev, curr } = pair;
   const aliveIds = new Set<number>();
@@ -622,11 +655,17 @@ function updateEntities<S extends EntitySnapshot>(
       const entry = ensure(entity);
       const prevSnap = findById(prev, matches, entity.id);
       if (prevSnap === null) {
-        entry.mesh.position.set(entity.x, entity.y, entry.mesh.position.z);
+        setSnappedMeshPosition(
+          entry.mesh,
+          entity.x,
+          entity.y,
+          entry.mesh.position.z,
+          snapGrid
+        );
       } else {
         const x = prevSnap.x + (entity.x - prevSnap.x) * alpha;
         const y = prevSnap.y + (entity.y - prevSnap.y) * alpha;
-        entry.mesh.position.set(x, y, entry.mesh.position.z);
+        setSnappedMeshPosition(entry.mesh, x, y, entry.mesh.position.z, snapGrid);
       }
       entry.mesh.visible = true;
     }
@@ -637,6 +676,28 @@ function updateEntities<S extends EntitySnapshot>(
       table.delete(id);
     }
   }
+}
+
+function setSnappedMeshPosition(
+  mesh: THREE.Mesh,
+  x: number,
+  y: number,
+  z: number,
+  snapGrid: CharacterSnapGrid | null
+): void {
+  if (snapGrid === null) {
+    mesh.position.set(x, y, z);
+    return;
+  }
+  mesh.position.set(
+    snapCoordinate(x, snapGrid.stepX),
+    snapCoordinate(y, snapGrid.stepY),
+    z
+  );
+}
+
+function snapCoordinate(value: number, step: number): number {
+  return Math.round(value / step) * step;
 }
 
 function pulseDropMeshes(
