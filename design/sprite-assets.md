@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-23 (story 014: авторская поверхность для пути к PNG-ассету переезжает с MD-колонки `image` на inline image-узел `![alt](../public/...)` под `## <id>` в `content/players.md` / `content/enemies.md` / `content/bosses.md` — см. раздел «Inline media-узлы как derive-источники» в [content-authoring.md](content-authoring.md). Рантайм-контракт `SpriteVisualSpec` (`image`/`sourceSizePx`/`worldSize`/`anchor`), правило producer-а `worldSize = sourceSizePx / PX_PER_WU`, three visual registries и hard-error policy — не меняются.)
+- Updated: 2026-04-24 (render follow-up: `enemy` и `boss` получают render-only procedural breathing через squash/stretch `mesh.scale`, с фазой от `entity.id` и без новых snapshot/content-полей; story 014: авторская поверхность для пути к PNG-ассету переезжает с MD-колонки `image` на inline image-узел `![alt](../public/...)` под `## <id>` в `content/players.md` / `content/enemies.md` / `content/bosses.md` — см. раздел «Inline media-узлы как derive-источники» в [content-authoring.md](content-authoring.md). Рантайм-контракт `SpriteVisualSpec` (`image`/`sourceSizePx`/`worldSize`/`anchor`), правило producer-а `worldSize = sourceSizePx / PX_PER_WU`, three visual registries и hard-error policy — не меняются.)
 
 ## Context
 
@@ -80,6 +80,21 @@
 - Z-order не меняется: player/enemy/boss остаются на том же `z`, что сейчас (`ENEMY_Z` из renderer-а), projectile выше, drop ниже, zone overlay поверх.
 - `transparent: true` нужен для PNG с альфа-каналом; `depthWrite: false` — чтобы прозрачные края не клипали друг друга при пересечении (спрайты лежат на одинаковом z-плоскости, порядок отрисовки задаётся z-координатой и `renderOrder`).
 
+### Procedural breathing
+
+- Static PNG remains the source visual, but `Renderer` may apply a small presentation-only squash/stretch to the existing sprite mesh. This is intentionally a render pass, not a simulation system: it changes only `THREE.Mesh.scale` and never writes to snapshot state, archetypes, `SpriteVisualSpec`, `worldSize`, `contactBox`, movement, collision, projectile targeting, or spawn/balance values.
+- On the current horizon the effect applies to `enemy` and `boss` sprites only. `player` stays unscaled so input feel and player silhouette remain stable; `projectile` and `drop` keep their existing primitive render paths.
+- The breathing curve is sinusoidal and deterministic from render time plus entity identity:
+  ```ts
+  breath = sin(nowMs * breathHz + entity.id * phaseStride)
+  scaleX = 1 + amplitude * breath
+  scaleY = 1 - amplitude * verticalRatio * breath
+  ```
+  Positive `breath` makes the slime wider and slightly lower; negative `breath` makes it narrower and taller. Different `entity.id` values provide phase offsets so a wave of slimes does not animate in lockstep.
+- Amplitudes are deliberately small and renderer-owned constants. Normal enemies may use a stronger amplitude than bosses; bosses should read as alive but heavier. Tuning these numbers is a visual polish change inside `src/main/render/**`, not content authoring.
+- The effect must remain independent of `renderScalePreset`, DPR, canvas backing size, arena size, and simulation tick rate. It uses wall/render time for presentation, so it is allowed to be visually non-authoritative in the same way interpolation and drop pulsing are presentation-only.
+- If future animation frames, skeletons, shader deformation, event impulses (hit/landing squash), or per-archetype animation profiles are introduced, they extend this section. They must still preserve the core rule: sprite deformation cannot become a source of gameplay geometry unless [body-contact-boxes.md](body-contact-boxes.md) is explicitly updated.
+
 ### Hard error policy
 
 - Все следующие ситуации — `throw` на старте/в тесте, не silent fallback:
@@ -107,11 +122,13 @@
 - `validateEnemyVisuals` / `validateBossVisuals` / `validatePlayerVisuals`: happy path проходит на live registries; mismatch (orphan visual / orphan archetype) бросает с понятным сообщением, в котором есть `archetypeId` и название области.
 - Renderer hard-error: создание enemy mesh для `archetypeId`, отсутствующего в visual registry, → `throw`; отсутствие текстуры в preloaded наборе → `throw`. Регрессионный тест «`Renderer` для player/enemy/boss не создаёт `CircleGeometry`» (любой импорт `CircleGeometry` в этих ветках — ошибка).
 - Тест «независимость от арены»: при изменении `arena.width`/`arena.height` `worldSize` любого spec остаётся прежним (фиксируется как unit-тест над `SpriteVisualSpec` структурой, не над renderer-ом).
+- Renderer breathing: `enemy` получает render-only `mesh.scale` squash/stretch на заданном `nowMs`, а `player` остаётся с `scale = 1`. Это защищает границу «визуальная деформация не меняет player/simulation contract».
 
 ## Consequences
 
 - 013 получает компактный контракт: один общий тип `SpriteVisualSpec`, три раздельных registry, одна константа `PX_PER_WU = 200`, один путь к hard-error-у. Renderer перестаёт быть местом, где живут «магические» цвета и радиусы для рисования.
 - Будущие истории «уникальный visual для босса», «directional frames», «atlas» расширяют именно этот файл (новые поля в `SpriteVisualSpec`, новое решение про atlas как отдельный слой), а не переоткрывают контракт «как описать спрайт» по месту.
+- Procedural breathing даёт статическим PNG минимальную жизнь без расширения content/snapshot контракта. Цена — ещё один renderer-owned polish pass и необходимость держать амплитуды достаточно малыми, чтобы визуальный контур не обещал игроку другие хитбоксы.
 - `EnemyArchetype.color`/`BossArchetype.color` теряют половину аудитории. Это сознательный долг: пока не появится consumer (debug overlay/мини-карта), поле — placeholder. Удаление — отдельное решение, когда появится фактический consumer или подтверждение, что его не будет.
 - Generator получает право читать PNG-файлы для derive `sourceSizePx`. Это первый случай «MD не единственный физический вход генератора»; правила derive-полей зафиксированы в [content-authoring.md](content-authoring.md), здесь — конкретный потребитель.
 - Преcеты render scale ([render-scale.md](render-scale.md)) и pixel-density (DPR) не влияют на визуальный размер спрайта в wu: пресет меняет backing-pixels canvas-а, спрайт остаётся того же мирового размера. Инвариант «без преимущества от железа» остаётся в силе.

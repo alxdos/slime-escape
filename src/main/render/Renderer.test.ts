@@ -304,6 +304,62 @@ describe('createRenderer', () => {
     expect(backend.ops).toEqual([{ kind: 'render' }]);
   });
 
+  it('adds render-only squash and stretch to slime sprites without scaling the player', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const playerTexture = new THREE.Texture();
+    const enemyTexture = new THREE.Texture();
+    const pair: SnapshotPair = {
+      prev: null,
+      curr: createSnapshot([
+        { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+        {
+          id: 0,
+          kind: 'enemy',
+          archetypeId: SLIME_BUG.id,
+          x: 1,
+          y: 1,
+          hp: 2,
+          maxHp: 2
+        }
+      ]),
+      currReceivedAtMs: 0,
+      nowMs: 1000 / (0.85 * 4)
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({
+        [DEFAULT_PLAYER_VISUAL.archetypeId]: playerTexture,
+        [SLIME_BUG.id]: enemyTexture
+      }),
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const scene = backend.lastScene();
+    const playerMesh = findMeshWithMaterialMap(scene, playerTexture);
+    const enemyMesh = findMeshWithMaterialMap(scene, enemyTexture);
+
+    expect(playerMesh?.scale.x).toBe(1);
+    expect(playerMesh?.scale.y).toBe(1);
+    expect(enemyMesh?.scale.x).toBeCloseTo(1.07);
+    expect(enemyMesh?.scale.y).toBeCloseTo(0.9426);
+  });
+
   it('snaps character positions to the low backing-pixel grid', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();

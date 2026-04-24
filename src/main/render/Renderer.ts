@@ -89,6 +89,10 @@ const PROJECTILE_Z = 0.05;
 const DROP_Z = 0.03;
 const DROP_PULSE_HZ = 1.6;
 const DROP_PULSE_AMPLITUDE = 0.15;
+const SLIME_BREATH_HZ = 0.85;
+const SLIME_BREATH_AMPLITUDE = 0.07;
+const SLIME_BREATH_VERTICAL_RATIO = 0.82;
+const BOSS_BREATH_AMPLITUDE = 0.045;
 const ZONE_OVERLAY_Z = 0.2;
 const ZONE_CORNER_RADIUS_FACTOR = 0.25;
 const ZONE_FEATHER_WU = 1.5;
@@ -294,7 +298,9 @@ export function createRenderer(init: RendererInit): Renderer {
         enemyMeshes,
         ensureEnemyMesh,
         disposeEntityMesh,
-        characterSnapGrid
+        characterSnapGrid,
+        (mesh, entity) =>
+          applySlimeBreath(mesh, pair.nowMs, entity.id, SLIME_BREATH_AMPLITUDE)
       );
       updateEntities(
         pair,
@@ -303,7 +309,9 @@ export function createRenderer(init: RendererInit): Renderer {
         bossMeshes,
         ensureBossMesh,
         disposeEntityMesh,
-        characterSnapGrid
+        characterSnapGrid,
+        (mesh, entity) =>
+          applySlimeBreath(mesh, pair.nowMs, entity.id, BOSS_BREATH_AMPLITUDE)
       );
       updateEntities(
         pair,
@@ -644,7 +652,8 @@ function updateEntities<S extends EntitySnapshot>(
   table: Map<number, EntityMeshEntry>,
   ensure: (snap: S) => EntityMeshEntry,
   dispose: (entry: EntityMeshEntry) => void,
-  snapGrid: CharacterSnapGrid | null = null
+  snapGrid: CharacterSnapGrid | null = null,
+  updateVisual?: (mesh: THREE.Mesh, snap: S) => void
 ): void {
   const { prev, curr } = pair;
   const aliveIds = new Set<number>();
@@ -667,6 +676,7 @@ function updateEntities<S extends EntitySnapshot>(
         const y = prevSnap.y + (entity.y - prevSnap.y) * alpha;
         setSnappedMeshPosition(entry.mesh, x, y, entry.mesh.position.z, snapGrid);
       }
+      updateVisual?.(entry.mesh, entity);
       entry.mesh.visible = true;
     }
   }
@@ -711,6 +721,23 @@ function pulseDropMeshes(
   for (const entry of table.values()) {
     entry.mesh.scale.set(scale, scale, 1);
   }
+}
+
+function applySlimeBreath(
+  mesh: THREE.Mesh,
+  nowMs: number,
+  entityId: number,
+  amplitude: number
+): void {
+  const phase =
+    (nowMs / 1000) * SLIME_BREATH_HZ * Math.PI * 2 +
+    entityId * 1.61803398875;
+  const breath = Math.sin(phase);
+  mesh.scale.set(
+    1 + amplitude * breath,
+    1 - amplitude * SLIME_BREATH_VERTICAL_RATIO * breath,
+    1
+  );
 }
 
 function updateCrosshair(group: THREE.Group, getAim: AimAccessor | undefined): void {
