@@ -1212,7 +1212,18 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   ],
   "id": "campaign-session",
   "loadout": {
-    "primaryWeaponArchetypeId": "pistol",
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "shotgun",
+      "smg",
+      "sniper",
+      "laser",
+      "rock-thrower",
+      "grenade-launcher",
+      "bomb-placer",
+      "fireball-staff",
+    ],
   },
   "lossCondition": {
     "kind": "playerDeath",
@@ -1231,7 +1242,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 0,
   "uiMeta": null,
   "winCondition": {
@@ -2452,7 +2467,18 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   ],
   "id": "campaign-session",
   "loadout": {
-    "primaryWeaponArchetypeId": "pistol",
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "shotgun",
+      "smg",
+      "sniper",
+      "laser",
+      "rock-thrower",
+      "grenade-launcher",
+      "bomb-placer",
+      "fireball-staff",
+    ],
   },
   "lossCondition": {
     "kind": "playerDeath",
@@ -2471,7 +2497,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 1,
   "uiMeta": null,
   "winCondition": {
@@ -3692,7 +3722,18 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   ],
   "id": "campaign-session",
   "loadout": {
-    "primaryWeaponArchetypeId": "pistol",
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "shotgun",
+      "smg",
+      "sniper",
+      "laser",
+      "rock-thrower",
+      "grenade-launcher",
+      "bomb-placer",
+      "fireball-staff",
+    ],
   },
   "lossCondition": {
     "kind": "playerDeath",
@@ -3711,7 +3752,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 42,
   "uiMeta": null,
   "winCondition": {
@@ -3771,7 +3816,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 0,
   "uiMeta": null,
   "winCondition": {
@@ -3831,7 +3880,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 1,
   "uiMeta": null,
   "winCondition": {
@@ -3891,7 +3944,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 42,
   "uiMeta": null,
   "winCondition": {
@@ -3943,7 +4000,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
   ],
   "id": "sandbox-with-combat-session",
   "loadout": {
-    "primaryWeaponArchetypeId": "pistol",
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "rock-thrower",
+      "grenade-launcher",
+      "bomb-placer",
+      "fireball-staff",
+    ],
   },
   "lossCondition": {
     "kind": "none",
@@ -3962,7 +4026,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 0,
   "uiMeta": null,
   "winCondition": {
@@ -4014,7 +4082,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
   ],
   "id": "sandbox-with-combat-session",
   "loadout": {
-    "primaryWeaponArchetypeId": "pistol",
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "rock-thrower",
+      "grenade-launcher",
+      "bomb-placer",
+      "fireball-staff",
+    ],
   },
   "lossCondition": {
     "kind": "none",
@@ -4033,7 +4108,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 1,
   "uiMeta": null,
   "winCondition": {
@@ -4085,7 +4164,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
   ],
   "id": "sandbox-with-combat-session",
   "loadout": {
-    "primaryWeaponArchetypeId": "pistol",
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "rock-thrower",
+      "grenade-launcher",
+      "bomb-placer",
+      "fireball-staff",
+    ],
   },
   "lossCondition": {
     "kind": "none",
@@ -4104,7 +4190,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 42,
   "uiMeta": null,
   "winCondition": {
@@ -4251,7 +4341,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   ],
   "id": "training-session",
   "loadout": {
-    "primaryWeaponArchetypeId": "pistol",
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "shotgun",
+      "smg",
+    ],
   },
   "lossCondition": {
     "kind": "playerDeath",
@@ -4270,7 +4365,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 0,
   "uiMeta": null,
   "winCondition": {
@@ -4417,7 +4516,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   ],
   "id": "training-session",
   "loadout": {
-    "primaryWeaponArchetypeId": "pistol",
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "shotgun",
+      "smg",
+    ],
   },
   "lossCondition": {
     "kind": "playerDeath",
@@ -4436,7 +4540,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 1,
   "uiMeta": null,
   "winCondition": {
@@ -4583,7 +4691,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   ],
   "id": "training-session",
   "loadout": {
-    "primaryWeaponArchetypeId": "pistol",
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "shotgun",
+      "smg",
+    ],
   },
   "lossCondition": {
     "kind": "playerDeath",
@@ -4602,7 +4715,11 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     },
     "radius": 0.5,
   },
-  "rules": null,
+  "rules": {
+    "damage": {
+      "slimeFriendlyFire": false,
+    },
+  },
   "seed": 42,
   "uiMeta": null,
   "winCondition": {

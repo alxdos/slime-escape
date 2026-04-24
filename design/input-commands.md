@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (017 alignment: weapon slot selection and holster commands are added for ordered loadouts; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: 007 finalized Space as dev-pause through `UiShell`.)
+- Updated: 2026-04-24 (017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: 007 finalized Space as dev-pause through `UiShell`.)
 
 ## Context
 
@@ -32,6 +32,13 @@
 - Команды движения строятся по `KeyboardEvent.code`: `KeyW`, `KeyA`, `KeyS`, `KeyD`. Поле `event.key` не используется для движения, чтобы поведение не зависело от текущей раскладки и от модификаторов.
 - Стрелки `ArrowUp/Down/Left/Right` — допустимый эквивалентный ввод; mapping живёт в `src/main/input/**`.
 - Никакая системная клавиша не отбирается у браузера без необходимости. Конкретно: `e.preventDefault()` вызывается только для тех `code`, которые игра реально использует.
+
+### Клавиатура: слоты оружия
+
+- `Digit1`..`Digit9` выбирают 0-based слот оружия `0..8` и отправляют `selectWeaponSlot`.
+- `Digit0` — dedicated holster hotkey and sends `holsterWeapon`.
+- Для этих команд используется `KeyboardEvent.code`, not `event.key`, по тем же причинам раскладки, что и для движения.
+- `event.repeat` для slot/holster hotkeys игнорируется: это edge-команды, удержание клавиши не должно порождать повторный поток выбора.
 
 ### Команда движения
 

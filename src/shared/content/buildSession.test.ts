@@ -13,7 +13,15 @@ import {
   TRAINING_PRESET,
   type ModePresetId
 } from './sessions';
-import { PISTOL } from './weapons';
+import {
+  BOMB_PLACER,
+  FIREBALL_STAFF,
+  GRENADE_LAUNCHER,
+  PISTOL,
+  ROCK_THROWER,
+  SHOTGUN,
+  SMG
+} from './weapons';
 
 const ACCEPTANCE_PRESET_IDS = Object.keys(SESSION_PRESET_TEMPLATES) as ModePresetId[];
 const ACCEPTANCE_SEEDS = [0, 1, 42] as const;
@@ -96,10 +104,14 @@ describe('buildSessionDefinition (sandbox-with-combat)', () => {
     expect(session.lossCondition.kind).toBe('none');
   });
 
-  it('exposes a Loadout that points at the pistol archetype id', () => {
+  it('exposes an ordered Loadout with the first slot selected', () => {
     const session = buildSessionDefinition(SANDBOX_WITH_COMBAT_PRESET, { seed: 7 });
 
-    expect(session.loadout).toEqual({ primaryWeaponArchetypeId: PISTOL.id });
+    expect(session.loadout).toEqual({
+      weapons: [PISTOL.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id],
+      selectedIndex: 0
+    });
+    expect(session.rules.damage.slimeFriendlyFire).toBe(false);
   });
 
   it('uses a static spawn plan with slime-bug inside the arena', () => {
@@ -205,10 +217,10 @@ describe('buildSessionDefinition (training)', () => {
     }
   });
 
-  it('exposes pistol loadout and a damageable training player', () => {
+  it('exposes ordered loadout and a damageable training player', () => {
     const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
 
-    expect(session.loadout).toEqual({ primaryWeaponArchetypeId: PISTOL.id });
+    expect(session.loadout).toEqual({ weapons: [PISTOL.id, SHOTGUN.id, SMG.id], selectedIndex: 0 });
     expect(session.player.maxHp).toBeGreaterThan(0);
   });
 });

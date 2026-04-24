@@ -3,7 +3,9 @@ import { basename, extname, join } from 'node:path';
 
 import type {
   EncounterType,
+  Loadout,
   LossCondition,
+  SessionRules,
   TransitionNext,
   WinCondition,
   ZoneBehavior
@@ -85,11 +87,17 @@ export type ParsedSessionPreset = Readonly<{
   order: number;
   arena: ParsedRef;
   player: ParsedRef;
-  loadoutWeapon: ParsedRef | null;
+  loadout: ParsedLoadout | null;
   backgrounds: ReadonlyArray<ParsedSessionBackground>;
+  rules: SessionRules;
   winCondition: ParsedWinCondition;
   lossCondition: ParsedLossCondition;
   encounters: ReadonlyArray<ParsedEncounter>;
+}>;
+
+export type ParsedLoadout = Readonly<{
+  weapons: ReadonlyArray<ParsedRef>;
+  selectedIndex: Loadout['selectedIndex'];
 }>;
 
 export type ParsedSessionsArea = Readonly<{
@@ -190,8 +198,9 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
     order: sessionFields.readNumber('order'),
     arena: parseArenaRef(sessionFields, 'arenaId'),
     player: parsePlayerRef(sessionFields, 'playerId'),
-    loadoutWeapon: parseLoadoutWeapon(sessionFields, 'loadoutWeaponId'),
+    loadout: parseLoadout(sessionFields),
     backgrounds,
+    rules: parseSessionRules(sessionFields),
     winCondition: parseWinCondition(sessionFields, 'winCondition'),
     lossCondition: parseLossCondition(sessionFields, 'lossCondition'),
     encounters: encountersSection.sections.map((section) =>
@@ -509,12 +518,68 @@ function parseBooleanField(field: FieldReader, fieldName: string): boolean {
   throw fieldError(field, fieldName, 'expected true or false');
 }
 
-function parseLoadoutWeapon(field: FieldReader, fieldName: string): ParsedRef | null {
-  const cell = field.readCell(fieldName);
-  if (cell.value === 'none') {
+function parseLoadout(field: FieldReader): ParsedLoadout | null {
+  const weaponIdsCell = field.readCell('loadoutWeaponIds');
+  const selectedIndexCell = field.readCell('selectedWeaponIndex');
+  if (weaponIdsCell.value === 'none') {
+    if (selectedIndexCell.value !== 'none') {
+      throw cellError(
+        field.section,
+        selectedIndexCell.position,
+        'selectedWeaponIndex',
+        'value',
+        'expected none when loadoutWeaponIds is none'
+      );
+    }
     return null;
   }
-  return requireWeaponRef(field.section, cell.position, fieldName, cell.value);
+
+  const weapons = weaponIdsCell.value.split(',').map((rawWeaponId) => {
+    const weaponId = rawWeaponId.trim();
+    if (weaponId.length === 0) {
+      throw cellError(
+        field.section,
+        weaponIdsCell.position,
+        'loadoutWeaponIds',
+        'value',
+        'expected comma-separated weapon ids'
+      );
+    }
+    return requireWeaponRef(field.section, weaponIdsCell.position, 'loadoutWeaponIds', weaponId);
+  });
+  if (weapons.length === 0) {
+    throw cellError(field.section, weaponIdsCell.position, 'loadoutWeaponIds', 'value', 'expected weapon ids or none');
+  }
+
+  const selectedIndex = parseSelectedWeaponIndex(field, selectedIndexCell, weapons.length);
+  return { weapons, selectedIndex };
+}
+
+function parseSelectedWeaponIndex(
+  field: FieldReader,
+  cell: MarkdownCell,
+  weaponCount: number
+): number | null {
+  if (cell.value === 'none') return null;
+  const value = Number(cell.value);
+  if (!Number.isInteger(value) || value < 0 || value >= weaponCount) {
+    throw cellError(
+      field.section,
+      cell.position,
+      'selectedWeaponIndex',
+      'value',
+      `expected 0..${weaponCount - 1} or none`
+    );
+  }
+  return value;
+}
+
+function parseSessionRules(field: FieldReader): SessionRules {
+  return {
+    damage: {
+      slimeFriendlyFire: parseBooleanField(field, 'slimeFriendlyFire')
+    }
+  };
 }
 
 function parseArenaRef(field: FieldReader, fieldName: string): ParsedRef {

@@ -12,8 +12,10 @@ import type { SessionDefinition } from '../../shared/session';
 import { createAudio, type Audio } from '../audio/Audio';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
 import { BOSS_VISUALS } from '../render/bossVisuals';
+import { DROP_VISUALS } from '../render/dropVisuals';
 import { ENEMY_VISUALS } from '../render/enemyVisuals';
 import { PLAYER_VISUALS } from '../render/playerVisuals';
+import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 import { createRenderer, type Renderer, type RendererInit } from '../render/Renderer';
 import { preloadSprites, type TextureMap } from '../render/spritePreload';
 import {
@@ -117,11 +119,13 @@ const RUNNING_PHASE: UiShellPhase = { kind: 'running' };
 const PAUSED_PHASE: UiShellPhase = { kind: 'paused' };
 const STARTUP_PRELOAD_MIN_DURATION_MS = 1500;
 const STARTUP_PRELOAD_PROGRESS_TICK_MS = 50;
-const STARTUP_SPRITE_SPECS = [
+export const STARTUP_SPRITE_SPECS = Object.freeze([
   ...Object.values(PLAYER_VISUALS),
   ...Object.values(ENEMY_VISUALS),
-  ...Object.values(BOSS_VISUALS)
-];
+  ...Object.values(BOSS_VISUALS),
+  ...Object.values(PROJECTILE_VISUALS),
+  ...Object.values(DROP_VISUALS)
+]);
 
 export function createUiShell(init: UiShellInit): UiShell {
   const builder = init.buildSessionDefinition ?? buildSessionDefinition;

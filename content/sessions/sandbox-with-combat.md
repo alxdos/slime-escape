@@ -8,7 +8,9 @@
 | order | 0 |
 | arenaId | sandbox |
 | playerId | hero-sandbox |
-| loadoutWeaponId | pistol |
+| loadoutWeaponIds | pistol, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |
+| selectedWeaponIndex | 0 |
+| slimeFriendlyFire | false |
 | winCondition | none |
 | lossCondition | none |
 

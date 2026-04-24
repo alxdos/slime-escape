@@ -8,7 +8,9 @@
 | order | 0 |
 | arenaId | sandbox |
 | playerId | hero-sandbox |
-| loadoutWeaponId | none |
+| loadoutWeaponIds | none |
+| selectedWeaponIndex | none |
+| slimeFriendlyFire | false |
 | winCondition | none |
 | lossCondition | none |
 

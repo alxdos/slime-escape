@@ -4,16 +4,20 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { PX_PER_WU } from '../../src/shared/sprite/spriteScale';
+
 import { parseBossesArea, type ParsedBossesArea } from './bosses/parse';
 import { renderBossAudio } from './bosses/renderAudio';
 import { renderBossContent } from './bosses/renderContent';
 import { renderBossVisuals } from './bosses/renderVisuals';
 import { parseDropsArea, type ParsedDropsArea } from './drops/parse';
 import { renderDropContent } from './drops/renderContent';
+import { renderDropVisuals } from './drops/renderVisuals';
 import { runContentBuild, type ContentArea } from './index';
 import { parseWeaponsArea, type ParsedWeaponsArea } from './weapons/parse';
 import { renderWeaponAudio } from './weapons/renderAudio';
 import { renderWeaponContent } from './weapons/renderContent';
+import { renderProjectileVisuals } from './weapons/renderVisuals';
 
 describe('content-build archetype areas', () => {
   it('renders committed weapons markdown to committed generated files', async () => {
@@ -25,6 +29,9 @@ describe('content-build archetype areas', () => {
     await expect(readFile('src/main/audio/weaponAudio.generated.ts', 'utf8')).resolves.toBe(
       renderWeaponAudio(area)
     );
+    await expect(readFile('src/main/render/projectileVisuals.generated.ts', 'utf8')).resolves.toBe(
+      renderProjectileVisuals(area)
+    );
   });
 
   it('renders committed drops markdown to committed generated files', async () => {
@@ -33,6 +40,36 @@ describe('content-build archetype areas', () => {
     await expect(readFile('src/shared/content/drops.generated.ts', 'utf8')).resolves.toBe(
       renderDropContent(area)
     );
+    await expect(readFile('src/main/render/dropVisuals.generated.ts', 'utf8')).resolves.toBe(
+      renderDropVisuals(area)
+    );
+  });
+
+  it('derives projectile and drop gameplay sizes from sprite PNG metrics, independent of arena size', async () => {
+    const weaponsArea = await parseWeaponsArea('content/weapons.md');
+    const dropsArea = await parseDropsArea('content/drops.md');
+
+    for (const weapon of weaponsArea.weapons) {
+      expect(weapon.projectile.size).toEqual(weapon.projectileSpriteVisual.worldSize);
+      expect(deriveWorldSize(weapon.projectileSpriteVisual.sourceSizePx, { width: 16, height: 9 })).toEqual(
+        weapon.projectile.size
+      );
+      expect(deriveWorldSize(weapon.projectileSpriteVisual.sourceSizePx, { width: 64, height: 36 })).toEqual(
+        weapon.projectile.size
+      );
+    }
+
+    for (const drop of dropsArea.drops) {
+      const expectedRadius =
+        Math.min(drop.spriteVisual.worldSize.width, drop.spriteVisual.worldSize.height) / 2;
+      expect(drop.radius).toBe(expectedRadius);
+      expect(deriveDropRadius(drop.spriteVisual.sourceSizePx, { width: 16, height: 9 })).toBe(
+        expectedRadius
+      );
+      expect(deriveDropRadius(drop.spriteVisual.sourceSizePx, { width: 64, height: 36 })).toBe(
+        expectedRadius
+      );
+    }
   });
 
   it('renders committed bosses markdown to committed generated files', async () => {
@@ -61,10 +98,10 @@ describe('content-build archetype areas', () => {
       name: 'drops-missing-cell',
       sourcePath: 'content/drops.md',
       targetName: 'drops.generated.ts',
-      mutate: (source) => replaceExact(source, '| heal-orb | 0.35 | 8000 |', '| heal-orb | | 8000 |'),
+      mutate: (source) => replaceExact(source, '| heal-orb | 8000 |', '| heal-orb | |'),
       parse: parseDropsArea,
       render: renderDropContent,
-      pattern: /column "radius"/
+      pattern: /column "ttlMs"/
     });
 
     await expectAreaRejectsBeforeWriting<ParsedBossesArea>({
@@ -91,7 +128,7 @@ describe('content-build archetype areas', () => {
     await expectParseRejects({
       sourcePath: 'content/drops.md',
       mutate: (source) =>
-        replaceExact(source, '| heal-orb | 0.35 | 8000 |', '| heal-orb | 0.35 | 8000 |\n| coin | 0.2 | 5000 |'),
+        replaceExact(source, '| heal-orb | 8000 |', '| heal-orb | 8000 |\n| coin | 5000 |'),
       parse: parseDropsArea,
       pattern: /unknown drop id "coin"/
     });
@@ -127,12 +164,171 @@ describe('content-build archetype areas', () => {
     });
   });
 
+  it('rejects weapon projectile visuals without the required inline H2 image', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(source, '![Pistol projectile](../public/assets/projectiles/pistol.png)\n\n', ''),
+      parse: parseWeaponsArea,
+      pattern: /expected !\[.*\]\(/
+    });
+  });
+
+  it('rejects manual weapon sprite fields in definition tables', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| displayName | Pistol |',
+          '| displayName | Pistol |\n| image | ../public/assets/projectiles/pistol.png |'
+        ),
+      parse: parseWeaponsArea,
+      pattern: /sprite fields are derived from the inline image/
+    });
+  });
+
+  it('rejects manual weapon sprite columns in balance tables', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| id | cooldownMs |\n|---|---:|',
+          '| id | cooldownMs | image |\n|---|---:|---|'
+        ),
+      parse: parseWeaponsArea,
+      pattern: /sprite fields are derived from the inline image/
+    });
+  });
+
+  it('rejects drop visuals without the required inline H2 image', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) => replaceExact(source, '![Heal orb](../public/assets/drops/heal-orb.png)\n\n', ''),
+      parse: parseDropsArea,
+      pattern: /expected !\[.*\]\(/
+    });
+  });
+
+  it('rejects manual drop sprite fields in definition tables', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| displayName | Heal Orb |',
+          '| displayName | Heal Orb |\n| radius | 0.25 |'
+        ),
+      parse: parseDropsArea,
+      pattern: /sprite fields are derived from the inline image/
+    });
+  });
+
+  it('rejects manual drop sprite columns in balance tables', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| id | ttlMs |\n|---|---:|',
+          '| id | ttlMs | image |\n|---|---:|---|'
+        ),
+      parse: parseDropsArea,
+      pattern: /sprite fields are derived from the inline image/
+    });
+  });
+
   it('rejects negative weapon force values', async () => {
     await expectParseRejects({
       sourcePath: 'content/weapons.md',
-      mutate: (source) => replaceExact(source, '| pistol | 5 |', '| pistol | -1 |'),
+      mutate: (source) => replaceExact(source, '| pistol | 1 | 5 | 0 |', '| pistol | 1 | -1 | 0 |'),
       parse: parseWeaponsArea,
-      pattern: /knockbackImpulse must be >= 0/
+      pattern: /knockbackImpulse.*expected >= 0/
+    });
+  });
+
+  it('rejects non-positive projectile motion values', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| grenade-launcher | arc | 7 | 6 | 700 |',
+          '| grenade-launcher | arc | 7 | 6 | 0 |'
+        ),
+      parse: parseWeaponsArea,
+      pattern: /flightMs.*expected > 0/
+    });
+  });
+
+  it('rejects weapon fragments that reference unknown weapon ids', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| bomb-placer | none | 0 | 0 |',
+          '| bomb-placer | missing-weapon | 4 | 1 |'
+        ),
+      parse: parseWeaponsArea,
+      pattern: /fragmentWeaponId.*unknown weapon id "missing-weapon"/
+    });
+  });
+
+  it('rejects weapon fragments on weapons without an explosion spec', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '## Explosion Fragments\n\n| id | fragmentWeaponId | count | spreadRadians |\n|---|---|---:|---:|\n| pistol | none | 0 | 0 |\n| shotgun | none | 0 | 0 |\n| smg | none | 0 | 0 |\n| sniper | none | 0 | 0 |\n| laser | none | 0 | 0 |\n| rock-thrower | none | 0 | 0 |',
+          '## Explosion Fragments\n\n| id | fragmentWeaponId | count | spreadRadians |\n|---|---|---:|---:|\n| pistol | none | 0 | 0 |\n| shotgun | none | 0 | 0 |\n| smg | none | 0 | 0 |\n| sniper | none | 0 | 0 |\n| laser | none | 0 | 0 |\n| rock-thrower | pistol | 2 | 1 |'
+        ),
+      parse: parseWeaponsArea,
+      pattern: /fragment requires a non-none explosion/
+    });
+  });
+
+  it('rejects drop fragment modifiers that reference unknown weapon ids', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| fragment | fragmentExplosion | 6 | pistol | 6.2831853072 |',
+          '| fragment | fragmentExplosion | 6 | railgun | 6.2831853072 |'
+        ),
+      parse: parseDropsArea,
+      pattern: /fragmentWeaponId.*unknown weapon id "railgun"/
+    });
+  });
+
+  it('rejects weapon modifier drops with an unsupported target', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| size-up | addWeaponModifier | selectedWeapon | none | none |',
+          '| size-up | addWeaponModifier | allWeapons | none | none |'
+        ),
+      parse: parseDropsArea,
+      pattern: /target.*expected selectedWeapon/
+    });
+  });
+
+  it('rejects non-positive weapon modifier multipliers', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| size-up | projectileSizeMultiplier | 1.25 | none | 0 |',
+          '| size-up | projectileSizeMultiplier | 0 | none | 0 |'
+        ),
+      parse: parseDropsArea,
+      pattern: /value.*expected > 0/
     });
   });
 
@@ -234,6 +430,24 @@ async function expectParseRejects<T>(
 
 function makeArea(name: string, render: ContentArea['render']): ContentArea {
   return { name, render };
+}
+
+function deriveWorldSize(
+  sourceSizePx: Readonly<{ width: number; height: number }>,
+  _arena: Readonly<{ width: number; height: number }>
+): Readonly<{ width: number; height: number }> {
+  return {
+    width: sourceSizePx.width / PX_PER_WU,
+    height: sourceSizePx.height / PX_PER_WU
+  };
+}
+
+function deriveDropRadius(
+  sourceSizePx: Readonly<{ width: number; height: number }>,
+  arena: Readonly<{ width: number; height: number }>
+): number {
+  const worldSize = deriveWorldSize(sourceSizePx, arena);
+  return Math.min(worldSize.width, worldSize.height) / 2;
 }
 
 function replaceExact(source: string, search: string, replacement: string): string {

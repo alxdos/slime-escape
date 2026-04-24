@@ -94,11 +94,15 @@ describe('content-build sessions area', () => {
       pattern: /section "# Session": unknown playerId "hero-ghost"/
     },
     {
-      name: 'loadoutWeaponId',
+      name: 'loadoutWeaponIds',
       file: 'campaign.md' as const,
       mutate: (source: string) =>
-        replaceExact(source, '| loadoutWeaponId | pistol |', '| loadoutWeaponId | railgun |'),
-      pattern: /section "# Session": unknown loadoutWeaponId "railgun"/
+        replaceExact(
+          source,
+          '| loadoutWeaponIds | pistol, shotgun, smg, sniper, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |',
+          '| loadoutWeaponIds | pistol, shotgun, smg, railgun, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |'
+        ),
+      pattern: /section "# Session": unknown loadoutWeaponIds "railgun"/
     },
     {
       name: 'bossArchetypeId',
@@ -125,6 +129,26 @@ describe('content-build sessions area', () => {
       }, testCase.pattern);
     });
   }
+
+  it('rejects selectedWeaponIndex outside the authored ordered loadout', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          replaceExact(source, '| selectedWeaponIndex | 0 |', '| selectedWeaponIndex | 3 |')
+      },
+      /selectedWeaponIndex.*expected 0\.\.2 or none/
+    );
+  });
+
+  it('rejects selectedWeaponIndex when loadoutWeaponIds is none', async () => {
+    await expectParseRejects(
+      {
+        'sandbox.md': (source) =>
+          replaceExact(source, '| selectedWeaponIndex | none |', '| selectedWeaponIndex | 0 |')
+      },
+      /selectedWeaponIndex.*expected none when loadoutWeaponIds is none/
+    );
+  });
 
   it('rejects a spawn table on an empty encounter', async () => {
     await expectParseRejects(

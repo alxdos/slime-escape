@@ -24,7 +24,19 @@ const combat = createCombatSystem();
 const healthDeath = createHealthDeathSystem();
 const spatialIndex = createSpatialIndex();
 const zone = createZoneSystem();
-const drops = createDropSystem();
+const drops = createDropSystem(undefined, undefined, {
+  addModifierToSelectedWeapon(ownerId, modifier) {
+    combat.addModifierToSelectedWeapon(ownerId, modifier);
+  },
+  applyTemporaryOverdriveToSelectedWeapon(ownerId, cooldownMultiplier, durationMs, simTimeMs) {
+    combat.applyTemporaryOverdriveToSelectedWeapon(
+      ownerId,
+      cooldownMultiplier,
+      durationMs,
+      simTimeMs
+    );
+  }
+});
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);
@@ -62,7 +74,8 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
   const snapshot = exporter.onTick(simTimeMs, entities, {
     encounter: encounterCtx,
     zone: zone.zone(),
-    waveProgress: waveSnap
+    waveProgress: waveSnap,
+    weaponHud: combat.weaponHudFor(entities.player()?.id ?? null)
   });
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });
@@ -80,6 +93,7 @@ const sessionFlow = createSessionFlowSystem({
     zone.reset();
     spawn.setRng(rng);
     drops.setRng(rng);
+    combat.setDamageRules(session.rules.damage);
     const player = entities.spawnPlayer(session.player);
     if (session.loadout !== null) {
       combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());

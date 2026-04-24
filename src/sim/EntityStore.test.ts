@@ -6,6 +6,7 @@ import {
   createEntityStore,
   type DropSpawnSpec,
   type EnemySpawnSpec,
+  type EntityId,
   type ProjectileSpawnSpec
 } from './EntityStore';
 
@@ -39,12 +40,20 @@ const ENEMY_SPEC: EnemySpawnSpec = {
 
 const PROJECTILE_SPEC: ProjectileSpawnSpec = {
   weaponArchetypeId: 'pistol',
+  ownerId: 1 as EntityId,
   ownerKind: 'player',
+  motionKind: 'linear',
   position: { x: 0, y: 0 },
   velocity: { vx: 10, vy: 0 },
-  radius: 0.1,
-  damage: 1,
+  size: { width: 0.25, height: 0.25 },
+  hitRadius: 0.1,
+  impactDamage: 1,
   knockbackImpulse: 5,
+  pierceRemaining: 0,
+  groundOnImpact: false,
+  groundedLifetimeMs: null,
+  explosion: null,
+  groundAtSimMs: null,
   expireAtSimMs: 2000
 };
 
@@ -113,15 +122,17 @@ describe('EntityStore', () => {
     expect(enemy.position.x).toBe(1);
   });
 
-  it('spawns a projectile copying velocity and radius from the spec', () => {
+  it('spawns a projectile copying universal projectile fields from the spec', () => {
     const store = createEntityStore();
     const projectile = store.spawnProjectile(PROJECTILE_SPEC);
 
     expect(projectile.kind).toBe('projectile');
     expect(projectile.velocity).toEqual(PROJECTILE_SPEC.velocity);
-    expect(projectile.radius).toBe(PROJECTILE_SPEC.radius);
-    expect(projectile.damage).toBe(PROJECTILE_SPEC.damage);
+    expect(projectile.size).toEqual(PROJECTILE_SPEC.size);
+    expect(projectile.hitRadius).toBe(PROJECTILE_SPEC.hitRadius);
+    expect(projectile.impactDamage).toBe(PROJECTILE_SPEC.impactDamage);
     expect(projectile.knockbackImpulse).toBe(PROJECTILE_SPEC.knockbackImpulse);
+    expect(projectile.pierceRemaining).toBe(PROJECTILE_SPEC.pierceRemaining);
     expect(projectile.expireAtSimMs).toBe(PROJECTILE_SPEC.expireAtSimMs);
     expect(store.projectileById(projectile.id)).toBe(projectile);
     expect(store.projectileCount()).toBe(1);
@@ -142,7 +153,7 @@ describe('EntityStore', () => {
     // design/drops.md: radius/effect/color are copied at spawn so a live drop
     // is independent from later mutations of the archetype it came from.
     const store = createEntityStore();
-    const archetypeEffect: DropEffect = { kind: 'heal', amount: 1 };
+    const archetypeEffect: { kind: 'heal'; amount: number } = { kind: 'heal', amount: 1 };
     const spec: DropSpawnSpec = {
       archetypeId: 'heal-orb',
       position: { x: 0, y: 0 },

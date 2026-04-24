@@ -137,6 +137,38 @@ describe('HealthDeathSystem', () => {
     expect(death.impactDirY).toBe(0);
   });
 
+  it('copies explosion weapon into death events without an impact direction', () => {
+    const store = createEntityStore();
+    const enemy = spawnTarget(store, 1);
+    const sys = createHealthDeathSystem();
+    const events: RuntimeEvent[] = [];
+
+    sys.tick(
+      [
+        {
+          targetId: enemy.id,
+          amount: 1,
+          source: {
+            kind: 'explosion',
+            projectileId: 0 as EntityId,
+            ownerKind: 'player',
+            weaponArchetypeId: PISTOL.id
+          },
+          hitPosition: { x: enemy.position.x, y: enemy.position.y }
+        }
+      ],
+      store,
+      0,
+      (e) => events.push(e)
+    );
+
+    const death = events.find((e) => e.kind === 'death');
+    if (death?.kind !== 'death') throw new Error('expected death event');
+    expect(death.weaponArchetypeId).toBe(PISTOL.id);
+    expect(death.impactDirX).toBeNull();
+    expect(death.impactDirY).toBeNull();
+  });
+
   it('ignores intent targeting an unknown id', () => {
     const store = createEntityStore();
     const sys = createHealthDeathSystem();

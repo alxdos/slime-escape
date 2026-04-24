@@ -17,10 +17,10 @@ function makeSession(): SessionDefinition {
       maxSpeed: 5,
       maxHp: 5
     },
-    loadout: { primaryWeaponArchetypeId: 'pistol' },
+    loadout: { weapons: ['pistol'], selectedIndex: 0 },
     backgrounds: [],
     modifiers: [],
-    rules: null,
+    rules: { damage: { slimeFriendlyFire: false } },
     encounters: [
       {
         id: 'wave-1',
@@ -84,6 +84,7 @@ function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: { dispatched: 3, total: 7, alive: 2 },
     bossHud: null,
+    weaponHud: null,
     ...overrides
   };
 }
@@ -146,6 +147,7 @@ describe('Hud view model', () => {
     expect(view.encounterElapsedText).toBe('01:05');
     expect(view.waveTitleText).toBe('Волна 2 из 2');
     expect(view.waveProgressText).toBe('Выпущено 3/7 · Живых 2');
+    expect(view.weapon).toBeNull();
     expect(view.boss).toBeNull();
   });
 
@@ -165,7 +167,65 @@ describe('Hud view model', () => {
 
     expect(breakView.waveTitleText).toBeNull();
     expect(breakView.waveProgressText).toBeNull();
+    expect(breakView.weapon).toBeNull();
     expect(breakView.boss).toBeNull();
+  });
+
+  it('derives selected weapon name, slot and cooldown from weaponHud', () => {
+    const view = deriveHudViewModel(
+      makeSession(),
+      makeSnapshot({
+        simTimeMs: 200,
+        weaponHud: {
+          selectedIndex: 1,
+          weapons: [
+            {
+              index: 0,
+              weaponArchetypeId: 'pistol',
+              cooldownReadyAtSimMs: 0,
+              overdriveUntilSimMs: null
+            },
+            {
+              index: 1,
+              weaponArchetypeId: 'shotgun',
+              cooldownReadyAtSimMs: 700,
+              overdriveUntilSimMs: null
+            }
+          ]
+        }
+      })
+    );
+
+    expect(view.weapon).toEqual({
+      titleText: 'Shotgun',
+      slotText: '2 / 2',
+      cooldownText: '0.5s'
+    });
+  });
+
+  it('shows a holstered weapon summary when no weapon slot is selected', () => {
+    const view = deriveHudViewModel(
+      makeSession(),
+      makeSnapshot({
+        weaponHud: {
+          selectedIndex: null,
+          weapons: [
+            {
+              index: 0,
+              weaponArchetypeId: 'pistol',
+              cooldownReadyAtSimMs: 0,
+              overdriveUntilSimMs: null
+            }
+          ]
+        }
+      })
+    );
+
+    expect(view.weapon).toEqual({
+      titleText: 'Holstered',
+      slotText: '— / 1',
+      cooldownText: '—'
+    });
   });
 
   it('shows boss block only when bossHud is present and resolves phase through archetype data', () => {
@@ -274,6 +334,7 @@ describe('Hud view model', () => {
     expect(view.encounterElapsedText).toBe('--:--');
     expect(view.waveTitleText).toBeNull();
     expect(view.waveProgressText).toBeNull();
+    expect(view.weapon).toBeNull();
     expect(view.boss).toBeNull();
   });
 });

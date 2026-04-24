@@ -8,7 +8,9 @@
 | order | 0 |
 | arenaId | sandbox |
 | playerId | hero-training |
-| loadoutWeaponId | pistol |
+| loadoutWeaponIds | pistol, shotgun, smg, sniper, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |
+| selectedWeaponIndex | 0 |
+| slimeFriendlyFire | false |
 | winCondition | allEncountersComplete |
 | lossCondition | playerDeath |
 

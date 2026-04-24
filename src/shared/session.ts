@@ -53,7 +53,16 @@ export type BossSpawnPlan = Readonly<{
 export type SpawnPlan = EmptySpawnPlan | StaticSpawnPlan | WaveSpawnPlan | BossSpawnPlan;
 
 export type Loadout = Readonly<{
-  primaryWeaponArchetypeId: string;
+  weapons: ReadonlyArray<string>;
+  selectedIndex: number | null;
+}>;
+
+export type DamageRules = Readonly<{
+  slimeFriendlyFire: boolean;
+}>;
+
+export type SessionRules = Readonly<{
+  damage: DamageRules;
 }>;
 
 export type SessionBackground = Readonly<{
@@ -119,7 +128,7 @@ export type SessionDefinition = Readonly<{
   loadout: Loadout | null;
   backgrounds: ReadonlyArray<SessionBackground>;
   modifiers: ReadonlyArray<Modifier>;
-  rules: null;
+  rules: SessionRules;
   encounters: ReadonlyArray<EncounterDefinition>;
   winCondition: WinCondition;
   lossCondition: LossCondition;

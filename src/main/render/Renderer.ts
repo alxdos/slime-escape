@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
 import { BOSS_ARCHETYPES } from '../../shared/content/bosses';
-import { DROP_ARCHETYPES, type DropArchetype } from '../../shared/content/drops';
 import { ENEMY_ARCHETYPES } from '../../shared/content/enemies';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
 import type { RuntimeEvent } from '../../shared/events';
@@ -12,6 +11,7 @@ import type {
   DropSnapshot,
   EnemySnapshot,
   EntitySnapshot,
+  PlayerSnapshot,
   ProjectileSnapshot,
   Snapshot
 } from '../../shared/snapshot';
@@ -19,6 +19,7 @@ import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 import { BOSS_VISUALS } from './bossVisuals';
+import { DROP_VISUALS } from './dropVisuals';
 import { ENEMY_VISUALS } from './enemyVisuals';
 import { fitCanvasToViewport } from './fitToViewport';
 import {
@@ -28,6 +29,7 @@ import {
   type SlimeDropletEffect
 } from './ImpactEffectStore';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
+import { PROJECTILE_VISUALS } from './projectileVisuals';
 import {
   resolveRenderScale,
   type RenderScalePreset
@@ -69,7 +71,6 @@ export type RendererInit = Readonly<{
   getSnapshotPair: () => SnapshotPair;
   getAim?: AimAccessor;
   weaponRegistry?: Readonly<Record<string, WeaponArchetype>>;
-  dropRegistry?: Readonly<Record<string, DropArchetype>>;
   windowTarget?: RendererWindowTarget;
   createRendererBackend?: CreateRendererBackendFn;
   loadBackgroundTexture?: LoadTextureFn;
@@ -96,11 +97,16 @@ const ARENA_TINT_OPACITY = 0.18;
 const BACKGROUND_Z = -2;
 const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
+const PROJECTILE_RADIUS_Z = -0.01;
+const PROJECTILE_RADIUS_INDICATOR_NAME = 'projectile-radius-indicator';
 const DROP_Z = 0.03;
+const ARC_PREVIEW_Z = 0.04;
+const ARC_PREVIEW_RADIUS_WU = 0.18;
 const SLIME_STAIN_Z = -0.25;
 const DEATH_GHOST_Z = 0.045;
 const DROP_PULSE_HZ = 1.6;
 const DROP_PULSE_AMPLITUDE = 0.15;
+const PROJECTILE_GROUNDED_PULSE_AMPLITUDE = 0.1;
 const SLIME_BREATH_HZ = 0.85;
 const SLIME_BREATH_AMPLITUDE = 0.07;
 const SLIME_BREATH_VERTICAL_RATIO = 0.82;
@@ -122,7 +128,6 @@ type CharacterSnapGrid = Readonly<{
 
 export function createRenderer(init: RendererInit): Renderer {
   const weaponRegistry = init.weaponRegistry ?? WEAPON_ARCHETYPES;
-  const dropRegistry = init.dropRegistry ?? DROP_ARCHETYPES;
   const windowTarget = init.windowTarget ?? window;
 
   const renderer =
@@ -177,6 +182,9 @@ export function createRenderer(init: RendererInit): Renderer {
   const crosshair = createCrosshair();
   crosshair.visible = false;
   scene.add(crosshair);
+
+  const arcPreview = createArcPreview();
+  scene.add(arcPreview);
 
   const zoneOverlay = createZoneOverlay(init.arena);
   scene.add(zoneOverlay.mesh);
@@ -244,8 +252,7 @@ export function createRenderer(init: RendererInit): Renderer {
 
   function disposeEntityMesh(entry: EntityMeshEntry): void {
     scene.remove(entry.mesh);
-    entry.geometry.dispose();
-    entry.material.dispose();
+    disposeObjectTree(entry.mesh);
   }
 
   function ensureBossMesh(snap: BossSnapshot): EntityMeshEntry {
@@ -277,15 +284,13 @@ export function createRenderer(init: RendererInit): Renderer {
   function ensureProjectileMesh(snap: ProjectileSnapshot): EntityMeshEntry {
     const existing = projectileMeshes.get(snap.id);
     if (existing !== undefined) return existing;
-    const archetype = weaponRegistry[snap.weaponArchetypeId];
-    const radius = archetype?.projectileRadius ?? 0.1;
-    const color = archetype?.color ?? 0xffffff;
-    const geometry = new THREE.CircleGeometry(radius, 12);
-    const material = new THREE.MeshBasicMaterial({ color });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.z = PROJECTILE_Z;
-    scene.add(mesh);
-    const entry: EntityMeshEntry = { mesh, geometry, material };
+    const entry = createSpriteMesh(
+      requireVisualSpec(PROJECTILE_VISUALS, snap.weaponArchetypeId, 'projectile'),
+      requireSpriteTexture(init.spriteTextures, snap.weaponArchetypeId, 'projectile'),
+      PROJECTILE_Z
+    );
+    entry.mesh.add(createProjectileRadiusIndicator());
+    scene.add(entry.mesh);
     projectileMeshes.set(snap.id, entry);
     return entry;
   }
@@ -293,15 +298,12 @@ export function createRenderer(init: RendererInit): Renderer {
   function ensureDropMesh(snap: DropSnapshot): EntityMeshEntry {
     const existing = dropMeshes.get(snap.id);
     if (existing !== undefined) return existing;
-    const archetype = dropRegistry[snap.archetypeId];
-    const radius = archetype?.radius ?? 0.3;
-    const color = archetype?.color ?? 0xffffff;
-    const geometry = new THREE.CircleGeometry(radius, 24);
-    const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.z = DROP_Z;
-    scene.add(mesh);
-    const entry: EntityMeshEntry = { mesh, geometry, material };
+    const entry = createSpriteMesh(
+      requireVisualSpec(DROP_VISUALS, snap.archetypeId, 'drop'),
+      requireSpriteTexture(init.spriteTextures, snap.archetypeId, 'drop'),
+      DROP_Z
+    );
+    scene.add(entry.mesh);
     dropMeshes.set(snap.id, entry);
     return entry;
   }
@@ -323,9 +325,9 @@ export function createRenderer(init: RendererInit): Renderer {
         ensureEnemyMesh,
         disposeEntityMesh,
         characterSnapGrid,
-        (mesh, entity) =>
+        (entry, entity) =>
           applySlimePresentation(
-            mesh,
+            entry.mesh,
             pair.nowMs,
             entity.id,
             SLIME_BREATH_AMPLITUDE,
@@ -340,9 +342,9 @@ export function createRenderer(init: RendererInit): Renderer {
         ensureBossMesh,
         disposeEntityMesh,
         characterSnapGrid,
-        (mesh, entity) =>
+        (entry, entity) =>
           applySlimePresentation(
-            mesh,
+            entry.mesh,
             pair.nowMs,
             entity.id,
             BOSS_BREATH_AMPLITUDE,
@@ -355,7 +357,9 @@ export function createRenderer(init: RendererInit): Renderer {
         (e): e is ProjectileSnapshot => e.kind === 'projectile',
         projectileMeshes,
         ensureProjectileMesh,
-        disposeEntityMesh
+        disposeEntityMesh,
+        null,
+        (entry, entity) => applyProjectilePresentation(entry.mesh, entity, weaponRegistry)
       );
       updateEntities(
         pair,
@@ -367,6 +371,7 @@ export function createRenderer(init: RendererInit): Renderer {
       );
       pulseDropMeshes(dropMeshes, pair.nowMs);
       updateCrosshair(crosshair, init.getAim);
+      updateArcPreview(arcPreview, pair.curr, init.getAim, weaponRegistry);
       updateZoneOverlay(zoneOverlay, pair, alpha);
       updateSlimeDropletMeshes(
         impactSnapshot.droplets,
@@ -396,6 +401,7 @@ export function createRenderer(init: RendererInit): Renderer {
       scene.remove(arenaBackground.mesh);
       disposeEntityMesh(playerEntry);
       scene.remove(crosshair);
+      disposeArcPreview(arcPreview);
       scene.remove(zoneOverlay.mesh);
       for (const entry of enemyMeshes.values()) disposeEntityMesh(entry);
       enemyMeshes.clear();
@@ -562,10 +568,83 @@ function createSpriteMesh(
   return { mesh, geometry, material };
 }
 
+function createProjectileRadiusIndicator(): THREE.Mesh {
+  const geometry = new THREE.CircleGeometry(1, 48);
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffd166,
+    transparent: true,
+    opacity: 0.14,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = PROJECTILE_RADIUS_INDICATOR_NAME;
+  mesh.position.z = PROJECTILE_RADIUS_Z;
+  mesh.visible = false;
+  return mesh;
+}
+
+function applyProjectilePresentation(
+  mesh: THREE.Mesh,
+  snap: ProjectileSnapshot,
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>
+): void {
+  const archetype = weaponRegistry[snap.weaponArchetypeId];
+  const visual = archetype?.projectile.visual;
+  const travelAngle = visual?.rotateWhileFlying === false ? 0 : snap.visualState.angleRadians;
+  mesh.rotation.z = travelAngle + snap.visualState.spinRadians;
+
+  const pulse =
+    snap.state === 'grounded' && visual?.pulseWhenGrounded === true
+      ? 1 +
+        PROJECTILE_GROUNDED_PULSE_AMPLITUDE *
+          Math.sin(snap.visualState.pulsePhase * Math.PI * 2)
+      : 1;
+  mesh.scale.set(pulse, pulse, 1);
+
+  const material = mesh.material;
+  if (!Array.isArray(material) && material instanceof THREE.MeshBasicMaterial) {
+    material.opacity = snap.state === 'grounded' ? 0.86 : 0.95;
+  }
+
+  const radiusIndicator = mesh.children.find(
+    (child): child is THREE.Mesh =>
+      child instanceof THREE.Mesh && child.name === PROJECTILE_RADIUS_INDICATOR_NAME
+  );
+  if (radiusIndicator === undefined) return;
+  const showRadius =
+    snap.state === 'grounded' &&
+    snap.explosionRadius !== null &&
+    snap.explosionRadius > 0 &&
+    visual?.explosionRadiusIndicator === true;
+  radiusIndicator.visible = showRadius;
+  if (!showRadius || snap.explosionRadius === null) return;
+  radiusIndicator.scale.set(snap.explosionRadius, snap.explosionRadius, 1);
+  const radiusMaterial = radiusIndicator.material;
+  if (!Array.isArray(radiusMaterial) && radiusMaterial instanceof THREE.MeshBasicMaterial) {
+    const phase = 0.5 + 0.5 * Math.sin(snap.visualState.pulsePhase * Math.PI * 2);
+    radiusMaterial.opacity = 0.08 + 0.08 * phase;
+  }
+}
+
+function disposeObjectTree(root: THREE.Object3D): void {
+  root.traverse((child) => {
+    const maybeMesh = child as Partial<
+      Readonly<{ geometry: THREE.BufferGeometry; material: THREE.Material | THREE.Material[] }>
+    >;
+    maybeMesh.geometry?.dispose();
+    const material = maybeMesh.material;
+    if (Array.isArray(material)) {
+      for (const entry of material) entry.dispose();
+    } else {
+      material?.dispose();
+    }
+  });
+}
+
 function requireVisualSpec(
   visuals: Readonly<Record<string, SpriteVisualSpec>>,
   archetypeId: string,
-  kind: 'player' | 'enemy' | 'boss'
+  kind: 'player' | 'enemy' | 'boss' | 'projectile' | 'drop'
 ): SpriteVisualSpec {
   const visual = visuals[archetypeId];
   if (visual !== undefined) {
@@ -577,7 +656,7 @@ function requireVisualSpec(
 function requireSpriteTexture(
   textures: TextureMap,
   archetypeId: string,
-  kind: 'player' | 'enemy' | 'boss'
+  kind: 'player' | 'enemy' | 'boss' | 'projectile' | 'drop'
 ): THREE.Texture {
   const texture = textures[archetypeId];
   if (texture !== undefined) {
@@ -648,6 +727,32 @@ function createCrosshair(): THREE.Group {
   return group;
 }
 
+function createArcPreview(): THREE.Mesh {
+  const geometry = new THREE.RingGeometry(0.72, 1, 36);
+  const material = new THREE.MeshBasicMaterial({
+    color: CROSSHAIR_COLOR,
+    transparent: true,
+    opacity: 0.52,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.z = ARC_PREVIEW_Z;
+  mesh.scale.set(ARC_PREVIEW_RADIUS_WU, ARC_PREVIEW_RADIUS_WU, 1);
+  mesh.visible = false;
+  return mesh;
+}
+
+function disposeArcPreview(mesh: THREE.Mesh): void {
+  mesh.removeFromParent();
+  mesh.geometry.dispose();
+  const material = mesh.material;
+  if (Array.isArray(material)) {
+    for (const entry of material) entry.dispose();
+  } else {
+    material.dispose();
+  }
+}
+
 function disposeCrosshair(group: THREE.Group): void {
   for (const child of group.children) {
     if (child instanceof THREE.Mesh) {
@@ -710,7 +815,7 @@ function updateEntities<S extends EntitySnapshot>(
   ensure: (snap: S) => EntityMeshEntry,
   dispose: (entry: EntityMeshEntry) => void,
   snapGrid: CharacterSnapGrid | null = null,
-  updateVisual?: (mesh: THREE.Mesh, snap: S) => void
+  updateVisual?: (entry: EntityMeshEntry, snap: S) => void
 ): void {
   const { prev, curr } = pair;
   const aliveIds = new Set<number>();
@@ -733,7 +838,7 @@ function updateEntities<S extends EntitySnapshot>(
         const y = prevSnap.y + (entity.y - prevSnap.y) * alpha;
         setSnappedMeshPosition(entry.mesh, x, y, entry.mesh.position.z, snapGrid);
       }
-      updateVisual?.(entry.mesh, entity);
+      updateVisual?.(entry, entity);
       entry.mesh.visible = true;
     }
   }
@@ -984,6 +1089,60 @@ function updateCrosshair(group: THREE.Group, getAim: AimAccessor | undefined): v
   group.visible = true;
   group.position.x = aim.x;
   group.position.y = aim.y;
+}
+
+function updateArcPreview(
+  mesh: THREE.Mesh,
+  snapshot: Snapshot | null,
+  getAim: AimAccessor | undefined,
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>
+): void {
+  if (snapshot === null || getAim === undefined) {
+    mesh.visible = false;
+    return;
+  }
+  const aim = getAim();
+  const weaponHud = snapshot.weaponHud;
+  const player = snapshot.entities.find(
+    (entity): entity is PlayerSnapshot => entity.kind === 'player'
+  );
+  if (
+    aim === null ||
+    weaponHud === null ||
+    player === undefined ||
+    weaponHud.selectedIndex === null
+  ) {
+    mesh.visible = false;
+    return;
+  }
+  const selected = weaponHud.weapons.find((weapon) => weapon.index === weaponHud.selectedIndex);
+  const archetype =
+    selected === undefined ? undefined : weaponRegistry[selected.weaponArchetypeId];
+  if (archetype === undefined) {
+    mesh.visible = false;
+    return;
+  }
+  const motion = archetype.projectile.motion;
+  if (motion?.kind !== 'arc') {
+    mesh.visible = false;
+    return;
+  }
+  const dx = aim.x - player.x;
+  const dy = aim.y - player.y;
+  const len = Math.hypot(dx, dy);
+  if (len === 0) {
+    mesh.visible = false;
+    return;
+  }
+  const travelDistance = Math.min(motion.range, len);
+  mesh.visible = true;
+  mesh.position.x = player.x + (dx / len) * travelDistance;
+  mesh.position.y = player.y + (dy / len) * travelDistance;
+  mesh.scale.set(
+    Math.max(ARC_PREVIEW_RADIUS_WU, archetype.projectile.hitRadius),
+    Math.max(ARC_PREVIEW_RADIUS_WU, archetype.projectile.hitRadius),
+    1
+  );
 }
 
 type ZoneOverlay = Readonly<{

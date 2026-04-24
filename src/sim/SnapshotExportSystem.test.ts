@@ -4,7 +4,7 @@ import { PISTOL } from '../shared/content/weapons';
 import type { ZoneSnapshot } from '../shared/snapshot';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../shared/timing';
 
-import { createEntityStore } from './EntityStore';
+import { createEntityStore, type EntityId } from './EntityStore';
 import type { EncounterContext } from './SessionFlowSystem';
 import { createSnapshotExportSystem, type SnapshotSources } from './SnapshotExportSystem';
 
@@ -17,7 +17,8 @@ function squareContactBox(radius: number) {
 const NO_SOURCES: SnapshotSources = {
   encounter: null,
   zone: IDLE_ZONE,
-  waveProgress: null
+  waveProgress: null,
+  weaponHud: null
 };
 const STATIONARY_TEST_ENEMY = {
   archetypeId: 'test-stationary-enemy',
@@ -123,12 +124,20 @@ describe('SnapshotExportSystem', () => {
     });
     store.spawnProjectile({
       weaponArchetypeId: PISTOL.id,
+      ownerId: 1 as EntityId,
       ownerKind: 'player',
+      motionKind: 'linear',
       position: { x: 1, y: 0 },
       velocity: { vx: 24, vy: 0 },
-      radius: PISTOL.projectileRadius,
-      damage: PISTOL.damage,
-      knockbackImpulse: PISTOL.knockbackImpulse,
+      size: PISTOL.projectile.size,
+      hitRadius: PISTOL.projectile.hitRadius,
+      impactDamage: PISTOL.projectile.impactDamage,
+      knockbackImpulse: PISTOL.projectile.knockbackImpulse,
+      pierceRemaining: PISTOL.projectile.pierceCount,
+      groundOnImpact: PISTOL.projectile.groundOnImpact,
+      groundedLifetimeMs: PISTOL.projectile.groundedLifetimeMs,
+      explosion: PISTOL.projectile.explosion,
+      groundAtSimMs: null,
       expireAtSimMs: 1000
     });
 
@@ -147,6 +156,12 @@ describe('SnapshotExportSystem', () => {
     if (projectile?.kind !== 'projectile') throw new Error('expected projectile snapshot');
     expect(projectile.weaponArchetypeId).toBe(PISTOL.id);
     expect(projectile.ownerKind).toBe('player');
+    expect(projectile.state).toBe('flying');
+    expect(projectile.visualState.angleRadians).toBeCloseTo(0);
+    expect(projectile.visualState.spinRadians).toBe(0);
+    expect(projectile.visualState.pulsePhase).toBe(0);
+    expect(projectile.explosionRadius).toBeNull();
+    expect(projectile.detonateAtSimMs).toBeNull();
   });
 
   it('omits removed entities (no tombstones in entities)', () => {
@@ -227,7 +242,8 @@ describe('SnapshotExportSystem top-level fields', () => {
     const snap = exporter.onTick(1500, store, {
       encounter: ctx,
       zone: IDLE_ZONE,
-      waveProgress: null
+      waveProgress: null,
+      weaponHud: null
     });
     expect(snap?.encounter).toEqual({
       id: 'wave-1',
@@ -244,7 +260,8 @@ describe('SnapshotExportSystem top-level fields', () => {
     const snap = exporter.onTick(0, store, {
       encounter: null,
       zone: { mode: 'shrink', margin: 2.5 },
-      waveProgress: null
+      waveProgress: null,
+      weaponHud: null
     });
     expect(snap?.zone).toEqual({ mode: 'shrink', margin: 2.5 });
   });
@@ -261,8 +278,56 @@ describe('SnapshotExportSystem top-level fields', () => {
     const snapWithWave = exporter.onTick(0, store, {
       encounter: null,
       zone: IDLE_ZONE,
-      waveProgress: { dispatched: 3, total: 5, alive: 2 }
+      waveProgress: { dispatched: 3, total: 5, alive: 2 },
+      weaponHud: null
     });
     expect(snapWithWave?.waveProgress).toEqual({ dispatched: 3, total: 5, alive: 2 });
+  });
+
+  it('copies weaponHud into the snapshot when supplied by combat', () => {
+    const store = createEntityStore();
+    spawnPlayerAt(store);
+    const exporter = createSnapshotExportSystem();
+
+    const snap = exporter.onTick(0, store, {
+      encounter: null,
+      zone: IDLE_ZONE,
+      waveProgress: null,
+      weaponHud: {
+        selectedIndex: 1,
+        weapons: [
+          {
+            index: 0,
+            weaponArchetypeId: 'pistol',
+            cooldownReadyAtSimMs: 0,
+            overdriveUntilSimMs: null
+          },
+          {
+            index: 1,
+            weaponArchetypeId: 'shotgun',
+            cooldownReadyAtSimMs: 900,
+            overdriveUntilSimMs: 1200
+          }
+        ]
+      }
+    });
+
+    expect(snap?.weaponHud).toEqual({
+      selectedIndex: 1,
+      weapons: [
+        {
+          index: 0,
+          weaponArchetypeId: 'pistol',
+          cooldownReadyAtSimMs: 0,
+          overdriveUntilSimMs: null
+        },
+        {
+          index: 1,
+          weaponArchetypeId: 'shotgun',
+          cooldownReadyAtSimMs: 900,
+          overdriveUntilSimMs: 1200
+        }
+      ]
+    });
   });
 });

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyMouseDeltaToAim, clampAimToArena, moveVectorFromKeys } from './inputMath';
+import {
+  applyMouseDeltaToAim,
+  clampAimToArena,
+  moveVectorFromKeys,
+  weaponHotkeyCommandFromCode
+} from './inputMath';
 
 const ARENA = { width: 32, height: 18 } as const;
 const ALL_OFF = { up: false, down: false, left: false, right: false } as const;
@@ -59,5 +64,22 @@ describe('applyMouseDeltaToAim', () => {
   it('clamps the resulting aim to the arena bounds', () => {
     const next = applyMouseDeltaToAim({ x: 15, y: 8 }, 1000, -1000, 30, ARENA);
     expect(next).toEqual({ x: 16, y: 9 });
+  });
+});
+
+describe('weaponHotkeyCommandFromCode', () => {
+  it('maps physical digit codes 1..9 to zero-based weapon slots', () => {
+    expect(weaponHotkeyCommandFromCode('Digit1')).toEqual({ kind: 'selectWeaponSlot', slotIndex: 0 });
+    expect(weaponHotkeyCommandFromCode('Digit5')).toEqual({ kind: 'selectWeaponSlot', slotIndex: 4 });
+    expect(weaponHotkeyCommandFromCode('Digit9')).toEqual({ kind: 'selectWeaponSlot', slotIndex: 8 });
+  });
+
+  it('maps Digit0 to holster', () => {
+    expect(weaponHotkeyCommandFromCode('Digit0')).toEqual({ kind: 'holsterWeapon' });
+  });
+
+  it('ignores non-top-row digit and non-weapon codes', () => {
+    expect(weaponHotkeyCommandFromCode('Numpad1')).toBeNull();
+    expect(weaponHotkeyCommandFromCode('KeyQ')).toBeNull();
   });
 });

@@ -43,7 +43,7 @@ describe('combat integration (CombatSystem + HealthDeathSystem)', () => {
     const healthDeath = createHealthDeathSystem();
 
     const player = store.spawnPlayer(PLAYER_SPEC);
-    combat.setPlayerLoadout(player.id, { primaryWeaponArchetypeId: PISTOL.id }, 0);
+    combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
     const enemy = store.spawnEnemy({
       archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
       position: { x: 0.3, y: 0 },

@@ -5,7 +5,7 @@ import { BOSS_BUBBLE_HOG, BOSS_GARGOYLE, BOSS_SAW_CYCLOPS, BOSS_SCRAP_KING, BOSS
 import { SLIME_BUG, SLIME_CANDLE, SLIME_CLAMPER, SLIME_DASHER, SLIME_DOOR, SLIME_DRONE, SLIME_ECHO, SLIME_FLAME, SLIME_FORTRESS, SLIME_HORNLING, SLIME_KINGLING, SLIME_LIFTER, SLIME_MANY_EYE, SLIME_MECH, SLIME_MECH_CRAB, SLIME_NINJA, SLIME_OBELISK, SLIME_ONE_EYE, SLIME_PRINCE, SLIME_SAW, SLIME_SHELL, SLIME_SLEEPER, SLIME_SPARK, SLIME_SPLITTER, SLIME_STACK, SLIME_STAR, SLIME_STONEHEAD, SLIME_TADPOLE, SLIME_TRICKSTER, SLIME_WRAITH } from './enemies.generated';
 import { SANDBOX_PLAYER, TRAINING_PLAYER } from './players.generated';
 import type { SessionPresetTemplate } from './sessions';
-import { PISTOL } from './weapons.generated';
+import { BOMB_PLACER, FIREBALL_STAFF, GRENADE_LAUNCHER, LASER, PISTOL, ROCK_THROWER, SHOTGUN, SMG, SNIPER } from './weapons.generated';
 
 export const SESSION_PRESET_TEMPLATES = {
   campaign: {
@@ -16,7 +16,7 @@ export const SESSION_PRESET_TEMPLATES = {
     order: 0,
     arena: SANDBOX_ARENA,
     player: TRAINING_PLAYER,
-    loadout: { primaryWeaponArchetypeId: PISTOL.id },
+    loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, LASER.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'set-1',
@@ -39,6 +39,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-05.jpg'
       }
     ],
+    rules: { damage: { slimeFriendlyFire: false } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     encounters: [
@@ -671,6 +672,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
+    rules: { damage: { slimeFriendlyFire: false } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
     encounters: [
@@ -695,13 +697,14 @@ export const SESSION_PRESET_TEMPLATES = {
     order: 0,
     arena: SANDBOX_ARENA,
     player: SANDBOX_PLAYER,
-    loadout: { primaryWeaponArchetypeId: PISTOL.id },
+    loadout: { weapons: [PISTOL.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'sandbox',
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
+    rules: { damage: { slimeFriendlyFire: false } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
     encounters: [
@@ -734,13 +737,14 @@ export const SESSION_PRESET_TEMPLATES = {
     order: 1,
     arena: SANDBOX_ARENA,
     player: TRAINING_PLAYER,
-    loadout: { primaryWeaponArchetypeId: PISTOL.id },
+    loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'training',
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
+    rules: { damage: { slimeFriendlyFire: false } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     encounters: [

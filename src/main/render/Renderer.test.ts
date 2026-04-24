@@ -4,10 +4,14 @@ import { describe, expect, it } from 'vitest';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 import { BOSS_GARGOYLE } from '../../shared/content/bosses';
+import { HEAL_ORB } from '../../shared/content/drops';
 import { SLIME_BUG } from '../../shared/content/enemies';
+import { BOMB_PLACER, ROCK_THROWER } from '../../shared/content/weapons';
 import type { SessionDefinition } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
+import { DROP_VISUALS } from './dropVisuals';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
+import { PROJECTILE_VISUALS } from './projectileVisuals';
 import { createRenderer } from './Renderer';
 import type { TextureMap } from './spritePreload';
 
@@ -77,7 +81,8 @@ function createSnapshot(entities: SnapshotEntities): NonNullable<SnapshotPair['c
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    weaponHud: null
   };
 }
 
@@ -95,8 +100,16 @@ function createSpriteTextures(
 ): TextureMap {
   return {
     [DEFAULT_PLAYER_VISUAL.archetypeId]: new THREE.Texture(),
+    ...createTextureEntries(PROJECTILE_VISUALS),
+    ...createTextureEntries(DROP_VISUALS),
     ...overrides
   };
+}
+
+function createTextureEntries(
+  visuals: Readonly<Record<string, unknown>>
+): Readonly<Record<string, THREE.Texture>> {
+  return Object.fromEntries(Object.keys(visuals).map((id) => [id, new THREE.Texture()]));
 }
 
 function createRenderSession(
@@ -154,6 +167,24 @@ function findShaderMeshWithMap(scene: THREE.Scene | null, texture: THREE.Texture
     const material = child.material;
     if (Array.isArray(material) || !(material instanceof THREE.ShaderMaterial)) return false;
     return material.uniforms.uMap?.value === texture;
+  }) ?? null;
+}
+
+function findProjectileMesh(scene: THREE.Scene | null): THREE.Mesh | null {
+  if (scene === null) return null;
+  return scene.children.find((child): child is THREE.Mesh => {
+    if (!(child instanceof THREE.Mesh)) return false;
+    if (!(child.geometry instanceof THREE.PlaneGeometry)) return false;
+    const material = child.material;
+    if (Array.isArray(material) || !(material instanceof THREE.MeshBasicMaterial)) return false;
+    return material.map !== null && child.position.z === 0.05;
+  }) ?? null;
+}
+
+function findArcPreviewMesh(scene: THREE.Scene | null): THREE.Mesh | null {
+  if (scene === null) return null;
+  return scene.children.find((child): child is THREE.Mesh => {
+    return child instanceof THREE.Mesh && child.geometry instanceof THREE.RingGeometry;
   }) ?? null;
 }
 
@@ -457,6 +488,152 @@ describe('createRenderer', () => {
     expect(backend.ops).toEqual([{ kind: 'render' }]);
   });
 
+  it('applies projectile visual state and grounded explosion radius indicators', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const projectileTexture = new THREE.Texture();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [BOMB_PLACER.id]: projectileTexture }),
+      getSnapshotPair: () =>
+        createSnapshotPairWithEntities([
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+          {
+            id: 20,
+            kind: 'projectile',
+            weaponArchetypeId: BOMB_PLACER.id,
+            ownerKind: 'player',
+            x: 2,
+            y: 1,
+            state: 'grounded',
+            visualState: {
+              angleRadians: 0.25,
+              spinRadians: 0.5,
+              pulsePhase: 0.25
+            },
+            explosionRadius: BOMB_PLACER.projectile.explosion!.radius,
+            detonateAtSimMs: 1000
+          }
+        ]),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const projectileMesh = findProjectileMesh(backend.lastScene());
+    const radiusIndicator = projectileMesh?.children.find(
+      (child): child is THREE.Mesh => child instanceof THREE.Mesh
+    );
+    expect(projectileMesh).not.toBeNull();
+    expect(projectileMesh?.geometry).toBeInstanceOf(THREE.PlaneGeometry);
+    expect(projectileMesh?.geometry).not.toBeInstanceOf(THREE.CircleGeometry);
+    expect(projectileMesh?.material).toBeInstanceOf(THREE.MeshBasicMaterial);
+    if (projectileMesh?.material instanceof THREE.MeshBasicMaterial) {
+      expect(projectileMesh.material.map).toBe(projectileTexture);
+    }
+    expect(projectileMesh?.rotation.z).toBeCloseTo(0.5);
+    expect(projectileMesh?.scale.x).toBeCloseTo(1.1);
+    expect(radiusIndicator?.visible).toBe(true);
+    expect(radiusIndicator?.scale.x).toBeCloseTo(BOMB_PLACER.projectile.explosion!.radius);
+  });
+
+  it('renders drops as sprite-backed plane meshes', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const dropTexture = new THREE.Texture();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [HEAL_ORB.id]: dropTexture }),
+      getSnapshotPair: () =>
+        createSnapshotPairWithEntities([
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+          { id: 30, kind: 'drop', archetypeId: HEAL_ORB.id, x: 2, y: 1 }
+        ]),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const dropMesh = findMeshWithMaterialMap(backend.lastScene(), dropTexture);
+    expect(dropMesh).not.toBeNull();
+    expect(dropMesh?.geometry).toBeInstanceOf(THREE.PlaneGeometry);
+    expect(dropMesh?.geometry).not.toBeInstanceOf(THREE.CircleGeometry);
+  });
+
+  it('shows an arc landing preview for the selected arc weapon', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => ({
+        prev: null,
+        curr: {
+          ...createSnapshot([{ id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 }]),
+          weaponHud: {
+            selectedIndex: 0,
+            weapons: [
+              {
+                index: 0,
+                weaponArchetypeId: ROCK_THROWER.id,
+                cooldownReadyAtSimMs: 0,
+                overdriveUntilSimMs: null
+              }
+            ]
+          }
+        },
+        currReceivedAtMs: 0,
+        nowMs: 0
+      }),
+      getAim: () => ({ x: 10, y: 0 }),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const preview = findArcPreviewMesh(backend.lastScene());
+    if (ROCK_THROWER.projectile.motion.kind !== 'arc') throw new Error('expected arc weapon');
+    expect(preview?.visible).toBe(true);
+    expect(preview?.position.x).toBeCloseTo(ROCK_THROWER.projectile.motion.range);
+    expect(preview?.position.y).toBeCloseTo(0);
+  });
+
   it('adds render-only squash and stretch to slime sprites without scaling the player', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();
@@ -704,7 +881,8 @@ describe('createRenderer', () => {
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
-        bossHud: null
+        bossHud: null,
+        weaponHud: null
       },
       currReceivedAtMs: 0,
       nowMs: 0

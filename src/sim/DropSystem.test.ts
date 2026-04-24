@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { DROP_ARCHETYPES, HEAL_ORB } from '../shared/content/drops';
+import { DROP_ARCHETYPES, HEAL_ORB, OVERDRIVE, SIZE_UP } from '../shared/content/drops';
 import type { EnemyArchetype } from '../shared/content/enemies';
 import type { RuntimeEvent } from '../shared/events';
 import { createRng, type Rng } from '../shared/rng';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import type { DamageIntent } from './CombatSystem';
-import { createDropSystem } from './DropSystem';
+import { createDropSystem, type WeaponDropEffectSink } from './DropSystem';
 import { createEntityStore, type EntityId } from './EntityStore';
 import { createHealthDeathSystem, type DeathContext } from './HealthDeathSystem';
 
@@ -353,6 +353,76 @@ describe('DropSystem tick (ttl, pickup, heal)', () => {
     expect(pickup.entityId).toBe(drop.id);
     expect(pickup.pickerId).toBe(player.id);
     expect(player.hp).toBe(3); // 2 + 1 (heal-orb amount)
+    expect(store.dropCount()).toBe(0);
+  });
+
+  it('routes weapon modifier pickups through the weapon-state sink', () => {
+    if (SIZE_UP.effect.kind !== 'addWeaponModifier') {
+      throw new Error('expected size-up modifier drop');
+    }
+    const store = createEntityStore();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    const drop = store.spawnDrop({
+      archetypeId: SIZE_UP.id,
+      position: { x: 0, y: 0 },
+      radius: SIZE_UP.radius,
+      effect: SIZE_UP.effect,
+      color: SIZE_UP.color,
+      expireAtSimMs: 9999
+    });
+    const modifierCalls: Array<Parameters<WeaponDropEffectSink['addModifierToSelectedWeapon']>> =
+      [];
+    const sink: WeaponDropEffectSink = {
+      addModifierToSelectedWeapon(ownerId, modifier) {
+        modifierCalls.push([ownerId, modifier]);
+      },
+      applyTemporaryOverdriveToSelectedWeapon() {
+      }
+    };
+    const drops = createDropSystem(REGISTRY, DROP_ARCHETYPES, sink);
+    drops.setRng(createRng(1));
+    const events: RuntimeEvent[] = [];
+
+    drops.tick(1000, store, (e) => events.push(e));
+
+    expect(modifierCalls).toEqual([[player.id, SIZE_UP.effect.modifier]]);
+    expect(events.map((e) => e.kind)).toEqual(['dropPickup']);
+    expect(events[0]?.kind === 'dropPickup' ? events[0].entityId : null).toBe(drop.id);
+    expect(store.dropCount()).toBe(0);
+  });
+
+  it('routes temporary overdrive pickups through the weapon-state sink with sim time', () => {
+    if (OVERDRIVE.effect.kind !== 'temporaryOverdrive') {
+      throw new Error('expected overdrive drop');
+    }
+    const store = createEntityStore();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    store.spawnDrop({
+      archetypeId: OVERDRIVE.id,
+      position: { x: 0, y: 0 },
+      radius: OVERDRIVE.radius,
+      effect: OVERDRIVE.effect,
+      color: OVERDRIVE.color,
+      expireAtSimMs: 9999
+    });
+    const overdriveCalls: Array<
+      Parameters<WeaponDropEffectSink['applyTemporaryOverdriveToSelectedWeapon']>
+    > = [];
+    const sink: WeaponDropEffectSink = {
+      addModifierToSelectedWeapon() {
+      },
+      applyTemporaryOverdriveToSelectedWeapon(ownerId, cooldownMultiplier, durationMs, simTimeMs) {
+        overdriveCalls.push([ownerId, cooldownMultiplier, durationMs, simTimeMs]);
+      }
+    };
+    const drops = createDropSystem(REGISTRY, DROP_ARCHETYPES, sink);
+    drops.setRng(createRng(1));
+
+    drops.tick(1234, store, () => {});
+
+    expect(overdriveCalls).toEqual([
+      [player.id, OVERDRIVE.effect.cooldownMultiplier, OVERDRIVE.effect.durationMs, 1234]
+    ]);
     expect(store.dropCount()).toBe(0);
   });
 

@@ -4,6 +4,7 @@ import type {
   Loadout,
   PlayerSpawn,
   SessionBackground,
+  SessionRules,
   StaticSpawnPlan,
   Vec2,
   WaveSpawnPlan,
@@ -46,6 +47,7 @@ export type SessionPresetTemplate = Readonly<{
   player: PlayerSpawn;
   loadout: Loadout | null;
   backgrounds: ReadonlyArray<SessionBackground>;
+  rules: SessionRules;
   winCondition: WinCondition;
   lossCondition: LossCondition;
   encounters: ReadonlyArray<SessionPresetEncounterTemplate>;

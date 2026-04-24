@@ -35,7 +35,9 @@ export function buildSessionDefinition(
   validateEnemyRegistry(ENEMY_ARCHETYPES, template.player.contactBox);
   validateEncounterBackgroundReferences(template);
   if (template.loadout !== null) {
-    warnIfWeaponMayTunnel(template.loadout.primaryWeaponArchetypeId);
+    for (const weaponId of template.loadout.weapons) {
+      warnIfWeaponMayTunnel(weaponId);
+    }
   }
   return {
     id: options.id ?? `${template.presetId}-session`,
@@ -45,7 +47,7 @@ export function buildSessionDefinition(
     loadout: template.loadout,
     backgrounds: template.backgrounds,
     modifiers: [],
-    rules: null,
+    rules: template.rules,
     encounters: resolveEncounterTemplates(template),
     winCondition: template.winCondition,
     lossCondition: template.lossCondition,
@@ -179,8 +181,11 @@ function warnIfWeaponMayTunnel(weaponId: string): void {
   }
   if (!Number.isFinite(minTargetInsetRadius)) return;
 
-  const stepDistance = weapon.projectileSpeed * (SIM_STEP_MS / 1000);
-  const reach = weapon.projectileRadius + minTargetInsetRadius;
+  const motion = weapon.projectile.motion;
+  if (motion.kind !== 'linear') return;
+
+  const stepDistance = motion.speed * (SIM_STEP_MS / 1000);
+  const reach = weapon.projectile.hitRadius + minTargetInsetRadius;
   if (stepDistance > reach) {
     log.warn('weapon may tunnel through smallest target per design/projectiles-and-combat.md', {
       weaponId: weapon.id,
