@@ -1,5 +1,5 @@
 import { BOSS_ARCHETYPES, type BossArchetype } from '../shared/content/bosses';
-import { PISTOL } from '../shared/content/weapons';
+import { FIREBALL_STAFF } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig } from '../shared/session';
 
@@ -80,7 +80,7 @@ function runBossAttacks(
       if (len === 0) continue;
       const dirX = dx / len;
       const dirY = dy / len;
-      const w = PISTOL;
+      const w = FIREBALL_STAFF;
       if (w.projectile.motion.kind !== 'linear') continue;
       store.spawnProjectile({
         weaponArchetypeId: w.id,
@@ -95,7 +95,7 @@ function runBossAttacks(
         },
         size: w.projectile.size,
         hitRadius: w.projectile.hitRadius,
-        impactDamage: Math.max(1, spec.damage),
+        impactDamage: w.projectile.impactDamage,
         knockbackImpulse: w.projectile.knockbackImpulse,
         pierceRemaining: w.projectile.pierceCount,
         groundOnImpact: w.projectile.groundOnImpact,
