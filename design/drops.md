@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (cleanup pass: `DropEffect` is the single source of truth for the union; `kind: 'pickupModifier'` is added explicitly here as the binding point for drop magnet from [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). 017 alignment: `DropEffect` includes weapon modifier and temporary overdrive effects from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: drop magnet uses the new `pickupModifier` kind; carrier drops are defined by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
+- Updated: 2026-04-24 (sprite extension: `Drop` rendering moves from primitives to PNG sprites by [sprite-assets.md](sprite-assets.md); `dropVisuals` registry keyed by `dropArchetypeId` is added there, sourced from inline image-узлов в `content/drops.md`. cleanup pass: `DropEffect` is the single source of truth for the union; `kind: 'pickupModifier'` is added explicitly here as the binding point for drop magnet from [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). 017 alignment: `DropEffect` includes weapon modifier and temporary overdrive effects from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: drop magnet uses the new `pickupModifier` kind; carrier drops are defined by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
 
 ## Context
 
@@ -38,7 +38,7 @@
 - Поля `radius`, `effect`, `color`, `expireAtSimMs` копируются из архетипа в момент создания, чтобы tick не зависел от лишних lookup-ов и оставался стабильным даже при будущих мутациях архетипа в редакторе/тестах. Это та же модель, что у `Projectile` ([projectiles-and-combat.md](projectiles-and-combat.md)).
 - Drop не имеет `hp` или `behavior`. Baseline drops do not move. Story 018 adds deterministic magnet attraction owned by `DropSystem`; that extension is defined in [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) and does not change drop ownership.
 - Drop **не damageable**: `HasHealth` ([health-and-death.md](health-and-death.md)) у дропа нет, `HealthDeathSystem` дроп не трогает. Удалением дропа владеет только `DropSystem` — это согласовано с уже принятым правилом «для снарядов и дропа удалением владеют их собственные системы» ([projectiles-and-combat.md](projectiles-and-combat.md)).
-- Drop попадает в snapshot отдельным `kind` (см. [snapshot-shape.md](snapshot-shape.md)). Рендер выбирает визуал по `archetypeId`, а не по `id` сущности.
+- Drop попадает в snapshot отдельным `kind` (см. [snapshot-shape.md](snapshot-shape.md)). Рендер выбирает визуал по `archetypeId` через `dropVisuals` registry ([sprite-assets.md](sprite-assets.md)), а не по `id` сущности и не по `color`. Поле `color` остаётся в `DropArchetype` как placeholder для не-renderer consumer-ов; base sprite renderer drop-PNG им не tint-ит.
 
 ### DropArchetype и DropEffect
 

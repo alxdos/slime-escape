@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-24
-- Updated: 2026-04-24 (cleanup pass: `audio?` field removed from `WeaponArchetype` to keep [audio.md](audio.md) invariant «no audio fields on archetypes»; no-op weapon-modifier rule reduced to a single deterministic case; `temporaryOverdrive.target` documented as single-value on this horizon; aim assist owner and pickup magnet binding moved to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) without ambiguity.)
+- Updated: 2026-04-24 (sprite extension: `ProjectileVisualSpec` form fixed to render-only behavior fields only; sprite identity (PNG path / `worldSize` / `anchor`) lives in the `projectileVisuals` registry per [sprite-assets.md](sprite-assets.md), keyed by `weaponArchetypeId`. cleanup pass: `audio?` field removed from `WeaponArchetype` to keep [audio.md](audio.md) invariant «no audio fields on archetypes»; no-op weapon-modifier rule reduced to a single deterministic case; `temporaryOverdrive.target` documented as single-value on this horizon; aim assist owner and pickup magnet binding moved to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) without ambiguity.)
 
 ## Context
 
@@ -194,9 +194,18 @@ Without a new contract, each new weapon would either add special branches to `Co
 
 ### Presentation hooks
 
-- `ProjectileVisualSpec` includes `spriteId`, `spinSpeed`, `rotateWhileFlying`, `pulseWhenGrounded`, and optional `explosionRadiusIndicator`.
-- Spin and pulse are render-only. They do not affect hit tests.
-- Grounded grenades and bombs that will explode should expose enough snapshot data for the renderer to show pulse and a faint radius indicator.
+- `ProjectileVisualSpec` carries **render-only behavior** of the projectile and is part of the content archetype:
+  ```ts
+  type ProjectileVisualSpec = Readonly<{
+    spinRadiansPerSec: number;        // 0 — без спина
+    rotateWhileFlying: boolean;       // если true, sprite rotates по направлению движения
+    pulseWhenGrounded: boolean;       // если true, grounded mesh пульсирует render-only
+    explosionRadiusIndicator: boolean;// если true, renderer показывает faint radius для grounded explosive
+  }>;
+  ```
+- Идентичность спрайта (PNG-ассет, `worldSize`, `anchor`) **не входит** в `ProjectileVisualSpec`. Sprite берётся из `projectileVisuals` registry по ключу `weaponArchetypeId` per [sprite-assets.md](sprite-assets.md). Это исключает второй источник правды для пути к ассету.
+- Spin, pulse и radius indicator — render-only. Они не влияют на hit tests, damage и authoritative simulation state.
+- Grounded grenades and bombs that will explode should expose enough snapshot data ([snapshot-shape.md](snapshot-shape.md): `state`, `pulsePhase`, `explosionRadius`, `detonateAtSimMs`) for the renderer to show pulse and a faint radius indicator.
 - Arc weapons should expose a main-thread preview affordance: approximate landing point or short trajectory. Preview is not authoritative gameplay state; it is calculated from weapon archetype, current aim and current modifiers on the main thread or via a read-only helper shared with simulation.
 
 ### CombatSystem ownership
