@@ -6,7 +6,7 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 import { BOSS_GARGOYLE } from '../../shared/content/bosses';
 import { HEAL_ORB } from '../../shared/content/drops';
 import { SLIME_BUG } from '../../shared/content/enemies';
-import { BOMB_PLACER, ROCK_THROWER } from '../../shared/content/weapons';
+import { BOMB_PLACER, PISTOL, ROCK_THROWER } from '../../shared/content/weapons';
 import type { SessionDefinition } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import { DROP_VISUALS } from './dropVisuals';
@@ -594,6 +594,8 @@ describe('createRenderer', () => {
             kind: 'projectile',
             weaponArchetypeId: BOMB_PLACER.id,
             ownerKind: 'player',
+            originX: 2,
+            originY: 1,
             x: 2,
             y: 1,
             state: 'grounded',
@@ -635,6 +637,82 @@ describe('createRenderer', () => {
     expect(projectileMesh?.scale.x).toBeCloseTo(1.1);
     expect(radiusIndicator?.visible).toBe(true);
     expect(radiusIndicator?.scale.x).toBeCloseTo(BOMB_PLACER.projectile.explosion!.radius);
+  });
+
+  it('hides newly fired projectiles until they travel the player radius from the fire origin', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    let pair = createSnapshotPairWithEntities([
+      { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+      {
+        id: 20,
+        kind: 'projectile',
+        weaponArchetypeId: PISTOL.id,
+        ownerKind: 'player',
+        originX: 0,
+        originY: 0,
+        x: 0.5,
+        y: 0,
+        state: 'flying',
+        visualState: {
+          angleRadians: 0,
+          spinRadians: 0,
+          pulsePhase: 0
+        },
+        explosionRadius: null,
+        detonateAtSimMs: null
+      }
+    ]);
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const nearProjectile = findProjectileMesh(backend.lastScene());
+    expect(nearProjectile).not.toBeNull();
+    expect(nearProjectile?.visible).toBe(false);
+
+    pair = createSnapshotPairWithEntities([
+      { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+      {
+        id: 20,
+        kind: 'projectile',
+        weaponArchetypeId: PISTOL.id,
+        ownerKind: 'player',
+        originX: 0,
+        originY: 0,
+        x: DEFAULT_PLAYER_VISUAL.worldSize.height / 2 + 0.05,
+        y: 0,
+        state: 'flying',
+        visualState: {
+          angleRadians: 0,
+          spinRadians: 0,
+          pulsePhase: 0
+        },
+        explosionRadius: null,
+        detonateAtSimMs: null
+      }
+    ]);
+    renderer.render();
+
+    const farProjectile = findProjectileMesh(backend.lastScene());
+    expect(farProjectile?.visible).toBe(true);
   });
 
   it('renders drops as sprite-backed plane meshes', () => {

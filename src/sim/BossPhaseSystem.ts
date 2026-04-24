@@ -87,6 +87,7 @@ function runBossAttacks(
         ownerId: boss.id,
         ownerKind: 'boss',
         motionKind: w.projectile.motion.kind,
+        origin: { x: boss.position.x, y: boss.position.y },
         position: { x: boss.position.x, y: boss.position.y },
         velocity: {
           vx: dirX * w.projectile.motion.speed,

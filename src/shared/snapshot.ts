@@ -27,6 +27,8 @@ export type ProjectileSnapshot = Readonly<{
   kind: 'projectile';
   weaponArchetypeId: string;
   ownerKind: 'player' | 'enemy' | 'boss';
+  originX: number;
+  originY: number;
   x: number;
   y: number;
   state: 'flying' | 'grounded';

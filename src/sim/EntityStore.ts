@@ -134,6 +134,7 @@ export type Projectile = {
   readonly arcEnd: Vec2 | null;
   readonly arcStartSimMs: number | null;
   readonly arcEndSimMs: number | null;
+  readonly origin: Vec2;
   readonly size: { width: number; height: number };
   readonly hitRadius: number;
   readonly impactDamage: number;
@@ -204,6 +205,7 @@ export type ProjectileSpawnSpec = Readonly<{
   arcEnd?: Vec2 | null;
   arcStartSimMs?: number | null;
   arcEndSimMs?: number | null;
+  origin?: Vec2;
   position: Vec2;
   velocity: { vx: number; vy: number };
   size: Readonly<{ width: number; height: number }>;
@@ -409,6 +411,10 @@ export function createEntityStore(): EntityStore {
             : { x: spec.arcEnd.x, y: spec.arcEnd.y },
         arcStartSimMs: spec.arcStartSimMs ?? null,
         arcEndSimMs: spec.arcEndSimMs ?? null,
+        origin:
+          spec.origin === undefined
+            ? { x: spec.position.x, y: spec.position.y }
+            : { x: spec.origin.x, y: spec.origin.y },
         size: { width: spec.size.width, height: spec.size.height },
         hitRadius: spec.hitRadius,
         impactDamage: spec.impactDamage,

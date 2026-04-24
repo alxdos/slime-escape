@@ -214,6 +214,10 @@ export function createRenderer(init: RendererInit): Renderer {
     bossRegistry: BOSS_ARCHETYPES,
     weaponRegistry
   });
+  const projectileHideDistance = Math.max(
+    DEFAULT_PLAYER_VISUAL.worldSize.width,
+    DEFAULT_PLAYER_VISUAL.worldSize.height
+  ) / 2;
 
   const enemyMeshes = new Map<number, EntityMeshEntry>();
   const bossMeshes = new Map<number, EntityMeshEntry>();
@@ -424,7 +428,13 @@ export function createRenderer(init: RendererInit): Renderer {
         ensureProjectileMesh,
         disposeEntityMesh,
         null,
-        (entry, entity) => applyProjectilePresentation(entry.mesh, entity, weaponRegistry)
+        (entry, entity) =>
+          applyProjectilePresentation(
+            entry.mesh,
+            entity,
+            weaponRegistry,
+            projectileHideDistance
+          )
       );
       updateEntities(
         pair,
@@ -757,8 +767,9 @@ function applyFieldEffectPresentation(
 function applyProjectilePresentation(
   mesh: THREE.Mesh,
   snap: ProjectileSnapshot,
-  weaponRegistry: Readonly<Record<string, WeaponArchetype>>
-): void {
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
+  hideDistance: number
+): boolean {
   const archetype = weaponRegistry[snap.weaponArchetypeId];
   const visual = archetype?.projectile.visual;
   const travelAngle = visual?.rotateWhileFlying === false ? 0 : snap.visualState.angleRadians;
@@ -777,24 +788,38 @@ function applyProjectilePresentation(
     material.opacity = snap.state === 'grounded' ? 0.86 : 0.95;
   }
 
+  const shouldShow = shouldShowProjectile(snap, hideDistance);
   const radiusIndicator = mesh.children.find(
     (child): child is THREE.Mesh =>
       child instanceof THREE.Mesh && child.name === PROJECTILE_RADIUS_INDICATOR_NAME
   );
-  if (radiusIndicator === undefined) return;
+  if (radiusIndicator === undefined) return shouldShow;
   const showRadius =
+    shouldShow &&
     snap.state === 'grounded' &&
     snap.explosionRadius !== null &&
     snap.explosionRadius > 0 &&
     visual?.explosionRadiusIndicator === true;
   radiusIndicator.visible = showRadius;
-  if (!showRadius || snap.explosionRadius === null) return;
+  if (!showRadius || snap.explosionRadius === null) return shouldShow;
   radiusIndicator.scale.set(snap.explosionRadius, snap.explosionRadius, 1);
   const radiusMaterial = radiusIndicator.material;
   if (!Array.isArray(radiusMaterial) && radiusMaterial instanceof THREE.MeshBasicMaterial) {
     const phase = 0.5 + 0.5 * Math.sin(snap.visualState.pulsePhase * Math.PI * 2);
     radiusMaterial.opacity = 0.08 + 0.08 * phase;
   }
+  return shouldShow;
+}
+
+function shouldShowProjectile(
+  snap: ProjectileSnapshot,
+  hideDistance: number
+): boolean {
+  if (snap.state !== 'flying') return true;
+  if (hideDistance <= 0) return true;
+  const dx = snap.x - snap.originX;
+  const dy = snap.y - snap.originY;
+  return dx * dx + dy * dy >= hideDistance * hideDistance;
 }
 
 function disposeObjectTree(root: THREE.Object3D): void {
@@ -988,7 +1013,7 @@ function updateEntities<S extends EntitySnapshot>(
   ensure: (snap: S) => EntityMeshEntry,
   dispose: (entry: EntityMeshEntry) => void,
   snapGrid: CharacterSnapGrid | null = null,
-  updateVisual?: (entry: EntityMeshEntry, snap: S) => void
+  updateVisual?: (entry: EntityMeshEntry, snap: S) => boolean | void
 ): void {
   const { prev, curr } = pair;
   const aliveIds = new Set<number>();
@@ -1011,8 +1036,7 @@ function updateEntities<S extends EntitySnapshot>(
         const y = prevSnap.y + (entity.y - prevSnap.y) * alpha;
         setSnappedMeshPosition(entry.mesh, x, y, entry.mesh.position.z, snapGrid);
       }
-      updateVisual?.(entry, entity);
-      entry.mesh.visible = true;
+      entry.mesh.visible = updateVisual?.(entry, entity) ?? true;
     }
   }
   for (const [id, entry] of table) {

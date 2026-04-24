@@ -72,6 +72,8 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           kind: 'projectile',
           weaponArchetypeId: projectile.weaponArchetypeId,
           ownerKind: projectile.ownerKind,
+          originX: projectile.origin.x,
+          originY: projectile.origin.y,
           x: projectile.position.x,
           y: projectile.position.y,
           state: projectile.state,

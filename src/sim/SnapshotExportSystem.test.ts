@@ -128,6 +128,7 @@ describe('SnapshotExportSystem', () => {
       ownerId: 1 as EntityId,
       ownerKind: 'player',
       motionKind: 'linear',
+      origin: { x: 0, y: 0 },
       position: { x: 1, y: 0 },
       velocity: { vx: 24, vy: 0 },
       size: PISTOL.projectile.size,
@@ -158,6 +159,8 @@ describe('SnapshotExportSystem', () => {
     if (projectile?.kind !== 'projectile') throw new Error('expected projectile snapshot');
     expect(projectile.weaponArchetypeId).toBe(PISTOL.id);
     expect(projectile.ownerKind).toBe('player');
+    expect(projectile.originX).toBe(0);
+    expect(projectile.originY).toBe(0);
     expect(projectile.state).toBe('flying');
     expect(projectile.visualState.angleRadians).toBeCloseTo(0);
     expect(projectile.visualState.spinRadians).toBe(0);

@@ -140,6 +140,7 @@ describe('EntityStore', () => {
     const projectile = store.spawnProjectile(PROJECTILE_SPEC);
 
     expect(projectile.kind).toBe('projectile');
+    expect(projectile.origin).toEqual(PROJECTILE_SPEC.position);
     expect(projectile.velocity).toEqual(PROJECTILE_SPEC.velocity);
     expect(projectile.size).toEqual(PROJECTILE_SPEC.size);
     expect(projectile.hitRadius).toBe(PROJECTILE_SPEC.hitRadius);
@@ -160,6 +161,16 @@ describe('EntityStore', () => {
     liveVelocity.vx = 999;
 
     expect(projectile.velocity.vx).toBe(5);
+  });
+
+  it('isolates projectile origin from the spec object', () => {
+    const store = createEntityStore();
+    const liveOrigin = { x: 4, y: 5 };
+    const projectile = store.spawnProjectile({ ...PROJECTILE_SPEC, origin: liveOrigin });
+
+    liveOrigin.x = 999;
+
+    expect(projectile.origin).toEqual({ x: 4, y: 5 });
   });
 
   it('isolates drop effect from later mutations of the source archetype object', () => {

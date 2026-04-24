@@ -547,6 +547,7 @@ function spawnProjectileForDirection(
         ownerId,
         ownerKind,
         motionKind: 'linear',
+        origin,
         position: origin,
         velocity: {
           vx: direction.x * projectile.motion.speed,
@@ -580,6 +581,7 @@ function spawnProjectileForDirection(
         ownerId,
         ownerKind,
         motionKind: 'arc',
+        origin,
         arcStart: origin,
         arcEnd: end,
         arcStartSimMs: simTimeMs,
@@ -617,6 +619,7 @@ function spawnProjectileForDirection(
         ownerId,
         ownerKind,
         motionKind: 'placed',
+        origin,
         position: origin,
         velocity: { vx: 0, vy: 0 },
         size: projectile.size,
