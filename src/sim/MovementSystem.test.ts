@@ -117,6 +117,24 @@ describe('MovementSystem player', () => {
     expect(store.player()?.velocity).toEqual({ vx: 0, vy: 0 });
   });
 
+  it('applies slow status as a movement speed multiplier', () => {
+    const { store, movement, input } = setup();
+    const player = store.player();
+    if (player === null) throw new Error('expected player');
+    player.statusEffects.push({
+      kind: 'slow',
+      speedMultiplier: 0.5,
+      expireAtSimMs: 1000,
+      source: { kind: 'fieldEffect', fieldEffectId: 1 as EntityId, archetypeId: 'slow-puddle' }
+    });
+    input.moveDir.dx = 1;
+
+    movement.tick(ARENA, store, input, 0);
+
+    expect(player.velocity.vx).toBeCloseTo(PLAYER.maxSpeed * 0.5, 10);
+    expect(player.position.x).toBeCloseTo(PLAYER.maxSpeed * 0.5 * SIM_STEP_SEC, 10);
+  });
+
   it('treats normalised diagonal as full speed (not sqrt(2)*speed)', () => {
     const { store, movement, input } = setup();
     const inv = Math.SQRT1_2;
@@ -210,6 +228,25 @@ describe('MovementSystem enemies', () => {
     expect(before - after).toBeCloseTo(CHASE_TEST_ENEMY.maxSpeed * SIM_STEP_SEC, 10);
     expect(enemy.velocity.vx).toBeCloseTo(-CHASE_TEST_ENEMY.maxSpeed, 10);
     expect(enemy.velocity.vy).toBeCloseTo(0, 10);
+  });
+
+  it('applies slow status to chase movement', () => {
+    const { store, movement, input } = setup();
+    const enemy = store.spawnEnemy(slimeFastAt(5, 0));
+    enemy.statusEffects.push({
+      kind: 'slow',
+      speedMultiplier: 0.25,
+      expireAtSimMs: 1000,
+      source: { kind: 'fieldEffect', fieldEffectId: 1 as EntityId, archetypeId: 'slow-puddle' }
+    });
+
+    movement.tick(ARENA, store, input, 0);
+
+    expect(5 - enemy.position.x).toBeCloseTo(
+      CHASE_TEST_ENEMY.maxSpeed * 0.25 * SIM_STEP_SEC,
+      10
+    );
+    expect(enemy.velocity.vx).toBeCloseTo(-CHASE_TEST_ENEMY.maxSpeed * 0.25, 10);
   });
 
   it('a chase enemy without a player keeps still and zeroes velocity', () => {

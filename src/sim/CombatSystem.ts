@@ -39,6 +39,7 @@ export type DamageSource =
     }
   | { kind: 'enemyContact'; enemyId: EntityId }
   | { kind: 'fieldEffect'; fieldEffectId: EntityId; archetypeId: string }
+  | { kind: 'statusEffect'; statusKind: string; sourceEntityId: EntityId | null }
   | { kind: 'environment'; tag: string }
   | { kind: 'boss'; bossId: EntityId; attackId: string };
 

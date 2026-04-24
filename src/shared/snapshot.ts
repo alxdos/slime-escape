@@ -7,6 +7,7 @@ export type PlayerSnapshot = Readonly<{
   y: number;
   hp: number;
   maxHp: number;
+  statusEffects?: ReadonlyArray<StatusEffectSnapshot>;
 }>;
 
 export type EnemySnapshot = Readonly<{
@@ -17,6 +18,7 @@ export type EnemySnapshot = Readonly<{
   y: number;
   hp: number;
   maxHp: number;
+  statusEffects?: ReadonlyArray<StatusEffectSnapshot>;
 }>;
 
 export type ProjectileSnapshot = Readonly<{
@@ -55,6 +57,12 @@ export type BossSnapshot = Readonly<{
   phaseIndex: number;
   phaseId: string;
   activeAttackIds: ReadonlyArray<string>;
+  statusEffects?: ReadonlyArray<StatusEffectSnapshot>;
+}>;
+
+export type StatusEffectSnapshot = Readonly<{
+  kind: 'burn' | 'slow' | 'poison';
+  expiresAtSimMs: number;
 }>;
 
 export type FieldEffectSnapshot = Readonly<{

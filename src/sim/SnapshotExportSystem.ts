@@ -43,7 +43,11 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           x: player.position.x,
           y: player.position.y,
           hp: player.hp,
-          maxHp: player.maxHp
+          maxHp: player.maxHp,
+          statusEffects: player.statusEffects.map((effect) => ({
+            kind: effect.kind,
+            expiresAtSimMs: effect.expireAtSimMs
+          }))
         });
       }
       for (const enemy of store.enemies()) {
@@ -54,7 +58,11 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           x: enemy.position.x,
           y: enemy.position.y,
           hp: enemy.hp,
-          maxHp: enemy.maxHp
+          maxHp: enemy.maxHp,
+          statusEffects: enemy.statusEffects.map((effect) => ({
+            kind: effect.kind,
+            expiresAtSimMs: effect.expireAtSimMs
+          }))
         });
       }
       for (const projectile of store.projectiles()) {
@@ -103,7 +111,11 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           maxHp: boss.maxHp,
           phaseIndex: boss.phaseIndex,
           phaseId: boss.phaseId,
-          activeAttackIds: boss.activeAttackIds
+          activeAttackIds: boss.activeAttackIds,
+          statusEffects: boss.statusEffects.map((effect) => ({
+            kind: effect.kind,
+            expiresAtSimMs: effect.expireAtSimMs
+          }))
         });
         if (bossHud === null) {
           bossHud = {

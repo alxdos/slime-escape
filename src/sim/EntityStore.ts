@@ -15,6 +15,7 @@ export type Player = {
   position: { x: number; y: number };
   velocity: { vx: number; vy: number };
   hp: number;
+  statusEffects: ActorStatusEffect[];
 };
 
 export type KnockbackState = {
@@ -44,6 +45,7 @@ export type Enemy = {
   hp: number;
   nextContactSimMs: number;
   knockback: KnockbackState | null;
+  statusEffects: ActorStatusEffect[];
 };
 
 export type Boss = {
@@ -69,7 +71,38 @@ export type Boss = {
   phaseId: string;
   activeAttackIds: string[];
   attackNextSimMs: Map<string, number>;
+  statusEffects: ActorStatusEffect[];
 };
+
+export type ActorStatusEffect =
+  | {
+      kind: 'burn';
+      damagePerTick: number;
+      tickEveryMs: number;
+      nextTickSimMs: number;
+      expireAtSimMs: number;
+      source: StatusEffectSource;
+    }
+  | {
+      kind: 'slow';
+      speedMultiplier: number;
+      expireAtSimMs: number;
+      source: StatusEffectSource;
+    }
+  | {
+      kind: 'poison';
+      damagePerTick: number;
+      tickEveryMs: number;
+      nextTickSimMs: number;
+      expireAtSimMs: number;
+      source: StatusEffectSource;
+    };
+
+export type StatusEffectSource = Readonly<{
+  kind: 'fieldEffect';
+  fieldEffectId: EntityId;
+  archetypeId: string;
+}>;
 
 export type Projectile = {
   readonly id: EntityId;
@@ -267,7 +300,8 @@ export function createEntityStore(): EntityStore {
         maxHp: spec.maxHp,
         position: { x: spec.position.x, y: spec.position.y },
         velocity: { vx: 0, vy: 0 },
-        hp: spec.maxHp
+        hp: spec.maxHp,
+        statusEffects: []
       };
       player = next;
       return next;
@@ -292,7 +326,8 @@ export function createEntityStore(): EntityStore {
         velocity: { vx: 0, vy: 0 },
         hp: spec.maxHp,
         nextContactSimMs: 0,
-        knockback: null
+        knockback: null,
+        statusEffects: []
       };
       enemies.set(next.id, next);
       return next;
@@ -324,7 +359,8 @@ export function createEntityStore(): EntityStore {
         phaseIndex: spec.phaseIndex,
         phaseId: spec.phaseId,
         activeAttackIds: [...spec.activeAttackIds],
-        attackNextSimMs
+        attackNextSimMs,
+        statusEffects: []
       };
       bosses.set(next.id, next);
       return next;

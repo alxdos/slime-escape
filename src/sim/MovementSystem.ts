@@ -4,6 +4,7 @@ import { SIM_STEP_MS } from '../shared/timing';
 
 import type { Boss, Enemy, EntityStore, Player } from './EntityStore';
 import type { RuntimeInputState } from './RuntimeInputState';
+import { resolveMovementSpeedMultiplier } from './StatusEffectSystem';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 
@@ -29,8 +30,9 @@ export function createMovementSystem(): MovementSystem {
 
 function tickPlayer(arena: ArenaConfig, player: Player, input: RuntimeInputState): void {
   const { dx, dy } = input.moveDir;
-  const vx = dx * player.maxSpeed;
-  const vy = dy * player.maxSpeed;
+  const speedMultiplier = resolveMovementSpeedMultiplier(player);
+  const vx = dx * player.maxSpeed * speedMultiplier;
+  const vy = dy * player.maxSpeed * speedMultiplier;
   player.velocity.vx = vx;
   player.velocity.vy = vy;
   if (vx === 0 && vy === 0) return;
@@ -81,8 +83,9 @@ function chaseTowardPlayer(actor: Enemy | Boss, player: Player | null): void {
   }
   const nx = dx / dist;
   const ny = dy / dist;
-  const vx = nx * actor.maxSpeed;
-  const vy = ny * actor.maxSpeed;
+  const speedMultiplier = resolveMovementSpeedMultiplier(actor);
+  const vx = nx * actor.maxSpeed * speedMultiplier;
+  const vy = ny * actor.maxSpeed * speedMultiplier;
   actor.position.x += vx * SIM_STEP_SEC;
   actor.position.y += vy * SIM_STEP_SEC;
   actor.velocity.vx = vx;
