@@ -23,6 +23,7 @@ import { ENEMY_VISUALS } from './enemyVisuals';
 import { fitCanvasToViewport } from './fitToViewport';
 import {
   createImpactEffectStore,
+  type HitImpulseEffect,
   type SlimeDropletEffect
 } from './ImpactEffectStore';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
@@ -306,6 +307,9 @@ export function createRenderer(init: RendererInit): Renderer {
     render(): void {
       const pair = init.getSnapshotPair();
       lastRenderNowMs = pair.nowMs;
+      impactEffects.update(pair.nowMs);
+      const impactSnapshot = impactEffects.snapshot();
+      const hitImpulsesByTarget = indexHitImpulses(impactSnapshot.hitImpulses);
       const alpha = computeAlpha(pair);
       updatePlayer(playerMesh, pair, alpha, characterSnapGrid);
       updateEntities(
@@ -317,7 +321,13 @@ export function createRenderer(init: RendererInit): Renderer {
         disposeEntityMesh,
         characterSnapGrid,
         (mesh, entity) =>
-          applySlimeBreath(mesh, pair.nowMs, entity.id, SLIME_BREATH_AMPLITUDE)
+          applySlimePresentation(
+            mesh,
+            pair.nowMs,
+            entity.id,
+            SLIME_BREATH_AMPLITUDE,
+            hitImpulsesByTarget.get(entity.id)
+          )
       );
       updateEntities(
         pair,
@@ -328,7 +338,13 @@ export function createRenderer(init: RendererInit): Renderer {
         disposeEntityMesh,
         characterSnapGrid,
         (mesh, entity) =>
-          applySlimeBreath(mesh, pair.nowMs, entity.id, BOSS_BREATH_AMPLITUDE)
+          applySlimePresentation(
+            mesh,
+            pair.nowMs,
+            entity.id,
+            BOSS_BREATH_AMPLITUDE,
+            hitImpulsesByTarget.get(entity.id)
+          )
       );
       updateEntities(
         pair,
@@ -349,9 +365,8 @@ export function createRenderer(init: RendererInit): Renderer {
       pulseDropMeshes(dropMeshes, pair.nowMs);
       updateCrosshair(crosshair, init.getAim);
       updateZoneOverlay(zoneOverlay, pair, alpha);
-      impactEffects.update(pair.nowMs);
       updateSlimeDropletMeshes(
-        impactEffects.snapshot().droplets,
+        impactSnapshot.droplets,
         slimeDropletMeshes,
         scene,
         disposeEntityMesh
@@ -817,21 +832,49 @@ function createIrregularBlobGeometry(droplet: SlimeDropletEffect): THREE.ShapeGe
   return new THREE.ShapeGeometry(shape);
 }
 
-function applySlimeBreath(
+function applySlimePresentation(
   mesh: THREE.Mesh,
   nowMs: number,
   entityId: number,
-  amplitude: number
+  amplitude: number,
+  hitImpulse: HitImpulseEffect | undefined
 ): void {
   const phase =
     (nowMs / 1000) * SLIME_BREATH_HZ * Math.PI * 2 +
     entityId * 1.61803398875;
   const breath = Math.sin(phase);
+  const hitT = computeHitResponseT(hitImpulse, nowMs);
+  const squashX = 1 + 0.16 * hitT;
+  const squashY = 1 - 0.12 * hitT;
   mesh.scale.set(
-    1 + amplitude * breath,
-    1 - amplitude * SLIME_BREATH_VERTICAL_RATIO * breath,
+    (1 + amplitude * breath) * squashX,
+    (1 - amplitude * SLIME_BREATH_VERTICAL_RATIO * breath) * squashY,
     1
   );
+  const material = mesh.material;
+  if (Array.isArray(material) || !(material instanceof THREE.MeshBasicMaterial)) return;
+  const flash = 1 + 0.55 * hitT;
+  material.color.setRGB(flash, flash, flash);
+}
+
+function computeHitResponseT(
+  hitImpulse: HitImpulseEffect | undefined,
+  nowMs: number
+): number {
+  if (hitImpulse === undefined) return 0;
+  const span = hitImpulse.expiresAtMs - hitImpulse.startedAtMs;
+  if (span <= 0) return 0;
+  return Math.max(0, Math.min(1, (hitImpulse.expiresAtMs - nowMs) / span));
+}
+
+function indexHitImpulses(
+  hitImpulses: ReadonlyArray<HitImpulseEffect>
+): Map<number, HitImpulseEffect> {
+  const byTarget = new Map<number, HitImpulseEffect>();
+  for (const impulse of hitImpulses) {
+    byTarget.set(impulse.targetId, impulse);
+  }
+  return byTarget;
 }
 
 function updateCrosshair(group: THREE.Group, getAim: AimAccessor | undefined): void {

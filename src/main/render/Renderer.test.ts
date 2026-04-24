@@ -442,6 +442,81 @@ describe('createRenderer', () => {
     expect(enemyMesh?.scale.y).toBeCloseTo(0.9426);
   });
 
+  it('layers hit flash and squash on enemy sprites without affecting the player sprite', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const playerTexture = new THREE.Texture();
+    const enemyTexture = new THREE.Texture();
+    let pair: SnapshotPair = {
+      prev: null,
+      curr: createSnapshot([
+        { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+        {
+          id: 2,
+          kind: 'enemy',
+          archetypeId: SLIME_BUG.id,
+          x: 1,
+          y: 1,
+          hp: 2,
+          maxHp: 2
+        }
+      ]),
+      currReceivedAtMs: 0,
+      nowMs: 0
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({
+        [DEFAULT_PLAYER_VISUAL.archetypeId]: playerTexture,
+        [SLIME_BUG.id]: enemyTexture
+      }),
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.handleEvent({
+      kind: 'hit',
+      simTime: 0,
+      projectileId: 10,
+      targetId: 2,
+      targetKind: 'enemy',
+      targetArchetypeId: SLIME_BUG.id,
+      weaponArchetypeId: 'pistol',
+      damage: 1,
+      impactDirX: 1,
+      impactDirY: 0,
+      x: 1,
+      y: 1
+    });
+    renderer.render();
+
+    const scene = backend.lastScene();
+    const playerMesh = findMeshWithMaterialMap(scene, playerTexture);
+    const enemyMesh = findMeshWithMaterialMap(scene, enemyTexture);
+    const enemyMaterial = enemyMesh?.material;
+    expect(playerMesh?.scale.x).toBe(1);
+    expect(enemyMesh?.scale.x).toBeGreaterThan(1.1);
+    expect(enemyMaterial).toBeInstanceOf(THREE.MeshBasicMaterial);
+    expect((enemyMaterial as THREE.MeshBasicMaterial).color.r).toBeGreaterThan(1);
+
+    pair = { ...pair, nowMs: 500 };
+    renderer.render();
+    expect(enemyMesh?.scale.x).toBeLessThan(1.1);
+    expect((enemyMaterial as THREE.MeshBasicMaterial).color.r).toBe(1);
+  });
+
   it('snaps character positions to the low backing-pixel grid', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();
