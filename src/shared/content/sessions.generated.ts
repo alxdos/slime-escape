@@ -2,10 +2,10 @@
 // Do not edit by hand.
 import { SANDBOX_ARENA } from './arenas';
 import { BOSS_BUBBLE_HOG, BOSS_GARGOYLE, BOSS_SAW_CYCLOPS, BOSS_SCRAP_KING, BOSS_TOWER_SENTINEL } from './bosses.generated';
-import { SLIME_BUG, SLIME_CANDLE, SLIME_CLAMPER, SLIME_DASHER, SLIME_DOOR, SLIME_DRONE, SLIME_ECHO, SLIME_FLAME, SLIME_FORTRESS, SLIME_HORNLING, SLIME_KINGLING, SLIME_LIFTER, SLIME_MANY_EYE, SLIME_MECH, SLIME_MECH_CRAB, SLIME_NINJA, SLIME_OBELISK, SLIME_ONE_EYE, SLIME_PRINCE, SLIME_SAW, SLIME_SHELL, SLIME_SLEEPER, SLIME_SPARK, SLIME_SPLITTER, SLIME_STACK, SLIME_STAR, SLIME_STONEHEAD, SLIME_TADPOLE, SLIME_TRICKSTER, SLIME_WRAITH } from './enemies.generated';
+import { CAMPAIGN_SET_1_CARRIER_SLIME, CAMPAIGN_SET_2_CARRIER_SLIME, CAMPAIGN_SET_3_CARRIER_SLIME, CAMPAIGN_SET_4_CARRIER_SLIME, CAMPAIGN_SET_5_CARRIER_SLIME, DEMO_CARRIER_SLIME, DEMO_RETALIATOR_SLIME, SLIME_BUG, SLIME_CANDLE, SLIME_CLAMPER, SLIME_DASHER, SLIME_DOOR, SLIME_DRONE, SLIME_ECHO, SLIME_FLAME, SLIME_FORTRESS, SLIME_HORNLING, SLIME_KINGLING, SLIME_LIFTER, SLIME_MANY_EYE, SLIME_MECH, SLIME_MECH_CRAB, SLIME_NINJA, SLIME_OBELISK, SLIME_ONE_EYE, SLIME_PRINCE, SLIME_SAW, SLIME_SHELL, SLIME_SLEEPER, SLIME_SPARK, SLIME_SPLITTER, SLIME_STACK, SLIME_STAR, SLIME_STONEHEAD, SLIME_TADPOLE, SLIME_TRICKSTER, SLIME_WRAITH } from './enemies.generated';
 import { SANDBOX_PLAYER, TRAINING_PLAYER } from './players.generated';
 import type { SessionPresetTemplate } from './sessions';
-import { BOMB_PLACER, FIREBALL_STAFF, GRENADE_LAUNCHER, LASER, PISTOL, ROCK_THROWER, SHOTGUN, SMG, SNIPER } from './weapons.generated';
+import { BOMB_PLACER, DEMO_HAZARD_GRENADE, DEMO_PROXIMITY_MINE, FIREBALL_STAFF, GRENADE_LAUNCHER, LASER, PISTOL, ROCK_THROWER, SHOTGUN, SMG, SNIPER } from './weapons.generated';
 
 export const SESSION_PRESET_TEMPLATES = {
   campaign: {
@@ -39,7 +39,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-05.jpg'
       }
     ],
-    rules: { damage: { slimeFriendlyFire: false } },
+    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     encounters: [
@@ -78,7 +78,7 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_SLEEPER.id },
             { archetypeId: SLIME_HORNLING.id },
             { archetypeId: SLIME_SPARK.id },
-            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: CAMPAIGN_SET_1_CARRIER_SLIME.id },
             { archetypeId: SLIME_HORNLING.id },
             { archetypeId: SLIME_SPARK.id },
             { archetypeId: SLIME_SLEEPER.id },
@@ -198,7 +198,7 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_WRAITH.id },
             { archetypeId: SLIME_SHELL.id },
             { archetypeId: SLIME_STACK.id },
-            { archetypeId: SLIME_WRAITH.id },
+            { archetypeId: CAMPAIGN_SET_2_CARRIER_SLIME.id },
             { archetypeId: SLIME_SHELL.id },
             { archetypeId: SLIME_STACK.id },
             { archetypeId: SLIME_TRICKSTER.id },
@@ -321,7 +321,7 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_BUG.id },
             { archetypeId: SLIME_STAR.id },
             { archetypeId: SLIME_LIFTER.id },
-            { archetypeId: SLIME_BUG.id },
+            { archetypeId: CAMPAIGN_SET_3_CARRIER_SLIME.id },
             { archetypeId: SLIME_STAR.id },
             { archetypeId: SLIME_LIFTER.id },
             { archetypeId: SLIME_ECHO.id },
@@ -446,7 +446,7 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_FORTRESS.id },
             { archetypeId: SLIME_SPLITTER.id },
             { archetypeId: SLIME_PRINCE.id },
-            { archetypeId: SLIME_FORTRESS.id },
+            { archetypeId: CAMPAIGN_SET_4_CARRIER_SLIME.id },
             { archetypeId: SLIME_SPLITTER.id },
             { archetypeId: SLIME_PRINCE.id },
             { archetypeId: SLIME_TADPOLE.id },
@@ -574,7 +574,7 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_CANDLE.id },
             { archetypeId: SLIME_MECH.id },
             { archetypeId: SLIME_CLAMPER.id },
-            { archetypeId: SLIME_CANDLE.id },
+            { archetypeId: CAMPAIGN_SET_5_CARRIER_SLIME.id },
             { archetypeId: SLIME_MECH.id },
             { archetypeId: SLIME_CLAMPER.id },
             { archetypeId: SLIME_DOOR.id },
@@ -657,6 +657,58 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ]
   },
+  'combat-modifiers-demo': {
+    presetId: 'combat-modifiers-demo',
+    displayName: 'Combat Modifiers Demo',
+    description: 'Проверочная арена для puddles, statuses, proximity mines, carrier drops, magnet pickup, retaliation and aim assist.',
+    visibleInMenu: true,
+    order: 1,
+    arena: SANDBOX_ARENA,
+    player: SANDBOX_PLAYER,
+    loadout: { weapons: [DEMO_HAZARD_GRENADE.id, DEMO_PROXIMITY_MINE.id, PISTOL.id], selectedIndex: 0 },
+    backgrounds: [
+      {
+        id: 'sandbox',
+        imageUrl: '/images/bg/bg-01.jpg'
+      }
+    ],
+    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: true, maxAngleRadians: 0.35, maxDistance: 8, strength: 0.65 } },
+    winCondition: { kind: 'none' },
+    lossCondition: { kind: 'none' },
+    encounters: [
+      {
+        id: 'combat-modifiers-demo-encounter',
+        type: 'sandbox',
+        backgroundId: 'sandbox',
+        spawnPlan: {
+          kind: 'static',
+          spawns: [
+            {
+              archetypeId: DEMO_CARRIER_SLIME.id,
+              position: { x: 4, y: 1.5 }
+            },
+            {
+              archetypeId: DEMO_RETALIATOR_SLIME.id,
+              position: { x: 5, y: -1 }
+            },
+            {
+              archetypeId: DEMO_RETALIATOR_SLIME.id,
+              position: { x: 7, y: -1 }
+            },
+            {
+              archetypeId: SLIME_BUG.id,
+              position: { x: 6, y: 2.5 }
+            }
+          ]
+        },
+        zoneBehavior: { kind: 'disabled' },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'never', next: 'sequential' },
+        tuning: null
+      }
+    ]
+  },
   sandbox: {
     presetId: 'sandbox',
     displayName: 'Песочница',
@@ -672,7 +724,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
-    rules: { damage: { slimeFriendlyFire: false } },
+    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
     encounters: [
@@ -704,7 +756,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
-    rules: { damage: { slimeFriendlyFire: false } },
+    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
     encounters: [
@@ -744,7 +796,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
-    rules: { damage: { slimeFriendlyFire: false } },
+    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     encounters: [

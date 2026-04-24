@@ -61,8 +61,16 @@ export type DamageRules = Readonly<{
   slimeFriendlyFire: boolean;
 }>;
 
+export type AimAssistRule = Readonly<{
+  enabled: boolean;
+  maxAngleRadians: number;
+  maxDistance: number;
+  strength: number;
+}>;
+
 export type SessionRules = Readonly<{
   damage: DamageRules;
+  aimAssist: AimAssistRule;
 }>;
 
 export type SessionBackground = Readonly<{

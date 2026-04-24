@@ -288,7 +288,10 @@ function makeSession(
     loadout: options?.loadout ?? null,
     backgrounds: [],
     modifiers: [],
-    rules: { damage: { slimeFriendlyFire: false } },
+    rules: {
+      damage: { slimeFriendlyFire: false },
+      aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 }
+    },
     encounters,
     winCondition: options?.win ?? { kind: 'allEncountersComplete' },
     lossCondition: options?.loss ?? { kind: 'playerDeath' },

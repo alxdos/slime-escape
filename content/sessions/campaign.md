@@ -11,6 +11,10 @@
 | loadoutWeaponIds | pistol, shotgun, smg, sniper, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |
 | selectedWeaponIndex | 0 |
 | slimeFriendlyFire | false |
+| aimAssistEnabled | false |
+| aimAssistMaxAngleRadians | 0 |
+| aimAssistMaxDistance | 0 |
+| aimAssistStrength | 0 |
 | winCondition | allEncountersComplete |
 | lossCondition | playerDeath |
 
@@ -73,7 +77,7 @@
 | 2 | slime-sleeper |
 | 3 | slime-hornling |
 | 4 | slime-spark |
-| 5 | slime-one-eye |
+| 5 | campaign-set-1-carrier-slime |
 | 6 | slime-hornling |
 | 7 | slime-spark |
 | 8 | slime-sleeper |
@@ -202,7 +206,7 @@
 | 2 | slime-wraith |
 | 3 | slime-shell |
 | 4 | slime-stack |
-| 5 | slime-wraith |
+| 5 | campaign-set-2-carrier-slime |
 | 6 | slime-shell |
 | 7 | slime-stack |
 | 8 | slime-trickster |
@@ -334,7 +338,7 @@
 | 2 | slime-bug |
 | 3 | slime-star |
 | 4 | slime-lifter |
-| 5 | slime-bug |
+| 5 | campaign-set-3-carrier-slime |
 | 6 | slime-star |
 | 7 | slime-lifter |
 | 8 | slime-echo |
@@ -468,7 +472,7 @@
 | 2 | slime-fortress |
 | 3 | slime-splitter |
 | 4 | slime-prince |
-| 5 | slime-fortress |
+| 5 | campaign-set-4-carrier-slime |
 | 6 | slime-splitter |
 | 7 | slime-prince |
 | 8 | slime-tadpole |
@@ -605,7 +609,7 @@
 | 2 | slime-candle |
 | 3 | slime-mech |
 | 4 | slime-clamper |
-| 5 | slime-candle |
+| 5 | campaign-set-5-carrier-slime |
 | 6 | slime-mech |
 | 7 | slime-clamper |
 | 8 | slime-door |

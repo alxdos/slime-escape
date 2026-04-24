@@ -6,6 +6,7 @@ import {
   PISTOL,
   ROCK_THROWER,
   SHOTGUN,
+  SMG,
   SNIPER,
   type WeaponArchetype
 } from '../shared/content/weapons';
@@ -183,6 +184,30 @@ describe('CombatSystem', () => {
     expect(events.filter((e) => e.kind === 'fire')).toHaveLength(2);
   });
 
+  it('keeps base SMG cadence at a 150ms tick-aligned interval', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [SMG.id], selectedIndex: 0 }, 0);
+    const input = makeInput({
+      aimWorld: { x: 5, y: 0 },
+      firing: true,
+      loadout: { weapons: [SMG.id], selectedIndex: 0 }
+    });
+    const events: RuntimeEvent[] = [];
+
+    for (let tick = 0; tick <= 20; tick += 1) {
+      combat.tick(input, store, index, tick * SIM_STEP_MS, ARENA, (e) => events.push(e));
+    }
+
+    expect(events.filter((e) => e.kind === 'fire').map((e) => e.simTime)).toEqual([
+      0,
+      150,
+      300
+    ]);
+  });
+
   it('uses runtime selected slot and keeps cooldowns owner-local per weapon instance', () => {
     const store = createEntityStore();
     const index = createSpatialIndex();
@@ -286,6 +311,30 @@ describe('CombatSystem', () => {
     expect(projectiles[1]?.size.width).toBeCloseTo(PISTOL.projectile.size.width * 2);
     expect(projectiles[1]?.hitRadius).toBeCloseTo(PISTOL.projectile.hitRadius * 2);
     expect(projectiles[1]?.velocity.vx).toBeCloseTo(PISTOL.projectile.motion.speed * 2);
+  });
+
+  it('caps identical weapon modifier pickups at two stacks per selected weapon', () => {
+    const combat = createCombatSystem();
+    const store = createEntityStore();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+
+    expect(combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'projectileSizeMultiplier',
+      multiplier: 1.25
+    })).toBe(true);
+    expect(combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'projectileSizeMultiplier',
+      multiplier: 1.25
+    })).toBe(true);
+    expect(combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'projectileSizeMultiplier',
+      multiplier: 1.25
+    })).toBe(false);
+    expect(combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'projectileSpeedMultiplier',
+      multiplier: 1.25
+    })).toBe(true);
   });
 
   it('uses symmetric count and pierce modifiers when spawning future shots', () => {
@@ -460,7 +509,46 @@ describe('CombatSystem', () => {
     expect(store.projectileCount()).toBe(0);
   });
 
-  it('expands multi-direction fire patterns without requiring aim direction', () => {
+  it('rotates multi-direction fire patterns around the aim direction', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [FIREBALL_STAFF.id], selectedIndex: 0 }, 0);
+    const input = makeInput({
+      aimWorld: { x: player.position.x, y: player.position.y + 5 },
+      firing: true,
+      loadout: { weapons: [FIREBALL_STAFF.id], selectedIndex: 0 }
+    });
+    const events: RuntimeEvent[] = [];
+
+    combat.tick(input, store, index, 0, ARENA, (event) => events.push(event));
+
+    const projectiles = [...store.projectiles()];
+    if (FIREBALL_STAFF.projectile.motion.kind !== 'linear') {
+      throw new Error('expected fireball linear motion');
+    }
+    const speed = FIREBALL_STAFF.projectile.motion.speed;
+    expect(projectiles).toHaveLength(4);
+    expect(projectiles.map((p) => cleanZero(Math.round(p.velocity.vx)))).toEqual([
+      0,
+      -speed,
+      0,
+      speed
+    ]);
+    expect(projectiles.map((p) => cleanZero(Math.round(p.velocity.vy)))).toEqual([
+      speed,
+      0,
+      -speed,
+      0
+    ]);
+    const fireEvent = events.find((event) => event.kind === 'fire');
+    if (fireEvent?.kind !== 'fire') throw new Error('expected fire event');
+    expect(fireEvent.dirX).toBeCloseTo(0);
+    expect(fireEvent.dirY).toBeCloseTo(1);
+  });
+
+  it('skips multi-direction fire patterns without an aim direction', () => {
     const store = createEntityStore();
     const index = createSpatialIndex();
     const combat = createCombatSystem();
@@ -471,27 +559,12 @@ describe('CombatSystem', () => {
       firing: true,
       loadout: { weapons: [FIREBALL_STAFF.id], selectedIndex: 0 }
     });
+    const events: RuntimeEvent[] = [];
 
-    combat.tick(input, store, index, 0, ARENA, () => {});
+    combat.tick(input, store, index, 0, ARENA, (event) => events.push(event));
 
-    const projectiles = [...store.projectiles()];
-    if (FIREBALL_STAFF.projectile.motion.kind !== 'linear') {
-      throw new Error('expected fireball linear motion');
-    }
-    const speed = Math.round(FIREBALL_STAFF.projectile.motion.speed);
-    expect(projectiles).toHaveLength(4);
-    expect(projectiles.map((p) => cleanZero(Math.round(p.velocity.vx)))).toEqual([
-      speed,
-      0,
-      -speed,
-      0
-    ]);
-    expect(projectiles.map((p) => cleanZero(Math.round(p.velocity.vy)))).toEqual([
-      0,
-      speed,
-      0,
-      -speed
-    ]);
+    expect(store.projectileCount()).toBe(0);
+    expect(events.filter((event) => event.kind === 'fire')).toHaveLength(0);
   });
 
   it('moves arc projectiles to their landing point, grounds them, then expires them', () => {
@@ -689,7 +762,9 @@ describe('CombatSystem', () => {
             weaponArchetypeId: PISTOL.id,
             count: 3,
             spreadRadians: Math.PI * 2
-          }
+          },
+          fieldEffect: null,
+          effects: []
         }
       }
     };
@@ -721,6 +796,121 @@ describe('CombatSystem', () => {
     expect(fragments.every((p) => p.weaponArchetypeId === PISTOL.id)).toBe(true);
     expect(fragments.every((p) => p.ownerId === player.id)).toBe(true);
     expect(fragments.every((p) => p.ownerKind === 'player')).toBe(true);
+  });
+
+  it('detonates armed proximity mines before their timer when a valid target enters range', () => {
+    const proximityBomb: WeaponArchetype = {
+      ...BOMB_PLACER,
+      id: 'test-proximity-bomb',
+      projectile: {
+        ...BOMB_PLACER.projectile,
+        detonationTrigger: { kind: 'timerOrProximity', radius: 2, armDelayMs: 100 },
+        explosion: {
+          ...BOMB_PLACER.projectile.explosion!,
+          delayMs: 10_000,
+          damage: 2,
+          fieldEffect: null,
+          effects: []
+        }
+      }
+    };
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem({ [proximityBomb.id]: proximityBomb });
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 1, y: 0 }));
+    combat.setPlayerLoadout(player.id, { weapons: [proximityBomb.id], selectedIndex: 0 }, 0);
+
+    combat.tick(
+      makeInput({
+        aimWorld: { x: 1, y: 0 },
+        firing: true,
+        loadout: { weapons: [proximityBomb.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      () => {}
+    );
+    expect(store.projectileCount()).toBe(1);
+
+    const beforeArm = combat.tick(makeInput(), store, index, 99, ARENA, () => {});
+    expect(beforeArm).toHaveLength(0);
+    expect(store.projectileCount()).toBe(1);
+
+    const afterArm = combat.tick(makeInput(), store, index, 100, ARENA, () => {});
+    expect(afterArm).toHaveLength(1);
+    expect(afterArm[0]?.targetId).toBe(enemy.id);
+    expect(store.projectileCount()).toBe(0);
+  });
+
+  it('spawns explosion field effects and queues explosion status applications', () => {
+    const hazardBomb: WeaponArchetype = {
+      ...BOMB_PLACER,
+      id: 'test-hazard-bomb',
+      projectile: {
+        ...BOMB_PLACER.projectile,
+        detonationTrigger: { kind: 'timer' },
+        explosion: {
+          delayMs: 0,
+          radius: 2,
+          damage: 0,
+          knockbackImpulse: 0,
+          fragments: null,
+          fieldEffect: {
+            archetypeId: 'test-fire-field',
+            radius: 1.5,
+            durationMs: 500,
+            applyEveryMs: 100,
+            effects: [{ kind: 'damage', amount: 1 }]
+          },
+          effects: [
+            {
+              kind: 'status',
+              status: { kind: 'slow', speedMultiplier: 0.5, durationMs: 300 }
+            }
+          ]
+        }
+      }
+    };
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem({ [hazardBomb.id]: hazardBomb });
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 1, y: 0 }));
+    combat.setPlayerLoadout(player.id, { weapons: [hazardBomb.id], selectedIndex: 0 }, 0);
+
+    const damageIntents = combat.tick(
+      makeInput({
+        aimWorld: { x: 1, y: 0 },
+        firing: true,
+        loadout: { weapons: [hazardBomb.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      () => {}
+    );
+    const actorEffectIntents = combat.drainActorEffectIntents();
+
+    expect(damageIntents).toHaveLength(0);
+    expect(store.fieldEffectCount()).toBe(1);
+    const fieldEffect = [...store.fieldEffects()][0]!;
+    expect(fieldEffect.archetypeId).toBe('test-fire-field');
+    expect(fieldEffect.ownerId).toBe(player.id);
+    expect(fieldEffect.expireAtSimMs).toBe(500);
+    expect(actorEffectIntents).toHaveLength(1);
+    expect(actorEffectIntents[0]).toEqual({
+      targetId: enemy.id,
+      source: {
+        kind: 'explosion',
+        projectileId: expect.any(Number),
+        weaponArchetypeId: hazardBomb.id
+      },
+      application: hazardBomb.projectile.explosion!.effects[0]
+    });
   });
 
   it('produces a damage intent and hit event when projectile reaches an enemy', () => {

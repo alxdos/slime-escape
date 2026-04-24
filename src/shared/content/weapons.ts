@@ -1,5 +1,7 @@
 import {
   BOMB_PLACER,
+  DEMO_HAZARD_GRENADE,
+  DEMO_PROXIMITY_MINE,
   FIREBALL_STAFF,
   GRENADE_LAUNCHER,
   LASER,
@@ -26,12 +28,36 @@ export type FragmentSpec = Readonly<{
   spreadRadians: number;
 }>;
 
+export type DetonationTrigger =
+  | Readonly<{ kind: 'timer' }>
+  | Readonly<{ kind: 'proximity'; radius: number; armDelayMs: number }>
+  | Readonly<{ kind: 'timerOrProximity'; radius: number; armDelayMs: number }>;
+
+export type StatusEffectSpec =
+  | Readonly<{ kind: 'burn'; damagePerTick: number; tickEveryMs: number; durationMs: number }>
+  | Readonly<{ kind: 'slow'; speedMultiplier: number; durationMs: number }>
+  | Readonly<{ kind: 'poison'; damagePerTick: number; tickEveryMs: number; durationMs: number }>;
+
+export type ActorEffectApplication =
+  | Readonly<{ kind: 'damage'; amount: number }>
+  | Readonly<{ kind: 'status'; status: StatusEffectSpec }>;
+
+export type FieldEffectSpec = Readonly<{
+  archetypeId: string;
+  radius: number;
+  durationMs: number;
+  applyEveryMs: number;
+  effects: ReadonlyArray<ActorEffectApplication>;
+}>;
+
 export type ExplosionSpec = Readonly<{
   delayMs: number;
   radius: number;
   damage: number;
   knockbackImpulse: number;
   fragments: FragmentSpec | null;
+  fieldEffect: FieldEffectSpec | null;
+  effects: ReadonlyArray<ActorEffectApplication>;
 }>;
 
 export type ProjectileVisualSpec = Readonly<{
@@ -51,6 +77,7 @@ export type ProjectileArchetype = Readonly<{
   ttlMs: number;
   groundOnImpact: boolean;
   groundedLifetimeMs: number | null;
+  detonationTrigger: DetonationTrigger | null;
   explosion: ExplosionSpec | null;
   visual: ProjectileVisualSpec;
 }>;
@@ -77,6 +104,8 @@ export type WeaponArchetype = Readonly<{
 
 export {
   BOMB_PLACER,
+  DEMO_HAZARD_GRENADE,
+  DEMO_PROXIMITY_MINE,
   FIREBALL_STAFF,
   GRENADE_LAUNCHER,
   LASER,
@@ -96,5 +125,7 @@ export const WEAPON_ARCHETYPES: Readonly<Record<string, WeaponArchetype>> = {
   [ROCK_THROWER.id]: ROCK_THROWER,
   [GRENADE_LAUNCHER.id]: GRENADE_LAUNCHER,
   [BOMB_PLACER.id]: BOMB_PLACER,
-  [FIREBALL_STAFF.id]: FIREBALL_STAFF
+  [FIREBALL_STAFF.id]: FIREBALL_STAFF,
+  [DEMO_HAZARD_GRENADE.id]: DEMO_HAZARD_GRENADE,
+  [DEMO_PROXIMITY_MINE.id]: DEMO_PROXIMITY_MINE
 };

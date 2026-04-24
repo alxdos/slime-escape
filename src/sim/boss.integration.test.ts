@@ -77,7 +77,10 @@ function bossOnlySession(seed: number): SessionDefinition {
     loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
     backgrounds: [],
     modifiers: [],
-    rules: { damage: { slimeFriendlyFire: false } },
+    rules: {
+      damage: { slimeFriendlyFire: false },
+      aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 }
+    },
     encounters: [BOSS_ENCOUNTER],
     winCondition: { kind: 'bossDefeated' },
     lossCondition: { kind: 'playerDeath' },

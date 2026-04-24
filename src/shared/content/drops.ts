@@ -1,6 +1,7 @@
 import {
   FRAGMENT,
   HEAL_ORB,
+  MAGNET,
   MULTI_SHOT,
   OVERDRIVE,
   PIERCE,
@@ -10,7 +11,11 @@ import {
 
 import type { WeaponModifier } from './weapons';
 
-export type PickupModifier = never;
+export type PickupModifier = Readonly<{
+  kind: 'dropMagnet';
+  pickupRadiusMultiplier: number;
+  attractSpeed: number;
+}>;
 
 export type DropEffect =
   | Readonly<{ kind: 'heal'; amount: number }>
@@ -32,7 +37,7 @@ export type DropArchetype = Readonly<{
   color: number;
 }>;
 
-export { FRAGMENT, HEAL_ORB, MULTI_SHOT, OVERDRIVE, PIERCE, SIZE_UP, SPEED_UP };
+export { FRAGMENT, HEAL_ORB, MAGNET, MULTI_SHOT, OVERDRIVE, PIERCE, SIZE_UP, SPEED_UP };
 
 export const DROP_ARCHETYPES: Readonly<Record<string, DropArchetype>> = {
   [HEAL_ORB.id]: HEAL_ORB,
@@ -41,5 +46,6 @@ export const DROP_ARCHETYPES: Readonly<Record<string, DropArchetype>> = {
   [MULTI_SHOT.id]: MULTI_SHOT,
   [PIERCE.id]: PIERCE,
   [FRAGMENT.id]: FRAGMENT,
-  [OVERDRIVE.id]: OVERDRIVE
+  [OVERDRIVE.id]: OVERDRIVE,
+  [MAGNET.id]: MAGNET
 };

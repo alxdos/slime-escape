@@ -117,6 +117,69 @@
 | displayName | Bug Slime |
 | color | #8ee03a |
 
+## demo-carrier-slime
+
+![Demo Carrier Slime](../public/assets/slime-25.png)
+
+| field | value |
+|---|---|
+| displayName | Demo Carrier Slime |
+| color | #5ee6ff |
+
+## demo-retaliator-slime
+
+![Demo Retaliator Slime](../public/assets/slime-23.png)
+
+| field | value |
+|---|---|
+| displayName | Demo Retaliator Slime |
+| color | #ff6b35 |
+
+## campaign-set-1-carrier-slime
+
+![Set 1 Carrier Slime](../public/assets/slime-06.png)
+
+| field | value |
+|---|---|
+| displayName | Set 1 Carrier Slime |
+| color | #ffd166 |
+
+## campaign-set-2-carrier-slime
+
+![Set 2 Carrier Slime](../public/assets/slime-15.png)
+
+| field | value |
+|---|---|
+| displayName | Set 2 Carrier Slime |
+| color | #ffd166 |
+
+## campaign-set-3-carrier-slime
+
+![Set 3 Carrier Slime](../public/assets/slime-26.png)
+
+| field | value |
+|---|---|
+| displayName | Set 3 Carrier Slime |
+| color | #5ee6ff |
+
+## campaign-set-4-carrier-slime
+
+![Set 4 Carrier Slime](../public/assets/slime-32.png)
+
+| field | value |
+|---|---|
+| displayName | Set 4 Carrier Slime |
+| color | #ffd166 |
+
+## campaign-set-5-carrier-slime
+
+![Set 5 Carrier Slime](../public/assets/slime-45.png)
+
+| field | value |
+|---|---|
+| displayName | Set 5 Carrier Slime |
+| color | #ffd166 |
+
 ## slime-lifter
 
 ![Lifter Slime](../public/assets/slime-22.png)
@@ -276,36 +339,43 @@
 
 | id | radius | maxHp | behavior |
 |---|---:|---:|---|
-| slime-one-eye | 0.40 | 1 | chase |
-| slime-hornling | 0.50 | 2 | chase |
-| slime-many-eye | 0.60 | 3 | chase |
-| slime-stonehead | 0.72 | 6 | chase |
-| slime-sleeper | 0.45 | 2 | chase |
-| slime-spark | 0.35 | 1 | chase |
-| slime-wraith | 0.48 | 2 | chase |
-| slime-shell | 0.65 | 5 | chase |
-| slime-flame | 0.44 | 2 | chase |
-| slime-mech-crab | 0.62 | 4 | chase |
-| slime-stack | 0.58 | 3 | chase |
-| slime-trickster | 0.52 | 3 | chase |
-| slime-bug | 0.48 | 2 | chase |
-| slime-lifter | 0.70 | 6 | chase |
-| slime-saw | 0.55 | 3 | chase |
-| slime-drone | 0.42 | 1 | chase |
-| slime-star | 0.38 | 1 | chase |
-| slime-echo | 0.36 | 1 | chase |
-| slime-splitter | 0.56 | 3 | chase |
-| slime-prince | 0.66 | 4 | chase |
-| slime-kingling | 0.74 | 7 | chase |
-| slime-fortress | 0.80 | 8 | chase |
-| slime-dasher | 0.46 | 2 | chase |
-| slime-tadpole | 0.34 | 1 | chase |
-| slime-door | 0.76 | 7 | chase |
-| slime-mech | 0.70 | 6 | chase |
-| slime-clamper | 0.52 | 3 | chase |
-| slime-candle | 0.46 | 2 | chase |
-| slime-obelisk | 0.50 | 4 | chase |
-| slime-ninja | 0.54 | 4 | chase |
+| slime-one-eye | 0.40 | 2 | chase |
+| slime-hornling | 0.50 | 3 | chase |
+| slime-many-eye | 0.60 | 4 | chase |
+| slime-stonehead | 0.72 | 7 | chase |
+| slime-sleeper | 0.45 | 3 | chase |
+| slime-spark | 0.35 | 2 | chase |
+| slime-wraith | 0.48 | 3 | chase |
+| slime-shell | 0.65 | 6 | chase |
+| slime-flame | 0.44 | 3 | chase |
+| slime-mech-crab | 0.62 | 5 | chase |
+| slime-stack | 0.58 | 4 | chase |
+| slime-trickster | 0.52 | 4 | chase |
+| slime-bug | 0.48 | 3 | chase |
+| demo-carrier-slime | 0.50 | 2 | chase |
+| demo-retaliator-slime | 0.52 | 3 | chase |
+| campaign-set-1-carrier-slime | 0.42 | 3 | chase |
+| campaign-set-2-carrier-slime | 0.58 | 4 | chase |
+| campaign-set-3-carrier-slime | 0.42 | 3 | chase |
+| campaign-set-4-carrier-slime | 0.62 | 5 | chase |
+| campaign-set-5-carrier-slime | 0.50 | 5 | chase |
+| slime-lifter | 0.70 | 7 | chase |
+| slime-saw | 0.55 | 4 | chase |
+| slime-drone | 0.42 | 2 | chase |
+| slime-star | 0.38 | 2 | chase |
+| slime-echo | 0.36 | 2 | chase |
+| slime-splitter | 0.56 | 4 | chase |
+| slime-prince | 0.66 | 5 | chase |
+| slime-kingling | 0.74 | 8 | chase |
+| slime-fortress | 0.80 | 9 | chase |
+| slime-dasher | 0.46 | 3 | chase |
+| slime-tadpole | 0.34 | 2 | chase |
+| slime-door | 0.76 | 8 | chase |
+| slime-mech | 0.70 | 7 | chase |
+| slime-clamper | 0.52 | 4 | chase |
+| slime-candle | 0.46 | 3 | chase |
+| slime-obelisk | 0.50 | 5 | chase |
+| slime-ninja | 0.54 | 5 | chase |
 
 ## Movement
 
@@ -324,6 +394,13 @@
 | slime-stack | 2.2 |
 | slime-trickster | 2.5 |
 | slime-bug | 2.6 |
+| demo-carrier-slime | 2.4 |
+| demo-retaliator-slime | 2.6 |
+| campaign-set-1-carrier-slime | 2.6 |
+| campaign-set-2-carrier-slime | 2.2 |
+| campaign-set-3-carrier-slime | 2.6 |
+| campaign-set-4-carrier-slime | 2.2 |
+| campaign-set-5-carrier-slime | 2.0 |
 | slime-lifter | 1.6 |
 | slime-saw | 2.5 |
 | slime-drone | 2.8 |
@@ -359,6 +436,13 @@
 | slime-stack | 1 | 900 |
 | slime-trickster | 1 | 850 |
 | slime-bug | 1 | 800 |
+| demo-carrier-slime | 1 | 800 |
+| demo-retaliator-slime | 1 | 800 |
+| campaign-set-1-carrier-slime | 1 | 800 |
+| campaign-set-2-carrier-slime | 1 | 900 |
+| campaign-set-3-carrier-slime | 1 | 750 |
+| campaign-set-4-carrier-slime | 2 | 950 |
+| campaign-set-5-carrier-slime | 2 | 1000 |
 | slime-lifter | 3 | 1100 |
 | slime-saw | 2 | 900 |
 | slime-drone | 1 | 750 |
@@ -394,6 +478,13 @@
 | slime-stack | 5 | 1.0 | 280 |
 | slime-trickster | 5 | 1.0 | 280 |
 | slime-bug | 5 | 1.0 | 280 |
+| demo-carrier-slime | 5 | 1.0 | 280 |
+| demo-retaliator-slime | 5 | 1.0 | 280 |
+| campaign-set-1-carrier-slime | 8 | 1.5 | 350 |
+| campaign-set-2-carrier-slime | 5 | 1.0 | 280 |
+| campaign-set-3-carrier-slime | 8 | 1.5 | 350 |
+| campaign-set-4-carrier-slime | 5 | 1.0 | 280 |
+| campaign-set-5-carrier-slime | 5 | 1.0 | 280 |
 | slime-lifter | 3 | 0.5 | 220 |
 | slime-saw | 5 | 1.0 | 280 |
 | slime-drone | 8 | 1.5 | 350 |
@@ -416,36 +507,159 @@
 
 | id | dropArchetypeId | chance |
 |---|---|---:|
-| slime-one-eye | heal-orb | 0.25 |
-| slime-hornling | heal-orb | 0.30 |
-| slime-many-eye | heal-orb | 0.35 |
-| slime-stonehead | heal-orb | 0.60 |
-| slime-sleeper | heal-orb | 0.20 |
-| slime-spark | heal-orb | 0.18 |
-| slime-wraith | heal-orb | 0.25 |
-| slime-shell | heal-orb | 0.55 |
-| slime-flame | heal-orb | 0.30 |
-| slime-mech-crab | heal-orb | 0.45 |
-| slime-stack | heal-orb | 0.35 |
-| slime-trickster | heal-orb | 0.30 |
-| slime-bug | heal-orb | 0.25 |
-| slime-lifter | heal-orb | 0.60 |
-| slime-saw | heal-orb | 0.40 |
-| slime-drone | heal-orb | 0.20 |
-| slime-star | heal-orb | 0.18 |
-| slime-echo | heal-orb | 0.15 |
-| slime-splitter | heal-orb | 0.35 |
-| slime-prince | heal-orb | 0.45 |
-| slime-kingling | heal-orb | 0.65 |
-| slime-fortress | heal-orb | 0.70 |
-| slime-dasher | heal-orb | 0.25 |
-| slime-tadpole | heal-orb | 0.15 |
-| slime-door | heal-orb | 0.65 |
-| slime-mech | heal-orb | 0.55 |
-| slime-clamper | heal-orb | 0.35 |
-| slime-candle | heal-orb | 0.25 |
-| slime-obelisk | heal-orb | 0.40 |
-| slime-ninja | heal-orb | 0.35 |
+| slime-one-eye | heal-orb | 0.18 |
+| slime-one-eye | speed-up | 0.05 |
+| slime-hornling | heal-orb | 0.20 |
+| slime-hornling | size-up | 0.099 |
+| slime-many-eye | multi-shot | 0.127 |
+| slime-many-eye | pierce | 0.057 |
+| slime-stonehead | heal-orb | 0.30 |
+| slime-stonehead | size-up | 0.127 |
+| slime-stonehead | fragment | 0.057 |
+| slime-sleeper | heal-orb | 0.16 |
+| slime-sleeper | magnet | 0.071 |
+| slime-spark | speed-up | 0.155 |
+| slime-spark | magnet | 0.085 |
+| slime-spark | overdrive | 0.057 |
+| slime-wraith | speed-up | 0.127 |
+| slime-wraith | pierce | 0.113 |
+| slime-shell | heal-orb | 0.32 |
+| slime-shell | pierce | 0.141 |
+| slime-flame | overdrive | 0.141 |
+| slime-flame | fragment | 0.113 |
+| slime-mech-crab | fragment | 0.169 |
+| slime-mech-crab | pierce | 0.141 |
+| slime-stack | multi-shot | 0.183 |
+| slime-stack | heal-orb | 0.14 |
+| slime-trickster | multi-shot | 0.141 |
+| slime-trickster | speed-up | 0.113 |
+| slime-bug | heal-orb | 0.18 |
+| slime-bug | magnet | 0.099 |
+| demo-carrier-slime | heal-orb | 0 |
+| demo-retaliator-slime | heal-orb | 0.20 |
+| campaign-set-1-carrier-slime | heal-orb | 0 |
+| campaign-set-2-carrier-slime | heal-orb | 0 |
+| campaign-set-3-carrier-slime | heal-orb | 0 |
+| campaign-set-4-carrier-slime | heal-orb | 0 |
+| campaign-set-5-carrier-slime | heal-orb | 0 |
+| slime-lifter | heal-orb | 0.34 |
+| slime-lifter | magnet | 0.141 |
+| slime-saw | fragment | 0.169 |
+| slime-saw | speed-up | 0.113 |
+| slime-drone | speed-up | 0.183 |
+| slime-drone | pierce | 0.099 |
+| slime-star | speed-up | 0.155 |
+| slime-star | multi-shot | 0.113 |
+| slime-echo | magnet | 0.127 |
+| slime-echo | speed-up | 0.099 |
+| slime-splitter | multi-shot | 0.183 |
+| slime-splitter | fragment | 0.113 |
+| slime-prince | overdrive | 0.155 |
+| slime-prince | multi-shot | 0.127 |
+| slime-kingling | heal-orb | 0.32 |
+| slime-kingling | overdrive | 0.155 |
+| slime-fortress | heal-orb | 0.40 |
+| slime-fortress | size-up | 0.141 |
+| slime-dasher | speed-up | 0.155 |
+| slime-dasher | overdrive | 0.113 |
+| slime-tadpole | speed-up | 0.127 |
+| slime-tadpole | magnet | 0.099 |
+| slime-door | heal-orb | 0.34 |
+| slime-door | pierce | 0.127 |
+| slime-mech | fragment | 0.197 |
+| slime-mech | pierce | 0.141 |
+| slime-clamper | pierce | 0.155 |
+| slime-clamper | magnet | 0.113 |
+| slime-candle | overdrive | 0.155 |
+| slime-candle | speed-up | 0.099 |
+| slime-obelisk | fragment | 0.183 |
+| slime-obelisk | overdrive | 0.127 |
+| slime-ninja | overdrive | 0.155 |
+| slime-ninja | pierce | 0.127 |
+
+## Carrier Drops
+
+| id | guaranteedDropArchetypeIds |
+|---|---|
+| slime-one-eye | none |
+| slime-hornling | none |
+| slime-many-eye | none |
+| slime-stonehead | none |
+| slime-sleeper | none |
+| slime-spark | none |
+| slime-wraith | none |
+| slime-shell | none |
+| slime-flame | none |
+| slime-mech-crab | none |
+| slime-stack | none |
+| slime-trickster | none |
+| slime-bug | none |
+| demo-carrier-slime | magnet, heal-orb |
+| demo-retaliator-slime | none |
+| campaign-set-1-carrier-slime | size-up |
+| campaign-set-2-carrier-slime | multi-shot |
+| campaign-set-3-carrier-slime | magnet |
+| campaign-set-4-carrier-slime | fragment |
+| campaign-set-5-carrier-slime | overdrive |
+| slime-lifter | none |
+| slime-saw | none |
+| slime-drone | none |
+| slime-star | none |
+| slime-echo | none |
+| slime-splitter | none |
+| slime-prince | none |
+| slime-kingling | none |
+| slime-fortress | none |
+| slime-dasher | none |
+| slime-tadpole | none |
+| slime-door | none |
+| slime-mech | none |
+| slime-clamper | none |
+| slime-candle | none |
+| slime-obelisk | none |
+| slime-ninja | none |
+
+## Retaliation
+
+| id | enabled | durationMs |
+|---|---|---:|
+| slime-one-eye | false | 0 |
+| slime-hornling | false | 0 |
+| slime-many-eye | false | 0 |
+| slime-stonehead | false | 0 |
+| slime-sleeper | false | 0 |
+| slime-spark | false | 0 |
+| slime-wraith | false | 0 |
+| slime-shell | false | 0 |
+| slime-flame | false | 0 |
+| slime-mech-crab | false | 0 |
+| slime-stack | false | 0 |
+| slime-trickster | false | 0 |
+| slime-bug | false | 0 |
+| demo-carrier-slime | false | 0 |
+| demo-retaliator-slime | true | 2500 |
+| campaign-set-1-carrier-slime | false | 0 |
+| campaign-set-2-carrier-slime | false | 0 |
+| campaign-set-3-carrier-slime | false | 0 |
+| campaign-set-4-carrier-slime | false | 0 |
+| campaign-set-5-carrier-slime | false | 0 |
+| slime-lifter | false | 0 |
+| slime-saw | false | 0 |
+| slime-drone | false | 0 |
+| slime-star | false | 0 |
+| slime-echo | false | 0 |
+| slime-splitter | false | 0 |
+| slime-prince | false | 0 |
+| slime-kingling | false | 0 |
+| slime-fortress | false | 0 |
+| slime-dasher | false | 0 |
+| slime-tadpole | false | 0 |
+| slime-door | false | 0 |
+| slime-mech | false | 0 |
+| slime-clamper | false | 0 |
+| slime-candle | false | 0 |
+| slime-obelisk | false | 0 |
+| slime-ninja | false | 0 |
 
 # Sound sets
 
@@ -453,7 +667,7 @@
 
 | setId | slimes |
 |---|---|
-| default | slime-one-eye, slime-hornling, slime-many-eye, slime-stonehead, slime-sleeper, slime-spark, slime-wraith, slime-shell, slime-flame, slime-mech-crab, slime-stack, slime-trickster, slime-bug, slime-lifter, slime-saw, slime-drone, slime-star, slime-echo, slime-splitter, slime-prince, slime-kingling, slime-fortress, slime-dasher, slime-tadpole, slime-door, slime-mech, slime-clamper, slime-candle, slime-obelisk, slime-ninja |
+| default | slime-one-eye, slime-hornling, slime-many-eye, slime-stonehead, slime-sleeper, slime-spark, slime-wraith, slime-shell, slime-flame, slime-mech-crab, slime-stack, slime-trickster, slime-bug, demo-carrier-slime, demo-retaliator-slime, campaign-set-1-carrier-slime, campaign-set-2-carrier-slime, campaign-set-3-carrier-slime, campaign-set-4-carrier-slime, campaign-set-5-carrier-slime, slime-lifter, slime-saw, slime-drone, slime-star, slime-echo, slime-splitter, slime-prince, slime-kingling, slime-fortress, slime-dasher, slime-tadpole, slime-door, slime-mech, slime-clamper, slime-candle, slime-obelisk, slime-ninja |
 
 ## Hit
 

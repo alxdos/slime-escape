@@ -1,9 +1,13 @@
 import type {
+  ActorEffectApplication,
+  DetonationTrigger,
   ExplosionSpec,
+  FieldEffectSpec,
   FirePattern,
   FragmentSpec,
   ProjectileArchetype,
   ProjectileMotion,
+  StatusEffectSpec,
   ProjectileVisualSpec
 } from '../../../src/shared/content/weapons';
 
@@ -70,9 +74,12 @@ function parseWeaponsDocument(document: MarkdownDocument): ParsedWeaponsArea {
   const firePatternSection = requireSection(balanceSection, 'Fire Pattern');
   const motionSection = requireSection(balanceSection, 'Projectile Motion');
   const lifecycleSection = requireSection(balanceSection, 'Projectile Lifecycle');
+  const detonationTriggerSection = requireSection(balanceSection, 'Detonation Trigger');
   const impactSection = requireSection(balanceSection, 'Projectile Impact');
   const explosionSection = requireSection(balanceSection, 'Explosion');
   const fragmentSection = requireSection(balanceSection, 'Explosion Fragments');
+  const explosionFieldSection = requireSection(balanceSection, 'Explosion Field Effect');
+  const explosionStatusSection = requireSection(balanceSection, 'Explosion Status');
   const visualSection = requireSection(balanceSection, 'Projectile Visual');
   assertNoForbiddenSoundGroup(balanceSection);
 
@@ -80,9 +87,12 @@ function parseWeaponsDocument(document: MarkdownDocument): ParsedWeaponsArea {
   const firePatternTable = requireSingleTable(firePatternSection);
   const motionTable = requireSingleTable(motionSection);
   const lifecycleTable = requireSingleTable(lifecycleSection);
+  const detonationTriggerTable = requireSingleTable(detonationTriggerSection);
   const impactTable = requireSingleTable(impactSection);
   const explosionTable = requireSingleTable(explosionSection);
   const fragmentTable = requireSingleTable(fragmentSection);
+  const explosionFieldTable = requireSingleTable(explosionFieldSection);
+  const explosionStatusTable = requireSingleTable(explosionStatusSection);
   const visualTable = requireSingleTable(visualSection);
 
   for (const [section, table] of [
@@ -90,9 +100,12 @@ function parseWeaponsDocument(document: MarkdownDocument): ParsedWeaponsArea {
     [firePatternSection, firePatternTable],
     [motionSection, motionTable],
     [lifecycleSection, lifecycleTable],
+    [detonationTriggerSection, detonationTriggerTable],
     [impactSection, impactTable],
     [explosionSection, explosionTable],
     [fragmentSection, fragmentTable],
+    [explosionFieldSection, explosionFieldTable],
+    [explosionStatusSection, explosionStatusTable],
     [visualSection, visualTable]
   ] as const) {
     assertNoForbiddenSpriteColumns(section, table);
@@ -111,12 +124,18 @@ function parseWeaponsDocument(document: MarkdownDocument): ParsedWeaponsArea {
         motionTable,
         lifecycleSection,
         lifecycleTable,
+        detonationTriggerSection,
+        detonationTriggerTable,
         impactSection,
         impactTable,
         explosionSection,
         explosionTable,
         fragmentSection,
         fragmentTable,
+        explosionFieldSection,
+        explosionFieldTable,
+        explosionStatusSection,
+        explosionStatusTable,
         visualSection,
         visualTable,
         knownWeaponIds
@@ -204,12 +223,18 @@ function parseWeapon(
     motionTable: MarkdownTable;
     lifecycleSection: MarkdownSection;
     lifecycleTable: MarkdownTable;
+    detonationTriggerSection: MarkdownSection;
+    detonationTriggerTable: MarkdownTable;
     impactSection: MarkdownSection;
     impactTable: MarkdownTable;
     explosionSection: MarkdownSection;
     explosionTable: MarkdownTable;
     fragmentSection: MarkdownSection;
     fragmentTable: MarkdownTable;
+    explosionFieldSection: MarkdownSection;
+    explosionFieldTable: MarkdownTable;
+    explosionStatusSection: MarkdownSection;
+    explosionStatusTable: MarkdownTable;
     visualSection: MarkdownSection;
     visualTable: MarkdownTable;
     knownWeaponIds: ReadonlySet<string>;
@@ -219,9 +244,12 @@ function parseWeapon(
   const firePatternRow = requireRow(tables.firePatternSection, tables.firePatternTable, definition.id);
   const motionRow = requireRow(tables.motionSection, tables.motionTable, definition.id);
   const lifecycleRow = requireRow(tables.lifecycleSection, tables.lifecycleTable, definition.id);
+  const detonationTriggerRow = requireRow(tables.detonationTriggerSection, tables.detonationTriggerTable, definition.id);
   const impactRow = requireRow(tables.impactSection, tables.impactTable, definition.id);
   const explosionRow = requireRow(tables.explosionSection, tables.explosionTable, definition.id);
   const fragmentRow = requireRow(tables.fragmentSection, tables.fragmentTable, definition.id);
+  const explosionFieldRow = requireRow(tables.explosionFieldSection, tables.explosionFieldTable, definition.id);
+  const explosionStatusRow = requireRow(tables.explosionStatusSection, tables.explosionStatusTable, definition.id);
   const visualRow = requireRow(tables.visualSection, tables.visualTable, definition.id);
 
   const cooldownMs = requireNumber(tables.cooldownSection, tables.cooldownTable, cooldownRow, 'cooldownMs');
@@ -235,7 +263,20 @@ function parseWeapon(
     fragmentRow,
     tables.knownWeaponIds
   );
-  const explosion = parseExplosion(tables.explosionSection, tables.explosionTable, explosionRow, fragment);
+  const fieldEffect = parseFieldEffect(tables.explosionFieldSection, tables.explosionFieldTable, explosionFieldRow);
+  const explosionEffects = parseExplosionEffects(
+    tables.explosionStatusSection,
+    tables.explosionStatusTable,
+    explosionStatusRow
+  );
+  const explosion = parseExplosion(
+    tables.explosionSection,
+    tables.explosionTable,
+    explosionRow,
+    fragment,
+    fieldEffect,
+    explosionEffects
+  );
   if (explosion === null && fragment !== null) {
     throw cellError(
       tables.fragmentSection,
@@ -243,6 +284,38 @@ function parseWeapon(
       definition.id,
       'fragmentWeaponId',
       'fragment requires a non-none explosion'
+    );
+  }
+  if (explosion === null && fieldEffect !== null) {
+    throw cellError(
+      tables.explosionFieldSection,
+      explosionFieldRow.position,
+      definition.id,
+      'fieldArchetypeId',
+      'field effect requires a non-none explosion'
+    );
+  }
+  if (explosion === null && explosionEffects.length > 0) {
+    throw cellError(
+      tables.explosionStatusSection,
+      explosionStatusRow.position,
+      definition.id,
+      'statusKind',
+      'status application requires a non-none explosion'
+    );
+  }
+  const detonationTrigger = parseDetonationTrigger(
+    tables.detonationTriggerSection,
+    tables.detonationTriggerTable,
+    detonationTriggerRow
+  );
+  if (explosion === null && detonationTrigger !== null) {
+    throw cellError(
+      tables.detonationTriggerSection,
+      detonationTriggerRow.position,
+      definition.id,
+      'kind',
+      'detonation trigger requires a non-none explosion'
     );
   }
 
@@ -267,6 +340,7 @@ function parseWeapon(
         lifecycleRow,
         'groundedLifetimeMs'
       ),
+      detonationTrigger,
       explosion,
       visual: parseProjectileVisual(tables.visualSection, tables.visualTable, visualRow)
     },
@@ -326,7 +400,9 @@ function parseExplosion(
   section: MarkdownSection,
   table: MarkdownTable,
   row: MarkdownTableRow,
-  fragments: FragmentSpec | null
+  fragments: FragmentSpec | null,
+  fieldEffect: FieldEffectSpec | null,
+  effects: ReadonlyArray<ActorEffectApplication>
 ): ExplosionSpec | null {
   const delayMs = parseNullablePositiveNumber(section, table, row, 'delayMs');
   if (delayMs === null) {
@@ -337,8 +413,106 @@ function parseExplosion(
     radius: parseNonNegativeNumber(section, table, row, 'radius'),
     damage: parseNonNegativeNumber(section, table, row, 'damage'),
     knockbackImpulse: parseNonNegativeNumber(section, table, row, 'knockbackImpulse'),
-    fragments
+    fragments,
+    fieldEffect,
+    effects
   };
+}
+
+function parseDetonationTrigger(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow
+): DetonationTrigger | null {
+  const kind = requireCell(section, table, row, 'kind');
+  switch (kind) {
+    case 'none':
+      return null;
+    case 'timer':
+      return { kind };
+    case 'proximity':
+    case 'timerOrProximity':
+      return {
+        kind,
+        radius: parsePositiveNumber(section, table, row, 'radius'),
+        armDelayMs: parseNonNegativeNumber(section, table, row, 'armDelayMs')
+      };
+    default:
+      throw cellError(section, row.position, getRowId(row), 'kind', 'expected none, timer, proximity or timerOrProximity');
+  }
+}
+
+function parseFieldEffect(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow
+): FieldEffectSpec | null {
+  const archetypeId = requireCell(section, table, row, 'fieldArchetypeId');
+  if (archetypeId === 'none') return null;
+  return {
+    archetypeId,
+    radius: parsePositiveNumber(section, table, row, 'radius'),
+    durationMs: parsePositiveNumber(section, table, row, 'durationMs'),
+    applyEveryMs: parsePositiveNumber(section, table, row, 'applyEveryMs'),
+    effects: parseActorEffects(section, table, row)
+  };
+}
+
+function parseActorEffects(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow
+): ReadonlyArray<ActorEffectApplication> {
+  const effects: ActorEffectApplication[] = [];
+  const damage = parseNullablePositiveNumber(section, table, row, 'damage');
+  if (damage !== null) {
+    effects.push({ kind: 'damage', amount: damage });
+  }
+  const status = parseStatusEffect(section, table, row);
+  if (status !== null) {
+    effects.push({ kind: 'status', status });
+  }
+  if (effects.length === 0) {
+    throw cellError(section, row.position, getRowId(row), 'damage', 'expected damage or status effect');
+  }
+  return effects;
+}
+
+function parseExplosionEffects(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow
+): ReadonlyArray<ActorEffectApplication> {
+  const status = parseStatusEffect(section, table, row);
+  return status === null ? [] : [{ kind: 'status', status }];
+}
+
+function parseStatusEffect(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow
+): StatusEffectSpec | null {
+  const kind = requireCell(section, table, row, 'statusKind');
+  switch (kind) {
+    case 'none':
+      return null;
+    case 'burn':
+    case 'poison':
+      return {
+        kind,
+        damagePerTick: parsePositiveNumber(section, table, row, 'statusValue'),
+        tickEveryMs: parsePositiveNumber(section, table, row, 'tickEveryMs'),
+        durationMs: parsePositiveNumber(section, table, row, 'statusDurationMs')
+      };
+    case 'slow':
+      return {
+        kind,
+        speedMultiplier: parsePositiveNumber(section, table, row, 'statusValue'),
+        durationMs: parsePositiveNumber(section, table, row, 'statusDurationMs')
+      };
+    default:
+      throw cellError(section, row.position, getRowId(row), 'statusKind', 'expected none, burn, slow or poison');
+  }
 }
 
 function parseFragment(

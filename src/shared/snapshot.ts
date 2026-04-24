@@ -7,6 +7,7 @@ export type PlayerSnapshot = Readonly<{
   y: number;
   hp: number;
   maxHp: number;
+  statusEffects?: ReadonlyArray<StatusEffectSnapshot>;
 }>;
 
 export type EnemySnapshot = Readonly<{
@@ -17,6 +18,8 @@ export type EnemySnapshot = Readonly<{
   y: number;
   hp: number;
   maxHp: number;
+  carrierDropMarker?: 'reward' | null;
+  statusEffects?: ReadonlyArray<StatusEffectSnapshot>;
 }>;
 
 export type ProjectileSnapshot = Readonly<{
@@ -24,6 +27,8 @@ export type ProjectileSnapshot = Readonly<{
   kind: 'projectile';
   weaponArchetypeId: string;
   ownerKind: 'player' | 'enemy' | 'boss';
+  originX: number;
+  originY: number;
   x: number;
   y: number;
   state: 'flying' | 'grounded';
@@ -55,6 +60,22 @@ export type BossSnapshot = Readonly<{
   phaseIndex: number;
   phaseId: string;
   activeAttackIds: ReadonlyArray<string>;
+  statusEffects?: ReadonlyArray<StatusEffectSnapshot>;
+}>;
+
+export type StatusEffectSnapshot = Readonly<{
+  kind: 'burn' | 'slow' | 'poison';
+  expiresAtSimMs: number;
+}>;
+
+export type FieldEffectSnapshot = Readonly<{
+  id: number;
+  kind: 'fieldEffect';
+  archetypeId: string;
+  x: number;
+  y: number;
+  radius: number;
+  expiresAtSimMs: number;
 }>;
 
 export type EntitySnapshot =
@@ -62,7 +83,8 @@ export type EntitySnapshot =
   | EnemySnapshot
   | ProjectileSnapshot
   | DropSnapshot
-  | BossSnapshot;
+  | BossSnapshot
+  | FieldEffectSnapshot;
 
 export type EntityKind = EntitySnapshot['kind'];
 

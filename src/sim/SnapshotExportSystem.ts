@@ -43,7 +43,11 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           x: player.position.x,
           y: player.position.y,
           hp: player.hp,
-          maxHp: player.maxHp
+          maxHp: player.maxHp,
+          statusEffects: player.statusEffects.map((effect) => ({
+            kind: effect.kind,
+            expiresAtSimMs: effect.expireAtSimMs
+          }))
         });
       }
       for (const enemy of store.enemies()) {
@@ -54,7 +58,12 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           x: enemy.position.x,
           y: enemy.position.y,
           hp: enemy.hp,
-          maxHp: enemy.maxHp
+          maxHp: enemy.maxHp,
+          carrierDropMarker: enemy.carrierDropMarker,
+          statusEffects: enemy.statusEffects.map((effect) => ({
+            kind: effect.kind,
+            expiresAtSimMs: effect.expireAtSimMs
+          }))
         });
       }
       for (const projectile of store.projectiles()) {
@@ -63,6 +72,8 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           kind: 'projectile',
           weaponArchetypeId: projectile.weaponArchetypeId,
           ownerKind: projectile.ownerKind,
+          originX: projectile.origin.x,
+          originY: projectile.origin.y,
           x: projectile.position.x,
           y: projectile.position.y,
           state: projectile.state,
@@ -80,6 +91,17 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           y: drop.position.y
         });
       }
+      for (const fieldEffect of store.fieldEffects()) {
+        entities.push({
+          id: fieldEffect.id,
+          kind: 'fieldEffect',
+          archetypeId: fieldEffect.archetypeId,
+          x: fieldEffect.position.x,
+          y: fieldEffect.position.y,
+          radius: fieldEffect.radius,
+          expiresAtSimMs: fieldEffect.expireAtSimMs
+        });
+      }
       let bossHud: BossHudSnapshot | null = null;
       for (const boss of store.bosses()) {
         entities.push({
@@ -92,7 +114,11 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           maxHp: boss.maxHp,
           phaseIndex: boss.phaseIndex,
           phaseId: boss.phaseId,
-          activeAttackIds: boss.activeAttackIds
+          activeAttackIds: boss.activeAttackIds,
+          statusEffects: boss.statusEffects.map((effect) => ({
+            kind: effect.kind,
+            expiresAtSimMs: effect.expireAtSimMs
+          }))
         });
         if (bossHud === null) {
           bossHud = {

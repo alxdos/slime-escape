@@ -12,6 +12,16 @@ export type DropTableEntry = Readonly<{
   chance: number;
 }>;
 
+export type CarrierDropMetadata = Readonly<{
+  marker: 'reward';
+  guaranteedDropArchetypeIds: ReadonlyArray<string>;
+}>;
+
+export type RetaliationPolicy = Readonly<{
+  enabled: boolean;
+  durationMs: number;
+}>;
+
 export type EnemyArchetype = Readonly<{
   id: string;
   displayName: string;
@@ -27,6 +37,8 @@ export type EnemyArchetype = Readonly<{
   knockbackDurationMs: number;
   color: number;
   dropTable: ReadonlyArray<DropTableEntry>;
+  carrierDrop: CarrierDropMetadata | null;
+  retaliation: RetaliationPolicy;
 }>;
 
 export * from './enemies.generated';
@@ -57,6 +69,8 @@ export function validateEnemyRegistry(
     warnIfEnemyMayTunnelThroughPlayer(archetype, playerContactBox);
     warnIfDropTableInvalid(archetype);
     assertDropTableArchetypesResolve(archetype, dropRegistry);
+    assertCarrierDropsResolve(archetype, dropRegistry);
+    warnIfRetaliationInvalid(archetype);
   }
 }
 
@@ -130,5 +144,30 @@ function assertDropTableArchetypesResolve(
           `"${entry.archetypeId}" (see design/drops.md and design/content-archetypes.md)`
       );
     }
+  }
+}
+
+function assertCarrierDropsResolve(
+  archetype: EnemyArchetype,
+  dropRegistry: Readonly<Record<string, DropArchetype>>
+): void {
+  if (archetype.carrierDrop === null) return;
+  for (const dropArchetypeId of archetype.carrierDrop.guaranteedDropArchetypeIds) {
+    if (dropRegistry[dropArchetypeId] === undefined) {
+      throw new Error(
+        `enemy archetype "${archetype.id}" carrier drop references unknown drop archetype ` +
+          `"${dropArchetypeId}" (see design/combat-modifiers-and-field-effects.md and design/drops.md)`
+      );
+    }
+  }
+}
+
+function warnIfRetaliationInvalid(archetype: EnemyArchetype): void {
+  if (!archetype.retaliation.enabled) return;
+  if (archetype.retaliation.durationMs <= 0) {
+    log.warn('enabled retaliation duration must be positive per design/combat-modifiers-and-field-effects.md', {
+      enemyArchetypeId: archetype.id,
+      durationMs: archetype.retaliation.durationMs
+    });
   }
 }

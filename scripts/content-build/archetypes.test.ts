@@ -324,7 +324,7 @@ describe('content-build archetype areas', () => {
       mutate: (source) =>
         replaceExact(
           source,
-          '| size-up | projectileSizeMultiplier | 1.25 | none | 0 |',
+          '| size-up | projectileSizeMultiplier | 1.5 | none | 0 |',
           '| size-up | projectileSizeMultiplier | 0 | none | 0 |'
         ),
       parse: parseDropsArea,

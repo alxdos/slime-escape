@@ -28,7 +28,9 @@ const STATIONARY_TEST_ENEMY: EnemyArchetype = {
   knockbackVelocityScale: 0,
   knockbackDurationMs: 1,
   color: 0xff7766,
-  dropTable: []
+  dropTable: [],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 const FAST_TEST_ENEMY: EnemyArchetype = {
   ...STATIONARY_TEST_ENEMY,

@@ -138,13 +138,14 @@
   type PlayerArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;                                       // wu, legacy circle metric для не-мигрированных consumers
+    radius: number;                                       // wu, derive: max(contactBox.width, contactBox.height) / 2
     contactBox: Readonly<{ width: number; height: number }>;  // wu, derive body footprint / projectile target shape
     maxSpeed: number;                                     // wu/s
     maxHp: number;                                        // целое > 0
   }>;
   ```
 - `contactBox` у игрока следует тому же правилу, что и у `EnemyArchetype` / `BossArchetype`: derive из sprite asset по [body-contact-boxes.md](body-contact-boxes.md), используется для body-contact и projectile hit detection, без ручных MD-колонок на горизонте 013.
+- `radius` у игрока больше не авторится в `content/players.md`: producer выводит его из того же sprite `worldSize` как `max(width, height) / 2`. Поле остаётся в runtime-контракте только для не-мигрированных consumers вроде pickup distance.
 - `PlayerSpawn` в `SessionDefinition.player` собирается из `PlayerArchetype`, но остаётся отдельным контрактом уровня сессии, потому что хранит стартовую позицию и session-local форму.
 
 ### PlayerSpawn.maxHp

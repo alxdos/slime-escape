@@ -575,9 +575,30 @@ function parseSelectedWeaponIndex(
 }
 
 function parseSessionRules(field: FieldReader): SessionRules {
+  const aimAssistEnabled = parseBooleanField(field, 'aimAssistEnabled');
+  const maxAngleRadians = field.readNumber('aimAssistMaxAngleRadians');
+  const maxDistance = field.readNumber('aimAssistMaxDistance');
+  const strength = field.readNumber('aimAssistStrength');
+  if (aimAssistEnabled) {
+    if (maxAngleRadians <= 0) {
+      throw fieldError(field, 'aimAssistMaxAngleRadians', 'expected > 0 when aimAssistEnabled is true');
+    }
+    if (maxDistance <= 0) {
+      throw fieldError(field, 'aimAssistMaxDistance', 'expected > 0 when aimAssistEnabled is true');
+    }
+    if (!(strength > 0 && strength <= 1)) {
+      throw fieldError(field, 'aimAssistStrength', 'expected > 0 and <= 1 when aimAssistEnabled is true');
+    }
+  }
   return {
     damage: {
       slimeFriendlyFire: parseBooleanField(field, 'slimeFriendlyFire')
+    },
+    aimAssist: {
+      enabled: aimAssistEnabled,
+      maxAngleRadians,
+      maxDistance,
+      strength
     }
   };
 }

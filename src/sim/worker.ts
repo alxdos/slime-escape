@@ -6,6 +6,7 @@ import { createBossPhaseSystem } from './BossPhaseSystem';
 import { createCombatSystem } from './CombatSystem';
 import { createDropSystem } from './DropSystem';
 import { createEntityStore } from './EntityStore';
+import { createFieldEffectSystem } from './FieldEffectSystem';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createSessionFlowSystem } from './SessionFlowSystem';
@@ -13,6 +14,8 @@ import { createSimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
+import { createStatusEffectSystem } from './StatusEffectSystem';
+import { createRetaliationSystem } from './RetaliationSystem';
 import { createZoneSystem } from './ZoneSystem';
 
 const entities = createEntityStore();
@@ -21,9 +24,14 @@ const movement = createMovementSystem();
 const spawn = createSpawnSystem();
 const bossPhase = createBossPhaseSystem();
 const combat = createCombatSystem();
+const fieldEffects = createFieldEffectSystem();
 const healthDeath = createHealthDeathSystem();
+const statusEffects = createStatusEffectSystem();
+const retaliation = createRetaliationSystem();
 const spatialIndex = createSpatialIndex();
 const zone = createZoneSystem();
+let pendingFieldDamageIntents: ReturnType<typeof fieldEffects.tick>['damageIntents'] = [];
+let pendingStatusDamageIntents: ReturnType<typeof statusEffects.tick> = [];
 const drops = createDropSystem(undefined, undefined, {
   addModifierToSelectedWeapon(ownerId, modifier) {
     combat.addModifierToSelectedWeapon(ownerId, modifier);
@@ -60,9 +68,22 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     session.arena,
     emitEvent
   );
-  const intents =
-    bossIntents.length === 0 ? combatIntents : [...bossIntents, ...combatIntents];
+  const combatActorEffectIntents = combat.drainActorEffectIntents();
+  const intents = [
+    ...pendingFieldDamageIntents,
+    ...pendingStatusDamageIntents,
+    ...bossIntents,
+    ...combatIntents
+  ];
+  pendingFieldDamageIntents = [];
+  pendingStatusDamageIntents = [];
   healthDeath.tick(intents, entities, simTimeMs, emitEvent);
+  spatialIndex.rebuild(entities);
+  statusEffects.apply(combatActorEffectIntents, simTimeMs, entities);
+  const fieldEffectResult = fieldEffects.tick(simTimeMs, entities, spatialIndex);
+  statusEffects.apply(fieldEffectResult.actorEffectIntents, simTimeMs, entities);
+  pendingStatusDamageIntents = statusEffects.tick(simTimeMs, entities);
+  pendingFieldDamageIntents = fieldEffectResult.damageIntents;
   drops.tick(simTimeMs, entities, emitEvent);
   sessionFlow.checkTransitions(simTimeMs);
   zone.onTick();
@@ -90,10 +111,16 @@ const sessionFlow = createSessionFlowSystem({
     entities.clear();
     exporter.reset();
     combat.clear();
+    fieldEffects.clear();
+    statusEffects.clear();
+    drops.clear();
     zone.reset();
+    pendingFieldDamageIntents = [];
+    pendingStatusDamageIntents = [];
     spawn.setRng(rng);
     drops.setRng(rng);
     combat.setDamageRules(session.rules.damage);
+    fieldEffects.setDamageRules(session.rules.damage);
     const player = entities.spawnPlayer(session.player);
     if (session.loadout !== null) {
       combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
@@ -103,9 +130,13 @@ const sessionFlow = createSessionFlowSystem({
     entities.clear();
     exporter.reset();
     combat.clear();
+    fieldEffects.clear();
+    statusEffects.clear();
+    drops.clear();
     zone.reset();
+    pendingFieldDamageIntents = [];
+    pendingStatusDamageIntents = [];
     spawn.setRng(null);
-    drops.setRng(null);
   },
   onEncounterStart(encounter) {
     const session = sessionFlow.activeSession();
@@ -126,6 +157,8 @@ healthDeath.registerHook((ctx) => {
   if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
   if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
 });
+
+healthDeath.registerDamageHook((ctx) => retaliation.onDamage(ctx, entities));
 
 self.addEventListener('message', (event: MessageEvent<MainToSim>) => {
   const msg = event.data;

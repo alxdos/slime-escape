@@ -7,7 +7,7 @@ export const SLIME_ONE_EYE: EnemyArchetype = {
   displayName: 'One-Eye Slime',
   radius: 0.4,
   contactBox: { width: 0.8041666666666667, height: 0.8208333333333333 },
-  maxHp: 1,
+  maxHp: 2,
   behavior: 'chase',
   maxSpeed: 2.6,
   contactDamage: 1,
@@ -16,7 +16,9 @@ export const SLIME_ONE_EYE: EnemyArchetype = {
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
   color: 0x7cf36a,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.25 }]
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.18 }, { archetypeId: 'speed-up', chance: 0.05 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_HORNLING: EnemyArchetype = {
@@ -24,7 +26,7 @@ export const SLIME_HORNLING: EnemyArchetype = {
   displayName: 'Hornling Slime',
   radius: 0.5,
   contactBox: { width: 1.2041666666666666, height: 1.4 },
-  maxHp: 2,
+  maxHp: 3,
   behavior: 'chase',
   maxSpeed: 2.5,
   contactDamage: 1,
@@ -33,7 +35,9 @@ export const SLIME_HORNLING: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0xf06a24,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.3 }]
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.2 }, { archetypeId: 'size-up', chance: 0.099 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_MANY_EYE: EnemyArchetype = {
@@ -41,7 +45,7 @@ export const SLIME_MANY_EYE: EnemyArchetype = {
   displayName: 'Many-Eye Slime',
   radius: 0.6,
   contactBox: { width: 1.2375, height: 1.1875 },
-  maxHp: 3,
+  maxHp: 4,
   behavior: 'chase',
   maxSpeed: 2.2,
   contactDamage: 2,
@@ -50,7 +54,9 @@ export const SLIME_MANY_EYE: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0x9b67d8,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.35 }]
+  dropTable: [{ archetypeId: 'multi-shot', chance: 0.127 }, { archetypeId: 'pierce', chance: 0.057 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_STONEHEAD: EnemyArchetype = {
@@ -58,7 +64,7 @@ export const SLIME_STONEHEAD: EnemyArchetype = {
   displayName: 'Stonehead Slime',
   radius: 0.72,
   contactBox: { width: 1.2083333333333333, height: 2.0125 },
-  maxHp: 6,
+  maxHp: 7,
   behavior: 'chase',
   maxSpeed: 1.5,
   contactDamage: 2,
@@ -67,7 +73,9 @@ export const SLIME_STONEHEAD: EnemyArchetype = {
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
   color: 0x8e8f95,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.6 }]
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.3 }, { archetypeId: 'size-up', chance: 0.127 }, { archetypeId: 'fragment', chance: 0.057 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_SLEEPER: EnemyArchetype = {
@@ -75,7 +83,7 @@ export const SLIME_SLEEPER: EnemyArchetype = {
   displayName: 'Sleeper Slime',
   radius: 0.45,
   contactBox: { width: 1.6166666666666667, height: 0.6 },
-  maxHp: 2,
+  maxHp: 3,
   behavior: 'chase',
   maxSpeed: 1,
   contactDamage: 1,
@@ -84,7 +92,9 @@ export const SLIME_SLEEPER: EnemyArchetype = {
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
   color: 0x9e7fd8,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.2 }]
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.16 }, { archetypeId: 'magnet', chance: 0.071 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_SPARK: EnemyArchetype = {
@@ -92,7 +102,7 @@ export const SLIME_SPARK: EnemyArchetype = {
   displayName: 'Spark Slime',
   radius: 0.35,
   contactBox: { width: 1.1958333333333333, height: 1.1875 },
-  maxHp: 1,
+  maxHp: 2,
   behavior: 'chase',
   maxSpeed: 2.8,
   contactDamage: 1,
@@ -101,7 +111,9 @@ export const SLIME_SPARK: EnemyArchetype = {
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
   color: 0xf2e84a,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.18 }]
+  dropTable: [{ archetypeId: 'speed-up', chance: 0.155 }, { archetypeId: 'magnet', chance: 0.085 }, { archetypeId: 'overdrive', chance: 0.057 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_WRAITH: EnemyArchetype = {
@@ -109,7 +121,7 @@ export const SLIME_WRAITH: EnemyArchetype = {
   displayName: 'Wraith Slime',
   radius: 0.48,
   contactBox: { width: 0.825, height: 1.0333333333333334 },
-  maxHp: 2,
+  maxHp: 3,
   behavior: 'chase',
   maxSpeed: 2.6,
   contactDamage: 1,
@@ -118,7 +130,9 @@ export const SLIME_WRAITH: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0xd9dce1,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.25 }]
+  dropTable: [{ archetypeId: 'speed-up', chance: 0.127 }, { archetypeId: 'pierce', chance: 0.113 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_SHELL: EnemyArchetype = {
@@ -126,7 +140,7 @@ export const SLIME_SHELL: EnemyArchetype = {
   displayName: 'Shell Slime',
   radius: 0.65,
   contactBox: { width: 0.9041666666666667, height: 1.1 },
-  maxHp: 5,
+  maxHp: 6,
   behavior: 'chase',
   maxSpeed: 1.7,
   contactDamage: 2,
@@ -135,7 +149,9 @@ export const SLIME_SHELL: EnemyArchetype = {
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
   color: 0xa6e34a,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.55 }]
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.32 }, { archetypeId: 'pierce', chance: 0.141 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_FLAME: EnemyArchetype = {
@@ -143,7 +159,7 @@ export const SLIME_FLAME: EnemyArchetype = {
   displayName: 'Flame Slime',
   radius: 0.44,
   contactBox: { width: 0.9375, height: 1.6583333333333334 },
-  maxHp: 2,
+  maxHp: 3,
   behavior: 'chase',
   maxSpeed: 2.6,
   contactDamage: 2,
@@ -152,7 +168,9 @@ export const SLIME_FLAME: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0xf6c06d,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.3 }]
+  dropTable: [{ archetypeId: 'overdrive', chance: 0.141 }, { archetypeId: 'fragment', chance: 0.113 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_MECH_CRAB: EnemyArchetype = {
@@ -160,7 +178,7 @@ export const SLIME_MECH_CRAB: EnemyArchetype = {
   displayName: 'Mech Crab Slime',
   radius: 0.62,
   contactBox: { width: 1.0875, height: 1.3666666666666667 },
-  maxHp: 4,
+  maxHp: 5,
   behavior: 'chase',
   maxSpeed: 2,
   contactDamage: 2,
@@ -169,7 +187,9 @@ export const SLIME_MECH_CRAB: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0xe85245,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.45 }]
+  dropTable: [{ archetypeId: 'fragment', chance: 0.169 }, { archetypeId: 'pierce', chance: 0.141 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_STACK: EnemyArchetype = {
@@ -177,7 +197,7 @@ export const SLIME_STACK: EnemyArchetype = {
   displayName: 'Stack Slime',
   radius: 0.58,
   contactBox: { width: 1.0166666666666666, height: 1.1083333333333334 },
-  maxHp: 3,
+  maxHp: 4,
   behavior: 'chase',
   maxSpeed: 2.2,
   contactDamage: 1,
@@ -186,7 +206,9 @@ export const SLIME_STACK: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0xcdeb84,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.35 }]
+  dropTable: [{ archetypeId: 'multi-shot', chance: 0.183 }, { archetypeId: 'heal-orb', chance: 0.14 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_TRICKSTER: EnemyArchetype = {
@@ -194,7 +216,7 @@ export const SLIME_TRICKSTER: EnemyArchetype = {
   displayName: 'Trickster Slime',
   radius: 0.52,
   contactBox: { width: 1.7541666666666667, height: 1.8083333333333333 },
-  maxHp: 3,
+  maxHp: 4,
   behavior: 'chase',
   maxSpeed: 2.5,
   contactDamage: 1,
@@ -203,7 +225,9 @@ export const SLIME_TRICKSTER: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0xbdb4f4,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.3 }]
+  dropTable: [{ archetypeId: 'multi-shot', chance: 0.141 }, { archetypeId: 'speed-up', chance: 0.113 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_BUG: EnemyArchetype = {
@@ -211,7 +235,7 @@ export const SLIME_BUG: EnemyArchetype = {
   displayName: 'Bug Slime',
   radius: 0.48,
   contactBox: { width: 0.8125, height: 1.0583333333333333 },
-  maxHp: 2,
+  maxHp: 3,
   behavior: 'chase',
   maxSpeed: 2.6,
   contactDamage: 1,
@@ -220,7 +244,142 @@ export const SLIME_BUG: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0x8ee03a,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.25 }]
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.18 }, { archetypeId: 'magnet', chance: 0.099 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
+export const DEMO_CARRIER_SLIME: EnemyArchetype = {
+  id: 'demo-carrier-slime',
+  displayName: 'Demo Carrier Slime',
+  radius: 0.5,
+  contactBox: { width: 1.4, height: 1.6125 },
+  maxHp: 2,
+  behavior: 'chase',
+  maxSpeed: 2.4,
+  contactDamage: 1,
+  contactCooldownMs: 800,
+  knockbackBaseImpulse: 5,
+  knockbackVelocityScale: 1,
+  knockbackDurationMs: 280,
+  color: 0x5ee6ff,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['magnet', 'heal-orb'] },
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
+export const DEMO_RETALIATOR_SLIME: EnemyArchetype = {
+  id: 'demo-retaliator-slime',
+  displayName: 'Demo Retaliator Slime',
+  radius: 0.52,
+  contactBox: { width: 1.1583333333333334, height: 1.2541666666666667 },
+  maxHp: 3,
+  behavior: 'chase',
+  maxSpeed: 2.6,
+  contactDamage: 1,
+  contactCooldownMs: 800,
+  knockbackBaseImpulse: 5,
+  knockbackVelocityScale: 1,
+  knockbackDurationMs: 280,
+  color: 0xff6b35,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.2 }],
+  carrierDrop: null,
+  retaliation: { enabled: true, durationMs: 2500 }
+};
+
+export const CAMPAIGN_SET_1_CARRIER_SLIME: EnemyArchetype = {
+  id: 'campaign-set-1-carrier-slime',
+  displayName: 'Set 1 Carrier Slime',
+  radius: 0.42,
+  contactBox: { width: 1.1958333333333333, height: 1.1875 },
+  maxHp: 3,
+  behavior: 'chase',
+  maxSpeed: 2.6,
+  contactDamage: 1,
+  contactCooldownMs: 800,
+  knockbackBaseImpulse: 8,
+  knockbackVelocityScale: 1.5,
+  knockbackDurationMs: 350,
+  color: 0xffd166,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['size-up'] },
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
+export const CAMPAIGN_SET_2_CARRIER_SLIME: EnemyArchetype = {
+  id: 'campaign-set-2-carrier-slime',
+  displayName: 'Set 2 Carrier Slime',
+  radius: 0.58,
+  contactBox: { width: 1.0166666666666666, height: 1.1083333333333334 },
+  maxHp: 4,
+  behavior: 'chase',
+  maxSpeed: 2.2,
+  contactDamage: 1,
+  contactCooldownMs: 900,
+  knockbackBaseImpulse: 5,
+  knockbackVelocityScale: 1,
+  knockbackDurationMs: 280,
+  color: 0xffd166,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['multi-shot'] },
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
+export const CAMPAIGN_SET_3_CARRIER_SLIME: EnemyArchetype = {
+  id: 'campaign-set-3-carrier-slime',
+  displayName: 'Set 3 Carrier Slime',
+  radius: 0.42,
+  contactBox: { width: 0.75, height: 1.0583333333333333 },
+  maxHp: 3,
+  behavior: 'chase',
+  maxSpeed: 2.6,
+  contactDamage: 1,
+  contactCooldownMs: 750,
+  knockbackBaseImpulse: 8,
+  knockbackVelocityScale: 1.5,
+  knockbackDurationMs: 350,
+  color: 0x5ee6ff,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['magnet'] },
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
+export const CAMPAIGN_SET_4_CARRIER_SLIME: EnemyArchetype = {
+  id: 'campaign-set-4-carrier-slime',
+  displayName: 'Set 4 Carrier Slime',
+  radius: 0.62,
+  contactBox: { width: 1.05, height: 1.1958333333333333 },
+  maxHp: 5,
+  behavior: 'chase',
+  maxSpeed: 2.2,
+  contactDamage: 2,
+  contactCooldownMs: 950,
+  knockbackBaseImpulse: 5,
+  knockbackVelocityScale: 1,
+  knockbackDurationMs: 280,
+  color: 0xffd166,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['fragment'] },
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
+export const CAMPAIGN_SET_5_CARRIER_SLIME: EnemyArchetype = {
+  id: 'campaign-set-5-carrier-slime',
+  displayName: 'Set 5 Carrier Slime',
+  radius: 0.5,
+  contactBox: { width: 0.6875, height: 2.0833333333333335 },
+  maxHp: 5,
+  behavior: 'chase',
+  maxSpeed: 2,
+  contactDamage: 2,
+  contactCooldownMs: 1000,
+  knockbackBaseImpulse: 5,
+  knockbackVelocityScale: 1,
+  knockbackDurationMs: 280,
+  color: 0xffd166,
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['overdrive'] },
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_LIFTER: EnemyArchetype = {
@@ -228,7 +387,7 @@ export const SLIME_LIFTER: EnemyArchetype = {
   displayName: 'Lifter Slime',
   radius: 0.7,
   contactBox: { width: 1.4625, height: 1.4458333333333333 },
-  maxHp: 6,
+  maxHp: 7,
   behavior: 'chase',
   maxSpeed: 1.6,
   contactDamage: 3,
@@ -237,7 +396,9 @@ export const SLIME_LIFTER: EnemyArchetype = {
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
   color: 0xe6e8ea,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.6 }]
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.34 }, { archetypeId: 'magnet', chance: 0.141 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_SAW: EnemyArchetype = {
@@ -245,7 +406,7 @@ export const SLIME_SAW: EnemyArchetype = {
   displayName: 'Saw Slime',
   radius: 0.55,
   contactBox: { width: 1.1583333333333334, height: 1.2541666666666667 },
-  maxHp: 3,
+  maxHp: 4,
   behavior: 'chase',
   maxSpeed: 2.5,
   contactDamage: 2,
@@ -254,7 +415,9 @@ export const SLIME_SAW: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0xf0523e,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.4 }]
+  dropTable: [{ archetypeId: 'fragment', chance: 0.169 }, { archetypeId: 'speed-up', chance: 0.113 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_DRONE: EnemyArchetype = {
@@ -262,7 +425,7 @@ export const SLIME_DRONE: EnemyArchetype = {
   displayName: 'Drone Slime',
   radius: 0.42,
   contactBox: { width: 2.0166666666666666, height: 1.8166666666666667 },
-  maxHp: 1,
+  maxHp: 2,
   behavior: 'chase',
   maxSpeed: 2.8,
   contactDamage: 1,
@@ -271,7 +434,9 @@ export const SLIME_DRONE: EnemyArchetype = {
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
   color: 0xafc4ea,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.2 }]
+  dropTable: [{ archetypeId: 'speed-up', chance: 0.183 }, { archetypeId: 'pierce', chance: 0.099 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_STAR: EnemyArchetype = {
@@ -279,7 +444,7 @@ export const SLIME_STAR: EnemyArchetype = {
   displayName: 'Star Slime',
   radius: 0.38,
   contactBox: { width: 1.4, height: 1.6125 },
-  maxHp: 1,
+  maxHp: 2,
   behavior: 'chase',
   maxSpeed: 2.8,
   contactDamage: 1,
@@ -288,7 +453,9 @@ export const SLIME_STAR: EnemyArchetype = {
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
   color: 0xe8a8bc,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.18 }]
+  dropTable: [{ archetypeId: 'speed-up', chance: 0.155 }, { archetypeId: 'multi-shot', chance: 0.113 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_ECHO: EnemyArchetype = {
@@ -296,7 +463,7 @@ export const SLIME_ECHO: EnemyArchetype = {
   displayName: 'Echo Slime',
   radius: 0.36,
   contactBox: { width: 0.75, height: 1.0583333333333333 },
-  maxHp: 1,
+  maxHp: 2,
   behavior: 'chase',
   maxSpeed: 2.6,
   contactDamage: 1,
@@ -305,7 +472,9 @@ export const SLIME_ECHO: EnemyArchetype = {
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
   color: 0x4b5365,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.15 }]
+  dropTable: [{ archetypeId: 'magnet', chance: 0.127 }, { archetypeId: 'speed-up', chance: 0.099 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_SPLITTER: EnemyArchetype = {
@@ -313,7 +482,7 @@ export const SLIME_SPLITTER: EnemyArchetype = {
   displayName: 'Splitter Slime',
   radius: 0.56,
   contactBox: { width: 1.0208333333333333, height: 1.0625 },
-  maxHp: 3,
+  maxHp: 4,
   behavior: 'chase',
   maxSpeed: 2.4,
   contactDamage: 1,
@@ -322,7 +491,9 @@ export const SLIME_SPLITTER: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0x7bd1ae,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.35 }]
+  dropTable: [{ archetypeId: 'multi-shot', chance: 0.183 }, { archetypeId: 'fragment', chance: 0.113 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_PRINCE: EnemyArchetype = {
@@ -330,7 +501,7 @@ export const SLIME_PRINCE: EnemyArchetype = {
   displayName: 'Prince Slime',
   radius: 0.66,
   contactBox: { width: 1.05, height: 1.1958333333333333 },
-  maxHp: 4,
+  maxHp: 5,
   behavior: 'chase',
   maxSpeed: 2.2,
   contactDamage: 2,
@@ -339,7 +510,9 @@ export const SLIME_PRINCE: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0xf1b294,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.45 }]
+  dropTable: [{ archetypeId: 'overdrive', chance: 0.155 }, { archetypeId: 'multi-shot', chance: 0.127 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_KINGLING: EnemyArchetype = {
@@ -347,7 +520,7 @@ export const SLIME_KINGLING: EnemyArchetype = {
   displayName: 'Kingling Slime',
   radius: 0.74,
   contactBox: { width: 1.5291666666666666, height: 1.8583333333333334 },
-  maxHp: 7,
+  maxHp: 8,
   behavior: 'chase',
   maxSpeed: 1.7,
   contactDamage: 3,
@@ -356,7 +529,9 @@ export const SLIME_KINGLING: EnemyArchetype = {
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
   color: 0xb7f3a6,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.65 }]
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.32 }, { archetypeId: 'overdrive', chance: 0.155 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_FORTRESS: EnemyArchetype = {
@@ -364,7 +539,7 @@ export const SLIME_FORTRESS: EnemyArchetype = {
   displayName: 'Fortress Slime',
   radius: 0.8,
   contactBox: { width: 1.5708333333333333, height: 1.375 },
-  maxHp: 8,
+  maxHp: 9,
   behavior: 'chase',
   maxSpeed: 1.2,
   contactDamage: 3,
@@ -373,7 +548,9 @@ export const SLIME_FORTRESS: EnemyArchetype = {
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
   color: 0x8f836e,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.7 }]
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.4 }, { archetypeId: 'size-up', chance: 0.141 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_DASHER: EnemyArchetype = {
@@ -381,7 +558,7 @@ export const SLIME_DASHER: EnemyArchetype = {
   displayName: 'Dasher Slime',
   radius: 0.46,
   contactBox: { width: 1.1375, height: 1.7875 },
-  maxHp: 2,
+  maxHp: 3,
   behavior: 'chase',
   maxSpeed: 2.8,
   contactDamage: 2,
@@ -390,7 +567,9 @@ export const SLIME_DASHER: EnemyArchetype = {
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
   color: 0xef6a38,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.25 }]
+  dropTable: [{ archetypeId: 'speed-up', chance: 0.155 }, { archetypeId: 'overdrive', chance: 0.113 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_TADPOLE: EnemyArchetype = {
@@ -398,7 +577,7 @@ export const SLIME_TADPOLE: EnemyArchetype = {
   displayName: 'Tadpole Slime',
   radius: 0.34,
   contactBox: { width: 1.4125, height: 1.7416666666666667 },
-  maxHp: 1,
+  maxHp: 2,
   behavior: 'chase',
   maxSpeed: 2.7,
   contactDamage: 1,
@@ -407,7 +586,9 @@ export const SLIME_TADPOLE: EnemyArchetype = {
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
   color: 0xd9dde2,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.15 }]
+  dropTable: [{ archetypeId: 'speed-up', chance: 0.127 }, { archetypeId: 'magnet', chance: 0.099 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_DOOR: EnemyArchetype = {
@@ -415,7 +596,7 @@ export const SLIME_DOOR: EnemyArchetype = {
   displayName: 'Door Slime',
   radius: 0.76,
   contactBox: { width: 0.9708333333333333, height: 1.2041666666666666 },
-  maxHp: 7,
+  maxHp: 8,
   behavior: 'chase',
   maxSpeed: 1.1,
   contactDamage: 2,
@@ -424,7 +605,9 @@ export const SLIME_DOOR: EnemyArchetype = {
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
   color: 0xa7e5d2,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.65 }]
+  dropTable: [{ archetypeId: 'heal-orb', chance: 0.34 }, { archetypeId: 'pierce', chance: 0.127 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_MECH: EnemyArchetype = {
@@ -432,7 +615,7 @@ export const SLIME_MECH: EnemyArchetype = {
   displayName: 'Mech Slime',
   radius: 0.7,
   contactBox: { width: 1.4541666666666666, height: 1.2208333333333334 },
-  maxHp: 6,
+  maxHp: 7,
   behavior: 'chase',
   maxSpeed: 1.8,
   contactDamage: 3,
@@ -441,7 +624,9 @@ export const SLIME_MECH: EnemyArchetype = {
   knockbackVelocityScale: 0.5,
   knockbackDurationMs: 220,
   color: 0xef7168,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.55 }]
+  dropTable: [{ archetypeId: 'fragment', chance: 0.197 }, { archetypeId: 'pierce', chance: 0.141 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_CLAMPER: EnemyArchetype = {
@@ -449,7 +634,7 @@ export const SLIME_CLAMPER: EnemyArchetype = {
   displayName: 'Clamper Slime',
   radius: 0.52,
   contactBox: { width: 1.0125, height: 0.7166666666666667 },
-  maxHp: 3,
+  maxHp: 4,
   behavior: 'chase',
   maxSpeed: 2.5,
   contactDamage: 2,
@@ -458,7 +643,9 @@ export const SLIME_CLAMPER: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0xf2c0a6,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.35 }]
+  dropTable: [{ archetypeId: 'pierce', chance: 0.155 }, { archetypeId: 'magnet', chance: 0.113 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_CANDLE: EnemyArchetype = {
@@ -466,7 +653,7 @@ export const SLIME_CANDLE: EnemyArchetype = {
   displayName: 'Candle Slime',
   radius: 0.46,
   contactBox: { width: 0.8541666666666666, height: 1.3583333333333334 },
-  maxHp: 2,
+  maxHp: 3,
   behavior: 'chase',
   maxSpeed: 2.5,
   contactDamage: 1,
@@ -475,7 +662,9 @@ export const SLIME_CANDLE: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0xa62922,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.25 }]
+  dropTable: [{ archetypeId: 'overdrive', chance: 0.155 }, { archetypeId: 'speed-up', chance: 0.099 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_OBELISK: EnemyArchetype = {
@@ -483,7 +672,7 @@ export const SLIME_OBELISK: EnemyArchetype = {
   displayName: 'Obelisk Slime',
   radius: 0.5,
   contactBox: { width: 0.6875, height: 2.0833333333333335 },
-  maxHp: 4,
+  maxHp: 5,
   behavior: 'chase',
   maxSpeed: 2,
   contactDamage: 2,
@@ -492,7 +681,9 @@ export const SLIME_OBELISK: EnemyArchetype = {
   knockbackVelocityScale: 1,
   knockbackDurationMs: 280,
   color: 0x5522a7,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.4 }]
+  dropTable: [{ archetypeId: 'fragment', chance: 0.183 }, { archetypeId: 'overdrive', chance: 0.127 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 
 export const SLIME_NINJA: EnemyArchetype = {
@@ -500,7 +691,7 @@ export const SLIME_NINJA: EnemyArchetype = {
   displayName: 'Ninja Slime',
   radius: 0.54,
   contactBox: { width: 1.4166666666666667, height: 1.375 },
-  maxHp: 4,
+  maxHp: 5,
   behavior: 'chase',
   maxSpeed: 2.6,
   contactDamage: 3,
@@ -509,5 +700,7 @@ export const SLIME_NINJA: EnemyArchetype = {
   knockbackVelocityScale: 1.5,
   knockbackDurationMs: 350,
   color: 0xa4e982,
-  dropTable: [{ archetypeId: 'heal-orb', chance: 0.35 }]
+  dropTable: [{ archetypeId: 'overdrive', chance: 0.155 }, { archetypeId: 'pierce', chance: 0.127 }],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };

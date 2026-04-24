@@ -18,13 +18,6 @@
 
 # Balance
 
-## Body
-
-| id | radius |
-|---|---:|
-| hero-sandbox | 0.5 |
-| hero-training | 0.5 |
-
 ## Movement
 
 | id | maxSpeed |

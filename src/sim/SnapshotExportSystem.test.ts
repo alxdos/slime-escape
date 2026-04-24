@@ -113,6 +113,7 @@ describe('SnapshotExportSystem', () => {
       radius: STATIONARY_TEST_ENEMY.radius,
       contactBox: STATIONARY_TEST_ENEMY.contactBox,
       behavior: 'stationary',
+      carrierDropMarker: 'reward',
       maxHp: STATIONARY_TEST_ENEMY.maxHp,
       maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
       contactDamage: STATIONARY_TEST_ENEMY.contactDamage,
@@ -127,6 +128,7 @@ describe('SnapshotExportSystem', () => {
       ownerId: 1 as EntityId,
       ownerKind: 'player',
       motionKind: 'linear',
+      origin: { x: 0, y: 0 },
       position: { x: 1, y: 0 },
       velocity: { vx: 24, vy: 0 },
       size: PISTOL.projectile.size,
@@ -150,12 +152,15 @@ describe('SnapshotExportSystem', () => {
     expect(enemy.archetypeId).toBe(STATIONARY_TEST_ENEMY.archetypeId);
     expect(enemy.hp).toBe(STATIONARY_TEST_ENEMY.maxHp);
     expect(enemy.maxHp).toBe(STATIONARY_TEST_ENEMY.maxHp);
+    expect(enemy.carrierDropMarker).toBe('reward');
 
     const projectile = snapshot?.entities.find((e) => e.kind === 'projectile');
     expect(projectile).toBeDefined();
     if (projectile?.kind !== 'projectile') throw new Error('expected projectile snapshot');
     expect(projectile.weaponArchetypeId).toBe(PISTOL.id);
     expect(projectile.ownerKind).toBe('player');
+    expect(projectile.originX).toBe(0);
+    expect(projectile.originY).toBe(0);
     expect(projectile.state).toBe('flying');
     expect(projectile.visualState.angleRadians).toBeCloseTo(0);
     expect(projectile.visualState.spinRadians).toBe(0);
@@ -190,6 +195,34 @@ describe('SnapshotExportSystem', () => {
 
     const after = exporter.onTick(0, store, NO_SOURCES);
     expect(after?.entities).toHaveLength(0);
+  });
+
+  it('emits field effect presentation fields', () => {
+    const store = createEntityStore();
+    const fieldEffect = store.spawnFieldEffect({
+      archetypeId: 'acid-puddle',
+      ownerId: null,
+      ownerKind: null,
+      position: { x: 2, y: -1 },
+      radius: 1.5,
+      applyEveryMs: 500,
+      nextApplySimMs: 0,
+      expireAtSimMs: 2500,
+      effects: [{ kind: 'damage', amount: 1 }]
+    });
+    const exporter = createSnapshotExportSystem();
+
+    const snapshot = exporter.onTick(0, store, NO_SOURCES);
+    const entity = snapshot?.entities.find((e) => e.kind === 'fieldEffect');
+
+    expect(entity).toBeDefined();
+    if (entity?.kind !== 'fieldEffect') throw new Error('expected field effect snapshot');
+    expect(entity.id).toBe(fieldEffect.id);
+    expect(entity.archetypeId).toBe('acid-puddle');
+    expect(entity.x).toBe(2);
+    expect(entity.y).toBe(-1);
+    expect(entity.radius).toBe(1.5);
+    expect(entity.expiresAtSimMs).toBe(2500);
   });
 });
 

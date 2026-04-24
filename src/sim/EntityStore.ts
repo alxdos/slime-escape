@@ -1,6 +1,10 @@
 import type { DropEffect } from '../shared/content/drops';
-import type { EnemyBehavior } from '../shared/content/enemies';
-import type { ExplosionSpec } from '../shared/content/weapons';
+import type { EnemyBehavior, RetaliationPolicy } from '../shared/content/enemies';
+import type {
+  ActorEffectApplication,
+  DetonationTrigger,
+  ExplosionSpec
+} from '../shared/content/weapons';
 import type { ContactBox, PlayerSpawn, Vec2 } from '../shared/session';
 
 export type EntityId = number & { readonly __brand: 'EntityId' };
@@ -15,6 +19,7 @@ export type Player = {
   position: { x: number; y: number };
   velocity: { vx: number; vy: number };
   hp: number;
+  statusEffects: ActorStatusEffect[];
 };
 
 export type KnockbackState = {
@@ -31,6 +36,8 @@ export type Enemy = {
   readonly radius: number;
   readonly contactBox: ContactBox;
   readonly behavior: EnemyBehavior;
+  readonly carrierDropMarker: 'reward' | null;
+  readonly retaliation: RetaliationPolicy;
   readonly maxHp: number;
   readonly maxSpeed: number;
   readonly contactDamage: number;
@@ -44,6 +51,14 @@ export type Enemy = {
   hp: number;
   nextContactSimMs: number;
   knockback: KnockbackState | null;
+  aggroMemory: AggroMemory | null;
+  statusEffects: ActorStatusEffect[];
+};
+
+export type AggroMemory = {
+  targetId: EntityId;
+  reason: 'friendlyFire' | 'playerDamage' | 'scripted';
+  expireAtSimMs: number;
 };
 
 export type Boss = {
@@ -69,7 +84,44 @@ export type Boss = {
   phaseId: string;
   activeAttackIds: string[];
   attackNextSimMs: Map<string, number>;
+  statusEffects: ActorStatusEffect[];
 };
+
+export type ActorStatusEffect =
+  | {
+      kind: 'burn';
+      damagePerTick: number;
+      tickEveryMs: number;
+      nextTickSimMs: number;
+      expireAtSimMs: number;
+      source: StatusEffectSource;
+    }
+  | {
+      kind: 'slow';
+      speedMultiplier: number;
+      expireAtSimMs: number;
+      source: StatusEffectSource;
+    }
+  | {
+      kind: 'poison';
+      damagePerTick: number;
+      tickEveryMs: number;
+      nextTickSimMs: number;
+      expireAtSimMs: number;
+      source: StatusEffectSource;
+    };
+
+export type StatusEffectSource =
+  | Readonly<{
+      kind: 'fieldEffect';
+      fieldEffectId: EntityId;
+      archetypeId: string;
+    }>
+  | Readonly<{
+      kind: 'explosion';
+      projectileId: EntityId;
+      weaponArchetypeId: string;
+    }>;
 
 export type Projectile = {
   readonly id: EntityId;
@@ -82,6 +134,7 @@ export type Projectile = {
   readonly arcEnd: Vec2 | null;
   readonly arcStartSimMs: number | null;
   readonly arcEndSimMs: number | null;
+  readonly origin: Vec2;
   readonly size: { width: number; height: number };
   readonly hitRadius: number;
   readonly impactDamage: number;
@@ -89,6 +142,7 @@ export type Projectile = {
   pierceRemaining: number;
   readonly groundOnImpact: boolean;
   readonly groundedLifetimeMs: number | null;
+  readonly detonationTrigger: DetonationTrigger | null;
   readonly explosion: ExplosionSpec | null;
   state: 'flying' | 'grounded';
   readonly hitEntityIds: Set<EntityId>;
@@ -110,12 +164,28 @@ export type Drop = {
   position: { x: number; y: number };
 };
 
+export type FieldEffect = {
+  readonly id: EntityId;
+  readonly kind: 'fieldEffect';
+  readonly archetypeId: string;
+  readonly ownerId: EntityId | null;
+  readonly ownerKind: 'player' | 'enemy' | 'boss' | null;
+  readonly position: { x: number; y: number };
+  readonly radius: number;
+  readonly applyEveryMs: number;
+  nextApplySimMs: number;
+  readonly expireAtSimMs: number;
+  readonly effects: ReadonlyArray<ActorEffectApplication>;
+};
+
 export type EnemySpawnSpec = Readonly<{
   archetypeId: string;
   position: Vec2;
   radius: number;
   contactBox: ContactBox;
   behavior: EnemyBehavior;
+  carrierDropMarker?: 'reward' | null;
+  retaliation?: RetaliationPolicy;
   maxHp: number;
   maxSpeed: number;
   contactDamage: number;
@@ -135,6 +205,7 @@ export type ProjectileSpawnSpec = Readonly<{
   arcEnd?: Vec2 | null;
   arcStartSimMs?: number | null;
   arcEndSimMs?: number | null;
+  origin?: Vec2;
   position: Vec2;
   velocity: { vx: number; vy: number };
   size: Readonly<{ width: number; height: number }>;
@@ -144,6 +215,7 @@ export type ProjectileSpawnSpec = Readonly<{
   pierceRemaining: number;
   groundOnImpact: boolean;
   groundedLifetimeMs: number | null;
+  detonationTrigger?: DetonationTrigger | null;
   explosion: ExplosionSpec | null;
   state?: 'flying' | 'grounded';
   hitEntityIds?: ReadonlySet<EntityId>;
@@ -159,6 +231,18 @@ export type DropSpawnSpec = Readonly<{
   effect: DropEffect;
   color: number;
   expireAtSimMs: number;
+}>;
+
+export type FieldEffectSpawnSpec = Readonly<{
+  archetypeId: string;
+  ownerId: EntityId | null;
+  ownerKind: 'player' | 'enemy' | 'boss' | null;
+  position: Vec2;
+  radius: number;
+  applyEveryMs: number;
+  nextApplySimMs: number;
+  expireAtSimMs: number;
+  effects: ReadonlyArray<ActorEffectApplication>;
 }>;
 
 export type BossSpawnSpec = Readonly<{
@@ -186,23 +270,28 @@ export type EntityStore = Readonly<{
   spawnBoss(spec: BossSpawnSpec): Boss;
   spawnProjectile(spec: ProjectileSpawnSpec): Projectile;
   spawnDrop(spec: DropSpawnSpec): Drop;
+  spawnFieldEffect(spec: FieldEffectSpawnSpec): FieldEffect;
   player(): Player | null;
   enemyById(id: EntityId): Enemy | null;
   bossById(id: EntityId): Boss | null;
   projectileById(id: EntityId): Projectile | null;
   dropById(id: EntityId): Drop | null;
+  fieldEffectById(id: EntityId): FieldEffect | null;
   enemies(): IterableIterator<Enemy>;
   bosses(): IterableIterator<Boss>;
   projectiles(): IterableIterator<Projectile>;
   drops(): IterableIterator<Drop>;
+  fieldEffects(): IterableIterator<FieldEffect>;
   enemyCount(): number;
   bossCount(): number;
   projectileCount(): number;
   dropCount(): number;
+  fieldEffectCount(): number;
   removeEnemy(id: EntityId): boolean;
   removeBoss(id: EntityId): boolean;
   removeProjectile(id: EntityId): boolean;
   removeDrop(id: EntityId): boolean;
+  removeFieldEffect(id: EntityId): boolean;
   removePlayer(): boolean;
   clear(): void;
 }>;
@@ -214,6 +303,7 @@ export function createEntityStore(): EntityStore {
   const bosses = new Map<EntityId, Boss>();
   const projectiles = new Map<EntityId, Projectile>();
   const drops = new Map<EntityId, Drop>();
+  const fieldEffects = new Map<EntityId, FieldEffect>();
 
   function makeId(): EntityId {
     const id = nextId as EntityId;
@@ -235,7 +325,8 @@ export function createEntityStore(): EntityStore {
         maxHp: spec.maxHp,
         position: { x: spec.position.x, y: spec.position.y },
         velocity: { vx: 0, vy: 0 },
-        hp: spec.maxHp
+        hp: spec.maxHp,
+        statusEffects: []
       };
       player = next;
       return next;
@@ -248,6 +339,8 @@ export function createEntityStore(): EntityStore {
         radius: spec.radius,
         contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
         behavior: spec.behavior,
+        carrierDropMarker: spec.carrierDropMarker ?? null,
+        retaliation: spec.retaliation ?? { enabled: false, durationMs: 0 },
         maxHp: spec.maxHp,
         maxSpeed: spec.maxSpeed,
         contactDamage: spec.contactDamage,
@@ -260,7 +353,9 @@ export function createEntityStore(): EntityStore {
         velocity: { vx: 0, vy: 0 },
         hp: spec.maxHp,
         nextContactSimMs: 0,
-        knockback: null
+        knockback: null,
+        aggroMemory: null,
+        statusEffects: []
       };
       enemies.set(next.id, next);
       return next;
@@ -292,7 +387,8 @@ export function createEntityStore(): EntityStore {
         phaseIndex: spec.phaseIndex,
         phaseId: spec.phaseId,
         activeAttackIds: [...spec.activeAttackIds],
-        attackNextSimMs
+        attackNextSimMs,
+        statusEffects: []
       };
       bosses.set(next.id, next);
       return next;
@@ -315,6 +411,10 @@ export function createEntityStore(): EntityStore {
             : { x: spec.arcEnd.x, y: spec.arcEnd.y },
         arcStartSimMs: spec.arcStartSimMs ?? null,
         arcEndSimMs: spec.arcEndSimMs ?? null,
+        origin:
+          spec.origin === undefined
+            ? { x: spec.position.x, y: spec.position.y }
+            : { x: spec.origin.x, y: spec.origin.y },
         size: { width: spec.size.width, height: spec.size.height },
         hitRadius: spec.hitRadius,
         impactDamage: spec.impactDamage,
@@ -322,6 +422,10 @@ export function createEntityStore(): EntityStore {
         pierceRemaining: spec.pierceRemaining,
         groundOnImpact: spec.groundOnImpact,
         groundedLifetimeMs: spec.groundedLifetimeMs,
+        detonationTrigger:
+          spec.detonationTrigger === undefined || spec.detonationTrigger === null
+            ? null
+            : structuredClone(spec.detonationTrigger),
         explosion: spec.explosion === null ? null : structuredClone(spec.explosion),
         state:
           spec.state ??
@@ -352,6 +456,23 @@ export function createEntityStore(): EntityStore {
       drops.set(next.id, next);
       return next;
     },
+    spawnFieldEffect(spec): FieldEffect {
+      const next: FieldEffect = {
+        id: makeId(),
+        kind: 'fieldEffect',
+        archetypeId: spec.archetypeId,
+        ownerId: spec.ownerId,
+        ownerKind: spec.ownerKind,
+        position: { x: spec.position.x, y: spec.position.y },
+        radius: spec.radius,
+        applyEveryMs: spec.applyEveryMs,
+        nextApplySimMs: spec.nextApplySimMs,
+        expireAtSimMs: spec.expireAtSimMs,
+        effects: spec.effects.map(copyActorEffect)
+      };
+      fieldEffects.set(next.id, next);
+      return next;
+    },
     player(): Player | null {
       return player;
     },
@@ -367,6 +488,9 @@ export function createEntityStore(): EntityStore {
     dropById(id): Drop | null {
       return drops.get(id) ?? null;
     },
+    fieldEffectById(id): FieldEffect | null {
+      return fieldEffects.get(id) ?? null;
+    },
     enemies(): IterableIterator<Enemy> {
       return enemies.values();
     },
@@ -378,6 +502,9 @@ export function createEntityStore(): EntityStore {
     },
     drops(): IterableIterator<Drop> {
       return drops.values();
+    },
+    fieldEffects(): IterableIterator<FieldEffect> {
+      return fieldEffects.values();
     },
     enemyCount(): number {
       return enemies.size;
@@ -391,6 +518,9 @@ export function createEntityStore(): EntityStore {
     dropCount(): number {
       return drops.size;
     },
+    fieldEffectCount(): number {
+      return fieldEffects.size;
+    },
     removeEnemy(id): boolean {
       return enemies.delete(id);
     },
@@ -403,6 +533,9 @@ export function createEntityStore(): EntityStore {
     removeDrop(id): boolean {
       return drops.delete(id);
     },
+    removeFieldEffect(id): boolean {
+      return fieldEffects.delete(id);
+    },
     removePlayer(): boolean {
       if (player === null) return false;
       player = null;
@@ -414,7 +547,46 @@ export function createEntityStore(): EntityStore {
       bosses.clear();
       projectiles.clear();
       drops.clear();
+      fieldEffects.clear();
       nextId = 1;
     }
   };
+}
+
+function copyActorEffect(effect: ActorEffectApplication): ActorEffectApplication {
+  switch (effect.kind) {
+    case 'damage':
+      return { kind: 'damage', amount: effect.amount };
+    case 'status':
+      switch (effect.status.kind) {
+        case 'burn':
+        case 'poison':
+          return {
+            kind: 'status',
+            status: {
+              kind: effect.status.kind,
+              damagePerTick: effect.status.damagePerTick,
+              tickEveryMs: effect.status.tickEveryMs,
+              durationMs: effect.status.durationMs
+            }
+          };
+        case 'slow':
+          return {
+            kind: 'status',
+            status: {
+              kind: 'slow',
+              speedMultiplier: effect.status.speedMultiplier,
+              durationMs: effect.status.durationMs
+            }
+          };
+        default:
+          return assertNever(effect.status);
+      }
+    default:
+      return assertNever(effect);
+  }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`unhandled entity-store value: ${String(value)}`);
 }

@@ -74,4 +74,20 @@ export const FIREBALL_STAFF_PROJECTILE_VISUAL: SpriteVisualSpec = {
   anchor: { x: 0.5, y: 0.5 }
 };
 
-export const PROJECTILE_VISUAL_SPECS = [PISTOL_PROJECTILE_VISUAL, SHOTGUN_PROJECTILE_VISUAL, SMG_PROJECTILE_VISUAL, SNIPER_PROJECTILE_VISUAL, LASER_PROJECTILE_VISUAL, ROCK_THROWER_PROJECTILE_VISUAL, GRENADE_LAUNCHER_PROJECTILE_VISUAL, BOMB_PLACER_PROJECTILE_VISUAL, FIREBALL_STAFF_PROJECTILE_VISUAL] as const satisfies ReadonlyArray<SpriteVisualSpec>;
+export const DEMO_HAZARD_GRENADE_PROJECTILE_VISUAL: SpriteVisualSpec = {
+  archetypeId: 'demo-hazard-grenade',
+  image: '/assets/projectiles/grenade-launcher.png',
+  sourceSizePx: { width: 80, height: 93 },
+  worldSize: { width: 0.3333333333333333, height: 0.3875 },
+  anchor: { x: 0.5, y: 0.5 }
+};
+
+export const DEMO_PROXIMITY_MINE_PROJECTILE_VISUAL: SpriteVisualSpec = {
+  archetypeId: 'demo-proximity-mine',
+  image: '/assets/projectiles/bomb-placer.png',
+  sourceSizePx: { width: 184, height: 175 },
+  worldSize: { width: 0.7666666666666667, height: 0.7291666666666666 },
+  anchor: { x: 0.5, y: 0.5 }
+};
+
+export const PROJECTILE_VISUAL_SPECS = [PISTOL_PROJECTILE_VISUAL, SHOTGUN_PROJECTILE_VISUAL, SMG_PROJECTILE_VISUAL, SNIPER_PROJECTILE_VISUAL, LASER_PROJECTILE_VISUAL, ROCK_THROWER_PROJECTILE_VISUAL, GRENADE_LAUNCHER_PROJECTILE_VISUAL, BOMB_PLACER_PROJECTILE_VISUAL, FIREBALL_STAFF_PROJECTILE_VISUAL, DEMO_HAZARD_GRENADE_PROJECTILE_VISUAL, DEMO_PROXIMITY_MINE_PROJECTILE_VISUAL] as const satisfies ReadonlyArray<SpriteVisualSpec>;

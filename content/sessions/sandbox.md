@@ -11,6 +11,10 @@
 | loadoutWeaponIds | none |
 | selectedWeaponIndex | none |
 | slimeFriendlyFire | false |
+| aimAssistEnabled | false |
+| aimAssistMaxAngleRadians | 0 |
+| aimAssistMaxDistance | 0 |
+| aimAssistStrength | 0 |
 | winCondition | none |
 | lossCondition | none |
 

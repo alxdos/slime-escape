@@ -226,13 +226,11 @@ describe('drops integration (training preset)', () => {
     }
 
     expect(world.clock.isRunning()).toBe(false);
-    // We should have observed at least one heal pickup over a full training run.
     const pickups = world.events.filter((e) => e.kind === 'dropPickup');
     expect(pickups.length).toBeGreaterThan(0);
-    for (const event of pickups) {
-      if (event.kind !== 'dropPickup') continue;
-      expect(event.archetypeId).toBe(HEAL_ORB.id);
-    }
+    expect(pickups.some((event) => event.kind === 'dropPickup' && event.archetypeId === HEAL_ORB.id)).toBe(
+      true
+    );
   });
 
   it('drops never leak after the session ends (win or stop)', () => {

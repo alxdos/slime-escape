@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { DROP_ARCHETYPES, HEAL_ORB, OVERDRIVE, SIZE_UP } from '../shared/content/drops';
+import { DROP_ARCHETYPES, HEAL_ORB, MAGNET, OVERDRIVE, SIZE_UP } from '../shared/content/drops';
 import type { EnemyArchetype } from '../shared/content/enemies';
 import type { RuntimeEvent } from '../shared/events';
 import { createRng, type Rng } from '../shared/rng';
@@ -36,7 +36,9 @@ const NO_DROP_TEST_ENEMY: EnemyArchetype = {
   knockbackVelocityScale: 0,
   knockbackDurationMs: 1,
   color: 0xff7766,
-  dropTable: []
+  dropTable: [],
+  carrierDrop: null,
+  retaliation: { enabled: false, durationMs: 0 }
 };
 const LIGHT_DROPPER: EnemyArchetype = {
   ...NO_DROP_TEST_ENEMY,
@@ -83,9 +85,16 @@ const GUARANTEED_DROPPER: EnemyArchetype = {
   id: 'test-guaranteed-dropper',
   dropTable: [{ archetypeId: HEAL_ORB.id, chance: 1 }]
 };
+const CARRIER_DROPPER: EnemyArchetype = {
+  ...NO_DROP_TEST_ENEMY,
+  id: 'test-carrier-dropper',
+  displayName: 'Test Carrier Dropper',
+  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: [MAGNET.id, HEAL_ORB.id] }
+};
 const REGISTRY_WITH_GUARANTEED: Readonly<Record<string, EnemyArchetype>> = {
   ...REGISTRY,
-  [GUARANTEED_DROPPER.id]: GUARANTEED_DROPPER
+  [GUARANTEED_DROPPER.id]: GUARANTEED_DROPPER,
+  [CARRIER_DROPPER.id]: CARRIER_DROPPER
 };
 
 function spyRng(seed = 1): { rng: Rng; floatCalls: number } {
@@ -294,6 +303,35 @@ describe('DropSystem death hook (spawn semantics)', () => {
     // GUARANTEED_DROPPER fires twice, so at least two drops exist regardless of seed.
     expect(a.length).toBeGreaterThanOrEqual(2);
   });
+
+  it('spawns carrier guaranteed drops without consuming RNG', () => {
+    const store = createEntityStore();
+    const drops = createDropSystem(REGISTRY_WITH_GUARANTEED, DROP_ARCHETYPES);
+    const spy = spyRng(123);
+    drops.setRng(spy.rng);
+    const events: RuntimeEvent[] = [];
+
+    drops.onDeathHook(
+      makeDeathContext({
+        entityId: 77,
+        archetypeId: CARRIER_DROPPER.id,
+        position: { x: -1, y: 2 },
+        simTime: 444
+      }),
+      store,
+      (e) => events.push(e)
+    );
+
+    expect(spy.floatCalls).toBe(0);
+    expect([...store.drops()].map((drop) => drop.archetypeId)).toEqual([
+      MAGNET.id,
+      HEAL_ORB.id
+    ]);
+    expect(events.map((event) => (event.kind === 'dropSpawn' ? event.archetypeId : ''))).toEqual([
+      MAGNET.id,
+      HEAL_ORB.id
+    ]);
+  });
 });
 
 describe('DropSystem tick (ttl, pickup, heal)', () => {
@@ -424,6 +462,69 @@ describe('DropSystem tick (ttl, pickup, heal)', () => {
       [player.id, OVERDRIVE.effect.cooldownMultiplier, OVERDRIVE.effect.durationMs, 1234]
     ]);
     expect(store.dropCount()).toBe(0);
+  });
+
+  it('pickupModifier expands pickup reach and keeps the modifier owner-local', () => {
+    const store = createEntityStore();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    store.spawnDrop({
+      archetypeId: MAGNET.id,
+      position: { x: 0, y: 0 },
+      radius: MAGNET.radius,
+      effect: MAGNET.effect,
+      color: MAGNET.color,
+      expireAtSimMs: 9999
+    });
+    const distantHeal = store.spawnDrop({
+      archetypeId: HEAL_ORB.id,
+      position: { x: 1.1, y: 0 },
+      radius: HEAL_ORB.radius,
+      effect: HEAL_ORB.effect,
+      color: HEAL_ORB.color,
+      expireAtSimMs: 9999
+    });
+    player.hp = 1;
+    const drops = createDropSystem(REGISTRY, DROP_ARCHETYPES);
+    drops.setRng(createRng(1));
+
+    drops.tick(0, store, () => {});
+    expect(store.dropById(distantHeal.id)).not.toBeNull();
+
+    drops.tick(SIM_STEP_MS, store, () => {});
+
+    expect(store.dropById(distantHeal.id)).toBeNull();
+    expect(player.hp).toBe(2);
+  });
+
+  it('magnet attraction moves nearby drops deterministically before pickup', () => {
+    const store = createEntityStore();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    store.spawnDrop({
+      archetypeId: MAGNET.id,
+      position: { x: 0, y: 0 },
+      radius: MAGNET.radius,
+      effect: MAGNET.effect,
+      color: MAGNET.color,
+      expireAtSimMs: 9999
+    });
+    const heal = store.spawnDrop({
+      archetypeId: HEAL_ORB.id,
+      position: { x: 1.6, y: 0 },
+      radius: HEAL_ORB.radius,
+      effect: HEAL_ORB.effect,
+      color: HEAL_ORB.color,
+      expireAtSimMs: 9999
+    });
+    const drops = createDropSystem(REGISTRY, DROP_ARCHETYPES);
+    drops.setRng(createRng(1));
+
+    drops.tick(0, store, () => {});
+    drops.tick(SIM_STEP_MS, store, () => {});
+
+    const moved = store.dropById(heal.id);
+    expect(moved).not.toBeNull();
+    expect(moved?.position.x).toBeLessThan(1.6);
+    expect(moved?.position.y).toBe(0);
   });
 
   it('heal clamps at player.maxHp', () => {

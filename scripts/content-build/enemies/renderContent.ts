@@ -39,7 +39,9 @@ function renderEnemy(area: ParsedEnemiesArea, enemy: ParsedEnemy): string {
   knockbackVelocityScale: ${formatNumber(enemy.knockbackVelocityScale)},
   knockbackDurationMs: ${formatNumber(enemy.knockbackDurationMs)},
   color: ${formatHexColor(enemy.color)},
-  dropTable: ${renderDropTable(enemy.dropTable)}
+  dropTable: ${renderDropTable(enemy.dropTable)},
+  carrierDrop: ${renderCarrierDrop(enemy.carrierDrop)},
+  retaliation: { enabled: ${enemy.retaliation.enabled ? 'true' : 'false'}, durationMs: ${formatNumber(enemy.retaliation.durationMs)} }
 };`;
 }
 
@@ -52,6 +54,14 @@ function renderDropTable(dropTable: ReadonlyArray<ParsedDropTableEntry>): string
       `{ archetypeId: '${escapeString(entry.archetypeId)}', chance: ${formatNumber(entry.chance)} }`
   );
   return `[${entries.join(', ')}]`;
+}
+
+function renderCarrierDrop(carrierDrop: ParsedEnemy['carrierDrop']): string {
+  if (carrierDrop === null) return 'null';
+  const ids = carrierDrop.guaranteedDropArchetypeIds
+    .map((id) => `'${escapeString(id)}'`)
+    .join(', ');
+  return `{ marker: 'reward', guaranteedDropArchetypeIds: [${ids}] }`;
 }
 
 function toConstName(id: string): string {

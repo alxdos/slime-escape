@@ -49,14 +49,14 @@ describe('content-build enemies area', () => {
   it('allows multiple drop rows for one enemy', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'content-build-multi-drop-'));
     const sourcePath = join(directory, 'enemies.md');
-    await writeFile(sourcePath, makeEnemiesMarkdown({ extraRunnerDropArchetypeId: 'coin' }), 'utf8');
+    await writeFile(sourcePath, makeEnemiesMarkdown({ extraRunnerDropArchetypeId: 'size-up' }), 'utf8');
 
     const area = await parseEnemiesArea(sourcePath);
     const runner = area.enemies.find((enemy) => enemy.id === 'slime-one-eye');
 
     expect(runner?.dropTable).toEqual([
       { archetypeId: 'heal-orb', chance: 0.25 },
-      { archetypeId: 'coin', chance: 0.1 }
+      { archetypeId: 'size-up', chance: 0.1 }
     ]);
   });
 
@@ -292,6 +292,20 @@ ${extraBodyRow}
 |---|---|---:|
 | slime-one-eye | heal-orb | 0.25 |
 ${extraRunnerDropRow}
+
+## Carrier Drops
+
+| id | guaranteedDropArchetypeIds |
+|---|---|
+| test-stationary | none |
+| slime-one-eye | none |
+
+## Retaliation
+
+| id | enabled | durationMs |
+|---|---|---:|
+| test-stationary | false | 0 |
+| slime-one-eye | false | 0 |
 
 # Sound sets
 
