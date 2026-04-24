@@ -175,10 +175,14 @@ function makeFireEvent(): RuntimeEvent {
   };
 }
 
-function makeSnapshotPair(curr: Snapshot | null = null, nowMs = 0): SnapshotPair {
+type SnapshotInput =
+  | (Omit<Snapshot, 'weaponHud'> & Partial<Pick<Snapshot, 'weaponHud'>>)
+  | null;
+
+function makeSnapshotPair(curr: SnapshotInput = null, nowMs = 0): SnapshotPair {
   return {
     prev: null,
-    curr,
+    curr: curr === null ? null : { weaponHud: null, ...curr },
     currReceivedAtMs: 0,
     nowMs
   };
@@ -750,7 +754,8 @@ describe('createAudio', () => {
           hp: 20,
           maxHp: 40,
           activeAttackIds: []
-        }
+        },
+        weaponHud: null
       }),
       { kind: 'running' },
       null
@@ -774,10 +779,21 @@ describe('createAudio', () => {
       phaseIndex: 1,
       phaseId: 'desperation'
     });
+    audio.handleEvent({
+      kind: 'explosion',
+      simTime: 230,
+      projectileId: 9,
+      ownerKind: 'player',
+      weaponArchetypeId: 'bomb-placer',
+      damage: 5,
+      radius: 2,
+      x: 0,
+      y: 0
+    });
 
     await flushAudioWork();
 
-    expect(context.sources).toHaveLength(baselineSourceCount + 2);
+    expect(context.sources).toHaveLength(baselineSourceCount + 3);
   });
 
   it('drops the oldest one-shot when more than 32 one-shots overlap', async () => {
@@ -1005,7 +1021,8 @@ describe('createAudio', () => {
       },
       zone: { mode: 'disabled', margin: 0 },
       waveProgress: null,
-      bossHud: null
+      bossHud: null,
+      weaponHud: null
     };
 
     audio.update(makeSnapshotPair(slimeSnapshot), { kind: 'running' }, null);

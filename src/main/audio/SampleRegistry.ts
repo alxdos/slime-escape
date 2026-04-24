@@ -215,6 +215,13 @@ export const DEFAULT_SAMPLE_ENTRIES: ReadonlyArray<SampleEntry> = Object.freeze(
     defaultGain: 1
   },
   {
+    id: 'events/explosion',
+    url: '/sfx/boss/boss-fireball.mp3',
+    category: 'sfx',
+    normalizedGain: 0.6,
+    defaultGain: 1
+  },
+  {
     id: 'events/drop-pickup',
     url: '/sfx/ui/open-2.mp3',
     category: 'sfx',

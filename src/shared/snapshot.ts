@@ -26,6 +26,14 @@ export type ProjectileSnapshot = Readonly<{
   ownerKind: 'player' | 'enemy' | 'boss';
   x: number;
   y: number;
+  state: 'flying' | 'grounded';
+  visualState: Readonly<{
+    angleRadians: number;
+    spinRadians: number;
+    pulsePhase: number;
+  }>;
+  explosionRadius: number | null;
+  detonateAtSimMs: number | null;
 }>;
 
 export type DropSnapshot = Readonly<{
@@ -87,6 +95,18 @@ export type BossHudSnapshot = Readonly<{
   activeAttackIds: ReadonlyArray<string>;
 }>;
 
+export type WeaponHudSnapshot = Readonly<{
+  selectedIndex: number | null;
+  weapons: ReadonlyArray<
+    Readonly<{
+      index: number;
+      weaponArchetypeId: string;
+      cooldownReadyAtSimMs: number;
+      overdriveUntilSimMs: number | null;
+    }>
+  >;
+}>;
+
 export type Snapshot = Readonly<{
   simTimeMs: number;
   entities: ReadonlyArray<EntitySnapshot>;
@@ -94,4 +114,5 @@ export type Snapshot = Readonly<{
   zone: ZoneSnapshot;
   waveProgress: WaveProgressSnapshot | null;
   bossHud: BossHudSnapshot | null;
+  weaponHud: WeaponHudSnapshot | null;
 }>;

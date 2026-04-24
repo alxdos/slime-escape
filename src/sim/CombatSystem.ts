@@ -11,6 +11,7 @@ import {
 import type { RuntimeEvent } from '../shared/events';
 import { assertNever } from '../shared/protocol';
 import type { ArenaConfig, DamageRules, Loadout, Vec2 } from '../shared/session';
+import type { WeaponHudSnapshot } from '../shared/snapshot';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import type { Boss, Enemy, EntityId, EntityStore, Player, Projectile } from './EntityStore';
@@ -62,6 +63,7 @@ type ShooterWeapons = {
 export type CombatSystem = Readonly<{
   setDamageRules(rules: DamageRules): void;
   setPlayerLoadout(playerId: EntityId, loadout: Loadout, simTimeMs: number): void;
+  weaponHudFor(playerId: EntityId | null): WeaponHudSnapshot | null;
   clear(): void;
   tick(
     input: RuntimeInputState,
@@ -107,6 +109,20 @@ export function createCombatSystem(
         weapons,
         selectedIndex: loadout.selectedIndex
       });
+    },
+    weaponHudFor(playerId): WeaponHudSnapshot | null {
+      if (playerId === null) return null;
+      const loadout = shooterWeapons.get(playerId);
+      if (loadout === undefined) return null;
+      return {
+        selectedIndex: loadout.selectedIndex,
+        weapons: loadout.weapons.map((weapon, index) => ({
+          index,
+          weaponArchetypeId: weapon.archetypeId,
+          cooldownReadyAtSimMs: weapon.nextFireSimMs,
+          overdriveUntilSimMs: weapon.overdriveUntilSimMs
+        }))
+      };
     },
     clear(): void {
       shooterWeapons.clear();

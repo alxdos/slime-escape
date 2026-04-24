@@ -3,9 +3,11 @@ import type {
   EncounterSnapshot,
   EntitySnapshot,
   Snapshot,
+  WeaponHudSnapshot,
   WaveProgressSnapshot,
   ZoneSnapshot
 } from '../shared/snapshot';
+import { WEAPON_ARCHETYPES } from '../shared/content/weapons';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../shared/timing';
 
 import type { EntityStore } from './EntityStore';
@@ -17,6 +19,7 @@ export type SnapshotSources = Readonly<{
   encounter: EncounterContext | null;
   zone: ZoneSnapshot;
   waveProgress: WaveProgressSnapshot | null;
+  weaponHud: WeaponHudSnapshot | null;
 }>;
 
 export type SnapshotExportSystem = Readonly<{
@@ -61,7 +64,11 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           weaponArchetypeId: projectile.weaponArchetypeId,
           ownerKind: projectile.ownerKind,
           x: projectile.position.x,
-          y: projectile.position.y
+          y: projectile.position.y,
+          state: projectile.state,
+          visualState: projectileVisualState(projectile, simTimeMs),
+          explosionRadius: projectile.explosion?.radius ?? null,
+          detonateAtSimMs: projectile.detonateAtSimMs
         });
       }
       for (const drop of store.drops()) {
@@ -111,13 +118,38 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
                 total: sources.waveProgress.total,
                 alive: sources.waveProgress.alive
               },
-        bossHud
+        bossHud,
+        weaponHud:
+          sources.weaponHud === null
+            ? null
+            : {
+                selectedIndex: sources.weaponHud.selectedIndex,
+                weapons: sources.weaponHud.weapons.map((weapon) => ({
+                  index: weapon.index,
+                  weaponArchetypeId: weapon.weaponArchetypeId,
+                  cooldownReadyAtSimMs: weapon.cooldownReadyAtSimMs,
+                  overdriveUntilSimMs: weapon.overdriveUntilSimMs
+                }))
+              }
       };
     },
     reset(): void {
       tickCount = 0;
     }
   };
+}
+
+function projectileVisualState(
+  projectile: { weaponArchetypeId: string; velocity: { vx: number; vy: number } },
+  simTimeMs: number
+): { angleRadians: number; spinRadians: number; pulsePhase: number } {
+  const archetype = WEAPON_ARCHETYPES[projectile.weaponArchetypeId];
+  const visual = archetype?.projectile.visual;
+  const speed = Math.hypot(projectile.velocity.vx, projectile.velocity.vy);
+  const angleRadians = speed === 0 ? 0 : Math.atan2(projectile.velocity.vy, projectile.velocity.vx);
+  const spinRadians = ((visual?.spinRadiansPerSec ?? 0) * simTimeMs) / 1000;
+  const pulsePhase = (((simTimeMs % 1000) + 1000) % 1000) / 1000;
+  return { angleRadians, spinRadians, pulsePhase };
 }
 
 function makeEncounterSnapshot(

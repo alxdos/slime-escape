@@ -541,8 +541,13 @@ export function createAudio(init: AudioInit = {}): Audio {
         }
         return;
       }
-      case 'explosion':
+      case 'explosion': {
+        const sampleId = dependencies.audioMappings.resolveEventSample('explosion');
+        if (sampleId !== null) {
+          playSampleById(sampleId);
+        }
         return;
+      }
       case 'bossPhaseChange': {
         const bossArchetypeId = resolveBossArchetypeId(event.bossId);
         if (bossArchetypeId === null) {

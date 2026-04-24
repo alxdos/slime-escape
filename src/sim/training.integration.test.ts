@@ -126,7 +126,8 @@ function setupWorld() {
       waveProgress:
         encCtx !== null && encCtx.encounter.spawnPlan.kind === 'wave'
           ? spawn.waveProgress()
-          : null
+          : null,
+      weaponHud: null
     });
   }
 

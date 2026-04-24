@@ -32,6 +32,7 @@ export type BossAudioMapping = Readonly<{
 }>;
 
 export type EventAudioMapping = Readonly<{
+  explosion?: SampleSpec;
   dropPickup?: SampleSpec;
   dropSpawn?: SampleSpec;
   dropExpire?: SampleSpec;
@@ -64,6 +65,7 @@ export type AudioMappings = Readonly<{
 }>;
 
 const EVENT_AUDIO_MAPPINGS: EventAudioMapping = Object.freeze({
+  explosion: 'events/explosion',
   dropPickup: 'events/drop-pickup',
   uiOverlayShow: ['ui/open-1', 'ui/open-2'],
   uiButtonClick: ['ui/switch-1', 'ui/switch-2', 'ui/switch-3', 'ui/switch-4']
@@ -165,6 +167,7 @@ function validateMappings(sampleRegistry: Pick<SampleRegistry, 'require'>): void
   }
 
   validateOptionalSampleSpec(EVENT_AUDIO_MAPPINGS.dropPickup, sampleRegistry);
+  validateOptionalSampleSpec(EVENT_AUDIO_MAPPINGS.explosion, sampleRegistry);
   validateOptionalSampleSpec(EVENT_AUDIO_MAPPINGS.dropSpawn, sampleRegistry);
   validateOptionalSampleSpec(EVENT_AUDIO_MAPPINGS.dropExpire, sampleRegistry);
   validateOptionalSampleSpec(EVENT_AUDIO_MAPPINGS.uiOverlayShow, sampleRegistry);

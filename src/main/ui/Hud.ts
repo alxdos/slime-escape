@@ -1,4 +1,5 @@
 import { BOSS_ARCHETYPES, type BossArchetype } from '../../shared/content/bosses';
+import { WEAPON_ARCHETYPES } from '../../shared/content/weapons';
 import type { SessionDefinition } from '../../shared/session';
 import type {
   BossHudSnapshot,
@@ -26,9 +27,16 @@ export type HudViewModel = Readonly<{
   encounterIdText: string;
   encounterTypeText: string;
   encounterElapsedText: string;
+  weapon: WeaponViewModel | null;
   waveTitleText: string | null;
   waveProgressText: string | null;
   boss: BossViewModel | null;
+}>;
+
+export type WeaponViewModel = Readonly<{
+  titleText: string;
+  slotText: string;
+  cooldownText: string;
 }>;
 
 export type BossViewModel = Readonly<{
@@ -45,11 +53,13 @@ export function createHud(init: HudInit): Hud {
   root.style.display = 'none';
 
   const hpBlock = createBlock('HP');
+  const weaponBlock = createBlock('Weapon');
   const encounterBlock = createBlock('Encounter');
   const waveBlock = createBlock('Wave');
   const bossBlock = createBossBlock();
 
   root.appendChild(hpBlock.root);
+  root.appendChild(weaponBlock.root);
   root.appendChild(encounterBlock.root);
   root.appendChild(waveBlock.root);
   root.appendChild(bossBlock.root);
@@ -61,11 +71,25 @@ export function createHud(init: HudInit): Hud {
     attach(nextSession): void {
       session = nextSession;
       root.style.display = 'grid';
-      render(deriveHudViewModel(nextSession, null), hpBlock, encounterBlock, waveBlock, bossBlock);
+      render(
+        deriveHudViewModel(nextSession, null),
+        hpBlock,
+        weaponBlock,
+        encounterBlock,
+        waveBlock,
+        bossBlock
+      );
     },
     update(snapshotPair): void {
       if (session === null) return;
-      render(deriveHudViewModel(session, snapshotPair.curr), hpBlock, encounterBlock, waveBlock, bossBlock);
+      render(
+        deriveHudViewModel(session, snapshotPair.curr),
+        hpBlock,
+        weaponBlock,
+        encounterBlock,
+        waveBlock,
+        bossBlock
+      );
     },
     detach(): void {
       session = null;
@@ -93,6 +117,7 @@ export function deriveHudViewModel(
     encounterIdText: encounter?.id ?? 'waiting',
     encounterTypeText: encounter?.type ?? 'none',
     encounterElapsedText: encounter === null ? '--:--' : formatElapsedMs(encounter.elapsedMs),
+    weapon: deriveWeaponSummary(snapshot),
     waveTitleText: wave?.title ?? null,
     waveProgressText: wave?.progress ?? null,
     boss: deriveBossSummary(snapshot)
@@ -109,12 +134,14 @@ export function formatElapsedMs(elapsedMs: number): string {
 function render(
   viewModel: HudViewModel,
   hpBlock: HudBlock,
+  weaponBlock: HudBlock,
   encounterBlock: HudBlock,
   waveBlock: HudBlock,
   bossBlock: BossHudBlock
 ): void {
   hpBlock.value.textContent = viewModel.hpText;
   hpBlock.meta.textContent = '';
+  renderOptionalBlock(weaponBlock, viewModel.weapon);
   encounterBlock.value.textContent = `${viewModel.encounterTypeText} • ${viewModel.encounterIdText}`;
   encounterBlock.meta.textContent = `t=${viewModel.encounterElapsedText}`;
 
@@ -140,6 +167,18 @@ function render(
   bossBlock.value.textContent = viewModel.boss.titleText;
   bossBlock.meta.textContent = `${viewModel.boss.phaseText} · ${viewModel.boss.hpText}`;
   bossBlock.barFill.style.width = `${Math.round(viewModel.boss.hpRatio * 100)}%`;
+}
+
+function renderOptionalBlock(block: HudBlock, viewModel: WeaponViewModel | null): void {
+  if (viewModel === null) {
+    block.root.style.display = 'none';
+    block.value.textContent = '';
+    block.meta.textContent = '';
+    return;
+  }
+  block.root.style.display = 'flex';
+  block.value.textContent = viewModel.titleText;
+  block.meta.textContent = `${viewModel.slotText} · ${viewModel.cooldownText}`;
 }
 
 type HudBlock = Readonly<{
@@ -241,6 +280,43 @@ function deriveBossSummary(snapshot: Snapshot | null): BossViewModel | null {
     phaseText: formatBossPhaseText(bossHud, bossArchetype),
     hpText: `${clampHp(bossHud.hp)} / ${bossHud.maxHp}`,
     hpRatio: clampRatio(bossHud.maxHp <= 0 ? 0 : bossHud.hp / bossHud.maxHp)
+  };
+}
+
+function deriveWeaponSummary(snapshot: Snapshot | null): WeaponViewModel | null {
+  const weaponHud = snapshot?.weaponHud ?? null;
+  if (weaponHud === null) return null;
+  const weaponCount = weaponHud.weapons.length;
+  if (weaponCount === 0) {
+    return {
+      titleText: 'No weapons',
+      slotText: '0 / 0',
+      cooldownText: '—'
+    };
+  }
+  if (weaponHud.selectedIndex === null) {
+    return {
+      titleText: 'Holstered',
+      slotText: `— / ${weaponCount}`,
+      cooldownText: '—'
+    };
+  }
+
+  const selected = weaponHud.weapons.find((weapon) => weapon.index === weaponHud.selectedIndex);
+  if (selected === undefined) {
+    return {
+      titleText: 'Unknown weapon',
+      slotText: `${weaponHud.selectedIndex + 1} / ${weaponCount}`,
+      cooldownText: '—'
+    };
+  }
+
+  const archetype = WEAPON_ARCHETYPES[selected.weaponArchetypeId];
+  const remainingMs = Math.max(0, selected.cooldownReadyAtSimMs - (snapshot?.simTimeMs ?? 0));
+  return {
+    titleText: archetype?.displayName ?? selected.weaponArchetypeId,
+    slotText: `${selected.index + 1} / ${weaponCount}`,
+    cooldownText: remainingMs === 0 ? 'Ready' : `${(remainingMs / 1000).toFixed(1)}s`
   };
 }
 

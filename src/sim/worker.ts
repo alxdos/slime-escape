@@ -62,7 +62,8 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
   const snapshot = exporter.onTick(simTimeMs, entities, {
     encounter: encounterCtx,
     zone: zone.zone(),
-    waveProgress: waveSnap
+    waveProgress: waveSnap,
+    weaponHud: combat.weaponHudFor(entities.player()?.id ?? null)
   });
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });

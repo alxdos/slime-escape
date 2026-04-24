@@ -215,6 +215,45 @@ describe('CombatSystem', () => {
     expect(shotgunFire.dirY).toBeCloseTo(0);
   });
 
+  it('exposes player weapon HUD state with selected slot and cooldowns', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id, SHOTGUN.id], selectedIndex: 0 }, 0);
+
+    combat.tick(
+      makeInput({
+        aimWorld: { x: 5, y: 0 },
+        firing: true,
+        loadout: { weapons: [PISTOL.id, SHOTGUN.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      () => {}
+    );
+
+    expect(combat.weaponHudFor(player.id)).toEqual({
+      selectedIndex: 0,
+      weapons: [
+        {
+          index: 0,
+          weaponArchetypeId: PISTOL.id,
+          cooldownReadyAtSimMs: PISTOL.cooldownMs,
+          overdriveUntilSimMs: null
+        },
+        {
+          index: 1,
+          weaponArchetypeId: SHOTGUN.id,
+          cooldownReadyAtSimMs: 0,
+          overdriveUntilSimMs: null
+        }
+      ]
+    });
+  });
+
   it('does not fire while the runtime loadout is holstered', () => {
     const store = createEntityStore();
     const index = createSpatialIndex();
