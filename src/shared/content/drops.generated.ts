@@ -16,7 +16,7 @@ export const SIZE_UP: DropArchetype = {
   displayName: 'Size Up',
   radius: 0.36666666666666664,
   ttlMs: 10000,
-  effect: { kind: 'addWeaponModifier', modifier: { kind: 'projectileSizeMultiplier', multiplier: 1.25 }, target: 'selectedWeapon' },
+  effect: { kind: 'addWeaponModifier', modifier: { kind: 'projectileSizeMultiplier', multiplier: 1.5 }, target: 'selectedWeapon' },
   color: 0xffcf5a
 };
 

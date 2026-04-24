@@ -47,7 +47,7 @@ export const SHOTGUN: WeaponArchetype = {
 export const SMG: WeaponArchetype = {
   id: 'smg',
   displayName: 'SMG',
-  cooldownMs: 90,
+  cooldownMs: 150,
   firePattern: { kind: 'single', spreadRadians: 0, count: 1 },
   projectile: {
     motion: { kind: 'linear', speed: 22 },

@@ -118,7 +118,7 @@
 |---|---:|
 | pistol | 250 |
 | shotgun | 900 |
-| smg | 90 |
+| smg | 150 |
 | sniper | 1200 |
 | laser | 140 |
 | rock-thrower | 700 |

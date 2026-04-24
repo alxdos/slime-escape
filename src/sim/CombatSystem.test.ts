@@ -6,6 +6,7 @@ import {
   PISTOL,
   ROCK_THROWER,
   SHOTGUN,
+  SMG,
   SNIPER,
   type WeaponArchetype
 } from '../shared/content/weapons';
@@ -181,6 +182,30 @@ describe('CombatSystem', () => {
 
     combat.tick(input, store, index, PISTOL.cooldownMs, ARENA, (e) => events.push(e));
     expect(events.filter((e) => e.kind === 'fire')).toHaveLength(2);
+  });
+
+  it('keeps base SMG cadence at a 150ms tick-aligned interval', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [SMG.id], selectedIndex: 0 }, 0);
+    const input = makeInput({
+      aimWorld: { x: 5, y: 0 },
+      firing: true,
+      loadout: { weapons: [SMG.id], selectedIndex: 0 }
+    });
+    const events: RuntimeEvent[] = [];
+
+    for (let tick = 0; tick <= 20; tick += 1) {
+      combat.tick(input, store, index, tick * SIM_STEP_MS, ARENA, (e) => events.push(e));
+    }
+
+    expect(events.filter((e) => e.kind === 'fire').map((e) => e.simTime)).toEqual([
+      0,
+      150,
+      300
+    ]);
   });
 
   it('uses runtime selected slot and keeps cooldowns owner-local per weapon instance', () => {

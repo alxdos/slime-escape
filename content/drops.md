@@ -104,7 +104,7 @@
 
 | id | modifierKind | value | fragmentWeaponId | spreadRadians |
 |---|---|---:|---|---:|
-| size-up | projectileSizeMultiplier | 1.25 | none | 0 |
+| size-up | projectileSizeMultiplier | 1.5 | none | 0 |
 | speed-up | projectileSpeedMultiplier | 1.3 | none | 0 |
 | multi-shot | symmetricProjectileMultiplier | 2 | none | 0 |
 | pierce | pierceBonus | 1 | none | 0 |
