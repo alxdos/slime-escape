@@ -100,6 +100,69 @@ describe('SessionFlowSystem', () => {
     expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('initializes runtime loadout selection from the session loadout', () => {
+    const clock = createFakeClock();
+    const flow = createSessionFlowSystem({ clock, emitEvent: () => {} });
+    const session = makeSession([emptyEncounter('only', { kind: 'never', next: 'sequential' })], {
+      loadout: { weapons: ['pistol', 'shotgun', 'smg'], selectedIndex: 1 }
+    });
+
+    flow.start(session);
+
+    expect(flow.inputState().loadout).toEqual({
+      weapons: ['pistol', 'shotgun', 'smg'],
+      selectedIndex: 1
+    });
+  });
+
+  it('selects valid weapon slots and holsters the selected weapon', () => {
+    const clock = createFakeClock();
+    const flow = createSessionFlowSystem({ clock, emitEvent: () => {} });
+    const session = makeSession([emptyEncounter('only', { kind: 'never', next: 'sequential' })], {
+      loadout: { weapons: ['pistol', 'shotgun', 'smg'], selectedIndex: 0 }
+    });
+
+    flow.start(session);
+    flow.handleInput({ kind: 'selectWeaponSlot', slotIndex: 2 });
+    expect(flow.inputState().loadout?.selectedIndex).toBe(2);
+
+    flow.handleInput({ kind: 'holsterWeapon' });
+    expect(flow.inputState().loadout?.selectedIndex).toBeNull();
+  });
+
+  it('warns and keeps current selection for invalid weapon slots', () => {
+    const clock = createFakeClock();
+    const flow = createSessionFlowSystem({ clock, emitEvent: () => {} });
+    const session = makeSession([emptyEncounter('only', { kind: 'never', next: 'sequential' })], {
+      loadout: { weapons: ['pistol', 'shotgun'], selectedIndex: 1 }
+    });
+
+    flow.start(session);
+    warnSpy.mockClear();
+
+    flow.handleInput({ kind: 'selectWeaponSlot', slotIndex: 2 });
+    flow.handleInput({ kind: 'selectWeaponSlot', slotIndex: -1 });
+    flow.handleInput({ kind: 'selectWeaponSlot', slotIndex: 0.5 });
+
+    expect(flow.inputState().loadout?.selectedIndex).toBe(1);
+    expect(warnSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('warns and ignores weapon slot selection when the session has no loadout', () => {
+    const clock = createFakeClock();
+    const flow = createSessionFlowSystem({ clock, emitEvent: () => {} });
+    const session = buildSessionDefinition(SANDBOX_PRESET, { seed: 1 });
+
+    flow.start(session);
+    warnSpy.mockClear();
+
+    flow.handleInput({ kind: 'selectWeaponSlot', slotIndex: 0 });
+    flow.handleInput({ kind: 'holsterWeapon' });
+
+    expect(flow.inputState().loadout).toBeNull();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('emits pause/resume only when active and only on state change', () => {
     const clock = createFakeClock();
     const events: RuntimeEvent[] = [];
@@ -203,10 +266,14 @@ function waveEncounter(id: string, transitionRules: EncounterDefinition['transit
   };
 }
 
-function makeSession(encounters: ReadonlyArray<EncounterDefinition>, options?: {
-  win?: SessionDefinition['winCondition'];
-  loss?: SessionDefinition['lossCondition'];
-}): SessionDefinition {
+function makeSession(
+  encounters: ReadonlyArray<EncounterDefinition>,
+  options?: {
+    loadout?: SessionDefinition['loadout'];
+    win?: SessionDefinition['winCondition'];
+    loss?: SessionDefinition['lossCondition'];
+  }
+): SessionDefinition {
   return {
     id: 'flow-test',
     seed: 1,
@@ -218,7 +285,7 @@ function makeSession(encounters: ReadonlyArray<EncounterDefinition>, options?: {
       maxSpeed: 6,
       maxHp: 1
     },
-    loadout: null,
+    loadout: options?.loadout ?? null,
     backgrounds: [],
     modifiers: [],
     rules: { damage: { slimeFriendlyFire: false } },

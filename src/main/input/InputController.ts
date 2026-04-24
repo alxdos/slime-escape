@@ -5,6 +5,7 @@ import type { ArenaConfig } from '../../shared/session';
 import {
   applyMouseDeltaToAim,
   moveVectorFromKeys,
+  weaponHotkeyCommandFromCode,
   type MoveVector,
   type Vec2
 } from './inputMath';
@@ -98,6 +99,13 @@ export function createInputController(init: InputControllerInit): InputControlle
   }
 
   function onKeyDown(event: KeyboardEvent): void {
+    const weaponCommand = weaponHotkeyCommandFromCode(event.code);
+    if (weaponCommand !== null) {
+      event.preventDefault();
+      if (event.repeat) return;
+      onCommand(weaponCommand);
+      return;
+    }
     if (!isMovementCode(event.code)) return;
     event.preventDefault();
     if (event.repeat) return;

@@ -1,3 +1,4 @@
+import type { InputCommand } from '../../shared/input';
 import type { ArenaConfig } from '../../shared/session';
 
 export type KeyState = Readonly<{
@@ -10,6 +11,11 @@ export type KeyState = Readonly<{
 export type Vec2 = Readonly<{ x: number; y: number }>;
 
 export type MoveVector = Readonly<{ dx: number; dy: number }>;
+
+export type WeaponHotkeyCommand = Extract<
+  InputCommand,
+  { kind: 'selectWeaponSlot' } | { kind: 'holsterWeapon' }
+>;
 
 export function moveVectorFromKeys(keys: KeyState): MoveVector {
   const dx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
@@ -45,6 +51,13 @@ export function applyMouseDeltaToAim(
     y: aim.y - movementY / pixelsPerWorldUnit
   };
   return clampAimToArena(next, arena);
+}
+
+export function weaponHotkeyCommandFromCode(code: string): WeaponHotkeyCommand | null {
+  if (code === 'Digit0') return { kind: 'holsterWeapon' };
+  const match = /^Digit([1-9])$/.exec(code);
+  if (match === null) return null;
+  return { kind: 'selectWeaponSlot', slotIndex: Number(match[1]) - 1 };
 }
 
 function clamp(value: number, min: number, max: number): number {

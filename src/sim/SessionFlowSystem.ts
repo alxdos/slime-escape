@@ -72,7 +72,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
       return;
     }
     sessionRng = createRng(next.seed);
-    resetRuntimeInputState(input, next.player.position.x, next.player.position.y);
+    resetRuntimeInputState(input, next.player.position.x, next.player.position.y, next.loadout);
     deps.onSessionStart?.(next, sessionRng);
     clock.toRunning();
     const simTime = clock.simTimeMs();
@@ -137,9 +137,35 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
       case 'fire':
         input.firing = command.phase === 'start';
         return;
+      case 'selectWeaponSlot':
+        selectWeaponSlot(command.slotIndex);
+        return;
+      case 'holsterWeapon':
+        holsterWeapon();
+        return;
       default:
         assertNever(command);
     }
+  }
+
+  function selectWeaponSlot(slotIndex: number): void {
+    if (input.loadout === null) {
+      log.warn('selectWeaponSlot ignored: no active player loadout', { slotIndex });
+      return;
+    }
+    if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= input.loadout.weapons.length) {
+      log.warn('selectWeaponSlot ignored: slot index outside player loadout', {
+        slotIndex,
+        weaponCount: input.loadout.weapons.length
+      });
+      return;
+    }
+    input.loadout.selectedIndex = slotIndex;
+  }
+
+  function holsterWeapon(): void {
+    if (input.loadout === null) return;
+    input.loadout.selectedIndex = null;
   }
 
   function checkTransitions(simTimeMs: number): void {
