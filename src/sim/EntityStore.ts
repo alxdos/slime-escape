@@ -1,5 +1,6 @@
 import type { DropEffect } from '../shared/content/drops';
 import type { EnemyBehavior } from '../shared/content/enemies';
+import type { ExplosionSpec } from '../shared/content/weapons';
 import type { ContactBox, PlayerSpawn, Vec2 } from '../shared/session';
 
 export type EntityId = number & { readonly __brand: 'EntityId' };
@@ -75,9 +76,16 @@ export type Projectile = {
   readonly kind: 'projectile';
   readonly weaponArchetypeId: string;
   readonly ownerKind: 'player' | 'enemy' | 'boss';
-  readonly radius: number;
-  readonly damage: number;
+  readonly motionKind: 'linear' | 'arc' | 'placed';
+  readonly size: { width: number; height: number };
+  readonly hitRadius: number;
+  readonly impactDamage: number;
   readonly knockbackImpulse: number;
+  pierceRemaining: number;
+  readonly groundOnImpact: boolean;
+  readonly groundedLifetimeMs: number | null;
+  readonly explosion: ExplosionSpec | null;
+  groundAtSimMs: number | null;
   readonly expireAtSimMs: number;
   position: { x: number; y: number };
   velocity: { vx: number; vy: number };
@@ -113,11 +121,18 @@ export type EnemySpawnSpec = Readonly<{
 export type ProjectileSpawnSpec = Readonly<{
   weaponArchetypeId: string;
   ownerKind: 'player' | 'enemy' | 'boss';
+  motionKind: 'linear' | 'arc' | 'placed';
   position: Vec2;
   velocity: { vx: number; vy: number };
-  radius: number;
-  damage: number;
+  size: Readonly<{ width: number; height: number }>;
+  hitRadius: number;
+  impactDamage: number;
   knockbackImpulse: number;
+  pierceRemaining: number;
+  groundOnImpact: boolean;
+  groundedLifetimeMs: number | null;
+  explosion: ExplosionSpec | null;
+  groundAtSimMs: number | null;
   expireAtSimMs: number;
 }>;
 
@@ -272,9 +287,16 @@ export function createEntityStore(): EntityStore {
         kind: 'projectile',
         weaponArchetypeId: spec.weaponArchetypeId,
         ownerKind: spec.ownerKind,
-        radius: spec.radius,
-        damage: spec.damage,
+        motionKind: spec.motionKind,
+        size: { width: spec.size.width, height: spec.size.height },
+        hitRadius: spec.hitRadius,
+        impactDamage: spec.impactDamage,
         knockbackImpulse: spec.knockbackImpulse,
+        pierceRemaining: spec.pierceRemaining,
+        groundOnImpact: spec.groundOnImpact,
+        groundedLifetimeMs: spec.groundedLifetimeMs,
+        explosion: spec.explosion === null ? null : structuredClone(spec.explosion),
+        groundAtSimMs: spec.groundAtSimMs,
         expireAtSimMs: spec.expireAtSimMs,
         position: { x: spec.position.x, y: spec.position.y },
         velocity: { vx: spec.velocity.vx, vy: spec.velocity.vy }

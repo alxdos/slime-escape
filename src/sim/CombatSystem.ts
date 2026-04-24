@@ -1,7 +1,13 @@
 import { BOSS_ARCHETYPES } from '../shared/content/bosses';
 import { ENEMY_ARCHETYPES } from '../shared/content/enemies';
-import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../shared/content/weapons';
+import {
+  WEAPON_ARCHETYPES,
+  type FirePattern,
+  type WeaponArchetype,
+  type WeaponModifier
+} from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
+import { assertNever } from '../shared/protocol';
 import type { ArenaConfig, Loadout, Vec2 } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
@@ -31,8 +37,17 @@ export type DamageIntent = Readonly<{
   hitPosition: Vec2;
 }>;
 
+export type WeaponInstance = {
+  readonly archetypeId: string;
+  nextFireSimMs: number;
+  modifiers: WeaponModifier[];
+  overdriveUntilSimMs: number | null;
+};
+
 type ShooterWeapons = {
-  primary: { archetype: WeaponArchetype; nextFireSimMs: number };
+  ownerKind: 'player' | 'enemy' | 'boss';
+  weapons: WeaponInstance[];
+  selectedIndex: number | null;
 };
 
 type LinearProjectileArchetype = WeaponArchetype['projectile'] & {
@@ -59,22 +74,28 @@ export function createCombatSystem(
 
   return {
     setPlayerLoadout(playerId, loadout, simTimeMs): void {
-      if (loadout.selectedIndex === null) {
-        shooterWeapons.delete(playerId);
-        return;
-      }
-      const weaponId = loadout.weapons[loadout.selectedIndex];
-      if (weaponId === undefined) {
+      if (
+        loadout.selectedIndex !== null &&
+        (loadout.selectedIndex < 0 || loadout.selectedIndex >= loadout.weapons.length)
+      ) {
         throw new Error(
           `invalid selected weapon index on session start: ${loadout.selectedIndex}`
         );
       }
-      const archetype = weaponRegistry[weaponId];
-      if (archetype === undefined) {
-        throw new Error(`unknown weapon archetype on session start: ${weaponId}`);
+      const weapons = loadout.weapons.map((weaponId) => {
+        const archetype = weaponRegistry[weaponId];
+        if (archetype === undefined) {
+          throw new Error(`unknown weapon archetype on session start: ${weaponId}`);
+        }
+        return createWeaponInstance(archetype.id, simTimeMs);
+      });
+      if (weapons.length === 0) {
+        throw new Error('player loadout must contain at least one weapon');
       }
       shooterWeapons.set(playerId, {
-        primary: { archetype, nextFireSimMs: simTimeMs }
+        ownerKind: 'player',
+        weapons,
+        selectedIndex: loadout.selectedIndex
       });
     },
     clear(): void {
@@ -83,7 +104,7 @@ export function createCombatSystem(
     tick(input, store, index, simTimeMs, arena, emit): ReadonlyArray<DamageIntent> {
       const maxContactBoundsRadius = computeMaxContactBoundsRadius(store);
       const maxProjectileTargetBoundsRadius = computeMaxProjectileTargetBoundsRadius(store);
-      runFiringDecisions(input, store, simTimeMs, shooterWeapons, emit);
+      runFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit);
       runProjectileMovement(store);
       runLifetimeCleanup(store, simTimeMs, arena);
       index.rebuild(store);
@@ -107,6 +128,7 @@ function runFiringDecisions(
   store: EntityStore,
   simTimeMs: number,
   shooterWeapons: Map<EntityId, ShooterWeapons>,
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
   emit: (event: RuntimeEvent) => void
 ): void {
   const player = store.player();
@@ -115,47 +137,158 @@ function runFiringDecisions(
 
   const weapons = shooterWeapons.get(player.id);
   if (weapons === undefined) return;
-  if (simTimeMs < weapons.primary.nextFireSimMs) return;
+  if (input.loadout !== null) {
+    weapons.selectedIndex = input.loadout.selectedIndex;
+  }
 
-  const { archetype } = weapons.primary;
-  const projectile = legacyLinearProjectile(archetype);
-  if (projectile === null) return;
+  const selectedWeapon = selectedWeaponInstance(weapons);
+  if (selectedWeapon === null) return;
+  if (simTimeMs < selectedWeapon.nextFireSimMs) return;
+
+  const archetype = weaponRegistry[selectedWeapon.archetypeId];
+  if (archetype === undefined) return;
 
   const dx = input.aimWorld.x - player.position.x;
   const dy = input.aimWorld.y - player.position.y;
-  const len = Math.hypot(dx, dy);
-  if (len === 0) return;
+  const fireDirections = firePatternDirections(archetype.firePattern, dx, dy);
+  if (fireDirections.length === 0) return;
+  const eventDir = fireEventDirection(archetype.firePattern, dx, dy, fireDirections);
+  if (eventDir === null) return;
 
-  const dirX = dx / len;
-  const dirY = dy / len;
+  const spawned = spawnProjectilesForDirections(
+    store,
+    archetype,
+    weapons.ownerKind,
+    player.position,
+    fireDirections,
+    simTimeMs
+  );
+  if (spawned === 0) return;
 
-  store.spawnProjectile({
-    weaponArchetypeId: archetype.id,
-    ownerKind: 'player',
-    position: { x: player.position.x, y: player.position.y },
-    velocity: {
-      vx: dirX * projectile.motion.speed,
-      vy: dirY * projectile.motion.speed
-    },
-    radius: projectile.hitRadius,
-    damage: projectile.impactDamage,
-    knockbackImpulse: projectile.knockbackImpulse,
-    expireAtSimMs: simTimeMs + projectile.ttlMs
-  });
-
-  weapons.primary.nextFireSimMs = simTimeMs + archetype.cooldownMs;
-
+  selectedWeapon.nextFireSimMs = simTimeMs + archetype.cooldownMs;
   emit({
     kind: 'fire',
     simTime: simTimeMs,
     shooterId: player.id,
-    ownerKind: 'player',
+    ownerKind: weapons.ownerKind,
     weaponArchetypeId: archetype.id,
     originX: player.position.x,
     originY: player.position.y,
-    dirX,
-    dirY
+    dirX: eventDir.x,
+    dirY: eventDir.y
   });
+}
+
+function fireEventDirection(
+  pattern: FirePattern,
+  aimDx: number,
+  aimDy: number,
+  fireDirections: ReadonlyArray<Vec2>
+): Vec2 | null {
+  switch (pattern.kind) {
+    case 'single':
+      return normalizedVector(aimDx, aimDy);
+    case 'multiDirection':
+      return fireDirections[0] ?? null;
+    case 'place':
+      return null;
+    default:
+      return assertNever(pattern);
+  }
+}
+
+function normalizedVector(dx: number, dy: number): Vec2 | null {
+  const len = Math.hypot(dx, dy);
+  if (len === 0) return null;
+  return { x: dx / len, y: dy / len };
+}
+
+function createWeaponInstance(archetypeId: string, simTimeMs: number): WeaponInstance {
+  return {
+    archetypeId,
+    nextFireSimMs: simTimeMs,
+    modifiers: [],
+    overdriveUntilSimMs: null
+  };
+}
+
+function selectedWeaponInstance(weapons: ShooterWeapons): WeaponInstance | null {
+  if (weapons.selectedIndex === null) return null;
+  return weapons.weapons[weapons.selectedIndex] ?? null;
+}
+
+function firePatternDirections(
+  pattern: FirePattern,
+  aimDx: number,
+  aimDy: number
+): ReadonlyArray<Vec2> {
+  switch (pattern.kind) {
+    case 'single':
+      return aimedSpreadDirections(aimDx, aimDy, pattern.count, pattern.spreadRadians);
+    case 'multiDirection':
+      return pattern.directions.map((angle) => ({ x: Math.cos(angle), y: Math.sin(angle) }));
+    case 'place':
+      return [];
+    default:
+      return assertNever(pattern);
+  }
+}
+
+function aimedSpreadDirections(
+  aimDx: number,
+  aimDy: number,
+  count: number,
+  spreadRadians: number
+): ReadonlyArray<Vec2> {
+  const len = Math.hypot(aimDx, aimDy);
+  if (len === 0) return [];
+  const baseAngle = Math.atan2(aimDy, aimDx);
+  if (count === 1) {
+    return [{ x: Math.cos(baseAngle), y: Math.sin(baseAngle) }];
+  }
+  const start = baseAngle - spreadRadians / 2;
+  const step = spreadRadians / (count - 1);
+  const directions: Vec2[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const angle = start + step * index;
+    directions.push({ x: Math.cos(angle), y: Math.sin(angle) });
+  }
+  return directions;
+}
+
+function spawnProjectilesForDirections(
+  store: EntityStore,
+  archetype: WeaponArchetype,
+  ownerKind: 'player' | 'enemy' | 'boss',
+  origin: Vec2,
+  directions: ReadonlyArray<Vec2>,
+  simTimeMs: number
+): number {
+  const projectile = legacyLinearProjectile(archetype);
+  if (projectile === null) return 0;
+  for (const direction of directions) {
+    store.spawnProjectile({
+      weaponArchetypeId: archetype.id,
+      ownerKind,
+      motionKind: projectile.motion.kind,
+      position: origin,
+      velocity: {
+        vx: direction.x * projectile.motion.speed,
+        vy: direction.y * projectile.motion.speed
+      },
+      size: projectile.size,
+      hitRadius: projectile.hitRadius,
+      impactDamage: projectile.impactDamage,
+      knockbackImpulse: projectile.knockbackImpulse,
+      pierceRemaining: projectile.pierceCount,
+      groundOnImpact: projectile.groundOnImpact,
+      groundedLifetimeMs: projectile.groundedLifetimeMs,
+      explosion: projectile.explosion,
+      groundAtSimMs: null,
+      expireAtSimMs: simTimeMs + projectile.ttlMs
+    });
+  }
+  return directions.length;
 }
 
 function legacyLinearProjectile(archetype: WeaponArchetype): LinearProjectileArchetype | null {
@@ -167,6 +300,7 @@ function legacyLinearProjectile(archetype: WeaponArchetype): LinearProjectileArc
 
 function runProjectileMovement(store: EntityStore): void {
   for (const projectile of store.projectiles()) {
+    if (projectile.motionKind !== 'linear') continue;
     projectile.position.x += projectile.velocity.vx * SIM_STEP_SEC;
     projectile.position.y += projectile.velocity.vy * SIM_STEP_SEC;
   }
@@ -271,7 +405,7 @@ function runHitDetection(
 
     intents.push({
       targetId: target.id,
-      amount: projectile.damage,
+      amount: projectile.impactDamage,
       source: {
         kind: 'projectile',
         projectileId: projectile.id,
@@ -291,7 +425,7 @@ function runHitDetection(
       targetKind: target.kind,
       targetArchetypeId: target.kind === 'player' ? null : target.archetypeId,
       weaponArchetypeId: projectile.weaponArchetypeId,
-      damage: projectile.damage,
+      damage: projectile.impactDamage,
       impactDirX: impactDir.x,
       impactDirY: impactDir.y,
       x: projectile.position.x,
@@ -334,12 +468,12 @@ function findFirstHit(
   const candidates = index.queryRadius(
     projectile.position.x,
     projectile.position.y,
-    projectile.radius + maxProjectileTargetBoundsRadius
+    projectile.hitRadius + maxProjectileTargetBoundsRadius
   );
   for (const candidate of candidates) {
     const target = asValidTarget(candidate, projectile.ownerKind);
     if (target === null) continue;
-    if (circleOverlapsBox(projectile, target)) {
+    if (circleOverlapsBox({ position: projectile.position, radius: projectile.hitRadius }, target)) {
       return target;
     }
   }

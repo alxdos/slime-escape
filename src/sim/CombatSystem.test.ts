@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { PISTOL } from '../shared/content/weapons';
+import { FIREBALL_STAFF, PISTOL, SHOTGUN } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
@@ -10,7 +10,8 @@ import {
   createEntityStore,
   type BossSpawnSpec,
   type EnemySpawnSpec,
-  type EntityId
+  type EntityId,
+  type ProjectileSpawnSpec
 } from './EntityStore';
 import { createRuntimeInputState, type RuntimeInputState } from './RuntimeInputState';
 import { createSpatialIndex } from './SpatialIndex';
@@ -70,6 +71,29 @@ const TEST_BOSS: BossSpawnSpec = {
   attackIdsFromArchetype: []
 };
 
+function pistolProjectileSpawnSpec(
+  overrides: Partial<ProjectileSpawnSpec> = {}
+): ProjectileSpawnSpec {
+  return {
+    weaponArchetypeId: PISTOL.id,
+    ownerKind: 'enemy',
+    motionKind: 'linear',
+    position: { x: 0, y: 0 },
+    velocity: { vx: 0, vy: 0 },
+    size: PISTOL.projectile.size,
+    hitRadius: PISTOL.projectile.hitRadius,
+    impactDamage: PISTOL.projectile.impactDamage,
+    knockbackImpulse: PISTOL.projectile.knockbackImpulse,
+    pierceRemaining: PISTOL.projectile.pierceCount,
+    groundOnImpact: PISTOL.projectile.groundOnImpact,
+    groundedLifetimeMs: PISTOL.projectile.groundedLifetimeMs,
+    explosion: PISTOL.projectile.explosion,
+    groundAtSimMs: null,
+    expireAtSimMs: 10_000,
+    ...overrides
+  };
+}
+
 function stationaryEnemySpec(position: { x: number; y: number }): EnemySpawnSpec {
   return {
     archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
@@ -102,6 +126,7 @@ function makeInput(overrides: Partial<RuntimeInputState> = {}): RuntimeInputStat
   if (overrides.moveDir) state.moveDir = overrides.moveDir;
   if (overrides.aimWorld) state.aimWorld = overrides.aimWorld;
   if (overrides.firing !== undefined) state.firing = overrides.firing;
+  if (overrides.loadout !== undefined) state.loadout = overrides.loadout;
   return state;
 }
 
@@ -147,6 +172,89 @@ describe('CombatSystem', () => {
 
     combat.tick(input, store, index, PISTOL.cooldownMs, ARENA, (e) => events.push(e));
     expect(events.filter((e) => e.kind === 'fire')).toHaveLength(2);
+  });
+
+  it('uses runtime selected slot and keeps cooldowns owner-local per weapon instance', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id, SHOTGUN.id], selectedIndex: 0 }, 0);
+    const input = makeInput({
+      aimWorld: { x: 5, y: 0 },
+      firing: true,
+      loadout: { weapons: [PISTOL.id, SHOTGUN.id], selectedIndex: 0 }
+    });
+    const events: RuntimeEvent[] = [];
+
+    combat.tick(input, store, index, 0, ARENA, (e) => events.push(e));
+    expect(store.projectileCount()).toBe(1);
+
+    input.loadout!.selectedIndex = 1;
+    combat.tick(input, store, index, SIM_STEP_MS, ARENA, (e) => events.push(e));
+
+    if (SHOTGUN.firePattern.kind !== 'single') throw new Error('expected shotgun single pattern');
+    expect(store.projectileCount()).toBe(1 + SHOTGUN.firePattern.count);
+    const fireEvents = events.filter((e) => e.kind === 'fire');
+    expect(fireEvents.map((e) => (e.kind === 'fire' ? e.weaponArchetypeId : ''))).toEqual([
+      PISTOL.id,
+      SHOTGUN.id
+    ]);
+    const shotgunFire = fireEvents[1];
+    if (shotgunFire?.kind !== 'fire') throw new Error('expected shotgun fire event');
+    expect(shotgunFire.dirX).toBeCloseTo(1);
+    expect(shotgunFire.dirY).toBeCloseTo(0);
+  });
+
+  it('does not fire while the runtime loadout is holstered', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id], selectedIndex: null }, 0);
+    const input = makeInput({
+      aimWorld: { x: 5, y: 0 },
+      firing: true,
+      loadout: { weapons: [PISTOL.id], selectedIndex: null }
+    });
+
+    combat.tick(input, store, index, 0, ARENA, () => {});
+
+    expect(store.projectileCount()).toBe(0);
+  });
+
+  it('expands multi-direction fire patterns without requiring aim direction', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [FIREBALL_STAFF.id], selectedIndex: 0 }, 0);
+    const input = makeInput({
+      aimWorld: { x: player.position.x, y: player.position.y },
+      firing: true,
+      loadout: { weapons: [FIREBALL_STAFF.id], selectedIndex: 0 }
+    });
+
+    combat.tick(input, store, index, 0, ARENA, () => {});
+
+    const projectiles = [...store.projectiles()];
+    if (FIREBALL_STAFF.projectile.motion.kind !== 'linear') {
+      throw new Error('expected fireball linear motion');
+    }
+    const speed = Math.round(FIREBALL_STAFF.projectile.motion.speed);
+    expect(projectiles).toHaveLength(4);
+    expect(projectiles.map((p) => cleanZero(Math.round(p.velocity.vx)))).toEqual([
+      speed,
+      0,
+      -speed,
+      0
+    ]);
+    expect(projectiles.map((p) => cleanZero(Math.round(p.velocity.vy)))).toEqual([
+      0,
+      speed,
+      0,
+      -speed
+    ]);
   });
 
   it('produces a damage intent and hit event when projectile reaches an enemy', () => {
@@ -288,16 +396,7 @@ describe('CombatSystem', () => {
   it('honours friendly-fire: enemy projectile does not target enemy', () => {
     const { store, index, combat } = setupCombat();
     store.spawnEnemy(stationaryEnemySpec({ x: 0.5, y: 0 }));
-    store.spawnProjectile({
-      weaponArchetypeId: PISTOL.id,
-      ownerKind: 'enemy',
-      position: { x: 0, y: 0 },
-      velocity: { vx: 0, vy: 0 },
-      radius: PISTOL.projectile.hitRadius,
-      damage: PISTOL.projectile.impactDamage,
-      knockbackImpulse: PISTOL.projectile.knockbackImpulse,
-      expireAtSimMs: 10_000
-    });
+    store.spawnProjectile(pistolProjectileSpawnSpec());
 
     const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, () => {});
 
@@ -311,19 +410,14 @@ describe('CombatSystem', () => {
   it('hits the player by contactBox for enemy projectiles even outside the player radius', () => {
     const { store, index, combat, player } = setupCombat();
     const events: RuntimeEvent[] = [];
-    store.spawnProjectile({
-      weaponArchetypeId: PISTOL.id,
-      ownerKind: 'enemy',
-      position: {
-        x: player.position.x + player.contactBox.width / 2 - 0.01,
-        y: player.position.y + player.contactBox.height / 2 - 0.08
-      },
-      velocity: { vx: 0, vy: 0 },
-      radius: PISTOL.projectile.hitRadius,
-      damage: PISTOL.projectile.impactDamage,
-      knockbackImpulse: PISTOL.projectile.knockbackImpulse,
-      expireAtSimMs: 10_000
-    });
+    store.spawnProjectile(
+      pistolProjectileSpawnSpec({
+        position: {
+          x: player.position.x + player.contactBox.width / 2 - 0.01,
+          y: player.position.y + player.contactBox.height / 2 - 0.08
+        }
+      })
+    );
 
     const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, (e) =>
       events.push(e)
@@ -361,6 +455,10 @@ describe('CombatSystem', () => {
     ).toThrow(/unknown weapon archetype/);
   });
 });
+
+function cleanZero(value: number): number {
+  return Object.is(value, -0) ? 0 : value;
+}
 
 describe('CombatSystem contact intents', () => {
   function contactEnemySpec(position: { x: number; y: number }): EnemySpawnSpec {

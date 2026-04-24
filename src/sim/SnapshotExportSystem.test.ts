@@ -124,11 +124,18 @@ describe('SnapshotExportSystem', () => {
     store.spawnProjectile({
       weaponArchetypeId: PISTOL.id,
       ownerKind: 'player',
+      motionKind: 'linear',
       position: { x: 1, y: 0 },
       velocity: { vx: 24, vy: 0 },
-      radius: PISTOL.projectile.hitRadius,
-      damage: PISTOL.projectile.impactDamage,
+      size: PISTOL.projectile.size,
+      hitRadius: PISTOL.projectile.hitRadius,
+      impactDamage: PISTOL.projectile.impactDamage,
       knockbackImpulse: PISTOL.projectile.knockbackImpulse,
+      pierceRemaining: PISTOL.projectile.pierceCount,
+      groundOnImpact: PISTOL.projectile.groundOnImpact,
+      groundedLifetimeMs: PISTOL.projectile.groundedLifetimeMs,
+      explosion: PISTOL.projectile.explosion,
+      groundAtSimMs: null,
       expireAtSimMs: 1000
     });
 
