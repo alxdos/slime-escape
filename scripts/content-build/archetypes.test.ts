@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { PX_PER_WU } from '../../src/shared/sprite/spriteScale';
+
 import { parseBossesArea, type ParsedBossesArea } from './bosses/parse';
 import { renderBossAudio } from './bosses/renderAudio';
 import { renderBossContent } from './bosses/renderContent';
@@ -41,6 +43,33 @@ describe('content-build archetype areas', () => {
     await expect(readFile('src/main/render/dropVisuals.generated.ts', 'utf8')).resolves.toBe(
       renderDropVisuals(area)
     );
+  });
+
+  it('derives projectile and drop gameplay sizes from sprite PNG metrics, independent of arena size', async () => {
+    const weaponsArea = await parseWeaponsArea('content/weapons.md');
+    const dropsArea = await parseDropsArea('content/drops.md');
+
+    for (const weapon of weaponsArea.weapons) {
+      expect(weapon.projectile.size).toEqual(weapon.projectileSpriteVisual.worldSize);
+      expect(deriveWorldSize(weapon.projectileSpriteVisual.sourceSizePx, { width: 16, height: 9 })).toEqual(
+        weapon.projectile.size
+      );
+      expect(deriveWorldSize(weapon.projectileSpriteVisual.sourceSizePx, { width: 64, height: 36 })).toEqual(
+        weapon.projectile.size
+      );
+    }
+
+    for (const drop of dropsArea.drops) {
+      const expectedRadius =
+        Math.min(drop.spriteVisual.worldSize.width, drop.spriteVisual.worldSize.height) / 2;
+      expect(drop.radius).toBe(expectedRadius);
+      expect(deriveDropRadius(drop.spriteVisual.sourceSizePx, { width: 16, height: 9 })).toBe(
+        expectedRadius
+      );
+      expect(deriveDropRadius(drop.spriteVisual.sourceSizePx, { width: 64, height: 36 })).toBe(
+        expectedRadius
+      );
+    }
   });
 
   it('renders committed bosses markdown to committed generated files', async () => {
@@ -401,6 +430,24 @@ async function expectParseRejects<T>(
 
 function makeArea(name: string, render: ContentArea['render']): ContentArea {
   return { name, render };
+}
+
+function deriveWorldSize(
+  sourceSizePx: Readonly<{ width: number; height: number }>,
+  _arena: Readonly<{ width: number; height: number }>
+): Readonly<{ width: number; height: number }> {
+  return {
+    width: sourceSizePx.width / PX_PER_WU,
+    height: sourceSizePx.height / PX_PER_WU
+  };
+}
+
+function deriveDropRadius(
+  sourceSizePx: Readonly<{ width: number; height: number }>,
+  arena: Readonly<{ width: number; height: number }>
+): number {
+  const worldSize = deriveWorldSize(sourceSizePx, arena);
+  return Math.min(worldSize.width, worldSize.height) / 2;
 }
 
 function replaceExact(source: string, search: string, replacement: string): string {

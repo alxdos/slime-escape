@@ -119,13 +119,13 @@ const RUNNING_PHASE: UiShellPhase = { kind: 'running' };
 const PAUSED_PHASE: UiShellPhase = { kind: 'paused' };
 const STARTUP_PRELOAD_MIN_DURATION_MS = 1500;
 const STARTUP_PRELOAD_PROGRESS_TICK_MS = 50;
-const STARTUP_SPRITE_SPECS = [
+export const STARTUP_SPRITE_SPECS = Object.freeze([
   ...Object.values(PLAYER_VISUALS),
   ...Object.values(ENEMY_VISUALS),
   ...Object.values(BOSS_VISUALS),
   ...Object.values(PROJECTILE_VISUALS),
   ...Object.values(DROP_VISUALS)
-];
+]);
 
 export function createUiShell(init: UiShellInit): UiShell {
   const builder = init.buildSessionDefinition ?? buildSessionDefinition;

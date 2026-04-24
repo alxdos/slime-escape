@@ -6,6 +6,8 @@ import type { InputCommand } from '../../shared/input';
 import type { SessionDefinition } from '../../shared/session';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
+import { DROP_VISUALS } from '../render/dropVisuals';
+import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 import type { Renderer, RendererInit } from '../render/Renderer';
 import type { TextureMap } from '../render/spritePreload';
 import {
@@ -17,7 +19,7 @@ import {
 import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/SimWorkerHost';
 
 import type { Hud, HudInit } from './Hud';
-import { createUiShell, type UiShellInit } from './UiShell';
+import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
 import type { PauseOverlay, PauseOverlayInit } from './PauseOverlay';
 import type { ResultOutcome, ResultOverlay, ResultOverlayInit } from './ResultOverlay';
@@ -762,6 +764,17 @@ function createClientSettingsStoreHarness(
 }
 
 describe('UiShell', () => {
+  it('preloads projectile and drop sprite registries before showing the menu', () => {
+    const preloadIds = new Set(STARTUP_SPRITE_SPECS.map((spec) => spec.archetypeId));
+
+    for (const archetypeId of Object.keys(PROJECTILE_VISUALS)) {
+      expect(preloadIds.has(archetypeId)).toBe(true);
+    }
+    for (const archetypeId of Object.keys(DROP_VISUALS)) {
+      expect(preloadIds.has(archetypeId)).toBe(true);
+    }
+  });
+
   it('shows startup loading before the menu and delays session client creation until preload finishes', async () => {
     const parent = new FakeDomElement();
     const menu = createMenuHarness();

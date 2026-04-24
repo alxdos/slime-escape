@@ -537,6 +537,8 @@ describe('createRenderer', () => {
       (child): child is THREE.Mesh => child instanceof THREE.Mesh
     );
     expect(projectileMesh).not.toBeNull();
+    expect(projectileMesh?.geometry).toBeInstanceOf(THREE.PlaneGeometry);
+    expect(projectileMesh?.geometry).not.toBeInstanceOf(THREE.CircleGeometry);
     expect(projectileMesh?.material).toBeInstanceOf(THREE.MeshBasicMaterial);
     if (projectileMesh?.material instanceof THREE.MeshBasicMaterial) {
       expect(projectileMesh.material.map).toBe(projectileTexture);
@@ -579,6 +581,7 @@ describe('createRenderer', () => {
     const dropMesh = findMeshWithMaterialMap(backend.lastScene(), dropTexture);
     expect(dropMesh).not.toBeNull();
     expect(dropMesh?.geometry).toBeInstanceOf(THREE.PlaneGeometry);
+    expect(dropMesh?.geometry).not.toBeInstanceOf(THREE.CircleGeometry);
   });
 
   it('shows an arc landing preview for the selected arc weapon', () => {
