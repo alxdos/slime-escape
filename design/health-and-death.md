@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-20 (активирован `DamageIntent.source.kind: 'boss'` для 006; `DeathContext.entityKind` включает `'boss'`; см. [boss-encounter.md](boss-encounter.md); ранее: heal от `DropSystem`, контракт death hook под дроп)
+- Updated: 2026-04-24 (016: projectile damage source несёт normalized impact direction, а `death` runtime event получает final weapon/direction для render-only death feedback; см. [impact-feedback.md](impact-feedback.md). Ранее: активирован `DamageIntent.source.kind: 'boss'` для 006; `DeathContext.entityKind` включает `'boss'`; см. [boss-encounter.md](boss-encounter.md); ранее: heal от `DropSystem`, контракт death hook под дроп)
 
 ## Context
 
@@ -38,7 +38,7 @@
     targetId: EntityId;
     amount: number;     // целое > 0
     source:
-      | { kind: 'projectile'; projectileId: EntityId; ownerKind: 'player' | 'enemy'; weaponArchetypeId: string }
+      | { kind: 'projectile'; projectileId: EntityId; ownerKind: 'player' | 'enemy' | 'boss'; weaponArchetypeId: string; impactDirX: number; impactDirY: number }
       | { kind: 'enemyContact'; enemyId: EntityId }                  // активен с 004; контракт — enemy-contact.md
       | { kind: 'environment'; tag: string }                         // зарезервировано: газ, поджог и т.п.
       | { kind: 'boss'; bossId: EntityId; attackId: string };        // активен с 006, [boss-encounter.md](boss-encounter.md)
@@ -57,6 +57,7 @@
   2. при переходе `hp > 0 → hp == 0` сущность помечается как «умерла на этом тике»;
   3. повторные intents в ту же цель в том же тике, пришедшие после её смерти, **игнорируются** — это исключает «пере-убийство» и двойной запуск death hooks.
 - Сущности, помеченные как «умерла на этом тике», образуют упорядоченный список death events для текущего тика.
+- При публикации `death` runtime event `HealthDeathSystem` копирует из финальной `DamageIntent.source` только presentation-safe impact metadata: для projectile-смерти `weaponArchetypeId` и normalized `impactDirX/Y`, для остальных источников — `null`. Полная форма события зафиксирована в [snapshot-shape.md](snapshot-shape.md), а потребительский смысл — в [impact-feedback.md](impact-feedback.md).
 
 ### Death hooks
 
@@ -127,3 +128,4 @@
 - [simulation-timing.md](simulation-timing.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
 - [boss-encounter.md](boss-encounter.md)
+- [impact-feedback.md](impact-feedback.md)

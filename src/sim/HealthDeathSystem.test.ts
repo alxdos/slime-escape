@@ -33,7 +33,9 @@ function makeIntent(targetId: EntityId, amount: number): DamageIntent {
       kind: 'projectile',
       projectileId: 0 as EntityId,
       ownerKind: 'player',
-      weaponArchetypeId: PISTOL.id
+      weaponArchetypeId: PISTOL.id,
+      impactDirX: 1,
+      impactDirY: 0
     },
     hitPosition: { x: 0, y: 0 }
   };
@@ -120,6 +122,21 @@ describe('HealthDeathSystem', () => {
     expect(hook).toHaveBeenCalledTimes(1);
   });
 
+  it('copies projectile weapon and impact direction into death events', () => {
+    const store = createEntityStore();
+    const enemy = spawnTarget(store, 1);
+    const sys = createHealthDeathSystem();
+    const events: RuntimeEvent[] = [];
+
+    sys.tick([makeIntent(enemy.id, 1)], store, 0, (e) => events.push(e));
+
+    const death = events.find((e) => e.kind === 'death');
+    if (death?.kind !== 'death') throw new Error('expected death event');
+    expect(death.weaponArchetypeId).toBe(PISTOL.id);
+    expect(death.impactDirX).toBe(1);
+    expect(death.impactDirY).toBe(0);
+  });
+
   it('ignores intent targeting an unknown id', () => {
     const store = createEntityStore();
     const sys = createHealthDeathSystem();
@@ -198,6 +215,9 @@ describe('HealthDeathSystem player damage', () => {
     if (deaths[0]?.kind !== 'death') throw new Error('expected death');
     expect(deaths[0].entityKind).toBe('player');
     expect(deaths[0].archetypeId).toBeNull();
+    expect(deaths[0].weaponArchetypeId).toBeNull();
+    expect(deaths[0].impactDirX).toBeNull();
+    expect(deaths[0].impactDirY).toBeNull();
     expect(deaths[0].x).toBe(1);
     expect(deaths[0].y).toBe(2);
     expect(captured).toHaveLength(1);

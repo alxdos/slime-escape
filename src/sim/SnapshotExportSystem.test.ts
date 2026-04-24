@@ -128,6 +128,7 @@ describe('SnapshotExportSystem', () => {
       velocity: { vx: 24, vy: 0 },
       radius: PISTOL.projectileRadius,
       damage: PISTOL.damage,
+      knockbackImpulse: PISTOL.knockbackImpulse,
       expireAtSimMs: 1000
     });
 

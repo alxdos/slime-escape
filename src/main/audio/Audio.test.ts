@@ -506,8 +506,11 @@ describe('createAudio', () => {
       projectileId: 1,
       targetId: 99,
       targetKind: 'enemy',
+      targetArchetypeId: 'slime-one-eye',
       weaponArchetypeId: 'pistol',
       damage: 1,
+      impactDirX: 1,
+      impactDirY: 0,
       x: 0,
       y: 0
     });
@@ -517,6 +520,9 @@ describe('createAudio', () => {
       entityId: 99,
       entityKind: 'enemy',
       archetypeId: 'slime-one-eye',
+      weaponArchetypeId: 'pistol',
+      impactDirX: 1,
+      impactDirY: 0,
       x: 0,
       y: 0
     });
@@ -536,8 +542,11 @@ describe('createAudio', () => {
       projectileId: 1,
       targetId: 5,
       targetKind: 'player',
+      targetArchetypeId: null,
       weaponArchetypeId: 'pistol',
       damage: 1,
+      impactDirX: 1,
+      impactDirY: 0,
       x: 0,
       y: 0
     });
@@ -586,8 +595,11 @@ describe('createAudio', () => {
       projectileId: 1,
       targetId: 7,
       targetKind: 'boss',
+      targetArchetypeId: 'boss-scrap-king',
       weaponArchetypeId: 'pistol',
       damage: 1,
+      impactDirX: 1,
+      impactDirY: 0,
       x: 0,
       y: 0
     });
@@ -597,8 +609,11 @@ describe('createAudio', () => {
       projectileId: 2,
       targetId: 7,
       targetKind: 'boss',
+      targetArchetypeId: 'boss-scrap-king',
       weaponArchetypeId: 'pistol',
       damage: 1,
+      impactDirX: 1,
+      impactDirY: 0,
       x: 0,
       y: 0
     });
@@ -622,6 +637,9 @@ describe('createAudio', () => {
       entityId: 42,
       entityKind: 'enemy',
       archetypeId: 'slime-one-eye',
+      weaponArchetypeId: 'pistol',
+      impactDirX: 1,
+      impactDirY: 0,
       x: 0,
       y: 0
     });
@@ -668,6 +686,9 @@ describe('createAudio', () => {
       entityId: 10,
       entityKind: 'enemy',
       archetypeId: 'missing-enemy',
+      weaponArchetypeId: null,
+      impactDirX: null,
+      impactDirY: null,
       x: 0,
       y: 0
     });
@@ -677,6 +698,9 @@ describe('createAudio', () => {
       entityId: 10,
       entityKind: 'enemy',
       archetypeId: 'missing-enemy',
+      weaponArchetypeId: null,
+      impactDirX: null,
+      impactDirY: null,
       x: 0,
       y: 0
     });

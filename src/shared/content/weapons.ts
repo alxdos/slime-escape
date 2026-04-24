@@ -8,6 +8,7 @@ export type WeaponArchetype = Readonly<{
   projectileRadius: number;
   projectileTtlMs: number;
   damage: number;
+  knockbackImpulse: number;
   color: number;
 }>;
 

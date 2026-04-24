@@ -177,6 +177,7 @@ describe('MovementSystem enemies', () => {
       velocity: { vx: 24, vy: 0 },
       radius: 0.1,
       damage: 1,
+      knockbackImpulse: 5,
       expireAtSimMs: 10_000
     });
     const enemyPosBefore = { ...enemy.position };

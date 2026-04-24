@@ -77,6 +77,7 @@ export type Projectile = {
   readonly ownerKind: 'player' | 'enemy' | 'boss';
   readonly radius: number;
   readonly damage: number;
+  readonly knockbackImpulse: number;
   readonly expireAtSimMs: number;
   position: { x: number; y: number };
   velocity: { vx: number; vy: number };
@@ -116,6 +117,7 @@ export type ProjectileSpawnSpec = Readonly<{
   velocity: { vx: number; vy: number };
   radius: number;
   damage: number;
+  knockbackImpulse: number;
   expireAtSimMs: number;
 }>;
 
@@ -272,6 +274,7 @@ export function createEntityStore(): EntityStore {
         ownerKind: spec.ownerKind,
         radius: spec.radius,
         damage: spec.damage,
+        knockbackImpulse: spec.knockbackImpulse,
         expireAtSimMs: spec.expireAtSimMs,
         position: { x: spec.position.x, y: spec.position.y },
         velocity: { vx: spec.velocity.vx, vy: spec.velocity.vy }

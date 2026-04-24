@@ -41,6 +41,10 @@ export function createHealthDeathSystem(): HealthDeathSystem {
           entityId: death.entityId,
           entityKind: death.entityKind,
           archetypeId: death.archetypeId,
+          weaponArchetypeId:
+            death.cause.kind === 'projectile' ? death.cause.weaponArchetypeId : null,
+          impactDirX: death.cause.kind === 'projectile' ? death.cause.impactDirX : null,
+          impactDirY: death.cause.kind === 'projectile' ? death.cause.impactDirY : null,
           x: death.position.x,
           y: death.position.y
         });

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-24 (render follow-up: `enemy` и `boss` получают render-only procedural breathing через squash/stretch `mesh.scale`, с фазой от `entity.id` и без новых snapshot/content-полей; story 014: авторская поверхность для пути к PNG-ассету переезжает с MD-колонки `image` на inline image-узел `![alt](../public/...)` под `## <id>` в `content/players.md` / `content/enemies.md` / `content/bosses.md` — см. раздел «Inline media-узлы как derive-источники» в [content-authoring.md](content-authoring.md). Рантайм-контракт `SpriteVisualSpec` (`image`/`sourceSizePx`/`worldSize`/`anchor`), правило producer-а `worldSize = sourceSizePx / PX_PER_WU`, three visual registries и hard-error policy — не меняются.)
+- Updated: 2026-04-24 (story 016: render-only impact effects may create transient droplets and death ghost sprites from existing slime visuals without extending `SpriteVisualSpec`; see [impact-feedback.md](impact-feedback.md). Earlier render follow-up: `enemy` и `boss` получают render-only procedural breathing через squash/stretch `mesh.scale`, с фазой от `entity.id` и без новых snapshot/content-полей; story 014: авторская поверхность для пути к PNG-ассету переезжает с MD-колонки `image` на inline image-узел `![alt](../public/...)` под `## <id>` в `content/players.md` / `content/enemies.md` / `content/bosses.md` — см. раздел «Inline media-узлы как derive-источники» в [content-authoring.md](content-authoring.md). Рантайм-контракт `SpriteVisualSpec` (`image`/`sourceSizePx`/`worldSize`/`anchor`), правило producer-а `worldSize = sourceSizePx / PX_PER_WU`, three visual registries и hard-error policy — не меняются.)
 
 ## Context
 
@@ -46,7 +46,7 @@
 - `worldSize` — derived: `width = sourceSizePx.width / PX_PER_WU`, аналогично по `height`. В MD не пишется и руками не правится.
 - `anchor` для MVP всегда `{ 0.5, 0.5 }` (центр спрайта). Поле объявлено сейчас, чтобы не делать новый контракт, когда понадобятся persistent-ноги/верхняя точка для боссов; конкретные значения для не-центрированных anchor-ов вводятся отдельным расширением этого решения.
 - Отдельного `displaySizePx` нет: на горизонт MVP `displaySizePx ≡ sourceSizePx`. Когда понадобится override (ручное масштабирование без правки PNG), поле вводится отдельным расширением этого решения; иначе мы держим один набор пикселей.
-- `color` из `EnemyArchetype`/`BossArchetype` (см. [content-archetypes.md](content-archetypes.md)) **не** входит в `SpriteVisualSpec`. После этого решения renderer не читает `color` для player/enemy/boss; поле остаётся как content-плейсхолдер для не-renderer сценариев (debug overlay, tooling, будущая мини-карта). Для `WeaponArchetype.color`/`DropArchetype.color` поведение не меняется.
+- `color` из `EnemyArchetype`/`BossArchetype` (см. [content-archetypes.md](content-archetypes.md)) **не** входит в `SpriteVisualSpec`. Base sprite renderer не tint-ит player/enemy/boss PNG по `color`; после [impact-feedback.md](impact-feedback.md) renderer может читать `color` только для render-only slime material effects (droplets/stains). Для `WeaponArchetype.color`/`DropArchetype.color` поведение не меняется.
 
 ### Reference scale
 
@@ -94,6 +94,12 @@
 - Amplitudes are deliberately small and renderer-owned constants. Normal enemies may use a stronger amplitude than bosses; bosses should read as alive but heavier. Tuning these numbers is a visual polish change inside `src/main/render/**`, not content authoring.
 - The effect must remain independent of `renderScalePreset`, DPR, canvas backing size, arena size, and simulation tick rate. It uses wall/render time for presentation, so it is allowed to be visually non-authoritative in the same way interpolation and drop pulsing are presentation-only.
 - If future animation frames, skeletons, shader deformation, event impulses (hit/landing squash), or per-archetype animation profiles are introduced, they extend this section. They must still preserve the core rule: sprite deformation cannot become a source of gameplay geometry unless [body-contact-boxes.md](body-contact-boxes.md) is explicitly updated.
+
+### Impact effects
+
+- Render-only slime impact effects are owned by [impact-feedback.md](impact-feedback.md). They reuse existing visual registries and preloaded textures for death ghost sprites, and may generate droplet geometry at runtime.
+- These effects do **not** add fields to `SpriteVisualSpec`: one static PNG remains the archetype visual source, while droplets/stains/ghosts are transient renderer state.
+- Death ghost sprites use the same `image`, `worldSize` and `anchor` as the live sprite, but their position, opacity, tint and lifetime are renderer-owned presentation data.
 
 ### Hard error policy
 
@@ -146,3 +152,4 @@
 - [web-stack.md](web-stack.md)
 - [testing.md](testing.md)
 - [../stories/013-sprite-assets-and-loader.md](../stories/013-sprite-assets-and-loader.md)
+- [impact-feedback.md](impact-feedback.md)

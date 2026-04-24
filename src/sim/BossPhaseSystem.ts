@@ -91,6 +91,7 @@ function runBossAttacks(
         },
         radius: w.projectileRadius,
         damage: Math.max(1, spec.damage),
+        knockbackImpulse: w.knockbackImpulse,
         expireAtSimMs: simTimeMs + w.projectileTtlMs
       });
       boss.attackNextSimMs.set(attackId, simTimeMs + spec.cooldownMs);

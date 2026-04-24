@@ -6,7 +6,12 @@ import type { ArenaConfig } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import { createCombatSystem } from './CombatSystem';
-import { createEntityStore, type EnemySpawnSpec, type EntityId } from './EntityStore';
+import {
+  createEntityStore,
+  type BossSpawnSpec,
+  type EnemySpawnSpec,
+  type EntityId
+} from './EntityStore';
 import { createRuntimeInputState, type RuntimeInputState } from './RuntimeInputState';
 import { createSpatialIndex } from './SpatialIndex';
 
@@ -46,6 +51,24 @@ const CONTACT_TEST_ENEMY = {
   knockbackDurationMs: 350,
   color: 0x77ff99
 } as const;
+const TEST_BOSS: BossSpawnSpec = {
+  archetypeId: 'test-boss',
+  position: { x: 0.75, y: 0 },
+  radius: 0.8,
+  contactBox: { width: 1.6, height: 1.6 },
+  maxHp: 10,
+  maxSpeed: 0,
+  color: 0x99ddff,
+  contactDamage: 0,
+  contactCooldownMs: 1,
+  knockbackBaseImpulse: 0,
+  knockbackVelocityScale: 0.5,
+  knockbackDurationMs: 400,
+  phaseIndex: 0,
+  phaseId: 'test-phase',
+  activeAttackIds: [],
+  attackIdsFromArchetype: []
+};
 
 function stationaryEnemySpec(position: { x: number; y: number }): EnemySpawnSpec {
   return {
@@ -138,9 +161,78 @@ describe('CombatSystem', () => {
     expect(intents[0]?.targetId).toBe(enemy.id);
     expect(intents[0]?.amount).toBe(PISTOL.damage);
     expect(intents[0]?.source.kind).toBe('projectile');
+    if (intents[0]?.source.kind !== 'projectile') throw new Error('expected projectile source');
+    expect(intents[0].source.impactDirX).toBeCloseTo(1);
+    expect(intents[0].source.impactDirY).toBeCloseTo(0);
     const hitEvents = events.filter((e) => e.kind === 'hit');
     expect(hitEvents).toHaveLength(1);
+    const hit = hitEvents[0]!;
+    if (hit.kind !== 'hit') throw new Error('expected hit event');
+    expect(hit.targetArchetypeId).toBe(STATIONARY_TEST_ENEMY.archetypeId);
+    expect(hit.impactDirX).toBeCloseTo(1);
+    expect(hit.impactDirY).toBeCloseTo(0);
+    expect(enemy.hp).toBe(STATIONARY_TEST_ENEMY.maxHp);
+    expect(enemy.knockback).not.toBeNull();
+    if (enemy.knockback === null) throw new Error('expected zero projectile knockback');
+    expect(enemy.knockback.vx).toBe(0);
+    expect(enemy.knockback.vy).toBe(0);
     expect(store.projectileCount()).toBe(0);
+  });
+
+  it('applies projectile knockback to enemy using weapon force and target susceptibility', () => {
+    const { store, index, combat } = setupCombat();
+    const enemy = store.spawnEnemy({
+      ...stationaryEnemySpec({ x: 0.75, y: 0 }),
+      knockbackVelocityScale: 2,
+      knockbackDurationMs: 250
+    });
+    const input = makeInput({ aimWorld: { x: 5, y: 0 }, firing: true });
+
+    const intents = combat.tick(input, store, index, 0, ARENA, () => {});
+
+    expect(intents).toHaveLength(1);
+    expect(enemy.hp).toBe(STATIONARY_TEST_ENEMY.maxHp);
+    expect(enemy.knockback).not.toBeNull();
+    if (enemy.knockback === null) throw new Error('expected projectile knockback');
+    expect(enemy.knockback.vx).toBeCloseTo(PISTOL.knockbackImpulse * 2);
+    expect(enemy.knockback.vy).toBeCloseTo(0);
+    expect(enemy.knockback.startSimMs).toBe(0);
+    expect(enemy.knockback.endSimMs).toBe(250);
+  });
+
+  it('overwrites active target knockback even when projectile susceptibility is zero', () => {
+    const { store, index, combat } = setupCombat();
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 0.75, y: 0 }));
+    enemy.knockback = { vx: 99, vy: 0, startSimMs: -100, endSimMs: 500 };
+    const input = makeInput({ aimWorld: { x: 5, y: 0 }, firing: true });
+
+    combat.tick(input, store, index, 0, ARENA, () => {});
+
+    expect(enemy.knockback).not.toBeNull();
+    if (enemy.knockback === null) throw new Error('expected overwritten knockback');
+    expect(enemy.knockback.vx).toBe(0);
+    expect(enemy.knockback.vy).toBe(0);
+    expect(enemy.knockback.startSimMs).toBe(0);
+    expect(enemy.knockback.endSimMs).toBe(STATIONARY_TEST_ENEMY.knockbackDurationMs);
+  });
+
+  it('applies projectile knockback to bosses without mutating boss hp', () => {
+    const { store, index, combat } = setupCombat();
+    const boss = store.spawnBoss(TEST_BOSS);
+    const input = makeInput({ aimWorld: { x: 5, y: 0 }, firing: true });
+
+    const intents = combat.tick(input, store, index, 0, ARENA, () => {});
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(boss.id);
+    expect(boss.hp).toBe(TEST_BOSS.maxHp);
+    expect(boss.knockback).not.toBeNull();
+    if (boss.knockback === null) throw new Error('expected boss projectile knockback');
+    expect(boss.knockback.vx).toBeCloseTo(PISTOL.knockbackImpulse * TEST_BOSS.knockbackVelocityScale);
+    expect(boss.knockback.vy).toBeCloseTo(0);
+    expect(boss.knockback.endSimMs - boss.knockback.startSimMs).toBe(
+      TEST_BOSS.knockbackDurationMs
+    );
   });
 
   it('hits an enemy by contactBox even when the legacy radius would miss', () => {
@@ -203,6 +295,7 @@ describe('CombatSystem', () => {
       velocity: { vx: 0, vy: 0 },
       radius: PISTOL.projectileRadius,
       damage: PISTOL.damage,
+      knockbackImpulse: PISTOL.knockbackImpulse,
       expireAtSimMs: 10_000
     });
 
@@ -217,6 +310,7 @@ describe('CombatSystem', () => {
 
   it('hits the player by contactBox for enemy projectiles even outside the player radius', () => {
     const { store, index, combat, player } = setupCombat();
+    const events: RuntimeEvent[] = [];
     store.spawnProjectile({
       weaponArchetypeId: PISTOL.id,
       ownerKind: 'enemy',
@@ -227,14 +321,23 @@ describe('CombatSystem', () => {
       velocity: { vx: 0, vy: 0 },
       radius: PISTOL.projectileRadius,
       damage: PISTOL.damage,
+      knockbackImpulse: PISTOL.knockbackImpulse,
       expireAtSimMs: 10_000
     });
 
-    const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, () => {});
+    const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, (e) =>
+      events.push(e)
+    );
 
     expect(intents).toHaveLength(1);
     expect(intents[0]?.targetId).toBe(player.id);
     expect(intents[0]?.source.kind).toBe('projectile');
+    if (intents[0]?.source.kind !== 'projectile') throw new Error('expected projectile source');
+    expect(intents[0].source.impactDirX).toBeCloseTo(1);
+    expect(intents[0].source.impactDirY).toBeCloseTo(0);
+    const hit = events.find((e) => e.kind === 'hit');
+    if (hit?.kind !== 'hit') throw new Error('expected hit event');
+    expect(hit.targetArchetypeId).toBeNull();
     expect(store.projectileCount()).toBe(0);
   });
 

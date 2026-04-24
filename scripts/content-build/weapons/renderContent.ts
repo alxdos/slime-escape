@@ -24,6 +24,7 @@ function renderWeapon(weapon: ParsedWeapon): string {
   projectileRadius: ${formatNumber(weapon.projectileRadius)},
   projectileTtlMs: ${formatNumber(weapon.projectileTtlMs)},
   damage: ${formatNumber(weapon.damage)},
+  knockbackImpulse: ${formatNumber(weapon.knockbackImpulse)},
   color: ${formatHexColor(weapon.color)}
 };`;
 }

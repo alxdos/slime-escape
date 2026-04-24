@@ -470,12 +470,14 @@ function createRendererHarness() {
   const calls = {
     create: 0,
     render: 0,
+    handleEvent: 0,
     fitToWindow: 0,
     applyScalePolicy: 0,
     dispose: 0
   };
   let lastInit: RendererInit | null = null;
   const appliedPresets: RenderScalePreset[] = [];
+  const events: RuntimeEvent[] = [];
 
   return {
     factory(init: RendererInit): Renderer {
@@ -484,6 +486,10 @@ function createRendererHarness() {
       return {
         render(): void {
           calls.render += 1;
+        },
+        handleEvent(event: RuntimeEvent): void {
+          calls.handleEvent += 1;
+          events.push(event);
         },
         fitToWindow(): void {
           calls.fitToWindow += 1;
@@ -498,6 +504,7 @@ function createRendererHarness() {
       };
     },
     calls,
+    events,
     appliedPresets,
     lastInit(): RendererInit | null {
       return lastInit;
@@ -1044,6 +1051,7 @@ describe('UiShell', () => {
       createSettingsOverlay: settingsOverlay.factory,
       createRenderer: () => ({
         render() {},
+        handleEvent() {},
         fitToWindow() {},
         applyScalePolicy() {},
         dispose() {}
@@ -1101,6 +1109,7 @@ describe('UiShell', () => {
       createSettingsOverlay: settingsOverlay.factory,
       createRenderer: () => ({
         render() {},
+        handleEvent() {},
         fitToWindow() {},
         applyScalePolicy() {},
         dispose() {}
@@ -1165,6 +1174,7 @@ describe('UiShell', () => {
       createSettingsOverlay: settingsOverlay.factory,
       createRenderer: () => ({
         render() {},
+        handleEvent() {},
         fitToWindow() {},
         applyScalePolicy() {},
         dispose() {}
@@ -1560,6 +1570,7 @@ describe('UiShell', () => {
       createSettingsOverlay: settingsOverlay.factory,
       createRenderer: () => ({
         render() {},
+        handleEvent() {},
         fitToWindow() {},
         applyScalePolicy() {},
         dispose() {}
@@ -1634,6 +1645,7 @@ describe('UiShell', () => {
       createSettingsOverlay: settingsOverlay.factory,
       createRenderer: () => ({
         render() {},
+        handleEvent() {},
         fitToWindow() {},
         applyScalePolicy() {},
         dispose() {}
@@ -1755,12 +1767,69 @@ describe('UiShell', () => {
     expect(renderer.calls.dispose).toBe(1);
     expect(hud.calls.detach).toBe(1);
     expect(audio.events).toEqual([{ kind, simTime: 123 }]);
+    expect(renderer.events).toEqual([{ kind, simTime: 123 }]);
     expect(audio.calls.detach).toBe(1);
     expect(menu.isVisible()).toBe(false);
     expect(result.isVisible()).toBe(true);
     expect(result.outcome()).toBe(outcome);
     expect(audio.uiEvents).toContain('overlayShow');
     expect(shell.phase()).toEqual({ kind: 'result', outcome });
+  });
+
+  it('fans runtime events out to audio and renderer while running', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    const event: RuntimeEvent = {
+      kind: 'hit',
+      simTime: 123,
+      projectileId: 1,
+      targetId: 2,
+      targetKind: 'enemy',
+      targetArchetypeId: 'slime-one-eye',
+      weaponArchetypeId: 'pistol',
+      damage: 1,
+      impactDirX: 1,
+      impactDirY: 0,
+      x: 3,
+      y: 4
+    };
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    menu.start();
+    sim.emit(event);
+
+    expect(audio.events).toEqual([event]);
+    expect(renderer.events).toEqual([event]);
+    expect(result.isVisible()).toBe(false);
   });
 
   it('returns from result overlay to menu without calling stopSession again', async () => {

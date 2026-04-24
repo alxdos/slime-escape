@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-20 (006: `BossSnapshot`, top-level `bossHud`, расширение `death`/`hit`/`fire` под `boss`; см. [boss-encounter.md](boss-encounter.md); ранее: дроп и события дропа)
+- Updated: 2026-04-24 (016: `hit` и `death` расширены impact payload-ом для render-only slime feedback и projectile knockback; см. [impact-feedback.md](impact-feedback.md). Ранее: 006 `BossSnapshot`, top-level `bossHud`, расширение `death`/`hit`/`fire` под `boss`; см. [boss-encounter.md](boss-encounter.md); ранее: дроп и события дропа)
 
 ## Context
 
@@ -186,8 +186,11 @@ type EntitySnapshot =
         projectileId: number;
         targetId: number;
         targetKind: 'enemy' | 'player' | 'boss';
+        targetArchetypeId: string | null; // enemy/boss id; null for player
         weaponArchetypeId: string;
         damage: number;
+        impactDirX: number;     // normalized projectile travel direction
+        impactDirY: number;
         x: number;
         y: number;
       }
@@ -197,6 +200,9 @@ type EntitySnapshot =
         entityId: number;
         entityKind: 'enemy' | 'player' | 'boss';
         archetypeId: string | null;
+        weaponArchetypeId: string | null; // final projectile weapon, if any
+        impactDirX: number | null;        // normalized final projectile direction, if any
+        impactDirY: number | null;
         x: number;
         y: number;
       }
@@ -238,6 +244,7 @@ type EntitySnapshot =
       };
   ```
 - `win`/`loss` несут только `simTime`. Дополнительные поля (статистика забега, причина) — будущие расширения, появятся вместе с потребителями (HUD-итог из 007). Минимальная форма достаточна, чтобы `main` отреагировал переходом в результат-экран.
+- `hit.targetArchetypeId` и `death.weaponArchetypeId`/`impactDir*` существуют для main-thread presentation consumers ([impact-feedback.md](impact-feedback.md)): renderer не должен реконструировать цвет цели, направление пули или причину смерти из соседних snapshot-ов, потому что цель может быть удалена до следующего кадра. Для `targetKind: 'player'` target archetype отсутствует и поле равно `null`; для смерти не от projectile weapon/direction поля равны `null`.
 - Owner-системы (см. [runtime-systems.md](runtime-systems.md)):
   - `fire`, `hit` публикует `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md));
   - `death` публикует `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) сразу после фиксации смерти и до запуска death hooks;
@@ -278,3 +285,4 @@ type EntitySnapshot =
 - [drops.md](drops.md)
 - [boss-encounter.md](boss-encounter.md)
 - [simulation-timing.md](simulation-timing.md)
+- [impact-feedback.md](impact-feedback.md)

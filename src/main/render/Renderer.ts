@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 
+import { BOSS_ARCHETYPES } from '../../shared/content/bosses';
 import { DROP_ARCHETYPES, type DropArchetype } from '../../shared/content/drops';
+import { ENEMY_ARCHETYPES } from '../../shared/content/enemies';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
+import type { RuntimeEvent } from '../../shared/events';
 import type { ArenaConfig, SessionDefinition } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import type {
@@ -18,6 +21,12 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 import { BOSS_VISUALS } from './bossVisuals';
 import { ENEMY_VISUALS } from './enemyVisuals';
 import { fitCanvasToViewport } from './fitToViewport';
+import {
+  createImpactEffectStore,
+  type DeathGhostEffect,
+  type HitImpulseEffect,
+  type SlimeDropletEffect
+} from './ImpactEffectStore';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
 import {
   resolveRenderScale,
@@ -69,6 +78,7 @@ export type RendererInit = Readonly<{
 
 export type Renderer = Readonly<{
   render(): void;
+  handleEvent(event: RuntimeEvent): void;
   fitToWindow(): void;
   applyScalePolicy(preset: RenderScalePreset): void;
   dispose(): void;
@@ -87,6 +97,8 @@ const BACKGROUND_Z = -2;
 const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
 const DROP_Z = 0.03;
+const SLIME_STAIN_Z = -0.25;
+const DEATH_GHOST_Z = 0.045;
 const DROP_PULSE_HZ = 1.6;
 const DROP_PULSE_AMPLITUDE = 0.15;
 const SLIME_BREATH_HZ = 0.85;
@@ -172,11 +184,19 @@ export function createRenderer(init: RendererInit): Renderer {
   const debugHud = (init.createDebugHud ?? createDebugHud)();
   let currentRenderScalePreset = init.renderScalePreset;
   let characterSnapGrid: CharacterSnapGrid | null = null;
+  let lastRenderNowMs = 0;
+  const impactEffects = createImpactEffectStore({
+    enemyRegistry: ENEMY_ARCHETYPES,
+    bossRegistry: BOSS_ARCHETYPES,
+    weaponRegistry
+  });
 
   const enemyMeshes = new Map<number, EntityMeshEntry>();
   const bossMeshes = new Map<number, EntityMeshEntry>();
   const projectileMeshes = new Map<number, EntityMeshEntry>();
   const dropMeshes = new Map<number, EntityMeshEntry>();
+  const slimeDropletMeshes = new Map<number, EntityMeshEntry>();
+  const deathGhostMeshes = new Map<number, EntityMeshEntry>();
 
   function applyResolvedScalePolicy(
     preset: RenderScalePreset,
@@ -289,6 +309,10 @@ export function createRenderer(init: RendererInit): Renderer {
   return {
     render(): void {
       const pair = init.getSnapshotPair();
+      lastRenderNowMs = pair.nowMs;
+      impactEffects.update(pair.nowMs);
+      const impactSnapshot = impactEffects.snapshot();
+      const hitImpulsesByTarget = indexHitImpulses(impactSnapshot.hitImpulses);
       const alpha = computeAlpha(pair);
       updatePlayer(playerMesh, pair, alpha, characterSnapGrid);
       updateEntities(
@@ -300,7 +324,13 @@ export function createRenderer(init: RendererInit): Renderer {
         disposeEntityMesh,
         characterSnapGrid,
         (mesh, entity) =>
-          applySlimeBreath(mesh, pair.nowMs, entity.id, SLIME_BREATH_AMPLITUDE)
+          applySlimePresentation(
+            mesh,
+            pair.nowMs,
+            entity.id,
+            SLIME_BREATH_AMPLITUDE,
+            hitImpulsesByTarget.get(entity.id)
+          )
       );
       updateEntities(
         pair,
@@ -311,7 +341,13 @@ export function createRenderer(init: RendererInit): Renderer {
         disposeEntityMesh,
         characterSnapGrid,
         (mesh, entity) =>
-          applySlimeBreath(mesh, pair.nowMs, entity.id, BOSS_BREATH_AMPLITUDE)
+          applySlimePresentation(
+            mesh,
+            pair.nowMs,
+            entity.id,
+            BOSS_BREATH_AMPLITUDE,
+            hitImpulsesByTarget.get(entity.id)
+          )
       );
       updateEntities(
         pair,
@@ -332,9 +368,25 @@ export function createRenderer(init: RendererInit): Renderer {
       pulseDropMeshes(dropMeshes, pair.nowMs);
       updateCrosshair(crosshair, init.getAim);
       updateZoneOverlay(zoneOverlay, pair, alpha);
+      updateSlimeDropletMeshes(
+        impactSnapshot.droplets,
+        slimeDropletMeshes,
+        scene,
+        disposeEntityMesh
+      );
+      updateDeathGhostMeshes(
+        impactSnapshot.deathGhosts,
+        deathGhostMeshes,
+        scene,
+        init.spriteTextures,
+        disposeEntityMesh
+      );
       arenaBackground.setEncounterId(pair.curr?.encounter?.id ?? null);
       debugHud.update(pair.curr);
       renderer.render(scene, camera);
+    },
+    handleEvent(event: RuntimeEvent): void {
+      impactEffects.handleEvent(event, lastRenderNowMs);
     },
     fitToWindow,
     applyScalePolicy,
@@ -353,6 +405,10 @@ export function createRenderer(init: RendererInit): Renderer {
       projectileMeshes.clear();
       for (const entry of dropMeshes.values()) disposeEntityMesh(entry);
       dropMeshes.clear();
+      for (const entry of slimeDropletMeshes.values()) disposeEntityMesh(entry);
+      slimeDropletMeshes.clear();
+      for (const entry of deathGhostMeshes.values()) disposeEntityMesh(entry);
+      deathGhostMeshes.clear();
       arenaGeometry.dispose();
       arenaMaterial.dispose();
       arenaBackground.dispose();
@@ -360,6 +416,7 @@ export function createRenderer(init: RendererInit): Renderer {
       arenaBorder.geometry.dispose();
       (arenaBorder.material as THREE.Material).dispose();
       zoneOverlay.dispose();
+      impactEffects.clear();
       debugHud.dispose();
       renderer.dispose();
     }
@@ -723,21 +780,195 @@ function pulseDropMeshes(
   }
 }
 
-function applySlimeBreath(
+function updateSlimeDropletMeshes(
+  droplets: ReadonlyArray<SlimeDropletEffect>,
+  table: Map<number, EntityMeshEntry>,
+  scene: THREE.Scene,
+  dispose: (entry: EntityMeshEntry) => void
+): void {
+  const aliveIds = new Set<number>();
+  for (const droplet of droplets) {
+    aliveIds.add(droplet.id);
+    const entry = ensureSlimeDropletMesh(droplet, table, scene);
+    const material = entry.material;
+    if (material instanceof THREE.MeshBasicMaterial) {
+      material.opacity = droplet.opacity;
+    }
+    entry.mesh.position.set(droplet.x, droplet.y, SLIME_STAIN_Z);
+    entry.mesh.scale.set(droplet.stainScale, droplet.stainScale, 1);
+  }
+  for (const [id, entry] of table) {
+    if (!aliveIds.has(id)) {
+      dispose(entry);
+      table.delete(id);
+    }
+  }
+}
+
+function ensureSlimeDropletMesh(
+  droplet: SlimeDropletEffect,
+  table: Map<number, EntityMeshEntry>,
+  scene: THREE.Scene
+): EntityMeshEntry {
+  const existing = table.get(droplet.id);
+  if (existing !== undefined) return existing;
+  const geometry = createIrregularBlobGeometry(droplet);
+  const material = new THREE.MeshBasicMaterial({
+    color: droplet.color,
+    transparent: true,
+    opacity: droplet.opacity,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.z = SLIME_STAIN_Z;
+  scene.add(mesh);
+  const entry: EntityMeshEntry = { mesh, geometry, material };
+  table.set(droplet.id, entry);
+  return entry;
+}
+
+function createIrregularBlobGeometry(droplet: SlimeDropletEffect): THREE.ShapeGeometry {
+  const shape = new THREE.Shape();
+  for (let i = 0; i < droplet.shape.length; i += 1) {
+    const point = droplet.shape[i];
+    if (point === undefined) continue;
+    const x = Math.cos(point.angle) * droplet.radius * point.radiusScale;
+    const y = Math.sin(point.angle) * droplet.radius * point.radiusScale;
+    if (i === 0) {
+      shape.moveTo(x, y);
+    } else {
+      shape.lineTo(x, y);
+    }
+  }
+  shape.closePath();
+  return new THREE.ShapeGeometry(shape);
+}
+
+function updateDeathGhostMeshes(
+  ghosts: ReadonlyArray<DeathGhostEffect>,
+  table: Map<number, EntityMeshEntry>,
+  scene: THREE.Scene,
+  spriteTextures: TextureMap,
+  dispose: (entry: EntityMeshEntry) => void
+): void {
+  const aliveIds = new Set<number>();
+  for (const ghost of ghosts) {
+    aliveIds.add(ghost.id);
+    const entry = ensureDeathGhostMesh(ghost, table, scene, spriteTextures);
+    const material = entry.material;
+    if (material instanceof THREE.MeshBasicMaterial) {
+      material.opacity = ghost.opacity;
+    } else if (material instanceof THREE.ShaderMaterial) {
+      const uniform = material.uniforms.uOpacity;
+      if (uniform !== undefined) {
+        uniform.value = ghost.opacity;
+      }
+    }
+    entry.mesh.position.set(ghost.x, ghost.y, DEATH_GHOST_Z);
+    entry.mesh.scale.set(ghost.scale, ghost.scale, 1);
+  }
+  for (const [id, entry] of table) {
+    if (!aliveIds.has(id)) {
+      dispose(entry);
+      table.delete(id);
+    }
+  }
+}
+
+function ensureDeathGhostMesh(
+  ghost: DeathGhostEffect,
+  table: Map<number, EntityMeshEntry>,
+  scene: THREE.Scene,
+  spriteTextures: TextureMap
+): EntityMeshEntry {
+  const existing = table.get(ghost.id);
+  if (existing !== undefined) return existing;
+  const visual =
+    ghost.entityKind === 'enemy'
+      ? requireVisualSpec(ENEMY_VISUALS, ghost.archetypeId, 'enemy')
+      : requireVisualSpec(BOSS_VISUALS, ghost.archetypeId, 'boss');
+  const texture = requireSpriteTexture(spriteTextures, ghost.archetypeId, ghost.entityKind);
+  const geometry = new THREE.PlaneGeometry(visual.worldSize.width, visual.worldSize.height);
+  const material = createDeathGhostMaterial(texture, ghost.opacity);
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.z = DEATH_GHOST_Z;
+  const entry: EntityMeshEntry = { mesh, geometry, material };
+  scene.add(entry.mesh);
+  table.set(ghost.id, entry);
+  return entry;
+}
+
+function createDeathGhostMaterial(texture: THREE.Texture, opacity: number): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    uniforms: {
+      uMap: { value: texture },
+      uOpacity: { value: opacity }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform sampler2D uMap;
+      uniform float uOpacity;
+      varying vec2 vUv;
+      void main() {
+        vec4 texel = texture2D(uMap, vUv);
+        float lum = dot(texel.rgb, vec3(0.299, 0.587, 0.114));
+        gl_FragColor = vec4(vec3(lum), texel.a * uOpacity);
+      }
+    `
+  });
+}
+
+function applySlimePresentation(
   mesh: THREE.Mesh,
   nowMs: number,
   entityId: number,
-  amplitude: number
+  amplitude: number,
+  hitImpulse: HitImpulseEffect | undefined
 ): void {
   const phase =
     (nowMs / 1000) * SLIME_BREATH_HZ * Math.PI * 2 +
     entityId * 1.61803398875;
   const breath = Math.sin(phase);
+  const hitT = computeHitResponseT(hitImpulse, nowMs);
+  const squashX = 1 + 0.16 * hitT;
+  const squashY = 1 - 0.12 * hitT;
   mesh.scale.set(
-    1 + amplitude * breath,
-    1 - amplitude * SLIME_BREATH_VERTICAL_RATIO * breath,
+    (1 + amplitude * breath) * squashX,
+    (1 - amplitude * SLIME_BREATH_VERTICAL_RATIO * breath) * squashY,
     1
   );
+  const material = mesh.material;
+  if (Array.isArray(material) || !(material instanceof THREE.MeshBasicMaterial)) return;
+  const flash = 1 + 0.55 * hitT;
+  material.color.setRGB(flash, flash, flash);
+}
+
+function computeHitResponseT(
+  hitImpulse: HitImpulseEffect | undefined,
+  nowMs: number
+): number {
+  if (hitImpulse === undefined) return 0;
+  const span = hitImpulse.expiresAtMs - hitImpulse.startedAtMs;
+  if (span <= 0) return 0;
+  return Math.max(0, Math.min(1, (hitImpulse.expiresAtMs - nowMs) / span));
+}
+
+function indexHitImpulses(
+  hitImpulses: ReadonlyArray<HitImpulseEffect>
+): Map<number, HitImpulseEffect> {
+  const byTarget = new Map<number, HitImpulseEffect>();
+  for (const impulse of hitImpulses) {
+    byTarget.set(impulse.targetId, impulse);
+  }
+  return byTarget;
 }
 
 function updateCrosshair(group: THREE.Group, getAim: AimAccessor | undefined): void {

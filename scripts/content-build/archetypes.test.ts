@@ -127,6 +127,15 @@ describe('content-build archetype areas', () => {
     });
   });
 
+  it('rejects negative weapon force values', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) => replaceExact(source, '| pistol | 5 |', '| pistol | -1 |'),
+      parse: parseWeaponsArea,
+      pattern: /knockbackImpulse must be >= 0/
+    });
+  });
+
   it('rejects legacy weapon Sound balance groups', async () => {
     await expectParseRejects({
       sourcePath: 'content/weapons.md',

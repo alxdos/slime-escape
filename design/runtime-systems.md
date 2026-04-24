@@ -111,3 +111,4 @@
 - [rng.md](rng.md)
 - [logging.md](logging.md)
 - [boss-encounter.md](boss-encounter.md)
+- [impact-feedback.md](impact-feedback.md)

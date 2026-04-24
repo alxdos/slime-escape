@@ -76,3 +76,13 @@
 | smg | 1 |
 | sniper | 6 |
 | laser | 1 |
+
+## Force
+
+| id | knockbackImpulse |
+|---|---:|
+| pistol | 5 |
+| shotgun | 12 |
+| smg | 3 |
+| sniper | 9 |
+| laser | 2 |

@@ -136,6 +136,27 @@ function findMeshWithMaterialMap(scene: THREE.Scene | null, texture: THREE.Textu
   }) ?? null;
 }
 
+function findSlimeBlobMeshes(scene: THREE.Scene | null, color: number): THREE.Mesh[] {
+  if (scene === null) return [];
+  return scene.children.filter((child): child is THREE.Mesh => {
+    if (!(child instanceof THREE.Mesh)) return false;
+    if (!(child.geometry instanceof THREE.ShapeGeometry)) return false;
+    const material = child.material;
+    if (Array.isArray(material) || !(material instanceof THREE.MeshBasicMaterial)) return false;
+    return material.color.getHex() === color;
+  });
+}
+
+function findShaderMeshWithMap(scene: THREE.Scene | null, texture: THREE.Texture): THREE.Mesh | null {
+  if (scene === null) return null;
+  return scene.children.find((child): child is THREE.Mesh => {
+    if (!(child instanceof THREE.Mesh)) return false;
+    const material = child.material;
+    if (Array.isArray(material) || !(material instanceof THREE.ShaderMaterial)) return false;
+    return material.uniforms.uMap?.value === texture;
+  }) ?? null;
+}
+
 function setTextureImageSize(texture: THREE.Texture, width: number, height: number): void {
   Object.defineProperty(texture, 'image', {
     value: { width, height },
@@ -208,6 +229,138 @@ describe('createRenderer', () => {
       { kind: 'pixelRatio', value: 2 },
       { kind: 'size', width: 800, height: 450, updateStyle: false }
     ]);
+  });
+
+  it('accepts runtime events through the renderer event sink', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: createEmptySnapshotPair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 1
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    expect(() => renderer.handleEvent({ kind: 'sessionStart', simTime: 0 })).not.toThrow();
+  });
+
+  it('renders slime impact droplets as generated irregular blob meshes', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => ({
+        ...createEmptySnapshotPair(),
+        nowMs: 1000
+      }),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 1
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.handleEvent({
+      kind: 'hit',
+      simTime: 0,
+      projectileId: 1,
+      targetId: 2,
+      targetKind: 'enemy',
+      targetArchetypeId: SLIME_BUG.id,
+      weaponArchetypeId: 'pistol',
+      damage: 1,
+      impactDirX: 1,
+      impactDirY: 0,
+      x: 2,
+      y: 3
+    });
+    renderer.render();
+
+    const blobs = findSlimeBlobMeshes(backend.lastScene(), SLIME_BUG.color);
+    expect(blobs.length).toBeGreaterThan(0);
+    expect(blobs[0]?.geometry).toBeInstanceOf(THREE.ShapeGeometry);
+    expect(blobs[0]?.position.z).toBeLessThan(0);
+  });
+
+  it('renders death ghosts from event data even when the dead entity is absent from snapshots', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const enemyTexture = new THREE.Texture();
+    let pair: SnapshotPair = {
+      ...createEmptySnapshotPair(),
+      curr: createSnapshot([]),
+      nowMs: 700
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({
+        [SLIME_BUG.id]: enemyTexture
+      }),
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 1
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.handleEvent({
+      kind: 'death',
+      simTime: 0,
+      entityId: 2,
+      entityKind: 'enemy',
+      archetypeId: SLIME_BUG.id,
+      weaponArchetypeId: 'pistol',
+      impactDirX: 1,
+      impactDirY: 0,
+      x: 2,
+      y: 3
+    });
+    renderer.render();
+
+    const ghostMesh = findShaderMeshWithMap(backend.lastScene(), enemyTexture);
+    const material = ghostMesh?.material;
+    expect(ghostMesh).not.toBeNull();
+    expect(ghostMesh?.position.x).toBeGreaterThan(2);
+    expect(ghostMesh?.position.y).toBeGreaterThan(3);
+    expect(ghostMesh?.scale.x).toBeGreaterThan(1);
+    expect(material).toBeInstanceOf(THREE.ShaderMaterial);
+    expect((material as THREE.ShaderMaterial).uniforms.uOpacity?.value).toBeLessThan(1);
+    expect((material as THREE.ShaderMaterial).uniforms.uOpacity?.value).toBeLessThan(0.42);
+    expect((material as THREE.ShaderMaterial).fragmentShader).toContain('dot(texel.rgb');
+
+    pair = { ...pair, nowMs: 2700 };
+    renderer.render();
+    expect(findShaderMeshWithMap(backend.lastScene(), enemyTexture)).toBeNull();
   });
 
   it('reapplies the current preset after resize in pixelRatio -> size order', () => {
@@ -358,6 +511,81 @@ describe('createRenderer', () => {
     expect(playerMesh?.scale.y).toBe(1);
     expect(enemyMesh?.scale.x).toBeCloseTo(1.07);
     expect(enemyMesh?.scale.y).toBeCloseTo(0.9426);
+  });
+
+  it('layers hit flash and squash on enemy sprites without affecting the player sprite', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const playerTexture = new THREE.Texture();
+    const enemyTexture = new THREE.Texture();
+    let pair: SnapshotPair = {
+      prev: null,
+      curr: createSnapshot([
+        { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+        {
+          id: 2,
+          kind: 'enemy',
+          archetypeId: SLIME_BUG.id,
+          x: 1,
+          y: 1,
+          hp: 2,
+          maxHp: 2
+        }
+      ]),
+      currReceivedAtMs: 0,
+      nowMs: 0
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({
+        [DEFAULT_PLAYER_VISUAL.archetypeId]: playerTexture,
+        [SLIME_BUG.id]: enemyTexture
+      }),
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.handleEvent({
+      kind: 'hit',
+      simTime: 0,
+      projectileId: 10,
+      targetId: 2,
+      targetKind: 'enemy',
+      targetArchetypeId: SLIME_BUG.id,
+      weaponArchetypeId: 'pistol',
+      damage: 1,
+      impactDirX: 1,
+      impactDirY: 0,
+      x: 1,
+      y: 1
+    });
+    renderer.render();
+
+    const scene = backend.lastScene();
+    const playerMesh = findMeshWithMaterialMap(scene, playerTexture);
+    const enemyMesh = findMeshWithMaterialMap(scene, enemyTexture);
+    const enemyMaterial = enemyMesh?.material;
+    expect(playerMesh?.scale.x).toBe(1);
+    expect(enemyMesh?.scale.x).toBeGreaterThan(1.1);
+    expect(enemyMaterial).toBeInstanceOf(THREE.MeshBasicMaterial);
+    expect((enemyMaterial as THREE.MeshBasicMaterial).color.r).toBeGreaterThan(1);
+
+    pair = { ...pair, nowMs: 500 };
+    renderer.render();
+    expect(enemyMesh?.scale.x).toBeLessThan(1.1);
+    expect((enemyMaterial as THREE.MeshBasicMaterial).color.r).toBe(1);
   });
 
   it('snaps character positions to the low backing-pixel grid', () => {

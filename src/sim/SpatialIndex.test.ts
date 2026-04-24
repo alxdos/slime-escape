@@ -45,6 +45,7 @@ function projectileAt(x: number, y: number): ProjectileSpawnSpec {
     velocity: { vx: 0, vy: 0 },
     radius: 0.1,
     damage: 1,
+    knockbackImpulse: 5,
     expireAtSimMs: 1000
   };
 }

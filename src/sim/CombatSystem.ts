@@ -17,6 +17,8 @@ export type DamageSource =
       projectileId: EntityId;
       ownerKind: 'player' | 'enemy' | 'boss';
       weaponArchetypeId: string;
+      impactDirX: number;
+      impactDirY: number;
     }
   | { kind: 'enemyContact'; enemyId: EntityId }
   | { kind: 'environment'; tag: string }
@@ -123,6 +125,7 @@ function runFiringDecisions(
     },
     radius: archetype.projectileRadius,
     damage: archetype.damage,
+    knockbackImpulse: archetype.knockbackImpulse,
     expireAtSimMs: simTimeMs + archetype.projectileTtlMs
   });
 
@@ -240,6 +243,10 @@ function runHitDetection(
   for (const projectile of store.projectiles()) {
     const target = findFirstHit(projectile, index, maxProjectileTargetBoundsRadius);
     if (target === null) continue;
+    const impactDir = normalizedProjectileDirection(projectile);
+    if (target.kind === 'enemy' || target.kind === 'boss') {
+      applyProjectileKnockback(target, projectile, impactDir, simTimeMs);
+    }
 
     intents.push({
       targetId: target.id,
@@ -248,7 +255,9 @@ function runHitDetection(
         kind: 'projectile',
         projectileId: projectile.id,
         ownerKind: projectile.ownerKind,
-        weaponArchetypeId: projectile.weaponArchetypeId
+        weaponArchetypeId: projectile.weaponArchetypeId,
+        impactDirX: impactDir.x,
+        impactDirY: impactDir.y
       },
       hitPosition: { x: projectile.position.x, y: projectile.position.y }
     });
@@ -259,8 +268,11 @@ function runHitDetection(
       projectileId: projectile.id,
       targetId: target.id,
       targetKind: target.kind,
+      targetArchetypeId: target.kind === 'player' ? null : target.archetypeId,
       weaponArchetypeId: projectile.weaponArchetypeId,
       damage: projectile.damage,
+      impactDirX: impactDir.x,
+      impactDirY: impactDir.y,
       x: projectile.position.x,
       y: projectile.position.y
     });
@@ -270,6 +282,27 @@ function runHitDetection(
 
   for (const id of hitProjectileIds) store.removeProjectile(id);
   return intents;
+}
+
+function normalizedProjectileDirection(projectile: Projectile): Vec2 {
+  const len = Math.hypot(projectile.velocity.vx, projectile.velocity.vy);
+  if (len === 0) return { x: 1, y: 0 };
+  return { x: projectile.velocity.vx / len, y: projectile.velocity.vy / len };
+}
+
+function applyProjectileKnockback(
+  target: Enemy | Boss,
+  projectile: Projectile,
+  impactDir: Vec2,
+  simTimeMs: number
+): void {
+  const impulseSpeed = projectile.knockbackImpulse * target.knockbackVelocityScale;
+  target.knockback = {
+    vx: impulseSpeed * impactDir.x,
+    vy: impulseSpeed * impactDir.y,
+    startSimMs: simTimeMs,
+    endSimMs: simTimeMs + target.knockbackDurationMs
+  };
 }
 
 function findFirstHit(
