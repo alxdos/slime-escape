@@ -40,7 +40,7 @@ Without a new contract, each new weapon would either add special branches to `Co
   ```ts
   type ProjectileArchetype = Readonly<{
     motion: ProjectileMotion;
-    size: { width: number; height: number };
+    size: { width: number; height: number };  // derive from PNG, see below
     hitRadius: number;
     impactDamage: number;
     knockbackImpulse: number;
@@ -52,7 +52,8 @@ Without a new contract, each new weapon would either add special branches to `Co
     visual: ProjectileVisualSpec;
   }>;
   ```
-- `hitRadius` is the gameplay overlap radius in world units. `size` is the rendered sprite footprint and the base value modified by size upgrades. Content must keep `hitRadius` consistent with `size`; if they intentionally differ, `hitRadius` is authoritative for gameplay.
+- `size` is a runtime field of the archetype but a **derive** value in the content pipeline: content-build copies it from `worldSize` of the corresponding `projectileVisuals[weaponArchetypeId]` entry per [sprite-assets.md](sprite-assets.md). It is **not authored** in `content/weapons.md` — the projectile's PNG is the single source of truth. The field exists in the type so runtime code (renderer, size modifiers, HUD, debug overlays) can read it directly without a registry lookup; both `weapons.generated.ts` and `projectileVisuals.generated.ts` carry the same number derived from the same PNG.
+- `hitRadius` is the gameplay overlap radius in world units and is **authored in MD** as a normal content field. It is **independent** of `size` and may legitimately differ from it — for example, a laser sprite is a long thin beam, but `hitRadius` is a small value at its centre. `hitRadius` is the only authoritative number for projectile collisions; `size` does not enter hit detection.
 - `impactDamage` can be `0`. This is valid for bombs or low-impact grenades. `explosion` can be `null`. A thrown rock is a projectile with high `impactDamage`, `groundOnImpact: true`, and `explosion: null`.
 - `pierceCount` is the number of additional targets the projectile may hit before it is removed or grounded. `0` preserves the old "one projectile = one hit" behavior.
 

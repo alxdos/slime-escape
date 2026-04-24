@@ -57,12 +57,13 @@
   type DropArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;          // wu, > 0; для overlap-теста и рендера
+    radius: number;          // wu, > 0; для overlap-теста и рендера; derive из PNG, см. ниже
     ttlMs: number;           // целое > 0; время жизни на арене с момента спавна
     effect: DropEffect;
     color: number;           // 0xRRGGBB, плейсхолдер для рендера
   }>;
   ```
+- `radius` — runtime-поле архетипа и одновременно **derive**-значение в content-pipeline: content-build считает его как `min(worldSize.width, worldSize.height) / 2` соответствующей записи `dropVisuals[dropArchetypeId]` per [sprite-assets.md](sprite-assets.md). В `content/drops.md` колонки `radius` нет — drop's PNG является единственным источником правды и для визуала, и для pickup overlap. Если в будущем понадобится разнести «визуал» и «pickup zone» (по аналогии с `projectile.size` vs `hitRadius`), вводится отдельное поле `pickupRadius`/`pickupBox` отдельным design-решением.
 - `DropEffect` — дискриминированный union по `kind`. Расширение только добавлением новых `kind`; переименование/смена семантики поля = новое решение и обновление этого файла.
 - `DropEffect.kind: 'heal'` keeps the 005 healing semantics described below. `addWeaponModifier`/`temporaryOverdrive` semantics live in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). `pickupModifier` semantics (drop magnet и будущие pickup-comfort modifier-ы) живут в [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md); `DropSystem` владеет mutating owner-local pickup-related player state по этому `kind`.
 - Реестр `DropArchetype` в `content library` имеет ту же форму, что и реестры `EnemyArchetype`/`WeaponArchetype` из [content-archetypes.md](content-archetypes.md): словарь `Record<string, DropArchetype>` с ключом, равным `archetype.id`. Конкретный файл (например, `src/shared/content/drops.ts`) — деталь реализации, не контракт.

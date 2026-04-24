@@ -90,12 +90,13 @@
   type DropArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;          // wu, > 0; для overlap-теста и рендера
+    radius: number;          // wu, > 0; derive из PNG ([drops.md](drops.md), [sprite-assets.md](sprite-assets.md))
     ttlMs: number;           // целое > 0; время жизни на арене с момента спавна
     effect: DropEffect;
     color: number;           // 0xRRGGBB, плейсхолдер для рендера
   }>;
   ```
+- `radius` — runtime-поле архетипа, но в content-pipeline это **derive**-значение из drop's PNG (полные правила — в [drops.md](drops.md)); MD-колонки для `radius` не существует.
 - `DropEffect` (его union, `heal`, weapon-related kinds, pickup-modifier kind) — единственный источник правды [drops.md](drops.md). Здесь форма не дублируется.
 - Полный контракт «как именно дроп спавнится, живёт и подбирается, и как применяется `DropEffect`» — в [drops.md](drops.md); здесь фиксируется только форма самого архетипа и его место в `content library`.
 
