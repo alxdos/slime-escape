@@ -23,6 +23,7 @@ export type ParsedWeapon = Readonly<{
   projectileRadius: number;
   projectileTtlMs: number;
   damage: number;
+  knockbackImpulse: number;
   color: number;
   audio: ParsedWeaponAudio;
 }>;
@@ -53,15 +54,18 @@ function parseWeaponsDocument(document: MarkdownDocument): ParsedWeaponsArea {
   const cooldownSection = requireSection(balanceSection, 'Cooldown');
   const projectileSection = requireSection(balanceSection, 'Projectile');
   const damageSection = requireSection(balanceSection, 'Damage');
+  const forceSection = requireSection(balanceSection, 'Force');
   assertNoForbiddenSoundGroup(balanceSection);
 
   const cooldownTable = requireSingleTable(cooldownSection);
   const projectileTable = requireSingleTable(projectileSection);
   const damageTable = requireSingleTable(damageSection);
+  const forceTable = requireSingleTable(forceSection);
 
   assertKnownReferences(cooldownSection, cooldownTable, knownWeaponIds, 'weapon');
   assertKnownReferences(projectileSection, projectileTable, knownWeaponIds, 'weapon');
   assertKnownReferences(damageSection, damageTable, knownWeaponIds, 'weapon');
+  assertKnownReferences(forceSection, forceTable, knownWeaponIds, 'weapon');
 
   return {
     weapons: definitions.map((definition) =>
@@ -71,7 +75,9 @@ function parseWeaponsDocument(document: MarkdownDocument): ParsedWeaponsArea {
         projectileSection,
         projectileTable,
         damageSection,
-        damageTable
+        damageTable,
+        forceSection,
+        forceTable
       })
     )
   };
@@ -98,11 +104,26 @@ function parseWeapon(
     projectileTable: MarkdownTable;
     damageSection: MarkdownSection;
     damageTable: MarkdownTable;
+    forceSection: MarkdownSection;
+    forceTable: MarkdownTable;
   }>
 ): ParsedWeapon {
   const cooldownRow = requireRow(tables.cooldownSection, tables.cooldownTable, definition.id);
   const projectileRow = requireRow(tables.projectileSection, tables.projectileTable, definition.id);
   const damageRow = requireRow(tables.damageSection, tables.damageTable, definition.id);
+  const forceRow = requireRow(tables.forceSection, tables.forceTable, definition.id);
+  const knockbackImpulse = requireNumber(
+    tables.forceSection,
+    tables.forceTable,
+    forceRow,
+    'knockbackImpulse'
+  );
+  if (knockbackImpulse < 0) {
+    throw sectionError(
+      tables.forceSection,
+      `weapon "${definition.id}" knockbackImpulse must be >= 0`
+    );
+  }
 
   return {
     ...definition,
@@ -126,6 +147,7 @@ function parseWeapon(
       'projectileTtlMs'
     ),
     damage: requireNumber(tables.damageSection, tables.damageTable, damageRow, 'damage'),
+    knockbackImpulse,
     audio: definition.audio
   };
 }

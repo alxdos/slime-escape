@@ -10,6 +10,7 @@ export const PISTOL: WeaponArchetype = {
   projectileRadius: 0.1,
   projectileTtlMs: 2000,
   damage: 1,
+  knockbackImpulse: 5,
   color: 0xffd76b
 };
 
@@ -21,6 +22,7 @@ export const SHOTGUN: WeaponArchetype = {
   projectileRadius: 0.18,
   projectileTtlMs: 500,
   damage: 4,
+  knockbackImpulse: 12,
   color: 0xff9b5e
 };
 
@@ -32,6 +34,7 @@ export const SMG: WeaponArchetype = {
   projectileRadius: 0.08,
   projectileTtlMs: 1600,
   damage: 1,
+  knockbackImpulse: 3,
   color: 0x9cff70
 };
 
@@ -43,6 +46,7 @@ export const SNIPER: WeaponArchetype = {
   projectileRadius: 0.08,
   projectileTtlMs: 2400,
   damage: 6,
+  knockbackImpulse: 9,
   color: 0xb8e8ff
 };
 
@@ -54,5 +58,6 @@ export const LASER: WeaponArchetype = {
   projectileRadius: 0.05,
   projectileTtlMs: 900,
   damage: 1,
+  knockbackImpulse: 2,
   color: 0x66fff0
 };
