@@ -1,6 +1,6 @@
 # Universal Weapons And Projectiles
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-24
 - Updated: 2026-04-24 (sprite extension: добавлены задачи T8–T11 на projectile/drop sprite pipeline по [sprite-assets.md](../design/sprite-assets.md); зафиксирован полный перечень новых weapon archetypes (rock-thrower, grenade-launcher, bomb-placer, fireball-staff) и projectile/drop спрайтов; inline image-узлы вводятся в `content/weapons.md` и `content/drops.md`.)
 
