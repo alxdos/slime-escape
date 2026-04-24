@@ -97,7 +97,11 @@ describe('content-build sessions area', () => {
       name: 'loadoutWeaponIds',
       file: 'campaign.md' as const,
       mutate: (source: string) =>
-        replaceExact(source, '| loadoutWeaponIds | pistol, shotgun, smg |', '| loadoutWeaponIds | pistol, railgun, smg |'),
+        replaceExact(
+          source,
+          '| loadoutWeaponIds | pistol, shotgun, smg, sniper, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |',
+          '| loadoutWeaponIds | pistol, shotgun, smg, railgun, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |'
+        ),
       pattern: /section "# Session": unknown loadoutWeaponIds "railgun"/
     },
     {
