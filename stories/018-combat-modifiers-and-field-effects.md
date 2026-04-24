@@ -1,6 +1,6 @@
 # Combat Modifiers And Field Effects
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-24
 - Updated: 2026-04-24 (architecture cleanup: drop magnet binding via new `DropEffect.kind: 'pickupModifier'` made explicit; aim assist owner fixed to `main thread`; tasks updated.)
 
