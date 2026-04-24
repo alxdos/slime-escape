@@ -21,7 +21,10 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 import { BOSS_VISUALS } from './bossVisuals';
 import { ENEMY_VISUALS } from './enemyVisuals';
 import { fitCanvasToViewport } from './fitToViewport';
-import { createImpactEffectStore } from './ImpactEffectStore';
+import {
+  createImpactEffectStore,
+  type SlimeDropletEffect
+} from './ImpactEffectStore';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
 import {
   resolveRenderScale,
@@ -92,6 +95,7 @@ const BACKGROUND_Z = -2;
 const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
 const DROP_Z = 0.03;
+const SLIME_STAIN_Z = 0.015;
 const DROP_PULSE_HZ = 1.6;
 const DROP_PULSE_AMPLITUDE = 0.15;
 const SLIME_BREATH_HZ = 0.85;
@@ -188,6 +192,7 @@ export function createRenderer(init: RendererInit): Renderer {
   const bossMeshes = new Map<number, EntityMeshEntry>();
   const projectileMeshes = new Map<number, EntityMeshEntry>();
   const dropMeshes = new Map<number, EntityMeshEntry>();
+  const slimeDropletMeshes = new Map<number, EntityMeshEntry>();
 
   function applyResolvedScalePolicy(
     preset: RenderScalePreset,
@@ -345,6 +350,12 @@ export function createRenderer(init: RendererInit): Renderer {
       updateCrosshair(crosshair, init.getAim);
       updateZoneOverlay(zoneOverlay, pair, alpha);
       impactEffects.update(pair.nowMs);
+      updateSlimeDropletMeshes(
+        impactEffects.snapshot().droplets,
+        slimeDropletMeshes,
+        scene,
+        disposeEntityMesh
+      );
       arenaBackground.setEncounterId(pair.curr?.encounter?.id ?? null);
       debugHud.update(pair.curr);
       renderer.render(scene, camera);
@@ -369,6 +380,8 @@ export function createRenderer(init: RendererInit): Renderer {
       projectileMeshes.clear();
       for (const entry of dropMeshes.values()) disposeEntityMesh(entry);
       dropMeshes.clear();
+      for (const entry of slimeDropletMeshes.values()) disposeEntityMesh(entry);
+      slimeDropletMeshes.clear();
       arenaGeometry.dispose();
       arenaMaterial.dispose();
       arenaBackground.dispose();
@@ -738,6 +751,70 @@ function pulseDropMeshes(
   for (const entry of table.values()) {
     entry.mesh.scale.set(scale, scale, 1);
   }
+}
+
+function updateSlimeDropletMeshes(
+  droplets: ReadonlyArray<SlimeDropletEffect>,
+  table: Map<number, EntityMeshEntry>,
+  scene: THREE.Scene,
+  dispose: (entry: EntityMeshEntry) => void
+): void {
+  const aliveIds = new Set<number>();
+  for (const droplet of droplets) {
+    aliveIds.add(droplet.id);
+    const entry = ensureSlimeDropletMesh(droplet, table, scene);
+    const material = entry.material;
+    if (material instanceof THREE.MeshBasicMaterial) {
+      material.opacity = droplet.opacity;
+    }
+    entry.mesh.position.set(droplet.x, droplet.y, SLIME_STAIN_Z);
+    entry.mesh.scale.set(droplet.stainScale, droplet.stainScale, 1);
+  }
+  for (const [id, entry] of table) {
+    if (!aliveIds.has(id)) {
+      dispose(entry);
+      table.delete(id);
+    }
+  }
+}
+
+function ensureSlimeDropletMesh(
+  droplet: SlimeDropletEffect,
+  table: Map<number, EntityMeshEntry>,
+  scene: THREE.Scene
+): EntityMeshEntry {
+  const existing = table.get(droplet.id);
+  if (existing !== undefined) return existing;
+  const geometry = createIrregularBlobGeometry(droplet);
+  const material = new THREE.MeshBasicMaterial({
+    color: droplet.color,
+    transparent: true,
+    opacity: droplet.opacity,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.z = SLIME_STAIN_Z;
+  scene.add(mesh);
+  const entry: EntityMeshEntry = { mesh, geometry, material };
+  table.set(droplet.id, entry);
+  return entry;
+}
+
+function createIrregularBlobGeometry(droplet: SlimeDropletEffect): THREE.ShapeGeometry {
+  const shape = new THREE.Shape();
+  for (let i = 0; i < droplet.shape.length; i += 1) {
+    const point = droplet.shape[i];
+    if (point === undefined) continue;
+    const x = Math.cos(point.angle) * droplet.radius * point.radiusScale;
+    const y = Math.sin(point.angle) * droplet.radius * point.radiusScale;
+    if (i === 0) {
+      shape.moveTo(x, y);
+    } else {
+      shape.lineTo(x, y);
+    }
+  }
+  shape.closePath();
+  return new THREE.ShapeGeometry(shape);
 }
 
 function applySlimeBreath(

@@ -136,6 +136,17 @@ function findMeshWithMaterialMap(scene: THREE.Scene | null, texture: THREE.Textu
   }) ?? null;
 }
 
+function findSlimeBlobMeshes(scene: THREE.Scene | null, color: number): THREE.Mesh[] {
+  if (scene === null) return [];
+  return scene.children.filter((child): child is THREE.Mesh => {
+    if (!(child instanceof THREE.Mesh)) return false;
+    if (!(child.geometry instanceof THREE.ShapeGeometry)) return false;
+    const material = child.material;
+    if (Array.isArray(material) || !(material instanceof THREE.MeshBasicMaterial)) return false;
+    return material.color.getHex() === color;
+  });
+}
+
 function setTextureImageSize(texture: THREE.Texture, width: number, height: number): void {
   Object.defineProperty(texture, 'image', {
     value: { width, height },
@@ -233,6 +244,52 @@ describe('createRenderer', () => {
     });
 
     expect(() => renderer.handleEvent({ kind: 'sessionStart', simTime: 0 })).not.toThrow();
+  });
+
+  it('renders slime impact droplets as generated irregular blob meshes', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => ({
+        ...createEmptySnapshotPair(),
+        nowMs: 1000
+      }),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 1
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.handleEvent({
+      kind: 'hit',
+      simTime: 0,
+      projectileId: 1,
+      targetId: 2,
+      targetKind: 'enemy',
+      targetArchetypeId: SLIME_BUG.id,
+      weaponArchetypeId: 'pistol',
+      damage: 1,
+      impactDirX: 1,
+      impactDirY: 0,
+      x: 2,
+      y: 3
+    });
+    renderer.render();
+
+    const blobs = findSlimeBlobMeshes(backend.lastScene(), SLIME_BUG.color);
+    expect(blobs.length).toBeGreaterThan(0);
+    expect(blobs[0]?.geometry).toBeInstanceOf(THREE.ShapeGeometry);
   });
 
   it('reapplies the current preset after resize in pixelRatio -> size order', () => {

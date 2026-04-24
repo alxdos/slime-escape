@@ -45,6 +45,10 @@ describe('ImpactEffectStore', () => {
     });
     expect(snapshot.droplets.length).toBeGreaterThan(0);
     expect(snapshot.droplets.every((droplet) => droplet.color === SLIME_BUG.color)).toBe(true);
+    expect(snapshot.droplets[0]?.shape.length).toBeGreaterThanOrEqual(8);
+    expect(
+      new Set(snapshot.droplets[0]?.shape.map((point) => point.radiusScale)).size
+    ).toBeGreaterThan(1);
     expect(snapshot.deathGhosts).toHaveLength(0);
   });
 
@@ -187,6 +191,39 @@ describe('ImpactEffectStore', () => {
 
     expect(twice.deathGhosts[0]?.x).toBe(ghostX);
     expect(twice.droplets[0]?.x).toBe(dropletX);
+  });
+
+  it('settles droplets into growing fading stains after landing', () => {
+    const store = createStore();
+
+    store.handleEvent(
+      {
+        kind: 'hit',
+        simTime: 300,
+        projectileId: 40,
+        targetId: 50,
+        targetKind: 'enemy',
+        targetArchetypeId: SLIME_BUG.id,
+        weaponArchetypeId: 'pistol',
+        damage: 1,
+        impactDirX: 1,
+        impactDirY: 0,
+        x: 0,
+        y: 0
+      },
+      1000
+    );
+
+    const spawned = store.snapshot().droplets[0];
+    expect(spawned).toBeDefined();
+    store.update(spawned!.landsAtMs + 1000);
+    const growing = store.snapshot().droplets[0];
+    expect(growing?.landed).toBe(true);
+    expect(growing?.stainScale).toBeGreaterThan(1);
+
+    store.update(spawned!.expiresAtMs - 1000);
+    const fading = store.snapshot().droplets[0];
+    expect(fading?.opacity).toBeLessThan(1);
   });
 
   it('keeps effect counts bounded when many impacts arrive before cleanup', () => {

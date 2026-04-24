@@ -24,6 +24,7 @@ export type HitImpulseEffect = Readonly<{
 export type SlimeDropletEffect = Readonly<{
   id: number;
   color: number;
+  shape: ReadonlyArray<Readonly<{ angle: number; radiusScale: number }>>;
   startX: number;
   startY: number;
   x: number;
@@ -36,6 +37,7 @@ export type SlimeDropletEffect = Readonly<{
   stainGrowUntilMs: number;
   expiresAtMs: number;
   opacity: number;
+  stainScale: number;
   landed: boolean;
 }>;
 
@@ -196,9 +198,11 @@ export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffe
         (initDroplets.kind === 'death' ? 0.08 : 0.045) *
         (0.75 + rng.nextFloat() * 0.7) *
         Math.sqrt(forceScale);
+      const shape = createBlobShape(rng, initDroplets.kind);
       droplets.push({
         id: nextDropletId,
         color: initDroplets.color,
+        shape,
         startX: initDroplets.x,
         startY: initDroplets.y,
         x: initDroplets.x,
@@ -211,6 +215,7 @@ export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffe
         stainGrowUntilMs: initDroplets.nowMs + flightMs + STAIN_GROW_MS,
         expiresAtMs: initDroplets.nowMs + flightMs + STAIN_TTL_MS,
         opacity: 1,
+        stainScale: 1,
         landed: false
       });
       nextDropletId += 1;
@@ -269,6 +274,11 @@ function updateDroplet(droplet: SlimeDropletEffect, nowMs: number): SlimeDroplet
   const elapsedMs = Math.max(0, nowMs - droplet.startedAtMs);
   const flightT = flightMs <= 0 ? 1 : Math.min(1, elapsedMs / flightMs);
   const landed = nowMs >= droplet.landsAtMs;
+  const growSpan = droplet.stainGrowUntilMs - droplet.landsAtMs;
+  const growT =
+    growSpan <= 0
+      ? 1
+      : Math.max(0, Math.min(1, (nowMs - droplet.landsAtMs) / growSpan));
   const fadeT = Math.max(0, nowMs - (droplet.expiresAtMs - STAIN_FADE_MS)) / STAIN_FADE_MS;
   const opacity = Math.max(0, 1 - fadeT);
   return {
@@ -276,6 +286,7 @@ function updateDroplet(droplet: SlimeDropletEffect, nowMs: number): SlimeDroplet
     x: droplet.startX + droplet.vx * (flightT * flightMs / 1000),
     y: droplet.startY + droplet.vy * (flightT * flightMs / 1000),
     opacity,
+    stainScale: landed ? 1 + 0.45 * growT : 1,
     landed
   };
 }
@@ -357,4 +368,20 @@ function createHashSequence(seed: number): Readonly<{ nextFloat(): number }> {
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     }
   };
+}
+
+function createBlobShape(
+  rng: Readonly<{ nextFloat(): number }>,
+  kind: 'hit' | 'death'
+): ReadonlyArray<Readonly<{ angle: number; radiusScale: number }>> {
+  const points = kind === 'death' ? 11 : 8;
+  const jitter = kind === 'death' ? 0.38 : 0.3;
+  const shape: Array<Readonly<{ angle: number; radiusScale: number }>> = [];
+  for (let i = 0; i < points; i += 1) {
+    const baseAngle = (i / points) * Math.PI * 2;
+    const angle = baseAngle + (rng.nextFloat() - 0.5) * (Math.PI / points) * 0.8;
+    const radiusScale = 1 - jitter / 2 + rng.nextFloat() * jitter;
+    shape.push({ angle, radiusScale });
+  }
+  return shape;
 }

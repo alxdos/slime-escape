@@ -48,7 +48,7 @@
 | T4 | [x] | Применить projectile knockback в симуляции | Переиспользовать enemy/boss knockback state на projectile hits, учесть susceptibility/duration цели и оставить HP mutation внутри `HealthDeathSystem`. |
 | T5 | [x] | Пробросить runtime events в renderer | Добавить `Renderer.handleEvent`, route events из `UiShell`, очистку renderer effects на dispose/session transitions. |
 | T6 | [x] | Собрать render-only impact effect store | Отслеживать transient hit impulses, droplets/stains и death ghosts с bounded budgets, TTL и per-frame updates. |
-| T7 | [ ] | Нарисовать slime droplets и floor stains | Генерировать irregular blob geometry, spawn-ить hit/death bursts из event data, коротко settle/grow stains, затем fade/remove. |
+| T7 | [x] | Нарисовать slime droplets и floor stains | Генерировать irregular blob geometry, spawn-ить hit/death bursts из event data, коротко settle/grow stains, затем fade/remove. |
 | T8 | [ ] | Добавить live hit response | Наложить короткий flash и/или squash impulse на enemy/boss sprites без влияния на breathing, position interpolation или player rendering. |
 | T9 | [ ] | Добавить death ghost feedback | Spawn transient sprite copy из death event archetype/texture, двигать вверх плюс impact direction, быстро fade-out-ить и безопасно работать без live mesh. |
 | T10 | [ ] | Проверить и настроить общее ощущение | Прогнать unit/build checks и manual browser QA по доступным weapons: direction, force difference, color, cleanup, отсутствие leftovers после выхода из run. |
