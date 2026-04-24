@@ -126,6 +126,26 @@ describe('content-build sessions area', () => {
     });
   }
 
+  it('rejects selectedWeaponIndex outside the authored ordered loadout', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          replaceExact(source, '| selectedWeaponIndex | 0 |', '| selectedWeaponIndex | 3 |')
+      },
+      /selectedWeaponIndex.*expected 0\.\.2 or none/
+    );
+  });
+
+  it('rejects selectedWeaponIndex when loadoutWeaponIds is none', async () => {
+    await expectParseRejects(
+      {
+        'sandbox.md': (source) =>
+          replaceExact(source, '| selectedWeaponIndex | none |', '| selectedWeaponIndex | 0 |')
+      },
+      /selectedWeaponIndex.*expected none when loadoutWeaponIds is none/
+    );
+  });
+
   it('rejects a spawn table on an empty encounter', async () => {
     await expectParseRejects(
       {

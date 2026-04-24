@@ -136,6 +136,20 @@ describe('content-build archetype areas', () => {
     });
   });
 
+  it('rejects non-positive projectile motion values', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| grenade-launcher | arc | 7 | 6 | 700 |',
+          '| grenade-launcher | arc | 7 | 6 | 0 |'
+        ),
+      parse: parseWeaponsArea,
+      pattern: /flightMs.*expected > 0/
+    });
+  });
+
   it('rejects weapon fragments that reference unknown weapon ids', async () => {
     await expectParseRejects({
       sourcePath: 'content/weapons.md',
@@ -150,6 +164,20 @@ describe('content-build archetype areas', () => {
     });
   });
 
+  it('rejects weapon fragments on weapons without an explosion spec', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/weapons.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '## Explosion Fragments\n\n| id | fragmentWeaponId | count | spreadRadians |\n|---|---|---:|---:|\n| pistol | none | 0 | 0 |\n| shotgun | none | 0 | 0 |\n| smg | none | 0 | 0 |\n| sniper | none | 0 | 0 |\n| laser | none | 0 | 0 |\n| rock-thrower | none | 0 | 0 |',
+          '## Explosion Fragments\n\n| id | fragmentWeaponId | count | spreadRadians |\n|---|---|---:|---:|\n| pistol | none | 0 | 0 |\n| shotgun | none | 0 | 0 |\n| smg | none | 0 | 0 |\n| sniper | none | 0 | 0 |\n| laser | none | 0 | 0 |\n| rock-thrower | pistol | 2 | 1 |'
+        ),
+      parse: parseWeaponsArea,
+      pattern: /fragment requires a non-none explosion/
+    });
+  });
+
   it('rejects drop fragment modifiers that reference unknown weapon ids', async () => {
     await expectParseRejects({
       sourcePath: 'content/drops.md',
@@ -161,6 +189,34 @@ describe('content-build archetype areas', () => {
         ),
       parse: parseDropsArea,
       pattern: /fragmentWeaponId.*unknown weapon id "railgun"/
+    });
+  });
+
+  it('rejects weapon modifier drops with an unsupported target', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| size-up | addWeaponModifier | selectedWeapon | none | none |',
+          '| size-up | addWeaponModifier | allWeapons | none | none |'
+        ),
+      parse: parseDropsArea,
+      pattern: /target.*expected selectedWeapon/
+    });
+  });
+
+  it('rejects non-positive weapon modifier multipliers', async () => {
+    await expectParseRejects({
+      sourcePath: 'content/drops.md',
+      mutate: (source) =>
+        replaceExact(
+          source,
+          '| size-up | projectileSizeMultiplier | 1.25 | none | 0 |',
+          '| size-up | projectileSizeMultiplier | 0 | none | 0 |'
+        ),
+      parse: parseDropsArea,
+      pattern: /value.*expected > 0/
     });
   });
 
