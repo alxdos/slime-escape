@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 
+import { BOSS_ARCHETYPES } from '../../shared/content/bosses';
 import { DROP_ARCHETYPES, type DropArchetype } from '../../shared/content/drops';
+import { ENEMY_ARCHETYPES } from '../../shared/content/enemies';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
 import type { RuntimeEvent } from '../../shared/events';
 import type { ArenaConfig, SessionDefinition } from '../../shared/session';
@@ -19,6 +21,7 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 import { BOSS_VISUALS } from './bossVisuals';
 import { ENEMY_VISUALS } from './enemyVisuals';
 import { fitCanvasToViewport } from './fitToViewport';
+import { createImpactEffectStore } from './ImpactEffectStore';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
 import {
   resolveRenderScale,
@@ -174,6 +177,12 @@ export function createRenderer(init: RendererInit): Renderer {
   const debugHud = (init.createDebugHud ?? createDebugHud)();
   let currentRenderScalePreset = init.renderScalePreset;
   let characterSnapGrid: CharacterSnapGrid | null = null;
+  let lastRenderNowMs = 0;
+  const impactEffects = createImpactEffectStore({
+    enemyRegistry: ENEMY_ARCHETYPES,
+    bossRegistry: BOSS_ARCHETYPES,
+    weaponRegistry
+  });
 
   const enemyMeshes = new Map<number, EntityMeshEntry>();
   const bossMeshes = new Map<number, EntityMeshEntry>();
@@ -291,6 +300,7 @@ export function createRenderer(init: RendererInit): Renderer {
   return {
     render(): void {
       const pair = init.getSnapshotPair();
+      lastRenderNowMs = pair.nowMs;
       const alpha = computeAlpha(pair);
       updatePlayer(playerMesh, pair, alpha, characterSnapGrid);
       updateEntities(
@@ -334,11 +344,14 @@ export function createRenderer(init: RendererInit): Renderer {
       pulseDropMeshes(dropMeshes, pair.nowMs);
       updateCrosshair(crosshair, init.getAim);
       updateZoneOverlay(zoneOverlay, pair, alpha);
+      impactEffects.update(pair.nowMs);
       arenaBackground.setEncounterId(pair.curr?.encounter?.id ?? null);
       debugHud.update(pair.curr);
       renderer.render(scene, camera);
     },
-    handleEvent(_event: RuntimeEvent): void {},
+    handleEvent(event: RuntimeEvent): void {
+      impactEffects.handleEvent(event, lastRenderNowMs);
+    },
     fitToWindow,
     applyScalePolicy,
     dispose(): void {
@@ -363,6 +376,7 @@ export function createRenderer(init: RendererInit): Renderer {
       arenaBorder.geometry.dispose();
       (arenaBorder.material as THREE.Material).dispose();
       zoneOverlay.dispose();
+      impactEffects.clear();
       debugHud.dispose();
       renderer.dispose();
     }
