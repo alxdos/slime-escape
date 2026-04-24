@@ -86,4 +86,5 @@
 | [body-contact-boxes.md](body-contact-boxes.md) | accepted | `contactBox` как derive shape для body-contact `player`/`enemy`/`boss`: box-vs-box overlap, broadphase через derived bounds radius, clamp игрока по box |
 | [impact-feedback.md](impact-feedback.md) | accepted | Juicy projectile feedback: self-contained `hit`/`death` event payloads, projectile knockback from weapon force, renderer-owned slime droplets/stains, hit squash/flash and death ghost |
 | [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) | accepted | Universal weapon instances, ordered loadouts, fire patterns, projectile motion, explosions, fragments, session friendly-fire rules and weapon modifier drops |
+| [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) | accepted | Follow-up combat layer: field effects, status effects, mines, carrier drops, drop magnet, friendly-fire retaliation and aim assist |
 | [_template.md](_template.md) | template | Минимальный шаблон нового решения |
