@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (sprite extension: `Drop` rendering moves from primitives to PNG sprites by [sprite-assets.md](sprite-assets.md); `dropVisuals` registry keyed by `dropArchetypeId` is added there, sourced from inline image-узлов в `content/drops.md`. cleanup pass: `DropEffect` is the single source of truth for the union; `kind: 'pickupModifier'` is added explicitly here as the binding point for drop magnet from [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). 017 alignment: `DropEffect` includes weapon modifier and temporary overdrive effects from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: drop magnet uses the new `pickupModifier` kind; carrier drops are defined by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
+- Updated: 2026-04-25 (story 019: «гарантированные дропы» и replace архетипного `dropTable` уезжают с архетипа в [spawn-overrides.md](spawn-overrides.md); `DropSystem` читает per-spawn `dropTable` и `guaranteedDrops` с runtime-сущности `enemy`, а не с `EnemyArchetype`. Earlier: 2026-04-24 sprite extension: `Drop` rendering moves from primitives to PNG sprites by [sprite-assets.md](sprite-assets.md); `dropVisuals` registry keyed by `dropArchetypeId` is added there, sourced from inline image-узлов в `content/drops.md`. cleanup pass: `DropEffect` is the single source of truth for the union; `kind: 'pickupModifier'` is added explicitly here as the binding point for drop magnet from [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). 017 alignment: `DropEffect` includes weapon modifier and temporary overdrive effects from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: drop magnet uses the new `pickupModifier` kind; carrier drops are defined by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
 
 ## Context
 
@@ -70,7 +70,7 @@
 
 ### Drop table на EnemyArchetype
 
-- Связь «какой враг что дропает» живёт на `EnemyArchetype` ([content-archetypes.md](content-archetypes.md)) полем `dropTable`:
+- Архетипный default «какой враг что дропает по умолчанию» живёт на `EnemyArchetype` ([content-archetypes.md](content-archetypes.md)) полем `dropTable`:
   ```ts
   type DropTableEntry = Readonly<{
     archetypeId: string;     // DropArchetype.id из content library
@@ -80,17 +80,18 @@
   // у EnemyArchetype дополнительное поле:
   // dropTable: ReadonlyArray<DropTableEntry>
   ```
-- Отдельной сущности «DropTable» с собственным `id` нет: одна таблица — одно поле архетипа врага. Это сознательно: 005 не вводит шаринг таблиц между врагами, и если он понадобится позже, это будет отдельным решением (ссылка по `dropTableId` поверх существующего поля), не «дописыванием по месту».
+- Отдельной сущности «DropTable» с собственным `id` нет: одна архетипная таблица — одно поле архетипа врага. Это сознательно: 005 не вводит шаринг таблиц между врагами, и если он понадобится позже, это будет отдельным решением (ссылка по `dropTableId` поверх существующего поля), не «дописыванием по месту».
+- **Эффективная dropTable конкретного спавна** — это per-spawn копия, разрешённая в момент спавна (`SpawnSystem`): если для этого `seq` задан `SpawnOverride.dropTable` ([spawn-overrides.md](spawn-overrides.md)) — replace архетипной таблицы целиком; иначе копия архетипной. `DropSystem` для weighted-pick читает **только** это runtime-поле сущности; архетипный `dropTable` — источник default-копии, не источник per-tick правды.
 - Семантика выбора — **один weighted pick на смерть**, не последовательные независимые роллы. Алгоритм:
-  1. `roll = rng.nextFloat()` — ровно один вызов session RNG на каждое срабатывание hook ([rng.md](rng.md));
-  2. идём по `dropTable` в порядке индексов, аккумулируя `chance`. Первый entry, у которого `accumulated > roll`, выигрывает;
-  3. если суммарный `chance` в таблице меньше единицы и `roll >= sum(chances)`, дропа на этой смерти **нет** — это и есть способ выразить «ничего не выпало».
-- Baseline death processing gives **не более одного weighted-pick дропа** за смерть. Story 018 may add explicit guaranteed carrier rewards; those must still be spawned by `DropSystem` from death hooks and must not replace the baseline weighted-pick rule silently.
-- Числовые ограничения, обязательные на стороне content/builder:
+  1. `roll = rng.nextFloat()` — ровно один вызов session RNG на каждое срабатывание hook с непустой эффективной таблицей ([rng.md](rng.md));
+  2. идём по эффективной `dropTable` сущности в порядке индексов, аккумулируя `chance`. Первый entry, у которого `accumulated > roll`, выигрывает;
+  3. если суммарный `chance` в таблице меньше единицы и `roll >= sum(chances)`, weighted-pick дропа на этой смерти **нет** — это и есть способ выразить «ничего не выпало».
+- Baseline death processing gives **не более одного weighted-pick дропа** за смерть. Per-spawn `SpawnOverride.guaranteedDrops` ([spawn-overrides.md](spawn-overrides.md)) добавляет **add поверх** weighted-pick: список `dropArchetypeId` спавнится в позиции смерти **до** weighted-pick без обращения к session RNG. Гарантированные дропы и weighted-pick — независимые источники, и наличие одних не подменяет другие.
+- Числовые ограничения, обязательные на стороне content/builder, действуют одинаково для архетипного `dropTable` и для `SpawnOverride.dropTable`:
   - `chance` каждого entry в `[0, 1]`;
   - суммарный `chance` по таблице `<= 1` (нарушение — warning через `log.warn` при сборке/старте сессии, [logging.md](logging.md); это контентная ошибка, а не runtime-фолбэк);
-  - все `archetypeId` из `dropTable` обязаны резолвиться в реестре `DropArchetype` — неизвестный `id` = ошибка сборки сессии, не runtime-фолбэк (то же правило, что и для других архетипов в [content-archetypes.md](content-archetypes.md)).
-- Пустой `dropTable` (`[]`) — валидное значение и означает «этот враг ничего не дропает». Поле `dropTable` обязательно: явное `[]` отличается от «забыли выставить» и держит правило «без двух разных «нет данных» из [content-archetypes.md](content-archetypes.md).
+  - все `archetypeId` из `dropTable` обязаны резолвиться в реестре `DropArchetype` — неизвестный `id` = ошибка сборки сессии, не runtime-фолбэк (то же правило, что и для других архетипов в [content-archetypes.md](content-archetypes.md)). Для архетипных таблиц проверка живёт в `validateEnemyRegistry`; для override-таблиц — в валидаторе multi-file области `sessions` (см. [content-authoring.md](content-authoring.md), [spawn-overrides.md](spawn-overrides.md), раздел «Валидация»).
+- Пустой `dropTable` (`[]`) — валидное значение и означает «этот враг ничего не дропает» (для архетипа) или «у этого конкретного спавна dropTable пуст» (для override). Поле `dropTable` на архетипе обязательно: явное `[]` отличается от «забыли выставить» и держит правило «без двух разных «нет данных» из [content-archetypes.md](content-archetypes.md). Для override `[]` отличается от «нет override» (поле опущено) и используется в миграционных сценариях из [spawn-overrides.md](spawn-overrides.md).
 
 ### Жизненный цикл `DropSystem`
 
@@ -105,10 +106,12 @@
 - Hook видит `DeathContext`: `entityId`, `entityKind`, `archetypeId`, `position`, `cause`, `simTime`.
 - Шаги hook:
   1. если `entityKind !== 'enemy'` — выйти. Дроп не падает с игрока (или будущего kind), даже если у него технически появится `dropTable`. На горизонт 005 `dropTable` живёт только на `EnemyArchetype`, но фильтр в hook оставлен явным как защита от расширений.
-  2. резолвить `EnemyArchetype` по `archetypeId` через карту, построенную при старте сессии ([content-archetypes.md](content-archetypes.md): «резолв `id → archetype` выполняется один раз при старте сессии»). Если `archetype` — `null`/`undefined`, это нарушение контракта сборки сессии: hook не пытается «починить» данные, а пишет `log.error` и выходит без спавна ([logging.md](logging.md)).
-  3. если `archetype.dropTable` пуст — выйти без спавна. RNG в этом случае **не дёргается**: пустая таблица — это ноль роллов, и порядок последовательности RNG зависит только от случаев, в которых дроп реально может выпасть. Это упрощает воспроизводимость и тесты.
-  4. иначе сделать ровно один `rng.nextFloat()` и выбрать `DropArchetype` по правилу из «Drop table» выше. Если выбран `null` (roll промахнулся мимо суммы chances) — выйти без спавна.
-  5. иначе вызвать `EntityStore.spawnDrop(spec)` с `position = ctx.position` и `expireAtSimMs = ctx.simTime + dropArchetype.ttlMs`. Опубликовать runtime event `dropSpawn` ([snapshot-shape.md](snapshot-shape.md)).
+  2. достать **резолвленную в момент спавна** копию полей сущности: `dropTable` и `guaranteedDrops`. Эти поля кладёт `SpawnSystem` из per-spawn `SpawnOverride` или из архетипных defaults (см. [spawn-overrides.md](spawn-overrides.md), раздел «Момент применения»). Архетип в `enemyRegistry` для этих двух полей в hook **не читается**; вместо этого DropSystem доверяет тому, что положил `SpawnSystem`. Если runtime-сущность недоступна (умерла слишком рано) — `log.error` и выход без спавна ([logging.md](logging.md)).
+  3. для каждого `dropArchetypeId` из `guaranteedDrops` (в порядке списка) разрешить `DropArchetype` через карту, построенную при старте сессии ([content-archetypes.md](content-archetypes.md)) и спавнить дроп в позиции смерти. Эти спавны **не** дёргают session RNG. Неизвестный `dropArchetypeId` здесь — runtime-нарушение контракта сборки сессии (валидатор должен был его поймать); hook пишет `log.error` и пропускает конкретный id, не падая.
+  4. если эффективная `dropTable` пуста — выйти без weighted-pick. RNG в этом случае **не дёргается**: пустая таблица — это ноль роллов, и порядок последовательности RNG зависит только от случаев, в которых weighted-pick дроп реально может выпасть. Это упрощает воспроизводимость и тесты.
+  5. иначе сделать ровно один `rng.nextFloat()` и выбрать `DropArchetype` по правилу из «Drop table» выше. Если выбран `null` (roll промахнулся мимо суммы chances) — выйти без weighted-pick спавна.
+  6. иначе вызвать `EntityStore.spawnDrop(spec)` с `position = ctx.position` и `expireAtSimMs = ctx.simTime + dropArchetype.ttlMs`. Опубликовать runtime event `dropSpawn` ([snapshot-shape.md](snapshot-shape.md)).
+  7. порядок шагов 3 → 4 → 5 фиксирован: **гарантированные дропы спавнятся раньше weighted-pick**, чтобы поток `dropSpawn` events был детерминирован относительно `seed` и не зависел от порядка обхода runtime-полей сущности.
 - Hook **не** наносит урон, не модифицирует HP других сущностей и не запускает каскадных смертей — это согласовано с правилами hook из [health-and-death.md](health-and-death.md).
 - На момент работы hook мёртвый враг ещё доступен в `EntityStore` (его удаление — шаг 5 порядка внутри тика). `DropSystem` опирается только на `ctx.position`, не читает `EntityStore.enemyById(ctx.entityId)`. Это держит hook независимым от внутреннего порядка чистки.
 
@@ -180,3 +183,4 @@
 - [../docs/GDD_CORE.md](../docs/GDD_CORE.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
+- [spawn-overrides.md](spawn-overrides.md)

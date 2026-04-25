@@ -2,7 +2,7 @@
 
 - Status: planned
 - Created: 2026-04-25
-- Updated: 2026-04-25
+- Updated: 2026-04-25 (architect: design/spawn-overrides.md оформлен, точечные правки в content-archetypes.md/spawn-plan.md/session-definition.md/drops.md/combat-modifiers-and-field-effects.md/content-authoring.md/design/README.md, Related расширен, Tasks полностью продроблены)
 
 ## Player-facing
 
@@ -77,14 +77,30 @@
 
 ## Tasks
 
-Стартовая таблица — полное дробление делает архитектор при переводе истории `planned → in-progress`.
+Полная декомпозиция: архитектурный PR (T1) подготовлен этим же ревью; код-PR (T2–T16) — отдельным PR после merge архитектурного, по правилу «не делать одним PR одновременно правки `design/` и кода». Внутри T2–T16 порядок отражает зависимости: типы → удаление `EnemyArchetype.carrierDrop` → парсер/рендер `sessions` → builder-валидация → runtime → миграция контента → тесты → верификация.
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Архитектор: оформить решение в `design/spawn-overrides.md` (форма, поля `guaranteedDrops`/`dropTable`/`retaliation`, семантика replace/add, момент применения, валидация, правило миграции) и точечные правки в `content-archetypes.md`/`spawn-plan.md`/`session-definition.md`/`drops.md`/`combat-modifiers-and-field-effects.md`/`design/README.md`. Декомпозировать историю на задачи. | Архитектурный PR — отдельным PR, без кода, до взятия истории в работу. |
+| T1 | [ ] | Архитектор: `design/spawn-overrides.md` (форма `SpawnOverride`, поля `guaranteedDrops`/`dropTable`/`retaliation`, семантика replace/add, момент применения, валидация, правило миграции) + точечные правки в `content-archetypes.md` (вынос `carrierDrop`), `spawn-plan.md` (optional `override` в `StaticSpawn`/`WaveSpawn`), `session-definition.md`, `drops.md` (DropSystem читает per-entity `dropTable`/`guaranteedDrops`), `combat-modifiers-and-field-effects.md` (carrier/retaliation теперь per-spawn), `content-authoring.md` (третья override-таблица в encounter, контролируемое расширение list-in-cell), `design/README.md` Index. Полная декомпозиция этой истории. | Архитектурный PR — отдельным PR, без кода. PR ready, awaiting merge. |
+| T2 | [ ] | Расширить `src/shared/session.ts`: добавить тип `SpawnOverride = Readonly<{ guaranteedDrops?, dropTable?, retaliation? }>`; добавить optional `override?: SpawnOverride` в `StaticSpawn` и `WaveSpawn`. Без изменения значения уже существующих полей. | Чисто типы; runtime-поведение пока не меняется. |
+| T3 | [ ] | Снять поле `carrierDrop` (включая `CarrierDropMetadata`/`marker: 'reward'`) с `EnemyArchetype` в `src/shared/content/enemies.ts`. Удалить `assertCarrierDropsResolve` из `validateEnemyRegistry`. Оставить `dropTable` и `retaliation` как defaults. | После этого шага сборка ломается до T4–T7; задачи идут одной серией. |
+| T4 | [ ] | `scripts/content-build/enemies/parse.ts` + `renderContent.ts`: убрать парсинг `## Carrier Drops` партиции из `content/enemies.md`; убрать выпуск поля `carrierDrop` в `enemies.generated.ts`. | Удаление самой партиции из MD-источника — часть T13 (после миграции `content/sessions/`). |
+| T5 | [ ] | `scripts/content-build/sessions/parse.ts`: парсить третью optional GFM-таблицу encounter-секции `seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs`. Hard-error на: неизвестное имя поля override, override на несуществующий `seq`, дубликат `seq`, неизвестный `dropArchetypeId` (через `requireDropRef`), `retaliationEnabled`/`retaliationDurationMs` заданы частично. Warn на `chance ∉ [0, 1]`/`sum > 1` в `dropTable` и на `enabled && durationMs <= 0`. Расширить `ParsedSpawn`/`ParsedStaticSpawn` полем `override`. | Запретить третью таблицу при `spawnKind ∈ {empty, boss}`. |
+| T6 | [ ] | `scripts/content-build/sessions/renderContent.ts`: эмитить `override` в литералах `WaveSpawn`/`StaticSpawn` сгенерированного `sessions.generated.ts` (пропускать поле, если override пуст; сохранять текущую форму без override). | Импорт `DropArchetype.id` для override.guaranteedDrops/dropTable идёт через тот же import bucket `drops`. |
+| T7 | [ ] | `src/shared/content/buildSession.ts`: в `resolveSpawnPlanTemplate` пройти по всем `seq` и проверить, что все `override.guaranteedDrops`/`override.dropTable[*].archetypeId` резолвятся в `DROP_ARCHETYPES`. Это runtime-second-pass, заменяющий бывший `assertCarrierDropsResolve`. | Проверка обязательная для всех `'static'` и `'wave'` планов. |
+| T8 | [ ] | `src/sim/EntityStore.ts`: добавить runtime-поля `guaranteedDrops: ReadonlyArray<string>` и `dropTable: ReadonlyArray<DropTableEntry>` на entity `enemy`. Источник `carrierDropMarker` сменить на derive `guaranteedDrops.length > 0 ? 'reward' : null`. `EnemySpawnSpec` принимает соответствующие поля. | Forma снапшота не меняется. |
+| T9 | [ ] | `src/sim/SpawnSystem.ts`: `makeEnemySpawnSpec` принимает second arg `override?: SpawnOverride` и резолвит `guaranteedDrops`/`dropTable`/`retaliation` через override-or-archetype-default. Применить в `executeStatic` и `spawnNextWaveEnemy`. | Никаких runtime-чтений `archetype.carrierDrop` после этого шага. |
+| T10 | [ ] | `src/sim/DropSystem.ts`: hook читает `enemy.dropTable` и `enemy.guaranteedDrops` с runtime-сущности через `EntityStore`, не из `EnemyArchetype`. Параметр `enemyRegistry` либо удаляется, либо сохраняется только для лога/неизвестного archetypeId. Порядок: гарантированные дропы → weighted-pick (см. design/drops.md, шаги hook 3 → 4 → 5). | После T8/T9 это рефактор без поведенческих изменений. |
+| T11 | [ ] | Миграция `content/sessions/*.md`: переписать каждый `seq`, ссылающийся на один из семи форков, на обычный архетип того же визуального семейства + соответствующий spawn-override. Конкретно (задачи на основе сегодняшнего состояния `enemies.md`/`sessions/`): `campaign-set-1-carrier-slime` → визуальный base + `guaranteedDrops: size-up`, `dropTable: empty`; `campaign-set-2-..` → `guaranteedDrops: multi-shot`, `dropTable: empty`; `campaign-set-3-..` → `guaranteedDrops: magnet`, `dropTable: empty`; `campaign-set-4-..` → `guaranteedDrops: fragment`, `dropTable: empty`; `campaign-set-5-..` → `guaranteedDrops: overdrive`, `dropTable: empty`; `demo-carrier-slime` → `guaranteedDrops: magnet, heal-orb`, `dropTable: empty`; `demo-retaliator-slime` → `dropTable: heal-orb:0.20`, `retaliation: enabled=true, durationMs=2500`. Конкретные визуальные base-архетипы и числа dropTable согласовать с тем, что лежит в `enemies.md` сегодня, чтобы не сломать байт-в-байт идентичность кампании. | Поведение runtime фиксируется тестом T15. |
+| T12 | [ ] | Удалить из `content/enemies.md` H2-секции семи форков и их строки во всех балансных партициях (`## Bodies`, `## Speed`, `## Hit points`, `## Contact`, `## Drops`, `## Carrier Drops`, `## Retaliation`) и в `# Sound sets / ## Members`. Удалить саму партицию `## Carrier Drops` целиком. Прогнать `npm run content:build` и убедиться, что `enemies.generated.ts` соответствует (forks исчезают; `carrierDrop`-поле исчезает у всех оставшихся). | Делается после T11, чтобы кампания не ссылалась на уже несуществующие архетипы. |
+| T13 | [ ] | `scripts/content-build/sessions/sessions.test.ts`: добавить unit-тесты на каждое hard-error правило T5 (override на несуществующий `seq`, дубликат `seq`, неизвестное имя поля, неизвестный `dropArchetypeId`, `empty` vs `none`, частично заданная `retaliation`) и на каждый warn (chance > 1, sum > 1, retaliation duration ≤ 0). | Покрытие на стороне content-build, как требует Acceptance. |
+| T14 | [ ] | Переписать тесты, опирающиеся на `EnemyArchetype.carrierDrop`: `src/sim/DropSystem.test.ts` (carrier guaranteed drops), `src/sim/SpawnSystem.test.ts`, `src/sim/RetaliationSystem.test.ts`, `src/shared/content/enemies.test.ts`. Тестовые fixtures теперь подают override через спавн-план или через runtime spec, не через архетип. | Поведение тех же сценариев должно остаться идентичным. |
+| T15 | [ ] | Детерминированный regression-тест: прогнать сессию `campaign` для одного фиксированного `seed` и зафиксировать байт-в-байт идентичность последовательности runtime events (`enemySpawn`/`death`/`dropSpawn`/`dropPickup`/`dropExpire` + позиции/архетипы) до и после миграции. Реализовать как vitest snapshot или явный equality на pre-recorded baseline. | Покрывает Acceptance-пункт «байт-в-байт идентично». |
+| T16 | [ ] | Прогнать `npm run content:check && tsc -p tsconfig.scripts.json && npm run typecheck && npm test`. Прогнать визуальный sanity-чек `npm run dev` для `campaign`/`combat-modifiers-demo` и убедиться, что HUD/рендер/звук без визуальной разницы. | Финальная верификация. |
 
 ## Related
 
+- [spawn-overrides.md](../design/spawn-overrides.md)
 - [content-archetypes.md](../design/content-archetypes.md)
 - [spawn-plan.md](../design/spawn-plan.md)
 - [session-definition.md](../design/session-definition.md)
@@ -92,4 +108,7 @@
 - [combat-modifiers-and-field-effects.md](../design/combat-modifiers-and-field-effects.md)
 - [content-authoring.md](../design/content-authoring.md)
 - [content-boundaries.md](../design/content-boundaries.md)
+- [snapshot-shape.md](../design/snapshot-shape.md)
+- [boss-encounter.md](../design/boss-encounter.md)
+- [universal-weapons-and-projectiles.md](../design/universal-weapons-and-projectiles.md)
 - [020-shooting-slimes.md](020-shooting-slimes.md)

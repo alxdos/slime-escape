@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (cleanup pass: legacy scalar `WeaponArchetype` and legacy `{ primaryWeaponArchetypeId }` `Loadout` removed; only the current 017 forms remain. `DropEffect` is no longer redefined here; the single source of truth is [drops.md](drops.md). `WeaponArchetype` carries no audio field by [audio.md](audio.md). 017 alignment: `WeaponArchetype` and `Loadout` follow [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: optional field/status/drop-magnet/carrier extensions are owned by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: story 016 impact feedback, story 013 sprite/contact boxes, story 012 MD-generated weapons/drops/bosses.)
+- Updated: 2026-04-25 (story 019: `EnemyArchetype.carrierDrop` removed; per-spawn guaranteed drops, dropTable replace and retaliation replace move to [spawn-overrides.md](spawn-overrides.md). `EnemyArchetype.dropTable` and `EnemyArchetype.retaliation` remain as archetype defaults. Earlier: 2026-04-24 cleanup pass: legacy scalar `WeaponArchetype` and legacy `{ primaryWeaponArchetypeId }` `Loadout` removed; only the current 017 forms remain. `DropEffect` is no longer redefined here; the single source of truth is [drops.md](drops.md). `WeaponArchetype` carries no audio field by [audio.md](audio.md). 017 alignment: `WeaponArchetype` and `Loadout` follow [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: optional field/status/drop-magnet/carrier extensions are owned by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: story 016 impact feedback, story 013 sprite/contact boxes, story 012 MD-generated weapons/drops/bosses.)
 
 ## Context
 
@@ -27,13 +27,18 @@
 
 ### EnemyArchetype
 
-- Форма на горизонт 005:
+- Форма на горизонт 019:
   ```ts
   type EnemyBehavior = 'stationary' | 'chase';
 
   type DropTableEntry = Readonly<{
     archetypeId: string;             // DropArchetype.id из реестра drops в content library
     chance: number;                  // [0, 1]
+  }>;
+
+  type RetaliationPolicy = Readonly<{
+    enabled: boolean;
+    durationMs: number;              // целое > 0 при enabled === true; иначе 0
   }>;
 
   type EnemyArchetype = Readonly<{
@@ -50,9 +55,12 @@
     knockbackVelocityScale: number;  // безразмерный, >= 0; множитель добавки от approachSpeed
     knockbackDurationMs: number;     // целое > 0; длительность затухания knockback
     color: number;                   // 0xRRGGBB, slime material color for impact effects; base sprite remains PNG-driven
-    dropTable: ReadonlyArray<DropTableEntry>;  // [] = враг ничего не дропает; правила выбора — drops.md
+    dropTable: ReadonlyArray<DropTableEntry>;  // **архетипный default**; per-spawn replace — spawn-overrides.md
+    retaliation: RetaliationPolicy;             // **архетипный default**; per-spawn replace — spawn-overrides.md
   }>;
   ```
+- `dropTable` и `retaliation` — **архетипные defaults**, действующие, если в `content/sessions/<presetId>.md` для конкретного спавна не задан `SpawnOverride` ([spawn-overrides.md](spawn-overrides.md)). Все runtime-системы читают per-spawn копию этих полей с runtime-сущности `enemy`, а не с архетипа; архетип используется только как источник default-копии в момент спавна.
+- Поля `carrierDrop` / `CarrierDropMetadata` / `marker: 'reward'` в `EnemyArchetype` **отсутствуют**. «Гарантированный дроп carrier-щели» — это per-spawn override (`SpawnOverride.guaranteedDrops` в [spawn-overrides.md](spawn-overrides.md)), а не поле архетипа. Презентационный `carrierDropMarker` в снапшоте ([snapshot-shape.md](snapshot-shape.md)) derive-ится в `SpawnSystem` из `guaranteedDrops.length > 0` в момент спавна и не зависит от архетипа.
 - `behavior: 'stationary'` означает, что `MovementSystem` не двигает врага этого архетипа; `maxSpeed` для `'stationary'` обязан быть 0 — это правило валидируется на стороне content/builder, не runtime.
 - `behavior: 'chase'` означает, что `MovementSystem` двигает врага к текущей позиции игрока с скоростью `maxSpeed`; конкретный alg (прямая линия / steering) — деталь реализации, контракт — «в среднем сокращает расстояние до игрока за тик». Дальнейшие поведения (`'wander'`, `'orbit'`, …) добавляются дописыванием в `EnemyBehavior` union, а не ветвями в `MovementSystem`.
 - `contactBox` — axis-aligned footprint тела врага для body-contact и projectile hit detection по [body-contact-boxes.md](body-contact-boxes.md) и [projectiles-and-combat.md](projectiles-and-combat.md). На горизонте 013 не авторится руками в MD и derive-ится из sprite asset тем же scale pipeline, что и visual `worldSize`.
@@ -63,6 +71,7 @@
   - `maxSpeed * SIM_STEP_SEC <= min((contactBox.width + player.contactBox.width) / 2, (contactBox.height + player.contactBox.height) / 2)` ([enemy-contact.md](enemy-contact.md): запрет touring через игрока), warning через единый log-модуль ([logging.md](logging.md));
   - для `'stationary'` обязан быть `maxSpeed === 0`, `contactDamage === 0` и `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0` (стационарная мишень не должна неявно бить и не должна прыгать); валидация на стороне content/builder.
 - `dropTable` обязателен и задаётся всегда, даже если враг ничего не дропает: явное `[]` отличается от «забыли выставить» (см. правило «без двух разных «нет данных»). Дополнительные ограничения (каждый `chance ∈ [0, 1]`, сумма `chance` по таблице `<= 1`, все `archetypeId` резолвятся в реестре `DropArchetype`) — см. [drops.md](drops.md); их нарушение фиксируется warning через единый log-модуль на стороне content/builder и не доходит до runtime-фолбэка.
+- `retaliation` обязателен и задаётся всегда, даже если архетип никогда не мстит: «retaliation отключена по умолчанию» выражается явным `{ enabled: false, durationMs: 0 }`, а не пропуском поля. То же правило валидации (`enabled === true && durationMs <= 0` → warning) живёт в [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) и применяется одинаково к архетипному default и к per-spawn override из [spawn-overrides.md](spawn-overrides.md).
 
 ### WeaponArchetype
 
@@ -205,3 +214,4 @@
 - [impact-feedback.md](impact-feedback.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
+- [spawn-overrides.md](spawn-overrides.md)

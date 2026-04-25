@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-24
-- Updated: 2026-04-24 (cleanup pass: aim assist owner fixed to `main thread`; drop magnet binding to `DropEffect.kind: 'pickupModifier'` made explicit so the new union member is the single extension surface in this story.)
+- Updated: 2026-04-25 (story 019: carrier «гарантированный дроп» и friendly-fire retaliation становятся per-spawn override-полями ([spawn-overrides.md](spawn-overrides.md)), а не полями `EnemyArchetype`. Архетипный default для retaliation остаётся; `EnemyArchetype.carrierDrop` удаляется. Earlier: 2026-04-24 cleanup pass: aim assist owner fixed to `main thread`; drop magnet binding to `DropEffect.kind: 'pickupModifier'` made explicit so the new union member is the single extension surface in this story.)
 
 ## Context
 
@@ -81,9 +81,9 @@ The next layer of combat juice should be designed separately so the universal we
 ### Drop extensions
 
 - Carrier enemies are represented by content, not a new runtime entity kind:
-  - `EnemyArchetype.dropTable` remains the baseline death-drop contract.
-  - A carrier may use a guaranteed drop table entry or a new explicit `guaranteedDropArchetypeIds` extension, but the death hook remains owned by `DropSystem`.
-  - Renderer may show a carrier marker using enemy archetype/content metadata, not by inspecting hidden runtime drop rolls.
+  - `EnemyArchetype.dropTable` remains the baseline death-drop contract; archetype-level `carrierDrop` is **not** part of the contract anymore (story 019).
+  - «Carrier»-щель — это per-spawn характеристика, а не вид существа: список гарантированных дропов задаётся `SpawnOverride.guaranteedDrops` per `seq` ([spawn-overrides.md](spawn-overrides.md)), а death hook по-прежнему принадлежит `DropSystem` ([drops.md](drops.md), раздел «Spawn on death hook», шаги 3 → 4 → 5).
+  - Renderer показывает carrier-маркер по полю снапшота `carrierDropMarker`, которое derive-ится в `SpawnSystem` из `guaranteedDrops.length > 0` в момент спавна ([snapshot-shape.md](snapshot-shape.md)). Никаких скрытых чтений архетипа или runtime-роллов rendering-стороной нет.
 - Drop magnet is a player-affecting modifier carried by an existing drop. It binds into the system through `DropEffect` by extending the `DropEffect` union with a new member:
   ```ts
   type PickupModifier =
@@ -107,9 +107,10 @@ The next layer of combat juice should be designed separately so the universal we
     expireAtSimMs: number;
   };
   ```
-- If `slimeFriendlyFire` is enabled and an enemy damages another enemy, the damaged enemy may temporarily target the attacker according to its archetype/session reaction policy.
+- If `slimeFriendlyFire` is enabled and an enemy damages another enemy, the damaged enemy may temporarily target the attacker according to its retaliation policy.
+- The active retaliation policy on a runtime enemy is the per-spawn copy resolved at spawn time: `SpawnOverride.retaliation` if present for that `seq`, otherwise `EnemyArchetype.retaliation` ([content-archetypes.md](content-archetypes.md), [spawn-overrides.md](spawn-overrides.md)). `RetaliationSystem` reads only this entity-local field; it does not consult the archetype directly.
 - `MovementSystem` may consume current aggro target as an input to chase behavior, but the decision to set/expire aggro belongs to an AI/behavior layer, not movement.
-- Retaliation is optional per enemy archetype or session. Some slimes can ignore friendly fire.
+- Retaliation is optional per archetype default and may be opted in / out per individual spawn through override. Some slimes can ignore friendly fire entirely (`{ enabled: false }`).
 
 ### Aim assist
 
@@ -162,3 +163,4 @@ The next layer of combat juice should be designed separately so the universal we
 - [rng.md](rng.md)
 - [testing.md](testing.md)
 - [../stories/018-combat-modifiers-and-field-effects.md](../stories/018-combat-modifiers-and-field-effects.md)
+- [spawn-overrides.md](spawn-overrides.md)

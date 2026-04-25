@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (static/boss builder-fit уточнён до `contactBox` для `enemy` / `boss`; ранее: кампания: break перед боссом, спавн босса сверху по центру; `'boss'` kind для 006)
+- Updated: 2026-04-25 (story 019: per-`seq` записи `'static'` и `'wave'` получают optional `override?: SpawnOverride`; форма и семантика override — [spawn-overrides.md](spawn-overrides.md). Earlier: 2026-04-23 static/boss builder-fit уточнён до `contactBox` для `enemy` / `boss`; ранее: кампания: break перед боссом, спавн босса сверху по центру; `'boss'` kind для 006)
 
 ## Context
 
@@ -37,6 +37,7 @@
     spawns: ReadonlyArray<{
       archetypeId: string;     // EnemyArchetype.id из content library
       position: { x: number; y: number };  // wu, центр сущности
+      override?: SpawnOverride;            // см. spawn-overrides.md
     }>;
   };
   ```
@@ -45,7 +46,8 @@
   - порядок исполнения соответствует порядку в массиве — это даёт стабильные `id` при детерминированной сборке `SessionDefinition`;
   - повторных спавнов и респавнов нет;
   - `position` обязан попадать внутрь арены ([arena-and-coordinates.md](arena-and-coordinates.md)); для `enemy` builder проверяет влезание по полному `contactBox`, а не по legacy `radius`, чтобы статический spawn не выпускал прямоугольное тело за границы арены;
-  - архетипы резолвятся через `content library` ([content-archetypes.md](content-archetypes.md), [content-boundaries.md](content-boundaries.md)).
+  - архетипы резолвятся через `content library` ([content-archetypes.md](content-archetypes.md), [content-boundaries.md](content-boundaries.md));
+  - `override` — optional «контекст появления» этого конкретного спавна (`guaranteedDrops`, `dropTable`, `retaliation`); форма, семантика replace/add, момент применения и валидация фиксируются в [spawn-overrides.md](spawn-overrides.md). `SpawnSystem` материализует override один раз в момент спавна, после чего runtime-сущность ничем не отличается от спавна без override.
 
 ### Wave spawn
 
@@ -55,12 +57,14 @@
     kind: 'wave';
     spawns: ReadonlyArray<{
       archetypeId: string;     // EnemyArchetype.id из content library
+      override?: SpawnOverride;             // см. spawn-overrides.md
     }>;
     spawnIntervalMs: number;   // > 0; минимальный интервал между двумя спавнами этого плана
     maxAlive: number;          // > 0; верхний предел одновременно живых сущностей, заспавненных этим планом
     edgeMargin?: number;       // wu, >= 0; отступ от внутренней кромки арены при выборе позиции; default 0
   };
   ```
+- `override` per-`seq` — единственный способ, которым `WaveSpawnPlan` несёт «контекст появления» (`guaranteedDrops`, `dropTable`, `retaliation`); общих per-encounter override-полей у плана нет (см. [spawn-overrides.md](spawn-overrides.md), раздел «Что запрещено вводить «по месту» в 019»). Применяется при материализации сущности тем же `SpawnSystem`-механизмом, что и для `'static'`.
 - Семантика:
   - `spawns` — упорядоченный счётный «бюджет» спавнов; план **завершает диспатч**, когда все элементы выпущены, и больше не спавнит;
   - на каждом тике `SpawnSystem` спавнит **не более одной** сущности из плана при выполнении всех условий:
@@ -131,3 +135,4 @@
 - [testing.md](testing.md)
 - [web-stack.md](web-stack.md)
 - [boss-encounter.md](boss-encounter.md)
+- [spawn-overrides.md](spawn-overrides.md)

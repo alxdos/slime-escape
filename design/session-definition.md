@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (cleanup pass: legacy `{ primaryWeaponArchetypeId }` `loadout` no longer mentioned as a current shape; only the ordered form remains. 017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules and player maxHp.)
+- Updated: 2026-04-25 (story 019: per-`seq` записи `spawnPlan` `'static'`/`'wave'` несут optional `SpawnOverride`, форма и семантика — [spawn-overrides.md](spawn-overrides.md); `EncounterDefinition` структурно не меняется. Earlier: 2026-04-24 cleanup pass: legacy `{ primaryWeaponArchetypeId }` `loadout` no longer mentioned as a current shape; only the ordered form remains. 017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules and player maxHp.)
 
 ## Context
 
@@ -73,7 +73,7 @@
 }
 ```
 
-- `spawnPlan` описывает данные для `SpawnSystem`, а не конкретный код спавна. Форма `spawnPlan` (дискриминированный union, набор `kind`, правила расширения, `'empty'`/`'static'`/`'wave'`) фиксируется отдельным решением [spawn-plan.md](spawn-plan.md). Будущие категории (`'boss'` и т.п.) добавляются туда же новыми `kind`, без изменения этого файла.
+- `spawnPlan` описывает данные для `SpawnSystem`, а не конкретный код спавна. Форма `spawnPlan` (дискриминированный union, набор `kind`, правила расширения, `'empty'`/`'static'`/`'wave'`/`'boss'`, optional `SpawnOverride` per-`seq` для `'static'`/`'wave'`) фиксируется отдельными решениями [spawn-plan.md](spawn-plan.md) и [spawn-overrides.md](spawn-overrides.md). Будущие категории `kind` и новые поля `SpawnOverride` добавляются туда же, без изменения этого файла.
 - `backgroundId` — явная ссылка на один из `SessionDefinition.backgrounds[].id` или `null`, если encounter не задаёт фон. Для player-facing `wave`/`break`/`boss` encounter'ов background обязателен на уровне content-authoring; sandbox/bring-up encounter'ы могут использовать `null` или тестовый фон. Симуляция не читает это поле; оно принадлежит presentation/runtime-конфигу, который main уже получил вместе с immutable `SessionDefinition`.
 - `zoneBehavior` — дискриминированный union по `kind`. Конкретная семантика и поведение `ZoneSystem` фиксируются в [zone.md](zone.md); этот файл закрепляет только форму поля и набор `kind`:
   - `{ kind: 'disabled' }` — зона отступлена и не двигается, `margin = 0` весь encounter;
@@ -143,3 +143,4 @@
 - [main-ui-shell.md](main-ui-shell.md)
 - [../stories/015-sessions-from-md.md](../stories/015-sessions-from-md.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
+- [spawn-overrides.md](spawn-overrides.md)

@@ -87,4 +87,5 @@
 | [impact-feedback.md](impact-feedback.md) | accepted | Juicy projectile feedback: self-contained `hit`/`death` event payloads, projectile knockback from weapon force, renderer-owned slime droplets/stains, hit squash/flash and death ghost |
 | [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) | accepted | Universal weapon instances, ordered loadouts, fire patterns, projectile motion, explosions, fragments, session friendly-fire rules and weapon modifier drops |
 | [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) | accepted | Follow-up combat layer: field effects, status effects, mines, carrier drops, drop magnet, friendly-fire retaliation and aim assist |
+| [spawn-overrides.md](spawn-overrides.md) | accepted | Per-`seq` `SpawnOverride` (`guaranteedDrops`/`dropTable`/`retaliation`) для `'static'`/`'wave'` плана; вынос `carrierDrop` из `EnemyArchetype`, момент применения, валидация и правило миграции |
 | [_template.md](_template.md) | template | Минимальный шаблон нового решения |
