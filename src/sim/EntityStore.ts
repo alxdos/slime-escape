@@ -1,5 +1,5 @@
 import type { DropEffect } from '../shared/content/drops';
-import type { EnemyBehavior, RetaliationPolicy } from '../shared/content/enemies';
+import type { DropTableEntry, EnemyBehavior, RetaliationPolicy } from '../shared/content/enemies';
 import type {
   ActorEffectApplication,
   DetonationTrigger,
@@ -36,6 +36,8 @@ export type Enemy = {
   readonly radius: number;
   readonly contactBox: ContactBox;
   readonly behavior: EnemyBehavior;
+  readonly guaranteedDrops: ReadonlyArray<string>;
+  readonly dropTable: ReadonlyArray<DropTableEntry>;
   readonly carrierDropMarker: 'reward' | null;
   readonly retaliation: RetaliationPolicy;
   readonly maxHp: number;
@@ -184,7 +186,8 @@ export type EnemySpawnSpec = Readonly<{
   radius: number;
   contactBox: ContactBox;
   behavior: EnemyBehavior;
-  carrierDropMarker?: 'reward' | null;
+  guaranteedDrops?: ReadonlyArray<string>;
+  dropTable?: ReadonlyArray<DropTableEntry>;
   retaliation?: RetaliationPolicy;
   maxHp: number;
   maxSpeed: number;
@@ -332,6 +335,7 @@ export function createEntityStore(): EntityStore {
       return next;
     },
     spawnEnemy(spec): Enemy {
+      const guaranteedDrops = [...(spec.guaranteedDrops ?? [])];
       const next: Enemy = {
         id: makeId(),
         kind: 'enemy',
@@ -339,7 +343,9 @@ export function createEntityStore(): EntityStore {
         radius: spec.radius,
         contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
         behavior: spec.behavior,
-        carrierDropMarker: spec.carrierDropMarker ?? null,
+        guaranteedDrops,
+        dropTable: [...(spec.dropTable ?? [])],
+        carrierDropMarker: guaranteedDrops.length > 0 ? 'reward' : null,
         retaliation: spec.retaliation ?? { enabled: false, durationMs: 0 },
         maxHp: spec.maxHp,
         maxSpeed: spec.maxSpeed,

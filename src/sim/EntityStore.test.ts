@@ -120,8 +120,29 @@ describe('EntityStore', () => {
     expect(enemy.hp).toBe(ENEMY_SPEC.maxHp);
     expect(enemy.maxHp).toBe(ENEMY_SPEC.maxHp);
     expect(enemy.position).toEqual(ENEMY_SPEC.position);
+    expect(enemy.guaranteedDrops).toEqual([]);
+    expect(enemy.dropTable).toEqual([]);
+    expect(enemy.carrierDropMarker).toBeNull();
     expect(store.enemyById(enemy.id)).toBe(enemy);
     expect(store.enemyCount()).toBe(1);
+  });
+
+  it('copies enemy drop fields and derives the carrier marker from guaranteed drops', () => {
+    const store = createEntityStore();
+    const guaranteedDrops = ['magnet'];
+    const dropTable = [{ archetypeId: 'heal-orb', chance: 0.25 }];
+    const enemy = store.spawnEnemy({
+      ...ENEMY_SPEC,
+      guaranteedDrops,
+      dropTable
+    });
+
+    guaranteedDrops.push('size-up');
+    dropTable[0] = { archetypeId: 'size-up', chance: 1 };
+
+    expect(enemy.guaranteedDrops).toEqual(['magnet']);
+    expect(enemy.dropTable).toEqual([{ archetypeId: 'heal-orb', chance: 0.25 }]);
+    expect(enemy.carrierDropMarker).toBe('reward');
   });
 
   it('isolates enemy position from the spec object', () => {
