@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { BossArchetype } from '../shared/content/bosses';
 import type { EnemyArchetype } from '../shared/content/enemies';
 import { createRng } from '../shared/rng';
-import type { ArenaConfig, EncounterDefinition } from '../shared/session';
+import type { ArenaConfig, EncounterDefinition, WaveSpawn } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import { createEntityStore } from './EntityStore';
@@ -29,7 +29,6 @@ const STATIONARY_TEST_ENEMY: EnemyArchetype = {
   knockbackDurationMs: 1,
   color: 0xff7766,
   dropTable: [],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 const FAST_TEST_ENEMY: EnemyArchetype = {
@@ -172,6 +171,35 @@ describe('SpawnSystem static / empty', () => {
     ).toThrow(/unknown enemy archetype/);
   });
 
+  it('applies static spawn override as runtime enemy fields', () => {
+    const store = createEntityStore();
+    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
+    spawn.onEncounterStart(
+      makeEncounter({
+        kind: 'static',
+        spawns: [
+          {
+            archetypeId: STATIONARY_TEST_ENEMY.id,
+            position: { x: 0, y: 0 },
+            override: {
+              guaranteedDrops: ['magnet'],
+              dropTable: [{ archetypeId: 'heal-orb', chance: 0.25 }],
+              retaliation: { enabled: true, durationMs: 2500 }
+            }
+          }
+        ]
+      }),
+      store,
+      ARENA
+    );
+
+    const enemy = [...store.enemies()][0]!;
+    expect(enemy.guaranteedDrops).toEqual(['magnet']);
+    expect(enemy.dropTable).toEqual([{ archetypeId: 'heal-orb', chance: 0.25 }]);
+    expect(enemy.retaliation).toEqual({ enabled: true, durationMs: 2500 });
+    expect(enemy.carrierDropMarker).toBe('reward');
+  });
+
   it('rejects unknown SpawnPlan.kind via assertNever', () => {
     const store = createEntityStore();
     const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
@@ -185,7 +213,7 @@ describe('SpawnSystem static / empty', () => {
 
 describe('SpawnSystem wave', () => {
   function setupWave(opts?: {
-    spawns?: ReadonlyArray<{ archetypeId: string }>;
+    spawns?: ReadonlyArray<WaveSpawn>;
     spawnIntervalMs?: number;
     maxAlive?: number;
     edgeMargin?: number;
@@ -214,6 +242,28 @@ describe('SpawnSystem wave', () => {
     const { store, spawn } = setupWave();
     spawn.onTick(0, store);
     expect(store.enemyCount()).toBe(1);
+  });
+
+  it('applies wave spawn override to the dispatched enemy', () => {
+    const { store, spawn } = setupWave({
+      spawns: [
+        {
+          archetypeId: FAST_TEST_ENEMY.id,
+          override: {
+            guaranteedDrops: ['size-up'],
+            dropTable: [],
+            retaliation: { enabled: true, durationMs: 900 }
+          }
+        }
+      ]
+    });
+    spawn.onTick(0, store);
+
+    const enemy = [...store.enemies()][0]!;
+    expect(enemy.guaranteedDrops).toEqual(['size-up']);
+    expect(enemy.dropTable).toEqual([]);
+    expect(enemy.retaliation).toEqual({ enabled: true, durationMs: 900 });
+    expect(enemy.carrierDropMarker).toBe('reward');
   });
 
   it('spawns at most one enemy per tick', () => {
