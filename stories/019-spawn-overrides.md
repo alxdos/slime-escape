@@ -1,6 +1,6 @@
 # Модификаторы спавнов в волнах
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-25
 - Updated: 2026-04-25 (architect: design/spawn-overrides.md оформлен, точечные правки в content-archetypes.md/spawn-plan.md/session-definition.md/drops.md/combat-modifiers-and-field-effects.md/content-authoring.md/design/README.md, Related расширен, Tasks полностью продроблены)
 
@@ -81,7 +81,7 @@
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Архитектор: `design/spawn-overrides.md` (форма `SpawnOverride`, поля `guaranteedDrops`/`dropTable`/`retaliation`, семантика replace/add, момент применения, валидация, правило миграции) + точечные правки в `content-archetypes.md` (вынос `carrierDrop`), `spawn-plan.md` (optional `override` в `StaticSpawn`/`WaveSpawn`), `session-definition.md`, `drops.md` (DropSystem читает per-entity `dropTable`/`guaranteedDrops`), `combat-modifiers-and-field-effects.md` (carrier/retaliation теперь per-spawn), `content-authoring.md` (третья override-таблица в encounter, контролируемое расширение list-in-cell), `design/README.md` Index. Полная декомпозиция этой истории. | Архитектурный PR — отдельным PR, без кода. PR ready, awaiting merge. |
+| T1 | [x] | Архитектор: `design/spawn-overrides.md` (форма `SpawnOverride`, поля `guaranteedDrops`/`dropTable`/`retaliation`, семантика replace/add, момент применения, валидация, правило миграции) + точечные правки в `content-archetypes.md` (вынос `carrierDrop`), `spawn-plan.md` (optional `override` в `StaticSpawn`/`WaveSpawn`), `session-definition.md`, `drops.md` (DropSystem читает per-entity `dropTable`/`guaranteedDrops`), `combat-modifiers-and-field-effects.md` (carrier/retaliation теперь per-spawn), `content-authoring.md` (третья override-таблица в encounter, контролируемое расширение list-in-cell), `design/README.md` Index. Полная декомпозиция этой истории. | Архитектурный PR — отдельным PR, без кода. Design accepted, code branch starts from T2. |
 | T2 | [ ] | Расширить `src/shared/session.ts`: добавить тип `SpawnOverride = Readonly<{ guaranteedDrops?, dropTable?, retaliation? }>`; добавить optional `override?: SpawnOverride` в `StaticSpawn` и `WaveSpawn`. Без изменения значения уже существующих полей. | Чисто типы; runtime-поведение пока не меняется. |
 | T3 | [ ] | Снять поле `carrierDrop` (включая `CarrierDropMetadata`/`marker: 'reward'`) с `EnemyArchetype` в `src/shared/content/enemies.ts`. Удалить `assertCarrierDropsResolve` из `validateEnemyRegistry`. Оставить `dropTable` и `retaliation` как defaults. | После этого шага сборка ломается до T4–T7; задачи идут одной серией. |
 | T4 | [ ] | `scripts/content-build/enemies/parse.ts` + `renderContent.ts`: убрать парсинг `## Carrier Drops` партиции из `content/enemies.md`; убрать выпуск поля `carrierDrop` в `enemies.generated.ts`. | Удаление самой партиции из MD-источника — часть T13 (после миграции `content/sessions/`). |
