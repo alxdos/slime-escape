@@ -83,6 +83,15 @@ export function requireEnemyRef(
   return requireKnownRef(section, position, fieldName, id, ENEMY_CONST_NAMES);
 }
 
+export function requireDropRef(
+  section: MarkdownSection,
+  position: SourcePosition,
+  fieldName: string,
+  id: string
+): ResolvedContentRef {
+  return requireKnownRef(section, position, fieldName, id, DROP_CONST_NAMES);
+}
+
 function requireKnownRef(
   section: MarkdownSection,
   position: SourcePosition,
