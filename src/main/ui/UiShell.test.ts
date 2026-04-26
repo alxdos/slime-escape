@@ -1478,6 +1478,82 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'menu' });
   });
 
+  it('routes Space into overlay pause and releases pointer lock for the menu cursor', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const canvas = { clientHeight: 900 } as HTMLCanvasElement;
+    const documentTarget = Object.assign(documentEvents, {
+      pointerLockElement: canvas as unknown as Element | null,
+      exitPointerLock: vi.fn()
+    });
+    documentTarget.exitPointerLock.mockImplementation(() => {
+      documentTarget.pointerLockElement = null;
+    });
+    const preventDefault = vi.fn();
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: () => ({
+        render() {},
+        handleEvent() {},
+        fitToWindow() {},
+        applyScalePolicy() {},
+        dispose() {}
+      }),
+      createInputController: () => ({
+        start() {},
+        stop() {},
+        isActive() {
+          return true;
+        },
+        currentAim() {
+          return { x: 0, y: 0 };
+        },
+        requestLock() {}
+      }),
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    menu.start();
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Space',
+        preventDefault,
+        repeat: false
+      } as unknown as Event
+    );
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(documentTarget.exitPointerLock).toHaveBeenCalledTimes(1);
+    expect(documentTarget.pointerLockElement).toBeNull();
+    expect(sim.calls.pause).toBe(1);
+    expect(pause.isVisible()).toBe(true);
+    expect(result.isVisible()).toBe(false);
+    expect(audio.uiEvents).toContain('overlayShow');
+    expect(shell.phase()).toEqual({ kind: 'paused' });
+  });
+
   it('routes pointer lock loss into overlay pause while a run is active', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
@@ -1600,7 +1676,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'result', outcome: 'win' });
   });
 
-  it('keeps Space as dev pause without showing the pause overlay', async () => {
+  it('keeps physical KeyP as dev pause without showing the pause overlay', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -1653,7 +1729,8 @@ describe('UiShell', () => {
     windowTarget.dispatch(
       'keydown',
       {
-        code: 'Space',
+        code: 'KeyP',
+        key: 'З',
         preventDefault,
         repeat: false
       } as unknown as Event
@@ -1668,7 +1745,8 @@ describe('UiShell', () => {
     windowTarget.dispatch(
       'keydown',
       {
-        code: 'Space',
+        code: 'KeyP',
+        key: 'p',
         preventDefault,
         repeat: false
       } as unknown as Event
@@ -2136,6 +2214,15 @@ describe('UiShell', () => {
         repeat: false
       } as unknown as Event
     );
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'KeyP',
+        key: 'P',
+        preventDefault,
+        repeat: false
+      } as unknown as Event
+    );
 
     expect(sim.calls.pause).toBe(0);
     expect(sim.calls.resume).toBe(0);
@@ -2159,6 +2246,15 @@ describe('UiShell', () => {
       'keydown',
       {
         code: 'Space',
+        preventDefault,
+        repeat: false
+      } as unknown as Event
+    );
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'KeyP',
+        key: 'p',
         preventDefault,
         repeat: false
       } as unknown as Event

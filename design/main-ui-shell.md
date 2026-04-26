@@ -44,7 +44,7 @@
   - `loading → menu` после успешного завершения startup preload;
   - `loading → error('preload')` при ошибке загрузки/декодирования хотя бы одного обязательного ассета;
   - `menu → running` через явное действие игрока (выбор режима);
-  - `running ↔ paused` через `Esc`/потерю Pointer Lock/кнопки overlay-ев и через дев-хоткей (см. ниже);
+  - `running ↔ paused` через `Esc`/`Space`/потерю Pointer Lock/кнопки overlay-ев и через `KeyP` dev-хоткей (см. ниже);
   - `running → result(win|loss)` через `win`/`loss` event из sim;
   - `running → menu` через явный exit из паузы (кнопка «Выйти в меню»);
   - `paused → menu` через тот же exit (без промежуточного `running`);
@@ -128,8 +128,8 @@
 
 ### Pause UX
 
-- UX паузы уже зафиксирован в [input-commands.md](input-commands.md) (Esc открывает overlay, кнопка «Выйти в меню» вызывает `stopSession`, Pointer Lock корректно ходит между состояниями).
-- `UiShell` — единственное место, которое реально вызывает `SimWorkerHost.pause()`/`.resume()`. Хоткеи Esc/Space и кнопки overlay-ев маршрутизируются через `UiShell`; прямые вызовы `pause/resume` из обработчиков событий вне `UiShell` запрещены. Это исключает «двойную паузу» и рассинхрон между `paused`-фазой UI и `isPaused()` симуляции.
+- UX паузы уже зафиксирован в [input-commands.md](input-commands.md) (`Esc`/`Space` открывают overlay, `KeyP` остаётся dev-паузой без overlay, кнопка «Выйти в меню» вызывает `stopSession`, Pointer Lock корректно ходит между состояниями).
+- `UiShell` — единственное место, которое реально вызывает `SimWorkerHost.pause()`/`.resume()`. Хоткеи `Esc`/`Space`/`KeyP` и кнопки overlay-ев маршрутизируются через `UiShell`; прямые вызовы `pause/resume` из обработчиков событий вне `UiShell` запрещены. Это исключает «двойную паузу» и рассинхрон между `paused`-фазой UI и `isPaused()` симуляции.
 - HUD остаётся видим и заморожен: `UiShell` пропускает вызов `Hud.update()` пока находится в `paused`. Pause overlay рисуется выше HUD по z-order.
 - Кнопка «Выйти в меню» в `paused` инициирует переход `paused → menu`: `UiShell` вызывает `SimWorkerHost.stopSession()` и снимает HUD. Никаких promtов «вы уверены?» в 007 не вводится; экран результата сюда не подменяется (`stopSession` — не «поражение»).
 
@@ -179,8 +179,8 @@
 
 ### Пересечение с input-commands
 
-- Esc и Pointer Lock — owner [input-commands.md](input-commands.md). Этот файл фиксирует только то, что **роутер** Esc/Pointer-Lock-loss/Space — `UiShell`, и что переходы `running ↔ paused` — единственный санкционированный эффект этих хоткеев на стороне UI.
-- Поведение Space в 007 закрепляется в [input-commands.md](input-commands.md) (см. обновление этого файла под 007). UiShell обязан соблюдать это поведение и не вводить параллельных хоткеев под паузу.
+- Pause hotkeys и Pointer Lock — owner [input-commands.md](input-commands.md). Этот файл фиксирует только то, что **роутер** `Esc`/`Space`/`KeyP`/Pointer-Lock-loss — `UiShell`, и что переходы `running ↔ paused` — единственный санкционированный эффект player-facing pause hotkeys на стороне UI.
+- Поведение `Space` и `KeyP` закрепляется в [input-commands.md](input-commands.md). UiShell обязан соблюдать это поведение и не вводить параллельных хоткеев под паузу.
 
 ## Consequences
 

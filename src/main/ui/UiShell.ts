@@ -73,6 +73,7 @@ export { STARTUP_SPRITE_SPECS } from './startupAssets';
 type WindowTarget = Pick<Window, 'addEventListener' | 'removeEventListener'>;
 type DocumentTarget = Pick<Document, 'addEventListener' | 'removeEventListener'> & {
   pointerLockElement: Element | null;
+  exitPointerLock?: () => void;
   fullscreenElement?: Element | null;
   documentElement?: {
     requestFullscreen?: () => Promise<void>;
@@ -137,6 +138,9 @@ const LOADING_PHASE: UiShellPhase = { kind: 'loading' };
 const MENU_PHASE: UiShellPhase = { kind: 'menu' };
 const RUNNING_PHASE: UiShellPhase = { kind: 'running' };
 const PAUSED_PHASE: UiShellPhase = { kind: 'paused' };
+const ESCAPE_KEY_CODE = 'Escape';
+const SPACE_KEY_CODE = 'Space';
+const DEV_PAUSE_KEY_CODE = 'KeyP';
 
 export function createUiShell(init: UiShellInit): UiShell {
   const builder = init.buildSessionDefinition ?? buildSessionDefinition;
@@ -600,6 +604,9 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function enterOverlayPause(): void {
     if (!isRunningSessionActive()) return;
+    if (documentTarget.pointerLockElement !== null) {
+      documentTarget.exitPointerLock?.();
+    }
     if (!sim.isPaused()) {
       sim.pause();
     }
@@ -642,12 +649,19 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function onKeyDown(event: KeyboardEvent): void {
-    if (event.code === 'Escape') {
+    if (event.code === SPACE_KEY_CODE) {
+      if (!isRunningSessionActive()) return;
+      event.preventDefault();
       enterOverlayPause();
       return;
     }
 
-    if (event.code === 'Space' && !event.repeat) {
+    if (event.code === ESCAPE_KEY_CODE) {
+      enterOverlayPause();
+      return;
+    }
+
+    if (event.code === DEV_PAUSE_KEY_CODE && !event.repeat) {
       if (!isRunningSessionActive()) return;
       event.preventDefault();
       if (sim.isPaused()) {

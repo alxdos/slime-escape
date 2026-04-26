@@ -12,6 +12,7 @@
 - Слышит: в главном меню заметный, но фоновый loop тикающих часов из существующего `public/sfx/music/101-clock-ticking.mp3`.
 - Видит: тексты меню, настроек, HUD и runtime-надписи в game/comic стиле: светлая или ярко-пастельная заливка, псевдо-обводка четырьмя резкими чёрными text-shadow без blur и отдельная резкая чёрная тень.
 - Видит: Settings и Pause overlay не как тёмные системные карточки, а как рисованный UI приложения: светлая бумага, яркие элементы, чёрная рамка и резкая тень.
+- Может: внутри сессии открыть Pause menu через `Esc` или `Space`; обычная pause/resume без меню остаётся на физической клавише `P` и не зависит от раскладки или CapsLock.
 - Может: выбрать `easy`, `normal` или `hard`; выбранный режим выделяется плотной цветной обводкой.
 - Видит: в спокойном меню кнопка Play мягко дышит и остаётся главным визуальным призывом к действию.
 - Может: запустить выбранную кампанию большой кнопкой Play.
@@ -27,7 +28,7 @@
 
 ## Technical
 
-История опирается на [menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md): startup ritual timing, honest preload progress, required first-screen UI assets, phase transition curtain, stage-layout меню, image-button states, typography и reduced-motion behavior. `UiShell` остаётся owner фаз и transition barrier по [main-ui-shell.md](../design/main-ui-shell.md).
+История опирается на [menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md): startup ritual timing, honest preload progress, required first-screen UI assets, phase transition curtain, stage-layout меню, image-button states, typography и reduced-motion behavior. `UiShell` остаётся owner фаз, pause hotkeys и transition barrier по [main-ui-shell.md](../design/main-ui-shell.md) и [input-commands.md](../design/input-commands.md).
 
 Технический срез:
 
@@ -69,6 +70,8 @@
 - Settings открывает overlay в рисованном стиле приложения: светлый фон, яркие controls, чёрная рамка и резкая тень.
 - Pause overlay в сессии использует тот же рисованный визуальный язык: светлый фон, яркие кнопки, чёрная рамка и резкая тень.
 - Fullscreen запрашивает fullscreen, если браузер разрешает, и gracefully fails, если запрос отклонён.
+- Внутри активной сессии `Space` ведёт себя как `Esc`: ставит симуляцию на паузу, открывает Pause overlay и освобождает Pointer Lock для системного курсора.
+- Внутри активной сессии физическая клавиша `KeyP` переключает pause/resume без Pause overlay; используется `KeyboardEvent.code`, поэтому локаль клавиатуры и CapsLock не влияют.
 - Soon и нижние Pets/Dungeon/Lab scene blocks не запускают сессию; если они интерактивны, дают только мягкий `not yet` feedback.
 - `prefers-reduced-motion` сохраняет fade, но отключает сильный zoom и breathing animation.
 - Проверка на desktop landscape и узком viewport показывает, что элементы не перекрываются incoherent-образом: ключевые кнопки видны, кликабельны и layout узнаваемо следует mockup-референсу.
@@ -89,6 +92,7 @@
 ## Related
 
 - [main-ui-shell.md](../design/main-ui-shell.md)
+- [input-commands.md](../design/input-commands.md)
 - [menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md)
 - [sprite-assets.md](../design/sprite-assets.md)
 - [audio.md](../design/audio.md)
