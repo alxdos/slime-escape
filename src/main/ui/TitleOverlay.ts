@@ -227,7 +227,9 @@ function rootStyle(): string {
 
 function titleLineStyle(): string {
   return [
-    'max-width:min(920px, calc(100vw - 32px))',
+    'box-sizing:border-box',
+    'max-width:min(936px, calc(100vw - 16px))',
+    'padding:6px 8px 8px',
     'font-variant:small-caps',
     ...comicTextStyle({
       fontSize: '28px',
@@ -242,8 +244,10 @@ function titleLineStyle(): string {
 
 function subtitleLineStyle(): string {
   return [
-    'max-width:min(920px, calc(100vw - 32px))',
-    'margin-top:10px',
+    'box-sizing:border-box',
+    'max-width:min(936px, calc(100vw - 16px))',
+    'margin-top:2px',
+    'padding:8px 10px 12px',
     ...comicTextStyle({
       fontSize: '44px',
       color: '#ffffff',
