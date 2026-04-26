@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-24 (017 terminology cleanup: session authoring references ordered `loadoutWeaponIds` instead of legacy singular `loadoutWeaponId`. story 016: `UiShell` fans simulation runtime events out to `Renderer.handleEvent` while keeping `UiShell` as the only `SimWorkerHost.onEvent` owner; see [impact-feedback.md](impact-feedback.md). Ранее: story 015 follow-up: `Renderer` получает immutable `SessionDefinition` при создании, читает `session.backgrounds` + `encounters[].backgroundId` и переключает фон арены по `snapshot.encounter.id`; snapshot не расширяется, потому что активный encounter уже присутствует. story 015: playable preset catalog становится derived view над `SESSION_PRESET_TEMPLATES` из `content library`; метаданные пресета (`displayName`/`description`/`visibleInMenu`/`order`) живут в партиции `# Session` каждого `content/sessions/<presetId>.md`, рядом с самим описанием пресета (см. [content-authoring.md](content-authoring.md), раздел «Multi-file области»); отдельный `playableModes.ts` исчезает; форма `PlayableModeEntry` сворачивается в derived view, без отдельного реестра. Story 013: для истории 013 добавлены стартовая фаза `loading` и финальная фаза `error('preload')`: видимый splash + sprite preload до меню, hard-error при провале загрузки, недоступность Renderer/InputController/Settings/SimWorkerHost в этих фазах; follow-up: minimum splash duration зафиксирован как контракт `STARTUP_PRELOAD_MIN_DURATION_MS = 1500`)
+- Updated: 2026-04-26 (story 021: появляется отдельный UI-слой «wave/break title overlay» — видимость по фазам, z-order и источники данных фиксируются в [encounter-presentation.md](encounter-presentation.md); правило HUD-агрегата «номер волны» остаётся глобальным (set-local нумерация — только у overlay). Earlier: 2026-04-24 017 terminology cleanup: session authoring references ordered `loadoutWeaponIds` instead of legacy singular `loadoutWeaponId`. story 016: `UiShell` fans simulation runtime events out to `Renderer.handleEvent` while keeping `UiShell` as the only `SimWorkerHost.onEvent` owner; see [impact-feedback.md](impact-feedback.md). Ранее: story 015 follow-up: `Renderer` получает immutable `SessionDefinition` при создании, читает `session.backgrounds` + `encounters[].backgroundId` и переключает фон арены по `snapshot.encounter.id`; snapshot не расширяется, потому что активный encounter уже присутствует. story 015: playable preset catalog становится derived view над `SESSION_PRESET_TEMPLATES` из `content library`; метаданные пресета (`displayName`/`description`/`visibleInMenu`/`order`) живут в партиции `# Session` каждого `content/sessions/<presetId>.md`, рядом с самим описанием пресета (см. [content-authoring.md](content-authoring.md), раздел «Multi-file области»); отдельный `playableModes.ts` исчезает; форма `PlayableModeEntry` сворачивается в derived view, без отдельного реестра. Story 013: для истории 013 добавлены стартовая фаза `loading` и финальная фаза `error('preload')`: видимый splash + sprite preload до меню, hard-error при провале загрузки, недоступность Renderer/InputController/Settings/SimWorkerHost в этих фазах; follow-up: minimum splash duration зафиксирован как контракт `STARTUP_PRELOAD_MIN_DURATION_MS = 1500`)
 
 ## Context
 
@@ -57,14 +57,14 @@
 
 ### Видимость overlay-ев и HUD по фазам
 
-| Фаза | Startup overlay | Menu overlay | HUD | Pause overlay | Result UI | Startup error | Pointer Lock |
-|------|-----------------|--------------|-----|---------------|-----------|---------------|--------------|
-| `loading` | visible | hidden | hidden | hidden | hidden | hidden | released |
-| `menu` | hidden | visible | hidden | hidden | hidden | hidden | released |
-| `running` | hidden | hidden | visible (live) | hidden | hidden | hidden | requested |
-| `paused` | hidden | hidden | visible (frozen на последнем снапшоте) | visible | hidden | hidden | released |
-| `result(win|loss)` | hidden | hidden | hidden | hidden | visible | hidden | released |
-| `error('preload')` | hidden | hidden | hidden | hidden | hidden | visible | released |
+| Фаза | Startup overlay | Menu overlay | HUD | Title overlay | Pause overlay | Result UI | Startup error | Pointer Lock |
+|------|-----------------|--------------|-----|---------------|---------------|-----------|---------------|--------------|
+| `loading` | visible | hidden | hidden | hidden | hidden | hidden | hidden | released |
+| `menu` | hidden | visible | hidden | hidden | hidden | hidden | hidden | released |
+| `running` | hidden | hidden | visible (live) | visible (см. [encounter-presentation.md](encounter-presentation.md)) | hidden | hidden | hidden | requested |
+| `paused` | hidden | hidden | visible (frozen на последнем снапшоте) | visible (frozen) | visible | hidden | hidden | released |
+| `result(win|loss)` | hidden | hidden | hidden | hidden | hidden | visible | hidden | released |
+| `error('preload')` | hidden | hidden | hidden | hidden | hidden | hidden | visible | released |
 
 - `Startup overlay` в фазе `loading` — белый фон, `public/images/slime-escape.jpg` с `object-fit: contain`, нижний progress bar и короткий статус (`Loading assets X/Y`). Конкретные числа `X/Y` приходят из preload-callback (см. [sprite-assets.md](sprite-assets.md)). Никакого «между загрузкой» меню или HUD не показано: игрок видит либо splash, либо menu, либо явный startup error.
 - `Startup error` в фазе `error('preload')` — отдельный overlay поверх пустого фона, с человекочитаемым описанием первой провалившейся загрузки и единственной кнопкой «Перезагрузить страницу» (вызывает `location.reload()`).
@@ -73,7 +73,7 @@
 
 ### Стек слоёв (z-order)
 
-- Слои сверху вниз: Startup error > Startup overlay > Result UI > Pause overlay > Menu overlay > HUD > canvas. Конкретные числовые `z-index` — деталь реализации; контракт — порядок и непересекающаяся видимость одновременных слоёв (по таблице фаз одновременно показано не более одного overlay-я плюс HUD; в `loading` и `error('preload')` HUD отсутствует).
+- Слои сверху вниз: Startup error > Startup overlay > Result UI > Pause overlay > Menu overlay > Settings overlay > Title overlay > HUD > canvas. Конкретные числовые `z-index` — деталь реализации; контракт — порядок и непересекающаяся видимость одновременных слоёв (по таблице фаз одновременно показано не более одного modal-overlay-я плюс Title overlay и HUD; в `loading` и `error('preload')` HUD и Title overlay отсутствуют). Title overlay — отдельный презентационный слой из [encounter-presentation.md](encounter-presentation.md), рисуется поверх HUD и под любым modal-overlay; его видимость внутри `running`/`paused` дополнительно обусловлена активным encounter (intro для wave, `text !== null` для break), а не только фазой `UiShell`.
 - HUD и overlay-и позиционированы относительно viewport (`position: fixed`), а не относительно canvas. Letterbox/pillarbox-полосы из [arena-and-coordinates.md](arena-and-coordinates.md) при этом не «прячут» HUD — он рисуется поверх любых пустых полос. Это даёт стабильное место HUD при нестандартных aspect ratio.
 
 ### HUD как пассивный потребитель
@@ -90,9 +90,10 @@
 ### HUD-агрегаты «номер волны» и «таймер encounter»
 
 - Номер волны и общее число волн **не** добавляются в snapshot. Они вычисляются на стороне HUD из:
-  - `SessionDefinition.encounters` — фильтрация по `type === 'wave'`, индексация в порядке списка;
+  - `SessionDefinition.encounters` — фильтрация по `type === 'wave'`, индексация в порядке списка (глобальная нумерация по всей сессии);
   - `snapshot.encounter.id` или `snapshot.encounter.index` — поиск активного encounter в этом списке.
 - Это сохраняет принцип «снапшот несёт только меняющееся state, конфигурация уже у main» из [thread-model.md](thread-model.md) и не требует расширения [snapshot-shape.md](snapshot-shape.md).
+- HUD-нумерация остаётся **глобальной** сознательно. Отдельный «wave title overlay» ([encounter-presentation.md](encounter-presentation.md)) считает **set-local** номер по другому правилу (run-length of consecutive `type === 'wave'`); это два разных UI-слоя и два разных числа. Переписывание HUD под set-local — out of scope истории 021 и отдельная история.
 - Таймер encounter в HUD = `snapshot.encounter.elapsedMs` (целое мс симуляции из [snapshot-shape.md](snapshot-shape.md)). Никаких параллельных wall-clock-таймеров на стороне HUD — это исключает рассинхрон с `pause`/`resume` ([simulation-timing.md](simulation-timing.md): `simTime` не догоняет wall-clock после resume).
 - Прогресс волны (`dispatched`/`total`/`alive`) HUD читает из `snapshot.waveProgress` и не реконструирует его сам; для не-wave encounter поле `null` и блок прогресса HUD скрывает.
 - HP игрока HUD читает из единственного `PlayerSnapshot` в `snapshot.entities` (поле `hp`/`maxHp` из [snapshot-shape.md](snapshot-shape.md)). Если `lossCondition.kind === 'none'`, HUD всё равно рендерит HP-блок: значения корректны (`hp = maxHp` весь run по контракту), и UX не должен «прыгать» между preset-ами с боем и без.
@@ -215,3 +216,4 @@
 - [../stories/013-sprite-assets-and-loader.md](../stories/013-sprite-assets-and-loader.md)
 - [../stories/015-sessions-from-md.md](../stories/015-sessions-from-md.md)
 - [impact-feedback.md](impact-feedback.md)
+- [encounter-presentation.md](encounter-presentation.md)
