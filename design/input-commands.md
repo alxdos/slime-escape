@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: 007 finalized Space as dev-pause through `UiShell`.)
+- Updated: 2026-04-26 (023 pause hotkey fix: player-facing pause overlay is `Esc` or `Space`; dev pause moves to physical `KeyP` through `UiShell`, independent of locale/CapsLock. Earlier: 017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 007 finalized pause routing through `UiShell`.)
 
 ## Context
 
@@ -72,11 +72,12 @@
 ### Esc, пауза и Pointer Lock
 
 - `Esc` всегда означает «открыть паузу с overlay»; кнопка «Выйти в меню» внутри overlay вызывает `stopSession`.
+- `Space` в активной сессии означает то же player-facing действие, что и `Esc`: открыть `PauseOverlay` и перевести `UiShell` в фазу `paused`. Так как `Space` сам не снимает Pointer Lock браузером, `UiShell` явно вызывает `document.exitPointerLock()` при входе в overlay-паузу, если Pointer Lock активен.
 - Браузер автоматически снимает Pointer Lock на `Esc` — это намеренно совпадает с открытием overlay паузы: системный курсор появляется, и им можно кликнуть кнопки.
 - При выходе из паузы `main` повторно запрашивает Pointer Lock. Пока пользователь не сделал жест (клик), запрос может быть отказан браузером — это корректно и обрабатывается следующим mousedown.
-- `Space` сохраняет роль из 001 как **dev-пауза**: переключает `SimWorkerHost.pause()`/`.resume()`, но **не** меняет фазу `UiShell` и **не** показывает `PauseOverlay`. Это намеренное расхождение со штатным UX и используется для дебага рендера/таймингов на стороне разработчика. Player-facing путь паузы — только `Esc` + overlay.
-- Маршрутизация хоткеев в 007: и `Esc`, и `Space` обрабатывает единственный owner `UiShell` ([main-ui-shell.md](main-ui-shell.md)). Прямые вызовы `SimWorkerHost.pause()`/`.resume()` из обработчиков `keydown` вне `UiShell` запрещены — иначе фаза `UiShell` (`running`/`paused`) разъедется с `isPaused()` симуляции, и появится «двойная пауза» из дев-хоткея + overlay.
-- В фазе `paused` (overlay поднят через `Esc`) `Space` дополнительно **не** действует: оркестратор игнорирует дев-хоткей, пока активна штатная пауза, чтобы не было сценария «снял дев-хоткеем, но overlay остался видим». В фазах `menu` и `result` оба хоткея игнорируются.
+- Физическая клавиша `KeyP` — **dev-пауза**: переключает `SimWorkerHost.pause()`/`.resume()`, но **не** меняет фазу `UiShell` и **не** показывает `PauseOverlay`. Для неё используется `KeyboardEvent.code === 'KeyP'`, не `event.key`, поэтому поведение не зависит от локали клавиатуры и CapsLock.
+- Маршрутизация хоткеев: `Esc`, `Space` и `KeyP` обрабатывает единственный owner `UiShell` ([main-ui-shell.md](main-ui-shell.md)). Прямые вызовы `SimWorkerHost.pause()`/`.resume()` из обработчиков `keydown` вне `UiShell` запрещены — иначе фаза `UiShell` (`running`/`paused`) разъедется с `isPaused()` симуляции, и появится «двойная пауза» из дев-хоткея + overlay.
+- В фазе `paused` (overlay поднят через `Esc`/`Space`) `KeyP` дополнительно **не** действует: оркестратор игнорирует dev-хоткей, пока активна штатная пауза, чтобы не было сценария «снял dev-хоткеем, но overlay остался видим». В фазах `menu` и `result` все pause hotkeys игнорируются.
 
 ### Структура `InputCommand`
 
@@ -115,7 +116,7 @@
 - В `src/shared/protocol.ts` `InputCommand` перестаёт быть `unknown` и становится конкретным дискриминированным union; это **изменение контракта** `MainToSim`, оформляется в реализации сразу.
 - `sim` остаётся headless: никаких упоминаний `KeyboardEvent`, `MouseEvent`, `clientX`, `viewport` внутри `src/sim/**`.
 - Прицел и движение ощущаются одинаково на любом разрешении и aspect ratio окна (см. инвариант в [arena-and-coordinates.md](arena-and-coordinates.md)): mapping mouse delta → world делает одна и та же формула.
-- Esc + Pointer Lock + overlay паузы образуют согласованный UX: один и тот же жест и снимает лок, и открывает меню, и даёт системный курсор для кликов.
+- Esc/Space + Pointer Lock + overlay паузы образуют согласованный UX: вход в overlay-паузу открывает меню и даёт системный курсор для кликов.
 - `fire` существует в контракте уже в 002 и игнорируется на уровне gameplay; 003 включает `CombatSystem` без расширения протокола.
 - Настройки чувствительности (009) ложатся как множитель на единственный mapping mouse delta → world и не требуют пересмотра этого решения.
 - Пересмотр клавиш (ремап, геймпад, тач) в будущем = расширение mapping в `src/main/input/**` без изменения формы `InputCommand`. Если потребуется новый `kind` — это уже изменение контракта и обновление этого файла.

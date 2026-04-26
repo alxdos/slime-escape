@@ -3,6 +3,7 @@ import type { EncounterSnapshot, Snapshot } from '../../shared/snapshot';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 import type { UiShellPhase } from './UiShellPhase';
+import { comicTextStyle } from './comicTextStyle';
 
 export type TitleOverlayInit = Readonly<{
   parent: HTMLElement;
@@ -226,28 +227,33 @@ function rootStyle(): string {
 
 function titleLineStyle(): string {
   return [
-    'max-width:min(920px, calc(100vw - 32px))',
-    'font-size:28px',
-    'line-height:1.1',
-    'font-weight:800',
+    'box-sizing:border-box',
+    'max-width:min(936px, calc(100vw - 16px))',
+    'padding:6px 8px 8px',
     'font-variant:small-caps',
-    'color:#f4fbff',
-    '-webkit-text-stroke:2px #03050a',
-    'text-shadow:0 3px 0 #03050a, 0 8px 20px rgba(0,0,0,0.8)',
+    ...comicTextStyle({
+      fontSize: '28px',
+      fontWeight: 800,
+      lineHeight: '1.1',
+      color: '#f4fbff',
+      shadow: 'strong'
+    }),
     'overflow-wrap:anywhere'
   ].join(';');
 }
 
 function subtitleLineStyle(): string {
   return [
-    'max-width:min(920px, calc(100vw - 32px))',
-    'margin-top:10px',
-    'font-size:44px',
-    'line-height:1.05',
-    'font-weight:900',
-    'color:#ffffff',
-    '-webkit-text-stroke:3px #03050a',
-    'text-shadow:0 4px 0 #03050a, 0 10px 26px rgba(0,0,0,0.86), 0 0 18px rgba(154,214,255,0.45)',
+    'box-sizing:border-box',
+    'max-width:min(936px, calc(100vw - 16px))',
+    'margin-top:2px',
+    'padding:8px 10px 12px',
+    ...comicTextStyle({
+      fontSize: '44px',
+      color: '#ffffff',
+      lineHeight: '1.05',
+      shadow: 'strong'
+    }),
     'overflow-wrap:anywhere',
     'display:-webkit-box',
     '-webkit-line-clamp:2',

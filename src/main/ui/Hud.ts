@@ -12,6 +12,8 @@ import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 import type { SpriteVisualSpec } from '../render/SpriteVisualSpec';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
+import { COMIC_TEXT_FONT_FAMILY, comicTextStyle } from './comicTextStyle';
+
 export type HudInit = Readonly<{
   parent: HTMLElement;
 }>;
@@ -816,7 +818,7 @@ function rootStyle(): string {
     'inset:0',
     'z-index:30',
     'pointer-events:none',
-    'font-family:Inter, ui-sans-serif, system-ui, sans-serif',
+    `font-family:${COMIC_TEXT_FONT_FAMILY}`,
     'color:#eef4ff'
   ].join(';');
 }
@@ -840,11 +842,14 @@ function topLeftStatusStyle(): string {
 
 function timerStyle(): string {
   return [
-    'font:700 22px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    ...comicTextStyle({
+      fontSize: '22px',
+      fontWeight: 900,
+      lineHeight: '1',
+      color: '#ffffff'
+    }),
     'font-variant-numeric:tabular-nums',
-    'letter-spacing:0',
-    'color:#ffffff',
-    'text-shadow:0 1px 8px rgba(0,0,0,0.45)'
+    'font-feature-settings:"tnum"'
   ].join(';');
 }
 
@@ -859,10 +864,14 @@ function hpRowStyle(): string {
 
 function hpTextStyle(): string {
   return [
-    'font:700 12px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    ...comicTextStyle({
+      fontSize: '12px',
+      fontWeight: 800,
+      lineHeight: '1.2',
+      color: '#dff4ff'
+    }),
     'font-variant-numeric:tabular-nums',
-    'letter-spacing:0',
-    'color:#c9d7e8',
+    'font-feature-settings:"tnum"',
     'white-space:nowrap'
   ].join(';');
 }
@@ -909,23 +918,29 @@ function bossStripStyle(): string {
 function bossTitleStyle(): string {
   return [
     'min-width:0',
-    'font-size:14px',
-    'font-weight:800',
-    'line-height:1.15',
+    ...comicTextStyle({
+      fontSize: '14px',
+      fontWeight: 900,
+      lineHeight: '1.15',
+      color: '#ffffff'
+    }),
     'white-space:nowrap',
     'overflow:hidden',
-    'text-overflow:ellipsis',
-    'color:#ffffff'
+    'text-overflow:ellipsis'
   ].join(';');
 }
 
 function bossMetaStyle(): string {
   return [
-    'font-size:11px',
-    'font-weight:700',
-    'line-height:1.15',
+    ...comicTextStyle({
+      fontSize: '11px',
+      fontWeight: 800,
+      lineHeight: '1.15',
+      color: '#d6f6ff'
+    }),
     'white-space:nowrap',
-    'color:#d6dfef'
+    'font-variant-numeric:tabular-nums',
+    'font-feature-settings:"tnum"'
   ].join(';');
 }
 
@@ -976,10 +991,12 @@ function keycapStyle(key: string): string {
     'border-radius:7px',
     'background:rgba(6,10,18,0.54)',
     'box-shadow:0 5px 14px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
-    'font-size:13px',
-    'font-weight:800',
-    'line-height:1',
-    'color:#f5f8ff'
+    ...comicTextStyle({
+      fontSize: '13px',
+      fontWeight: 900,
+      lineHeight: '1',
+      color: '#f5f8ff'
+    })
   ].join(';');
 }
 
@@ -1048,10 +1065,14 @@ function weaponSlotHotkeyStyle(): string {
     'position:absolute',
     'top:4px',
     'left:5px',
-    'font:700 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    ...comicTextStyle({
+      fontSize: '11px',
+      fontWeight: 900,
+      lineHeight: '1',
+      color: '#dfe8f8'
+    }),
     'font-variant-numeric:tabular-nums',
-    'letter-spacing:0',
-    'color:#dfe8f8'
+    'font-feature-settings:"tnum"'
   ].join(';');
 }
 
@@ -1109,11 +1130,14 @@ function badgeCountStyle(): string {
     'right:1px',
     'bottom:0',
     'z-index:2',
-    'font:800 9px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    ...comicTextStyle({
+      fontSize: '9px',
+      fontWeight: 900,
+      lineHeight: '1',
+      color: '#ffffff'
+    }),
     'font-variant-numeric:tabular-nums',
-    'letter-spacing:0',
-    'color:#ffffff',
-    'text-shadow:0 1px 3px #000000'
+    'font-feature-settings:"tnum"'
   ].join(';');
 }
 
@@ -1172,11 +1196,13 @@ function mouseButtonStyle(): string {
 
 function fireHintTextStyle(): string {
   return [
-    'font-size:13px',
-    'font-weight:800',
-    'line-height:1',
+    ...comicTextStyle({
+      fontSize: '13px',
+      fontWeight: 900,
+      lineHeight: '1',
+      color: '#f4f8ff'
+    }),
     'white-space:nowrap',
-    'color:#f4f8ff'
   ].join(';');
 }
 

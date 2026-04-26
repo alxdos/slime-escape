@@ -1,3 +1,5 @@
+import { comicTextStyle } from './comicTextStyle';
+
 export type PauseOverlayInit = Readonly<{
   parent: HTMLElement;
   onResume(): void;
@@ -17,6 +19,10 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   root.dataset['role'] = 'pause-overlay';
   root.style.cssText = baseOverlayStyle();
 
+  const style = document.createElement('style');
+  style.textContent = pauseOverlayCss();
+  root.appendChild(style);
+
   const card = document.createElement('div');
   card.style.cssText = cardStyle();
 
@@ -26,6 +32,7 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   card.appendChild(title);
 
   const resumeButton = document.createElement('button');
+  resumeButton.className = 'pause-comic-button';
   resumeButton.type = 'button';
   resumeButton.textContent = 'Продолжить';
   resumeButton.style.cssText = primaryButtonStyle();
@@ -33,6 +40,7 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   card.appendChild(resumeButton);
 
   const settingsButton = document.createElement('button');
+  settingsButton.className = 'pause-comic-button';
   settingsButton.type = 'button';
   settingsButton.textContent = 'Настройки';
   settingsButton.style.cssText = secondaryButtonStyle();
@@ -40,6 +48,7 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   card.appendChild(settingsButton);
 
   const exitButton = document.createElement('button');
+  exitButton.className = 'pause-comic-button';
   exitButton.type = 'button';
   exitButton.textContent = 'Выйти в меню';
   exitButton.style.cssText = secondaryButtonStyle();
@@ -77,7 +86,9 @@ function baseOverlayStyle(): string {
     'display:flex',
     'align-items:center',
     'justify-content:center',
-    'background:rgba(5,6,10,0.7)',
+    'box-sizing:border-box',
+    'padding:24px',
+    'background:rgba(255,255,255,0.34)',
     'z-index:90',
     'cursor:default'
   ].join(';');
@@ -88,53 +99,89 @@ function cardStyle(): string {
     'display:flex',
     'flex-direction:column',
     'align-items:center',
-    'gap:16px',
-    'padding:28px 36px',
-    'background:#11151c',
-    'border:1px solid #2a3142',
+    'gap:18px',
+    'box-sizing:border-box',
+    'padding:26px 34px 30px',
+    'width:min(380px, calc(100vw - 48px))',
+    'background:#fffdf4',
+    'border:4px solid #050505',
     'border-radius:8px',
-    'box-shadow:0 12px 40px rgba(0,0,0,0.6)'
+    'box-shadow:8px 8px 0 #000000'
   ].join(';');
 }
 
 function titleStyle(): string {
   return [
     'margin:0',
-    'font-size:22px',
-    'font-weight:600',
-    'color:#e6e8ef',
-    'letter-spacing:0.04em'
+    ...comicTextStyle({
+      fontSize: '26px',
+      color: '#fff38b',
+      lineHeight: '1',
+      textAlign: 'center',
+      shadow: 'strong'
+    })
   ].join(';');
 }
 
 function primaryButtonStyle(): string {
   return [
     'appearance:none',
-    'border:none',
-    'padding:10px 28px',
-    'font-size:15px',
-    'font-weight:600',
-    'letter-spacing:0.04em',
-    'color:#0a0c10',
-    'background:#9ad6ff',
-    'border-radius:4px',
+    'border:3px solid #050505',
+    'padding:11px 24px 12px',
+    ...comicTextStyle({
+      fontSize: '18px',
+      color: '#ffffff',
+      lineHeight: '1'
+    }),
+    'background:#7cf58f',
+    'border-radius:7px',
+    'box-shadow:4px 4px 0 #000000',
     'cursor:pointer',
-    'min-width:200px'
+    'width:100%',
+    'min-height:46px'
   ].join(';');
 }
 
 function secondaryButtonStyle(): string {
   return [
     'appearance:none',
-    'padding:10px 28px',
-    'font-size:15px',
-    'font-weight:500',
-    'letter-spacing:0.04em',
-    'color:#cdd5e3',
-    'background:transparent',
-    'border:1px solid #2a3142',
-    'border-radius:4px',
+    'border:3px solid #050505',
+    'padding:11px 24px 12px',
+    ...comicTextStyle({
+      fontSize: '18px',
+      color: '#ffffff',
+      lineHeight: '1'
+    }),
+    'background:#b8f1ff',
+    'border-radius:7px',
+    'box-shadow:4px 4px 0 #000000',
     'cursor:pointer',
-    'min-width:200px'
+    'width:100%',
+    'min-height:46px'
   ].join(';');
+}
+
+function pauseOverlayCss(): string {
+  return `
+.pause-comic-button {
+  transition: filter 120ms ease, transform 120ms ease;
+}
+
+.pause-comic-button:hover,
+.pause-comic-button:focus-visible {
+  filter: brightness(1.08) saturate(1.06);
+  transform: translate(-1px, -1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pause-comic-button {
+    transition: none;
+  }
+
+  .pause-comic-button:hover,
+  .pause-comic-button:focus-visible {
+    transform: none;
+  }
+}
+`;
 }

@@ -82,6 +82,7 @@ const MAX_MASTER_GAIN = 1;
 const MAX_ACTIVE_ONE_SHOTS = 32;
 const PAUSED_MUSIC_DUCK_GAIN = 0.5;
 const BOSS_MUSIC_SAMPLE_ID = 'boss/boss-music';
+const MENU_MUSIC_SAMPLE_ID = 'music/101-clock-ticking';
 
 export function createAudio(init: AudioInit = {}): Audio {
   const audioLog = init.log ?? defaultLog;
@@ -322,7 +323,12 @@ export function createAudio(init: AudioInit = {}): Audio {
     dependencies.runtime.musicDuckGain.gain.value =
       phase.kind === 'paused' ? PAUSED_MUSIC_DUCK_GAIN : DEFAULT_GAIN;
 
-    if (phase.kind === 'menu' || phase.kind === 'result' || phase.kind === 'loading' || phase.kind === 'error') {
+    if (phase.kind === 'menu') {
+      startMusicSample(MENU_MUSIC_SAMPLE_ID);
+      return;
+    }
+
+    if (phase.kind === 'result' || phase.kind === 'loading' || phase.kind === 'error') {
       stopMusicPlayback();
       return;
     }

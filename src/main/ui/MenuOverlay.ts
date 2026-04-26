@@ -1,10 +1,35 @@
 import type { ModePresetId, PlayableModeEntry } from '../../shared/content/sessions';
 
+import { comicTextStyle } from './comicTextStyle';
+import {
+  MAIN_MENU_CONTROLS,
+  MAIN_MENU_LOGO,
+  MAIN_MENU_STAGE,
+  MAIN_MENU_STAGE_WIDTH_VH,
+  type MenuImageLayout,
+  type MenuControlLayout
+} from './MenuOverlayLayout';
+import {
+  CAMPAIGN_MODE_BY_CONTROL,
+  DEFAULT_SELECTED_CAMPAIGN_MODE,
+  isCampaignModeControl,
+  resolveMenuControlAction,
+  type TeaserControlId
+} from './MenuOverlayState';
+
+const TEASER_FEEDBACK_VISIBLE_MS = 7_000;
+const TEASER_FEEDBACK_FADE_MS = 900;
+
 export type MenuOverlayInit = Readonly<{
   parent: HTMLElement;
   modes: ReadonlyArray<PlayableModeEntry>;
   onStart(presetId: ModePresetId): void;
+  onStartTraining(): void;
   onOpenSettings(): void;
+  onToggleFullscreen(): void;
+  onTeaser(controlId: TeaserControlId): void;
+  onButtonHover(): void;
+  onModeSwitch(): void;
 }>;
 
 export type MenuOverlay = Readonly<{
@@ -19,49 +44,47 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   root.dataset['role'] = 'menu-overlay';
   root.style.cssText = baseOverlayStyle();
 
-  const titleImage = document.createElement('img');
-  titleImage.alt = 'Slime Escape';
-  titleImage.src = '/images/title-1000.png';
-  titleImage.style.cssText = titleImageStyle();
-  root.appendChild(titleImage);
+  const style = document.createElement('style');
+  style.textContent = menuOverlayCss();
+  root.appendChild(style);
 
-  const card = document.createElement('div');
-  card.style.cssText = cardStyle();
+  const stage = document.createElement('div');
+  stage.dataset['role'] = 'menu-stage';
+  stage.style.cssText = stageStyle();
 
-  const subtitle = document.createElement('p');
-  subtitle.textContent = 'Выбери режим и запусти новый забег.';
-  subtitle.style.cssText = subtitleStyle();
-  card.appendChild(subtitle);
+  const logo = createStageImage(MAIN_MENU_LOGO);
+  stage.appendChild(logo);
 
-  const modesList = document.createElement('div');
-  modesList.style.cssText = modesListStyle();
+  const modeButtons = new Map<ModePresetId, HTMLButtonElement>();
+  const controlButtons: HTMLButtonElement[] = [];
+  let selectedMode: ModePresetId = DEFAULT_SELECTED_CAMPAIGN_MODE;
+  let feedbackTimeout: number | null = null;
 
-  for (const mode of init.modes) {
-    modesList.appendChild(createModeCard(mode, init.onStart));
+  const teaserFeedback = document.createElement('div');
+  teaserFeedback.dataset['role'] = 'menu-teaser-feedback';
+  teaserFeedback.style.cssText = teaserFeedbackStyle();
+
+  for (const [index, control] of MAIN_MENU_CONTROLS.entries()) {
+    const button = createControlButton(control, index, handleControl, init.onButtonHover);
+    controlButtons.push(button);
+    if (isCampaignModeControl(control.id)) {
+      modeButtons.set(CAMPAIGN_MODE_BY_CONTROL[control.id], button);
+    }
+    stage.appendChild(button);
   }
-  card.appendChild(modesList);
+  stage.appendChild(teaserFeedback);
 
-  const actions = document.createElement('div');
-  actions.style.cssText = actionsStyle();
-
-  const settingsButton = document.createElement('button');
-  settingsButton.type = 'button';
-  settingsButton.textContent = 'Настройки';
-  settingsButton.style.cssText = secondaryButtonStyle();
-  settingsButton.addEventListener('click', () => init.onOpenSettings());
-  actions.appendChild(settingsButton);
-
-  card.appendChild(actions);
-
-  root.appendChild(card);
+  root.appendChild(stage);
   init.parent.appendChild(root);
 
   let visible = true;
+  applyModeSelection();
 
   return {
     show(): void {
       visible = true;
       root.style.display = 'flex';
+      restartAppearAnimations();
     },
     hide(): void {
       visible = false;
@@ -71,9 +94,138 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
       return visible;
     },
     dispose(): void {
+      if (feedbackTimeout !== null) {
+        window.clearTimeout(feedbackTimeout);
+        feedbackTimeout = null;
+      }
       root.remove();
     }
   };
+
+  function handleControl(controlId: MenuControlLayout['id']): void {
+    const action = resolveMenuControlAction(controlId, selectedMode);
+
+    switch (action.kind) {
+      case 'selectMode': {
+        const previousMode = selectedMode;
+        selectedMode = action.presetId;
+        applyModeSelection();
+        if (selectedMode !== previousMode) {
+          init.onModeSwitch();
+        }
+        return;
+      }
+      case 'start':
+        init.onStart(action.presetId);
+        return;
+      case 'startTraining':
+        init.onStartTraining();
+        return;
+      case 'openSettings':
+        init.onOpenSettings();
+        return;
+      case 'toggleFullscreen':
+        init.onToggleFullscreen();
+        return;
+      case 'teaser':
+        showTeaserFeedback();
+        init.onTeaser(action.controlId);
+        return;
+    }
+  }
+
+  function applyModeSelection(): void {
+    for (const [presetId, button] of modeButtons.entries()) {
+      const selected = presetId === selectedMode;
+      button.dataset['selected'] = selected ? 'true' : 'false';
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    }
+  }
+
+  function showTeaserFeedback(): void {
+    teaserFeedback.textContent = 'Скоро';
+    teaserFeedback.style.opacity = '1';
+    if (feedbackTimeout !== null) {
+      window.clearTimeout(feedbackTimeout);
+    }
+    feedbackTimeout = window.setTimeout(() => {
+      teaserFeedback.style.opacity = '0';
+      feedbackTimeout = null;
+    }, TEASER_FEEDBACK_VISIBLE_MS);
+  }
+
+  function restartAppearAnimations(): void {
+    for (const button of controlButtons) {
+      button.classList.remove('menu-control-enter');
+    }
+    for (const button of controlButtons) {
+      void button.offsetWidth;
+      button.classList.add('menu-control-enter');
+    }
+  }
+}
+
+function createStageImage(layout: MenuImageLayout): HTMLImageElement {
+  const image = document.createElement('img');
+  if (layout.id === 'logo') {
+    image.className = 'menu-stage-logo';
+  }
+  image.dataset['role'] = `menu-${layout.id}`;
+  image.alt = layout.alt;
+  image.src = layout.src;
+  image.draggable = false;
+  image.style.cssText = stageImageStyle(layout);
+  return image;
+}
+
+function createControlButton(
+  control: MenuControlLayout,
+  index: number,
+  onControl: (controlId: MenuControlLayout['id']) => void,
+  onHover: () => void
+): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'menu-image-button';
+  button.dataset['role'] = 'menu-image-button';
+  button.dataset['controlId'] = control.id;
+  button.dataset['controlKind'] = control.kind;
+  if (control.kind === 'teaser' || control.id === 'soon') {
+    button.dataset['soon'] = 'true';
+  }
+  button.setAttribute('aria-label', control.label);
+  if (isCampaignModeControl(control.id)) {
+    button.setAttribute('aria-pressed', 'false');
+  }
+  button.style.cssText = controlButtonStyle(control, index);
+
+  const image = document.createElement('img');
+  image.alt = '';
+  image.src = control.src;
+  image.draggable = false;
+  image.style.cssText = controlImageStyle();
+  button.appendChild(image);
+
+  button.addEventListener('click', () => onControl(control.id));
+  button.addEventListener('pointerenter', onHover);
+
+  return button;
+}
+
+function stageImageStyle(layout: MenuImageLayout): string {
+  return [
+    'position:absolute',
+    `left:${layout.leftPercent}%`,
+    `top:${layout.topPercent}%`,
+    `width:${layout.widthPercent}%`,
+    `aspect-ratio:${layout.aspectRatio}`,
+    'display:block',
+    'height:auto',
+    'object-fit:contain',
+    layout.id === 'logo' ? 'pointer-events:auto' : 'pointer-events:none',
+    layout.id === 'logo' ? 'cursor:default' : '',
+    'user-select:none'
+  ].filter(Boolean).join(';');
 }
 
 function baseOverlayStyle(): string {
@@ -81,160 +233,249 @@ function baseOverlayStyle(): string {
     'position:fixed',
     'inset:0',
     'display:flex',
-    'flex-direction:column',
     'align-items:center',
     'justify-content:center',
-    'gap:24px',
     'box-sizing:border-box',
-    'padding:32px 24px',
     'overflow:auto',
-    'background-image:linear-gradient(180deg, rgba(5,6,10,0.28) 0%, rgba(5,6,10,0.64) 100%), url("/images/bg/bg-menu.jpg")',
-    'background-size:cover',
-    'background-position:center bottom',
-    'background-repeat:no-repeat',
+    'background:#050505',
     'z-index:100',
     'cursor:default'
   ].join(';');
 }
 
-function titleImageStyle(): string {
+function stageStyle(): string {
+  return [
+    'position:relative',
+    `width:min(100vw, ${MAIN_MENU_STAGE_WIDTH_VH.toFixed(3)}vh)`,
+    `aspect-ratio:${MAIN_MENU_STAGE.width} / ${MAIN_MENU_STAGE.height}`,
+    `background-image:url("${MAIN_MENU_STAGE.background}")`,
+    'background-size:100% 100%',
+    'background-position:center',
+    'background-repeat:no-repeat',
+    'overflow:hidden',
+    'flex:0 0 auto'
+  ].join(';');
+}
+
+function controlButtonStyle(control: MenuControlLayout, index: number): string {
+  return [
+    'appearance:none',
+    'position:absolute',
+    `left:${control.leftPercent}%`,
+    `top:${control.topPercent}%`,
+    `width:${control.widthPercent}%`,
+    `aspect-ratio:${control.aspectRatio}`,
+    'display:block',
+    'padding:0',
+    'margin:0',
+    'border:0',
+    'background:transparent',
+    'cursor:pointer',
+    'line-height:0',
+    'touch-action:manipulation',
+    `animation-delay:${index * 35}ms`
+  ].join(';');
+}
+
+function controlImageStyle(): string {
   return [
     'display:block',
-    'width:min(500px, calc(100vw - 48px))',
-    'height:auto',
-    'filter:drop-shadow(0 16px 28px rgba(0,0,0,0.45))',
+    'width:100%',
+    'height:100%',
+    'object-fit:contain',
     'pointer-events:none',
     'user-select:none'
   ].join(';');
 }
 
-function cardStyle(): string {
+function teaserFeedbackStyle(): string {
   return [
-    'display:flex',
-    'flex-direction:column',
-    'align-items:stretch',
-    'gap:24px',
-    'padding:32px 40px',
-    'width:min(720px, calc(100vw - 48px))',
-    'background:#11151c',
-    'border:1px solid #2a3142',
-    'border-radius:8px',
-    'box-shadow:0 12px 40px rgba(0,0,0,0.6)'
+    'position:absolute',
+    'left:50%',
+    'top:6%',
+    'width:36%',
+    'transform:translateX(-50%)',
+    'z-index:30',
+    'opacity:0',
+    ...comicTextStyle({
+      fontSize: '40px',
+      color: '#f8f0a8',
+      textAlign: 'center'
+    }),
+    'pointer-events:none',
+    `transition:opacity ${TEASER_FEEDBACK_FADE_MS}ms ease`
   ].join(';');
 }
 
-function subtitleStyle(): string {
-  return [
-    'margin:0',
-    'font-size:15px',
-    'line-height:1.5',
-    'color:#aeb7c8',
-    'text-align:center'
-  ].join(';');
+function menuOverlayCss(): string {
+  return `
+@keyframes menu-control-appear {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
 }
 
-function modesListStyle(): string {
-  return [
-    'display:grid',
-    'grid-template-columns:repeat(auto-fit, minmax(240px, 1fr))',
-    'gap:16px'
-  ].join(';');
+@keyframes menu-control-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-function actionsStyle(): string {
-  return [
-    'display:flex',
-    'justify-content:flex-end'
-  ].join(';');
+@keyframes menu-play-breathe {
+  0%, 100% {
+    filter: brightness(1) saturate(1);
+    transform: scale(1);
+  }
+  50% {
+    filter: brightness(1.12) saturate(1.06);
+    transform: scale(1.025);
+  }
 }
 
-function createModeCard(
-  mode: PlayableModeEntry,
-  onStart: (presetId: ModePresetId) => void
-): HTMLElement {
-  const root = document.createElement('section');
-  root.dataset['role'] = 'menu-mode-card';
-  root.dataset['presetId'] = mode.presetId;
-  root.style.cssText = modeCardStyle();
-
-  const heading = document.createElement('h2');
-  heading.textContent = mode.displayName;
-  heading.style.cssText = modeHeadingStyle();
-  root.appendChild(heading);
-
-  const description = document.createElement('p');
-  description.textContent = mode.description;
-  description.style.cssText = modeDescriptionStyle();
-  root.appendChild(description);
-
-  const startButton = document.createElement('button');
-  startButton.type = 'button';
-  startButton.textContent = 'Старт';
-  startButton.style.cssText = primaryButtonStyle();
-  startButton.addEventListener('click', () => onStart(mode.presetId));
-  root.appendChild(startButton);
-
-  return root;
+.menu-stage-logo {
+  filter:
+    brightness(1)
+    saturate(1)
+    drop-shadow(0 0 0 rgba(124, 245, 143, 0))
+    drop-shadow(0 0 0 rgba(125, 199, 255, 0));
+  transition: filter 460ms ease-out;
 }
 
-function modeCardStyle(): string {
-  return [
-    'display:flex',
-    'flex-direction:column',
-    'gap:16px',
-    'padding:20px',
-    'background:#171c26',
-    'border:1px solid #2a3142',
-    'border-radius:8px'
-  ].join(';');
+.menu-stage-logo:hover {
+  filter:
+    brightness(1.22)
+    saturate(1.14)
+    drop-shadow(0 0 10px rgba(124, 245, 143, 0.86))
+    drop-shadow(0 0 18px rgba(125, 199, 255, 0.7));
 }
 
-function modeHeadingStyle(): string {
-  return [
-    'margin:0',
-    'font-size:20px',
-    'font-weight:600',
-    'color:#e6e8ef'
-  ].join(';');
+.menu-image-button {
+  opacity: 1;
+  transform: scale(1);
+  transition: filter 140ms ease, transform 140ms ease;
+  outline: none;
 }
 
-function modeDescriptionStyle(): string {
-  return [
-    'margin:0',
-    'min-height:48px',
-    'font-size:14px',
-    'line-height:1.5',
-    'color:#b4bdd0'
-  ].join(';');
+.menu-image-button.menu-control-enter {
+  animation-name: menu-control-appear;
+  animation-duration: 360ms;
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.2, 1.15);
+  animation-fill-mode: both;
 }
 
-function primaryButtonStyle(): string {
-  return [
-    'appearance:none',
-    'border:none',
-    'padding:12px 32px',
-    'font-size:16px',
-    'font-weight:600',
-    'letter-spacing:0.04em',
-    'color:#0a0c10',
-    'background:#9ad6ff',
-    'border-radius:4px',
-    'cursor:pointer',
-    'align-self:flex-start'
-  ].join(';');
+.menu-image-button img {
+  transition: filter 140ms ease, transform 140ms ease, opacity 140ms ease;
+  filter: none;
 }
 
-function secondaryButtonStyle(): string {
-  return [
-    'appearance:none',
-    'padding:10px 24px',
-    'font-size:15px',
-    'font-weight:500',
-    'letter-spacing:0.04em',
-    'color:#cdd5e3',
-    'background:transparent',
-    'border:1px solid #2a3142',
-    'border-radius:4px',
-    'cursor:pointer'
-  ].join(';');
+.menu-image-button:hover img,
+.menu-image-button:focus-visible img {
+  filter: brightness(1.12) saturate(1.03) drop-shadow(6px 6px 0 #000000);
+  transform: translate(-1px, -1px) scale(1.015);
+}
+
+.menu-image-button[data-selected="true"] img {
+  filter:
+    brightness(1.08)
+    drop-shadow(3px 0 0 #7cf58f)
+    drop-shadow(-3px 0 0 #7cf58f)
+    drop-shadow(0 3px 0 #7cf58f)
+    drop-shadow(0 -3px 0 #7cf58f)
+    drop-shadow(2px 2px 0 #7cf58f)
+    drop-shadow(-2px 2px 0 #7cf58f)
+    drop-shadow(2px -2px 0 #7cf58f)
+    drop-shadow(-2px -2px 0 #7cf58f);
+}
+
+.menu-image-button[data-control-id="play"] img {
+  animation: menu-play-breathe 1800ms ease-in-out infinite;
+}
+
+.menu-image-button[data-control-id="play"]:hover,
+.menu-image-button[data-control-id="play"]:focus-visible {
+  filter: drop-shadow(6px 6px 0 #000000);
+  transform: translate(-1px, -1px) scale(1.015);
+}
+
+.menu-image-button[data-selected="true"]:hover img,
+.menu-image-button[data-selected="true"]:focus-visible img {
+  animation: none;
+  filter:
+    brightness(1.14)
+    saturate(1.04)
+    drop-shadow(3px 0 0 #7cf58f)
+    drop-shadow(-3px 0 0 #7cf58f)
+    drop-shadow(0 3px 0 #7cf58f)
+    drop-shadow(0 -3px 0 #7cf58f)
+    drop-shadow(2px 2px 0 #7cf58f)
+    drop-shadow(-2px 2px 0 #7cf58f)
+    drop-shadow(2px -2px 0 #7cf58f)
+    drop-shadow(-2px -2px 0 #7cf58f)
+    drop-shadow(6px 6px 0 #000000);
+  transform: translate(-1px, -1px) scale(1.015);
+}
+
+.menu-image-button[data-soon="true"] img {
+  filter: saturate(0.86) brightness(0.92);
+}
+
+.menu-image-button[data-soon="true"]:hover img,
+.menu-image-button[data-soon="true"]:focus-visible img {
+  filter: saturate(1) brightness(1.06) drop-shadow(5px 5px 0 #000000);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-image-button.menu-control-enter {
+    animation-name: menu-control-fade;
+    animation-duration: 160ms;
+    animation-timing-function: ease;
+  }
+
+  .menu-image-button,
+  .menu-image-button[data-control-id="play"]:hover,
+  .menu-image-button[data-control-id="play"]:focus-visible,
+  .menu-image-button:hover img,
+  .menu-image-button:focus-visible img {
+    transform: none;
+  }
+
+  .menu-image-button[data-selected="true"] img {
+    filter:
+      brightness(1.1)
+      drop-shadow(3px 0 0 #7cf58f)
+      drop-shadow(-3px 0 0 #7cf58f)
+      drop-shadow(0 3px 0 #7cf58f)
+      drop-shadow(0 -3px 0 #7cf58f)
+      drop-shadow(2px 2px 0 #7cf58f)
+      drop-shadow(-2px 2px 0 #7cf58f)
+      drop-shadow(2px -2px 0 #7cf58f)
+      drop-shadow(-2px -2px 0 #7cf58f);
+  }
+
+  .menu-image-button[data-control-id="play"] img {
+    animation: none;
+  }
+
+  .menu-stage-logo:hover {
+    filter:
+      brightness(1.18)
+      saturate(1.1)
+      drop-shadow(0 0 12px rgba(124, 245, 143, 0.72));
+  }
+
+  .menu-image-button[data-selected="true"]:hover img,
+  .menu-image-button[data-selected="true"]:focus-visible img {
+    filter:
+      brightness(1.14)
+      saturate(1.04)
+      drop-shadow(3px 0 0 #7cf58f)
+      drop-shadow(-3px 0 0 #7cf58f)
+      drop-shadow(0 3px 0 #7cf58f)
+      drop-shadow(0 -3px 0 #7cf58f)
+      drop-shadow(2px 2px 0 #7cf58f)
+      drop-shadow(-2px 2px 0 #7cf58f)
+      drop-shadow(2px -2px 0 #7cf58f)
+      drop-shadow(-2px -2px 0 #7cf58f)
+      drop-shadow(6px 6px 0 #000000);
+  }
+}
+`;
 }

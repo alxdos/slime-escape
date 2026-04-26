@@ -1,3 +1,5 @@
+import { comicTextStyle } from './comicTextStyle';
+
 export type ResultOutcome = 'win' | 'loss';
 
 export type ResultOverlayInit = Readonly<{
@@ -110,9 +112,12 @@ function cardStyle(): string {
 function titleStyle(): string {
   return [
     'margin:0',
-    'font-size:28px',
-    'font-weight:700',
-    'letter-spacing:0.06em',
+    ...comicTextStyle({
+      fontSize: '30px',
+      lineHeight: '1',
+      color: '#ffffff',
+      shadow: 'strong'
+    }),
     'text-transform:uppercase'
   ].join(';');
 }
@@ -120,10 +125,12 @@ function titleStyle(): string {
 function summaryStyle(): string {
   return [
     'margin:0',
-    'font-size:15px',
-    'line-height:1.5',
-    'color:#cdd5e3',
-    'text-align:center'
+    ...comicTextStyle({
+      fontSize: '16px',
+      color: '#f4fbff',
+      lineHeight: '1.35',
+      textAlign: 'center'
+    })
   ].join(';');
 }
 
@@ -132,10 +139,11 @@ function primaryButtonStyle(): string {
     'appearance:none',
     'border:none',
     'padding:10px 28px',
-    'font-size:15px',
-    'font-weight:600',
-    'letter-spacing:0.04em',
-    'color:#0a0c10',
+    ...comicTextStyle({
+      fontSize: '16px',
+      color: '#ffffff',
+      lineHeight: '1'
+    }),
     'background:#9ad6ff',
     'border-radius:4px',
     'cursor:pointer',

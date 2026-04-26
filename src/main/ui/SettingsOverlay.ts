@@ -4,6 +4,8 @@ import {
   type RenderScalePreset
 } from '../settings/ClientSettingsStore';
 
+import { comicTextStyle } from './comicTextStyle';
+
 export type SettingsOverlayInit = Readonly<{
   parent: HTMLElement;
   store: ClientSettingsStore;
@@ -22,6 +24,10 @@ export function createSettingsOverlay(init: SettingsOverlayInit): SettingsOverla
   const root = document.createElement('div');
   root.dataset['role'] = 'settings-overlay';
   root.style.cssText = baseOverlayStyle();
+
+  const style = document.createElement('style');
+  style.textContent = settingsOverlayCss();
+  root.appendChild(style);
 
   const card = document.createElement('div');
   card.style.cssText = cardStyle();
@@ -55,6 +61,7 @@ export function createSettingsOverlay(init: SettingsOverlayInit): SettingsOverla
   volumeInput.min = '0';
   volumeInput.max = '1';
   volumeInput.step = '0.01';
+  volumeInput.className = 'settings-comic-range';
   volumeInput.style.cssText = sliderStyle();
   volumeInput.addEventListener('input', () => {
     init.store.setMasterVolume(Number(volumeInput.value));
@@ -86,6 +93,7 @@ export function createSettingsOverlay(init: SettingsOverlayInit): SettingsOverla
 
   const closeButton = document.createElement('button');
   closeButton.dataset['role'] = 'settings-close';
+  closeButton.className = 'settings-comic-button';
   closeButton.type = 'button';
   closeButton.textContent = 'Закрыть';
   closeButton.style.cssText = closeButtonStyle();
@@ -143,6 +151,7 @@ function createPresetButton(
 ): HTMLButtonElement {
   const button = document.createElement('button');
   button.dataset['role'] = `settings-render-scale-${preset}`;
+  button.className = 'settings-comic-button';
   button.type = 'button';
   button.textContent = label;
   button.style.cssText = presetButtonStyle();
@@ -160,7 +169,9 @@ function baseOverlayStyle(): string {
     'display:flex',
     'align-items:center',
     'justify-content:center',
-    'background:rgba(5,6,10,0.76)',
+    'box-sizing:border-box',
+    'padding:24px',
+    'background:rgba(255,255,255,0.42)',
     'z-index:105',
     'cursor:default'
   ].join(';');
@@ -170,23 +181,27 @@ function cardStyle(): string {
   return [
     'display:flex',
     'flex-direction:column',
-    'gap:20px',
-    'padding:28px 32px',
-    'width:min(460px, calc(100vw - 48px))',
-    'background:#11151c',
-    'border:1px solid #2a3142',
+    'gap:18px',
+    'box-sizing:border-box',
+    'padding:24px 28px 26px',
+    'width:min(520px, calc(100vw - 48px))',
+    'background:#fffdf4',
+    'border:4px solid #050505',
     'border-radius:8px',
-    'box-shadow:0 12px 40px rgba(0,0,0,0.6)'
+    'box-shadow:8px 8px 0 #000000'
   ].join(';');
 }
 
 function titleStyle(): string {
   return [
     'margin:0',
-    'font-size:22px',
-    'font-weight:600',
-    'color:#e6e8ef',
-    'letter-spacing:0.04em'
+    ...comicTextStyle({
+      fontSize: '30px',
+      color: '#fff38b',
+      lineHeight: '1',
+      textAlign: 'center',
+      shadow: 'strong'
+    })
   ].join(';');
 }
 
@@ -194,7 +209,12 @@ function sectionStyle(): string {
   return [
     'display:flex',
     'flex-direction:column',
-    'gap:10px'
+    'gap:12px',
+    'padding:14px',
+    'background:#e9fbff',
+    'border:3px solid #050505',
+    'border-radius:8px',
+    'box-shadow:4px 4px 0 #000000'
   ].join(';');
 }
 
@@ -209,23 +229,32 @@ function rowStyle(): string {
 
 function sectionLabelStyle(): string {
   return [
-    'font-size:15px',
-    'font-weight:600',
-    'color:#e6e8ef'
+    ...comicTextStyle({
+      fontSize: '18px',
+      color: '#ffffff',
+      lineHeight: '1.1'
+    })
   ].join(';');
 }
 
 function valueStyle(): string {
   return [
-    'font-size:14px',
-    'color:#9ad6ff'
+    ...comicTextStyle({
+      fontSize: '18px',
+      color: '#9ef6ff',
+      lineHeight: '1.1',
+      textAlign: 'right'
+    }),
+    'min-width:58px'
   ].join(';');
 }
 
 function sliderStyle(): string {
   return [
     'width:100%',
-    'cursor:pointer'
+    'height:30px',
+    'cursor:pointer',
+    'accent-color:#71f79f'
   ].join(';');
 }
 
@@ -240,45 +269,121 @@ function presetButtonRowStyle(): string {
 function presetButtonStyle(): string {
   return [
     'appearance:none',
-    'padding:10px 14px',
-    'font-size:14px',
-    'font-weight:600',
-    'letter-spacing:0.03em',
-    'color:#cdd5e3',
-    'background:transparent',
-    'border:1px solid #2a3142',
-    'border-radius:4px',
-    'cursor:pointer'
+    'padding:10px 12px',
+    ...comicTextStyle({
+      fontSize: '16px',
+      color: '#ffffff',
+      lineHeight: '1'
+    }),
+    'background:#b8f1ff',
+    'border:3px solid #050505',
+    'border-radius:7px',
+    'box-shadow:4px 4px 0 #000000',
+    'cursor:pointer',
+    'min-height:42px'
   ].join(';');
 }
 
 function activePresetButtonStyle(): string {
   return [
     'appearance:none',
-    'padding:10px 14px',
-    'font-size:14px',
-    'font-weight:600',
-    'letter-spacing:0.03em',
-    'color:#0a0c10',
-    'background:#9ad6ff',
-    'border:1px solid #9ad6ff',
-    'border-radius:4px',
-    'cursor:pointer'
+    'padding:10px 12px',
+    ...comicTextStyle({
+      fontSize: '16px',
+      color: '#fff38b',
+      lineHeight: '1',
+      shadow: 'strong'
+    }),
+    'background:#7cf58f',
+    'border:3px solid #050505',
+    'border-radius:7px',
+    'box-shadow:4px 4px 0 #000000',
+    'cursor:pointer',
+    'min-height:42px'
   ].join(';');
 }
 
 function closeButtonStyle(): string {
   return [
     'appearance:none',
-    'border:none',
-    'padding:10px 28px',
-    'font-size:15px',
-    'font-weight:600',
-    'letter-spacing:0.04em',
-    'color:#0a0c10',
-    'background:#9ad6ff',
-    'border-radius:4px',
+    'border:3px solid #050505',
+    'padding:10px 28px 11px',
+    ...comicTextStyle({
+      fontSize: '18px',
+      color: '#ffffff',
+      lineHeight: '1'
+    }),
+    'background:#ff9fcf',
+    'border-radius:7px',
+    'box-shadow:4px 4px 0 #000000',
     'cursor:pointer',
-    'align-self:flex-end'
+    'align-self:flex-end',
+    'min-width:156px'
   ].join(';');
+}
+
+function settingsOverlayCss(): string {
+  return `
+.settings-comic-button {
+  transition: filter 120ms ease, transform 120ms ease;
+}
+
+.settings-comic-button:hover,
+.settings-comic-button:focus-visible {
+  filter: brightness(1.08) saturate(1.06);
+  transform: translate(-1px, -1px);
+}
+
+.settings-comic-range {
+  appearance: none;
+  background: transparent;
+}
+
+.settings-comic-range::-webkit-slider-runnable-track {
+  height: 14px;
+  background: #ffffff;
+  border: 3px solid #050505;
+  border-radius: 8px;
+  box-shadow: 3px 3px 0 #000000;
+}
+
+.settings-comic-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -9px;
+  background: #fff38b;
+  border: 3px solid #050505;
+  border-radius: 50%;
+  box-shadow: 3px 3px 0 #000000;
+}
+
+.settings-comic-range::-moz-range-track {
+  height: 14px;
+  background: #ffffff;
+  border: 3px solid #050505;
+  border-radius: 8px;
+  box-shadow: 3px 3px 0 #000000;
+}
+
+.settings-comic-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  background: #fff38b;
+  border: 3px solid #050505;
+  border-radius: 50%;
+  box-shadow: 3px 3px 0 #000000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-comic-button {
+    transition: none;
+  }
+
+  .settings-comic-button:hover,
+  .settings-comic-button:focus-visible {
+    transform: none;
+  }
+}
+`;
 }

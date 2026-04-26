@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-26 (story 022: детальный боевой HUD вынесен в [hud-presentation.md](hud-presentation.md); здесь остаются только фазовая видимость, пассивность HUD и `UiShell` ownership. Earlier story 021: появляется отдельный UI-слой «wave/break title overlay» — видимость по фазам, z-order и источники данных фиксируются в [encounter-presentation.md](encounter-presentation.md); правило HUD-агрегата «номер волны» остаётся глобальным (set-local нумерация — только у overlay). Earlier: 2026-04-24 017 terminology cleanup: session authoring references ordered `loadoutWeaponIds` instead of legacy singular `loadoutWeaponId`. story 016: `UiShell` fans simulation runtime events out to `Renderer.handleEvent` while keeping `UiShell` as the only `SimWorkerHost.onEvent` owner; see [impact-feedback.md](impact-feedback.md). Ранее: story 015 follow-up: `Renderer` получает immutable `SessionDefinition` при создании, читает `session.backgrounds` + `encounters[].backgroundId` и переключает фон арены по `snapshot.encounter.id`; snapshot не расширяется, потому что активный encounter уже присутствует. story 015: playable preset catalog становится derived view над `SESSION_PRESET_TEMPLATES` из `content library`; метаданные пресета (`displayName`/`description`/`visibleInMenu`/`order`) живут в партиции `# Session` каждого `content/sessions/<presetId>.md`, рядом с самим описанием пресета (см. [content-authoring.md](content-authoring.md), раздел «Multi-file области»); отдельный `playableModes.ts` исчезает; форма `PlayableModeEntry` сворачивается в derived view, без отдельного реестра. Story 013: для истории 013 добавлены стартовая фаза `loading` и финальная фаза `error('preload')`: видимый splash + sprite preload до меню, hard-error при провале загрузки, недоступность Renderer/InputController/Settings/SimWorkerHost в этих фазах; follow-up: minimum splash duration зафиксирован как контракт `STARTUP_PRELOAD_MIN_DURATION_MS = 1500`)
+- Updated: 2026-04-26 (story 023: startup/menu presentation, post-load ritual, first-menu UI asset preload and phase transition curtain are split into [menu-and-startup-presentation.md](menu-and-startup-presentation.md); this file keeps phase ownership and visibility. Earlier story 022: детальный боевой HUD вынесен в [hud-presentation.md](hud-presentation.md); здесь остаются только фазовая видимость, пассивность HUD и `UiShell` ownership. Earlier story 021: появляется отдельный UI-слой «wave/break title overlay» — видимость по фазам, z-order и источники данных фиксируются в [encounter-presentation.md](encounter-presentation.md); правило HUD-агрегата «номер волны» остаётся глобальным (set-local нумерация — только у overlay). Earlier: 2026-04-24 017 terminology cleanup: session authoring references ordered `loadoutWeaponIds` instead of legacy singular `loadoutWeaponId`. story 016: `UiShell` fans simulation runtime events out to `Renderer.handleEvent` while keeping `UiShell` as the only `SimWorkerHost.onEvent` owner; see [impact-feedback.md](impact-feedback.md). Ранее: story 015 follow-up: `Renderer` получает immutable `SessionDefinition` при создании, читает `session.backgrounds` + `encounters[].backgroundId` и переключает фон арены по `snapshot.encounter.id`; snapshot не расширяется, потому что активный encounter уже присутствует. story 015: playable preset catalog становится derived view над `SESSION_PRESET_TEMPLATES` из `content library`; метаданные пресета (`displayName`/`description`/`visibleInMenu`/`order`) живут в партиции `# Session` каждого `content/sessions/<presetId>.md`, рядом с самим описанием пресета (см. [content-authoring.md](content-authoring.md), раздел «Multi-file области»); отдельный `playableModes.ts` исчезает; форма `PlayableModeEntry` сворачивается в derived view, без отдельного реестра. Story 013: для истории 013 добавлены стартовая фаза `loading` и финальная фаза `error('preload')`: видимый splash + sprite preload до меню, hard-error при провале загрузки, недоступность Renderer/InputController/Settings/SimWorkerHost в этих фазах.)
 
 ## Context
 
@@ -44,7 +44,7 @@
   - `loading → menu` после успешного завершения startup preload;
   - `loading → error('preload')` при ошибке загрузки/декодирования хотя бы одного обязательного ассета;
   - `menu → running` через явное действие игрока (выбор режима);
-  - `running ↔ paused` через `Esc`/потерю Pointer Lock/кнопки overlay-ев и через дев-хоткей (см. ниже);
+  - `running ↔ paused` через `Esc`/`Space`/потерю Pointer Lock/кнопки overlay-ев и через `KeyP` dev-хоткей (см. ниже);
   - `running → result(win|loss)` через `win`/`loss` event из sim;
   - `running → menu` через явный exit из паузы (кнопка «Выйти в меню»);
   - `paused → menu` через тот же exit (без промежуточного `running`);
@@ -66,14 +66,14 @@
 | `result(win|loss)` | hidden | hidden | hidden | hidden | hidden | visible | hidden | released |
 | `error('preload')` | hidden | hidden | hidden | hidden | hidden | hidden | visible | released |
 
-- `Startup overlay` в фазе `loading` — белый фон, `public/images/slime-escape.jpg` с `object-fit: contain`, нижний progress bar и короткий статус (`Loading assets X/Y`). Конкретные числа `X/Y` приходят из preload-callback (см. [sprite-assets.md](sprite-assets.md)). Никакого «между загрузкой» меню или HUD не показано: игрок видит либо splash, либо menu, либо явный startup error.
+- `Startup overlay` в фазе `loading` показывает preload и post-load presentation ritual по [menu-and-startup-presentation.md](menu-and-startup-presentation.md). Никакого «между загрузкой» меню или HUD не показано: игрок видит либо splash, либо menu, либо явный startup error.
 - `Startup error` в фазе `error('preload')` — отдельный overlay поверх пустого фона, с человекочитаемым описанием первой провалившейся загрузки и единственной кнопкой «Перезагрузить страницу» (вызывает `location.reload()`).
 - HUD остаётся видимым в `paused` намеренно: игрок должен видеть текущие значения HP/таймера/волны/босса, на которых он поставил паузу. Pause overlay рисуется над ним.
 - Result UI скрывает HUD: цифры забега, на котором всё закончилось, не должны конкурировать с финальным итогом. Если позже потребуется «итоговая сводка» — это расширение Result UI, не возвращение HUD.
 
 ### Стек слоёв (z-order)
 
-- Слои сверху вниз: Startup error > Startup overlay > Result UI > Pause overlay > Menu overlay > Settings overlay > Title overlay > HUD > canvas. Конкретные числовые `z-index` — деталь реализации; контракт — порядок и непересекающаяся видимость одновременных слоёв (по таблице фаз одновременно показано не более одного modal-overlay-я плюс Title overlay и HUD; в `loading` и `error('preload')` HUD и Title overlay отсутствуют). Title overlay — отдельный презентационный слой из [encounter-presentation.md](encounter-presentation.md), рисуется поверх HUD и под любым modal-overlay; его видимость внутри `running`/`paused` дополнительно обусловлена активным encounter (intro для wave, `text !== null` для break), а не только фазой `UiShell`.
+- Слои сверху вниз: Startup error > Phase transition curtain > Startup overlay > Result UI > Settings overlay > Pause overlay > Menu overlay > Title overlay > HUD > canvas. Конкретные числовые `z-index` — деталь реализации; контракт — порядок и непересекающаяся видимость одновременных слоёв (по таблице фаз одновременно показано не более одного modal-overlay-я плюс Title overlay и HUD; в `loading` и `error('preload')` HUD и Title overlay отсутствуют). Phase transition curtain принадлежит `UiShell` и описан в [menu-and-startup-presentation.md](menu-and-startup-presentation.md). Title overlay — отдельный презентационный слой из [encounter-presentation.md](encounter-presentation.md), рисуется поверх HUD и под любым modal-overlay; его видимость внутри `running`/`paused` дополнительно обусловлена активным encounter (intro для wave, `text !== null` для break), а не только фазой `UiShell`.
 - HUD и overlay-и позиционированы относительно viewport (`position: fixed`), а не относительно canvas. Letterbox/pillarbox-полосы из [arena-and-coordinates.md](arena-and-coordinates.md) при этом не «прячут» HUD — он рисуется поверх любых пустых полос. Это даёт стабильное место HUD при нестандартных aspect ratio.
 
 ### HUD как пассивный потребитель
@@ -128,8 +128,8 @@
 
 ### Pause UX
 
-- UX паузы уже зафиксирован в [input-commands.md](input-commands.md) (Esc открывает overlay, кнопка «Выйти в меню» вызывает `stopSession`, Pointer Lock корректно ходит между состояниями).
-- `UiShell` — единственное место, которое реально вызывает `SimWorkerHost.pause()`/`.resume()`. Хоткеи Esc/Space и кнопки overlay-ев маршрутизируются через `UiShell`; прямые вызовы `pause/resume` из обработчиков событий вне `UiShell` запрещены. Это исключает «двойную паузу» и рассинхрон между `paused`-фазой UI и `isPaused()` симуляции.
+- UX паузы уже зафиксирован в [input-commands.md](input-commands.md) (`Esc`/`Space` открывают overlay, `KeyP` остаётся dev-паузой без overlay, кнопка «Выйти в меню» вызывает `stopSession`, Pointer Lock корректно ходит между состояниями).
+- `UiShell` — единственное место, которое реально вызывает `SimWorkerHost.pause()`/`.resume()`. Хоткеи `Esc`/`Space`/`KeyP` и кнопки overlay-ев маршрутизируются через `UiShell`; прямые вызовы `pause/resume` из обработчиков событий вне `UiShell` запрещены. Это исключает «двойную паузу» и рассинхрон между `paused`-фазой UI и `isPaused()` симуляции.
 - HUD остаётся видим и заморожен: `UiShell` пропускает вызов `Hud.update()` пока находится в `paused`. Pause overlay рисуется выше HUD по z-order.
 - Кнопка «Выйти в меню» в `paused` инициирует переход `paused → menu`: `UiShell` вызывает `SimWorkerHost.stopSession()` и снимает HUD. Никаких promtов «вы уверены?» в 007 не вводится; экран результата сюда не подменяется (`stopSession` — не «поражение»).
 
@@ -168,9 +168,9 @@
 
 ### Startup preload в фазе `loading`
 
-- `UiShell` стартует с фазы `loading` и **до** перехода в `menu` обязан выполнить sprite preload по контракту [sprite-assets.md](sprite-assets.md): загрузить и декодировать все textures из объединения generated visual registries (player/enemy/boss). Lazy-load в фазах `running`/`paused`/`result` запрещён.
-- Splash в фазе `loading` обязан оставаться видимым **минимум 1.5 секунды**, даже если preload ассетов завершился раньше. Это контракт UI, а не UX-эвристика «по месту»: константа `STARTUP_PRELOAD_MIN_DURATION_MS = 1500` живёт в `src/main/ui/UiShell.ts`, и её изменение требует обновления этого файла.
-- Источник списка ассетов — visual registries в `src/main/render/**`; preload не знает про content registry напрямую и не парсит MD: `image` уже зафиксирован в generated данных.
+- `UiShell` стартует с фазы `loading` и **до** перехода в `menu` обязан выполнить startup preload: sprite textures по контракту [sprite-assets.md](sprite-assets.md) и required first-screen UI assets по [menu-and-startup-presentation.md](menu-and-startup-presentation.md). Lazy-load этих обязательных ассетов в фазах `menu`/`running`/`paused`/`result` запрещён.
+- Splash timing больше не должен подделывать asset progress. Намеренная минимальная presentation-пауза живёт как post-load ritual в [menu-and-startup-presentation.md](menu-and-startup-presentation.md), после успешной загрузки и декодирования ассетов.
+- Источник sprite texture списка — visual registries в `src/main/render/**`; preload не знает про content registry напрямую и не парсит MD: `image` уже зафиксирован в generated данных. Источник first-screen UI asset списка — static presentation list from [menu-and-startup-presentation.md](menu-and-startup-presentation.md).
 - Прогресс preload-а (количество загруженных / общее) пробрасывается callback-ом в `StartupOverlay`. Текстуры считаются «готовыми» только после успешного декодирования — частично декодированный bitmap не отдаётся renderer-у даже на короткое время.
 - Любая ошибка загрузки или декодирования хотя бы одного обязательного ассета — единственный сан­кц­ио­ни­ро­ва­ный триггер `loading → error('preload')`. `UiShell` запоминает первое поражение (URL + браузерное сообщение) и передаёт его в `StartupErrorOverlay`. Параллельно идущие загрузки прерываются; partial-success-режима нет.
 - `SimWorkerHost.startSession` в фазе `loading` не вызывается; сам worker может быть инициализирован пустым (без сессии) уже здесь, но это деталь реализации, не контракт.
@@ -179,8 +179,8 @@
 
 ### Пересечение с input-commands
 
-- Esc и Pointer Lock — owner [input-commands.md](input-commands.md). Этот файл фиксирует только то, что **роутер** Esc/Pointer-Lock-loss/Space — `UiShell`, и что переходы `running ↔ paused` — единственный санкционированный эффект этих хоткеев на стороне UI.
-- Поведение Space в 007 закрепляется в [input-commands.md](input-commands.md) (см. обновление этого файла под 007). UiShell обязан соблюдать это поведение и не вводить параллельных хоткеев под паузу.
+- Pause hotkeys и Pointer Lock — owner [input-commands.md](input-commands.md). Этот файл фиксирует только то, что **роутер** `Esc`/`Space`/`KeyP`/Pointer-Lock-loss — `UiShell`, и что переходы `running ↔ paused` — единственный санкционированный эффект player-facing pause hotkeys на стороне UI.
+- Поведение `Space` и `KeyP` закрепляется в [input-commands.md](input-commands.md). UiShell обязан соблюдать это поведение и не вводить параллельных хоткеев под паузу.
 
 ## Consequences
 
@@ -219,3 +219,4 @@
 - [impact-feedback.md](impact-feedback.md)
 - [encounter-presentation.md](encounter-presentation.md)
 - [hud-presentation.md](hud-presentation.md)
+- [menu-and-startup-presentation.md](menu-and-startup-presentation.md)
