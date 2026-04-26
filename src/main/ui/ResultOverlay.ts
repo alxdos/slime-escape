@@ -1,6 +1,9 @@
+import { assertNever } from '../../shared/protocol';
+
 import { comicTextStyle } from './comicTextStyle';
 import type {
   ResultBossViewModel,
+  ResultEscapePathViewModel,
   ResultKillRowViewModel,
   ResultStatViewModel,
   ResultViewModel
@@ -25,6 +28,7 @@ type ResultOverlayParts = Readonly<{
   effectsLayer: HTMLElement;
   title: HTMLElement;
   summary: HTMLElement;
+  escapePath: HTMLElement;
   statGrid: HTMLElement;
   bossPanel: HTMLElement;
   bossIcon: HTMLImageElement;
@@ -75,14 +79,14 @@ const VICTORY_EFFECTS: ReadonlyArray<ResultEffectSpec> = [
 ];
 
 const DEFEAT_EFFECTS: ReadonlyArray<ResultEffectSpec> = [
-  makeEffect('slime-a', 'slime', 22, 31, 30, '#b7df79', -10, 20, -12, 0, 920),
-  makeEffect('slime-b', 'slime', 77, 33, 24, '#ff9fcf', 12, 24, 18, 80, 980),
-  makeEffect('slime-c', 'slime', 28, 68, 22, '#d7f7a2', -8, 28, 26, 120, 900),
-  makeEffect('slime-d', 'slime', 72, 70, 28, '#ffb5a7', 10, 30, -22, 170, 1040),
-  makeEffect('drop-a', 'slime', 45, 23, 14, '#b7df79', -4, 38, 8, 210, 960),
-  makeEffect('drop-b', 'slime', 56, 22, 16, '#ff9fcf', 5, 42, -10, 250, 1020),
-  makeEffect('splash-a', 'confetti', 38, 52, 12, '#ffe7f3', -18, 20, 34, 300, 840),
-  makeEffect('splash-b', 'confetti', 62, 51, 12, '#d7f7a2', 18, 22, -34, 340, 880)
+  makeEffect('slime-a', 'slime', 0, 31, 30, '#b7df79', -82, 20, -12, 0, 920),
+  makeEffect('slime-b', 'slime', 100, 33, 24, '#ff9fcf', 82, 24, 18, 80, 980),
+  makeEffect('slime-c', 'slime', 0, 68, 22, '#d7f7a2', -66, 28, 26, 120, 900),
+  makeEffect('slime-d', 'slime', 100, 70, 28, '#ffb5a7', 68, 30, -22, 170, 1040),
+  makeEffect('drop-a', 'slime', 0, 23, 14, '#b7df79', -92, 38, 8, 210, 960),
+  makeEffect('drop-b', 'slime', 100, 22, 16, '#ff9fcf', 92, 42, -10, 250, 1020),
+  makeEffect('splash-a', 'confetti', 0, 52, 12, '#ffe7f3', -74, 20, 34, 300, 840),
+  makeEffect('splash-b', 'confetti', 100, 51, 12, '#d7f7a2', 74, 22, -34, 340, 880)
 ];
 
 export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
@@ -119,6 +123,12 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   summary.dataset['role'] = 'result-summary';
   summary.style.cssText = summaryStyle();
   card.appendChild(summary);
+
+  const escapePath = document.createElement('section');
+  escapePath.className = 'result-escape-path';
+  escapePath.dataset['role'] = 'result-escape-path';
+  escapePath.style.cssText = resultEscapePathStyle();
+  card.appendChild(escapePath);
 
   const statGrid = document.createElement('div');
   statGrid.className = 'result-stat-grid';
@@ -186,6 +196,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
     effectsLayer,
     title,
     summary,
+    escapePath,
     statGrid,
     bossPanel,
     bossIcon,
@@ -210,6 +221,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
       summary.textContent = '';
       effectsLayer.replaceChildren();
       delete effectsLayer.dataset['outcome'];
+      hideEscapePath(escapePath);
       statGrid.replaceChildren();
       killList.replaceChildren();
       hideBoss(bossPanel, bossIcon, bossText);
@@ -251,6 +263,7 @@ function applyViewModel(viewModel: ResultViewModel, parts: ResultOverlayParts): 
 }
 
 function renderDynamicSections(viewModel: ResultViewModel, parts: ResultOverlayParts): void {
+  renderEscapePath(parts.escapePath, viewModel.escapePath, viewModel.outcome);
   parts.statGrid.replaceChildren(
     ...viewModel.primaryStats.map((stat, index) =>
       createStatTile(stat, index, viewModel.outcome)
@@ -259,6 +272,122 @@ function renderDynamicSections(viewModel: ResultViewModel, parts: ResultOverlayP
   renderBoss(parts.bossPanel, parts.bossIcon, parts.bossText, viewModel.boss);
   renderDefeatCause(parts.defeatCause, viewModel.defeatCause);
   renderKillRows(parts.killsSection, parts.killList, viewModel.killRows, viewModel.outcome);
+}
+
+function renderEscapePath(
+  container: HTMLElement,
+  escapePath: ResultEscapePathViewModel | null,
+  outcome: ResultOutcome
+): void {
+  if (escapePath === null) {
+    hideEscapePath(container);
+    return;
+  }
+
+  container.style.cssText = resultEscapePathStyle(outcome);
+  container.style.display = 'grid';
+  container.replaceChildren(
+    createEscapePathTitle(escapePath),
+    createEscapePathTrack(escapePath),
+    createEscapePathText(escapePath)
+  );
+}
+
+function hideEscapePath(container: HTMLElement): void {
+  container.style.display = 'none';
+  container.replaceChildren();
+}
+
+function createEscapePathTitle(escapePath: ResultEscapePathViewModel): HTMLElement {
+  const title = document.createElement('div');
+  title.dataset['role'] = 'result-escape-path-title';
+  title.textContent = escapePath.title;
+  title.style.cssText = resultEscapePathTitleStyle();
+  return title;
+}
+
+function createEscapePathTrack(escapePath: ResultEscapePathViewModel): HTMLElement {
+  const track = document.createElement('div');
+  track.dataset['role'] = 'result-escape-path-track';
+  track.style.cssText = resultEscapePathTrackStyle();
+  const nodes: HTMLElement[] = [];
+  if (
+    escapePath.path.stop.kind === 'loss' &&
+    escapePath.path.stop.anchor === 'afterCompletedWaves' &&
+    escapePath.path.completedWaves === 0
+  ) {
+    nodes.push(createEscapePathStopMarker('afterCompletedWaves'));
+  }
+  for (const point of escapePath.path.points) {
+    const node = document.createElement('span');
+    node.dataset['role'] = 'result-escape-path-point';
+    node.dataset['waveIndex'] = String(point.index);
+    node.dataset['state'] = point.state;
+    node.textContent = escapePathPointSymbol(point.state);
+    node.style.cssText = resultEscapePathPointStyle(point.state);
+    nodes.push(node);
+    if (
+      escapePath.path.stop.kind === 'loss' &&
+      escapePath.path.stop.anchor === 'afterCompletedWaves' &&
+      point.index === escapePath.path.completedWaves
+    ) {
+      nodes.push(createEscapePathStopMarker('afterCompletedWaves'));
+    }
+  }
+  if (escapePath.path.stop.kind === 'loss' && escapePath.path.stop.anchor === 'beforeFlag') {
+    nodes.push(createEscapePathStopMarker('beforeFlag'));
+  }
+  const flag = document.createElement('span');
+  flag.dataset['role'] = 'result-escape-path-flag';
+  flag.dataset['state'] = escapePath.path.flagState;
+  flag.textContent = '🏁';
+  flag.style.cssText = resultEscapePathFlagStyle(escapePath.path.flagState);
+  track.replaceChildren(...nodes, flag);
+  return track;
+}
+
+function createEscapePathStopMarker(anchor: 'afterCompletedWaves' | 'beforeFlag'): HTMLElement {
+  const marker = document.createElement('span');
+  marker.dataset['role'] = 'result-escape-path-stop';
+  marker.dataset['anchor'] = anchor;
+  marker.textContent = '✕';
+  marker.style.cssText = resultEscapePathPointStyle('stopped');
+  return marker;
+}
+
+function createEscapePathText(escapePath: ResultEscapePathViewModel): HTMLElement {
+  const text = document.createElement('div');
+  text.dataset['role'] = 'result-escape-path-text';
+  text.style.cssText = resultEscapePathTextStyle();
+  const summary = document.createElement('span');
+  summary.dataset['role'] = 'result-escape-path-summary';
+  summary.textContent = escapePath.summaryText;
+  text.appendChild(summary);
+  if (escapePath.detailText !== null) {
+    const detail = document.createElement('small');
+    detail.dataset['role'] = 'result-escape-path-detail';
+    detail.textContent = escapePath.detailText;
+    detail.style.cssText = resultEscapePathDetailStyle();
+    text.appendChild(detail);
+  }
+  return text;
+}
+
+function escapePathPointSymbol(
+  state: ResultEscapePathViewModel['path']['points'][number]['state']
+): string {
+  switch (state) {
+    case 'completed':
+      return '●';
+    case 'active':
+      return '◉';
+    case 'stopped':
+      return '✕';
+    case 'upcoming':
+      return '○';
+    default:
+      return assertNever(state);
+  }
 }
 
 function renderEffects(effectsLayer: HTMLElement, outcome: ResultOutcome): void {
@@ -523,6 +652,120 @@ function summaryStyle(background = '#e9fbff'): string {
       fontSize: '17px',
       color: '#ffffff',
       lineHeight: '1.25',
+      textAlign: 'center'
+    }),
+    'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function resultEscapePathStyle(outcome: ResultOutcome = 'win'): string {
+  return [
+    'display:none',
+    'box-sizing:border-box',
+    'width:100%',
+    'gap:8px',
+    'justify-items:center',
+    'padding:10px 8px 12px',
+    `background:${outcome === 'win' ? 'rgba(124,245,143,0.16)' : 'rgba(255,159,207,0.15)'}`,
+    'border-radius:8px'
+  ].join(';');
+}
+
+function resultEscapePathTitleStyle(): string {
+  return [
+    ...comicTextStyle({
+      fontSize: '17px',
+      color: '#fff38b',
+      lineHeight: '1',
+      textAlign: 'center',
+      shadow: 'strong'
+    }),
+    'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function resultEscapePathTrackStyle(): string {
+  return [
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'gap:7px',
+    'max-width:100%',
+    'overflow:hidden',
+    'white-space:nowrap'
+  ].join(';');
+}
+
+function resultEscapePathPointStyle(
+  state: ResultEscapePathViewModel['path']['points'][number]['state']
+): string {
+  const color =
+    state === 'active'
+      ? '#ffd166'
+      : state === 'upcoming'
+        ? '#7d8795'
+        : state === 'stopped'
+          ? '#ff5c7e'
+          : '#1fbf77';
+  const glow =
+    state === 'active'
+      ? '0 0 9px rgba(255,209,102,0.78)'
+      : state === 'stopped'
+      ? '0 0 8px rgba(255,92,126,0.65)'
+      : state === 'completed'
+        ? '0 0 7px rgba(31,191,119,0.46)'
+        : 'none';
+  return [
+    'display:inline-grid',
+    'place-items:center',
+    'width:16px',
+    'height:16px',
+    ...comicTextStyle({
+      fontSize: '17px',
+      color,
+      lineHeight: '1'
+    }),
+    `text-shadow:${glow}`,
+    state === 'upcoming' ? 'opacity:0.6' : 'opacity:1'
+  ].join(';');
+}
+
+function resultEscapePathFlagStyle(flagState: 'pending' | 'reached'): string {
+  return [
+    'display:inline-grid',
+    'place-items:center',
+    'width:20px',
+    'height:20px',
+    'font-size:18px',
+    'line-height:1',
+    flagState === 'reached'
+      ? 'filter:drop-shadow(0 0 8px rgba(31,191,119,0.72))'
+      : 'opacity:0.76'
+  ].join(';');
+}
+
+function resultEscapePathTextStyle(): string {
+  return [
+    'display:grid',
+    'gap:3px',
+    'justify-items:center',
+    ...comicTextStyle({
+      fontSize: '15px',
+      color: '#ffffff',
+      lineHeight: '1.12',
+      textAlign: 'center'
+    }),
+    'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function resultEscapePathDetailStyle(): string {
+  return [
+    'display:block',
+    ...comicTextStyle({
+      fontSize: '13px',
+      color: '#f2fbff',
+      lineHeight: '1.15',
       textAlign: 'center'
     }),
     'overflow-wrap:anywhere'
@@ -849,7 +1092,7 @@ function resultOverlayCss(): string {
     opacity: 0.95;
   }
   to {
-    opacity: 0.5;
+    opacity: 0;
     transform: translate(calc(-50% + var(--result-effect-x)), calc(-50% + var(--result-effect-y))) scale(1) rotate(var(--result-effect-rotation));
   }
 }

@@ -26,6 +26,12 @@ import {
 } from '../sim/SimWorkerHost';
 
 import {
+  createEscapeProgressPath,
+  type EscapeProgressPath,
+  type EscapeProgressPathInit
+} from './EscapeProgressPath';
+import { deriveLiveEscapeProgressPathViewModel } from './EscapeProgressPathViewModel';
+import {
   createMenuOverlay,
   type MenuOverlay,
   type MenuOverlayInit
@@ -96,6 +102,7 @@ type CreateStartupErrorOverlayFn = (init: StartupErrorOverlayInit) => StartupErr
 type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
+type CreateEscapeProgressPathFn = (init: EscapeProgressPathInit) => EscapeProgressPath;
 type CreateTitleOverlayFn = (init: TitleOverlayInit) => TitleOverlay;
 type CreateAudioFn = () => Audio;
 type CreateClientSettingsStoreFn = () => ClientSettingsStore;
@@ -119,6 +126,7 @@ export type UiShellInit = Readonly<{
   createRenderer?: CreateRendererFn;
   createInputController?: CreateInputControllerFn;
   createHud?: CreateHudFn;
+  createEscapeProgressPath?: CreateEscapeProgressPathFn;
   createTitleOverlay?: CreateTitleOverlayFn;
   createAudio?: CreateAudioFn;
   createClientSettingsStore?: CreateClientSettingsStoreFn;
@@ -164,6 +172,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   const rendererFactory = init.createRenderer ?? createRenderer;
   const inputFactory = init.createInputController ?? createInputController;
   const hudFactory = init.createHud ?? createHud;
+  const escapeProgressPathFactory =
+    init.createEscapeProgressPath ?? createEscapeProgressPath;
   const titleOverlayFactory = init.createTitleOverlay ?? createTitleOverlay;
   const audioFactory = init.createAudio ?? createAudio;
   const clientSettingsStoreFactory =
@@ -183,6 +193,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let disposed = false;
   let transitionActive = false;
   const hud = hudFactory({ parent: init.parent });
+  const escapeProgressPath = escapeProgressPathFactory({ parent: init.parent });
   const titleOverlay = titleOverlayFactory({ parent: init.parent });
   const clientSettingsStore = clientSettingsStoreFactory();
   const audio = audioFactory();
@@ -512,6 +523,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     let audioAttached = false;
     let sessionStarted = false;
     let hudAttached = false;
+    let escapeProgressPathAttached = false;
     let titleOverlayAttached = false;
     try {
       audio.attach(session);
@@ -523,11 +535,16 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
       hud.attach(session);
       hudAttached = true;
+      escapeProgressPath.attach(session);
+      escapeProgressPathAttached = true;
       titleOverlay.attach(session);
       titleOverlayAttached = true;
     } catch (error: unknown) {
       if (titleOverlayAttached) {
         titleOverlay.detach();
+      }
+      if (escapeProgressPathAttached) {
+        escapeProgressPath.detach();
       }
       if (hudAttached) {
         hud.detach();
@@ -571,6 +588,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     previousRenderer?.dispose();
     if (hadClientSession) {
       titleOverlay.detach();
+      escapeProgressPath.detach();
       hud.detach();
       audio.detach();
     }
@@ -609,12 +627,17 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function enterOverlayPause(): void {
     if (!isRunningSessionActive()) return;
+    const session = activeSession;
+    if (session === null) return;
     if (documentTarget.pointerLockElement !== null) {
       documentTarget.exitPointerLock?.();
     }
     if (!sim.isPaused()) {
       sim.pause();
     }
+    pause.setEscapePath(
+      deriveLiveEscapeProgressPathViewModel(session, sim.snapshotPair().curr)
+    );
     setPhase(PAUSED_PHASE);
   }
 
@@ -766,7 +789,13 @@ export function createUiShell(init: UiShellInit): UiShell {
         hud.update(snapshotPair);
       }
       if (activeSession !== null) {
+        escapeProgressPath.update(snapshotPair, phase);
         titleOverlay.update(snapshotPair, phase);
+        if (phase.kind === 'paused') {
+          pause.setEscapePath(
+            deriveLiveEscapeProgressPathViewModel(activeSession, snapshotPair.curr)
+          );
+        }
       }
       audio.update(snapshotPair, phase, snapshotPair.curr?.encounter ?? null);
       renderer?.render();
@@ -787,6 +816,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       result.dispose();
       settingsOverlay.dispose();
       titleOverlay.dispose();
+      escapeProgressPath.dispose();
       hud.dispose();
       unsubscribeAudioSettings();
       clientSettingsStore.dispose();

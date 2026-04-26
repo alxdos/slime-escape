@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { BossArchetype } from '../../shared/content/bosses';
 import type { EnemyArchetype } from '../../shared/content/enemies';
-import type { SessionDefinition } from '../../shared/session';
+import type { EncounterDefinition, SessionDefinition } from '../../shared/session';
 import type { SessionResultSummary } from '../../shared/sessionResult';
 import type { SpriteVisualSpec } from '../render/SpriteVisualSpec';
 
@@ -38,6 +38,16 @@ describe('buildResultViewModel', () => {
       id: 'drops',
       label: 'Собрано усилений',
       value: '1'
+    });
+    expect(viewModel.escapePath).toMatchObject({
+      title: 'Карта Побега',
+      summaryText: 'Путь до флага пройден',
+      detailText: null,
+      path: {
+        completedWaves: 2,
+        flagState: 'reached',
+        stop: { kind: 'none' }
+      }
     });
     expect(viewModel.killRows).toEqual([
       {
@@ -117,6 +127,79 @@ describe('buildResultViewModel', () => {
       label: 'Прогресс',
       value: 'Свободный режим'
     });
+    expect(viewModel.escapePath).toBeNull();
+  });
+
+  it('describes defeat path at the stopping wave', () => {
+    const viewModel = buildResultViewModel(
+      makeSession({
+        encounters: [wave('wave-1'), wave('wave-2'), wave('wave-3')]
+      }),
+      {
+        ...makeSummary('loss'),
+        progress: {
+          percent: 55,
+          completedObjectiveEncounters: 1,
+          totalObjectiveEncounters: 3,
+          completedWaves: 1,
+          totalWaves: 3,
+          activeEncounterId: 'wave-2',
+          activeEncounterIndex: 1
+        }
+      },
+      {
+        enemies: { slime: makeEnemy('slime', 'Обычный слайм') },
+        bosses: { boss: makeBoss('boss', 'Король слаймов') },
+        enemyVisuals: { slime: makeVisual('slime', '/slime.png') },
+        bossVisuals: { boss: makeVisual('boss', '/boss.png') }
+      }
+    );
+
+    expect(viewModel.escapePath).toMatchObject({
+      summaryText: 'Ты добрался до волны 2 из 3',
+      detailText: 'До выхода оставалось 1 волна',
+      path: {
+        activeWaveIndex: 2,
+        flagState: 'pending',
+        stop: { kind: 'loss', anchor: 'activeWave' }
+      }
+    });
+  });
+
+  it('keeps final-boss defeat before the flag', () => {
+    const viewModel = buildResultViewModel(
+      makeSession({
+        encounters: [wave('wave-1'), wave('wave-2'), bossEncounter('final-boss')]
+      }),
+      {
+        ...makeSummary('loss'),
+        progress: {
+          percent: 96,
+          completedObjectiveEncounters: 2,
+          totalObjectiveEncounters: 3,
+          completedWaves: 2,
+          totalWaves: 2,
+          activeEncounterId: 'final-boss',
+          activeEncounterIndex: 2
+        }
+      },
+      {
+        enemies: { slime: makeEnemy('slime', 'Обычный слайм') },
+        bosses: { boss: makeBoss('boss', 'Король слаймов') },
+        enemyVisuals: { slime: makeVisual('slime', '/slime.png') },
+        bossVisuals: { boss: makeVisual('boss', '/boss.png') }
+      }
+    );
+
+    expect(viewModel.escapePath).toMatchObject({
+      summaryText: 'Ты добрался до волны 2 из 2',
+      detailText: 'Флаг был уже рядом',
+      path: {
+        completedWaves: 2,
+        flagState: 'pending',
+        stop: { kind: 'loss', anchor: 'beforeFlag' }
+      }
+    });
   });
 
   it('throws when summary references missing presentation data', () => {
@@ -164,6 +247,40 @@ function makeSummary(outcome: 'win' | 'loss' = 'win'): SessionResultSummary {
       hpPercent: outcome === 'win' ? 0 : 28
     },
     defeat: null
+  };
+}
+
+function wave(id: string): EncounterDefinition {
+  return {
+    id,
+    type: 'wave',
+    backgroundId: null,
+    introDurationMs: 0,
+    name: null,
+    text: null,
+    spawnPlan: { kind: 'wave', spawns: [], spawnIntervalMs: 1000, maxAlive: 2 },
+    zoneBehavior: { kind: 'disabled' },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+}
+
+function bossEncounter(id: string): EncounterDefinition {
+  return {
+    id,
+    type: 'boss',
+    backgroundId: null,
+    introDurationMs: 0,
+    name: null,
+    text: null,
+    spawnPlan: { kind: 'boss', bossArchetypeId: 'boss', position: { x: 0, y: 0 } },
+    zoneBehavior: { kind: 'disabled' },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
   };
 }
 
