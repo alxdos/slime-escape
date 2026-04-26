@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-25 (story 019: per-`seq` записи `'static'` и `'wave'` получают optional `override?: SpawnOverride`; форма и семантика override — [spawn-overrides.md](spawn-overrides.md). Earlier: 2026-04-23 static/boss builder-fit уточнён до `contactBox` для `enemy` / `boss`; ранее: кампания: break перед боссом, спавн босса сверху по центру; `'boss'` kind для 006)
+- Updated: 2026-04-26 (story 021: intro delay — `SpawnSystem` не материализует сущности и не продвигает внутренний state плана, пока активен encounter intro (`encounter.elapsedMs < encounter.introDurationMs`); полный контракт — [encounter-presentation.md](encounter-presentation.md). Форма `SpawnPlan` и `SpawnOverride` не меняются. Earlier: 2026-04-25 story 019: per-`seq` записи `'static'` и `'wave'` получают optional `override?: SpawnOverride`; форма и семантика override — [spawn-overrides.md](spawn-overrides.md). Earlier: 2026-04-23 static/boss builder-fit уточнён до `contactBox` для `enemy` / `boss`; ранее: кампания: break перед боссом, спавн босса сверху по центру; `'boss'` kind для 006)
 
 ## Context
 
@@ -108,6 +108,16 @@
 - Все спавны проходят через `EntityStore` (см. [runtime-systems.md](runtime-systems.md)); `SpawnSystem` не создаёт сущности «в обход» store.
 - `SpawnSystem` детерминирован относительно `seed` сессии: единственный источник случайности — session RNG ([rng.md](rng.md)). `Math.random` запрещён ([session-definition.md](session-definition.md)).
 
+### Intro delay
+
+- Если у активного encounter `encounter.introDurationMs > 0` и `encounter.elapsedMs < encounter.introDurationMs` (intro активен по [encounter-presentation.md](encounter-presentation.md)):
+  - `'wave'` план не спавнит сущностей на этом тике и не обновляет `lastSpawnSimMs`. `dispatched`, `aliveFromThisPlan`, индекс очередного `spawns[i]` не меняются. На первом тике после окончания intro план стартует так же, как если бы encounter только что начался: условие `simTime − lastSpawnSimMs >= spawnIntervalMs` для первого спавна заведомо истинно (`lastSpawnSimMs = -∞`);
+  - `'static'` план откладывает свой единственный проход «spawn-на-encounter-start» до первого тика, на котором intro закончился. Порядок/позиции сохраняются, потому что материализация детерминированно зависит от `seed` и массива `spawns`, не от `simTime`;
+  - `'boss'` план не совместим с `introDurationMs > 0` по парным ограничениям из [encounter-presentation.md](encounter-presentation.md), поэтому здесь delay не применим;
+  - `'empty'` — no-op в любом случае, дополнительных действий не требует.
+- После окончания intro `SpawnSystem` продолжает обычный цикл тика; никаких «догонов» и компенсаций пропущенных интервалов нет. Это даёт предсказуемый темп волны, измеряемый от фактического старта спавна, а не от `encounterStart`.
+- Детерминизм по `seed` сохраняется: интро изменяет только момент первого спавна во времени симуляции, не влияя на последовательность RNG-вызовов `SpawnSystem`.
+
 ### Расширение и обратная совместимость
 
 - Новый `kind` обязан задаваться отдельным разделом этого файла, со своим описанием полей и поведения.
@@ -136,3 +146,4 @@
 - [web-stack.md](web-stack.md)
 - [boss-encounter.md](boss-encounter.md)
 - [spawn-overrides.md](spawn-overrides.md)
+- [encounter-presentation.md](encounter-presentation.md)

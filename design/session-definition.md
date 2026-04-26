@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-25 (story 019: per-`seq` записи `spawnPlan` `'static'`/`'wave'` несут optional `SpawnOverride`, форма и семантика — [spawn-overrides.md](spawn-overrides.md); `EncounterDefinition` структурно не меняется. Earlier: 2026-04-24 cleanup pass: legacy `{ primaryWeaponArchetypeId }` `loadout` no longer mentioned as a current shape; only the ordered form remains. 017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules and player maxHp.)
+- Updated: 2026-04-26 (story 021: `SessionDefinition` получает обязательное поле `musicSampleId: string | null`; `EncounterDefinition` получает обязательные presentation-поля `introDurationMs`/`name`/`text` — форма, парные ограничения по `type` и intro delay contract фиксируются в [encounter-presentation.md](encounter-presentation.md); валидация `musicSampleId` — в [audio.md](audio.md). Earlier: 2026-04-25 story 019: per-`seq` записи `spawnPlan` `'static'`/`'wave'` несут optional `SpawnOverride`, форма и семантика — [spawn-overrides.md](spawn-overrides.md); `EncounterDefinition` структурно не меняется. Earlier: 2026-04-24 cleanup pass: legacy `{ primaryWeaponArchetypeId }` `loadout` no longer mentioned as a current shape; only the ordered form remains. 017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules and player maxHp.)
 
 ## Context
 
@@ -25,6 +25,7 @@
   player,
   loadout,
   backgrounds,
+  musicSampleId,
   modifiers,
   encounters,
   rules,
@@ -36,6 +37,7 @@
 
 - `encounters` - это упорядоченный список `EncounterDefinition`.
 - `backgrounds` — session-level таблица визуальных фонов, доступных encounter'ам. Элемент имеет форму `{ id: string; imageUrl: string }`, где `imageUrl` — уже public-relative URL (`/images/bg/...`), пришедший из content library. Список immutable на время сессии, так же как остальные поля `SessionDefinition`.
+- `musicSampleId` — session-level выбор обычной (не-boss) музыки. Значение — либо `null` (silent regular music на всю сессию, например для sandbox/dev-режимов), либо строковый sampleId, обязанный существовать в `SampleRegistry` с `category: 'music'`; валидация и правила плейбэка (boss override, pause ducking, loop) фиксируются в [audio.md](audio.md). Поле обязательное и immutable на время сессии; builder обязан выставить либо `null`, либо известный music-sampleId — отсутствие поля или неизвестный id запрещены по тому же правилу «без двух разных нет данных», что и для остальных обязательных полей.
 - `SessionDefinition` после старта сессии считается immutable runtime-контрактом.
 - Стабильными частями контракта считаются имена верхнеуровневых полей, общий смысл `EncounterDefinition`, а также модели `winCondition` / `lossCondition`.
 - Допускается эволюция внутренних структур вроде `spawnPlan`, `rewardRules` и `tuning`, если она не ломает верхнеуровневую модель сборки сессии.
@@ -69,9 +71,14 @@
   objectives,
   rewardRules,
   transitionRules,
-  tuning
+  tuning,
+  introDurationMs,
+  name,
+  text
 }
 ```
+
+- Presentation-поля `introDurationMs: number`, `name: string | null` и `text: string | null` — плоская форма, обязательные, парные ограничения по `type` и intro delay contract для sim/UI фиксируются в [encounter-presentation.md](encounter-presentation.md). Этот файл закрепляет только то, что поля входят в `EncounterDefinition` как стабильные имена и присутствуют у любого encounter, включая sandbox/bring-up.
 
 - `spawnPlan` описывает данные для `SpawnSystem`, а не конкретный код спавна. Форма `spawnPlan` (дискриминированный union, набор `kind`, правила расширения, `'empty'`/`'static'`/`'wave'`/`'boss'`, optional `SpawnOverride` per-`seq` для `'static'`/`'wave'`) фиксируется отдельными решениями [spawn-plan.md](spawn-plan.md) и [spawn-overrides.md](spawn-overrides.md). Будущие категории `kind` и новые поля `SpawnOverride` добавляются туда же, без изменения этого файла.
 - `backgroundId` — явная ссылка на один из `SessionDefinition.backgrounds[].id` или `null`, если encounter не задаёт фон. Для player-facing `wave`/`break`/`boss` encounter'ов background обязателен на уровне content-authoring; sandbox/bring-up encounter'ы могут использовать `null` или тестовый фон. Симуляция не читает это поле; оно принадлежит presentation/runtime-конфигу, который main уже получил вместе с immutable `SessionDefinition`.
@@ -144,3 +151,5 @@
 - [../stories/015-sessions-from-md.md](../stories/015-sessions-from-md.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [spawn-overrides.md](spawn-overrides.md)
+- [encounter-presentation.md](encounter-presentation.md)
+- [audio.md](audio.md)
