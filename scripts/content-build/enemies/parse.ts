@@ -30,11 +30,6 @@ export type ParsedDropTableEntry = Readonly<{
   chance: number;
 }>;
 
-export type ParsedCarrierDropMetadata = Readonly<{
-  marker: 'reward';
-  guaranteedDropArchetypeIds: ReadonlyArray<string>;
-}>;
-
 export type ParsedRetaliationPolicy = Readonly<{
   enabled: boolean;
   durationMs: number;
@@ -70,7 +65,6 @@ export type ParsedEnemy = Readonly<{
   knockbackDurationMs: number;
   color: number;
   dropTable: ReadonlyArray<ParsedDropTableEntry>;
-  carrierDrop: ParsedCarrierDropMetadata | null;
   retaliation: ParsedRetaliationPolicy;
   audio: ParsedEnemyAudio;
   visual: ParsedEnemyVisual;
@@ -114,7 +108,6 @@ function parseEnemiesDocument(document: MarkdownDocument): ParsedEnemiesArea {
   const contactSection = requireSection(balanceSection, 'Contact damage');
   const knockbackSection = requireSection(balanceSection, 'Knockback');
   const dropsSection = requireSection(balanceSection, 'Drops');
-  const carrierDropsSection = requireSection(balanceSection, 'Carrier Drops');
   const retaliationSection = requireSection(balanceSection, 'Retaliation');
   assertNoForbiddenVisualGroup(balanceSection);
   assertNoForbiddenAudioGroups(balanceSection);
@@ -124,7 +117,6 @@ function parseEnemiesDocument(document: MarkdownDocument): ParsedEnemiesArea {
   const contactTable = requireSingleTable(contactSection);
   const knockbackTable = requireSingleTable(knockbackSection);
   const dropsTable = requireSingleTable(dropsSection);
-  const carrierDropsTable = requireSingleTable(carrierDropsSection);
   const retaliationTable = requireSingleTable(retaliationSection);
 
   assertKnownReferences(bodySection, bodyTable, knownEnemyIds);
@@ -132,7 +124,6 @@ function parseEnemiesDocument(document: MarkdownDocument): ParsedEnemiesArea {
   assertKnownReferences(contactSection, contactTable, knownEnemyIds);
   assertKnownReferences(knockbackSection, knockbackTable, knownEnemyIds);
   assertKnownReferences(dropsSection, dropsTable, knownEnemyIds);
-  assertKnownReferences(carrierDropsSection, carrierDropsTable, knownEnemyIds);
   assertKnownReferences(retaliationSection, retaliationTable, knownEnemyIds);
 
   return {
@@ -149,8 +140,6 @@ function parseEnemiesDocument(document: MarkdownDocument): ParsedEnemiesArea {
         knockbackTable,
         dropsSection,
         dropsTable,
-        carrierDropsSection,
-        carrierDropsTable,
         retaliationSection,
         retaliationTable,
         audioByEnemyId
@@ -195,8 +184,6 @@ function parseEnemy(
     knockbackTable: MarkdownTable;
     dropsSection: MarkdownSection;
     dropsTable: MarkdownTable;
-    carrierDropsSection: MarkdownSection;
-    carrierDropsTable: MarkdownTable;
     retaliationSection: MarkdownSection;
     retaliationTable: MarkdownTable;
     audioByEnemyId: ReadonlyMap<string, ParsedEnemyAudio>;
@@ -207,7 +194,6 @@ function parseEnemy(
   const contactRow = requireRow(tables.contactSection, tables.contactTable, definition.id);
   const knockbackRow = requireRow(tables.knockbackSection, tables.knockbackTable, definition.id);
   const dropRows = findRowsById(tables.dropsSection, tables.dropsTable, definition.id);
-  const carrierDropRow = requireRow(tables.carrierDropsSection, tables.carrierDropsTable, definition.id);
   const retaliationRow = requireRow(tables.retaliationSection, tables.retaliationTable, definition.id);
   const audio = tables.audioByEnemyId.get(definition.id);
   if (audio === undefined) {
@@ -254,47 +240,9 @@ function parseEnemy(
       'durationMs'
     ),
     dropTable: parseDropTable(tables.dropsSection, tables.dropsTable, dropRows),
-    carrierDrop: parseCarrierDrop(tables.carrierDropsSection, tables.carrierDropsTable, carrierDropRow),
     retaliation: parseRetaliation(tables.retaliationSection, tables.retaliationTable, retaliationRow),
     audio,
     visual: definition.visual
-  };
-}
-
-function parseCarrierDrop(
-  section: MarkdownSection,
-  table: MarkdownTable,
-  row: MarkdownTableRow
-): ParsedCarrierDropMetadata | null {
-  const raw = requireCell(section, table, row, 'guaranteedDropArchetypeIds');
-  if (raw === 'none') return null;
-  const guaranteedDropArchetypeIds = raw.split(',').map((part) => part.trim());
-  if (
-    guaranteedDropArchetypeIds.length === 0 ||
-    guaranteedDropArchetypeIds.some((id) => id.length === 0)
-  ) {
-    throw cellError(
-      section,
-      row.position,
-      getRowId(row),
-      'guaranteedDropArchetypeIds',
-      'expected comma-separated drop ids or none'
-    );
-  }
-  for (const dropArchetypeId of guaranteedDropArchetypeIds) {
-    if (!DROP_IDS.has(dropArchetypeId)) {
-      throw cellError(
-        section,
-        row.position,
-        getRowId(row),
-        'guaranteedDropArchetypeIds',
-        `unknown drop id "${dropArchetypeId}"`
-      );
-    }
-  }
-  return {
-    marker: 'reward',
-    guaranteedDropArchetypeIds
   };
 }
 

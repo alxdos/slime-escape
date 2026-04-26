@@ -4,8 +4,11 @@ import type {
   ParsedLossCondition,
   ParsedSessionPreset,
   ParsedSessionsArea,
+  ParsedSpawnOverride,
   ParsedSpawnPlan,
+  ParsedStaticSpawn,
   ParsedTransitionRules,
+  ParsedWaveSpawn,
   ParsedWinCondition
 } from './parse';
 import {
@@ -15,7 +18,7 @@ import {
   renderObjectKey
 } from '../util/render';
 
-type ImportBucket = 'arenas' | 'bosses' | 'enemies' | 'players' | 'weapons';
+type ImportBucket = 'arenas' | 'bosses' | 'drops' | 'enemies' | 'players' | 'weapons';
 
 export function renderSessionContent(area: ParsedSessionsArea): string {
   const imports = collectImports(area);
@@ -30,6 +33,7 @@ function renderImports(imports: ReadonlyMap<ImportBucket, ReadonlySet<string>>):
   return [
     renderImport(imports, 'arenas', './arenas'),
     renderImport(imports, 'bosses', './bosses.generated'),
+    renderImport(imports, 'drops', './drops.generated'),
     renderImport(imports, 'enemies', './enemies.generated'),
     renderImport(imports, 'players', './players.generated'),
     "import type { SessionPresetTemplate } from './sessions';",
@@ -103,7 +107,7 @@ function renderSpawnPlan(spawnPlan: ParsedSpawnPlan): string {
       return `{
           kind: 'wave',
           spawns: [
-${spawnPlan.spawns.map((spawn) => `            { archetypeId: ${spawn.archetype.constName}.id }`).join(',\n')}
+${spawnPlan.spawns.map(renderWaveSpawn).join(',\n')}
           ],
           spawnIntervalMs: ${formatNumber(spawnPlan.spawnIntervalMs)},
           maxAlive: ${formatNumber(spawnPlan.maxAlive)},
@@ -113,14 +117,7 @@ ${spawnPlan.spawns.map((spawn) => `            { archetypeId: ${spawn.archetype.
       return `{
           kind: 'static',
           spawns: [
-${spawnPlan.spawns
-  .map(
-    (spawn) => `            {
-              archetypeId: ${spawn.archetype.constName}.id,
-              position: { x: ${formatNumber(spawn.position.x)}, y: ${formatNumber(spawn.position.y)} }
-            }`
-  )
-  .join(',\n')}
+${spawnPlan.spawns.map(renderStaticSpawn).join(',\n')}
           ]
         }`;
     case 'boss':
@@ -133,6 +130,67 @@ ${spawnPlan.spawns
     default:
       return assertNever(spawnPlan);
   }
+}
+
+function renderWaveSpawn(spawn: ParsedWaveSpawn): string {
+  const override = renderSpawnOverride(spawn.override);
+  if (override === null) {
+    return `            { archetypeId: ${spawn.archetype.constName}.id }`;
+  }
+  return `            {
+              archetypeId: ${spawn.archetype.constName}.id,
+              override: ${override}
+            }`;
+}
+
+function renderStaticSpawn(spawn: ParsedStaticSpawn): string {
+  const override = renderSpawnOverride(spawn.override);
+  if (override === null) {
+    return `            {
+              archetypeId: ${spawn.archetype.constName}.id,
+              position: { x: ${formatNumber(spawn.position.x)}, y: ${formatNumber(spawn.position.y)} }
+            }`;
+  }
+  return `            {
+              archetypeId: ${spawn.archetype.constName}.id,
+              position: { x: ${formatNumber(spawn.position.x)}, y: ${formatNumber(spawn.position.y)} },
+              override: ${override}
+            }`;
+}
+
+function renderSpawnOverride(override: ParsedSpawnOverride | undefined): string | null {
+  if (override === undefined) {
+    return null;
+  }
+  const fields: string[] = [];
+  if (override.guaranteedDrops !== undefined) {
+    fields.push(
+      `guaranteedDrops: [${override.guaranteedDrops.map((drop) => `${drop.constName}.id`).join(', ')}]`
+    );
+  }
+  if (override.dropTable !== undefined) {
+    fields.push(`dropTable: ${renderOverrideDropTable(override.dropTable)}`);
+  }
+  if (override.retaliation !== undefined) {
+    fields.push(
+      `retaliation: { enabled: ${override.retaliation.enabled ? 'true' : 'false'}, durationMs: ${formatNumber(override.retaliation.durationMs)} }`
+    );
+  }
+  return fields.length === 0 ? null : `{ ${fields.join(', ')} }`;
+}
+
+function renderOverrideDropTable(
+  dropTable: NonNullable<ParsedSpawnOverride['dropTable']>
+): string {
+  if (dropTable.length === 0) {
+    return '[]';
+  }
+  return `[${dropTable
+    .map(
+      (entry) =>
+        `{ archetypeId: ${entry.archetype.constName}.id, chance: ${formatNumber(entry.chance)} }`
+    )
+    .join(', ')}]`;
 }
 
 function renderZoneBehavior(encounter: ParsedEncounter): string {
@@ -215,6 +273,7 @@ function collectSpawnImports(
     case 'static':
       for (const spawn of spawnPlan.spawns) {
         addImport(imports, 'enemies', spawn.archetype.constName);
+        collectOverrideImports(imports, spawn.override);
       }
       return;
     case 'boss':
@@ -222,6 +281,19 @@ function collectSpawnImports(
       return;
     default:
       assertNever(spawnPlan);
+  }
+}
+
+function collectOverrideImports(
+  imports: Map<ImportBucket, Set<string>>,
+  override: ParsedSpawnOverride | undefined
+): void {
+  if (override === undefined) return;
+  for (const drop of override.guaranteedDrops ?? []) {
+    addImport(imports, 'drops', drop.constName);
+  }
+  for (const entry of override.dropTable ?? []) {
+    addImport(imports, 'drops', entry.archetype.constName);
   }
 }
 

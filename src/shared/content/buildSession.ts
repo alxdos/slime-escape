@@ -5,12 +5,14 @@ import type {
   ContactBox,
   EncounterDefinition,
   SessionDefinition,
+  SpawnOverride,
   SpawnPlan,
   Vec2
 } from '../session';
 import { SIM_STEP_MS } from '../timing';
 
 import { BOSS_ARCHETYPES } from './bosses';
+import { DROP_ARCHETYPES } from './drops';
 import { ENEMY_ARCHETYPES, validateEnemyRegistry } from './enemies';
 import { SESSION_PRESET_TEMPLATES } from './sessions.generated';
 import type {
@@ -85,8 +87,10 @@ function resolveSpawnPlanTemplate(
     case 'empty':
       return spawnPlan;
     case 'wave':
+      assertSpawnOverridesResolve(spawnPlan.spawns, encounter, template);
       return spawnPlan;
     case 'static':
+      assertSpawnOverridesResolve(spawnPlan.spawns, encounter, template);
       for (const spawn of spawnPlan.spawns) {
         const archetype = ENEMY_ARCHETYPES[spawn.archetypeId];
         if (archetype === undefined) {
@@ -100,6 +104,55 @@ function resolveSpawnPlanTemplate(
     default:
       return assertNever(spawnPlan);
   }
+}
+
+function assertSpawnOverridesResolve(
+  spawns: ReadonlyArray<Readonly<{ override?: SpawnOverride }>>,
+  encounter: SessionPresetEncounterTemplate,
+  template: SessionPresetTemplate
+): void {
+  for (const [index, spawn] of spawns.entries()) {
+    const override = spawn.override;
+    if (override === undefined) continue;
+    assertOverrideGuaranteedDropsResolve(override, template, encounter, index);
+    assertOverrideDropTableResolves(override, template, encounter, index);
+  }
+}
+
+function assertOverrideGuaranteedDropsResolve(
+  override: SpawnOverride,
+  template: SessionPresetTemplate,
+  encounter: SessionPresetEncounterTemplate,
+  spawnIndex: number
+): void {
+  for (const dropArchetypeId of override.guaranteedDrops ?? []) {
+    assertDropArchetypeResolves(dropArchetypeId, 'guaranteedDrops', template, encounter, spawnIndex);
+  }
+}
+
+function assertOverrideDropTableResolves(
+  override: SpawnOverride,
+  template: SessionPresetTemplate,
+  encounter: SessionPresetEncounterTemplate,
+  spawnIndex: number
+): void {
+  for (const entry of override.dropTable ?? []) {
+    assertDropArchetypeResolves(entry.archetypeId, 'dropTable', template, encounter, spawnIndex);
+  }
+}
+
+function assertDropArchetypeResolves(
+  dropArchetypeId: string,
+  fieldName: 'guaranteedDrops' | 'dropTable',
+  template: SessionPresetTemplate,
+  encounter: SessionPresetEncounterTemplate,
+  spawnIndex: number
+): void {
+  if (DROP_ARCHETYPES[dropArchetypeId] !== undefined) return;
+  throw new Error(
+    `session preset "${template.presetId}" encounter "${encounter.id}" spawn #${spawnIndex + 1} ` +
+      `override.${fieldName} references unknown drop archetype "${dropArchetypeId}"`
+  );
 }
 
 function resolveBossSpawnPlan(

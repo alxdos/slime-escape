@@ -13,7 +13,6 @@ const ENEMY: EnemySpawnSpec = {
   radius: 0.5,
   contactBox: { width: 1, height: 1 },
   behavior: 'chase',
-  carrierDropMarker: null,
   retaliation: { enabled: true, durationMs: 750 },
   maxHp: 3,
   maxSpeed: 4,

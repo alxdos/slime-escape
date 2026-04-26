@@ -17,7 +17,6 @@ export const SLIME_ONE_EYE: EnemyArchetype = {
   knockbackDurationMs: 350,
   color: 0x7cf36a,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.18 }, { archetypeId: 'speed-up', chance: 0.05 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -36,7 +35,6 @@ export const SLIME_HORNLING: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xf06a24,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.2 }, { archetypeId: 'size-up', chance: 0.099 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -55,7 +53,6 @@ export const SLIME_MANY_EYE: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0x9b67d8,
   dropTable: [{ archetypeId: 'multi-shot', chance: 0.127 }, { archetypeId: 'pierce', chance: 0.057 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -74,7 +71,6 @@ export const SLIME_STONEHEAD: EnemyArchetype = {
   knockbackDurationMs: 220,
   color: 0x8e8f95,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.3 }, { archetypeId: 'size-up', chance: 0.127 }, { archetypeId: 'fragment', chance: 0.057 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -93,7 +89,6 @@ export const SLIME_SLEEPER: EnemyArchetype = {
   knockbackDurationMs: 220,
   color: 0x9e7fd8,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.16 }, { archetypeId: 'magnet', chance: 0.071 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -112,7 +107,6 @@ export const SLIME_SPARK: EnemyArchetype = {
   knockbackDurationMs: 350,
   color: 0xf2e84a,
   dropTable: [{ archetypeId: 'speed-up', chance: 0.155 }, { archetypeId: 'magnet', chance: 0.085 }, { archetypeId: 'overdrive', chance: 0.057 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -131,7 +125,6 @@ export const SLIME_WRAITH: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xd9dce1,
   dropTable: [{ archetypeId: 'speed-up', chance: 0.127 }, { archetypeId: 'pierce', chance: 0.113 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -150,7 +143,6 @@ export const SLIME_SHELL: EnemyArchetype = {
   knockbackDurationMs: 220,
   color: 0xa6e34a,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.32 }, { archetypeId: 'pierce', chance: 0.141 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -169,7 +161,6 @@ export const SLIME_FLAME: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xf6c06d,
   dropTable: [{ archetypeId: 'overdrive', chance: 0.141 }, { archetypeId: 'fragment', chance: 0.113 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -188,7 +179,6 @@ export const SLIME_MECH_CRAB: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xe85245,
   dropTable: [{ archetypeId: 'fragment', chance: 0.169 }, { archetypeId: 'pierce', chance: 0.141 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -207,7 +197,6 @@ export const SLIME_STACK: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xcdeb84,
   dropTable: [{ archetypeId: 'multi-shot', chance: 0.183 }, { archetypeId: 'heal-orb', chance: 0.14 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -226,7 +215,6 @@ export const SLIME_TRICKSTER: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xbdb4f4,
   dropTable: [{ archetypeId: 'multi-shot', chance: 0.141 }, { archetypeId: 'speed-up', chance: 0.113 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -245,7 +233,6 @@ export const SLIME_BUG: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0x8ee03a,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.18 }, { archetypeId: 'magnet', chance: 0.099 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -264,7 +251,6 @@ export const DEMO_CARRIER_SLIME: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0x5ee6ff,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
-  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['magnet', 'heal-orb'] },
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -283,7 +269,6 @@ export const DEMO_RETALIATOR_SLIME: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xff6b35,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.2 }],
-  carrierDrop: null,
   retaliation: { enabled: true, durationMs: 2500 }
 };
 
@@ -302,7 +287,6 @@ export const CAMPAIGN_SET_1_CARRIER_SLIME: EnemyArchetype = {
   knockbackDurationMs: 350,
   color: 0xffd166,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
-  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['size-up'] },
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -321,7 +305,6 @@ export const CAMPAIGN_SET_2_CARRIER_SLIME: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xffd166,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
-  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['multi-shot'] },
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -340,7 +323,6 @@ export const CAMPAIGN_SET_3_CARRIER_SLIME: EnemyArchetype = {
   knockbackDurationMs: 350,
   color: 0x5ee6ff,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
-  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['magnet'] },
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -359,7 +341,6 @@ export const CAMPAIGN_SET_4_CARRIER_SLIME: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xffd166,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
-  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['fragment'] },
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -378,7 +359,6 @@ export const CAMPAIGN_SET_5_CARRIER_SLIME: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xffd166,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0 }],
-  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: ['overdrive'] },
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -397,7 +377,6 @@ export const SLIME_LIFTER: EnemyArchetype = {
   knockbackDurationMs: 220,
   color: 0xe6e8ea,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.34 }, { archetypeId: 'magnet', chance: 0.141 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -416,7 +395,6 @@ export const SLIME_SAW: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xf0523e,
   dropTable: [{ archetypeId: 'fragment', chance: 0.169 }, { archetypeId: 'speed-up', chance: 0.113 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -435,7 +413,6 @@ export const SLIME_DRONE: EnemyArchetype = {
   knockbackDurationMs: 350,
   color: 0xafc4ea,
   dropTable: [{ archetypeId: 'speed-up', chance: 0.183 }, { archetypeId: 'pierce', chance: 0.099 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -454,7 +431,6 @@ export const SLIME_STAR: EnemyArchetype = {
   knockbackDurationMs: 350,
   color: 0xe8a8bc,
   dropTable: [{ archetypeId: 'speed-up', chance: 0.155 }, { archetypeId: 'multi-shot', chance: 0.113 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -473,7 +449,6 @@ export const SLIME_ECHO: EnemyArchetype = {
   knockbackDurationMs: 350,
   color: 0x4b5365,
   dropTable: [{ archetypeId: 'magnet', chance: 0.127 }, { archetypeId: 'speed-up', chance: 0.099 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -492,7 +467,6 @@ export const SLIME_SPLITTER: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0x7bd1ae,
   dropTable: [{ archetypeId: 'multi-shot', chance: 0.183 }, { archetypeId: 'fragment', chance: 0.113 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -511,7 +485,6 @@ export const SLIME_PRINCE: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xf1b294,
   dropTable: [{ archetypeId: 'overdrive', chance: 0.155 }, { archetypeId: 'multi-shot', chance: 0.127 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -530,7 +503,6 @@ export const SLIME_KINGLING: EnemyArchetype = {
   knockbackDurationMs: 220,
   color: 0xb7f3a6,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.32 }, { archetypeId: 'overdrive', chance: 0.155 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -549,7 +521,6 @@ export const SLIME_FORTRESS: EnemyArchetype = {
   knockbackDurationMs: 220,
   color: 0x8f836e,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.4 }, { archetypeId: 'size-up', chance: 0.141 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -568,7 +539,6 @@ export const SLIME_DASHER: EnemyArchetype = {
   knockbackDurationMs: 350,
   color: 0xef6a38,
   dropTable: [{ archetypeId: 'speed-up', chance: 0.155 }, { archetypeId: 'overdrive', chance: 0.113 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -587,7 +557,6 @@ export const SLIME_TADPOLE: EnemyArchetype = {
   knockbackDurationMs: 350,
   color: 0xd9dde2,
   dropTable: [{ archetypeId: 'speed-up', chance: 0.127 }, { archetypeId: 'magnet', chance: 0.099 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -606,7 +575,6 @@ export const SLIME_DOOR: EnemyArchetype = {
   knockbackDurationMs: 220,
   color: 0xa7e5d2,
   dropTable: [{ archetypeId: 'heal-orb', chance: 0.34 }, { archetypeId: 'pierce', chance: 0.127 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -625,7 +593,6 @@ export const SLIME_MECH: EnemyArchetype = {
   knockbackDurationMs: 220,
   color: 0xef7168,
   dropTable: [{ archetypeId: 'fragment', chance: 0.197 }, { archetypeId: 'pierce', chance: 0.141 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -644,7 +611,6 @@ export const SLIME_CLAMPER: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xf2c0a6,
   dropTable: [{ archetypeId: 'pierce', chance: 0.155 }, { archetypeId: 'magnet', chance: 0.113 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -663,7 +629,6 @@ export const SLIME_CANDLE: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0xa62922,
   dropTable: [{ archetypeId: 'overdrive', chance: 0.155 }, { archetypeId: 'speed-up', chance: 0.099 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -682,7 +647,6 @@ export const SLIME_OBELISK: EnemyArchetype = {
   knockbackDurationMs: 280,
   color: 0x5522a7,
   dropTable: [{ archetypeId: 'fragment', chance: 0.183 }, { archetypeId: 'overdrive', chance: 0.127 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
@@ -701,6 +665,5 @@ export const SLIME_NINJA: EnemyArchetype = {
   knockbackDurationMs: 350,
   color: 0xa4e982,
   dropTable: [{ archetypeId: 'overdrive', chance: 0.155 }, { archetypeId: 'pierce', chance: 0.127 }],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
