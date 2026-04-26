@@ -619,7 +619,8 @@ describe('createRenderer', () => {
               pulsePhase: 0.25
             },
             explosionRadius: BOMB_PLACER.projectile.explosion!.radius,
-            detonateAtSimMs: 1000
+            detonateAtSimMs: 1000,
+            arcEnd: null
           }
         ]),
       windowTarget: {
@@ -684,7 +685,8 @@ describe('createRenderer', () => {
           pulsePhase: 0
         },
         explosionRadius: null,
-        detonateAtSimMs: null
+        detonateAtSimMs: null,
+        arcEnd: null
       }
     ]);
     const renderer = createRenderer({
@@ -730,7 +732,8 @@ describe('createRenderer', () => {
           pulsePhase: 0
         },
         explosionRadius: null,
-        detonateAtSimMs: null
+        detonateAtSimMs: null,
+        arcEnd: null
       }
     ]);
     renderer.render();

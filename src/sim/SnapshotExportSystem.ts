@@ -79,7 +79,8 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           state: projectile.state,
           visualState: projectileVisualState(projectile, simTimeMs),
           explosionRadius: projectile.explosion?.radius ?? null,
-          detonateAtSimMs: projectile.detonateAtSimMs
+          detonateAtSimMs: projectile.detonateAtSimMs,
+          arcEnd: projectile.state === 'flying' ? projectile.arcEnd : null
         });
       }
       for (const drop of store.drops()) {
