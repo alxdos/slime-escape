@@ -273,10 +273,10 @@ function menuOverlayCss(): string {
 
 @keyframes menu-selected-breathe {
   0%, 100% {
-    filter: brightness(1.1) drop-shadow(0 0 12px rgba(255, 245, 122, 0.95));
+    filter: brightness(1.08) drop-shadow(5px 5px 0 #000000);
   }
   50% {
-    filter: brightness(1.24) drop-shadow(0 0 22px rgba(111, 244, 255, 0.95));
+    filter: brightness(1.18) drop-shadow(7px 7px 0 #000000);
   }
 }
 
@@ -295,12 +295,13 @@ function menuOverlayCss(): string {
 
 .menu-image-button img {
   transition: filter 140ms ease, transform 140ms ease, opacity 140ms ease;
+  filter: drop-shadow(4px 4px 0 #000000);
 }
 
 .menu-image-button:hover img,
 .menu-image-button:focus-visible img {
-  filter: brightness(1.2) saturate(1.05) drop-shadow(0 0 14px rgba(255, 255, 190, 0.95));
-  transform: scale(1.025);
+  filter: brightness(1.12) saturate(1.03) drop-shadow(6px 6px 0 #000000);
+  transform: translate(-1px, -1px) scale(1.015);
 }
 
 .menu-image-button[data-selected="true"] img {
@@ -308,12 +309,12 @@ function menuOverlayCss(): string {
 }
 
 .menu-image-button[data-soon="true"] img {
-  filter: saturate(0.86) brightness(0.92);
+  filter: saturate(0.86) brightness(0.92) drop-shadow(3px 3px 0 #000000);
 }
 
 .menu-image-button[data-soon="true"]:hover img,
 .menu-image-button[data-soon="true"]:focus-visible img {
-  filter: saturate(1) brightness(1.08) drop-shadow(0 0 10px rgba(190, 240, 255, 0.9));
+  filter: saturate(1) brightness(1.06) drop-shadow(5px 5px 0 #000000);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -331,7 +332,7 @@ function menuOverlayCss(): string {
 
   .menu-image-button[data-selected="true"] img {
     animation: none;
-    filter: brightness(1.14) drop-shadow(0 0 14px rgba(255, 245, 122, 0.95));
+    filter: brightness(1.12) drop-shadow(5px 5px 0 #000000);
   }
 }
 `;
