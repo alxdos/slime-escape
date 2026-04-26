@@ -1,6 +1,6 @@
 # Путь Побега
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-26
 - Updated: 2026-04-26
 
