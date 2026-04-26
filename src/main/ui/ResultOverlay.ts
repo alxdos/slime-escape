@@ -1,6 +1,9 @@
+import { assertNever } from '../../shared/protocol';
+
 import { comicTextStyle } from './comicTextStyle';
 import type {
   ResultBossViewModel,
+  ResultEscapePathViewModel,
   ResultKillRowViewModel,
   ResultStatViewModel,
   ResultViewModel
@@ -25,6 +28,7 @@ type ResultOverlayParts = Readonly<{
   effectsLayer: HTMLElement;
   title: HTMLElement;
   summary: HTMLElement;
+  escapePath: HTMLElement;
   statGrid: HTMLElement;
   bossPanel: HTMLElement;
   bossIcon: HTMLImageElement;
@@ -120,6 +124,12 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   summary.style.cssText = summaryStyle();
   card.appendChild(summary);
 
+  const escapePath = document.createElement('section');
+  escapePath.className = 'result-escape-path';
+  escapePath.dataset['role'] = 'result-escape-path';
+  escapePath.style.cssText = resultEscapePathStyle();
+  card.appendChild(escapePath);
+
   const statGrid = document.createElement('div');
   statGrid.className = 'result-stat-grid';
   statGrid.dataset['role'] = 'result-stat-grid';
@@ -186,6 +196,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
     effectsLayer,
     title,
     summary,
+    escapePath,
     statGrid,
     bossPanel,
     bossIcon,
@@ -210,6 +221,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
       summary.textContent = '';
       effectsLayer.replaceChildren();
       delete effectsLayer.dataset['outcome'];
+      hideEscapePath(escapePath);
       statGrid.replaceChildren();
       killList.replaceChildren();
       hideBoss(bossPanel, bossIcon, bossText);
@@ -251,6 +263,7 @@ function applyViewModel(viewModel: ResultViewModel, parts: ResultOverlayParts): 
 }
 
 function renderDynamicSections(viewModel: ResultViewModel, parts: ResultOverlayParts): void {
+  renderEscapePath(parts.escapePath, viewModel.escapePath, viewModel.outcome);
   parts.statGrid.replaceChildren(
     ...viewModel.primaryStats.map((stat, index) =>
       createStatTile(stat, index, viewModel.outcome)
@@ -259,6 +272,122 @@ function renderDynamicSections(viewModel: ResultViewModel, parts: ResultOverlayP
   renderBoss(parts.bossPanel, parts.bossIcon, parts.bossText, viewModel.boss);
   renderDefeatCause(parts.defeatCause, viewModel.defeatCause);
   renderKillRows(parts.killsSection, parts.killList, viewModel.killRows, viewModel.outcome);
+}
+
+function renderEscapePath(
+  container: HTMLElement,
+  escapePath: ResultEscapePathViewModel | null,
+  outcome: ResultOutcome
+): void {
+  if (escapePath === null) {
+    hideEscapePath(container);
+    return;
+  }
+
+  container.style.cssText = resultEscapePathStyle(outcome);
+  container.style.display = 'grid';
+  container.replaceChildren(
+    createEscapePathTitle(escapePath),
+    createEscapePathTrack(escapePath),
+    createEscapePathText(escapePath)
+  );
+}
+
+function hideEscapePath(container: HTMLElement): void {
+  container.style.display = 'none';
+  container.replaceChildren();
+}
+
+function createEscapePathTitle(escapePath: ResultEscapePathViewModel): HTMLElement {
+  const title = document.createElement('div');
+  title.dataset['role'] = 'result-escape-path-title';
+  title.textContent = escapePath.title;
+  title.style.cssText = resultEscapePathTitleStyle();
+  return title;
+}
+
+function createEscapePathTrack(escapePath: ResultEscapePathViewModel): HTMLElement {
+  const track = document.createElement('div');
+  track.dataset['role'] = 'result-escape-path-track';
+  track.style.cssText = resultEscapePathTrackStyle();
+  const nodes: HTMLElement[] = [];
+  if (
+    escapePath.path.stop.kind === 'loss' &&
+    escapePath.path.stop.anchor === 'afterCompletedWaves' &&
+    escapePath.path.completedWaves === 0
+  ) {
+    nodes.push(createEscapePathStopMarker('afterCompletedWaves'));
+  }
+  for (const point of escapePath.path.points) {
+    const node = document.createElement('span');
+    node.dataset['role'] = 'result-escape-path-point';
+    node.dataset['waveIndex'] = String(point.index);
+    node.dataset['state'] = point.state;
+    node.textContent = escapePathPointSymbol(point.state);
+    node.style.cssText = resultEscapePathPointStyle(point.state);
+    nodes.push(node);
+    if (
+      escapePath.path.stop.kind === 'loss' &&
+      escapePath.path.stop.anchor === 'afterCompletedWaves' &&
+      point.index === escapePath.path.completedWaves
+    ) {
+      nodes.push(createEscapePathStopMarker('afterCompletedWaves'));
+    }
+  }
+  if (escapePath.path.stop.kind === 'loss' && escapePath.path.stop.anchor === 'beforeFlag') {
+    nodes.push(createEscapePathStopMarker('beforeFlag'));
+  }
+  const flag = document.createElement('span');
+  flag.dataset['role'] = 'result-escape-path-flag';
+  flag.dataset['state'] = escapePath.path.flagState;
+  flag.textContent = '🏁';
+  flag.style.cssText = resultEscapePathFlagStyle(escapePath.path.flagState);
+  track.replaceChildren(...nodes, flag);
+  return track;
+}
+
+function createEscapePathStopMarker(anchor: 'afterCompletedWaves' | 'beforeFlag'): HTMLElement {
+  const marker = document.createElement('span');
+  marker.dataset['role'] = 'result-escape-path-stop';
+  marker.dataset['anchor'] = anchor;
+  marker.textContent = '✕';
+  marker.style.cssText = resultEscapePathPointStyle('stopped');
+  return marker;
+}
+
+function createEscapePathText(escapePath: ResultEscapePathViewModel): HTMLElement {
+  const text = document.createElement('div');
+  text.dataset['role'] = 'result-escape-path-text';
+  text.style.cssText = resultEscapePathTextStyle();
+  const summary = document.createElement('span');
+  summary.dataset['role'] = 'result-escape-path-summary';
+  summary.textContent = escapePath.summaryText;
+  text.appendChild(summary);
+  if (escapePath.detailText !== null) {
+    const detail = document.createElement('small');
+    detail.dataset['role'] = 'result-escape-path-detail';
+    detail.textContent = escapePath.detailText;
+    detail.style.cssText = resultEscapePathDetailStyle();
+    text.appendChild(detail);
+  }
+  return text;
+}
+
+function escapePathPointSymbol(
+  state: ResultEscapePathViewModel['path']['points'][number]['state']
+): string {
+  switch (state) {
+    case 'completed':
+      return '●';
+    case 'active':
+      return '◉';
+    case 'stopped':
+      return '✕';
+    case 'upcoming':
+      return '○';
+    default:
+      return assertNever(state);
+  }
 }
 
 function renderEffects(effectsLayer: HTMLElement, outcome: ResultOutcome): void {
@@ -523,6 +652,111 @@ function summaryStyle(background = '#e9fbff'): string {
       fontSize: '17px',
       color: '#ffffff',
       lineHeight: '1.25',
+      textAlign: 'center'
+    }),
+    'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function resultEscapePathStyle(outcome: ResultOutcome = 'win'): string {
+  return [
+    'display:none',
+    'box-sizing:border-box',
+    'width:100%',
+    'gap:8px',
+    'justify-items:center',
+    'padding:10px 8px 12px',
+    `background:${outcome === 'win' ? 'rgba(124,245,143,0.16)' : 'rgba(255,159,207,0.15)'}`,
+    'border-radius:8px'
+  ].join(';');
+}
+
+function resultEscapePathTitleStyle(): string {
+  return [
+    ...comicTextStyle({
+      fontSize: '17px',
+      color: '#fff38b',
+      lineHeight: '1',
+      textAlign: 'center',
+      shadow: 'strong'
+    }),
+    'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function resultEscapePathTrackStyle(): string {
+  return [
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'gap:7px',
+    'max-width:100%',
+    'overflow:hidden',
+    'white-space:nowrap'
+  ].join(';');
+}
+
+function resultEscapePathPointStyle(
+  state: ResultEscapePathViewModel['path']['points'][number]['state']
+): string {
+  const color = state === 'upcoming' ? '#7d8795' : state === 'stopped' ? '#ff5c7e' : '#1fbf77';
+  const glow =
+    state === 'stopped'
+      ? '0 0 8px rgba(255,92,126,0.65)'
+      : state === 'completed'
+        ? '0 0 7px rgba(31,191,119,0.46)'
+        : 'none';
+  return [
+    'display:inline-grid',
+    'place-items:center',
+    'width:16px',
+    'height:16px',
+    ...comicTextStyle({
+      fontSize: '17px',
+      color,
+      lineHeight: '1'
+    }),
+    `text-shadow:${glow}`,
+    state === 'upcoming' ? 'opacity:0.6' : 'opacity:1'
+  ].join(';');
+}
+
+function resultEscapePathFlagStyle(flagState: 'pending' | 'reached'): string {
+  return [
+    'display:inline-grid',
+    'place-items:center',
+    'width:20px',
+    'height:20px',
+    'font-size:18px',
+    'line-height:1',
+    flagState === 'reached'
+      ? 'filter:drop-shadow(0 0 8px rgba(31,191,119,0.72))'
+      : 'opacity:0.76'
+  ].join(';');
+}
+
+function resultEscapePathTextStyle(): string {
+  return [
+    'display:grid',
+    'gap:3px',
+    'justify-items:center',
+    ...comicTextStyle({
+      fontSize: '15px',
+      color: '#ffffff',
+      lineHeight: '1.12',
+      textAlign: 'center'
+    }),
+    'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function resultEscapePathDetailStyle(): string {
+  return [
+    'display:block',
+    ...comicTextStyle({
+      fontSize: '13px',
+      color: '#f2fbff',
+      lineHeight: '1.15',
       textAlign: 'center'
     }),
     'overflow-wrap:anywhere'

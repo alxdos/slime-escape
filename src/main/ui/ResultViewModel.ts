@@ -14,6 +14,11 @@ import { BOSS_VISUALS } from '../render/bossVisuals';
 import { ENEMY_VISUALS } from '../render/enemyVisuals';
 import type { SpriteVisualSpec } from '../render/SpriteVisualSpec';
 
+import {
+  deriveResultEscapeProgressPathViewModel,
+  type EscapeProgressPathViewModel
+} from './EscapeProgressPathViewModel';
+
 export type ResultStatViewModel = Readonly<{
   id: string;
   label: string;
@@ -38,12 +43,20 @@ export type ResultBossViewModel = Readonly<{
   hpPercent: number;
 }>;
 
+export type ResultEscapePathViewModel = Readonly<{
+  path: Extract<EscapeProgressPathViewModel, { kind: 'path' }>;
+  title: string;
+  summaryText: string;
+  detailText: string | null;
+}>;
+
 export type ResultViewModel = Readonly<{
   outcome: SessionResultOutcome;
   title: string;
   subtitle: string;
   primaryStats: ReadonlyArray<ResultStatViewModel>;
   killRows: ReadonlyArray<ResultKillRowViewModel>;
+  escapePath: ResultEscapePathViewModel | null;
   boss: ResultBossViewModel | null;
   defeatCause: string | null;
 }>;
@@ -78,11 +91,43 @@ export function buildResultViewModel(
         : defeatSubtitle(summary.progress.percent),
     primaryStats: buildPrimaryStats(session, summary),
     killRows,
+    escapePath: buildEscapePathViewModel(session, summary),
     boss: buildBossViewModel(summary, bosses, bossVisuals),
     defeatCause:
       outcome === 'loss' && summary.defeat !== null
         ? describeDefeatCause(summary.defeat.cause, enemies, bosses)
         : null
+  };
+}
+
+function buildEscapePathViewModel(
+  session: SessionDefinition,
+  summary: SessionResultSummary
+): ResultEscapePathViewModel | null {
+  const path = deriveResultEscapeProgressPathViewModel(session, summary);
+  if (path.kind === 'hidden') {
+    return null;
+  }
+
+  if (summary.outcome === 'win') {
+    return {
+      path,
+      title: 'Карта Побега',
+      summaryText: 'Путь до флага пройден',
+      detailText: null
+    };
+  }
+
+  const reachedWave = path.activeWaveIndex ?? path.completedWaves;
+  const remainingWaves = Math.max(0, path.totalWaves - reachedWave);
+  return {
+    path,
+    title: 'Карта Побега',
+    summaryText: `Ты добрался до волны ${reachedWave} из ${path.totalWaves}`,
+    detailText:
+      path.stop.kind === 'loss' && path.stop.anchor === 'beforeFlag'
+        ? 'Флаг был уже рядом'
+        : `До выхода оставалось ${formatWaveCount(remainingWaves)}`
   };
 }
 
@@ -238,6 +283,18 @@ function formatDuration(durationMs: number): string {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function formatWaveCount(count: number): string {
+  const remainder10 = count % 10;
+  const remainder100 = count % 100;
+  const noun =
+    remainder10 === 1 && remainder100 !== 11
+      ? 'волна'
+      : remainder10 >= 2 && remainder10 <= 4 && (remainder100 < 12 || remainder100 > 14)
+        ? 'волны'
+        : 'волн';
+  return `${count} ${noun}`;
 }
 
 function requireRegistryEntry<T>(
