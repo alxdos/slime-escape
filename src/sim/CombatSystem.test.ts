@@ -275,6 +275,12 @@ describe('CombatSystem', () => {
     const combat = createCombatSystem();
     const player = store.spawnPlayer(PLAYER_SPEC);
     combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id, SHOTGUN.id], selectedIndex: 0 }, 0);
+    expect(
+      combat.addModifierToSelectedWeapon(player.id, {
+        kind: 'projectileSizeMultiplier',
+        multiplier: 2
+      })
+    ).toBe(true);
 
     combat.tick(
       makeInput({
@@ -289,23 +295,42 @@ describe('CombatSystem', () => {
       () => {}
     );
 
-    expect(combat.weaponHudFor(player.id)).toEqual({
+    expect(combat.weaponHudFor(player.id, 0)).toEqual({
       selectedIndex: 0,
       weapons: [
         {
           index: 0,
           weaponArchetypeId: PISTOL.id,
+          cooldownStartedAtSimMs: 0,
           cooldownReadyAtSimMs: PISTOL.cooldownMs,
-          overdriveUntilSimMs: null
+          modifiers: [{ kind: 'projectileSizeMultiplier', multiplier: 2 }],
+          timedEffects: []
         },
         {
           index: 1,
           weaponArchetypeId: SHOTGUN.id,
+          cooldownStartedAtSimMs: 0,
           cooldownReadyAtSimMs: 0,
-          overdriveUntilSimMs: null
+          modifiers: [],
+          timedEffects: []
         }
       ]
     });
+
+    const exportedHud = combat.weaponHudFor(player.id, 0);
+    expect(
+      combat.addModifierToSelectedWeapon(player.id, {
+        kind: 'projectileSpeedMultiplier',
+        multiplier: 2
+      })
+    ).toBe(true);
+    expect(exportedHud?.weapons[0]?.modifiers).toEqual([
+      { kind: 'projectileSizeMultiplier', multiplier: 2 }
+    ]);
+    expect(combat.weaponHudFor(player.id, 0)?.weapons[0]?.modifiers).toEqual([
+      { kind: 'projectileSizeMultiplier', multiplier: 2 },
+      { kind: 'projectileSpeedMultiplier', multiplier: 2 }
+    ]);
   });
 
   it('applies size and speed modifiers only to future projectile spawns', () => {
@@ -495,13 +520,28 @@ describe('CombatSystem', () => {
     const events: RuntimeEvent[] = [];
 
     combat.tick(input, store, index, 0, ARENA, (e) => events.push(e));
-    expect(combat.weaponHudFor(player.id)?.weapons[0]?.cooldownReadyAtSimMs).toBe(125);
-    expect(combat.weaponHudFor(player.id)?.weapons[0]?.overdriveUntilSimMs).toBe(100);
+    expect(combat.weaponHudFor(player.id, 0)?.weapons[0]).toMatchObject({
+      cooldownStartedAtSimMs: 0,
+      cooldownReadyAtSimMs: 125,
+      timedEffects: [
+        {
+          kind: 'temporaryOverdrive',
+          cooldownMultiplier: 0.5,
+          startedAtSimMs: 0,
+          expiresAtSimMs: 100
+        }
+      ]
+    });
+    expect(combat.weaponHudFor(player.id, 100)?.weapons[0]?.timedEffects).toEqual([]);
     combat.tick(input, store, index, 124, ARENA, (e) => events.push(e));
     combat.tick(input, store, index, 125, ARENA, (e) => events.push(e));
 
     expect(events.filter((e) => e.kind === 'fire')).toHaveLength(2);
-    expect(combat.weaponHudFor(player.id)?.weapons[0]?.cooldownReadyAtSimMs).toBe(375);
+    expect(combat.weaponHudFor(player.id, 125)?.weapons[0]).toMatchObject({
+      cooldownStartedAtSimMs: 125,
+      cooldownReadyAtSimMs: 375,
+      timedEffects: []
+    });
   });
 
   it('ignores selected-weapon upgrades when the runtime loadout is holstered', () => {

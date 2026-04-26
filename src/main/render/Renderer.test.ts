@@ -253,6 +253,31 @@ describe('createRenderer', () => {
     ]);
   });
 
+  it('uses no renderer debug HUD by default', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: createEmptySnapshotPair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory
+    });
+
+    backend.reset();
+    renderer.render();
+    renderer.dispose();
+
+    expect(backend.ops).toEqual([{ kind: 'render' }, { kind: 'dispose' }]);
+  });
+
   it('applies the high preset through the renderer wrapper without changing CSS canvas size', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();
@@ -984,8 +1009,10 @@ describe('createRenderer', () => {
               {
                 index: 0,
                 weaponArchetypeId: ROCK_THROWER.id,
+                cooldownStartedAtSimMs: 0,
                 cooldownReadyAtSimMs: 0,
-                overdriveUntilSimMs: null
+                modifiers: [],
+                timedEffects: []
               }
             ]
           }

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-25 (story 020: `ProjectileSnapshot` получает обязательное поле `arcEnd: { x: number; y: number } | null` — fixed мировая позиция приземления для arc-снаряда в `state: 'flying'`, `null` для grounded и для linear/placed motion. Источник правды — `CombatSystem` в момент создания снаряда; `SnapshotExportSystem` копирует значение, не пересчитывает. Render-контракт landing-telegraph для in-flight arc от не-игрока — [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
+- Updated: 2026-04-26 (story 022: `WeaponHudSnapshot` получает cooldown interval (`cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`), permanent `modifiers` and active `timedEffects` for the weapon-slot HUD; presentation contract lives in [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-25 story 020: `ProjectileSnapshot` получает обязательное поле `arcEnd: { x: number; y: number } | null` — fixed мировая позиция приземления для arc-снаряда в `state: 'flying'`, `null` для grounded и для linear/placed motion. Источник правды — `CombatSystem` в момент создания снаряда; `SnapshotExportSystem` копирует значение, не пересчитывает. Render-контракт landing-telegraph для in-flight arc от не-игрока — [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
 
 ## Context
 
@@ -151,19 +151,29 @@ type EntitySnapshot =
   }>;
   ```
   Для encounter, у которых `encounter.type !== 'boss'` или активного босса нет, поле **`null`**. Значения дублируют ключевые поля сущности босса для дешёвого чтения HUD без поиска по `entities`; консистентность с сущностью обеспечивает `SnapshotExportSystem`.
-- `weaponHud` (017):
+- `weaponHud` (017, extended by 022):
   ```ts
+  type WeaponTimedEffectHudSnapshot =
+    | Readonly<{
+        kind: 'temporaryOverdrive';
+        cooldownMultiplier: number;
+        startedAtSimMs: number;
+        expiresAtSimMs: number;
+      }>;
+
   type WeaponHudSnapshot = Readonly<{
     selectedIndex: number | null;
     weapons: ReadonlyArray<Readonly<{
       index: number;
       weaponArchetypeId: string;
+      cooldownStartedAtSimMs: number;
       cooldownReadyAtSimMs: number;
-      overdriveUntilSimMs: number | null;
+      modifiers: ReadonlyArray<WeaponModifier>;
+      timedEffects: ReadonlyArray<WeaponTimedEffectHudSnapshot>;
     }>>;
   }>;
   ```
-  `null` means the active session has no player loadout. HUD reads selected weapon and cooldown readiness from this field instead of inspecting runtime weapon instances directly.
+  `null` means the active session has no player loadout. HUD reads selected weapon, cooldown interval, permanent modifiers and active timed weapon effects from this field instead of inspecting runtime weapon instances directly. `cooldownStartedAtSimMs`/`cooldownReadyAtSimMs` define the current or most recent cooldown interval; HUD derives fill from those timestamps and `snapshot.simTimeMs`. `modifiers` contains permanent `WeaponModifier` values copied from the selected owner's weapon instance. `timedEffects` contains only active timed effects at snapshot time (`expiresAtSimMs > snapshot.simTimeMs`); on this horizon the only timed effect is `temporaryOverdrive`. Full render semantics are in [hud-presentation.md](hud-presentation.md).
 - Поля 004:
   - `encounter`:
     ```ts
@@ -316,6 +326,7 @@ type EntitySnapshot =
 - [drops.md](drops.md)
 - [boss-encounter.md](boss-encounter.md)
 - [impact-feedback.md](impact-feedback.md)
+- [hud-presentation.md](hud-presentation.md)
 
 ### Расширение
 
@@ -347,3 +358,4 @@ type EntitySnapshot =
 - [impact-feedback.md](impact-feedback.md)
 - [landing-telegraph.md](landing-telegraph.md)
 - [non-player-firing.md](non-player-firing.md)
+- [hud-presentation.md](hud-presentation.md)

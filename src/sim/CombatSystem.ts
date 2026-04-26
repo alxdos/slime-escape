@@ -13,7 +13,7 @@ import {
 import type { RuntimeEvent } from '../shared/events';
 import { assertNever } from '../shared/protocol';
 import type { ArenaConfig, DamageRules, Loadout, Vec2 } from '../shared/session';
-import type { WeaponHudSnapshot } from '../shared/snapshot';
+import type { WeaponHudSnapshot, WeaponTimedEffectHudSnapshot } from '../shared/snapshot';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import type { Boss, Enemy, EntityId, EntityStore, Player, Projectile } from './EntityStore';
@@ -59,8 +59,10 @@ export type DamageIntent = Readonly<{
 
 export type WeaponInstance = {
   readonly archetypeId: string;
+  cooldownStartedAtSimMs: number;
   nextFireSimMs: number;
   modifiers: WeaponModifier[];
+  overdriveStartedAtSimMs: number | null;
   overdriveUntilSimMs: number | null;
   overdriveCooldownMultiplier: number | null;
 };
@@ -88,7 +90,7 @@ export type CombatSystem = Readonly<{
     durationMs: number,
     simTimeMs: number
   ): boolean;
-  weaponHudFor(playerId: EntityId | null): WeaponHudSnapshot | null;
+  weaponHudFor(playerId: EntityId | null, simTimeMs: number): WeaponHudSnapshot | null;
   drainActorEffectIntents(): ReadonlyArray<ActorEffectIntent>;
   clear(): void;
   tick(
@@ -148,10 +150,11 @@ export function createCombatSystem(
       const weapon = selectedWeaponForOwner(shooterWeapons, ownerId);
       if (weapon === null) return false;
       weapon.overdriveCooldownMultiplier = cooldownMultiplier;
+      weapon.overdriveStartedAtSimMs = simTimeMs;
       weapon.overdriveUntilSimMs = simTimeMs + durationMs;
       return true;
     },
-    weaponHudFor(playerId): WeaponHudSnapshot | null {
+    weaponHudFor(playerId, simTimeMs): WeaponHudSnapshot | null {
       if (playerId === null) return null;
       const loadout = shooterWeapons.get(playerId);
       if (loadout === undefined) return null;
@@ -160,8 +163,10 @@ export function createCombatSystem(
         weapons: loadout.weapons.map((weapon, index) => ({
           index,
           weaponArchetypeId: weapon.archetypeId,
+          cooldownStartedAtSimMs: weapon.cooldownStartedAtSimMs,
           cooldownReadyAtSimMs: weapon.nextFireSimMs,
-          overdriveUntilSimMs: weapon.overdriveUntilSimMs
+          modifiers: weapon.modifiers.map(copyWeaponModifier),
+          timedEffects: timedWeaponEffectsFor(weapon, simTimeMs)
         }))
       };
     },
@@ -255,6 +260,7 @@ function runPlayerFiringDecisions(
   );
   if (result === null) return;
 
+  selectedWeapon.cooldownStartedAtSimMs = simTimeMs;
   selectedWeapon.nextFireSimMs =
     simTimeMs +
     effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs, weapons.ownerKind);
@@ -307,6 +313,7 @@ function runEnemyFiringDecisions(
     );
     if (result === null) continue;
 
+    selectedWeapon.cooldownStartedAtSimMs = simTimeMs;
     selectedWeapon.nextFireSimMs =
       simTimeMs +
       effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs, weapons.ownerKind);
@@ -390,8 +397,10 @@ function createWeaponInstance(
 ): WeaponInstance {
   return {
     archetypeId: archetype.id,
+    cooldownStartedAtSimMs: simTimeMs,
     nextFireSimMs: simTimeMs + initialFireDelayMs(archetype.cooldownMs, ownerKind),
     modifiers: [],
+    overdriveStartedAtSimMs: null,
     overdriveUntilSimMs: null,
     overdriveCooldownMultiplier: null
   };
@@ -469,6 +478,28 @@ function copyWeaponModifier(modifier: WeaponModifier): WeaponModifier {
     default:
       return assertNever(modifier);
   }
+}
+
+function timedWeaponEffectsFor(
+  weapon: WeaponInstance,
+  simTimeMs: number
+): ReadonlyArray<WeaponTimedEffectHudSnapshot> {
+  if (
+    weapon.overdriveCooldownMultiplier === null ||
+    weapon.overdriveStartedAtSimMs === null ||
+    weapon.overdriveUntilSimMs === null ||
+    weapon.overdriveUntilSimMs <= simTimeMs
+  ) {
+    return [];
+  }
+  return [
+    {
+      kind: 'temporaryOverdrive',
+      cooldownMultiplier: weapon.overdriveCooldownMultiplier,
+      startedAtSimMs: weapon.overdriveStartedAtSimMs,
+      expiresAtSimMs: weapon.overdriveUntilSimMs
+    }
+  ];
 }
 
 function firePatternDirections(
