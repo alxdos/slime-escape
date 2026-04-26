@@ -5,12 +5,12 @@ import { SIM_STEP_MS } from '../shared/timing';
 
 import { createZoneSystem } from './ZoneSystem';
 
-function encounter(zoneBehavior: ZoneBehavior): EncounterDefinition {
+function encounter(zoneBehavior: ZoneBehavior, introDurationMs = 0): EncounterDefinition {
   return {
     id: 'test',
     type: 'wave',
     backgroundId: null,
-    introDurationMs: 0,
+    introDurationMs,
     name: null,
     text: null,
     spawnPlan: { kind: 'empty' },
@@ -54,6 +54,25 @@ describe('ZoneSystem', () => {
 
     for (let i = 6; i < 11; i += 1) zone.onTick();
     expect(zone.zone().margin).toBeCloseTo(4, 10);
+  });
+
+  it('keeps linear zone motion frozen until encounter intro has finished', () => {
+    const zone = createZoneSystem();
+    const durationMs = SIM_STEP_MS * 4;
+    const introDurationMs = SIM_STEP_MS * 3;
+    zone.onEncounterStart(
+      encounter({ kind: 'shrinkLinear', fromMargin: 0, toMargin: 4, durationMs }, introDurationMs)
+    );
+
+    zone.onTick(0);
+    zone.onTick(SIM_STEP_MS * 2);
+    expect(zone.zone()).toEqual({ mode: 'shrink', margin: 0 });
+
+    zone.onTick(introDurationMs);
+    expect(zone.zone()).toEqual({ mode: 'shrink', margin: 0 });
+
+    zone.onTick(introDurationMs + SIM_STEP_MS);
+    expect(zone.zone().margin).toBeCloseTo(1, 10);
   });
 
   it("'shrinkLinear' clamps at toMargin once durationMs has elapsed", () => {

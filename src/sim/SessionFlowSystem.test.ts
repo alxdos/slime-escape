@@ -338,6 +338,30 @@ describe('SessionFlowSystem encounter transitions', () => {
     expect(flow.activeEncounter()?.encounter.id).toBe('second');
   });
 
+  it("'timer' rule does not fire before encounter intro has finished", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession([
+      {
+        ...emptyEncounter('first', { kind: 'timer', durationMs: 100, next: 'sequential' }),
+        introDurationMs: 200
+      },
+      emptyEncounter('second', { kind: 'never', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+    events.length = 0;
+    flow.checkTransitions(100);
+    expect(events).toHaveLength(0);
+    expect(flow.activeEncounter()?.encounter.id).toBe('first');
+    flow.checkTransitions(199);
+    expect(events).toHaveLength(0);
+    flow.checkTransitions(200);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'encounterStart']);
+    expect(flow.activeEncounter()?.encounter.id).toBe('second');
+  });
+
   it("'allEnemiesCleared' for empty plan fires on the very first check", () => {
     const clock = createFakeClock();
     const events: RuntimeEvent[] = [];
@@ -350,6 +374,28 @@ describe('SessionFlowSystem encounter transitions', () => {
     flow.start(session);
     events.length = 0;
     flow.checkTransitions(0);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'encounterStart']);
+    expect(flow.activeEncounter()?.encounter.id).toBe('b');
+  });
+
+  it("'allEnemiesCleared' for empty plan waits for intro before firing", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession([
+      {
+        ...emptyEncounter('a', { kind: 'allEnemiesCleared', next: 'sequential' }),
+        introDurationMs: 100
+      },
+      emptyEncounter('b', { kind: 'never', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+    events.length = 0;
+    flow.checkTransitions(99);
+    expect(events).toHaveLength(0);
+    expect(flow.activeEncounter()?.encounter.id).toBe('a');
+    flow.checkTransitions(100);
     expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'encounterStart']);
     expect(flow.activeEncounter()?.encounter.id).toBe('b');
   });

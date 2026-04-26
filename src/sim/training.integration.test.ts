@@ -118,7 +118,8 @@ function setupWorld() {
     );
     healthDeath.tick(intents, entities, simTimeMs, emitEvent);
     sessionFlow.checkTransitions(simTimeMs);
-    zone.onTick();
+    const zoneEncCtx = sessionFlow.activeEncounter();
+    zone.onTick(zoneEncCtx === null ? undefined : simTimeMs - zoneEncCtx.startSimMs);
     const encCtx = sessionFlow.activeEncounter();
     exporter.onTick(simTimeMs, entities, {
       encounter: encCtx,

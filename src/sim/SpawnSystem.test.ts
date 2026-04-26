@@ -103,12 +103,17 @@ const BOSS_REGISTRY: Readonly<Record<string, BossArchetype>> = {
 };
 const TEST_LOADOUT: Loadout = { weapons: ['pistol'], selectedIndex: 0 };
 
-function makeEncounter(plan: EncounterDefinition['spawnPlan']): EncounterDefinition {
+function makeEncounter(
+  plan: EncounterDefinition['spawnPlan'],
+  overrides: Readonly<{
+    introDurationMs?: number;
+  }> = {}
+): EncounterDefinition {
   return {
     id: 'test-encounter',
     type: 'sandbox',
     backgroundId: null,
-    introDurationMs: 0,
+    introDurationMs: overrides.introDurationMs ?? 0,
     name: null,
     text: null,
     spawnPlan: plan,
@@ -158,6 +163,24 @@ describe('SpawnSystem static / empty', () => {
       expect(enemy.radius).toBe(STATIONARY_TEST_ENEMY.radius);
       expect(enemy.behavior).toBe(STATIONARY_TEST_ENEMY.behavior);
     }
+  });
+
+  it("'static' plan waits until encounter intro has finished before spawning once", () => {
+    const store = createEntityStore();
+    const spawn = createSpawnSystem({ enemyRegistry: ENEMY_REGISTRY, bossRegistry: BOSS_REGISTRY });
+    const plan: EncounterDefinition['spawnPlan'] = {
+      kind: 'static',
+      spawns: [{ archetypeId: STATIONARY_TEST_ENEMY.id, position: { x: 5, y: 0 } }]
+    };
+    spawn.onEncounterStart(makeEncounter(plan, { introDurationMs: 100 }), store, ARENA, 1000);
+
+    expect(store.enemyCount()).toBe(0);
+    spawn.onTick(1099, store);
+    expect(store.enemyCount()).toBe(0);
+    spawn.onTick(1100, store);
+    expect(store.enemyCount()).toBe(1);
+    spawn.onTick(1200, store);
+    expect(store.enemyCount()).toBe(1);
   });
 
   it('throws on unknown archetypeId', () => {
@@ -255,6 +278,8 @@ describe('SpawnSystem wave', () => {
     maxAlive?: number;
     edgeMargin?: number;
     seed?: number;
+    introDurationMs?: number;
+    startSimMs?: number;
   }) {
     const store = createEntityStore();
     const spawn = createSpawnSystem({ enemyRegistry: ENEMY_REGISTRY, bossRegistry: BOSS_REGISTRY });
@@ -271,7 +296,12 @@ describe('SpawnSystem wave', () => {
       maxAlive: opts?.maxAlive ?? 10,
       edgeMargin: opts?.edgeMargin ?? 0
     };
-    spawn.onEncounterStart(makeEncounter(plan), store, ARENA, 0);
+    spawn.onEncounterStart(
+      makeEncounter(plan, { introDurationMs: opts?.introDurationMs }),
+      store,
+      ARENA,
+      opts?.startSimMs ?? 0
+    );
     return { store, spawn, plan };
   }
 
@@ -279,6 +309,27 @@ describe('SpawnSystem wave', () => {
     const { store, spawn } = setupWave();
     spawn.onTick(0, store);
     expect(store.enemyCount()).toBe(1);
+  });
+
+  it('does not advance wave state until encounter intro has finished', () => {
+    const { store, spawn } = setupWave({
+      introDurationMs: 100,
+      spawnIntervalMs: 100,
+      startSimMs: 1000
+    });
+
+    spawn.onTick(1099, store);
+    expect(store.enemyCount()).toBe(0);
+    expect(spawn.waveProgress()).toEqual({ dispatched: 0, total: 4, alive: 0 });
+
+    spawn.onTick(1100, store);
+    expect(store.enemyCount()).toBe(1);
+    expect(spawn.waveProgress()).toEqual({ dispatched: 1, total: 4, alive: 1 });
+
+    spawn.onTick(1199, store);
+    expect(store.enemyCount()).toBe(1);
+    spawn.onTick(1200, store);
+    expect(store.enemyCount()).toBe(2);
   });
 
   it('applies wave spawn override to the dispatched enemy', () => {
