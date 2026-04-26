@@ -79,14 +79,14 @@ const VICTORY_EFFECTS: ReadonlyArray<ResultEffectSpec> = [
 ];
 
 const DEFEAT_EFFECTS: ReadonlyArray<ResultEffectSpec> = [
-  makeEffect('slime-a', 'slime', 22, 31, 30, '#b7df79', -10, 20, -12, 0, 920),
-  makeEffect('slime-b', 'slime', 77, 33, 24, '#ff9fcf', 12, 24, 18, 80, 980),
-  makeEffect('slime-c', 'slime', 28, 68, 22, '#d7f7a2', -8, 28, 26, 120, 900),
-  makeEffect('slime-d', 'slime', 72, 70, 28, '#ffb5a7', 10, 30, -22, 170, 1040),
-  makeEffect('drop-a', 'slime', 45, 23, 14, '#b7df79', -4, 38, 8, 210, 960),
-  makeEffect('drop-b', 'slime', 56, 22, 16, '#ff9fcf', 5, 42, -10, 250, 1020),
-  makeEffect('splash-a', 'confetti', 38, 52, 12, '#ffe7f3', -18, 20, 34, 300, 840),
-  makeEffect('splash-b', 'confetti', 62, 51, 12, '#d7f7a2', 18, 22, -34, 340, 880)
+  makeEffect('slime-a', 'slime', 0, 31, 30, '#b7df79', -82, 20, -12, 0, 920),
+  makeEffect('slime-b', 'slime', 100, 33, 24, '#ff9fcf', 82, 24, 18, 80, 980),
+  makeEffect('slime-c', 'slime', 0, 68, 22, '#d7f7a2', -66, 28, 26, 120, 900),
+  makeEffect('slime-d', 'slime', 100, 70, 28, '#ffb5a7', 68, 30, -22, 170, 1040),
+  makeEffect('drop-a', 'slime', 0, 23, 14, '#b7df79', -92, 38, 8, 210, 960),
+  makeEffect('drop-b', 'slime', 100, 22, 16, '#ff9fcf', 92, 42, -10, 250, 1020),
+  makeEffect('splash-a', 'confetti', 0, 52, 12, '#ffe7f3', -74, 20, 34, 300, 840),
+  makeEffect('splash-b', 'confetti', 100, 51, 12, '#d7f7a2', 74, 22, -34, 340, 880)
 ];
 
 export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
@@ -1092,7 +1092,7 @@ function resultOverlayCss(): string {
     opacity: 0.95;
   }
   to {
-    opacity: 0.5;
+    opacity: 0;
     transform: translate(calc(-50% + var(--result-effect-x)), calc(-50% + var(--result-effect-y))) scale(1) rotate(var(--result-effect-rotation));
   }
 }

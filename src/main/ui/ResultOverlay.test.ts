@@ -336,6 +336,13 @@ describe('createResultOverlay', () => {
     expect(defeatParticles).toHaveLength(8);
     expect(defeatParticles[0]?.dataset['effectId']).toBe('slime-a');
     expect(defeatParticles[0]?.style.cssText).toContain('animation:result-defeat-drip');
+    expect(defeatParticles[0]?.style.cssText).toContain('left:0%');
+    expect(defeatParticles[0]?.style.cssText).toContain('--result-effect-x:-82px');
+    expect(defeatParticles[0]?.style.cssText).toContain(' 1 both');
+    expect(defeatParticles[1]?.style.cssText).toContain('left:100%');
+    expect(defeatParticles[1]?.style.cssText).toContain('--result-effect-x:82px');
+    expect(defeatParticles[6]?.style.cssText).toContain('left:0%');
+    expect(defeatParticles[7]?.style.cssText).toContain('left:100%');
     expect(bossPanel.dataset['defeated']).toBe('false');
     expect(bossText.textContent).toBe('Босс: осталось 28% HP');
     expect(defeatCause.style.display).toBe('block');
