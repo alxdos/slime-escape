@@ -75,6 +75,7 @@ export type ParsedSpawnOverride = Readonly<{
   guaranteedDrops?: ReadonlyArray<ParsedRef>;
   dropTable?: ReadonlyArray<ParsedOverrideDropTableEntry>;
   retaliation?: ParsedRetaliationPolicy;
+  loadout?: ParsedLoadout;
 }>;
 
 export type ParsedWaveSpawn = Readonly<{
@@ -470,7 +471,9 @@ const SPAWN_OVERRIDE_HEADER = [
   'guaranteedDrops',
   'dropTable',
   'retaliationEnabled',
-  'retaliationDurationMs'
+  'retaliationDurationMs',
+  'loadoutWeaponIds',
+  'selectedWeaponIndex'
 ] as const;
 
 function parseSpawnOverrides(
@@ -510,7 +513,8 @@ function parseSpawnOverrideRow(
   return {
     ...parseGuaranteedDropsOverride(section, table, row),
     ...parseDropTableOverride(section, table, row),
-    ...parseRetaliationOverride(section, table, row)
+    ...parseRetaliationOverride(section, table, row),
+    ...parseLoadoutOverride(section, table, row)
   };
 }
 
@@ -641,6 +645,40 @@ function parseRetaliationOverride(
   return { retaliation: { enabled, durationMs } };
 }
 
+function parseLoadoutOverride(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow
+): Pick<ParsedSpawnOverride, 'loadout'> {
+  const weaponIdsCell = requireColumnCell(section, table, row, 'loadoutWeaponIds');
+  const selectedIndexCell = requireColumnCell(section, table, row, 'selectedWeaponIndex');
+  const weaponIdsIsNone = weaponIdsCell.value === 'none';
+  const selectedIndexIsNone = selectedIndexCell.value === 'none';
+  if (weaponIdsIsNone && selectedIndexIsNone) return {};
+  if (weaponIdsIsNone !== selectedIndexIsNone) {
+    throw cellError(
+      section,
+      weaponIdsIsNone ? selectedIndexCell.position : weaponIdsCell.position,
+      getRowId(row),
+      weaponIdsIsNone ? 'selectedWeaponIndex' : 'loadoutWeaponIds',
+      'loadoutWeaponIds and selectedWeaponIndex must be set together'
+    );
+  }
+
+  const loadout = parseLoadoutCells({
+    section,
+    weaponIdsCell,
+    selectedIndexCell,
+    rowId: getRowId(row),
+    selectedIndexRowId: getRowId(row),
+    weaponColumnName: 'loadoutWeaponIds',
+    selectedIndexColumnName: 'selectedWeaponIndex',
+    allowNoneSelectedIndex: false
+  });
+  if (loadout === null) return {};
+  return { loadout };
+}
+
 function parseOverrideBoolean(
   section: MarkdownSection,
   cell: MarkdownCell,
@@ -656,7 +694,8 @@ function isSpawnOverrideEmpty(override: ParsedSpawnOverride): boolean {
   return (
     override.guaranteedDrops === undefined &&
     override.dropTable === undefined &&
-    override.retaliation === undefined
+    override.retaliation === undefined &&
+    override.loadout === undefined
   );
 }
 
@@ -791,56 +830,102 @@ function parseBooleanField(field: FieldReader, fieldName: string): boolean {
 }
 
 function parseLoadout(field: FieldReader): ParsedLoadout | null {
-  const weaponIdsCell = field.readCell('loadoutWeaponIds');
-  const selectedIndexCell = field.readCell('selectedWeaponIndex');
+  return parseLoadoutCells({
+    section: field.section,
+    weaponIdsCell: field.readCell('loadoutWeaponIds'),
+    selectedIndexCell: field.readCell('selectedWeaponIndex'),
+    rowId: 'loadoutWeaponIds',
+    selectedIndexRowId: 'selectedWeaponIndex',
+    weaponColumnName: 'value',
+    selectedIndexColumnName: 'value',
+    allowNoneSelectedIndex: true
+  });
+}
+
+function parseLoadoutCells({
+  section,
+  weaponIdsCell,
+  selectedIndexCell,
+  rowId,
+  selectedIndexRowId,
+  weaponColumnName,
+  selectedIndexColumnName,
+  allowNoneSelectedIndex
+}: Readonly<{
+  section: MarkdownSection;
+  weaponIdsCell: MarkdownCell;
+  selectedIndexCell: MarkdownCell;
+  rowId: string;
+  selectedIndexRowId: string;
+  weaponColumnName: string;
+  selectedIndexColumnName: string;
+  allowNoneSelectedIndex: boolean;
+}>): ParsedLoadout | null {
   if (weaponIdsCell.value === 'none') {
     if (selectedIndexCell.value !== 'none') {
       throw cellError(
-        field.section,
+        section,
         selectedIndexCell.position,
-        'selectedWeaponIndex',
-        'value',
+        selectedIndexRowId,
+        selectedIndexColumnName,
         'expected none when loadoutWeaponIds is none'
       );
     }
     return null;
   }
-
   const weapons = weaponIdsCell.value.split(',').map((rawWeaponId) => {
     const weaponId = rawWeaponId.trim();
     if (weaponId.length === 0) {
       throw cellError(
-        field.section,
+        section,
         weaponIdsCell.position,
-        'loadoutWeaponIds',
-        'value',
+        rowId,
+        weaponColumnName,
         'expected comma-separated weapon ids'
       );
     }
-    return requireWeaponRef(field.section, weaponIdsCell.position, 'loadoutWeaponIds', weaponId);
+    return requireWeaponRef(section, weaponIdsCell.position, 'loadoutWeaponIds', weaponId);
   });
   if (weapons.length === 0) {
-    throw cellError(field.section, weaponIdsCell.position, 'loadoutWeaponIds', 'value', 'expected weapon ids or none');
+    throw cellError(section, weaponIdsCell.position, rowId, weaponColumnName, 'expected weapon ids or none');
   }
 
-  const selectedIndex = parseSelectedWeaponIndex(field, selectedIndexCell, weapons.length);
+  const selectedIndex = parseSelectedWeaponIndex({
+    section,
+    cell: selectedIndexCell,
+    rowId: selectedIndexRowId,
+    columnName: selectedIndexColumnName,
+    weaponCount: weapons.length,
+    allowNoneAsNull: allowNoneSelectedIndex
+  });
   return { weapons, selectedIndex };
 }
 
-function parseSelectedWeaponIndex(
-  field: FieldReader,
-  cell: MarkdownCell,
-  weaponCount: number
-): number | null {
-  if (cell.value === 'none') return null;
+function parseSelectedWeaponIndex({
+  section,
+  cell,
+  rowId,
+  columnName,
+  weaponCount,
+  allowNoneAsNull
+}: Readonly<{
+  section: MarkdownSection;
+  cell: MarkdownCell;
+  rowId: string;
+  columnName: string;
+  weaponCount: number;
+  allowNoneAsNull: boolean;
+}>): number | null {
+  if (allowNoneAsNull ? cell.value === 'none' : cell.value === 'null') return null;
   const value = Number(cell.value);
   if (!Number.isInteger(value) || value < 0 || value >= weaponCount) {
+    const nullLabel = allowNoneAsNull ? 'none' : 'null';
     throw cellError(
-      field.section,
+      section,
       cell.position,
-      'selectedWeaponIndex',
-      'value',
-      `expected 0..${weaponCount - 1} or none`
+      rowId,
+      columnName,
+      `expected 0..${weaponCount - 1} or ${nullLabel}`
     );
   }
   return value;

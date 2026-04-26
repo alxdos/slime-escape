@@ -42,8 +42,8 @@
 | 3 | slime-saw | 7 | -1 |
 | 4 | slime-bug | 6 | 2.5 |
 
-| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
-|---:|---|---|---|---:|
-| 1 | magnet, heal-orb | empty | none | none |
-| 2 | none | heal-orb:0.20 | true | 2500 |
-| 3 | none | heal-orb:0.20 | true | 2500 |
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 1 | magnet, heal-orb | empty | none | none | none | none |
+| 2 | none | heal-orb:0.20 | true | 2500 | none | none |
+| 3 | none | heal-orb:0.20 | true | 2500 | none | none |
