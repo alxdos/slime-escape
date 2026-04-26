@@ -1,8 +1,8 @@
 # Модификаторы спавнов в волнах
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-25
-- Updated: 2026-04-26 (architect: T11 стоп-сигнал закрыт продуктовым решением сохранять чистую модель spawn-override вместо byte-for-byte stat-переноса старых fork-архетипов; design/spawn-overrides.md обновлён)
+- Updated: 2026-04-26 (done: все T2-T16 закрыты; финальная проверка `content:check`, scripts `tsc`, `typecheck`, полный `npm test`, visual sanity через запущенный пользователем dev server)
 
 ## Player-facing
 
@@ -96,7 +96,7 @@
 | T13 | [x] | `scripts/content-build/sessions/sessions.test.ts`: добавить unit-тесты на каждое hard-error правило T5 (override на несуществующий `seq`, дубликат `seq`, неизвестное имя поля, неизвестный `dropArchetypeId`, `empty` vs `none`, частично заданная `retaliation`) и на каждый warn (chance > 1, sum > 1, retaliation duration ≤ 0). | Покрытие на стороне content-build, как требует Acceptance. |
 | T14 | [x] | Переписать тесты, опирающиеся на `EnemyArchetype.carrierDrop`: `src/sim/DropSystem.test.ts` (carrier guaranteed drops), `src/sim/SpawnSystem.test.ts`, `src/sim/RetaliationSystem.test.ts`, `src/shared/content/enemies.test.ts`. Тестовые fixtures теперь подают override через спавн-план или через runtime spec, не через архетип. | Поведение тех же сценариев должно остаться идентичным. |
 | T15 | [x] | Детерминированный regression-тест: прогнать сессию `campaign` для одного фиксированного `seed` и зафиксировать стабильную post-migration последовательность runtime events (`enemySpawn`/`death`/`dropSpawn`/`dropPickup`/`dropExpire` + позиции/архетипы). Реализовать как vitest snapshot или явный equality на зафиксированный baseline новой модели. | Покрывает Acceptance-пункт «детерминированно после миграции» без требования pre-019 byte-for-byte. |
-| T16 | [ ] | Прогнать `npm run content:check && tsc -p tsconfig.scripts.json && npm run typecheck && npm test`. Прогнать визуальный sanity-чек `npm run dev` для `campaign`/`combat-modifiers-demo` и убедиться, что HUD/рендер/звук без визуальной разницы. | Финальная верификация. |
+| T16 | [x] | Прогнать `npm run content:check && tsc -p tsconfig.scripts.json && npm run typecheck && npm test`. Прогнать визуальный sanity-чек `npm run dev` для `campaign`/`combat-modifiers-demo` и убедиться, что HUD/рендер/звук без визуальной разницы. | Финальная верификация. |
 
 ## Related
 
