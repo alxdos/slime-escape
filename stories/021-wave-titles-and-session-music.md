@@ -1,6 +1,6 @@
 # Титры волн и музыка сессии
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-26
 - Updated: 2026-04-26 (архитектурная подготовка: контракты вынесены в design/)
 
