@@ -328,7 +328,20 @@ function menuOverlayCss(): string {
 
 .menu-image-button[data-selected="true"]:hover img,
 .menu-image-button[data-selected="true"]:focus-visible img {
-  transform: none;
+  animation: none;
+  filter:
+    brightness(1.14)
+    saturate(1.04)
+    drop-shadow(3px 0 0 #7cf58f)
+    drop-shadow(-3px 0 0 #7cf58f)
+    drop-shadow(0 3px 0 #7cf58f)
+    drop-shadow(0 -3px 0 #7cf58f)
+    drop-shadow(2px 2px 0 #7cf58f)
+    drop-shadow(-2px 2px 0 #7cf58f)
+    drop-shadow(2px -2px 0 #7cf58f)
+    drop-shadow(-2px -2px 0 #7cf58f)
+    drop-shadow(6px 6px 0 #000000);
+  transform: translate(-1px, -1px) scale(1.015);
 }
 
 .menu-image-button[data-soon="true"] img {
@@ -365,6 +378,22 @@ function menuOverlayCss(): string {
       drop-shadow(-2px 2px 0 #7cf58f)
       drop-shadow(2px -2px 0 #7cf58f)
       drop-shadow(-2px -2px 0 #7cf58f);
+  }
+
+  .menu-image-button[data-selected="true"]:hover img,
+  .menu-image-button[data-selected="true"]:focus-visible img {
+    filter:
+      brightness(1.14)
+      saturate(1.04)
+      drop-shadow(3px 0 0 #7cf58f)
+      drop-shadow(-3px 0 0 #7cf58f)
+      drop-shadow(0 3px 0 #7cf58f)
+      drop-shadow(0 -3px 0 #7cf58f)
+      drop-shadow(2px 2px 0 #7cf58f)
+      drop-shadow(-2px 2px 0 #7cf58f)
+      drop-shadow(2px -2px 0 #7cf58f)
+      drop-shadow(-2px -2px 0 #7cf58f)
+      drop-shadow(6px 6px 0 #000000);
   }
 }
 `;
