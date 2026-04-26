@@ -216,6 +216,7 @@ type WeaponSlotDom = {
 type ModifierBadgeDom = {
   root: HTMLElement;
   image: HTMLImageElement;
+  imageSrc: string;
   count: HTMLElement | null;
   countText: string | null;
 };
@@ -224,6 +225,7 @@ type TimedBadgeDom = {
   root: HTMLElement;
   fill: HTMLElement;
   image: HTMLImageElement;
+  imageSrc: string;
   remainingHeight: string | null;
 };
 
@@ -313,10 +315,9 @@ function renderBossStrip(
   state: HudRenderState
 ): void {
   if (viewModel === null) {
-    if (state.bossVisible !== false) {
-      dom.bossStrip.style.display = 'none';
-      state.bossVisible = false;
-    }
+    if (state.bossVisible === false) return;
+    dom.bossStrip.style.display = 'none';
+    state.bossVisible = false;
     setTextContent(dom.bossTitle, '', 'bossTitle', state);
     setTextContent(dom.bossMeta, '', 'bossMeta', state);
     setStyleWidth(dom.bossFill, '0%', 'bossFillWidth', state);
@@ -401,7 +402,6 @@ function weaponSlotsSignature(slots: ReadonlyArray<WeaponSlotViewModel>): string
 function createWeaponSlotElement(slot: WeaponSlotViewModel): WeaponSlotDom {
   const root = document.createElement('div');
   root.dataset['weaponSlot'] = String(slot.index);
-  root.dataset['selected'] = 'false';
   root.style.cssText = weaponSlotWrapperStyle();
 
   const badges = document.createElement('div');
@@ -448,7 +448,6 @@ function createWeaponSlotElement(slot: WeaponSlotViewModel): WeaponSlotDom {
 
 function updateWeaponSlotElement(slot: WeaponSlotViewModel, dom: WeaponSlotDom): void {
   if (dom.isSelected !== slot.isSelected) {
-    dom.root.dataset['selected'] = slot.isSelected ? 'true' : 'false';
     applyWeaponSlotSelectedState(dom.frame, slot.isSelected);
     dom.isSelected = slot.isSelected;
   }
@@ -477,9 +476,13 @@ function renderWeaponBadges(
   const orderedBadges: HTMLElement[] = [];
   for (const badge of modifierBadges) {
     nextKinds.add(badge.kind);
-    const badgeDom = slotDom.modifierBadges.get(badge.kind) ?? createModifierBadgeElement(badge);
-    slotDom.modifierBadges.set(badge.kind, badgeDom);
-    updateModifierBadgeElement(badge, badgeDom);
+    let badgeDom = slotDom.modifierBadges.get(badge.kind);
+    if (badgeDom === undefined) {
+      badgeDom = createModifierBadgeElement(badge);
+      slotDom.modifierBadges.set(badge.kind, badgeDom);
+    } else {
+      updateModifierBadgeElement(badge, badgeDom);
+    }
     orderedBadges.push(badgeDom.root);
   }
   for (const kind of slotDom.modifierBadges.keys()) {
@@ -490,9 +493,13 @@ function renderWeaponBadges(
   const nextTimedKinds = new Set<WeaponTimedBadgeViewModel['kind']>();
   for (const badge of timedBadges) {
     nextTimedKinds.add(badge.kind);
-    const badgeDom = slotDom.timedBadges.get(badge.kind) ?? createTimedBadgeElement(badge);
-    slotDom.timedBadges.set(badge.kind, badgeDom);
-    updateTimedBadgeElement(badge, badgeDom);
+    let badgeDom = slotDom.timedBadges.get(badge.kind);
+    if (badgeDom === undefined) {
+      badgeDom = createTimedBadgeElement(badge);
+      slotDom.timedBadges.set(badge.kind, badgeDom);
+    } else {
+      updateTimedBadgeElement(badge, badgeDom);
+    }
     orderedBadges.push(badgeDom.root);
   }
   for (const kind of slotDom.timedBadges.keys()) {
@@ -517,10 +524,11 @@ function createModifierBadgeElement(badge: WeaponModifierBadgeViewModel): Modifi
   const dom: ModifierBadgeDom = {
     root,
     image,
+    imageSrc: badge.image,
     count: null,
     countText: null
   };
-  updateModifierBadgeElement(badge, dom);
+  syncModifierBadgeCount(badge.count, dom);
   return dom;
 }
 
@@ -528,16 +536,21 @@ function updateModifierBadgeElement(
   badge: WeaponModifierBadgeViewModel,
   dom: ModifierBadgeDom
 ): void {
-  if (dom.image.src !== badge.image) {
+  if (dom.imageSrc !== badge.image) {
     dom.image.src = badge.image;
+    dom.imageSrc = badge.image;
   }
-  if (badge.count > 1) {
+  syncModifierBadgeCount(badge.count, dom);
+}
+
+function syncModifierBadgeCount(countValue: number, dom: ModifierBadgeDom): void {
+  if (countValue > 1) {
     if (dom.count === null) {
       dom.count = document.createElement('span');
       dom.count.style.cssText = badgeCountStyle();
       dom.root.appendChild(dom.count);
     }
-    const countText = String(badge.count);
+    const countText = String(countValue);
     if (dom.countText !== countText) {
       dom.count.textContent = countText;
       dom.countText = countText;
@@ -556,19 +569,22 @@ function createTimedBadgeElement(badge: WeaponTimedBadgeViewModel): TimedBadgeDo
   root.appendChild(fill);
   const image = createBadgeImage(badge.image);
   root.appendChild(image);
+  const remainingHeight = ratioHeight(badge.remainingRatio);
   const dom: TimedBadgeDom = {
     root,
     fill,
     image,
-    remainingHeight: null
+    imageSrc: badge.image,
+    remainingHeight
   };
-  updateTimedBadgeElement(badge, dom);
+  fill.style.height = remainingHeight;
   return dom;
 }
 
 function updateTimedBadgeElement(badge: WeaponTimedBadgeViewModel, dom: TimedBadgeDom): void {
-  if (dom.image.src !== badge.image) {
+  if (dom.imageSrc !== badge.image) {
     dom.image.src = badge.image;
+    dom.imageSrc = badge.image;
   }
   const remainingHeight = ratioHeight(badge.remainingRatio);
   if (dom.remainingHeight !== remainingHeight) {
