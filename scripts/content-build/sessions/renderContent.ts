@@ -69,6 +69,7 @@ function renderPreset(preset: ParsedSessionPreset): string {
     backgrounds: [
 ${preset.backgrounds.map(renderBackground).join(',\n')}
     ],
+    musicSampleId: ${renderNullableString(preset.musicSampleId)},
     rules: ${renderRules(preset)},
     winCondition: ${renderWinCondition(preset.winCondition)},
     lossCondition: ${renderLossCondition(preset.lossCondition)},
@@ -83,6 +84,9 @@ function renderEncounter(encounter: ParsedEncounter): string {
         id: '${escapeString(encounter.id)}',
         type: '${encounter.type}',
         backgroundId: ${renderNullableString(encounter.backgroundId)},
+        introDurationMs: ${formatNumber(encounter.introDurationMs)},
+        name: ${renderNullableString(encounter.name)},
+        text: ${renderNullableString(encounter.text)},
         spawnPlan: ${renderSpawnPlan(encounter.spawnPlan)},
         zoneBehavior: ${renderZoneBehavior(encounter)},
         objectives: [],

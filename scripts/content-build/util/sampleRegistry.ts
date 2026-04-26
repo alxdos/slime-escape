@@ -6,12 +6,14 @@ import type { InlineMediaSampleRegistry } from './inlineMedia';
 type SampleEntrySnapshot = Readonly<{
   id: string;
   url: string;
+  category: string;
+  loop: boolean | undefined;
 }>;
 
 const DEFAULT_SAMPLE_ENTRIES = readDefaultSampleEntries();
 
 const ENTRIES_BY_ID = new Map(
-  DEFAULT_SAMPLE_ENTRIES.map((entry) => [entry.id, { url: entry.url }] as const)
+  DEFAULT_SAMPLE_ENTRIES.map((entry) => [entry.id, entry] as const)
 );
 
 export const BUILD_SAMPLE_REGISTRY: InlineMediaSampleRegistry = Object.freeze({
@@ -19,6 +21,10 @@ export const BUILD_SAMPLE_REGISTRY: InlineMediaSampleRegistry = Object.freeze({
     return ENTRIES_BY_ID.get(sampleId) ?? null;
   }
 });
+
+export function getBuildSampleEntry(sampleId: string): SampleEntrySnapshot | null {
+  return ENTRIES_BY_ID.get(sampleId) ?? null;
+}
 
 function readDefaultSampleEntries(): ReadonlyArray<SampleEntrySnapshot> {
   const source = readFileSync(resolve(process.cwd(), 'src/main/audio/SampleRegistry.ts'), 'utf8');
@@ -30,18 +36,34 @@ function readDefaultSampleEntries(): ReadonlyArray<SampleEntrySnapshot> {
   }
 
   const entries: SampleEntrySnapshot[] = [];
-  const entryPattern = /id:\s*'(?<id>[^']+)'\s*,\s*url:\s*'(?<url>[^']+)'/g;
+  const entryPattern = /\{(?<body>[\s\S]*?)\}/g;
   for (const entry of match[1].matchAll(entryPattern)) {
-    const id = entry.groups?.id;
-    const url = entry.groups?.url;
-    if (id === undefined || url === undefined) {
-      throw new Error('cannot parse DEFAULT_SAMPLE_ENTRIES id/url pair');
+    const body = entry.groups?.body;
+    if (body === undefined) {
+      throw new Error('cannot parse DEFAULT_SAMPLE_ENTRIES entry');
     }
-    entries.push({ id, url });
+    const id = matchStringProperty(body, 'id');
+    const url = matchStringProperty(body, 'url');
+    const category = matchStringProperty(body, 'category');
+    if (id === null || url === null || category === null) {
+      throw new Error('cannot parse DEFAULT_SAMPLE_ENTRIES id/url/category fields');
+    }
+    entries.push({ id, url, category, loop: matchBooleanProperty(body, 'loop') });
   }
 
   if (entries.length === 0) {
     throw new Error('DEFAULT_SAMPLE_ENTRIES did not contain any id/url pairs');
   }
   return entries;
+}
+
+function matchStringProperty(body: string, propertyName: string): string | null {
+  const match = new RegExp(`${propertyName}:\\s*'(?<value>[^']+)'`).exec(body);
+  return match?.groups?.value ?? null;
+}
+
+function matchBooleanProperty(body: string, propertyName: string): boolean | undefined {
+  const match = new RegExp(`${propertyName}:\\s*(?<value>true|false)`).exec(body);
+  if (match?.groups?.value === undefined) return undefined;
+  return match.groups.value === 'true';
 }

@@ -25,6 +25,7 @@ import {
   readMarkdownDocument,
   sectionError
 } from '../util/markdown';
+import { getBuildSampleEntry } from '../util/sampleRegistry';
 import { type InlineImage, requireInlineImageCell } from '../util/inlineMedia';
 import {
   type ResolvedContentRef,
@@ -98,6 +99,9 @@ export type ParsedEncounter = Readonly<{
   id: string;
   type: EncounterType;
   backgroundId: string | null;
+  introDurationMs: number;
+  name: string | null;
+  text: string | null;
   spawnPlan: ParsedSpawnPlan;
   zoneBehavior: ZoneBehavior;
   transitionRules: ParsedTransitionRules;
@@ -119,6 +123,7 @@ export type ParsedSessionPreset = Readonly<{
   player: ParsedRef;
   loadout: ParsedLoadout | null;
   backgrounds: ReadonlyArray<ParsedSessionBackground>;
+  musicSampleId: string | null;
   rules: SessionRules;
   winCondition: ParsedWinCondition;
   lossCondition: ParsedLossCondition;
@@ -231,6 +236,7 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
     player: parsePlayerRef(sessionFields, 'playerId'),
     loadout: parseLoadout(sessionFields),
     backgrounds,
+    musicSampleId: parseMusicSampleId(sessionFields),
     rules: parseSessionRules(sessionFields),
     winCondition: parseWinCondition(sessionFields, 'winCondition'),
     lossCondition: parseLossCondition(sessionFields, 'lossCondition'),
@@ -249,14 +255,17 @@ function parseEncounterSection(
   const spawnKind = parseEnumField(field, 'spawnKind', ['empty', 'wave', 'static', 'boss']);
   const tables = requireEncounterTables(section, spawnKind);
   const type = parseEncounterType(field);
+  const transitionRules = parseTransitionRules(field);
+  const presentation = parseEncounterPresentation(field, type, transitionRules);
 
   return {
     id: section.title,
     type,
     backgroundId: parseEncounterBackgroundId(field, type, backgroundIds),
+    ...presentation,
     spawnPlan: parseSpawnPlan(field, tables),
     zoneBehavior: parseZoneBehavior(field),
-    transitionRules: parseTransitionRules(field)
+    transitionRules
   };
 }
 
@@ -747,6 +756,107 @@ function parseTransitionNext(field: FieldReader): TransitionNext {
   return 'sequential';
 }
 
+function parseEncounterPresentation(
+  field: FieldReader,
+  type: EncounterType,
+  transitionRules: ParsedTransitionRules
+): Pick<ParsedEncounter, 'introDurationMs' | 'name' | 'text'> {
+  const introDurationMs = parseIntroDurationMs(field);
+  const name = parseNullableTextField(field, 'name');
+  const text = parseNullableTextField(field, 'text');
+
+  validateEncounterPresentationFields(field, type, introDurationMs, name, text, transitionRules);
+
+  return { introDurationMs, name, text };
+}
+
+function parseIntroDurationMs(field: FieldReader): number {
+  const cell = field.readCell('introDurationMs');
+  if (cell.value === 'none') return 0;
+  const value = Number(cell.value);
+  if (!Number.isInteger(value) || value < 0) {
+    throw cellError(
+      field.section,
+      cell.position,
+      'introDurationMs',
+      'value',
+      'expected integer >= 0 or none'
+    );
+  }
+  return value;
+}
+
+function parseNullableTextField(field: FieldReader, fieldName: 'name' | 'text'): string | null {
+  const cell = field.readCell(fieldName);
+  if (cell.value === 'none') return null;
+  if (cell.value.trim().length === 0) {
+    throw cellError(
+      field.section,
+      cell.position,
+      fieldName,
+      'value',
+      'expected non-empty string or none'
+    );
+  }
+  return cell.value;
+}
+
+function validateEncounterPresentationFields(
+  field: FieldReader,
+  type: EncounterType,
+  introDurationMs: number,
+  name: string | null,
+  text: string | null,
+  transitionRules: ParsedTransitionRules
+): void {
+  if (transitionRules.kind === 'timer' && introDurationMs > transitionRules.durationMs) {
+    throw fieldError(
+      field,
+      'introDurationMs',
+      'expected <= transitionDurationMs for timer encounter'
+    );
+  }
+
+  switch (type) {
+    case 'wave':
+      if (text !== null) {
+        throw fieldError(field, 'text', 'expected none for encounter type "wave"');
+      }
+      return;
+    case 'break':
+      requireZeroIntro(field, type, introDurationMs);
+      requireNoName(field, type, name);
+      return;
+    case 'boss':
+    case 'survivalTimer':
+    case 'sandbox':
+      requireZeroIntro(field, type, introDurationMs);
+      requireNoName(field, type, name);
+      requireNoText(field, type, text);
+      return;
+    default:
+      assertNever(type);
+  }
+}
+
+function requireZeroIntro(field: FieldReader, type: EncounterType, introDurationMs: number): void {
+  if (introDurationMs !== 0) {
+    throw fieldError(field, 'introDurationMs', `expected none or 0 for encounter type "${type}"`);
+  }
+}
+
+function requireNoName(field: FieldReader, type: EncounterType, name: string | null): void {
+  if (name !== null) {
+    throw fieldError(field, 'name', `expected none for encounter type "${type}"`);
+  }
+}
+
+function requireNoText(field: FieldReader, type: EncounterType, text: string | null): void {
+  if (text !== null) {
+    throw fieldError(field, 'text', `expected none for encounter type "${type}"`);
+  }
+}
+
 function parseEncounterType(field: FieldReader): EncounterType {
   return parseEnumField(field, 'type', ['wave', 'break', 'boss', 'survivalTimer', 'sandbox']);
 }
@@ -840,6 +950,32 @@ function parseLoadout(field: FieldReader): ParsedLoadout | null {
     selectedIndexColumnName: 'value',
     allowNoneSelectedIndex: true
   });
+}
+
+function parseMusicSampleId(field: FieldReader): string | null {
+  const cell = field.readCell('musicSampleId');
+  if (cell.value === 'none') return null;
+
+  const entry = getBuildSampleEntry(cell.value);
+  if (entry === null) {
+    throw cellError(
+      field.section,
+      cell.position,
+      'musicSampleId',
+      'value',
+      `unknown musicSampleId "${cell.value}"`
+    );
+  }
+  if (entry.category !== 'music') {
+    throw cellError(
+      field.section,
+      cell.position,
+      'musicSampleId',
+      'value',
+      `musicSampleId "${cell.value}" must reference category "music"`
+    );
+  }
+  return cell.value;
 }
 
 function parseLoadoutCells({
