@@ -9,12 +9,12 @@ import type { SessionPresetTemplate } from './sessions';
 import { BOMB_PLACER, DEMO_HAZARD_GRENADE, DEMO_PROXIMITY_MINE, FIREBALL_STAFF, GRENADE_LAUNCHER, LASER, PISTOL, ROCK_THROWER, SHOTGUN, SMG, SNIPER } from './weapons.generated';
 
 export const SESSION_PRESET_TEMPLATES = {
-  campaign: {
-    presetId: 'campaign',
-    displayName: 'Побег',
+  'campaign-normal': {
+    presetId: 'campaign-normal',
+    displayName: 'Кампания — normal',
     description: 'Основной забег: пять тематических сетов слаймов, после каждого — свой босс.',
     visibleInMenu: true,
-    order: 0,
+    order: 1,
     arena: SANDBOX_ARENA,
     player: TRAINING_PLAYER,
     loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, LASER.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 0 },

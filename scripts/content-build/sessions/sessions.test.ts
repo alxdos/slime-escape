@@ -9,7 +9,7 @@ import { parseSessionsArea, validateUniqueSessionPresetIds } from './parse';
 import { renderSessionContent } from './renderContent';
 
 const SESSION_SOURCE_FILES = [
-  'campaign.md',
+  'campaign-normal.md',
   'sandbox.md',
   'sandbox-with-combat.md',
   'training.md'
@@ -82,20 +82,20 @@ describe('content-build sessions area', () => {
   for (const testCase of [
     {
       name: 'arenaId',
-      file: 'campaign.md' as const,
+      file: 'campaign-normal.md' as const,
       mutate: (source: string) => replaceExact(source, '| arenaId | sandbox |', '| arenaId | sndbox |'),
       pattern: /section "# Session": unknown arenaId "sndbox"/
     },
     {
       name: 'playerId',
-      file: 'campaign.md' as const,
+      file: 'campaign-normal.md' as const,
       mutate: (source: string) =>
         replaceExact(source, '| playerId | hero-training |', '| playerId | hero-ghost |'),
       pattern: /section "# Session": unknown playerId "hero-ghost"/
     },
     {
       name: 'loadoutWeaponIds',
-      file: 'campaign.md' as const,
+      file: 'campaign-normal.md' as const,
       mutate: (source: string) =>
         replaceExact(
           source,
@@ -106,7 +106,7 @@ describe('content-build sessions area', () => {
     },
     {
       name: 'bossArchetypeId',
-      file: 'campaign.md' as const,
+      file: 'campaign-normal.md' as const,
       mutate: (source: string) =>
         replaceExact(
           source,
@@ -162,7 +162,7 @@ describe('content-build sessions area', () => {
   it('rejects a spawn table on a boss encounter', async () => {
     await expectParseRejects(
       {
-        'campaign.md': (source) => `${source}\n| seq | archetypeId |\n|---:|---|\n| 1 | slime-one-eye |\n`
+        'campaign-normal.md': (source) => `${source}\n| seq | archetypeId |\n|---:|---|\n| 1 | slime-one-eye |\n`
       },
       /spawnKind "boss" forbids seq\/archetypeId table/
     );
@@ -435,7 +435,7 @@ describe('content-build sessions area', () => {
   it('rejects an encounter background id that is not declared in the session table', async () => {
     await expectParseRejects(
       {
-        'campaign.md': (source) =>
+        'campaign-normal.md': (source) =>
           replaceExact(source, '| backgroundId | set-1 |', '| backgroundId | set-missing |')
       },
       /unknown backgroundId "set-missing"/
@@ -445,7 +445,7 @@ describe('content-build sessions area', () => {
   it('rejects a session background image cell without an inline image', async () => {
     await expectParseRejects(
       {
-        'campaign.md': (source) =>
+        'campaign-normal.md': (source) =>
           replaceExact(
             source,
             '| set-1 | ![Set 1](../../public/images/bg/bg-01.jpg) |',
@@ -470,7 +470,7 @@ describe('content-build sessions area', () => {
     const targetPath = join(fixture.directory, 'sessions.generated.ts');
     const baselineGenerated = renderSessionContent(await parseSessionsArea(fixture.sourceDirectory));
     await writeFile(targetPath, baselineGenerated, 'utf8');
-    const campaignPath = join(fixture.sourceDirectory, 'campaign.md');
+    const campaignPath = join(fixture.sourceDirectory, 'campaign-normal.md');
     await writeFile(
       campaignPath,
       replaceExact(

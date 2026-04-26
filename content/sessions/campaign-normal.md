@@ -2,10 +2,10 @@
 
 | field | value |
 |---|---|
-| displayName | Побег |
+| displayName | Кампания — normal |
 | description | Основной забег: пять тематических сетов слаймов, после каждого — свой босс. |
 | visibleInMenu | true |
-| order | 0 |
+| order | 1 |
 | arenaId | sandbox |
 | playerId | hero-training |
 | loadoutWeaponIds | pistol, shotgun, smg, sniper, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |

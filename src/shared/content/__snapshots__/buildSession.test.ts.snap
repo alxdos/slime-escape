@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign session for seed 0 1`] = `
+exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign-normal session for seed 0 1`] = `
 {
   "arena": {
     "height": 18,
@@ -1240,7 +1240,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
   ],
-  "id": "campaign-session",
+  "id": "campaign-normal-session",
   "loadout": {
     "selectedIndex": 0,
     "weapons": [
@@ -1291,7 +1291,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
 }
 `;
 
-exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign session for seed 1 1`] = `
+exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign-normal session for seed 1 1`] = `
 {
   "arena": {
     "height": 18,
@@ -2531,7 +2531,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
   ],
-  "id": "campaign-session",
+  "id": "campaign-normal-session",
   "loadout": {
     "selectedIndex": 0,
     "weapons": [
@@ -2582,7 +2582,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
 }
 `;
 
-exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign session for seed 42 1`] = `
+exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign-normal session for seed 42 1`] = `
 {
   "arena": {
     "height": 18,
@@ -3822,7 +3822,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
   ],
-  "id": "campaign-session",
+  "id": "campaign-normal-session",
   "loadout": {
     "selectedIndex": 0,
     "weapons": [

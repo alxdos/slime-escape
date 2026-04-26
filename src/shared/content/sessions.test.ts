@@ -9,7 +9,7 @@ describe('getPlayableModeCatalog', () => {
 
     expect(catalog).toHaveLength(3);
     expect(catalog.map((entry) => entry.presetId)).toEqual([
-      'campaign',
+      'campaign-normal',
       'combat-modifiers-demo',
       'training'
     ]);
