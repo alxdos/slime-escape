@@ -17,7 +17,7 @@ import {
   type TeaserControlId
 } from './MenuOverlayState';
 
-const TEASER_FEEDBACK_VISIBLE_MS = 20_000;
+const TEASER_FEEDBACK_VISIBLE_MS = 7_000;
 const TEASER_FEEDBACK_FADE_MS = 900;
 
 export type MenuOverlayInit = Readonly<{
@@ -160,6 +160,9 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
 
 function createStageImage(layout: MenuImageLayout): HTMLImageElement {
   const image = document.createElement('img');
+  if (layout.id === 'logo') {
+    image.className = 'menu-stage-logo';
+  }
   image.dataset['role'] = `menu-${layout.id}`;
   image.alt = layout.alt;
   image.src = layout.src;
@@ -210,9 +213,10 @@ function stageImageStyle(layout: MenuImageLayout): string {
     'display:block',
     'height:auto',
     'object-fit:contain',
-    'pointer-events:none',
+    layout.id === 'logo' ? 'pointer-events:auto' : 'pointer-events:none',
+    layout.id === 'logo' ? 'cursor:default' : '',
     'user-select:none'
-  ].join(';');
+  ].filter(Boolean).join(';');
 }
 
 function baseOverlayStyle(): string {
@@ -279,7 +283,7 @@ function teaserFeedbackStyle(): string {
   return [
     'position:absolute',
     'left:50%',
-    'top:14%',
+    'top:6%',
     'width:36%',
     'transform:translateX(-50%)',
     'z-index:30',
@@ -315,6 +319,31 @@ function menuOverlayCss(): string {
     filter: brightness(1.12) saturate(1.06);
     transform: scale(1.025);
   }
+}
+
+@keyframes menu-logo-shimmer {
+  0%, 100% {
+    filter:
+      brightness(1.06)
+      saturate(1.04)
+      drop-shadow(0 0 0 rgba(124, 245, 143, 0))
+      drop-shadow(0 0 0 rgba(125, 199, 255, 0));
+  }
+  50% {
+    filter:
+      brightness(1.24)
+      saturate(1.16)
+      drop-shadow(0 0 10px rgba(124, 245, 143, 0.88))
+      drop-shadow(0 0 18px rgba(125, 199, 255, 0.72));
+  }
+}
+
+.menu-stage-logo {
+  transition: filter 180ms ease;
+}
+
+.menu-stage-logo:hover {
+  animation: menu-logo-shimmer 1200ms ease-in-out infinite;
 }
 
 .menu-image-button {
@@ -422,6 +451,14 @@ function menuOverlayCss(): string {
 
   .menu-image-button[data-control-id="play"] img {
     animation: none;
+  }
+
+  .menu-stage-logo:hover {
+    animation: none;
+    filter:
+      brightness(1.18)
+      saturate(1.1)
+      drop-shadow(0 0 12px rgba(124, 245, 143, 0.72));
   }
 
   .menu-image-button[data-selected="true"]:hover img,
