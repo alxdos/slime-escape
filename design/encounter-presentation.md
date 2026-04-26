@@ -77,7 +77,7 @@ type EncounterDefinition = Readonly<{
 
 Алгоритм стабилен, детерминирован по содержимому `session.encounters` и не зависит ни от `backgroundId`, ни от текстовой формы `encounter.id`. Для текущих трёх кампаний (`campaign-easy`, `campaign-normal`, `campaign-hard`) сеты в `session.encounters` уже разделены `break`/`boss` encounter-ами, поэтому правило даёт ожидаемый результат «Волна 1/2/3» внутри каждого сета.
 
-HUD-нумерация волн (`main-ui-shell.md`, «HUD-агрегаты "номер волны" и "таймер encounter"») остаётся **глобальной** по всем wave encounter-ам сессии. Overlay и HUD показывают разные числа осознанно: HUD — общий прогресс забега, overlay — драматургия сета. Переписывание HUD под set-local — отдельное решение и отдельная история.
+HUD-нумерация волн (`main-ui-shell.md`, «HUD data derivation») остаётся **глобальной** по всем wave encounter-ам сессии. Overlay и HUD показывают разные числа осознанно: HUD — общий прогресс забега, overlay — драматургия сета. Переписывание HUD под set-local — отдельное решение и отдельная история.
 
 ### Render contract (main UI)
 

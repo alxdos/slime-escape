@@ -1,6 +1,6 @@
 # Боевой HUD без дебага
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-26
 - Updated: 2026-04-26
 
@@ -28,12 +28,16 @@
 
 ## Technical
 
-- Убрать renderer-level debug HUD с `encounter`/`wave`/`hp`/`zone`/`drops`, не трогая отдельный `FpsOverlay`.
-- Пересобрать `src/main/ui/Hud.ts` вокруг новых зон: top-left run status, bottom-left movement hint, bottom-center weapon slots, bottom-right fire hint.
-- Таймер забега должен считаться от session/runtime time, а не от `encounter.elapsedMs`, чтобы не сбрасываться между волнами.
-- Weapon slots используют существующие projectile assets из `public/assets/projectiles/**`.
-- Upgrade badges используют существующие drop assets из `public/assets/drops/**`.
-- Для честного отображения cooldown progress и upgrade badges может потребоваться расширить `WeaponHudSnapshot`: длительность cooldown-а, список weapon modifiers и duration/start для временного overdrive. Это design-контракт первой задачи, а не локальная догадка в UI.
+История опирается на новый контракт [hud-presentation.md](../design/hud-presentation.md): HUD остаётся пассивным `src/main/ui/**` компонентом под управлением `UiShell`, но его player-facing layout меняется на top-left run status, top-center boss strip, bottom-left `WASD`, bottom-center weapon slots и bottom-right `ЛКМ: выстрел`.
+
+Технический срез:
+
+- `WeaponHudSnapshot` расширяется по [snapshot-shape.md](../design/snapshot-shape.md): `cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`, permanent `modifiers`, active `timedEffects`.
+- `CombatSystem` хранит дополнительные поля owner-local `WeaponInstance` из [universal-weapons-and-projectiles.md](../design/universal-weapons-and-projectiles.md), чтобы snapshot export не угадывал cooldown/overdrive progress.
+- Renderer-level debug HUD с `encounter`/`wave`/`hp`/`zone`/`drops` удаляется или становится no-op по умолчанию. `FpsOverlay` остаётся отдельным overlay справа сверху.
+- `Hud.ts` перестаёт рендерить старые нижние блоки `HP`/`Weapon`/`Encounter`/`Wave`/`Boss`; run timer берётся из `snapshot.simTimeMs`, HP из `PlayerSnapshot`, boss strip из `bossHud`.
+- Weapon slots используют `PROJECTILE_VISUALS[weaponArchetypeId].image`, а upgrade badges — явный mapping modifier/effect → `DROP_VISUALS[dropArchetypeId].image`.
+- Input behavior не меняется: `WASD`, `Digit1..9`, `Digit0` и `ЛКМ` остаются контрактом [input-commands.md](../design/input-commands.md); HUD только показывает подсказки и не ловит события.
 
 ## Out of scope
 
@@ -65,16 +69,19 @@
 
 ## Tasks
 
-Стартовая таблица держит только крупные шаги. Полная декомпозиция делается при переводе истории в `in-progress`.
-
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Design update: зафиксировать HUD presentation contract и, если нужно, расширение `WeaponHudSnapshot` для cooldown duration, modifiers и temporary overdrive progress. | Вероятные файлы: `main-ui-shell.md`, `snapshot-shape.md`, `universal-weapons-and-projectiles.md`; при необходимости новый `hud-presentation.md`. |
-| T2 | [ ] | Реализовать новый player-facing HUD: убрать renderer debug HUD, сохранить FPS, заменить старый нижний HUD на top-left timer/status, bottom-left `WASD`, bottom-center weapon slots, bottom-right `ЛКМ: выстрел`. | Использовать существующие projectile/drop assets; без изменения input behavior. |
-| T3 | [ ] | Тесты и визуальная проверка: view-model/unit tests для HUD, snapshot/export tests для новых данных, dev-server sanity на desktop/mobile с несколькими оружиями и pickup-ами. | Проверить cooldown fill, selected slot, stacked badges, overdrive progress и отсутствие text/layout overlap. |
+| T1 | [x] | Architect: оформить [hud-presentation.md](../design/hud-presentation.md), обновить [snapshot-shape.md](../design/snapshot-shape.md), [universal-weapons-and-projectiles.md](../design/universal-weapons-and-projectiles.md), [main-ui-shell.md](../design/main-ui-shell.md), смежные ссылки, [design/README.md](../design/README.md) и эту историю. | Закрывает контракт cooldown interval, modifiers, timed overdrive, HUD layout и debug removal boundary. |
+| T2 | [ ] | Расширить shared/runtime форму weapon HUD: `src/shared/snapshot.ts`, `CombatSystem.WeaponInstance`, `weaponHudFor(playerId, simTimeMs)`, `SnapshotExportSystem` и связанные тесты. | Поля: `cooldownStartedAtSimMs`, `cooldownReadyAtSimMs`, `modifiers`, `timedEffects`; expired overdrive не экспортируется. |
+| T3 | [ ] | Убрать renderer-level debug HUD по умолчанию из `Renderer.ts`, сохранив `FpsOverlay` в `src/main/index.ts`; обновить renderer tests, которые инжектят `createDebugHud`. | На странице не должно появляться DOM-панели `encounter/wave/hp/zone/drops`. |
+| T4 | [ ] | Пересобрать HUD view model в `src/main/ui/Hud.ts`: run timer из `snapshot.simTimeMs`, compact HP, boss strip, weapon slot descriptors, cooldown ratio, timed-effect ratio, badge grouping. | Сохранить пассивный lifecycle `attach/update/detach`; обновить `Hud.test.ts`. |
+| T5 | [ ] | Реализовать новый DOM/CSS HUD layout: top-left status, top-center boss strip, bottom-left `WASD`, bottom-center weapon bar, bottom-right mouse hint. | `pointer-events:none`, viewport-fixed positioning, stable square slots, monospace/tabular timer, responsive desktop/mobile constraints. |
+| T6 | [ ] | Подключить visual assets and badge mapping: projectile images from `PROJECTILE_VISUALS`, modifier/effect badges from `DROP_VISUALS`, selected-slot highlight, cooldown fill and timed overdrive fill. | Missing visual for known weapon/modifier is a test failure, not silent text fallback. |
+| T7 | [ ] | Финальная проверка: unit/integration tests for snapshot + HUD, `npm test`, and dev-server visual sanity on desktop/mobile with multiple weapons, active cooldown, stacked modifiers and overdrive. | Проверить отсутствие overlap, отсутствие старой debug-панели, FPS справа сверху, `ЛКМ: выстрел` без pointer-lock текста. |
 
 ## Related
 
+- [../design/hud-presentation.md](../design/hud-presentation.md)
 - [../design/main-ui-shell.md](../design/main-ui-shell.md)
 - [../design/snapshot-shape.md](../design/snapshot-shape.md)
 - [../design/input-commands.md](../design/input-commands.md)
@@ -82,6 +89,7 @@
 - [../design/combat-modifiers-and-field-effects.md](../design/combat-modifiers-and-field-effects.md)
 - [../design/sprite-assets.md](../design/sprite-assets.md)
 - [../design/web-stack.md](../design/web-stack.md)
+- [../design/testing.md](../design/testing.md)
 - [007-hud-and-menu.md](007-hud-and-menu.md)
 - [017-universal-weapons-and-projectiles.md](017-universal-weapons-and-projectiles.md)
 - [018-combat-modifiers-and-field-effects.md](018-combat-modifiers-and-field-effects.md)

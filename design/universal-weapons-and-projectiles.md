@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-24
-- Updated: 2026-04-24 (sprite extension: `ProjectileVisualSpec` form fixed to render-only behavior fields only; sprite identity (PNG path / `worldSize` / `anchor`) lives in the `projectileVisuals` registry per [sprite-assets.md](sprite-assets.md), keyed by `weaponArchetypeId`. cleanup pass: `audio?` field removed from `WeaponArchetype` to keep [audio.md](audio.md) invariant «no audio fields on archetypes»; no-op weapon-modifier rule reduced to a single deterministic case; `temporaryOverdrive.target` documented as single-value on this horizon; aim assist owner and pickup magnet binding moved to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) without ambiguity. Fireball follow-up: `multiDirection` directions are aim-relative offsets, not world axes.)
+- Updated: 2026-04-26 (story 022: owner-local `WeaponInstance` also carries cooldown interval start and temporary overdrive start so `WeaponHudSnapshot` can render cooldown fill and timed upgrade progress without guessing; see [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-24 sprite extension: `ProjectileVisualSpec` form fixed to render-only behavior fields only; sprite identity (PNG path / `worldSize` / `anchor`) lives in the `projectileVisuals` registry per [sprite-assets.md](sprite-assets.md), keyed by `weaponArchetypeId`. cleanup pass: `audio?` field removed from `WeaponArchetype` to keep [audio.md](audio.md) invariant «no audio fields on archetypes»; no-op weapon-modifier rule reduced to a single deterministic case; `temporaryOverdrive.target` documented as single-value on this horizon; aim assist owner and pickup magnet binding moved to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) without ambiguity. Fireball follow-up: `multiDirection` directions are aim-relative offsets, not world axes.)
 
 ## Context
 
@@ -166,12 +166,17 @@ Without a new contract, each new weapon would either add special branches to `Co
   ```ts
   type WeaponInstance = {
     archetypeId: string;
+    cooldownStartedAtSimMs: number;
     nextFireSimMs: number;
     modifiers: ReadonlyArray<WeaponModifier>;
+    overdriveStartedAtSimMs: number | null;
     overdriveUntilSimMs: number | null;
+    overdriveCooldownMultiplier: number | null;
   };
   ```
 - Cooldown and modifiers live on instances, not archetypes. Giving two actors the same weapon archetype never shares cooldown or upgrades.
+- `cooldownStartedAtSimMs` and `nextFireSimMs` define the current or most recent cooldown interval for HUD presentation. Firing updates both atomically. A ready weapon initialized at session start has both values equal to the initialization sim time.
+- `overdriveStartedAtSimMs`, `overdriveUntilSimMs` and `overdriveCooldownMultiplier` describe the current temporary overdrive effect. Repeated overdrive pickups overwrite these three fields.
 
 ### Weapon modifiers from drops
 
@@ -239,4 +244,5 @@ Without a new contract, each new weapon would either add special branches to `Co
 - [impact-feedback.md](impact-feedback.md)
 - [rng.md](rng.md)
 - [testing.md](testing.md)
+- [hud-presentation.md](hud-presentation.md)
 - [../stories/017-universal-weapons-and-projectiles.md](../stories/017-universal-weapons-and-projectiles.md)
