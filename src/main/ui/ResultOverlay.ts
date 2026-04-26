@@ -1,4 +1,5 @@
 import { comicTextStyle } from './comicTextStyle';
+import type { ResultViewModel } from './ResultViewModel';
 
 export type ResultOutcome = 'win' | 'loss';
 
@@ -8,7 +9,7 @@ export type ResultOverlayInit = Readonly<{
 }>;
 
 export type ResultOverlay = Readonly<{
-  show(outcome: ResultOutcome): void;
+  show(viewModel: ResultViewModel): void;
   hide(): void;
   isVisible(): boolean;
   dispose(): void;
@@ -52,9 +53,9 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   let visible = false;
 
   return {
-    show(outcome): void {
+    show(viewModel): void {
       visible = true;
-      applyOutcome(outcome, root, title, summary, backButton);
+      applyViewModel(viewModel, root, title, summary, backButton);
       root.style.display = 'flex';
     },
     hide(): void {
@@ -73,27 +74,28 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   };
 }
 
-function applyOutcome(
-  outcome: ResultOutcome,
+function applyViewModel(
+  viewModel: ResultViewModel,
   root: HTMLElement,
   title: HTMLElement,
   summary: HTMLElement,
   backButton: HTMLElement
 ): void {
+  const outcome = viewModel.outcome;
   root.dataset['outcome'] = outcome;
 
   if (outcome === 'win') {
-    title.textContent = 'Победа!';
+    title.textContent = viewModel.title;
     title.style.cssText = titleStyle('#fff38b');
-    summary.textContent = 'Забег завершён успешно. Слизни отступили.';
+    summary.textContent = viewModel.subtitle;
     summary.style.cssText = summaryStyle('#e9fbff');
     backButton.style.cssText = primaryButtonStyle('#7cf58f');
     return;
   }
 
-  title.textContent = 'Поражение';
+  title.textContent = viewModel.title;
   title.style.cssText = titleStyle('#ff9fcf');
-  summary.textContent = 'Забег окончен. Вернись в меню и попробуй новый заход.';
+  summary.textContent = viewModel.subtitle;
   summary.style.cssText = summaryStyle('#ffe7f3');
   backButton.style.cssText = primaryButtonStyle('#ff9fcf');
 }

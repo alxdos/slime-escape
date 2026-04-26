@@ -29,6 +29,7 @@ import type {
 } from './PhaseTransitionCurtain';
 import type { PauseOverlay, PauseOverlayInit } from './PauseOverlay';
 import type { ResultOutcome, ResultOverlay, ResultOverlayInit } from './ResultOverlay';
+import type { ResultViewModel } from './ResultViewModel';
 import type { SettingsOverlay, SettingsOverlayInit } from './SettingsOverlay';
 import type { StartupErrorOverlay, StartupErrorOverlayInit } from './StartupErrorOverlay';
 import type { StartupOverlay, StartupOverlayInit } from './StartupOverlay';
@@ -143,7 +144,10 @@ function makeResultSummary(
   };
 }
 
-function makeTerminalEvent(outcome: SessionResultOutcome, simTime: number): RuntimeEvent {
+function makeTerminalEvent(
+  outcome: SessionResultOutcome,
+  simTime: number
+): Extract<RuntimeEvent, { kind: SessionResultOutcome }> {
   return {
     kind: outcome,
     simTime,
@@ -366,13 +370,15 @@ function createPhaseTransitionCurtainHarness() {
 function createResultHarness() {
   let visible = false;
   let outcome: ResultOutcome | null = null;
+  let viewModel: ResultViewModel | null = null;
   let onBackToMenu: (() => void) | null = null;
   let root: FakeDomElement | null = null;
 
   const overlay: ResultOverlay = {
     show(next): void {
       visible = true;
-      outcome = next;
+      viewModel = next;
+      outcome = next.outcome;
       if (root !== null) {
         root.style.display = 'flex';
       }
@@ -380,6 +386,7 @@ function createResultHarness() {
     hide(): void {
       visible = false;
       outcome = null;
+      viewModel = null;
       if (root !== null) {
         root.style.display = 'none';
       }
@@ -408,6 +415,9 @@ function createResultHarness() {
     },
     outcome(): ResultOutcome | null {
       return outcome;
+    },
+    viewModel(): ResultViewModel | null {
+      return viewModel;
     },
     root(): FakeDomElement | null {
       return root;
@@ -1710,7 +1720,7 @@ describe('UiShell', () => {
     expect(sim.calls.pause).toBe(0);
     expect(pause.isVisible()).toBe(false);
     expect(result.isVisible()).toBe(true);
-    expect(shell.phase()).toEqual({ kind: 'result', outcome: 'win' });
+    expect(shell.phase()).toMatchObject({ kind: 'result', outcome: 'win' });
   });
 
   it('keeps physical KeyP as dev pause without showing the pause overlay', async () => {
@@ -2050,7 +2060,7 @@ describe('UiShell', () => {
     sim.emit(makeTerminalEvent('win', 123));
     pause.openSettings();
     expect(settings.isVisible()).toBe(false);
-    expect(shell.phase()).toEqual({ kind: 'result', outcome: 'win' });
+    expect(shell.phase()).toMatchObject({ kind: 'result', outcome: 'win' });
   });
 
   it('freezes HUD updates while paused but keeps renderer rendering', async () => {
@@ -2303,7 +2313,7 @@ describe('UiShell', () => {
     expect(pause.isVisible()).toBe(false);
     expect(result.isVisible()).toBe(true);
     expect(result.outcome()).toBe('loss');
-    expect(shell.phase()).toEqual({ kind: 'result', outcome: 'loss' });
+    expect(shell.phase()).toMatchObject({ kind: 'result', outcome: 'loss' });
   });
 
   it.each([
@@ -2358,7 +2368,13 @@ describe('UiShell', () => {
     expect(result.isVisible()).toBe(true);
     expect(result.outcome()).toBe(outcome);
     expect(audio.uiEvents).toContain('overlayShow');
-    expect(shell.phase()).toEqual({ kind: 'result', outcome });
+    const phase = shell.phase();
+    expect(phase).toMatchObject({ kind: 'result', outcome });
+    if (phase.kind !== 'result') {
+      throw new Error('expected result phase');
+    }
+    expect(phase.summary).toBe(event.summary);
+    expect(phase.viewModel).toBe(result.viewModel());
   });
 
   it('fans runtime events out to audio and renderer while running', async () => {
@@ -2456,7 +2472,7 @@ describe('UiShell', () => {
 
     expect(sim.calls.stop).toBe(0);
     expect(result.isVisible()).toBe(true);
-    expect(shell.phase()).toEqual({ kind: 'result', outcome: 'win' });
+    expect(shell.phase()).toMatchObject({ kind: 'result', outcome: 'win' });
 
     result.backToMenu();
 

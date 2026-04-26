@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createResultOverlay } from './ResultOverlay';
+import type { ResultViewModel } from './ResultViewModel';
 
 class FakeStyle {
   cssText = '';
@@ -78,6 +79,19 @@ function findByRoleOptional(root: FakeElement, role: string): FakeElement | null
 
 const originalDocument = globalThis.document;
 
+function makeViewModel(outcome: 'win' | 'loss'): ResultViewModel {
+  return {
+    outcome,
+    title: outcome === 'win' ? 'Победа!' : 'Забег окончен',
+    subtitle:
+      outcome === 'win' ? 'Ты выбрался из мира слаймов' : 'Слизни снова сомкнули ловушку',
+    primaryStats: [],
+    killRows: [],
+    boss: null,
+    defeatCause: null
+  };
+}
+
 afterEach(() => {
   if (originalDocument === undefined) {
     delete (globalThis as Partial<typeof globalThis>).document;
@@ -115,21 +129,19 @@ describe('createResultOverlay', () => {
     expect(backButton.textContent).toBe('Вернуться в меню');
     expect(backButton.className).toBe('result-comic-button');
 
-    overlay.show('win');
+    overlay.show(makeViewModel('win'));
     expect(overlay.isVisible()).toBe(true);
     expect(root.style.display).toBe('flex');
     expect(root.dataset['outcome']).toBe('win');
     expect(title.textContent).toBe('Победа!');
-    expect(summary.textContent).toBe('Забег завершён успешно. Слизни отступили.');
+    expect(summary.textContent).toBe('Ты выбрался из мира слаймов');
     expect(summary.style.cssText).toContain('background:#e9fbff');
     expect(backButton.style.cssText).toContain('background:#7cf58f');
 
-    overlay.show('loss');
+    overlay.show(makeViewModel('loss'));
     expect(root.dataset['outcome']).toBe('loss');
-    expect(title.textContent).toBe('Поражение');
-    expect(summary.textContent).toBe(
-      'Забег окончен. Вернись в меню и попробуй новый заход.'
-    );
+    expect(title.textContent).toBe('Забег окончен');
+    expect(summary.textContent).toBe('Слизни снова сомкнули ловушку');
     expect(summary.style.cssText).toContain('background:#ffe7f3');
     expect(backButton.style.cssText).toContain('background:#ff9fcf');
 

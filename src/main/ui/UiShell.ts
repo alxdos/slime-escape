@@ -9,6 +9,7 @@ import type { RuntimeEvent } from '../../shared/events';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type { SessionDefinition } from '../../shared/session';
+import type { SessionResultOutcome } from '../../shared/sessionResult';
 import { createAudio, type Audio } from '../audio/Audio';
 import { applyAimAssist } from '../input/AimAssist';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
@@ -38,10 +39,10 @@ import { createHud, type Hud, type HudInit } from './Hud';
 import { createPauseOverlay, type PauseOverlay, type PauseOverlayInit } from './PauseOverlay';
 import {
   createResultOverlay,
-  type ResultOutcome,
   type ResultOverlay,
   type ResultOverlayInit
 } from './ResultOverlay';
+import { buildResultViewModel } from './ResultViewModel';
 import {
   createSettingsOverlay,
   type SettingsOverlay,
@@ -66,7 +67,7 @@ import { STARTUP_SPRITE_SPECS } from './startupAssets';
 import { preloadStartupAssets } from './startupPreload';
 import type { UiShellPhase } from './UiShellPhase';
 
-export type SessionResult = ResultOutcome;
+export type SessionResult = SessionResultOutcome;
 export type { UiShellPhase } from './UiShellPhase';
 export { STARTUP_SPRITE_SPECS } from './startupAssets';
 
@@ -302,7 +303,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     audio.handleEvent(event);
     renderer?.handleEvent(event);
     if (event.kind === 'win' || event.kind === 'loss') {
-      handleRunEnd(event.kind, event.simTime);
+      handleRunEnd(event);
       return;
     }
     if (
@@ -357,7 +358,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         startupErrorOverlay.hide();
         menu.hide();
         pause.hide();
-        result.show(phase.outcome);
+        result.show(phase.viewModel);
         syncSettingsVisibility();
         return;
       case 'error':
@@ -591,11 +592,15 @@ export function createUiShell(init: UiShellInit): UiShell {
     setPhase(MENU_PHASE);
   }
 
-  function handleRunEnd(kind: SessionResult, simTimeMs: number): void {
+  function handleRunEnd(event: Extract<RuntimeEvent, { kind: 'win' | 'loss' }>): void {
     if (activeSession === null) return;
+    const session = activeSession;
+    const kind = event.kind;
+    const simTimeMs = event.simTime;
     log.info(`run ended: ${kind}`, { simTimeMs });
+    const viewModel = buildResultViewModel(session, event.summary);
     tearDownClientSession();
-    setPhase({ kind: 'result', outcome: kind });
+    setPhase({ kind: 'result', outcome: kind, summary: event.summary, viewModel });
   }
 
   function isRunningSessionActive(): boolean {
