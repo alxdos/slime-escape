@@ -13,18 +13,18 @@ export const COMIC_TEXT_FONT_FAMILY =
   '"M PLUS Rounded 1c", "Noto Sans Display", system-ui, sans-serif';
 
 const REGULAR_TEXT_SHADOW = [
-  '1px 0 0 #000000',
-  '-1px 0 0 #000000',
-  '0 1px 0 #000000',
-  '0 -1px 0 #000000',
+  '1.5px 0 0 #000000',
+  '-1.5px 0 0 #000000',
+  '0 1.5px 0 #000000',
+  '0 -1.5px 0 #000000',
   '3px 3px 0 #000000'
 ].join(', ');
 
 const STRONG_TEXT_SHADOW = [
-  '2px 0 0 #000000',
-  '-2px 0 0 #000000',
-  '0 2px 0 #000000',
-  '0 -2px 0 #000000',
+  '2.5px 0 0 #000000',
+  '-2.5px 0 0 #000000',
+  '0 2.5px 0 #000000',
+  '0 -2.5px 0 #000000',
   '4px 4px 0 #000000'
 ].join(', ');
 
