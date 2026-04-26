@@ -12,13 +12,8 @@ import type { SessionDefinition } from '../../shared/session';
 import { createAudio, type Audio } from '../audio/Audio';
 import { applyAimAssist } from '../input/AimAssist';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
-import { BOSS_VISUALS } from '../render/bossVisuals';
-import { DROP_VISUALS } from '../render/dropVisuals';
-import { ENEMY_VISUALS } from '../render/enemyVisuals';
-import { PLAYER_VISUALS } from '../render/playerVisuals';
-import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 import { createRenderer, type Renderer, type RendererInit } from '../render/Renderer';
-import { preloadSprites, type TextureMap } from '../render/spritePreload';
+import type { TextureMap } from '../render/spritePreload';
 import {
   createClientSettingsStore,
   type ClientSettingsStore
@@ -62,10 +57,13 @@ import {
   type TitleOverlay,
   type TitleOverlayInit
 } from './TitleOverlay';
+import { STARTUP_SPRITE_SPECS } from './startupAssets';
+import { preloadStartupAssets } from './startupPreload';
 import type { UiShellPhase } from './UiShellPhase';
 
 export type SessionResult = ResultOutcome;
 export type { UiShellPhase } from './UiShellPhase';
+export { STARTUP_SPRITE_SPECS } from './startupAssets';
 
 type WindowTarget = Pick<Window, 'addEventListener' | 'removeEventListener'>;
 type DocumentTarget = Pick<Document, 'addEventListener' | 'removeEventListener'> & {
@@ -125,15 +123,6 @@ const LOADING_PHASE: UiShellPhase = { kind: 'loading' };
 const MENU_PHASE: UiShellPhase = { kind: 'menu' };
 const RUNNING_PHASE: UiShellPhase = { kind: 'running' };
 const PAUSED_PHASE: UiShellPhase = { kind: 'paused' };
-const STARTUP_PRELOAD_MIN_DURATION_MS = 1500;
-const STARTUP_PRELOAD_PROGRESS_TICK_MS = 50;
-export const STARTUP_SPRITE_SPECS = Object.freeze([
-  ...Object.values(PLAYER_VISUALS),
-  ...Object.values(ENEMY_VISUALS),
-  ...Object.values(BOSS_VISUALS),
-  ...Object.values(PROJECTILE_VISUALS),
-  ...Object.values(DROP_VISUALS)
-]);
 
 export function createUiShell(init: UiShellInit): UiShell {
   const builder = init.buildSessionDefinition ?? buildSessionDefinition;
@@ -667,46 +656,7 @@ export function createUiShell(init: UiShellInit): UiShell {
 async function defaultRunStartupPreload(
   onProgress: (loaded: number, total: number) => void
 ): Promise<TextureMap> {
-  const startedAt = performance.now();
-  let actualLoaded = 0;
-  let total = 0;
-  let textures: TextureMap | null = null;
-  let failure: unknown = null;
-
-  const preloadPromise = preloadSprites(STARTUP_SPRITE_SPECS, (loaded, nextTotal) => {
-    actualLoaded = loaded;
-    total = nextTotal;
-  })
-    .then((resolvedTextures) => {
-      textures = resolvedTextures;
-    })
-    .catch((error: unknown) => {
-      failure = error;
-    });
-
-  while (true) {
-    const elapsedMs = performance.now() - startedAt;
-    const timedFraction =
-      total === 0 ? 1 : Math.min(1, elapsedMs / STARTUP_PRELOAD_MIN_DURATION_MS);
-    const timedLoaded = total === 0 ? 0 : Math.floor(total * timedFraction);
-    const displayedLoaded = Math.min(actualLoaded, timedLoaded);
-    onProgress(displayedLoaded, total);
-
-    if (failure !== null) {
-      await preloadPromise;
-      throw failure;
-    }
-
-    if (
-      textures !== null &&
-      elapsedMs >= STARTUP_PRELOAD_MIN_DURATION_MS &&
-      displayedLoaded >= total
-    ) {
-      return textures;
-    }
-
-    await delayMs(STARTUP_PRELOAD_PROGRESS_TICK_MS);
-  }
+  return preloadStartupAssets(onProgress);
 }
 
 function defaultReloadPage(): void {
@@ -752,12 +702,6 @@ function disposeTextureMap(textures: TextureMap): void {
   for (const texture of new Set(Object.values(textures))) {
     texture.dispose();
   }
-}
-
-function delayMs(durationMs: number): Promise<void> {
-  return new Promise((resolve) => {
-    globalThis.setTimeout(resolve, durationMs);
-  });
 }
 
 function defaultMakeSeed(): number {

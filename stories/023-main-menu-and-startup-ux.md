@@ -71,7 +71,7 @@
 | ID | Status | Task | Note |
 |----|--------|------|------|
 | T1 | [x] | Architect: оформить [menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md), обновить [main-ui-shell.md](../design/main-ui-shell.md), [design/README.md](../design/README.md), Related/Technical/Tasks этой истории и индекс [stories/README.md](README.md). | Закрывает contract для honest preload, post-load ritual, transition curtain, menu stage, typography и reduced-motion. |
-| T2 | [ ] | Расширить startup preload required asset set: gameplay textures + first-screen UI images (`slime-escape`, `bg-main`, `menu-main-*`), с hard-error через существующий startup error path. | UI images не становятся `SpriteVisualSpec`; список живёт в `src/main/ui/**`. |
+| T2 | [x] | Расширить startup preload required asset set: gameplay textures + first-screen UI images (`slime-escape`, `bg-main`, `menu-main-*`), с hard-error через существующий startup error path. | UI images не становятся `SpriteVisualSpec`; список живёт в `src/main/ui/**`. |
 | T3 | [ ] | Переработать `StartupOverlay` view model/rendering: honest asset progress, отдельный themed post-load ritual, progress to `100%`, no fake asset counts. | Покрыть тестами различие actual asset progress vs ritual progress. |
 | T4 | [ ] | Добавить `UiShell` phase transition curtain для `loading -> menu` и `menu -> running`, включая input guard от повторного старта. | Commit phase switch while curtain is opaque; `StartupErrorOverlay` остаётся emergency top layer. |
 | T5 | [ ] | Пересобрать `MenuOverlay` stage layout по [001-main.jpg](../mockups/001-main.jpg): `bg-main`, top-right controls, difficulty buttons, Play, Training, Pets/Dungeon/Lab blocks. | Stable reference coordinates/aspect ratio; no card UI fallback. |
