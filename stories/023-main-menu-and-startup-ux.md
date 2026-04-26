@@ -61,7 +61,7 @@
 - При входе в меню все интерактивные menu assets появляются через opacity `0 -> 1` и scale `0.5 -> 1`.
 - Обычные menu assets не имеют тени в покое; hover любой активной кнопки использует brightness и резкую чёрную drop-shadow, не меняя layout footprint.
 - Клик по `easy`, `normal` или `hard` обновляет selected state; одновременно выбран ровно один режим, он выделен плотной цветной обводкой.
-- Play в idle-состоянии мягко дышит через presentation-only scale/filter animation; hover/focus по Play переключает её на обычный button response.
+- Play в idle-состоянии мягко дышит через presentation-only scale/filter animation без чёрной тени; hover/focus по Play добавляет обычный lifted button response, но не прерывает breathing.
 - Play запускает текущий выбранный campaign preset.
 - Training запускает preset `training`.
 - Settings открывает overlay в рисованном стиле приложения: светлый фон, яркие controls, чёрная рамка и резкая тень.

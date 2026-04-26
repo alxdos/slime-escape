@@ -307,7 +307,7 @@ function menuOverlayCss(): string {
     transform: scale(1);
   }
   50% {
-    filter: brightness(1.12) saturate(1.06) drop-shadow(4px 4px 0 #000000);
+    filter: brightness(1.12) saturate(1.06);
     transform: scale(1.025);
   }
 }
@@ -315,6 +315,7 @@ function menuOverlayCss(): string {
 .menu-image-button {
   opacity: 1;
   transform: scale(1);
+  transition: filter 140ms ease, transform 140ms ease;
   outline: none;
 }
 
@@ -353,9 +354,10 @@ function menuOverlayCss(): string {
   animation: menu-play-breathe 1800ms ease-in-out infinite;
 }
 
-.menu-image-button[data-control-id="play"]:hover img,
-.menu-image-button[data-control-id="play"]:focus-visible img {
-  animation: none;
+.menu-image-button[data-control-id="play"]:hover,
+.menu-image-button[data-control-id="play"]:focus-visible {
+  filter: drop-shadow(6px 6px 0 #000000);
+  transform: translate(-1px, -1px) scale(1.015);
 }
 
 .menu-image-button[data-selected="true"]:hover img,
@@ -393,6 +395,8 @@ function menuOverlayCss(): string {
   }
 
   .menu-image-button,
+  .menu-image-button[data-control-id="play"]:hover,
+  .menu-image-button[data-control-id="play"]:focus-visible,
   .menu-image-button:hover img,
   .menu-image-button:focus-visible img {
     transform: none;
