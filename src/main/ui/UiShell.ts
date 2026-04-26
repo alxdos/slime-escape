@@ -30,6 +30,7 @@ import {
   type EscapeProgressPath,
   type EscapeProgressPathInit
 } from './EscapeProgressPath';
+import { deriveLiveEscapeProgressPathViewModel } from './EscapeProgressPathViewModel';
 import {
   createMenuOverlay,
   type MenuOverlay,
@@ -626,12 +627,17 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function enterOverlayPause(): void {
     if (!isRunningSessionActive()) return;
+    const session = activeSession;
+    if (session === null) return;
     if (documentTarget.pointerLockElement !== null) {
       documentTarget.exitPointerLock?.();
     }
     if (!sim.isPaused()) {
       sim.pause();
     }
+    pause.setEscapePath(
+      deriveLiveEscapeProgressPathViewModel(session, sim.snapshotPair().curr)
+    );
     setPhase(PAUSED_PHASE);
   }
 
@@ -785,6 +791,11 @@ export function createUiShell(init: UiShellInit): UiShell {
       if (activeSession !== null) {
         escapeProgressPath.update(snapshotPair, phase);
         titleOverlay.update(snapshotPair, phase);
+        if (phase.kind === 'paused') {
+          pause.setEscapePath(
+            deriveLiveEscapeProgressPathViewModel(activeSession, snapshotPair.curr)
+          );
+        }
       }
       audio.update(snapshotPair, phase, snapshotPair.curr?.encounter ?? null);
       renderer?.render();

@@ -699,9 +699,18 @@ function resultEscapePathTrackStyle(): string {
 function resultEscapePathPointStyle(
   state: ResultEscapePathViewModel['path']['points'][number]['state']
 ): string {
-  const color = state === 'upcoming' ? '#7d8795' : state === 'stopped' ? '#ff5c7e' : '#1fbf77';
+  const color =
+    state === 'active'
+      ? '#ffd166'
+      : state === 'upcoming'
+        ? '#7d8795'
+        : state === 'stopped'
+          ? '#ff5c7e'
+          : '#1fbf77';
   const glow =
-    state === 'stopped'
+    state === 'active'
+      ? '0 0 9px rgba(255,209,102,0.78)'
+      : state === 'stopped'
       ? '0 0 8px rgba(255,92,126,0.65)'
       : state === 'completed'
         ? '0 0 7px rgba(31,191,119,0.46)'

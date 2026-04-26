@@ -221,12 +221,12 @@ function rootStyle(): string {
 function compactRootStyle(): string {
   return [
     rootStyle(),
-    'top:14px',
+    'top:10px',
     'right:14px',
     'grid-template-columns:max-content 1fr',
     'align-items:center',
-    'gap:6px 8px',
-    'max-width:min(48vw, 440px)',
+    'gap:7px 10px',
+    'max-width:min(62vw, 620px)',
     'padding:4px 0',
     'text-align:right'
   ].join(';');
@@ -249,7 +249,7 @@ function expandedRootStyle(): string {
 function compactLabelStyle(): string {
   return [
     ...comicTextStyle({
-      fontSize: '13px',
+      fontSize: '17px',
       fontWeight: 900,
       lineHeight: '1',
       color: '#ffffff'
@@ -278,7 +278,7 @@ function compactTrackStyle(): string {
     'display:flex',
     'align-items:center',
     'justify-content:flex-end',
-    'gap:3px',
+    'gap:4px',
     'min-width:0',
     'overflow:hidden',
     'white-space:nowrap'
@@ -314,10 +314,17 @@ function expandedFooterStyle(): string {
 }
 
 function pointStyle(state: EscapeProgressPathPointViewModel['state']): string {
-  const color = state === 'upcoming' ? '#9aa7b8' : state === 'stopped' ? '#ff7b90' : '#7dffbd';
+  const color =
+    state === 'active'
+      ? '#ffd166'
+      : state === 'upcoming'
+        ? '#9aa7b8'
+        : state === 'stopped'
+          ? '#ff7b90'
+          : '#7dffbd';
   const glow =
     state === 'active'
-      ? '0 0 11px rgba(125,255,189,0.78)'
+      ? '0 0 13px rgba(255,209,102,0.82)'
       : state === 'completed'
         ? '0 0 7px rgba(125,255,189,0.56)'
         : state === 'stopped'
@@ -326,10 +333,10 @@ function pointStyle(state: EscapeProgressPathPointViewModel['state']): string {
   return [
     'display:inline-grid',
     'place-items:center',
-    'width:14px',
-    'height:14px',
+    'width:20px',
+    'height:20px',
     ...comicTextStyle({
-      fontSize: '14px',
+      fontSize: '20px',
       fontWeight: 900,
       lineHeight: '1',
       color
@@ -343,9 +350,9 @@ function flagStyle(flagState: 'pending' | 'reached'): string {
   return [
     'display:inline-grid',
     'place-items:center',
-    'width:18px',
-    'height:18px',
-    'font-size:16px',
+    'width:24px',
+    'height:24px',
+    'font-size:22px',
     'line-height:1',
     flagState === 'reached'
       ? 'filter:drop-shadow(0 0 8px rgba(125,255,189,0.82))'
@@ -376,15 +383,15 @@ function escapeProgressPathCss(): string {
     max-width: calc(100vw - 24px) !important;
     grid-template-columns: 1fr !important;
     justify-items: end !important;
-    gap: 4px !important;
+    gap: 5px !important;
   }
 
   .escape-progress-path[data-presentation="compact"] [data-role="escape-progress-label"] {
-    font-size: 12px !important;
+    font-size: 15px !important;
   }
 
   .escape-progress-path[data-presentation="compact"] [data-role="escape-progress-track"] {
-    gap: 2px !important;
+    gap: 3px !important;
     max-width: 100% !important;
   }
 

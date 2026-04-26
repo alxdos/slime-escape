@@ -20,6 +20,7 @@ import {
 import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/SimWorkerHost';
 
 import type { EscapeProgressPath, EscapeProgressPathInit } from './EscapeProgressPath';
+import type { EscapeProgressPathViewModel } from './EscapeProgressPathViewModel';
 import type { Hud, HudInit } from './Hud';
 import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
@@ -433,9 +434,13 @@ function createPauseHarness() {
   let onResume: (() => void) | null = null;
   let onExit: (() => void) | null = null;
   let onOpenSettings: (() => void) | null = null;
+  const escapePaths: EscapeProgressPathViewModel[] = [];
   let root: FakeDomElement | null = null;
 
   const overlay: PauseOverlay = {
+    setEscapePath(viewModel): void {
+      escapePaths.push(viewModel);
+    },
     show(): void {
       visible = true;
       if (root !== null) {
@@ -483,6 +488,9 @@ function createPauseHarness() {
     },
     root(): FakeDomElement | null {
       return root;
+    },
+    escapePaths(): ReadonlyArray<EscapeProgressPathViewModel> {
+      return escapePaths;
     }
   };
 }
@@ -2160,6 +2168,7 @@ describe('UiShell', () => {
     expect(renderer.calls.render).toBe(2);
     expect(audio.calls.update).toBe(2);
     expect(pause.isVisible()).toBe(true);
+    expect(pause.escapePaths().length).toBeGreaterThan(0);
     expect(result.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'paused' });
   });

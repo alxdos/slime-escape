@@ -85,6 +85,9 @@ describe('EscapeProgressPath', () => {
       expect(label.textContent).toBe('Волна 1/2');
       expect(footer.textContent).toBe('');
       expect(trackStates(track)).toEqual(['active', 'upcoming', 'pending']);
+      expect(childAt(track, 0).style.cssText).toContain('#ffd166');
+      expect(childAt(track, 0).style.cssText).toContain('width:20px');
+      expect(label.style.cssText).toContain('font-size:17px');
 
       path.update(
         snapshotPair(snapshot({ id: 'break-1', type: 'break', index: 1, elapsedMs: 100 })),
