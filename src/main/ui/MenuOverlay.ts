@@ -275,18 +275,26 @@ function menuOverlayCss(): string {
   0%, 100% {
     filter:
       brightness(1.08)
-      drop-shadow(2px 0 0 #7cf58f)
-      drop-shadow(-2px 0 0 #7cf58f)
-      drop-shadow(0 2px 0 #7cf58f)
-      drop-shadow(0 -2px 0 #7cf58f);
+      drop-shadow(3px 0 0 #7cf58f)
+      drop-shadow(-3px 0 0 #7cf58f)
+      drop-shadow(0 3px 0 #7cf58f)
+      drop-shadow(0 -3px 0 #7cf58f)
+      drop-shadow(2px 2px 0 #7cf58f)
+      drop-shadow(-2px 2px 0 #7cf58f)
+      drop-shadow(2px -2px 0 #7cf58f)
+      drop-shadow(-2px -2px 0 #7cf58f);
   }
   50% {
     filter:
       brightness(1.16)
-      drop-shadow(2px 0 0 #fff38b)
-      drop-shadow(-2px 0 0 #fff38b)
-      drop-shadow(0 2px 0 #fff38b)
-      drop-shadow(0 -2px 0 #fff38b);
+      drop-shadow(3px 0 0 #fff38b)
+      drop-shadow(-3px 0 0 #fff38b)
+      drop-shadow(0 3px 0 #fff38b)
+      drop-shadow(0 -3px 0 #fff38b)
+      drop-shadow(2px 2px 0 #fff38b)
+      drop-shadow(-2px 2px 0 #fff38b)
+      drop-shadow(2px -2px 0 #fff38b)
+      drop-shadow(-2px -2px 0 #fff38b);
   }
 }
 
@@ -318,6 +326,11 @@ function menuOverlayCss(): string {
   animation: menu-selected-breathe 1500ms ease-in-out infinite;
 }
 
+.menu-image-button[data-selected="true"]:hover img,
+.menu-image-button[data-selected="true"]:focus-visible img {
+  transform: none;
+}
+
 .menu-image-button[data-soon="true"] img {
   filter: saturate(0.86) brightness(0.92);
 }
@@ -344,10 +357,14 @@ function menuOverlayCss(): string {
     animation: none;
     filter:
       brightness(1.1)
-      drop-shadow(2px 0 0 #7cf58f)
-      drop-shadow(-2px 0 0 #7cf58f)
-      drop-shadow(0 2px 0 #7cf58f)
-      drop-shadow(0 -2px 0 #7cf58f);
+      drop-shadow(3px 0 0 #7cf58f)
+      drop-shadow(-3px 0 0 #7cf58f)
+      drop-shadow(0 3px 0 #7cf58f)
+      drop-shadow(0 -3px 0 #7cf58f)
+      drop-shadow(2px 2px 0 #7cf58f)
+      drop-shadow(-2px 2px 0 #7cf58f)
+      drop-shadow(2px -2px 0 #7cf58f)
+      drop-shadow(-2px -2px 0 #7cf58f);
   }
 }
 `;
