@@ -29,6 +29,7 @@ export type MenuOverlayInit = Readonly<{
   onToggleFullscreen(): void;
   onTeaser(controlId: TeaserControlId): void;
   onButtonHover(): void;
+  onModeSwitch(): void;
 }>;
 
 export type MenuOverlay = Readonly<{
@@ -105,10 +106,15 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     const action = resolveMenuControlAction(controlId, selectedMode);
 
     switch (action.kind) {
-      case 'selectMode':
+      case 'selectMode': {
+        const previousMode = selectedMode;
         selectedMode = action.presetId;
         applyModeSelection();
+        if (selectedMode !== previousMode) {
+          init.onModeSwitch();
+        }
         return;
+      }
       case 'start':
         init.onStart(action.presetId);
         return;

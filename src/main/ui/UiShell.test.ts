@@ -173,6 +173,7 @@ function createMenuHarness() {
   let onToggleFullscreen: (() => void) | null = null;
   let onTeaser: ((controlId: TeaserControlId) => void) | null = null;
   let onButtonHover: (() => void) | null = null;
+  let onModeSwitch: (() => void) | null = null;
   let modes: ReadonlyArray<{ presetId: ModePresetId }> = [];
   let root: FakeDomElement | null = null;
 
@@ -204,6 +205,7 @@ function createMenuHarness() {
       onToggleFullscreen = init.onToggleFullscreen;
       onTeaser = init.onTeaser;
       onButtonHover = init.onButtonHover;
+      onModeSwitch = init.onModeSwitch;
       root = new FakeDomElement();
       root.dataset['role'] = 'menu-overlay';
       root.style.zIndex = '100';
@@ -246,6 +248,12 @@ function createMenuHarness() {
         return;
       }
       onButtonHover?.();
+    },
+    switchMode(): void {
+      if (!visible) {
+        return;
+      }
+      onModeSwitch?.();
     },
     root(): FakeDomElement | null {
       return root;
@@ -1382,6 +1390,7 @@ describe('UiShell', () => {
     await flushUiShellStartup();
 
     menu.hoverButton();
+    menu.switchMode();
     menu.teaser('pets');
     expect(sim.startSessions).toHaveLength(0);
 
@@ -1394,7 +1403,13 @@ describe('UiShell', () => {
     expect(sim.startSessions).toHaveLength(1);
     expect(renderer.calls.create).toBe(1);
     expect(input.calls.start).toBe(1);
-    expect(audio.uiEvents).toEqual(['buttonHover', 'buttonClick', 'buttonClick', 'buttonClick']);
+    expect(audio.uiEvents).toEqual([
+      'buttonHover',
+      'modeSwitch',
+      'buttonClick',
+      'buttonClick',
+      'buttonClick'
+    ]);
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
 

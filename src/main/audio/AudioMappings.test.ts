@@ -68,7 +68,7 @@ describe('createAudioMappings', () => {
     });
 
     expect(mappings.resolveEnemySample('hit', 'slime-one-eye')).toBe('slimes/hit-3');
-    expect(mappings.resolveUiSample('buttonClick')).toBe('ui/switch-3');
+    expect(mappings.resolveUiSample('buttonClick')).toBe('ui/switch-4');
   });
 
   it('warns once per unique missing mapping key and skips playback', () => {
@@ -125,6 +125,7 @@ describe('createAudioMappings', () => {
     expect(mappings.resolveEventSample('dropPickup')).toBe('events/drop-pickup');
     expect(mappings.resolveUiSample('overlayShow')).toBe('ui/open-1');
     expect(mappings.resolveUiSample('buttonHover')).toBe('ui/open-1');
+    expect(mappings.resolveUiSample('modeSwitch')).toBe('ui/switch-2');
     expect(mappings.resolveEnemyVoice('slime-shell')).toEqual({
       sampleIds: ['slimes/voice-1', 'slimes/voice-2', 'slimes/voice-3', 'slimes/voice-4'],
       intervalMinMs: 3000,

@@ -1,1 +1,1 @@
-export type AudioUiEventId = 'overlayShow' | 'buttonClick' | 'buttonHover';
+export type AudioUiEventId = 'overlayShow' | 'buttonClick' | 'buttonHover' | 'modeSwitch';

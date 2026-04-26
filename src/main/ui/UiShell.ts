@@ -250,6 +250,12 @@ export function createUiShell(init: UiShellInit): UiShell {
         return;
       }
       audio.playUi('buttonHover');
+    },
+    onModeSwitch() {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
+        return;
+      }
+      audio.playUi('modeSwitch');
     }
   });
 
