@@ -1,6 +1,7 @@
 import type { RuntimeEvent } from '../shared/events';
 import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
+import type { SessionResultOutcome, SessionResultSummary } from '../shared/sessionResult';
 
 import { createBossPhaseSystem } from './BossPhaseSystem';
 import { createCombatSystem } from './CombatSystem';
@@ -58,6 +59,34 @@ function emitEvent(event: RuntimeEvent): void {
   postToMain({ kind: 'event', event });
 }
 
+function buildProtocolOnlyResultSummary(
+  outcome: SessionResultOutcome,
+  simTimeMs: number
+): SessionResultSummary {
+  return {
+    outcome,
+    durationMs: simTimeMs,
+    progress: {
+      percent: outcome === 'win' ? 100 : null,
+      completedObjectiveEncounters: 0,
+      totalObjectiveEncounters: 0,
+      completedWaves: 0,
+      totalWaves: 0,
+      activeEncounterId: null,
+      activeEncounterIndex: null
+    },
+    kills: {
+      total: 0,
+      byArchetype: []
+    },
+    drops: {
+      pickedUpTotal: 0
+    },
+    boss: null,
+    defeat: null
+  };
+}
+
 const clock = createSimulationClock((_dtMs, simTimeMs) => {
   const session = sessionFlow.activeSession();
   if (session === null) return;
@@ -113,6 +142,7 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
 const sessionFlow = createSessionFlowSystem({
   clock,
   emitEvent,
+  buildResultSummary: buildProtocolOnlyResultSummary,
   waveProgress: () => spawn.waveProgress(),
   onSessionStart(session, rng) {
     entities.clear();

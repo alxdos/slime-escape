@@ -9,6 +9,7 @@ import type {
   TransitionNext,
   TransitionRules
 } from '../shared/session';
+import type { SessionResultOutcome, SessionResultSummary } from '../shared/sessionResult';
 import type { WaveProgressSnapshot } from '../shared/snapshot';
 
 import {
@@ -49,6 +50,7 @@ export type SessionFlowDeps = Readonly<{
   onSessionStop?(): void;
   onEncounterStart?(encounter: EncounterDefinition): void;
   onEncounterEnd?(encounter: EncounterDefinition): void;
+  buildResultSummary(outcome: SessionResultOutcome, simTimeMs: number): SessionResultSummary;
 }>;
 
 type ActiveSession = {
@@ -205,7 +207,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
       emitEvent({ kind: 'encounterEnd', simTime });
       deps.onEncounterEnd?.(currentEncounter);
     }
-    emitEvent({ kind: 'loss', simTime });
+    emitTerminalEvent('loss', simTime);
     emitEvent({ kind: 'sessionStop', simTime });
     tearDown();
   }
@@ -214,7 +216,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     if (active === null) return;
     const winKind = active.def.winCondition.kind;
     if (winKind === 'allEncountersComplete') {
-      emitEvent({ kind: 'win', simTime: simTimeMs });
+      emitTerminalEvent('win', simTimeMs);
     }
     // bossDefeated: win только через onBossDeath (design/session-definition.md, boss-encounter.md)
     emitEvent({ kind: 'sessionStop', simTime: simTimeMs });
@@ -229,9 +231,14 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     const simTime = clock.simTimeMs();
     emitEvent({ kind: 'encounterEnd', simTime });
     deps.onEncounterEnd?.(enc);
-    emitEvent({ kind: 'win', simTime });
+    emitTerminalEvent('win', simTime);
     emitEvent({ kind: 'sessionStop', simTime });
     tearDown();
+  }
+
+  function emitTerminalEvent(outcome: SessionResultOutcome, simTimeMs: number): void {
+    const summary = deps.buildResultSummary(outcome, simTimeMs);
+    emitEvent({ kind: outcome, simTime: simTimeMs, summary });
   }
 
   function tearDown(): void {

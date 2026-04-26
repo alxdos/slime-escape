@@ -31,6 +31,7 @@ import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
 import { createZoneSystem } from './ZoneSystem';
+import { makeTestResultSummary } from './testSessionResultSummary';
 
 const HARD_HEAL_CARRIER_IDS = new Set([
   SLIME_FORTRESS.id,
@@ -157,6 +158,7 @@ function setupSimWorld(session: SessionDefinition) {
   const sessionFlow = createSessionFlowSystem({
     clock,
     emitEvent,
+    buildResultSummary: (outcome, simTimeMs) => makeTestResultSummary(outcome, simTimeMs),
     waveProgress: () => spawn.waveProgress(),
     onSessionStart(startedSession, rng) {
       entities.clear();

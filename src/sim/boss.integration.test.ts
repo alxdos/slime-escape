@@ -18,6 +18,7 @@ import { type SimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
+import { makeTestResultSummary } from './testSessionResultSummary';
 import { createZoneSystem } from './ZoneSystem';
 
 function fakeClock(): SimulationClock & {
@@ -109,6 +110,7 @@ function setupBossWorld() {
   const sessionFlow = createSessionFlowSystem({
     clock,
     emitEvent,
+    buildResultSummary: (outcome, simTimeMs) => makeTestResultSummary(outcome, simTimeMs),
     waveProgress: () => spawn.waveProgress(),
     onSessionStart(session, rng) {
       entities.clear();

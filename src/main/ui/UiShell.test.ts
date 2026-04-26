@@ -4,6 +4,7 @@ import { getPlayableModeCatalog, type ModePresetId } from '../../shared/content/
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type { SessionDefinition } from '../../shared/session';
+import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import { DROP_VISUALS } from '../render/dropVisuals';
@@ -111,6 +112,42 @@ function makeSession(id = 'test-session'): SessionDefinition {
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null
+  };
+}
+
+function makeResultSummary(
+  outcome: SessionResultOutcome,
+  durationMs: number
+): SessionResultSummary {
+  return {
+    outcome,
+    durationMs,
+    progress: {
+      percent: outcome === 'win' ? 100 : null,
+      completedObjectiveEncounters: 0,
+      totalObjectiveEncounters: 0,
+      completedWaves: 0,
+      totalWaves: 0,
+      activeEncounterId: null,
+      activeEncounterIndex: null
+    },
+    kills: {
+      total: 0,
+      byArchetype: []
+    },
+    drops: {
+      pickedUpTotal: 0
+    },
+    boss: null,
+    defeat: null
+  };
+}
+
+function makeTerminalEvent(outcome: SessionResultOutcome, simTime: number): RuntimeEvent {
+  return {
+    kind: outcome,
+    simTime,
+    summary: makeResultSummary(outcome, simTime)
   };
 }
 
@@ -1667,7 +1704,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'menu' });
 
     menu.start();
-    sim.emit({ kind: 'win', simTime: 123 });
+    sim.emit(makeTerminalEvent('win', 123));
     documentEvents.dispatch('pointerlockchange', new Event('pointerlockchange'));
 
     expect(sim.calls.pause).toBe(0);
@@ -1846,7 +1883,7 @@ describe('UiShell', () => {
     settings.setRenderScalePreset('low');
     expect(renderer.appliedPresets).toEqual(['low']);
 
-    sim.emit({ kind: 'win', simTime: 123 });
+    sim.emit(makeTerminalEvent('win', 123));
     settings.setRenderScalePreset('medium');
 
     expect(renderer.appliedPresets).toEqual(['low']);
@@ -2010,7 +2047,7 @@ describe('UiShell', () => {
     expect(settings.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'running' });
 
-    sim.emit({ kind: 'win', simTime: 123 });
+    sim.emit(makeTerminalEvent('win', 123));
     pause.openSettings();
     expect(settings.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'result', outcome: 'win' });
@@ -2232,7 +2269,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'menu' });
 
     menu.start();
-    sim.emit({ kind: 'loss', simTime: 123 });
+    sim.emit(makeTerminalEvent('loss', 123));
 
     windowTarget.dispatch(
       'keydown',
@@ -2307,14 +2344,15 @@ describe('UiShell', () => {
     await flushUiShellStartup();
 
     menu.start();
-    sim.emit({ kind, simTime: 123 });
+    const event = makeTerminalEvent(kind, 123);
+    sim.emit(event);
 
     expect(sim.calls.stop).toBe(0);
     expect(input.calls.stop).toBe(1);
     expect(renderer.calls.dispose).toBe(1);
     expect(hud.calls.detach).toBe(1);
-    expect(audio.events).toEqual([{ kind, simTime: 123 }]);
-    expect(renderer.events).toEqual([{ kind, simTime: 123 }]);
+    expect(audio.events).toEqual([event]);
+    expect(renderer.events).toEqual([event]);
     expect(audio.calls.detach).toBe(1);
     expect(menu.isVisible()).toBe(false);
     expect(result.isVisible()).toBe(true);
@@ -2414,7 +2452,7 @@ describe('UiShell', () => {
     await flushUiShellStartup();
 
     menu.start();
-    sim.emit({ kind: 'win', simTime: 123 });
+    sim.emit(makeTerminalEvent('win', 123));
 
     expect(sim.calls.stop).toBe(0);
     expect(result.isVisible()).toBe(true);

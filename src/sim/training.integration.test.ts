@@ -15,6 +15,7 @@ import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
 import { createZoneSystem } from './ZoneSystem';
+import { makeTestResultSummary } from './testSessionResultSummary';
 
 function fakeClock(): SimulationClock & {
   state: { running: boolean; paused: boolean; simTime: number };
@@ -62,6 +63,7 @@ function setupWorld() {
   const sessionFlow = createSessionFlowSystem({
     clock,
     emitEvent,
+    buildResultSummary: (outcome, simTimeMs) => makeTestResultSummary(outcome, simTimeMs),
     waveProgress: () => spawn.waveProgress(),
     onSessionStart(session, rng) {
       entities.clear();
