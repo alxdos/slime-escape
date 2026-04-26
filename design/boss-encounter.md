@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-20
+- Updated: 2026-04-26 (story 024: boss defeat/result HP is summarized for Result UI by [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-20.)
 
 ## Context
 
@@ -61,3 +61,4 @@
 - [snapshot-shape.md](snapshot-shape.md)
 - [projectiles-and-combat.md](projectiles-and-combat.md)
 - [../stories/006-boss-encounter.md](../stories/006-boss-encounter.md)
+- [session-result-summary.md](session-result-summary.md)

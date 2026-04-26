@@ -10,6 +10,7 @@ import { createDropSystem } from './DropSystem';
 import { createEntityStore } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
+import { createRunSummaryTracker } from './RunSummaryTracker';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import type { SimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
@@ -114,7 +115,10 @@ function setupCampaignRegressionWorld() {
   const healthDeath = createHealthDeathSystem();
   const spatialIndex = createSpatialIndex();
   const zone = createZoneSystem();
-  const drops = createDropSystem();
+  const runSummary = createRunSummaryTracker();
+  const drops = createDropSystem(undefined, undefined, null, (fact) =>
+    runSummary.onDropPickup(fact)
+  );
   const clock = fakeClock();
   const seenEnemyIds = new Set<number>();
   const recorded: RecordedSpawnOverrideEvent[] = [];
@@ -127,11 +131,19 @@ function setupCampaignRegressionWorld() {
   const sessionFlow = createSessionFlowSystem({
     clock,
     emitEvent,
+    buildResultSummary: (outcome, simTimeMs) =>
+      runSummary.buildSummary(outcome, simTimeMs, {
+        session: sessionFlow.activeSession(),
+        activeEncounter: sessionFlow.activeEncounter(),
+        waveProgress: spawn.waveProgress(),
+        store: entities
+      }),
     waveProgress: () => spawn.waveProgress(),
     onSessionStart(session, rng) {
       entities.clear();
       exporter.reset();
       combat.clear();
+      runSummary.reset();
       zone.reset();
       spawn.setRng(rng);
       drops.setRng(rng);
@@ -146,6 +158,7 @@ function setupCampaignRegressionWorld() {
       entities.clear();
       exporter.reset();
       combat.clear();
+      runSummary.reset();
       zone.reset();
       spawn.setRng(null);
       drops.setRng(null);
@@ -164,6 +177,7 @@ function setupCampaignRegressionWorld() {
   });
 
   healthDeath.registerHook((ctx) => {
+    runSummary.onDeath(ctx, entities);
     if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
     if (ctx.entityKind === 'enemy') combat.removeShooter(ctx.entityId);
     if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);

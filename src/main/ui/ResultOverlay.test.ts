@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createResultOverlay } from './ResultOverlay';
+import type { ResultViewModel } from './ResultViewModel';
 
 class FakeStyle {
   cssText = '';
@@ -16,11 +17,24 @@ class FakeElement {
   textContent = '';
   type = '';
   className = '';
+  src = '';
+  alt = '';
+  draggable = true;
 
   appendChild(child: FakeElement): FakeElement {
     child.parent = this;
     this.children.push(child);
     return child;
+  }
+
+  replaceChildren(...children: FakeElement[]): void {
+    for (const child of this.children) {
+      child.parent = null;
+    }
+    this.children.length = 0;
+    for (const child of children) {
+      this.appendChild(child);
+    }
   }
 
   remove(): void {
@@ -76,7 +90,64 @@ function findByRoleOptional(root: FakeElement, role: string): FakeElement | null
   return null;
 }
 
+function findAllByRole(root: FakeElement, role: string): FakeElement[] {
+  const matches: FakeElement[] = [];
+  if (root.dataset['role'] === role) {
+    matches.push(root);
+  }
+  for (const child of root.children) {
+    matches.push(...findAllByRole(child, role));
+  }
+  return matches;
+}
+
 const originalDocument = globalThis.document;
+
+function makeViewModel(
+  outcome: 'win' | 'loss',
+  overrides: Partial<ResultViewModel> = {}
+): ResultViewModel {
+  return {
+    outcome,
+    title: outcome === 'win' ? 'Победа!' : 'Забег окончен',
+    subtitle:
+      outcome === 'win' ? 'Ты выбрался из мира слаймов' : 'Слизни снова сомкнули ловушку',
+    primaryStats: [
+      { id: 'progress', label: 'Прогресс', value: outcome === 'win' ? '100%' : '73%' },
+      { id: 'duration', label: 'Время', value: outcome === 'win' ? '04:18' : '03:12' },
+      { id: 'total-kills', label: 'Убито слаймов', value: outcome === 'win' ? '143' : '96' },
+      { id: 'drops', label: 'Собрано усилений', value: '12' }
+    ],
+    killRows: [
+      {
+        id: 'enemy:slime',
+        entityKind: 'enemy',
+        archetypeId: 'slime',
+        label: 'Обычный слайм',
+        count: 80,
+        iconUrl: '/slime.png'
+      },
+      {
+        id: 'boss:king',
+        entityKind: 'boss',
+        archetypeId: 'king',
+        label: 'Король слаймов',
+        count: 1,
+        iconUrl: '/king.png'
+      }
+    ],
+    boss: {
+      archetypeId: 'king',
+      label: 'Король слаймов',
+      iconUrl: '/king.png',
+      text: outcome === 'win' ? 'Босс повержен' : 'Босс: осталось 28% HP',
+      defeated: outcome === 'win',
+      hpPercent: outcome === 'win' ? 0 : 28
+    },
+    defeatCause: outcome === 'loss' ? 'Добил: Прыгающий слайм' : null,
+    ...overrides
+  };
+}
 
 afterEach(() => {
   if (originalDocument === undefined) {
@@ -106,32 +177,76 @@ describe('createResultOverlay', () => {
     });
 
     const root = findByRole(parent, 'result-overlay');
+    const style = root.children[0];
+    const effectsLayer = findByRole(root, 'result-effects');
     const title = findByRole(root, 'result-title');
     const summary = findByRole(root, 'result-summary');
+    const statGrid = findByRole(root, 'result-stat-grid');
+    const bossPanel = findByRole(root, 'result-boss');
+    const bossText = findByRole(root, 'result-boss-text');
+    const defeatCause = findByRole(root, 'result-defeat-cause');
+    const killSection = findByRole(root, 'result-kills-section');
+    const killList = findByRole(root, 'result-kill-list');
     const backButton = findByRole(root, 'result-back-to-menu');
 
     expect(root.style.display).toBe('none');
-    expect(root.style.cssText).toContain('background:rgba(255,255,255,0.42)');
+    expect(root.style.cssText).toContain('background:rgba(255,255,255,0.46)');
+    expect(style?.textContent).toContain('prefers-reduced-motion');
+    expect(style?.textContent).toContain('.result-effect-particle');
+    expect(style?.textContent).toContain('result-victory-confetti');
+    expect(effectsLayer.parent?.className).toBe('result-stage');
     expect(backButton.textContent).toBe('Вернуться в меню');
     expect(backButton.className).toBe('result-comic-button');
 
-    overlay.show('win');
+    overlay.show(makeViewModel('win'));
     expect(overlay.isVisible()).toBe(true);
     expect(root.style.display).toBe('flex');
     expect(root.dataset['outcome']).toBe('win');
     expect(title.textContent).toBe('Победа!');
-    expect(summary.textContent).toBe('Забег завершён успешно. Слизни отступили.');
+    expect(summary.textContent).toBe('Ты выбрался из мира слаймов');
     expect(summary.style.cssText).toContain('background:#e9fbff');
     expect(backButton.style.cssText).toContain('background:#7cf58f');
+    expect(effectsLayer.dataset['outcome']).toBe('win');
+    const victoryParticles = findAllByRole(effectsLayer, 'result-effect-particle');
+    expect(victoryParticles).toHaveLength(20);
+    expect(victoryParticles[0]?.dataset['effectId']).toBe('left-spark-a');
+    expect(victoryParticles[0]?.style.cssText).toContain('animation:result-victory-pop');
+    expect(victoryParticles[4]?.dataset['effectId']).toBe('left-confetti-a');
+    expect(victoryParticles[4]?.style.cssText).toContain('animation:result-victory-confetti');
+    expect(victoryParticles[4]?.style.cssText).toContain('5 both');
+    expect(findAllByRole(statGrid, 'result-stat')).toHaveLength(4);
+    const firstStat = findAllByRole(statGrid, 'result-stat')[0];
+    expect(firstStat?.dataset['statId']).toBe('progress');
+    expect(findByRole(firstStat!, 'result-stat-label').textContent).toBe('Прогресс');
+    expect(findByRole(firstStat!, 'result-stat-value').textContent).toBe('100%');
+    expect(bossPanel.style.display).toBe('flex');
+    expect(bossPanel.dataset['defeated']).toBe('true');
+    expect(bossText.textContent).toBe('Босс повержен');
+    expect(defeatCause.style.display).toBe('none');
+    const killRows = findAllByRole(killList, 'result-kill-row');
+    expect(killSection.style.display).toBe('flex');
+    expect(killRows).toHaveLength(2);
+    expect(findByRole(killRows[0]!, 'result-kill-label').textContent).toBe('Обычный слайм');
+    expect(findByRole(killRows[0]!, 'result-kill-count').textContent).toBe('x80');
+    expect(findByRole(killRows[0]!, 'result-kill-icon').src).toBe('/slime.png');
 
-    overlay.show('loss');
+    overlay.show(makeViewModel('loss', { killRows: [] }));
     expect(root.dataset['outcome']).toBe('loss');
-    expect(title.textContent).toBe('Поражение');
-    expect(summary.textContent).toBe(
-      'Забег окончен. Вернись в меню и попробуй новый заход.'
-    );
+    expect(title.textContent).toBe('Забег окончен');
+    expect(summary.textContent).toBe('Слизни снова сомкнули ловушку');
     expect(summary.style.cssText).toContain('background:#ffe7f3');
     expect(backButton.style.cssText).toContain('background:#ff9fcf');
+    expect(effectsLayer.dataset['outcome']).toBe('loss');
+    const defeatParticles = findAllByRole(effectsLayer, 'result-effect-particle');
+    expect(defeatParticles).toHaveLength(8);
+    expect(defeatParticles[0]?.dataset['effectId']).toBe('slime-a');
+    expect(defeatParticles[0]?.style.cssText).toContain('animation:result-defeat-drip');
+    expect(bossPanel.dataset['defeated']).toBe('false');
+    expect(bossText.textContent).toBe('Босс: осталось 28% HP');
+    expect(defeatCause.style.display).toBe('block');
+    expect(defeatCause.textContent).toBe('Добил: Прыгающий слайм');
+    expect(killSection.style.display).toBe('none');
+    expect(findAllByRole(killList, 'result-kill-row')).toHaveLength(0);
 
     backButton.dispatch('click');
     expect(onBackToMenu).toHaveBeenCalledTimes(1);
@@ -142,6 +257,12 @@ describe('createResultOverlay', () => {
     expect(root.dataset['outcome']).toBeUndefined();
     expect(title.textContent).toBe('');
     expect(summary.textContent).toBe('');
+    expect(effectsLayer.dataset['outcome']).toBeUndefined();
+    expect(findAllByRole(effectsLayer, 'result-effect-particle')).toHaveLength(0);
+    expect(findAllByRole(statGrid, 'result-stat')).toHaveLength(0);
+    expect(killSection.style.display).toBe('none');
+    expect(bossPanel.style.display).toBe('none');
+    expect(defeatCause.style.display).toBe('none');
   });
 
   it('removes itself on dispose', () => {

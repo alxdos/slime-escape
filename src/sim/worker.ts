@@ -16,6 +16,7 @@ import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
 import { createStatusEffectSystem } from './StatusEffectSystem';
 import { createRetaliationSystem } from './RetaliationSystem';
+import { createRunSummaryTracker } from './RunSummaryTracker';
 import { createZoneSystem } from './ZoneSystem';
 
 const entities = createEntityStore();
@@ -34,21 +35,27 @@ const statusEffects = createStatusEffectSystem();
 const retaliation = createRetaliationSystem();
 const spatialIndex = createSpatialIndex();
 const zone = createZoneSystem();
+const runSummary = createRunSummaryTracker();
 let pendingFieldDamageIntents: ReturnType<typeof fieldEffects.tick>['damageIntents'] = [];
 let pendingStatusDamageIntents: ReturnType<typeof statusEffects.tick> = [];
-const drops = createDropSystem(undefined, undefined, {
-  addModifierToSelectedWeapon(ownerId, modifier) {
-    combat.addModifierToSelectedWeapon(ownerId, modifier);
+const drops = createDropSystem(
+  undefined,
+  undefined,
+  {
+    addModifierToSelectedWeapon(ownerId, modifier) {
+      combat.addModifierToSelectedWeapon(ownerId, modifier);
+    },
+    applyTemporaryOverdriveToSelectedWeapon(ownerId, cooldownMultiplier, durationMs, simTimeMs) {
+      combat.applyTemporaryOverdriveToSelectedWeapon(
+        ownerId,
+        cooldownMultiplier,
+        durationMs,
+        simTimeMs
+      );
+    }
   },
-  applyTemporaryOverdriveToSelectedWeapon(ownerId, cooldownMultiplier, durationMs, simTimeMs) {
-    combat.applyTemporaryOverdriveToSelectedWeapon(
-      ownerId,
-      cooldownMultiplier,
-      durationMs,
-      simTimeMs
-    );
-  }
-});
+  (fact) => runSummary.onDropPickup(fact)
+);
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);
@@ -113,6 +120,13 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
 const sessionFlow = createSessionFlowSystem({
   clock,
   emitEvent,
+  buildResultSummary: (outcome, simTimeMs) =>
+    runSummary.buildSummary(outcome, simTimeMs, {
+      session: sessionFlow.activeSession(),
+      activeEncounter: sessionFlow.activeEncounter(),
+      waveProgress: spawn.waveProgress(),
+      store: entities
+    }),
   waveProgress: () => spawn.waveProgress(),
   onSessionStart(session, rng) {
     entities.clear();
@@ -121,6 +135,7 @@ const sessionFlow = createSessionFlowSystem({
     fieldEffects.clear();
     statusEffects.clear();
     drops.clear();
+    runSummary.reset();
     zone.reset();
     pendingFieldDamageIntents = [];
     pendingStatusDamageIntents = [];
@@ -140,6 +155,7 @@ const sessionFlow = createSessionFlowSystem({
     fieldEffects.clear();
     statusEffects.clear();
     drops.clear();
+    runSummary.reset();
     zone.reset();
     pendingFieldDamageIntents = [];
     pendingStatusDamageIntents = [];
@@ -158,6 +174,7 @@ const sessionFlow = createSessionFlowSystem({
 });
 
 healthDeath.registerHook((ctx) => {
+  runSummary.onDeath(ctx, entities);
   if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
   if (ctx.entityKind === 'enemy') combat.removeShooter(ctx.entityId);
   if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);

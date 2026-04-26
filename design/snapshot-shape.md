@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-26 (story 022: `WeaponHudSnapshot` получает cooldown interval (`cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`), permanent `modifiers` and active `timedEffects` for the weapon-slot HUD; presentation contract lives in [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-25 story 020: `ProjectileSnapshot` получает обязательное поле `arcEnd: { x: number; y: number } | null` — fixed мировая позиция приземления для arc-снаряда в `state: 'flying'`, `null` для grounded и для linear/placed motion. Источник правды — `CombatSystem` в момент создания снаряда; `SnapshotExportSystem` копирует значение, не пересчитывает. Render-контракт landing-telegraph для in-flight arc от не-игрока — [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
+- Updated: 2026-04-26 (story 024: terminal `win`/`loss` runtime events carry `SessionResultSummary`; authoritative result stats are defined in [session-result-summary.md](session-result-summary.md). Earlier story 022: `WeaponHudSnapshot` получает cooldown interval (`cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`), permanent `modifiers` and active `timedEffects` for the weapon-slot HUD; presentation contract lives in [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-25 story 020: `ProjectileSnapshot` получает обязательное поле `arcEnd: { x: number; y: number } | null` — fixed мировая позиция приземления для arc-снаряда в `state: 'flying'`, `null` для grounded и для linear/placed motion. Источник правды — `CombatSystem` в момент создания снаряда; `SnapshotExportSystem` копирует значение, не пересчитывает. Render-контракт landing-telegraph для in-flight arc от не-игрока — [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
 
 ## Context
 
@@ -271,9 +271,9 @@ type EntitySnapshot =
         phaseIndex: number;
         phaseId: string;
       }
-    // session lifecycle (этот файл, история 004)
-    | { kind: 'win'; simTime: number }
-    | { kind: 'loss'; simTime: number }
+    // session lifecycle (этот файл, история 004; summary extension — session-result-summary.md)
+    | { kind: 'win'; simTime: number; summary: SessionResultSummary }
+    | { kind: 'loss'; simTime: number; summary: SessionResultSummary }
     // drops (этот файл, история 005; см. drops.md)
     | {
         kind: 'dropSpawn';
@@ -301,7 +301,7 @@ type EntitySnapshot =
         y: number;
       };
   ```
-- `win`/`loss` несут только `simTime`. Дополнительные поля (статистика забега, причина) — будущие расширения, появятся вместе с потребителями (HUD-итог из 007). Минимальная форма достаточна, чтобы `main` отреагировал переходом в результат-экран.
+- `win`/`loss` несут `simTime` и `summary`. Полная форма `SessionResultSummary`, владелец статистики и правила progress/kills/boss/defeat-cause зафиксированы в [session-result-summary.md](session-result-summary.md). `summary.outcome` должен совпадать с `event.kind`, а `summary.durationMs` должен совпадать с `event.simTime`.
 - `hit.targetArchetypeId` и `death.weaponArchetypeId`/`impactDir*` существуют для main-thread presentation consumers ([impact-feedback.md](impact-feedback.md)): renderer не должен реконструировать цвет цели, направление пули или причину смерти из соседних snapshot-ов, потому что цель может быть удалена до следующего кадра. Для `targetKind: 'player'` target archetype отсутствует и поле равно `null`; для смерти не от projectile weapon/direction поля равны `null`.
 - Owner-системы (см. [runtime-systems.md](runtime-systems.md)):
   - `fire`, `hit`, `explosion` публикует `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md));
@@ -327,6 +327,7 @@ type EntitySnapshot =
 - [boss-encounter.md](boss-encounter.md)
 - [impact-feedback.md](impact-feedback.md)
 - [hud-presentation.md](hud-presentation.md)
+- [session-result-summary.md](session-result-summary.md)
 
 ### Расширение
 

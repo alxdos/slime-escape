@@ -11,6 +11,7 @@ import { createDropSystem } from './DropSystem';
 import { createEntityStore } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
+import { createRunSummaryTracker } from './RunSummaryTracker';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import type { SimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
@@ -57,7 +58,10 @@ function setupWorld() {
   const healthDeath = createHealthDeathSystem();
   const spatialIndex = createSpatialIndex();
   const zone = createZoneSystem();
-  const drops = createDropSystem();
+  const runSummary = createRunSummaryTracker();
+  const drops = createDropSystem(undefined, undefined, null, (fact) =>
+    runSummary.onDropPickup(fact)
+  );
   const clock = fakeClock();
   const events: RuntimeEvent[] = [];
   const emitEvent = (event: RuntimeEvent): void => {
@@ -67,11 +71,19 @@ function setupWorld() {
   const sessionFlow = createSessionFlowSystem({
     clock,
     emitEvent,
+    buildResultSummary: (outcome, simTimeMs) =>
+      runSummary.buildSummary(outcome, simTimeMs, {
+        session: sessionFlow.activeSession(),
+        activeEncounter: sessionFlow.activeEncounter(),
+        waveProgress: spawn.waveProgress(),
+        store: entities
+      }),
     waveProgress: () => spawn.waveProgress(),
     onSessionStart(session, rng) {
       entities.clear();
       exporter.reset();
       combat.clear();
+      runSummary.reset();
       zone.reset();
       spawn.setRng(rng);
       drops.setRng(rng);
@@ -84,6 +96,7 @@ function setupWorld() {
       entities.clear();
       exporter.reset();
       combat.clear();
+      runSummary.reset();
       zone.reset();
       spawn.setRng(null);
       drops.setRng(null);
@@ -101,6 +114,7 @@ function setupWorld() {
   });
 
   healthDeath.registerHook((ctx) => {
+    runSummary.onDeath(ctx, entities);
     if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
@@ -232,6 +246,7 @@ describe('drops integration (training preset)', () => {
     expect(pickups.some((event) => event.kind === 'dropPickup' && event.archetypeId === HEAL_ORB.id)).toBe(
       true
     );
+    expect(terminalEvent(world.events, 'win').summary.drops.pickedUpTotal).toBe(pickups.length);
   });
 
   it('drops never leak after the session ends (win or stop)', () => {
@@ -268,3 +283,16 @@ describe('drops integration (training preset)', () => {
     expect(world.clock.isRunning()).toBe(false);
   });
 });
+
+function terminalEvent<TKind extends 'win' | 'loss'>(
+  events: ReadonlyArray<RuntimeEvent>,
+  kind: TKind
+): Extract<RuntimeEvent, { kind: TKind }> {
+  const event = events.find((candidate): candidate is Extract<RuntimeEvent, { kind: TKind }> => {
+    return candidate.kind === kind;
+  });
+  if (event === undefined) {
+    throw new Error(`missing terminal event: ${kind}`);
+  }
+  return event;
+}

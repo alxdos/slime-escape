@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { RuntimeEvent } from '../../shared/events';
 import type { Log } from '../../shared/log';
 import type { SessionDefinition } from '../../shared/session';
+import type { SessionResultSummary } from '../../shared/sessionResult';
 import type { Snapshot } from '../../shared/snapshot';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
@@ -174,6 +175,42 @@ function makeFireEvent(): RuntimeEvent {
     originY: 0,
     dirX: 1,
     dirY: 0
+  };
+}
+
+function makeWinEvent(simTime = 123): Extract<RuntimeEvent, { kind: 'win' }> {
+  return {
+    kind: 'win',
+    simTime,
+    summary: makeResultSummary('win', simTime)
+  };
+}
+
+function makeResultSummary(
+  outcome: 'win' | 'loss',
+  durationMs: number
+): SessionResultSummary {
+  return {
+    outcome,
+    durationMs,
+    progress: {
+      percent: outcome === 'win' ? 100 : 64,
+      completedObjectiveEncounters: 1,
+      totalObjectiveEncounters: 1,
+      completedWaves: 1,
+      totalWaves: 1,
+      activeEncounterId: null,
+      activeEncounterIndex: null
+    },
+    kills: {
+      total: 0,
+      byArchetype: []
+    },
+    drops: {
+      pickedUpTotal: 0
+    },
+    boss: null,
+    defeat: null
   };
 }
 
@@ -809,6 +846,23 @@ describe('createAudio', () => {
     expect(context.sources).toHaveLength(baselineSourceCount + 3);
   });
 
+  it('plays the victory fanfare on win but not on loss', async () => {
+    const { audio, context, fetchedUrls } = createAudioHarness();
+    context.setState('running');
+
+    audio.handleEvent(makeWinEvent(240));
+    audio.handleEvent({
+      ...makeWinEvent(260),
+      kind: 'loss',
+      summary: makeResultSummary('loss', 260)
+    });
+
+    await flushAudioWork();
+
+    expect(fetchedUrls).toEqual(['/sfx/ui/fanfare.mp3']);
+    expect(context.sources).toHaveLength(1);
+  });
+
   it('drops the oldest one-shot when more than 32 one-shots overlap', async () => {
     const { audio, context } = createAudioHarness();
     context.setState('running');
@@ -1075,11 +1129,11 @@ describe('createAudio', () => {
 
     expect(context.sources).toHaveLength(4);
     expect(context.sources[3]?.loop).toBe(true);
-    expect(getPlaybackTrimGain(context, 3).gain.value).toBe(1.6);
+    expect(getPlaybackTrimGain(context, 3).gain.value).toBe(0.55);
     expect(fetchedUrls).toEqual([
       '/sfx/music/005-forest.mp3',
       '/sfx/boss/boss-music.mp3',
-      '/sfx/music/101-clock-ticking.mp3'
+      '/sfx/music/digital-dawn.mp3'
     ]);
   });
 

@@ -190,6 +190,14 @@ export const DEFAULT_SAMPLE_ENTRIES: ReadonlyArray<SampleEntry> = Object.freeze(
     loop: true
   },
   {
+    id: 'music/digital-dawn',
+    url: '/sfx/music/digital-dawn.mp3',
+    category: 'music',
+    normalizedGain: 0.55,
+    defaultGain: 1,
+    loop: true
+  },
+  {
     id: 'music/001-calm',
     url: '/sfx/music/001-calm.mp3',
     category: 'music',
@@ -301,6 +309,13 @@ export const DEFAULT_SAMPLE_ENTRIES: ReadonlyArray<SampleEntry> = Object.freeze(
   {
     id: 'ui/open-2',
     url: '/sfx/ui/open-2.mp3',
+    category: 'ui',
+    normalizedGain: 1,
+    defaultGain: 1
+  },
+  {
+    id: 'ui/fanfare',
+    url: '/sfx/ui/fanfare.mp3',
     category: 'ui',
     normalizedGain: 1,
     defaultGain: 1

@@ -5,7 +5,11 @@ import { SANDBOX_PRESET } from '../shared/content/sessions';
 import type { RuntimeEvent } from '../shared/events';
 import type { EntityId } from './EntityStore';
 import type { SimulationClock } from './SimulationClock';
-import { createSessionFlowSystem } from './SessionFlowSystem';
+import {
+  createSessionFlowSystem as createRawSessionFlowSystem,
+  type SessionFlowDeps
+} from './SessionFlowSystem';
+import { makeTestResultSummary } from './testSessionResultSummary';
 
 function createFakeClock(): SimulationClock & { _state: { running: boolean; paused: boolean; simTime: number } } {
   const state = { running: false, paused: false, simTime: 0 };
@@ -229,6 +233,16 @@ describe('SessionFlowSystem', () => {
     expect(onStop).toHaveBeenCalledTimes(2);
   });
 });
+
+function createSessionFlowSystem(
+  deps: Omit<SessionFlowDeps, 'buildResultSummary'> &
+    Partial<Pick<SessionFlowDeps, 'buildResultSummary'>>
+) {
+  return createRawSessionFlowSystem({
+    buildResultSummary: (outcome, simTimeMs) => makeTestResultSummary(outcome, simTimeMs),
+    ...deps
+  });
+}
 
 import type { EncounterDefinition, SessionDefinition } from '../shared/session';
 import type { WaveProgressSnapshot } from '../shared/snapshot';
@@ -467,8 +481,65 @@ describe('SessionFlowSystem encounter transitions', () => {
     events.length = 0;
     flow.checkTransitions(0);
     expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'win', 'sessionStop']);
+    expect(terminalEvent(events, 'win').summary).toEqual(makeTestResultSummary('win', 0));
     expect(flow.isActive()).toBe(false);
     expect(clock.isRunning()).toBe(false);
+  });
+
+  it('builds terminal summaries through the configured summary builder', () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const summary = makeTestResultSummary('win', 0, { totalKills: 1 });
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: (e) => events.push(e),
+      buildResultSummary: (outcome, simTimeMs) => {
+        expect(outcome).toBe('win');
+        expect(simTimeMs).toBe(0);
+        return summary;
+      }
+    });
+    const session = makeSession([
+      emptyEncounter('only', { kind: 'allEnemiesCleared', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+    events.length = 0;
+    flow.checkTransitions(0);
+
+    expect(terminalEvent(events, 'win').summary).toBe(summary);
+  });
+
+  it('rejects terminal summaries that do not match the terminal event', () => {
+    const clock = createFakeClock();
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: () => {},
+      buildResultSummary: () => makeTestResultSummary('loss', 0)
+    });
+    const session = makeSession([
+      emptyEncounter('only', { kind: 'allEnemiesCleared', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+
+    expect(() => flow.checkTransitions(0)).toThrow(/outcome mismatch/);
+  });
+
+  it('rejects terminal summaries with a mismatched duration', () => {
+    const clock = createFakeClock();
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: () => {},
+      buildResultSummary: (outcome) => makeTestResultSummary(outcome, 999)
+    });
+    const session = makeSession([
+      emptyEncounter('only', { kind: 'allEnemiesCleared', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+
+    expect(() => flow.checkTransitions(0)).toThrow(/duration mismatch/);
   });
 
   it("does not publish 'win' if winCondition is none, but still publishes sessionStop", () => {
@@ -550,6 +621,7 @@ describe('SessionFlowSystem bossDefeated', () => {
     events.length = 0;
     flow.onBossDeath(42 as EntityId);
     expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'win', 'sessionStop']);
+    expect(terminalEvent(events, 'win').summary.outcome).toBe('win');
     expect(flow.isActive()).toBe(false);
     expect(clock.isRunning()).toBe(false);
   });
@@ -582,6 +654,7 @@ describe('SessionFlowSystem player death', () => {
     events.length = 0;
     flow.onPlayerDeath();
     expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'loss', 'sessionStop']);
+    expect(terminalEvent(events, 'loss').summary).toEqual(makeTestResultSummary('loss', 0));
     expect(flow.isActive()).toBe(false);
     expect(clock.isRunning()).toBe(false);
   });
@@ -637,3 +710,16 @@ describe('SessionFlowSystem player death', () => {
     }
   });
 });
+
+function terminalEvent<TKind extends 'win' | 'loss'>(
+  events: ReadonlyArray<RuntimeEvent>,
+  kind: TKind
+): Extract<RuntimeEvent, { kind: TKind }> {
+  const event = events.find((candidate): candidate is Extract<RuntimeEvent, { kind: TKind }> => {
+    return candidate.kind === kind;
+  });
+  if (event === undefined) {
+    throw new Error(`missing terminal event: ${kind}`);
+  }
+  return event;
+}

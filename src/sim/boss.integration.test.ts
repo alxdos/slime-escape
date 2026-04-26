@@ -13,6 +13,7 @@ import { createCombatSystem } from './CombatSystem';
 import { createEntityStore } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
+import { createRunSummaryTracker } from './RunSummaryTracker';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { type SimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
@@ -102,6 +103,7 @@ function setupBossWorld() {
   const healthDeath = createHealthDeathSystem();
   const spatialIndex = createSpatialIndex();
   const zone = createZoneSystem();
+  const runSummary = createRunSummaryTracker();
   const clock = fakeClock();
   const events: RuntimeEvent[] = [];
   const emitEvent = (event: RuntimeEvent) => events.push(event);
@@ -109,11 +111,19 @@ function setupBossWorld() {
   const sessionFlow = createSessionFlowSystem({
     clock,
     emitEvent,
+    buildResultSummary: (outcome, simTimeMs) =>
+      runSummary.buildSummary(outcome, simTimeMs, {
+        session: sessionFlow.activeSession(),
+        activeEncounter: sessionFlow.activeEncounter(),
+        waveProgress: spawn.waveProgress(),
+        store: entities
+      }),
     waveProgress: () => spawn.waveProgress(),
     onSessionStart(session, rng) {
       entities.clear();
       exporter.reset();
       combat.clear();
+      runSummary.reset();
       zone.reset();
       spawn.setRng(rng);
       const player = entities.spawnPlayer(session.player);
@@ -125,6 +135,7 @@ function setupBossWorld() {
       entities.clear();
       exporter.reset();
       combat.clear();
+      runSummary.reset();
       zone.reset();
       spawn.setRng(null);
     },
@@ -141,6 +152,7 @@ function setupBossWorld() {
   });
 
   healthDeath.registerHook((ctx) => {
+    runSummary.onDeath(ctx, entities);
     if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
@@ -199,6 +211,25 @@ function setupBossWorld() {
     );
   }
 
+  function killPlayerByBoss(simTimeMs: number): void {
+    const player = entities.player();
+    const boss = [...entities.bosses()][0];
+    if (player === null || boss === undefined) return;
+    healthDeath.tick(
+      [
+        {
+          targetId: player.id,
+          amount: player.hp + 99,
+          source: { kind: 'boss', bossId: boss.id, attackId: 'slam' },
+          hitPosition: player.position
+        }
+      ],
+      entities,
+      simTimeMs,
+      emitEvent
+    );
+  }
+
   return {
     entities,
     spawn,
@@ -206,8 +237,10 @@ function setupBossWorld() {
     sessionFlow,
     clock,
     events,
+    healthDeath,
     tick,
-    killBoss
+    killBoss,
+    killPlayerByBoss
   };
 }
 
@@ -228,7 +261,58 @@ describe('boss encounter integration', () => {
     world.tick();
 
     expect(world.clock.isRunning()).toBe(false);
-    expect(world.events.filter((e) => e.kind === 'win')).toHaveLength(1);
+    const wins = world.events.filter((e) => e.kind === 'win');
+    expect(wins).toHaveLength(1);
     expect(world.events.filter((e) => e.kind === 'loss')).toHaveLength(0);
+    const win = terminalEvent(world.events, 'win');
+    expect(win.summary.progress.percent).toBe(100);
+    expect(win.summary.kills.byArchetype).toContainEqual({
+      entityKind: 'boss',
+      archetypeId: BOSS_SCRAP_KING.id,
+      count: 1
+    });
+    expect(win.summary.boss?.defeated).toBe(true);
+  });
+
+  it('reports boss hp and boss defeat cause when the player dies during boss encounter', () => {
+    const world = setupBossWorld();
+    world.sessionFlow.start(bossOnlySession(12));
+    const boss = [...world.entities.bosses()][0];
+    if (boss === undefined) throw new Error('expected boss');
+    boss.hp = Math.round(boss.maxHp * 0.28);
+
+    world.killPlayerByBoss(world.clock.simTimeMs());
+
+    const loss = terminalEvent(world.events, 'loss');
+    expect(loss.summary.progress.percent).toBe(73);
+    expect(loss.summary.boss).toEqual({
+      archetypeId: BOSS_SCRAP_KING.id,
+      encountered: true,
+      defeated: false,
+      hp: boss.hp,
+      maxHp: boss.maxHp,
+      hpPercent: 28
+    });
+    expect(loss.summary.defeat).toEqual({
+      cause: {
+        kind: 'boss',
+        bossId: boss.id,
+        bossArchetypeId: BOSS_SCRAP_KING.id,
+        attackId: 'slam'
+      }
+    });
   });
 });
+
+function terminalEvent<TKind extends 'win' | 'loss'>(
+  events: ReadonlyArray<RuntimeEvent>,
+  kind: TKind
+): Extract<RuntimeEvent, { kind: TKind }> {
+  const event = events.find((candidate): candidate is Extract<RuntimeEvent, { kind: TKind }> => {
+    return candidate.kind === kind;
+  });
+  if (event === undefined) {
+    throw new Error(`missing terminal event: ${kind}`);
+  }
+  return event;
+}

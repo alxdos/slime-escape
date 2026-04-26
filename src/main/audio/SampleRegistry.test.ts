@@ -213,11 +213,40 @@ describe('createSampleRegistry', () => {
     expect(registry.require('ui/open-2').category).toBe('ui');
   });
 
-  it('normalizes all public music folder tracks above unity gain', () => {
+  it('registers the victory fanfare on the ui bus', () => {
+    const context = new FakeAudioContext();
+    const audioApi: AudioApi = {
+      createContext(): AudioContextLike {
+        return context;
+      },
+      async fetchArrayBuffer(): Promise<ArrayBuffer> {
+        return createArrayBuffer(4);
+      }
+    };
+
+    const registry = createSampleRegistry({
+      audioApi,
+      context
+    });
+
+    expect(registry.require('ui/fanfare')).toEqual({
+      id: 'ui/fanfare',
+      url: '/sfx/ui/fanfare.mp3',
+      category: 'ui',
+      normalizedGain: 1,
+      defaultGain: 1
+    });
+  });
+
+  it('normalizes public music folder tracks with explicit per-file overrides', () => {
     const musicFolderEntries = DEFAULT_SAMPLE_ENTRIES.filter((entry) => entry.id.startsWith('music/'));
+    const defaultNormalizedEntries = musicFolderEntries.filter(
+      (entry) => entry.id !== 'music/digital-dawn'
+    );
 
     expect(musicFolderEntries).not.toHaveLength(0);
-    expect(musicFolderEntries.every((entry) => entry.normalizedGain === 1.6)).toBe(true);
+    expect(defaultNormalizedEntries.every((entry) => entry.normalizedGain === 1.6)).toBe(true);
+    expect(DEFAULT_SAMPLE_ENTRIES.find((entry) => entry.id === 'music/digital-dawn')?.normalizedGain).toBe(0.55);
     expect(DEFAULT_SAMPLE_ENTRIES.find((entry) => entry.id === 'boss/boss-music')?.normalizedGain).toBe(1);
   });
 

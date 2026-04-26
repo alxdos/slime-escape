@@ -93,4 +93,5 @@
 | [landing-telegraph.md](landing-telegraph.md) | accepted | Render-only маркер точки приземления для in-flight arc-снарядов от не-игрока: snapshot-расширение `ProjectileSnapshot.arcEnd`, render-контракт (когда показывать, размер, исключение для player-owned arc), презентация vs геймплей |
 | [encounter-presentation.md](encounter-presentation.md) | accepted | Presentation-поля `EncounterDefinition` (`introDurationMs`/`name`/`text`), intro delay contract для `SpawnSystem`/`ZoneSystem`/`SessionFlowSystem`, set-local wave numbering (run-length), render-контракт wave/break title overlay |
 | [hud-presentation.md](hud-presentation.md) | accepted | Player-facing combat HUD: viewport regions, run timer, compact HP/boss state, control hints, weapon slots, cooldown interval, modifier badges and timed overdrive progress |
+| [session-result-summary.md](session-result-summary.md) | accepted | Terminal run summary for `win`/`loss`: progress, duration, kills, drops, boss state, defeat cause and Result UI ownership |
 | [_template.md](_template.md) | template | Минимальный шаблон нового решения |

@@ -1,3 +1,5 @@
+import type { SessionResultSummary } from './sessionResult';
+
 export type RuntimeEvent =
   | { kind: 'sessionStart'; simTime: number }
   | { kind: 'sessionStop'; simTime: number }
@@ -53,8 +55,8 @@ export type RuntimeEvent =
       x: number;
       y: number;
     }
-  | { kind: 'win'; simTime: number }
-  | { kind: 'loss'; simTime: number }
+  | { kind: 'win'; simTime: number; summary: SessionResultSummary }
+  | { kind: 'loss'; simTime: number; summary: SessionResultSummary }
   | {
       kind: 'dropSpawn';
       simTime: number;
