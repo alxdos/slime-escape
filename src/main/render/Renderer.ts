@@ -217,7 +217,7 @@ export function createRenderer(init: RendererInit): Renderer {
   const zoneOverlay = createZoneOverlay(init.arena);
   scene.add(zoneOverlay.mesh);
 
-  const debugHud = (init.createDebugHud ?? createDebugHud)();
+  const debugHud = (init.createDebugHud ?? createNoopDebugHud)();
   let currentRenderScalePreset = init.renderScalePreset;
   let characterSnapGrid: CharacterSnapGrid | null = null;
   let lastRenderNowMs = 0;
@@ -1576,56 +1576,9 @@ function updateZoneOverlay(overlay: ZoneOverlay, pair: SnapshotPair, alpha: numb
   overlay.setMargin(margin);
 }
 
-function createDebugHud(): DebugHud {
-  const div = document.createElement('div');
-  div.style.cssText = [
-    'position:fixed',
-    'top:8px',
-    'left:8px',
-    'color:#9ad6ff',
-    'font:12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace',
-    'background:rgba(0,0,0,0.55)',
-    'padding:6px 8px',
-    'border-radius:4px',
-    'pointer-events:none',
-    'z-index:5',
-    'white-space:pre'
-  ].join(';');
-  document.body.appendChild(div);
-
+function createNoopDebugHud(): DebugHud {
   return {
-    update(snapshot): void {
-      if (!snapshot) {
-        div.textContent = '';
-        return;
-      }
-      const lines: string[] = [];
-      const enc = snapshot.encounter;
-      lines.push(
-        enc
-          ? `encounter: ${enc.id} (${enc.type} #${enc.index})  ${(enc.elapsedMs / 1000).toFixed(1)}s`
-          : 'encounter: —'
-      );
-      const wp = snapshot.waveProgress;
-      if (wp !== null) {
-        lines.push(`wave: ${wp.dispatched}/${wp.total}  alive=${wp.alive}`);
-      }
-      const player = snapshot.entities.find((e) => e.kind === 'player');
-      lines.push(
-        player !== undefined && player.kind === 'player'
-          ? `hp:   ${player.hp}/${player.maxHp}`
-          : 'hp:   —'
-      );
-      lines.push(`zone: ${snapshot.zone.mode}  margin=${snapshot.zone.margin.toFixed(2)}`);
-      let drops = 0;
-      for (const entity of snapshot.entities) {
-        if (entity.kind === 'drop') drops += 1;
-      }
-      lines.push(`drops: ${drops}`);
-      div.textContent = lines.join('\n');
-    },
-    dispose(): void {
-      div.remove();
-    }
+    update(): void {},
+    dispose(): void {}
   };
 }
