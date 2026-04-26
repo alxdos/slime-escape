@@ -341,6 +341,8 @@ function pointStyle(state: EscapeProgressPathPointViewModel['state']): string {
       lineHeight: '1',
       color
     }),
+    '-webkit-text-stroke:1.6px rgba(5,5,5,0.68)',
+    'paint-order:stroke fill',
     `text-shadow:${glow}`,
     state === 'upcoming' ? 'opacity:0.62' : 'opacity:1'
   ].join(';');
