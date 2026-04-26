@@ -1,6 +1,6 @@
 # Путь Побега
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-26
 - Updated: 2026-04-26
 
@@ -99,6 +99,13 @@
 - Боссов в дорожке не отмечаем. Это оставляет маршрут чистым и не создаёт второй конкурирующий boss-индикатор.
 - Лучший эффект удержания возникает не от процента, а от незавершённой картинки: игрок видит пустые точки до флага и хочет заполнить их.
 
+## Technical
+
+- Архитектурная опора — [escape-progress-path.md](../design/escape-progress-path.md): `Путь Побега` является main-thread presentation layer, не расширяет `Snapshot`, runtime events, session content или sim-системы.
+- Live/break вариант строится из `SessionDefinition + SnapshotPair.curr`; result-вариант строится из `SessionDefinition + SessionResultSummary`.
+- `UiShell` владеет live-компонентом так же, как HUD/Title overlay: attach/update/freeze/detach по фазам. Result UI рендерит отдельную static-карту внутри result overlay.
+- Единая pure view-model derivation должна обслуживать compact HUD, expanded break map и result map, чтобы глобальная нумерация волн не расходилась между слоями.
+
 ## Out of scope
 
 - Отдельные маркеры боссов на дорожке.
@@ -121,16 +128,19 @@
 
 ## Tasks
 
-Стартовая декомпозиция предварительная. Детальные задачи появятся после архитектурного прохода.
+Архитектурная подготовка закрыта этим проходом; дальше задачи рассчитаны на кодера.
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Согласовать player-facing форму `Пути Побега`: compact HUD, expanded break map, result map, состояния wave/loss/win. | Product/design pass, без кода. |
-| T2 | [ ] | Зафиксировать архитектурные контракты для источников данных, фаз UiShell, z-order и result/break интеграции. | Следующий проход в `design/`. |
-| T3 | [ ] | Реализовать и проверить compact/expanded/result presentation. | После согласования контрактов. |
+| T1 | [x] | Архитектурная подготовка: новый [escape-progress-path.md](../design/escape-progress-path.md), обновление [main-ui-shell.md](../design/main-ui-shell.md), индекса [../design/README.md](../design/README.md), `Technical`/`Tasks`/`Related` истории. | Без production-кода. |
+| T2 | [ ] | Pure progress view model: добавить main-side helper для live/result derivation пути по `SessionDefinition`, `Snapshot` и `SessionResultSummary`. | Покрыть active wave, break after wave, boss/non-wave, win, loss during wave, loss after all waves before flag, zero-wave session. |
+| T3 | [ ] | Live component + UiShell wiring: создать `EscapeProgressPath` UI-компонент с lifecycle `attach/update/detach/dispose`, compact mode для running и expanded break mode для active break, подключить к `UiShell`. | Компонент пассивный: без `src/sim/**`, без runtime events, freeze в `paused`, hidden в result/menu/loading/error. |
+| T4 | [ ] | Result integration: расширить `ResultViewModel` и `ResultOverlay`, чтобы victory/defeat result показывали static `Карту Побега` из terminal summary. | Result UI не читает snapshot после teardown; final-boss loss показывает stop marker before flag, а не reached flag. |
+| T5 | [ ] | Presentation polish and verification: responsive layout, reduced-motion fallback, z-order sanity with boss HUD/title/pause/result, unit tests and demo checks. | Проверить desktop/mobile-ish widths; full `typecheck`/tests по затронутым UI-модулям. |
 
 ## Related
 
+- [escape-progress-path.md](../design/escape-progress-path.md)
 - [main-ui-shell.md](../design/main-ui-shell.md)
 - [hud-presentation.md](../design/hud-presentation.md)
 - [encounter-presentation.md](../design/encounter-presentation.md)
