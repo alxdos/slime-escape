@@ -97,7 +97,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-spark",
           },
           {
-            "archetypeId": "campaign-set-1-carrier-slime",
+            "archetypeId": "slime-spark",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "size-up",
+              ],
+            },
           },
           {
             "archetypeId": "slime-hornling",
@@ -323,7 +329,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-stack",
           },
           {
-            "archetypeId": "campaign-set-2-carrier-slime",
+            "archetypeId": "slime-stack",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "multi-shot",
+              ],
+            },
           },
           {
             "archetypeId": "slime-shell",
@@ -558,7 +570,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-lifter",
           },
           {
-            "archetypeId": "campaign-set-3-carrier-slime",
+            "archetypeId": "slime-echo",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "magnet",
+              ],
+            },
           },
           {
             "archetypeId": "slime-star",
@@ -799,7 +817,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-prince",
           },
           {
-            "archetypeId": "campaign-set-4-carrier-slime",
+            "archetypeId": "slime-prince",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "fragment",
+              ],
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -1049,7 +1073,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-clamper",
           },
           {
-            "archetypeId": "campaign-set-5-carrier-slime",
+            "archetypeId": "slime-obelisk",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "overdrive",
+              ],
+            },
           },
           {
             "archetypeId": "slime-mech",
@@ -1358,7 +1388,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-spark",
           },
           {
-            "archetypeId": "campaign-set-1-carrier-slime",
+            "archetypeId": "slime-spark",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "size-up",
+              ],
+            },
           },
           {
             "archetypeId": "slime-hornling",
@@ -1584,7 +1620,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-stack",
           },
           {
-            "archetypeId": "campaign-set-2-carrier-slime",
+            "archetypeId": "slime-stack",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "multi-shot",
+              ],
+            },
           },
           {
             "archetypeId": "slime-shell",
@@ -1819,7 +1861,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-lifter",
           },
           {
-            "archetypeId": "campaign-set-3-carrier-slime",
+            "archetypeId": "slime-echo",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "magnet",
+              ],
+            },
           },
           {
             "archetypeId": "slime-star",
@@ -2060,7 +2108,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-prince",
           },
           {
-            "archetypeId": "campaign-set-4-carrier-slime",
+            "archetypeId": "slime-prince",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "fragment",
+              ],
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -2310,7 +2364,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-clamper",
           },
           {
-            "archetypeId": "campaign-set-5-carrier-slime",
+            "archetypeId": "slime-obelisk",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "overdrive",
+              ],
+            },
           },
           {
             "archetypeId": "slime-mech",
@@ -2619,7 +2679,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-spark",
           },
           {
-            "archetypeId": "campaign-set-1-carrier-slime",
+            "archetypeId": "slime-spark",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "size-up",
+              ],
+            },
           },
           {
             "archetypeId": "slime-hornling",
@@ -2845,7 +2911,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-stack",
           },
           {
-            "archetypeId": "campaign-set-2-carrier-slime",
+            "archetypeId": "slime-stack",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "multi-shot",
+              ],
+            },
           },
           {
             "archetypeId": "slime-shell",
@@ -3080,7 +3152,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-lifter",
           },
           {
-            "archetypeId": "campaign-set-3-carrier-slime",
+            "archetypeId": "slime-echo",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "magnet",
+              ],
+            },
           },
           {
             "archetypeId": "slime-star",
@@ -3321,7 +3399,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-prince",
           },
           {
-            "archetypeId": "campaign-set-4-carrier-slime",
+            "archetypeId": "slime-prince",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "fragment",
+              ],
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -3571,7 +3655,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
             "archetypeId": "slime-clamper",
           },
           {
-            "archetypeId": "campaign-set-5-carrier-slime",
+            "archetypeId": "slime-obelisk",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "overdrive",
+              ],
+            },
           },
           {
             "archetypeId": "slime-mech",
@@ -3805,21 +3895,52 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
         "kind": "static",
         "spawns": [
           {
-            "archetypeId": "demo-carrier-slime",
+            "archetypeId": "slime-star",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "magnet",
+                "heal-orb",
+              ],
+            },
             "position": {
               "x": 4,
               "y": 1.5,
             },
           },
           {
-            "archetypeId": "demo-retaliator-slime",
+            "archetypeId": "slime-saw",
+            "override": {
+              "dropTable": [
+                {
+                  "archetypeId": "heal-orb",
+                  "chance": 0.2,
+                },
+              ],
+              "retaliation": {
+                "durationMs": 2500,
+                "enabled": true,
+              },
+            },
             "position": {
               "x": 5,
               "y": -1,
             },
           },
           {
-            "archetypeId": "demo-retaliator-slime",
+            "archetypeId": "slime-saw",
+            "override": {
+              "dropTable": [
+                {
+                  "archetypeId": "heal-orb",
+                  "chance": 0.2,
+                },
+              ],
+              "retaliation": {
+                "durationMs": 2500,
+                "enabled": true,
+              },
+            },
             "position": {
               "x": 7,
               "y": -1,
@@ -3912,21 +4033,52 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
         "kind": "static",
         "spawns": [
           {
-            "archetypeId": "demo-carrier-slime",
+            "archetypeId": "slime-star",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "magnet",
+                "heal-orb",
+              ],
+            },
             "position": {
               "x": 4,
               "y": 1.5,
             },
           },
           {
-            "archetypeId": "demo-retaliator-slime",
+            "archetypeId": "slime-saw",
+            "override": {
+              "dropTable": [
+                {
+                  "archetypeId": "heal-orb",
+                  "chance": 0.2,
+                },
+              ],
+              "retaliation": {
+                "durationMs": 2500,
+                "enabled": true,
+              },
+            },
             "position": {
               "x": 5,
               "y": -1,
             },
           },
           {
-            "archetypeId": "demo-retaliator-slime",
+            "archetypeId": "slime-saw",
+            "override": {
+              "dropTable": [
+                {
+                  "archetypeId": "heal-orb",
+                  "chance": 0.2,
+                },
+              ],
+              "retaliation": {
+                "durationMs": 2500,
+                "enabled": true,
+              },
+            },
             "position": {
               "x": 7,
               "y": -1,
@@ -4019,21 +4171,52 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
         "kind": "static",
         "spawns": [
           {
-            "archetypeId": "demo-carrier-slime",
+            "archetypeId": "slime-star",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "magnet",
+                "heal-orb",
+              ],
+            },
             "position": {
               "x": 4,
               "y": 1.5,
             },
           },
           {
-            "archetypeId": "demo-retaliator-slime",
+            "archetypeId": "slime-saw",
+            "override": {
+              "dropTable": [
+                {
+                  "archetypeId": "heal-orb",
+                  "chance": 0.2,
+                },
+              ],
+              "retaliation": {
+                "durationMs": 2500,
+                "enabled": true,
+              },
+            },
             "position": {
               "x": 5,
               "y": -1,
             },
           },
           {
-            "archetypeId": "demo-retaliator-slime",
+            "archetypeId": "slime-saw",
+            "override": {
+              "dropTable": [
+                {
+                  "archetypeId": "heal-orb",
+                  "chance": 0.2,
+                },
+              ],
+              "retaliation": {
+                "durationMs": 2500,
+                "enabled": true,
+              },
+            },
             "position": {
               "x": 7,
               "y": -1,
