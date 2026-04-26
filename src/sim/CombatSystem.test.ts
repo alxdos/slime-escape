@@ -269,6 +269,31 @@ describe('CombatSystem', () => {
     expect(shotgunFire.dirY).toBeCloseTo(0);
   });
 
+  it('reflects selected slot changes in weaponHudFor without firing', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [PISTOL.id, SHOTGUN.id], selectedIndex: 0 }, 0);
+    const input = makeInput({
+      aimWorld: { x: 5, y: 0 },
+      firing: false,
+      loadout: { weapons: [PISTOL.id, SHOTGUN.id], selectedIndex: 0 }
+    });
+
+    expect(combat.weaponHudFor(player.id, 0)?.selectedIndex).toBe(0);
+
+    input.loadout!.selectedIndex = 1;
+    combat.tick(input, store, index, 0, ARENA, () => {});
+    expect(store.projectileCount()).toBe(0);
+    expect(combat.weaponHudFor(player.id, 0)?.selectedIndex).toBe(1);
+
+    input.loadout!.selectedIndex = null;
+    combat.tick(input, store, index, SIM_STEP_MS, ARENA, () => {});
+    expect(store.projectileCount()).toBe(0);
+    expect(combat.weaponHudFor(player.id, SIM_STEP_MS)?.selectedIndex).toBeNull();
+  });
+
   it('exposes player weapon HUD state with selected slot and cooldowns', () => {
     const store = createEntityStore();
     const index = createSpatialIndex();

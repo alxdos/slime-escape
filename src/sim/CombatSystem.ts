@@ -185,6 +185,7 @@ export function createCombatSystem(
       const maxContactBoundsRadius = computeMaxContactBoundsRadius(store);
       const maxProjectileTargetBoundsRadius = computeMaxProjectileTargetBoundsRadius(store);
       const projectileRemovals = new Set<EntityId>();
+      syncPlayerSelectedIndex(input, store, shooterWeapons);
       runPlayerFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit);
       runEnemyFiringDecisions(store, simTimeMs, shooterWeapons, weaponRegistry, emit);
       runProjectileMovement(store, simTimeMs, projectileRemovals);
@@ -224,6 +225,19 @@ export function createCombatSystem(
   };
 }
 
+function syncPlayerSelectedIndex(
+  input: RuntimeInputState,
+  store: EntityStore,
+  shooterWeapons: Map<EntityId, ShooterWeapons>
+): void {
+  const player = store.player();
+  if (player === null) return;
+  if (input.loadout === null) return;
+  const weapons = shooterWeapons.get(player.id);
+  if (weapons === undefined) return;
+  weapons.selectedIndex = input.loadout.selectedIndex;
+}
+
 function runPlayerFiringDecisions(
   input: RuntimeInputState,
   store: EntityStore,
@@ -238,9 +252,6 @@ function runPlayerFiringDecisions(
 
   const weapons = shooterWeapons.get(player.id);
   if (weapons === undefined) return;
-  if (input.loadout !== null) {
-    weapons.selectedIndex = input.loadout.selectedIndex;
-  }
 
   const selectedWeapon = selectedWeaponInstance(weapons);
   if (selectedWeapon === null) return;
