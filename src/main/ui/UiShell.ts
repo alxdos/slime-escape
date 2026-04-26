@@ -29,6 +29,11 @@ import {
   type MenuOverlay,
   type MenuOverlayInit
 } from './MenuOverlay';
+import {
+  createPhaseTransitionCurtain,
+  type PhaseTransitionCurtain,
+  type PhaseTransitionCurtainInit
+} from './PhaseTransitionCurtain';
 import { createHud, type Hud, type HudInit } from './Hud';
 import { createPauseOverlay, type PauseOverlay, type PauseOverlayInit } from './PauseOverlay';
 import {
@@ -73,6 +78,9 @@ type DocumentTarget = Pick<Document, 'addEventListener' | 'removeEventListener'>
 type BuildSessionDefinitionFn = typeof buildSessionDefinition;
 type CreateSimWorkerHostFn = (options?: SimWorkerHostOptions) => SimWorkerHost;
 type CreateMenuOverlayFn = (init: MenuOverlayInit) => MenuOverlay;
+type CreatePhaseTransitionCurtainFn = (
+  init: PhaseTransitionCurtainInit
+) => PhaseTransitionCurtain;
 type CreatePauseOverlayFn = (init: PauseOverlayInit) => PauseOverlay;
 type CreateResultOverlayFn = (init: ResultOverlayInit) => ResultOverlay;
 type CreateSettingsOverlayFn = (init: SettingsOverlayInit) => SettingsOverlay;
@@ -95,6 +103,7 @@ export type UiShellInit = Readonly<{
   buildSessionDefinition?: BuildSessionDefinitionFn;
   createSimWorkerHost?: CreateSimWorkerHostFn;
   createMenuOverlay?: CreateMenuOverlayFn;
+  createPhaseTransitionCurtain?: CreatePhaseTransitionCurtainFn;
   createPauseOverlay?: CreatePauseOverlayFn;
   createResultOverlay?: CreateResultOverlayFn;
   createSettingsOverlay?: CreateSettingsOverlayFn;
@@ -128,6 +137,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   const builder = init.buildSessionDefinition ?? buildSessionDefinition;
   const makeSeed = init.makeSeed ?? defaultMakeSeed;
   const menuFactory = init.createMenuOverlay ?? createMenuOverlay;
+  const phaseTransitionCurtainFactory =
+    init.createPhaseTransitionCurtain ?? createPhaseTransitionCurtain;
   const pauseFactory = init.createPauseOverlay ?? createPauseOverlay;
   const resultFactory = init.createResultOverlay ?? createResultOverlay;
   const settingsOverlayFactory = init.createSettingsOverlay ?? createSettingsOverlay;
@@ -160,6 +171,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let settingsVisible = false;
   let phase: UiShellPhase = LOADING_PHASE;
   let disposed = false;
+  let transitionActive = false;
   const hud = hudFactory({ parent: init.parent });
   const titleOverlay = titleOverlayFactory({ parent: init.parent });
   const clientSettingsStore = clientSettingsStoreFactory();
@@ -186,19 +198,22 @@ export function createUiShell(init: UiShellInit): UiShell {
       reloadPage();
     }
   });
+  const phaseTransitionCurtain = phaseTransitionCurtainFactory({
+    parent: init.parent
+  });
 
   const menu = menuFactory({
     parent: init.parent,
     modes: getPlayableModeCatalog(),
     onStart(presetId) {
-      if (phase.kind !== 'menu') {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
       }
       audio.playUi('buttonClick');
       startPresetId(presetId);
     },
     onOpenSettings() {
-      if (phase.kind !== 'menu') {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
       }
       audio.playUi('buttonClick');
@@ -351,12 +366,37 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function startPresetId(presetId: ModePresetId): void {
-    if (phase.kind !== 'menu') return;
+    if (phase.kind !== 'menu' || isTransitionActive()) return;
     const preset = resolveModePreset(presetId);
-    startPreset(preset);
+    void startPresetWithTransition(preset);
   }
 
-  function startPreset(preset: ModePreset): void {
+  async function startPresetWithTransition(preset: ModePreset): Promise<void> {
+    if (phase.kind !== 'menu' || activeSession !== null || isTransitionActive()) {
+      return;
+    }
+
+    transitionActive = true;
+    try {
+      await phaseTransitionCurtain.run(
+        () => {
+          startPreset(preset, { startInput: false });
+        },
+        () => {
+          if (phase.kind === 'running') {
+            input?.start();
+          }
+        }
+      );
+    } finally {
+      transitionActive = false;
+    }
+  }
+
+  function startPreset(
+    preset: ModePreset,
+    options: Readonly<{ startInput: boolean }> = { startInput: true }
+  ): void {
     if (phase.kind !== 'menu') return;
     if (activeSession !== null) return;
 
@@ -414,7 +454,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       audioAttached = true;
       sim.startSession(session);
       sessionStarted = true;
-      nextInput.start();
+      if (options.startInput) {
+        nextInput.start();
+      }
       hud.attach(session);
       hudAttached = true;
       titleOverlay.attach(session);
@@ -581,6 +623,10 @@ export function createUiShell(init: UiShellInit): UiShell {
     startupOverlay.setProgress(loaded, total);
   }
 
+  function isTransitionActive(): boolean {
+    return transitionActive || phaseTransitionCurtain.isActive();
+  }
+
   function releasePreloadedTextures(): void {
     if (preloadedTextures === null) {
       return;
@@ -604,8 +650,21 @@ export function createUiShell(init: UiShellInit): UiShell {
         disposeTextureMap(textures);
         return;
       }
-      preloadedTextures = textures;
-      setPhase(MENU_PHASE);
+      let texturesOwnedByShell = false;
+      await phaseTransitionCurtain.run(() => {
+        if (disposed) {
+          return;
+        }
+        preloadedTextures = textures;
+        texturesOwnedByShell = true;
+        setPhase(MENU_PHASE);
+      });
+      if (disposed) {
+        if (!texturesOwnedByShell) {
+          disposeTextureMap(textures);
+        }
+        return;
+      }
     } catch (error: unknown) {
       if (disposed) {
         return;
@@ -644,6 +703,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       releasePreloadedTextures();
       startupOverlay.dispose();
       startupErrorOverlay.dispose();
+      phaseTransitionCurtain.dispose();
       menu.dispose();
       pause.dispose();
       result.dispose();

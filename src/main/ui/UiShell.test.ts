@@ -21,6 +21,10 @@ import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/S
 import type { Hud, HudInit } from './Hud';
 import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
+import type {
+  PhaseTransitionCurtain,
+  PhaseTransitionCurtainInit
+} from './PhaseTransitionCurtain';
 import type { PauseOverlay, PauseOverlayInit } from './PauseOverlay';
 import type { ResultOutcome, ResultOverlay, ResultOverlayInit } from './ResultOverlay';
 import type { SettingsOverlay, SettingsOverlayInit } from './SettingsOverlay';
@@ -151,9 +155,11 @@ function createDeferredVoid() {
 
 function createUiShellForTest(init: UiShellInit) {
   const titleOverlay = createTitleOverlayHarness();
+  const phaseTransitionCurtain = createPhaseTransitionCurtainHarness();
   return createUiShell({
     runStartupPreload: () => Promise.resolve(EMPTY_TEXTURE_MAP),
     createTitleOverlay: titleOverlay.factory,
+    createPhaseTransitionCurtain: phaseTransitionCurtain.factory,
     ...init
   });
 }
@@ -214,6 +220,71 @@ function createMenuHarness() {
     root(): FakeDomElement | null {
       return root;
     }
+  };
+}
+
+function createPhaseTransitionCurtainHarness() {
+  let active = false;
+  let gate: Promise<void> | null = null;
+  let revealGate: Promise<void> | null = null;
+  const calls = {
+    create: 0,
+    run: 0,
+    dispose: 0
+  };
+
+  return {
+    factory(_init: PhaseTransitionCurtainInit): PhaseTransitionCurtain {
+      calls.create += 1;
+      return {
+        async run(commit, reveal): Promise<void> {
+          if (active) {
+            return;
+          }
+          active = true;
+          calls.run += 1;
+          const currentGate = gate;
+          const currentRevealGate = revealGate;
+          gate = null;
+          revealGate = null;
+          if (currentGate !== null) {
+            await currentGate;
+          }
+          try {
+            const commitResult = commit();
+            if (commitResult instanceof Promise) {
+              await commitResult;
+            }
+            if (currentRevealGate !== null) {
+              await currentRevealGate;
+            }
+            const revealResult = reveal?.();
+            if (revealResult instanceof Promise) {
+              await revealResult;
+            }
+          } finally {
+            active = false;
+          }
+        },
+        isActive(): boolean {
+          return active;
+        },
+        dispose(): void {
+          calls.dispose += 1;
+          active = false;
+        }
+      };
+    },
+    deferNextRun(nextGate: Promise<void>): void {
+      gate = nextGate;
+    },
+    deferNextReveal(nextGate: Promise<void>): void {
+      revealGate = nextGate;
+    },
+    isActive(): boolean {
+      return active;
+    },
+    calls
   };
 }
 
@@ -956,6 +1027,41 @@ describe('UiShell', () => {
     expect(menu.isVisible()).toBe(true);
   });
 
+  it('uses the phase transition curtain when startup reveals the menu', async () => {
+    const parent = new FakeDomElement();
+    const menu = createMenuHarness();
+    const transition = createPhaseTransitionCurtainHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: parent as unknown as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPhaseTransitionCurtain: transition.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createStartupOverlay: createStartupOverlayHarness().factory,
+      createStartupErrorOverlay: createStartupErrorOverlayHarness().factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(transition.calls.run).toBe(1);
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+    expect(menu.isVisible()).toBe(true);
+  });
+
   it('transitions loading into preload error and exposes only reload', async () => {
     const parent = new FakeDomElement();
     const menu = createMenuHarness();
@@ -1093,6 +1199,117 @@ describe('UiShell', () => {
     expect(hud.calls.update).toBe(1);
     expect(titleOverlay.calls.update).toBe(1);
     expect(audio.calls.update).toBe(1);
+  });
+
+  it('ignores repeated start clicks while the menu-to-running curtain is active', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const transition = createPhaseTransitionCurtainHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    const gate = createDeferredVoid();
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 321,
+      buildSessionDefinition: () => makeSession('guarded-session'),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPhaseTransitionCurtain: transition.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    expect(transition.calls.run).toBe(1);
+
+    transition.deferNextRun(gate.promise);
+    menu.start('campaign-normal');
+    await flushUiShellStartup();
+
+    expect(transition.isActive()).toBe(true);
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+    expect(sim.startSessions).toHaveLength(0);
+    expect(audio.uiEvents).toEqual(['buttonClick']);
+
+    menu.start('campaign-hard');
+    expect(audio.uiEvents).toEqual(['buttonClick']);
+    expect(sim.startSessions).toHaveLength(0);
+
+    gate.resolve();
+    await flushUiShellStartup();
+
+    expect(transition.calls.run).toBe(2);
+    expect(sim.startSessions).toHaveLength(1);
+    expect(renderer.calls.create).toBe(1);
+    expect(input.calls.start).toBe(1);
+    expect(shell.phase()).toEqual({ kind: 'running' });
+  });
+
+  it('starts gameplay input only when the running screen begins reveal', async () => {
+    const menu = createMenuHarness();
+    const transition = createPhaseTransitionCurtainHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    const revealGate = createDeferredVoid();
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 654,
+      buildSessionDefinition: () => makeSession('reveal-session'),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPhaseTransitionCurtain: transition.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    transition.deferNextReveal(revealGate.promise);
+    menu.start('campaign-normal');
+    await flushUiShellStartup();
+
+    expect(shell.phase()).toEqual({ kind: 'running' });
+    expect(sim.startSessions).toHaveLength(1);
+    expect(renderer.calls.create).toBe(1);
+    expect(hud.calls.attach).toBe(1);
+    expect(input.calls.start).toBe(0);
+
+    revealGate.resolve();
+    await flushUiShellStartup();
+
+    expect(input.calls.start).toBe(1);
   });
 
   it('routes Escape into overlay pause and exit back to menu with stopSession', async () => {
