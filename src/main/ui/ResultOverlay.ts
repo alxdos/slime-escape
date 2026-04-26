@@ -19,20 +19,28 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   root.dataset['role'] = 'result-overlay';
   root.style.cssText = baseOverlayStyle();
 
+  const style = document.createElement('style');
+  style.textContent = resultOverlayCss();
+  root.appendChild(style);
+
   const card = document.createElement('div');
   card.style.cssText = cardStyle();
 
   const title = document.createElement('h2');
+  title.dataset['role'] = 'result-title';
   title.style.cssText = titleStyle();
   card.appendChild(title);
 
   const summary = document.createElement('p');
+  summary.dataset['role'] = 'result-summary';
   summary.style.cssText = summaryStyle();
   card.appendChild(summary);
 
   const backButton = document.createElement('button');
+  backButton.dataset['role'] = 'result-back-to-menu';
+  backButton.className = 'result-comic-button';
   backButton.type = 'button';
-  backButton.textContent = 'В меню';
+  backButton.textContent = 'Вернуться в меню';
   backButton.style.cssText = primaryButtonStyle();
   backButton.addEventListener('click', () => init.onBackToMenu());
   card.appendChild(backButton);
@@ -46,11 +54,12 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   return {
     show(outcome): void {
       visible = true;
-      applyOutcome(outcome, title, summary);
+      applyOutcome(outcome, root, title, summary, backButton);
       root.style.display = 'flex';
     },
     hide(): void {
       visible = false;
+      delete root.dataset['outcome'];
       root.style.display = 'none';
       title.textContent = '';
       summary.textContent = '';
@@ -66,19 +75,27 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
 
 function applyOutcome(
   outcome: ResultOutcome,
+  root: HTMLElement,
   title: HTMLElement,
-  summary: HTMLElement
+  summary: HTMLElement,
+  backButton: HTMLElement
 ): void {
+  root.dataset['outcome'] = outcome;
+
   if (outcome === 'win') {
     title.textContent = 'Победа!';
-    title.style.color = '#9ce69a';
-    summary.textContent = 'Забег завершён успешно.';
+    title.style.cssText = titleStyle('#fff38b');
+    summary.textContent = 'Забег завершён успешно. Слизни отступили.';
+    summary.style.cssText = summaryStyle('#e9fbff');
+    backButton.style.cssText = primaryButtonStyle('#7cf58f');
     return;
   }
 
   title.textContent = 'Поражение';
-  title.style.color = '#ff8a7a';
-  summary.textContent = 'Попробуй ещё раз из меню.';
+  title.style.cssText = titleStyle('#ff9fcf');
+  summary.textContent = 'Забег окончен. Вернись в меню и попробуй новый заход.';
+  summary.style.cssText = summaryStyle('#ffe7f3');
+  backButton.style.cssText = primaryButtonStyle('#ff9fcf');
 }
 
 function baseOverlayStyle(): string {
@@ -88,7 +105,9 @@ function baseOverlayStyle(): string {
     'display:flex',
     'align-items:center',
     'justify-content:center',
-    'background:rgba(5,6,10,0.88)',
+    'box-sizing:border-box',
+    'padding:24px',
+    'background:rgba(255,255,255,0.42)',
     'z-index:110',
     'cursor:default'
   ].join(';');
@@ -99,54 +118,91 @@ function cardStyle(): string {
     'display:flex',
     'flex-direction:column',
     'align-items:center',
-    'gap:16px',
-    'padding:32px 40px',
-    'min-width:min(420px, calc(100vw - 48px))',
-    'background:#11151c',
-    'border:1px solid #2a3142',
+    'gap:18px',
+    'box-sizing:border-box',
+    'padding:26px 34px 30px',
+    'width:min(460px, calc(100vw - 48px))',
+    'background:#fffdf4',
+    'border:4px solid #050505',
     'border-radius:8px',
-    'box-shadow:0 12px 40px rgba(0,0,0,0.6)'
+    'box-shadow:8px 8px 0 #000000'
   ].join(';');
 }
 
-function titleStyle(): string {
+function titleStyle(color = '#fff38b'): string {
   return [
     'margin:0',
     ...comicTextStyle({
       fontSize: '30px',
       lineHeight: '1',
-      color: '#ffffff',
+      color,
+      textAlign: 'center',
       shadow: 'strong'
     }),
-    'text-transform:uppercase'
+    'overflow-wrap:anywhere'
   ].join(';');
 }
 
-function summaryStyle(): string {
+function summaryStyle(background = '#e9fbff'): string {
   return [
     'margin:0',
+    'box-sizing:border-box',
+    'width:100%',
+    'padding:14px 16px 16px',
+    `background:${background}`,
+    'border:3px solid #050505',
+    'border-radius:8px',
+    'box-shadow:4px 4px 0 #000000',
     ...comicTextStyle({
-      fontSize: '16px',
-      color: '#f4fbff',
-      lineHeight: '1.35',
+      fontSize: '17px',
+      color: '#ffffff',
+      lineHeight: '1.25',
       textAlign: 'center'
-    })
+    }),
+    'overflow-wrap:anywhere'
   ].join(';');
 }
 
-function primaryButtonStyle(): string {
+function primaryButtonStyle(background = '#7cf58f'): string {
   return [
     'appearance:none',
-    'border:none',
-    'padding:10px 28px',
+    'border:3px solid #050505',
+    'padding:11px 24px 12px',
     ...comicTextStyle({
-      fontSize: '16px',
+      fontSize: '18px',
       color: '#ffffff',
       lineHeight: '1'
     }),
-    'background:#9ad6ff',
-    'border-radius:4px',
+    `background:${background}`,
+    'border-radius:7px',
+    'box-shadow:4px 4px 0 #000000',
     'cursor:pointer',
-    'min-width:200px'
+    'width:100%',
+    'min-height:46px'
   ].join(';');
+}
+
+function resultOverlayCss(): string {
+  return `
+.result-comic-button {
+  transition: filter 120ms ease, transform 120ms ease;
+}
+
+.result-comic-button:hover,
+.result-comic-button:focus-visible {
+  filter: brightness(1.08) saturate(1.06);
+  transform: translate(-1px, -1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-comic-button {
+    transition: none;
+  }
+
+  .result-comic-button:hover,
+  .result-comic-button:focus-visible {
+    transform: none;
+  }
+}
+`;
 }
