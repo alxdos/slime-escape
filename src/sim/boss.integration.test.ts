@@ -56,6 +56,9 @@ const BOSS_ENCOUNTER: EncounterDefinition = {
   id: 'test-boss',
   type: 'boss',
   backgroundId: null,
+  introDurationMs: 0,
+  name: null,
+  text: null,
   spawnPlan: {
     kind: 'boss',
     bossArchetypeId: BOSS_SCRAP_KING.id,
@@ -76,6 +79,7 @@ function bossOnlySession(seed: number): SessionDefinition {
     player: TRAINING_PLAYER,
     loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
     backgrounds: [],
+    musicSampleId: null,
     modifiers: [],
     rules: {
       damage: { slimeFriendlyFire: false },
@@ -162,7 +166,8 @@ function setupBossWorld() {
     );
     healthDeath.tick(intents, entities, simTimeMs, emitEvent);
     sessionFlow.checkTransitions(simTimeMs);
-    zone.onTick();
+    const zoneEncCtx = sessionFlow.activeEncounter();
+    zone.onTick(zoneEncCtx === null ? undefined : simTimeMs - zoneEncCtx.startSimMs);
     const encCtx = sessionFlow.activeEncounter();
     exporter.onTick(simTimeMs, entities, {
       encounter: encCtx,

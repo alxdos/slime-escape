@@ -48,6 +48,7 @@ export function buildSessionDefinition(
     player: template.player,
     loadout: template.loadout,
     backgrounds: template.backgrounds,
+    musicSampleId: template.musicSampleId,
     modifiers: [],
     rules: template.rules,
     encounters: resolveEncounterTemplates(template),

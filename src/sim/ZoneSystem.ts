@@ -7,7 +7,7 @@ export type ZoneSystem = Readonly<{
   reset(): void;
   onEncounterStart(encounter: EncounterDefinition): void;
   onEncounterEnd(encounter: EncounterDefinition): void;
-  onTick(): void;
+  onTick(encounterElapsedMs?: number): void;
   zone(): ZoneSnapshot;
 }>;
 
@@ -18,6 +18,7 @@ type ZoneState = {
   fromMargin: number;
   toMargin: number;
   durationMs: number;
+  introDurationMs: number;
 };
 
 export function createZoneSystem(): ZoneSystem {
@@ -38,7 +39,8 @@ export function createZoneSystem(): ZoneSystem {
             'shrink',
             state.margin,
             behavior.toMargin,
-            behavior.durationMs
+            behavior.durationMs,
+            encounter.introDurationMs
           );
           return;
         case 'expandLinear':
@@ -46,7 +48,8 @@ export function createZoneSystem(): ZoneSystem {
             'expand',
             state.margin,
             behavior.toMargin,
-            behavior.durationMs
+            behavior.durationMs,
+            encounter.introDurationMs
           );
           return;
         default:
@@ -56,8 +59,9 @@ export function createZoneSystem(): ZoneSystem {
     onEncounterEnd(_encounter): void {
       state = holdState(state.margin);
     },
-    onTick(): void {
+    onTick(encounterElapsedMs = Number.POSITIVE_INFINITY): void {
       if (state.mode === 'disabled') return;
+      if (encounterElapsedMs < state.introDurationMs) return;
       // Sample margin from the time already elapsed before advancing the
       // counter. That way, a snapshot taken right after this tick still
       // reflects EncounterSnapshot.elapsedMs (which the exporter computes
@@ -78,7 +82,8 @@ function activeState(
   mode: Extract<ZoneMode, 'shrink' | 'expand'>,
   fromMargin: number,
   toMargin: number,
-  durationMs: number
+  durationMs: number,
+  introDurationMs: number
 ): ZoneState {
   return {
     mode,
@@ -86,7 +91,8 @@ function activeState(
     elapsedMs: 0,
     fromMargin,
     toMargin,
-    durationMs
+    durationMs,
+    introDurationMs
   };
 }
 
@@ -97,7 +103,8 @@ function idleState(): ZoneState {
     elapsedMs: 0,
     fromMargin: 0,
     toMargin: 0,
-    durationMs: 1
+    durationMs: 1,
+    introDurationMs: 0
   };
 }
 
@@ -108,6 +115,7 @@ function holdState(margin: number): ZoneState {
     elapsedMs: 0,
     fromMargin: margin,
     toMargin: margin,
-    durationMs: 1
+    durationMs: 1,
+    introDurationMs: 0
   };
 }

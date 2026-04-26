@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23
+- Updated: 2026-04-26 (story 021: intro delay — `ZoneSystem` не продвигает внутренний `elapsedMs` и не двигает `margin`, пока у активного encounter активен intro (`encounter.elapsedMs < encounter.introDurationMs`); полный контракт — [encounter-presentation.md](encounter-presentation.md). Форма `zoneBehavior` и экспорт в snapshot не меняются. Earlier: 2026-04-23.)
 
 ## Context
 
@@ -56,6 +56,14 @@
 - На `encounterEnd` активная интерполяция останавливается (`mode = 'disabled'`), но текущий `margin` сохраняется как фактическое начало для следующего encounter. Полный сброс к `margin = 0` происходит на lifecycle-границе сессии (`sessionStart`/`sessionStop`) или при старте encounter с `zoneBehavior: { kind: 'disabled' }`.
 - `ZoneSystem` встроен в update order по [runtime-systems.md](runtime-systems.md): тикает каждый sim tick, после `HealthDeathSystem`/`DropSystem` и до `SnapshotExportSystem`. Никакая другая система от текущего значения `margin` не зависит, поэтому конкретное место «после `HealthDeathSystem`» — деталь порядка, не gameplay-зависимость.
 
+### Intro delay
+
+- Пока у активного encounter `encounter.elapsedMs < encounter.introDurationMs` ([encounter-presentation.md](encounter-presentation.md)):
+  - для `disabled` — по-прежнему no-op;
+  - для `shrinkLinear`/`expandLinear` `ZoneSystem` не продвигает внутренний `elapsedMs` и оставляет `margin` равным `startMargin`. Первый tick после окончания intro работает как первый tick обычного encounter: `t = 0`, `margin = startMargin`, `elapsedMs = 0`, дальше обычное продвижение.
+- Это гарантирует, что титр волны сидит поверх «нулевого» состояния зоны: игрок видит зону в том виде, в каком её оставил предыдущий encounter, и сжатие/расширение стартует ровно в момент окончания intro.
+- Детерминизм сохраняется: `ZoneSystem` продолжает быть чистой функцией от `zoneBehavior` + накопленного `elapsedMs`; intro только сдвигает базу `elapsedMs` во времени симуляции.
+
 ### Экспорт в snapshot
 
 - `ZoneSystem` экспортирует своё состояние в snapshot одним top-level полем (форма поля фиксируется в [snapshot-shape.md](snapshot-shape.md)):
@@ -95,3 +103,4 @@
 - [../docs/GDD_CORE.md](../docs/GDD_CORE.md)
 - [../docs/WAVES_AND_SCALING.md](../docs/WAVES_AND_SCALING.md)
 - [../docs/BOSS.md](../docs/BOSS.md)
+- [encounter-presentation.md](encounter-presentation.md)

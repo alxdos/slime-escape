@@ -4,6 +4,7 @@
 |---|---|
 | displayName | Кампания — hard |
 | description | Плотный забег со стреляющими слаймами, скупыми дропами и короткими окнами реакции. |
+| musicSampleId | music/100-waves |
 | visibleInMenu | true |
 | order | 2 |
 | arenaId | sandbox |
@@ -34,6 +35,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-1 |
+| introDurationMs | 2500 |
+| name | Один глаз в темноте |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1125 |
 | maxAlive | 5 |
@@ -69,6 +73,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-1 |
+| introDurationMs | 2500 |
+| name | Рога и искры |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 938 |
 | maxAlive | 7 |
@@ -111,6 +118,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-1 |
+| introDurationMs | 2500 |
+| name | Каменные взгляды |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 825 |
 | maxAlive | 8 |
@@ -158,6 +168,9 @@
 |---|---|
 | type | break |
 | backgroundId | set-1 |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 4.55 |
@@ -173,6 +186,9 @@
 |---|---|
 | type | boss |
 | backgroundId | set-1 |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | boss |
 | bossArchetypeId | boss-gargoyle |
 | bossSpawnPosition | top-center |
@@ -187,6 +203,9 @@
 |---|---|
 | type | break |
 | backgroundId | set-1 |
+| introDurationMs | none |
+| name | none |
+| text | Дальше: Хламные призраки |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -199,6 +218,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-2 |
+| introDurationMs | 2500 |
+| name | Панцири и призраки |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1050 |
 | maxAlive | 7 |
@@ -236,6 +258,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-2 |
+| introDurationMs | 2500 |
+| name | Хламная куча |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 863 |
 | maxAlive | 8 |
@@ -280,6 +305,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-2 |
+| introDurationMs | 2500 |
+| name | Огненный скрап |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 750 |
 | maxAlive | 8 |
@@ -329,6 +357,9 @@
 |---|---|
 | type | break |
 | backgroundId | set-2 |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 4.55 |
@@ -344,6 +375,9 @@
 |---|---|
 | type | boss |
 | backgroundId | set-2 |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | boss |
 | bossArchetypeId | boss-saw-cyclops |
 | bossSpawnPosition | top-center |
@@ -358,6 +392,9 @@
 |---|---|
 | type | break |
 | backgroundId | set-2 |
+| introDurationMs | none |
+| name | none |
+| text | Дальше: Индустриальные мутанты |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -370,6 +407,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-3 |
+| introDurationMs | 2500 |
+| name | Эхо в противогазах |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 975 |
 | maxAlive | 7 |
@@ -409,6 +449,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-3 |
+| introDurationMs | 2500 |
+| name | Качки и дроны |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 788 |
 | maxAlive | 8 |
@@ -455,6 +498,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-3 |
+| introDurationMs | 2500 |
+| name | Бензопильный цех |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 675 |
 | maxAlive | 10 |
@@ -506,6 +552,9 @@
 |---|---|
 | type | break |
 | backgroundId | set-3 |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 4.55 |
@@ -521,6 +570,9 @@
 |---|---|
 | type | boss |
 | backgroundId | set-3 |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | boss |
 | bossArchetypeId | boss-scrap-king |
 | bossSpawnPosition | top-center |
@@ -535,6 +587,9 @@
 |---|---|
 | type | break |
 | backgroundId | set-3 |
+| introDurationMs | none |
+| name | none |
+| text | Дальше: Королевство на войне |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -547,6 +602,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-4 |
+| introDurationMs | 2500 |
+| name | Бомбы у ворот |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 900 |
 | maxAlive | 8 |
@@ -586,6 +644,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-4 |
+| introDurationMs | 2500 |
+| name | Принцы и сюрикены |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 713 |
 | maxAlive | 10 |
@@ -634,6 +695,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-4 |
+| introDurationMs | 2500 |
+| name | Корона мёртвых |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 600 |
 | maxAlive | 11 |
@@ -687,6 +751,9 @@
 |---|---|
 | type | break |
 | backgroundId | set-4 |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 4.55 |
@@ -702,6 +769,9 @@
 |---|---|
 | type | boss |
 | backgroundId | set-4 |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | boss |
 | bossArchetypeId | boss-tower-sentinel |
 | bossSpawnPosition | top-center |
@@ -716,6 +786,9 @@
 |---|---|
 | type | break |
 | backgroundId | set-4 |
+| introDurationMs | none |
+| name | none |
+| text | Дальше: Техно-финал |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -728,6 +801,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-5 |
+| introDurationMs | 2500 |
+| name | Дискеты и двигатели |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 825 |
 | maxAlive | 10 |
@@ -769,6 +845,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-5 |
+| introDurationMs | 2500 |
+| name | Магниты и ниндзя |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 638 |
 | maxAlive | 11 |
@@ -819,6 +898,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-5 |
+| introDurationMs | 2500 |
+| name | Идолы последнего сектора |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 525 |
 | maxAlive | 12 |
@@ -874,6 +956,9 @@
 |---|---|
 | type | break |
 | backgroundId | set-5 |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 4.55 |
@@ -889,6 +974,9 @@
 |---|---|
 | type | boss |
 | backgroundId | set-5 |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | boss |
 | bossArchetypeId | boss-bubble-hog |
 | bossSpawnPosition | top-center |

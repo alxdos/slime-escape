@@ -4,6 +4,7 @@
 |---|---|
 | displayName | Combat Modifiers Demo |
 | description | Проверочная арена для puddles, statuses, proximity mines, carrier drops, magnet pickup, retaliation and aim assist. |
+| musicSampleId | none |
 | visibleInMenu | false |
 | order | 1 |
 | arenaId | sandbox |
@@ -30,6 +31,9 @@
 |---|---|
 | type | sandbox |
 | backgroundId | sandbox |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | static |
 | zoneKind | disabled |
 | transitionKind | never |

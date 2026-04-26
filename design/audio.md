@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-23 (story 014: авторская поверхность для `WEAPON_AUDIO_MAPPINGS[*].fire` переезжает на inline audio-link-узел под H2 weapon в `content/weapons.md`, для `ENEMY_AUDIO_MAPPINGS[*].hit/death/voice` — на новую партицию `# Sound sets` в `content/enemies.md` с `## Members` (`setId | slimes`) и узкими group-таблицами `## Hit`/`## Death`/`## Voice`, чьи `sampleId`-ячейки тоже допускают inline audio-link-форму (см. разделы «Inline media-узлы как derive-источники» и «Shared resource set partition» в [content-authoring.md](content-authoring.md)); рантайм-формы `EnemyAudioMapping`, `BOSS_AUDIO_MAPPINGS`, `WEAPON_AUDIO_MAPPINGS`, `SampleRegistry`, `createAudioMappings` и валидаторы — не меняются, генератор разворачивает sound-set N→1 в тот же `Record<enemyArchetypeId, EnemyAudioMapping>` байт-в-байт. story 013 расширяет `ENEMY_AUDIO_MAPPINGS` на все 30 slime-архетипов и `BOSS_AUDIO_MAPPINGS` на все 5 boss-архетипов через те же три пула `slimes/hit-*`/`slimes/death-*`/`slimes/voice-*` и существующие boss sample id; формы маппингов и `SampleRegistry` не меняются. story 012 покрывает MD-генерацией weapon/boss audio-маппинги и дозаполнение enemy sound по пулам из `SampleRegistry`; типы и валидации не меняются)
+- Updated: 2026-04-26 (story 021: music selector больше не хранит `regularPool` внутри `Audio` — выбор обычной музыки переносится на session-level поле `SessionDefinition.musicSampleId` ([session-definition.md](session-definition.md)); boss override по `encounter.type === 'boss'` сохраняется без изменений, pause ducking тоже. `SampleRegistry`-инвариант: любой entry с `category: 'music'` обязан иметь `loop: true`, иначе ошибка модуля на инициализации `Audio`; валидатор музыки теперь явно проверяет category+loop. Для `musicSampleId: null` регулярная музыка молчит весь забег — это legitimate конфигурация. Earlier: 2026-04-23 story 014: авторская поверхность для `WEAPON_AUDIO_MAPPINGS[*].fire` переезжает на inline audio-link-узел под H2 weapon в `content/weapons.md`, для `ENEMY_AUDIO_MAPPINGS[*].hit/death/voice` — на новую партицию `# Sound sets` в `content/enemies.md` с `## Members` (`setId | slimes`) и узкими group-таблицами `## Hit`/`## Death`/`## Voice`, чьи `sampleId`-ячейки тоже допускают inline audio-link-форму (см. разделы «Inline media-узлы как derive-источники» и «Shared resource set partition» в [content-authoring.md](content-authoring.md)); рантайм-формы `EnemyAudioMapping`, `BOSS_AUDIO_MAPPINGS`, `WEAPON_AUDIO_MAPPINGS`, `SampleRegistry`, `createAudioMappings` и валидаторы — не меняются, генератор разворачивает sound-set N→1 в тот же `Record<enemyArchetypeId, EnemyAudioMapping>` байт-в-байт. story 013 расширяет `ENEMY_AUDIO_MAPPINGS` на все 30 slime-архетипов и `BOSS_AUDIO_MAPPINGS` на все 5 boss-архетипов через те же три пула `slimes/hit-*`/`slimes/death-*`/`slimes/voice-*` и существующие boss sample id; формы маппингов и `SampleRegistry` не меняются. story 012 покрывает MD-генерацией weapon/boss audio-маппинги и дозаполнение enemy sound по пулам из `SampleRegistry`; типы и валидации не меняются)
 
 ## Context
 
@@ -68,6 +68,7 @@
     loop?: boolean;                 // true — для music/ambience
   }>;
   ```
+- Для `category: 'music'` поле `loop` обязательно равно `true`. Это инвариант модуля: session music по контракту «один трек на всю сессию» ([session-definition.md](session-definition.md), поле `musicSampleId`), и `Audio` не полагается на «сам перезапущу при `onended`». Нарушение — ошибка модуля на инициализации `Audio` (см. «Бюджеты и инварианты»).
 - Эффективный gain источника при воспроизведении:
   ```
   effectiveGain =
@@ -140,22 +141,16 @@
 
 ### Music selector
 
-- Реестр треков в `Audio`:
-  - `regularPool: ReadonlyArray<sampleId>` — фоновая музыка для не-boss-encounter и для не-`menu`/`result` фаз. На 008 baseline пул ровно из шести треков:
-    - `music/100-waves.mp3`
-    - `music/101-clock-ticking.mp3`
-    - `music/001-calm.mp3`
-    - `music/005-forest.mp3`
-    - `music/007-nature.mp3`
-    - `music/009-windy-forest.mp3`
-  - `bossTrack: sampleId` — `boss/boss-music.mp3`.
+- Источник обычного трека — **session-level поле** `SessionDefinition.musicSampleId` ([session-definition.md](session-definition.md)). Отдельного `regularPool`, которым владеет `Audio`, нет: история 021 убрала hard-coded пул в коде — выбор принадлежит геймдизайнеру в `content/sessions/*.md`.
+- `bossTrack: sampleId` остаётся фиксированным — `boss/boss-music.mp3`. Per-boss custom music и per-wave music — out of scope этого решения.
 - Правила выбора (определяют, что **должно** играть в данный момент):
-  - `phase ∈ { menu, result }` → music silent.
-  - `phase ∈ { running, paused }` и активный `snapshot.encounter` отсутствует или `encounter.type !== 'boss'` → играет случайный трек из `regularPool`. По окончании одного трека выбирается следующий случайный (без зацикливания одного и того же файла; повтор подряд допустим, но реализация может избегать его).
-  - `phase ∈ { running, paused }` и `encounter.type === 'boss'` → играет `bossTrack`.
-  - В фазе `paused` музыка **ducked**: `musicBus` временно умножается на `0.5`. Music **не** останавливается. Это упрощает Web Audio (не нужен корректный pause/resume `AudioBufferSourceNode`) и даёт мягкий UX в паузе.
-- Конкретный способ перехода между треками (резкая смена / crossfade) — деталь реализации, контракт фиксирует только «что играет» и «когда».
-- Music selector использует `Math.random()` для выбора следующего трека (presentation RNG, как и slime ambient).
+  - `phase ∈ { menu, loading, result, error('preload') }` → music silent, независимо от `musicSampleId`.
+  - `phase ∈ { running, paused }` и активный `snapshot.encounter` отсутствует или `encounter.type !== 'boss'` → играет `attachedSession.musicSampleId`. Если `musicSampleId === null`, regular music silent (legitimate конфигурация — sandbox/dev-режимы).
+  - `phase ∈ { running, paused }` и `encounter.type === 'boss'` → играет `bossTrack`. При выходе из boss encounter регулярная музыка возвращается к `attachedSession.musicSampleId`.
+  - В фазе `paused` музыка **ducked**: `musicBus` временно умножается на `0.5`. Music **не** останавливается и track не меняется. Это упрощает Web Audio (не нужен корректный pause/resume `AudioBufferSourceNode`) и даёт мягкий UX в паузе.
+- `musicSampleId` на время активной сессии immutable (как и вся `SessionDefinition`). Новый session → новый `attach(session)` → music selector пересматривает выбор.
+- Сам выбранный track не «ротируется»: один session — один обычный трек. Ротация между треками внутри одного забега была артефактом старого `regularPool` и устранена вместе с ним. Если в будущем потребуется per-encounter music, это расширение этого файла и `session-definition.md`, а не возврат к пулу в `Audio`.
+- Конкретный способ смены track при переходе `running ↔ boss` (резкая смена / crossfade) — деталь реализации, контракт фиксирует только «что играет» и «когда».
 
 ### UI-звуки
 
@@ -202,7 +197,12 @@
   - дублирующиеся `sampleId` в реестре — ошибка модуля;
   - `sampleId` в маппинге без записи в реестре — ошибка модуля;
   - `normalizedGain ∈ (0, 2]`, `defaultGain ∈ [0, 2]`, иначе warning через единый log-модуль и значение **clamped** в допустимый диапазон;
+  - любой entry с `category: 'music'` и `loop !== true` — ошибка модуля; это поддерживает контракт «один трек на всю сессию» (см. «Двухслойная громкость»);
   - URL не валидируется online — отсутствие файла фиксируется как warning в момент первой попытки воспроизведения.
+- `attach(session)` дополнительно валидирует `session.musicSampleId`:
+  - `null` — ок, regular music silent весь забег;
+  - строка, которой нет в `SampleRegistry` — ошибка модуля (не warning): неизвестный id должен быть пойман content-build и builder-ом до старта сессии (см. [content-authoring.md](content-authoring.md), раздел `# Session`);
+  - строка с `SampleRegistry[*].category !== 'music'` — ошибка модуля: session music обязана быть music-категории, чтобы попадать в `musicBus` и получать корректный ducking в паузе.
 - `Audio` не должен иметь скрытого глобального state: все таймеры и решения хранятся в инстансе, создаваемом `UiShell`. Один экземпляр на жизнь приложения; повторная инициализация не предусмотрена в MVP.
 
 ### Тесты
