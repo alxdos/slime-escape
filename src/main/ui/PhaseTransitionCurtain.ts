@@ -14,7 +14,7 @@ export type PhaseTransitionCurtain = Readonly<{
   dispose(): void;
 }>;
 
-const DEFAULT_TRANSITION_DURATION_MS = 360;
+const DEFAULT_TRANSITION_DURATION_MS = 640;
 
 export function createPhaseTransitionCurtain(
   init: PhaseTransitionCurtainInit
@@ -50,6 +50,7 @@ export function createPhaseTransitionCurtain(
 
       try {
         await requestFrame();
+        await requestFrame();
         await fadeTo('1');
         await commit();
         await requestFrame();
@@ -82,7 +83,7 @@ function rootStyle(durationMs: number): string {
     'background:#000000',
     'z-index:125',
     'pointer-events:auto',
-    `transition:opacity ${durationMs}ms ease`
+    `transition:opacity ${durationMs}ms ease-in-out`
   ].join(';');
 }
 

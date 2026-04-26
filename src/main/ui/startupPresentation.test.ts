@@ -25,12 +25,10 @@ describe('startup presentation view model', () => {
   it('uses themed ritual labels and reaches 100%', () => {
     expect(STARTUP_PRESENTATION_STEPS.map((step) => step.label)).toEqual([
       'Пробуждаем слизь',
-      'Замешиваем липкость',
       'Спавним слаймов',
-      'Проектируем босса',
-      'Открываем путь побега'
+      'Проектируем босса'
     ]);
-    expect(STARTUP_PRESENTATION_STEPS.reduce((sum, step) => sum + step.durationMs, 0)).toBe(900);
+    expect(STARTUP_PRESENTATION_STEPS.reduce((sum, step) => sum + step.durationMs, 0)).toBe(2100);
 
     expect(createStartupRitualViewModel(0)).toMatchObject({
       kind: 'ritual',
@@ -38,7 +36,7 @@ describe('startup presentation view model', () => {
     });
     expect(createStartupRitualViewModel(STARTUP_PRESENTATION_STEPS.length - 1)).toEqual({
       kind: 'ritual',
-      label: 'Открываем путь побега',
+      label: 'Проектируем босса',
       progressPercent: 100
     });
   });
