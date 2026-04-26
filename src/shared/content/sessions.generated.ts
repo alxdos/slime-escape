@@ -32,6 +32,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-05.jpg'
       }
     ],
+    musicSampleId: 'music/007-nature',
     rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: true, maxAngleRadians: 0.4, maxDistance: 8, strength: 0.7 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
@@ -40,6 +41,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-easy-set-1-wave-1',
         type: 'wave',
         backgroundId: 'set-1',
+        introDurationMs: 2500,
+        name: 'Один глаз в темноте',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -62,6 +66,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-easy-set-1-wave-2',
         type: 'wave',
         backgroundId: 'set-1',
+        introDurationMs: 2500,
+        name: 'Рога и искры',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -89,6 +96,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-easy-set-3-wave-1',
         type: 'wave',
         backgroundId: 'set-3',
+        introDurationMs: 2500,
+        name: 'Эхо в противогазах',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -112,6 +122,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-easy-set-3-wave-2',
         type: 'wave',
         backgroundId: 'set-3',
+        introDurationMs: 2500,
+        name: 'Качки и дроны',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -143,6 +156,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-easy-set-5-wave-1',
         type: 'wave',
         backgroundId: 'set-5',
+        introDurationMs: 2500,
+        name: 'Дискеты и двигатели',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -169,6 +185,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-easy-set-5-wave-2',
         type: 'wave',
         backgroundId: 'set-5',
+        introDurationMs: 2500,
+        name: 'Магниты и ниндзя',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -232,6 +251,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-05.jpg'
       }
     ],
+    musicSampleId: 'music/100-waves',
     rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
@@ -240,6 +260,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-wave-1',
         type: 'wave',
         backgroundId: 'set-1',
+        introDurationMs: 2500,
+        name: 'Один глаз в темноте',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -282,6 +305,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-wave-2',
         type: 'wave',
         backgroundId: 'set-1',
+        introDurationMs: 2500,
+        name: 'Рога и искры',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -336,6 +362,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-wave-3',
         type: 'wave',
         backgroundId: 'set-1',
+        introDurationMs: 2500,
+        name: 'Каменные взгляды',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -402,6 +431,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-pre-boss-break',
         type: 'break',
         backgroundId: 'set-1',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 4.55, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -413,6 +445,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-boss',
         type: 'boss',
         backgroundId: 'set-1',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_GARGOYLE.id,
@@ -429,6 +464,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-after-boss-break',
         type: 'break',
         backgroundId: 'set-1',
+        introDurationMs: 0,
+        name: null,
+        text: 'Дальше: Хламные призраки',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -440,6 +478,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-wave-1',
         type: 'wave',
         backgroundId: 'set-2',
+        introDurationMs: 2500,
+        name: 'Панцири и призраки',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -480,6 +521,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-wave-2',
         type: 'wave',
         backgroundId: 'set-2',
+        introDurationMs: 2500,
+        name: 'Хламная куча',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -532,6 +576,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-wave-3',
         type: 'wave',
         backgroundId: 'set-2',
+        introDurationMs: 2500,
+        name: 'Огненный скрап',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -596,6 +643,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-pre-boss-break',
         type: 'break',
         backgroundId: 'set-2',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 4.55, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -607,6 +657,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-boss',
         type: 'boss',
         backgroundId: 'set-2',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_SAW_CYCLOPS.id,
@@ -623,6 +676,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-after-boss-break',
         type: 'break',
         backgroundId: 'set-2',
+        introDurationMs: 0,
+        name: null,
+        text: 'Дальше: Индустриальные мутанты',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -634,6 +690,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-wave-1',
         type: 'wave',
         backgroundId: 'set-3',
+        introDurationMs: 2500,
+        name: 'Эхо в противогазах',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -684,6 +743,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-wave-2',
         type: 'wave',
         backgroundId: 'set-3',
+        introDurationMs: 2500,
+        name: 'Качки и дроны',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -746,6 +808,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-wave-3',
         type: 'wave',
         backgroundId: 'set-3',
+        introDurationMs: 2500,
+        name: 'Бензопильный цех',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -820,6 +885,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-pre-boss-break',
         type: 'break',
         backgroundId: 'set-3',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 4.55, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -831,6 +899,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-boss',
         type: 'boss',
         backgroundId: 'set-3',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_SCRAP_KING.id,
@@ -847,6 +918,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-after-boss-break',
         type: 'break',
         backgroundId: 'set-3',
+        introDurationMs: 0,
+        name: null,
+        text: 'Дальше: Королевство на войне',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -858,6 +932,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-wave-1',
         type: 'wave',
         backgroundId: 'set-4',
+        introDurationMs: 2500,
+        name: 'Бомбы у ворот',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -899,6 +976,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-wave-2',
         type: 'wave',
         backgroundId: 'set-4',
+        introDurationMs: 2500,
+        name: 'Принцы и сюрикены',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -962,6 +1042,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-wave-3',
         type: 'wave',
         backgroundId: 'set-4',
+        introDurationMs: 2500,
+        name: 'Корона мёртвых',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1031,6 +1114,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-pre-boss-break',
         type: 'break',
         backgroundId: 'set-4',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 4.55, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -1042,6 +1128,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-boss',
         type: 'boss',
         backgroundId: 'set-4',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_TOWER_SENTINEL.id,
@@ -1058,6 +1147,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-after-boss-break',
         type: 'break',
         backgroundId: 'set-4',
+        introDurationMs: 0,
+        name: null,
+        text: 'Дальше: Техно-финал',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -1069,6 +1161,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-5-wave-1',
         type: 'wave',
         backgroundId: 'set-5',
+        introDurationMs: 2500,
+        name: 'Дискеты и двигатели',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1111,6 +1206,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-5-wave-2',
         type: 'wave',
         backgroundId: 'set-5',
+        introDurationMs: 2500,
+        name: 'Магниты и ниндзя',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1175,6 +1273,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-5-wave-3',
         type: 'wave',
         backgroundId: 'set-5',
+        introDurationMs: 2500,
+        name: 'Идолы последнего сектора',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1254,6 +1355,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-5-pre-boss-break',
         type: 'break',
         backgroundId: 'set-5',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 4.55, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -1265,6 +1369,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-5-boss',
         type: 'boss',
         backgroundId: 'set-5',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_BUBBLE_HOG.id,
@@ -1310,6 +1417,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-05.jpg'
       }
     ],
+    musicSampleId: 'music/005-forest',
     rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
@@ -1318,6 +1426,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-wave-1',
         type: 'wave',
         backgroundId: 'set-1',
+        introDurationMs: 2500,
+        name: 'Один глаз в темноте',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1342,6 +1453,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-wave-2',
         type: 'wave',
         backgroundId: 'set-1',
+        introDurationMs: 2500,
+        name: 'Рога и искры',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1372,6 +1486,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-wave-3',
         type: 'wave',
         backgroundId: 'set-1',
+        introDurationMs: 2500,
+        name: 'Каменные взгляды',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1408,6 +1525,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-pre-boss-break',
         type: 'break',
         backgroundId: 'set-1',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -1419,6 +1539,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-boss',
         type: 'boss',
         backgroundId: 'set-1',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_GARGOYLE.id,
@@ -1435,6 +1558,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-1-after-boss-break',
         type: 'break',
         backgroundId: 'set-1',
+        introDurationMs: 0,
+        name: null,
+        text: 'Дальше: Хламные призраки',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -1446,6 +1572,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-wave-1',
         type: 'wave',
         backgroundId: 'set-2',
+        introDurationMs: 2500,
+        name: 'Панцири и призраки',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1477,6 +1606,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-wave-2',
         type: 'wave',
         backgroundId: 'set-2',
+        introDurationMs: 2500,
+        name: 'Хламная куча',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1517,6 +1649,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-wave-3',
         type: 'wave',
         backgroundId: 'set-2',
+        introDurationMs: 2500,
+        name: 'Огненный скрап',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1569,6 +1704,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-pre-boss-break',
         type: 'break',
         backgroundId: 'set-2',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -1580,6 +1718,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-boss',
         type: 'boss',
         backgroundId: 'set-2',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_SAW_CYCLOPS.id,
@@ -1596,6 +1737,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-2-after-boss-break',
         type: 'break',
         backgroundId: 'set-2',
+        introDurationMs: 0,
+        name: null,
+        text: 'Дальше: Индустриальные мутанты',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -1607,6 +1751,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-wave-1',
         type: 'wave',
         backgroundId: 'set-3',
+        introDurationMs: 2500,
+        name: 'Эхо в противогазах',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1633,6 +1780,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-wave-2',
         type: 'wave',
         backgroundId: 'set-3',
+        introDurationMs: 2500,
+        name: 'Качки и дроны',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1674,6 +1824,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-wave-3',
         type: 'wave',
         backgroundId: 'set-3',
+        introDurationMs: 2500,
+        name: 'Бензопильный цех',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1715,6 +1868,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-pre-boss-break',
         type: 'break',
         backgroundId: 'set-3',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -1726,6 +1882,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-boss',
         type: 'boss',
         backgroundId: 'set-3',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_SCRAP_KING.id,
@@ -1742,6 +1901,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-3-after-boss-break',
         type: 'break',
         backgroundId: 'set-3',
+        introDurationMs: 0,
+        name: null,
+        text: 'Дальше: Королевство на войне',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -1753,6 +1915,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-wave-1',
         type: 'wave',
         backgroundId: 'set-4',
+        introDurationMs: 2500,
+        name: 'Бомбы у ворот',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1788,6 +1953,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-wave-2',
         type: 'wave',
         backgroundId: 'set-4',
+        introDurationMs: 2500,
+        name: 'Принцы и сюрикены',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1824,6 +1992,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-wave-3',
         type: 'wave',
         backgroundId: 'set-4',
+        introDurationMs: 2500,
+        name: 'Корона мёртвых',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1863,6 +2034,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-pre-boss-break',
         type: 'break',
         backgroundId: 'set-4',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -1874,6 +2048,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-boss',
         type: 'boss',
         backgroundId: 'set-4',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_TOWER_SENTINEL.id,
@@ -1890,6 +2067,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-4-after-boss-break',
         type: 'break',
         backgroundId: 'set-4',
+        introDurationMs: 0,
+        name: null,
+        text: 'Дальше: Техно-финал',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -1901,6 +2081,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-5-wave-1',
         type: 'wave',
         backgroundId: 'set-5',
+        introDurationMs: 2500,
+        name: 'Дискеты и двигатели',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1940,6 +2123,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-5-wave-2',
         type: 'wave',
         backgroundId: 'set-5',
+        introDurationMs: 2500,
+        name: 'Магниты и ниндзя',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -1986,6 +2172,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-5-wave-3',
         type: 'wave',
         backgroundId: 'set-5',
+        introDurationMs: 2500,
+        name: 'Идолы последнего сектора',
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -2035,6 +2224,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-5-pre-boss-break',
         type: 'break',
         backgroundId: 'set-5',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 3.5, toMargin: 0, durationMs: 3500 },
         objectives: [],
@@ -2046,6 +2238,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'campaign-set-5-boss',
         type: 'boss',
         backgroundId: 'set-5',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_BUBBLE_HOG.id,
@@ -2075,6 +2270,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
+    musicSampleId: null,
     rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: true, maxAngleRadians: 0.35, maxDistance: 8, strength: 0.65 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
@@ -2083,6 +2279,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'combat-modifiers-demo-encounter',
         type: 'sandbox',
         backgroundId: 'sandbox',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'static',
           spawns: [
@@ -2130,6 +2329,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
+    musicSampleId: null,
     rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
@@ -2138,6 +2338,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'sandbox-encounter',
         type: 'sandbox',
         backgroundId: 'sandbox',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -2162,6 +2365,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
+    musicSampleId: null,
     rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
@@ -2170,6 +2374,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'sandbox-with-combat-encounter',
         type: 'sandbox',
         backgroundId: 'sandbox',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'static',
           spawns: [
@@ -2202,6 +2409,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-01.jpg'
       }
     ],
+    musicSampleId: 'music/001-calm',
     rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
@@ -2210,6 +2418,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'training-wave-1',
         type: 'wave',
         backgroundId: 'training',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [
@@ -2234,6 +2445,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'training-break',
         type: 'break',
         backgroundId: 'training',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'expandLinear', fromMargin: 4, toMargin: 0, durationMs: 2500 },
         objectives: [],
@@ -2245,6 +2459,9 @@ export const SESSION_PRESET_TEMPLATES = {
         id: 'training-wave-2',
         type: 'wave',
         backgroundId: 'training',
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'wave',
           spawns: [

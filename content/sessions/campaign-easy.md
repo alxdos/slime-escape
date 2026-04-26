@@ -4,6 +4,7 @@
 |---|---|
 | displayName | Кампания — easy |
 | description | Короткий мягкий забег: friendly fire слаймов, щедрый aim assist, лужи и понятные волны. |
+| musicSampleId | music/007-nature |
 | visibleInMenu | true |
 | order | 0 |
 | arenaId | sandbox |
@@ -32,6 +33,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-1 |
+| introDurationMs | 2500 |
+| name | Один глаз в темноте |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 2100 |
 | maxAlive | 3 |
@@ -56,6 +60,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-1 |
+| introDurationMs | 2500 |
+| name | Рога и искры |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1750 |
 | maxAlive | 4 |
@@ -86,6 +93,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-3 |
+| introDurationMs | 2500 |
+| name | Эхо в противогазах |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1900 |
 | maxAlive | 4 |
@@ -111,6 +121,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-3 |
+| introDurationMs | 2500 |
+| name | Качки и дроны |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1600 |
 | maxAlive | 4 |
@@ -143,6 +156,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-5 |
+| introDurationMs | 2500 |
+| name | Дискеты и двигатели |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1700 |
 | maxAlive | 4 |
@@ -172,6 +188,9 @@
 |---|---|
 | type | wave |
 | backgroundId | set-5 |
+| introDurationMs | 2500 |
+| name | Магниты и ниндзя |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1450 |
 | maxAlive | 5 |

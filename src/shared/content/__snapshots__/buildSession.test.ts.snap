@@ -24,6 +24,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-1",
+      "introDurationMs": 2500,
+      "name": "Один глаз в темноте",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -46,6 +48,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -62,6 +65,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-2",
+      "introDurationMs": 2500,
+      "name": "Рога и искры",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -96,6 +101,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -112,6 +118,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-1",
+      "introDurationMs": 2500,
+      "name": "Эхо в противогазах",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -137,6 +145,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -153,6 +162,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-2",
+      "introDurationMs": 2500,
+      "name": "Качки и дроны",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -198,6 +209,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -214,6 +226,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-1",
+      "introDurationMs": 2500,
+      "name": "Дискеты и двигатели",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -247,6 +261,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -263,6 +278,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-2",
+      "introDurationMs": 2500,
+      "name": "Магниты и ниндзя",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -316,6 +333,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -349,6 +367,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/007-nature",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -405,6 +424,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-1",
+      "introDurationMs": 2500,
+      "name": "Один глаз в темноте",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -427,6 +448,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -443,6 +465,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-2",
+      "introDurationMs": 2500,
+      "name": "Рога и искры",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -477,6 +501,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -493,6 +518,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-1",
+      "introDurationMs": 2500,
+      "name": "Эхо в противогазах",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -518,6 +545,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -534,6 +562,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-2",
+      "introDurationMs": 2500,
+      "name": "Качки и дроны",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -579,6 +609,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -595,6 +626,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-1",
+      "introDurationMs": 2500,
+      "name": "Дискеты и двигатели",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -628,6 +661,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -644,6 +678,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-2",
+      "introDurationMs": 2500,
+      "name": "Магниты и ниндзя",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -697,6 +733,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -730,6 +767,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/007-nature",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -786,6 +824,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-1",
+      "introDurationMs": 2500,
+      "name": "Один глаз в темноте",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -808,6 +848,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -824,6 +865,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-2",
+      "introDurationMs": 2500,
+      "name": "Рога и искры",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -858,6 +901,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -874,6 +918,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-1",
+      "introDurationMs": 2500,
+      "name": "Эхо в противогазах",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -899,6 +945,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -915,6 +962,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-2",
+      "introDurationMs": 2500,
+      "name": "Качки и дроны",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -960,6 +1009,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -976,6 +1026,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-1",
+      "introDurationMs": 2500,
+      "name": "Дискеты и двигатели",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1009,6 +1061,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -1025,6 +1078,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-2",
+      "introDurationMs": 2500,
+      "name": "Магниты и ниндзя",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1078,6 +1133,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -1111,6 +1167,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/007-nature",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -1175,6 +1232,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
+      "introDurationMs": 2500,
+      "name": "Один глаз в темноте",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1227,6 +1286,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -1243,6 +1303,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
+      "introDurationMs": 2500,
+      "name": "Рога и искры",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1313,6 +1375,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -1329,6 +1392,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
+      "introDurationMs": 2500,
+      "name": "Каменные взгляды",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1423,6 +1488,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -1439,11 +1505,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -1461,6 +1530,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1471,6 +1542,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.3125,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -1484,11 +1556,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Хламные призраки",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -1503,6 +1578,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
+      "introDurationMs": 2500,
+      "name": "Панцири и призраки",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1555,6 +1632,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -1571,6 +1649,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
+      "introDurationMs": 2500,
+      "name": "Хламная куча",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1641,6 +1721,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -1657,6 +1738,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
+      "introDurationMs": 2500,
+      "name": "Огненный скрап",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1751,6 +1834,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -1767,11 +1851,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -1789,6 +1876,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1799,6 +1888,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.395833333333333,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -1812,11 +1902,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Индустриальные мутанты",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -1831,6 +1924,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
+      "introDurationMs": 2500,
+      "name": "Эхо в противогазах",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1901,6 +1996,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -1917,6 +2013,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
+      "introDurationMs": 2500,
+      "name": "Качки и дроны",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2011,6 +2109,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -2027,6 +2126,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
+      "introDurationMs": 2500,
+      "name": "Бензопильный цех",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2145,6 +2246,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -2161,11 +2263,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -2183,6 +2288,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2193,6 +2300,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 6.860416666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -2206,11 +2314,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Королевство на войне",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -2225,6 +2336,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
+      "introDurationMs": 2500,
+      "name": "Бомбы у ворот",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2280,6 +2393,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -2296,6 +2410,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
+      "introDurationMs": 2500,
+      "name": "Принцы и сюрикены",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2395,6 +2511,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -2411,6 +2528,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
+      "introDurationMs": 2500,
+      "name": "Корона мёртвых",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2522,6 +2641,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -2538,11 +2658,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -2560,6 +2683,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2570,6 +2695,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.025,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -2583,11 +2709,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Техно-финал",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -2602,6 +2731,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
+      "introDurationMs": 2500,
+      "name": "Дискеты и двигатели",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2654,6 +2785,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -2670,6 +2802,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
+      "introDurationMs": 2500,
+      "name": "Магниты и ниндзя",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2752,6 +2886,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -2768,6 +2903,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
+      "introDurationMs": 2500,
+      "name": "Идолы последнего сектора",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2883,6 +3020,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -2899,11 +3037,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -2921,6 +3062,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2931,6 +3074,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.304166666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -2955,6 +3099,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/100-waves",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -3019,6 +3164,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
+      "introDurationMs": 2500,
+      "name": "Один глаз в темноте",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3071,6 +3218,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -3087,6 +3235,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
+      "introDurationMs": 2500,
+      "name": "Рога и искры",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3157,6 +3307,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -3173,6 +3324,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
+      "introDurationMs": 2500,
+      "name": "Каменные взгляды",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3267,6 +3420,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -3283,11 +3437,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -3305,6 +3462,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3315,6 +3474,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.3125,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -3328,11 +3488,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Хламные призраки",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -3347,6 +3510,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
+      "introDurationMs": 2500,
+      "name": "Панцири и призраки",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3399,6 +3564,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -3415,6 +3581,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
+      "introDurationMs": 2500,
+      "name": "Хламная куча",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3485,6 +3653,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -3501,6 +3670,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
+      "introDurationMs": 2500,
+      "name": "Огненный скрап",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3595,6 +3766,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -3611,11 +3783,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -3633,6 +3808,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3643,6 +3820,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.395833333333333,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -3656,11 +3834,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Индустриальные мутанты",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -3675,6 +3856,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
+      "introDurationMs": 2500,
+      "name": "Эхо в противогазах",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3745,6 +3928,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -3761,6 +3945,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
+      "introDurationMs": 2500,
+      "name": "Качки и дроны",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3855,6 +4041,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -3871,6 +4058,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
+      "introDurationMs": 2500,
+      "name": "Бензопильный цех",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3989,6 +4178,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -4005,11 +4195,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -4027,6 +4220,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4037,6 +4232,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 6.860416666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -4050,11 +4246,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Королевство на войне",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -4069,6 +4268,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
+      "introDurationMs": 2500,
+      "name": "Бомбы у ворот",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4124,6 +4325,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -4140,6 +4342,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
+      "introDurationMs": 2500,
+      "name": "Принцы и сюрикены",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4239,6 +4443,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -4255,6 +4460,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
+      "introDurationMs": 2500,
+      "name": "Корона мёртвых",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4366,6 +4573,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -4382,11 +4590,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -4404,6 +4615,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4414,6 +4627,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.025,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -4427,11 +4641,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Техно-финал",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -4446,6 +4663,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
+      "introDurationMs": 2500,
+      "name": "Дискеты и двигатели",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4498,6 +4717,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -4514,6 +4734,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
+      "introDurationMs": 2500,
+      "name": "Магниты и ниндзя",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4596,6 +4818,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -4612,6 +4835,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
+      "introDurationMs": 2500,
+      "name": "Идолы последнего сектора",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4727,6 +4952,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -4743,11 +4969,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -4765,6 +4994,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4775,6 +5006,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.304166666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -4799,6 +5031,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/100-waves",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -4863,6 +5096,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
+      "introDurationMs": 2500,
+      "name": "Один глаз в темноте",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4915,6 +5150,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -4931,6 +5167,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
+      "introDurationMs": 2500,
+      "name": "Рога и искры",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5001,6 +5239,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5017,6 +5256,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
+      "introDurationMs": 2500,
+      "name": "Каменные взгляды",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5111,6 +5352,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5127,11 +5369,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -5149,6 +5394,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5159,6 +5406,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.3125,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5172,11 +5420,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Хламные призраки",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -5191,6 +5442,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
+      "introDurationMs": 2500,
+      "name": "Панцири и призраки",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5243,6 +5496,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5259,6 +5513,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
+      "introDurationMs": 2500,
+      "name": "Хламная куча",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5329,6 +5585,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5345,6 +5602,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
+      "introDurationMs": 2500,
+      "name": "Огненный скрап",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5439,6 +5698,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5455,11 +5715,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -5477,6 +5740,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5487,6 +5752,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.395833333333333,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5500,11 +5766,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Индустриальные мутанты",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -5519,6 +5788,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
+      "introDurationMs": 2500,
+      "name": "Эхо в противогазах",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5589,6 +5860,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5605,6 +5877,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
+      "introDurationMs": 2500,
+      "name": "Качки и дроны",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5699,6 +5973,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5715,6 +5990,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
+      "introDurationMs": 2500,
+      "name": "Бензопильный цех",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5833,6 +6110,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5849,11 +6127,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -5871,6 +6152,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5881,6 +6164,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 6.860416666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5894,11 +6178,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Королевство на войне",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -5913,6 +6200,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
+      "introDurationMs": 2500,
+      "name": "Бомбы у ворот",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5968,6 +6257,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -5984,6 +6274,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
+      "introDurationMs": 2500,
+      "name": "Принцы и сюрикены",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6083,6 +6375,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -6099,6 +6392,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
+      "introDurationMs": 2500,
+      "name": "Корона мёртвых",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6210,6 +6505,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -6226,11 +6522,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -6248,6 +6547,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6258,6 +6559,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.025,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -6271,11 +6573,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Техно-финал",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -6290,6 +6595,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
+      "introDurationMs": 2500,
+      "name": "Дискеты и двигатели",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6342,6 +6649,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -6358,6 +6666,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
+      "introDurationMs": 2500,
+      "name": "Магниты и ниндзя",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6440,6 +6750,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -6456,6 +6767,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
+      "introDurationMs": 2500,
+      "name": "Идолы последнего сектора",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6571,6 +6884,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -6587,11 +6901,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -6609,6 +6926,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6619,6 +6938,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.304166666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -6643,6 +6963,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/100-waves",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -6707,6 +7028,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
+      "introDurationMs": 2500,
+      "name": "Один глаз в темноте",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6735,6 +7058,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -6751,6 +7075,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
+      "introDurationMs": 2500,
+      "name": "Рога и искры",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6794,6 +7120,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -6810,6 +7137,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
+      "introDurationMs": 2500,
+      "name": "Каменные взгляды",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6872,6 +7201,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -6888,11 +7218,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -6910,6 +7243,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6920,6 +7255,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.3125,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -6933,11 +7269,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Хламные призраки",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -6952,6 +7291,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
+      "introDurationMs": 2500,
+      "name": "Панцири и призраки",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6999,6 +7340,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7015,6 +7357,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
+      "introDurationMs": 2500,
+      "name": "Хламная куча",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7085,6 +7429,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7101,6 +7446,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
+      "introDurationMs": 2500,
+      "name": "Огненный скрап",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7206,6 +7553,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7222,11 +7570,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -7244,6 +7595,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7254,6 +7607,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.395833333333333,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7267,11 +7621,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Индустриальные мутанты",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -7286,6 +7643,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
+      "introDurationMs": 2500,
+      "name": "Эхо в противогазах",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7320,6 +7679,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7336,6 +7696,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
+      "introDurationMs": 2500,
+      "name": "Качки и дроны",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7409,6 +7771,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7425,6 +7788,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
+      "introDurationMs": 2500,
+      "name": "Бензопильный цех",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7501,6 +7866,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7517,11 +7883,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -7539,6 +7908,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7549,6 +7920,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 6.860416666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7562,11 +7934,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Королевство на войне",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -7581,6 +7956,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
+      "introDurationMs": 2500,
+      "name": "Бомбы у ворот",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7639,6 +8016,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7655,6 +8033,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
+      "introDurationMs": 2500,
+      "name": "Принцы и сюрикены",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7715,6 +8095,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7731,6 +8112,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
+      "introDurationMs": 2500,
+      "name": "Корона мёртвых",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7802,6 +8185,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7818,11 +8202,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -7840,6 +8227,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7850,6 +8239,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.025,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7863,11 +8253,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Техно-финал",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -7882,6 +8275,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
+      "introDurationMs": 2500,
+      "name": "Дискеты и двигатели",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7951,6 +8346,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -7967,6 +8363,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
+      "introDurationMs": 2500,
+      "name": "Магниты и ниндзя",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8054,6 +8452,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8070,6 +8469,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
+      "introDurationMs": 2500,
+      "name": "Идолы последнего сектора",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8168,6 +8569,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8184,11 +8586,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -8206,6 +8611,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8216,6 +8623,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.304166666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8243,6 +8651,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/005-forest",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -8307,6 +8716,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
+      "introDurationMs": 2500,
+      "name": "Один глаз в темноте",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8335,6 +8746,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8351,6 +8763,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
+      "introDurationMs": 2500,
+      "name": "Рога и искры",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8394,6 +8808,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8410,6 +8825,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
+      "introDurationMs": 2500,
+      "name": "Каменные взгляды",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8472,6 +8889,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8488,11 +8906,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -8510,6 +8931,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8520,6 +8943,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.3125,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8533,11 +8957,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Хламные призраки",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -8552,6 +8979,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
+      "introDurationMs": 2500,
+      "name": "Панцири и призраки",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8599,6 +9028,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8615,6 +9045,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
+      "introDurationMs": 2500,
+      "name": "Хламная куча",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8685,6 +9117,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8701,6 +9134,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
+      "introDurationMs": 2500,
+      "name": "Огненный скрап",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8806,6 +9241,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8822,11 +9258,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -8844,6 +9283,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8854,6 +9295,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.395833333333333,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8867,11 +9309,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Индустриальные мутанты",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -8886,6 +9331,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
+      "introDurationMs": 2500,
+      "name": "Эхо в противогазах",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8920,6 +9367,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -8936,6 +9384,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
+      "introDurationMs": 2500,
+      "name": "Качки и дроны",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9009,6 +9459,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9025,6 +9476,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
+      "introDurationMs": 2500,
+      "name": "Бензопильный цех",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9101,6 +9554,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9117,11 +9571,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -9139,6 +9596,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9149,6 +9608,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 6.860416666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9162,11 +9622,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Королевство на войне",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -9181,6 +9644,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
+      "introDurationMs": 2500,
+      "name": "Бомбы у ворот",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9239,6 +9704,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9255,6 +9721,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
+      "introDurationMs": 2500,
+      "name": "Принцы и сюрикены",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9315,6 +9783,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9331,6 +9800,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
+      "introDurationMs": 2500,
+      "name": "Корона мёртвых",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9402,6 +9873,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9418,11 +9890,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -9440,6 +9915,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9450,6 +9927,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.025,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9463,11 +9941,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Техно-финал",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -9482,6 +9963,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
+      "introDurationMs": 2500,
+      "name": "Дискеты и двигатели",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9551,6 +10034,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9567,6 +10051,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
+      "introDurationMs": 2500,
+      "name": "Магниты и ниндзя",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9654,6 +10140,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9670,6 +10157,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
+      "introDurationMs": 2500,
+      "name": "Идолы последнего сектора",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9768,6 +10257,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9784,11 +10274,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -9806,6 +10299,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9816,6 +10311,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.304166666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9843,6 +10339,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/005-forest",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -9907,6 +10404,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
+      "introDurationMs": 2500,
+      "name": "Один глаз в темноте",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9935,6 +10434,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -9951,6 +10451,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
+      "introDurationMs": 2500,
+      "name": "Рога и искры",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9994,6 +10496,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10010,6 +10513,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
+      "introDurationMs": 2500,
+      "name": "Каменные взгляды",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10072,6 +10577,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10088,11 +10594,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -10110,6 +10619,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10120,6 +10631,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.3125,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10133,11 +10645,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-1",
       "id": "campaign-set-1-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Хламные призраки",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -10152,6 +10667,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
+      "introDurationMs": 2500,
+      "name": "Панцири и призраки",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10199,6 +10716,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10215,6 +10733,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
+      "introDurationMs": 2500,
+      "name": "Хламная куча",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10285,6 +10805,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10301,6 +10822,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
+      "introDurationMs": 2500,
+      "name": "Огненный скрап",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10406,6 +10929,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10422,11 +10946,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -10444,6 +10971,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10454,6 +10983,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.395833333333333,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10467,11 +10997,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-2",
       "id": "campaign-set-2-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Индустриальные мутанты",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -10486,6 +11019,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
+      "introDurationMs": 2500,
+      "name": "Эхо в противогазах",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10520,6 +11055,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10536,6 +11072,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
+      "introDurationMs": 2500,
+      "name": "Качки и дроны",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10609,6 +11147,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10625,6 +11164,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
+      "introDurationMs": 2500,
+      "name": "Бензопильный цех",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10701,6 +11242,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10717,11 +11259,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -10739,6 +11284,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10749,6 +11296,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 6.860416666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10762,11 +11310,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-3",
       "id": "campaign-set-3-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Королевство на войне",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -10781,6 +11332,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
+      "introDurationMs": 2500,
+      "name": "Бомбы у ворот",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10839,6 +11392,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10855,6 +11409,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
+      "introDurationMs": 2500,
+      "name": "Принцы и сюрикены",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10915,6 +11471,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -10931,6 +11488,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
+      "introDurationMs": 2500,
+      "name": "Корона мёртвых",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11002,6 +11561,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -11018,11 +11578,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -11040,6 +11603,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11050,6 +11615,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.025,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -11063,11 +11629,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-4",
       "id": "campaign-set-4-after-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": "Дальше: Техно-финал",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -11082,6 +11651,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
+      "introDurationMs": 2500,
+      "name": "Дискеты и двигатели",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11151,6 +11722,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -11167,6 +11739,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
+      "introDurationMs": 2500,
+      "name": "Магниты и ниндзя",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11254,6 +11828,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -11270,6 +11845,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
+      "introDurationMs": 2500,
+      "name": "Идолы последнего сектора",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11368,6 +11945,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -11384,11 +11962,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3500,
         "kind": "timer",
@@ -11406,6 +11987,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     {
       "backgroundId": "set-5",
       "id": "campaign-set-5-boss",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11416,6 +11999,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           "y": 7.304166666666667,
         },
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -11443,6 +12027,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/005-forest",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -11491,6 +12076,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     {
       "backgroundId": "sandbox",
       "id": "combat-modifiers-demo-encounter",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11557,6 +12144,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "never",
         "next": "sequential",
@@ -11581,6 +12169,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     "kind": "none",
   },
   "modifiers": [],
+  "musicSampleId": null,
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -11629,6 +12218,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     {
       "backgroundId": "sandbox",
       "id": "combat-modifiers-demo-encounter",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11695,6 +12286,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "never",
         "next": "sequential",
@@ -11719,6 +12311,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     "kind": "none",
   },
   "modifiers": [],
+  "musicSampleId": null,
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -11767,6 +12360,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     {
       "backgroundId": "sandbox",
       "id": "combat-modifiers-demo-encounter",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11833,6 +12428,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "never",
         "next": "sequential",
@@ -11857,6 +12453,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     "kind": "none",
   },
   "modifiers": [],
+  "musicSampleId": null,
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -11905,11 +12502,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     {
       "backgroundId": "sandbox",
       "id": "sandbox-encounter",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "kind": "never",
         "next": "sequential",
@@ -11927,6 +12527,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     "kind": "none",
   },
   "modifiers": [],
+  "musicSampleId": null,
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -11975,11 +12576,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     {
       "backgroundId": "sandbox",
       "id": "sandbox-encounter",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "kind": "never",
         "next": "sequential",
@@ -11997,6 +12601,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     "kind": "none",
   },
   "modifiers": [],
+  "musicSampleId": null,
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -12045,11 +12650,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     {
       "backgroundId": "sandbox",
       "id": "sandbox-encounter",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "kind": "never",
         "next": "sequential",
@@ -12067,6 +12675,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     "kind": "none",
   },
   "modifiers": [],
+  "musicSampleId": null,
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -12115,6 +12724,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     {
       "backgroundId": "sandbox",
       "id": "sandbox-with-combat-encounter",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12129,6 +12740,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "never",
         "next": "sequential",
@@ -12155,6 +12767,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     "kind": "none",
   },
   "modifiers": [],
+  "musicSampleId": null,
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -12203,6 +12816,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     {
       "backgroundId": "sandbox",
       "id": "sandbox-with-combat-encounter",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12217,6 +12832,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "never",
         "next": "sequential",
@@ -12243,6 +12859,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     "kind": "none",
   },
   "modifiers": [],
+  "musicSampleId": null,
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -12291,6 +12908,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     {
       "backgroundId": "sandbox",
       "id": "sandbox-with-combat-encounter",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12305,6 +12924,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "never",
         "next": "sequential",
@@ -12331,6 +12951,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     "kind": "none",
   },
   "modifiers": [],
+  "musicSampleId": null,
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -12379,6 +13000,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     {
       "backgroundId": "training",
       "id": "training-wave-1",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12407,6 +13030,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -12423,11 +13047,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     {
       "backgroundId": "training",
       "id": "training-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3000,
         "kind": "timer",
@@ -12445,6 +13072,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     {
       "backgroundId": "training",
       "id": "training-wave-2",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12485,6 +13114,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -12512,6 +13142,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/001-calm",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -12560,6 +13191,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     {
       "backgroundId": "training",
       "id": "training-wave-1",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12588,6 +13221,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -12604,11 +13238,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     {
       "backgroundId": "training",
       "id": "training-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3000,
         "kind": "timer",
@@ -12626,6 +13263,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     {
       "backgroundId": "training",
       "id": "training-wave-2",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12666,6 +13305,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -12693,6 +13333,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/001-calm",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,
@@ -12741,6 +13382,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     {
       "backgroundId": "training",
       "id": "training-wave-1",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12769,6 +13412,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -12785,11 +13429,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     {
       "backgroundId": "training",
       "id": "training-break",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "kind": "empty",
       },
+      "text": null,
       "transitionRules": {
         "durationMs": 3000,
         "kind": "timer",
@@ -12807,6 +13454,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     {
       "backgroundId": "training",
       "id": "training-wave-2",
+      "introDurationMs": 0,
+      "name": null,
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12847,6 +13496,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
           },
         ],
       },
+      "text": null,
       "transitionRules": {
         "kind": "allEnemiesCleared",
         "next": "sequential",
@@ -12874,6 +13524,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     "kind": "playerDeath",
   },
   "modifiers": [],
+  "musicSampleId": "music/001-calm",
   "player": {
     "contactBox": {
       "height": 2.2916666666666665,

@@ -4,6 +4,7 @@
 |---|---|
 | displayName | Песочница |
 | description | Свободная пустая арена для проверки перемещения и камеры. |
+| musicSampleId | none |
 | visibleInMenu | false |
 | order | 0 |
 | arenaId | sandbox |
@@ -30,6 +31,9 @@
 |---|---|
 | type | sandbox |
 | backgroundId | sandbox |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | never |

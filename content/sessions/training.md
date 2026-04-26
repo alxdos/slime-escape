@@ -4,6 +4,7 @@
 |---|---|
 | displayName | Тренировка |
 | description | Короткая сессия без босса, чтобы размяться и проверить сборку. |
+| musicSampleId | music/001-calm |
 | visibleInMenu | false |
 | order | 1 |
 | arenaId | sandbox |
@@ -30,6 +31,9 @@
 |---|---|
 | type | wave |
 | backgroundId | training |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1500 |
 | maxAlive | 4 |
@@ -56,6 +60,9 @@
 |---|---|
 | type | break |
 | backgroundId | training |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | empty |
 | zoneKind | expandLinear |
 | zoneFromMargin | 4 |
@@ -71,6 +78,9 @@
 |---|---|
 | type | wave |
 | backgroundId | training |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1200 |
 | maxAlive | 5 |
