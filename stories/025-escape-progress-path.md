@@ -136,7 +136,7 @@
 | T2 | [x] | Pure progress view model: добавить main-side helper для live/result derivation пути по `SessionDefinition`, `Snapshot` и `SessionResultSummary`. | Покрыть active wave, break after wave, boss/non-wave, win, loss during wave, loss after all waves before flag, zero-wave session. |
 | T3 | [x] | Live component + UiShell wiring: создать `EscapeProgressPath` UI-компонент с lifecycle `attach/update/detach/dispose`, compact mode для running и expanded break mode для active break, подключить к `UiShell`. | Компонент пассивный: без `src/sim/**`, без runtime events, freeze в `paused`, hidden в result/menu/loading/error. |
 | T4 | [x] | Result integration: расширить `ResultViewModel` и `ResultOverlay`, чтобы victory/defeat result показывали static `Карту Побега` из terminal summary. | Result UI не читает snapshot после teardown; final-boss loss показывает stop marker before flag, а не reached flag. |
-| T5 | [ ] | Presentation polish and verification: responsive layout, reduced-motion fallback, z-order sanity with boss HUD/title/pause/result, unit tests and demo checks. | Проверить desktop/mobile-ish widths; full `typecheck`/tests по затронутым UI-модулям. |
+| T5 | [x] | Presentation polish and verification: responsive layout, reduced-motion fallback, z-order sanity with boss HUD/title/pause/result, unit tests and demo checks. | Проверить desktop/mobile-ish widths; full `typecheck`/tests по затронутым UI-модулям. |
 
 ## Related
 

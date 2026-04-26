@@ -13,6 +13,7 @@ class FakeElement {
   readonly attributes = new Map<string, string>();
   parent: FakeElement | null = null;
   textContent = '';
+  className = '';
 
   appendChild<T extends FakeElement>(child: T): T {
     child.parent?.removeChild(child);
@@ -67,9 +68,12 @@ describe('EscapeProgressPath', () => {
 
       path.attach(session);
       const root = childAt(parent, 0);
-      const label = childAt(root, 0);
-      const track = childAt(root, 1);
-      const footer = childAt(root, 2);
+      const style = childAt(root, 0);
+      const label = childAt(root, 1);
+      const track = childAt(root, 2);
+      const footer = childAt(root, 3);
+      expect(style.textContent).toContain('prefers-reduced-motion');
+      expect(style.textContent).toContain('max-width: calc(100vw - 24px)');
 
       path.update(
         snapshotPair(snapshot({ id: 'wave-1', type: 'wave', index: 0, elapsedMs: 200 })),

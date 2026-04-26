@@ -25,9 +25,14 @@ const HIDDEN_VIEW_MODEL: EscapeProgressPathViewModel = Object.freeze({ kind: 'hi
 
 export function createEscapeProgressPath(init: EscapeProgressPathInit): EscapeProgressPath {
   const root = document.createElement('section');
+  root.className = 'escape-progress-path';
   root.dataset['role'] = 'escape-progress-path';
   root.style.cssText = rootStyle();
   root.style.display = 'none';
+
+  const style = document.createElement('style');
+  style.textContent = escapeProgressPathCss();
+  root.appendChild(style);
 
   const label = document.createElement('div');
   label.dataset['role'] = 'escape-progress-label';
@@ -125,6 +130,7 @@ function createTrackNodes(
 ): HTMLElement[] {
   const nodes = points.map((point) => {
     const node = document.createElement('span');
+    node.className = 'escape-progress-point';
     node.dataset['waveIndex'] = String(point.index);
     node.dataset['state'] = point.state;
     node.setAttribute('aria-label', point.label);
@@ -134,6 +140,7 @@ function createTrackNodes(
   });
 
   const flag = document.createElement('span');
+  flag.className = 'escape-progress-flag';
   flag.dataset['role'] = 'escape-progress-flag';
   flag.dataset['state'] = flagState;
   flag.setAttribute('aria-label', 'Флаг выхода');
@@ -344,4 +351,51 @@ function flagStyle(flagState: 'pending' | 'reached'): string {
       ? 'filter:drop-shadow(0 0 8px rgba(125,255,189,0.82))'
       : 'opacity:0.86'
   ].join(';');
+}
+
+function escapeProgressPathCss(): string {
+  return `
+@keyframes escape-progress-active-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+}
+
+.escape-progress-point[data-state="active"] {
+  animation: escape-progress-active-pulse 920ms ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .escape-progress-point[data-state="active"] {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .escape-progress-path[data-presentation="compact"] {
+    max-width: calc(100vw - 24px) !important;
+    grid-template-columns: 1fr !important;
+    justify-items: end !important;
+    gap: 4px !important;
+  }
+
+  .escape-progress-path[data-presentation="compact"] [data-role="escape-progress-label"] {
+    font-size: 12px !important;
+  }
+
+  .escape-progress-path[data-presentation="compact"] [data-role="escape-progress-track"] {
+    gap: 2px !important;
+    max-width: 100% !important;
+  }
+
+  .escape-progress-path[data-presentation="expandedBreak"] {
+    top: 64px !important;
+    width: calc(100vw - 18px) !important;
+  }
+
+  .escape-progress-path[data-presentation="expandedBreak"] [data-role="escape-progress-track"] {
+    gap: 5px !important;
+  }
+}
+`.trim();
 }
