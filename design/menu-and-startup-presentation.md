@@ -97,9 +97,9 @@
 - On menu show, interactive controls use an appear animation: opacity `0 -> 1` and scale `0.5 -> 1`.
 - Initial appear may be staggered by small delays, but all primary actions must become available quickly. Stagger timing is presentation-only.
 - Hover/focus for active image buttons uses brightness, drop-shadow, glow, or a subtle transform. It must not alter the element's layout footprint.
-- Selected difficulty uses an always-visible selected state plus a gentle breathing animation. The breathing is presentation-only and must not move surrounding controls.
+- Selected difficulty uses an always-visible selected state; it does not need idle motion. The large Play button uses a gentle idle breathing animation as the primary call-to-action. This breathing is presentation-only and must not move surrounding controls.
 - Disabled/soon controls are visually distinct from active controls and cannot start sessions.
-- `prefers-reduced-motion: reduce` keeps simple opacity fades but disables strong zoom, breathing and large transforms.
+- `prefers-reduced-motion: reduce` keeps simple opacity fades but disables strong zoom, Play breathing and large transforms.
 
 ### Typography
 

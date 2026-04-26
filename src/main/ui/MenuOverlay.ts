@@ -301,30 +301,14 @@ function menuOverlayCss(): string {
   to { opacity: 1; }
 }
 
-@keyframes menu-selected-breathe {
+@keyframes menu-play-breathe {
   0%, 100% {
-    filter:
-      brightness(1.08)
-      drop-shadow(3px 0 0 #7cf58f)
-      drop-shadow(-3px 0 0 #7cf58f)
-      drop-shadow(0 3px 0 #7cf58f)
-      drop-shadow(0 -3px 0 #7cf58f)
-      drop-shadow(2px 2px 0 #7cf58f)
-      drop-shadow(-2px 2px 0 #7cf58f)
-      drop-shadow(2px -2px 0 #7cf58f)
-      drop-shadow(-2px -2px 0 #7cf58f);
+    filter: brightness(1) saturate(1);
+    transform: scale(1);
   }
   50% {
-    filter:
-      brightness(1.16)
-      drop-shadow(3px 0 0 #fff38b)
-      drop-shadow(-3px 0 0 #fff38b)
-      drop-shadow(0 3px 0 #fff38b)
-      drop-shadow(0 -3px 0 #fff38b)
-      drop-shadow(2px 2px 0 #fff38b)
-      drop-shadow(-2px 2px 0 #fff38b)
-      drop-shadow(2px -2px 0 #fff38b)
-      drop-shadow(-2px -2px 0 #fff38b);
+    filter: brightness(1.12) saturate(1.06) drop-shadow(4px 4px 0 #000000);
+    transform: scale(1.025);
   }
 }
 
@@ -353,7 +337,25 @@ function menuOverlayCss(): string {
 }
 
 .menu-image-button[data-selected="true"] img {
-  animation: menu-selected-breathe 1500ms ease-in-out infinite;
+  filter:
+    brightness(1.08)
+    drop-shadow(3px 0 0 #7cf58f)
+    drop-shadow(-3px 0 0 #7cf58f)
+    drop-shadow(0 3px 0 #7cf58f)
+    drop-shadow(0 -3px 0 #7cf58f)
+    drop-shadow(2px 2px 0 #7cf58f)
+    drop-shadow(-2px 2px 0 #7cf58f)
+    drop-shadow(2px -2px 0 #7cf58f)
+    drop-shadow(-2px -2px 0 #7cf58f);
+}
+
+.menu-image-button[data-control-id="play"] img {
+  animation: menu-play-breathe 1800ms ease-in-out infinite;
+}
+
+.menu-image-button[data-control-id="play"]:hover img,
+.menu-image-button[data-control-id="play"]:focus-visible img {
+  animation: none;
 }
 
 .menu-image-button[data-selected="true"]:hover img,
@@ -397,7 +399,6 @@ function menuOverlayCss(): string {
   }
 
   .menu-image-button[data-selected="true"] img {
-    animation: none;
     filter:
       brightness(1.1)
       drop-shadow(3px 0 0 #7cf58f)
@@ -408,6 +409,10 @@ function menuOverlayCss(): string {
       drop-shadow(-2px 2px 0 #7cf58f)
       drop-shadow(2px -2px 0 #7cf58f)
       drop-shadow(-2px -2px 0 #7cf58f);
+  }
+
+  .menu-image-button[data-control-id="play"] img {
+    animation: none;
   }
 
   .menu-image-button[data-selected="true"]:hover img,
