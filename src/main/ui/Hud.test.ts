@@ -1,11 +1,158 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { SessionDefinition } from '../../shared/session';
 import type { Snapshot } from '../../shared/snapshot';
 import { DROP_VISUALS } from '../render/dropVisuals';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
+import type { SnapshotPair } from '../sim/SimWorkerHost';
 
-import { deriveHudViewModel, formatElapsedMs } from './Hud';
+import { createHud, deriveHudViewModel, formatElapsedMs } from './Hud';
+
+class FakeStyle {
+  private readonly values = new Map<string, string>();
+  writeCount = 0;
+
+  get cssText(): string {
+    return this.values.get('cssText') ?? '';
+  }
+
+  set cssText(value: string) {
+    this.write('cssText', value);
+  }
+
+  get display(): string {
+    return this.values.get('display') ?? '';
+  }
+
+  set display(value: string) {
+    this.write('display', value);
+  }
+
+  get width(): string {
+    return this.values.get('width') ?? '';
+  }
+
+  set width(value: string) {
+    this.write('width', value);
+  }
+
+  get height(): string {
+    return this.values.get('height') ?? '';
+  }
+
+  set height(value: string) {
+    this.write('height', value);
+  }
+
+  get borderColor(): string {
+    return this.values.get('borderColor') ?? '';
+  }
+
+  set borderColor(value: string) {
+    this.write('borderColor', value);
+  }
+
+  get background(): string {
+    return this.values.get('background') ?? '';
+  }
+
+  set background(value: string) {
+    this.write('background', value);
+  }
+
+  get boxShadow(): string {
+    return this.values.get('boxShadow') ?? '';
+  }
+
+  set boxShadow(value: string) {
+    this.write('boxShadow', value);
+  }
+
+  private write(key: string, value: string): void {
+    if (this.values.get(key) === value) return;
+    this.values.set(key, value);
+    this.writeCount += 1;
+  }
+}
+
+class FakeElement {
+  readonly children: FakeElement[] = [];
+  readonly dataset: Record<string, string> = {};
+  readonly style = new FakeStyle();
+  readonly attributes = new Map<string, string>();
+  parent: FakeElement | null = null;
+  draggable = true;
+  private text = '';
+  private source = '';
+
+  constructor(readonly tagName: string) {}
+
+  get textContent(): string {
+    return this.text;
+  }
+
+  set textContent(value: string | null) {
+    this.text = value ?? '';
+  }
+
+  get src(): string {
+    return this.source;
+  }
+
+  set src(value: string) {
+    this.source = value;
+  }
+
+  get alt(): string {
+    return this.attributes.get('alt') ?? '';
+  }
+
+  set alt(value: string) {
+    this.attributes.set('alt', value);
+  }
+
+  appendChild<T extends FakeElement>(child: T): T {
+    child.parent?.removeChild(child);
+    child.parent = this;
+    this.children.push(child);
+    return child;
+  }
+
+  replaceChildren(...children: FakeElement[]): void {
+    for (const child of this.children) {
+      child.parent = null;
+    }
+    this.children.length = 0;
+    for (const child of children) {
+      this.appendChild(child);
+    }
+  }
+
+  remove(): void {
+    this.parent?.removeChild(this);
+  }
+
+  setAttribute(name: string, value: string): void {
+    this.attributes.set(name, value);
+  }
+
+  private removeChild(child: FakeElement): void {
+    const index = this.children.indexOf(child);
+    if (index >= 0) {
+      this.children.splice(index, 1);
+    }
+    child.parent = null;
+  }
+}
+
+class FakeDocument {
+  createCount = 0;
+
+  createElement(tagName: string): FakeElement {
+    this.createCount += 1;
+    return new FakeElement(tagName);
+  }
+}
 
 function makeSession(): SessionDefinition {
   return {
@@ -102,6 +249,76 @@ function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
     weaponHud: null,
     ...overrides
   };
+}
+
+function makeSnapshotPair(curr: Snapshot | null): SnapshotPair {
+  return {
+    prev: null,
+    curr,
+    currReceivedAtMs: 0,
+    nowMs: 0
+  };
+}
+
+function withFakeDocument(run: (document: FakeDocument) => void): void {
+  const fakeDocument = new FakeDocument();
+  vi.stubGlobal('document', fakeDocument as unknown as Document);
+  try {
+    run(fakeDocument);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+}
+
+function asHtmlElement(element: FakeElement): HTMLElement {
+  return element as unknown as HTMLElement;
+}
+
+function requireElement(element: FakeElement | null): FakeElement {
+  if (element === null) {
+    throw new Error('expected fake DOM element');
+  }
+  return element;
+}
+
+function childAt(root: FakeElement, index: number): FakeElement {
+  const child = root.children[index];
+  if (child === undefined) {
+    throw new Error(`expected fake DOM child at ${index}`);
+  }
+  return child;
+}
+
+function findByDataset(root: FakeElement, key: string, value: string): FakeElement | null {
+  if (root.dataset[key] === value) {
+    return root;
+  }
+  for (const child of root.children) {
+    const found = findByDataset(child, key, value);
+    if (found !== null) {
+      return found;
+    }
+  }
+  return null;
+}
+
+function findAllByTag(root: FakeElement, tagName: string): FakeElement[] {
+  const found: FakeElement[] = [];
+  if (root.tagName === tagName) {
+    found.push(root);
+  }
+  for (const child of root.children) {
+    found.push(...findAllByTag(child, tagName));
+  }
+  return found;
+}
+
+function totalStyleWrites(root: FakeElement): number {
+  let count = root.style.writeCount;
+  for (const child of root.children) {
+    count += totalStyleWrites(child);
+  }
+  return count;
 }
 
 function makeBossSnapshot(): Snapshot {
@@ -257,6 +474,112 @@ describe('Hud view model', () => {
         ]
       }
     ]);
+  });
+
+  it('reuses weapon slot DOM while updating live cooldown and timed fills', () => {
+    withFakeDocument((fakeDocument) => {
+      const parent = new FakeElement('main');
+      const hud = createHud({ parent: asHtmlElement(parent) });
+      hud.attach(makeSession());
+
+      const firstSnapshot = makeSnapshot({
+        simTimeMs: 450,
+        weaponHud: {
+          selectedIndex: 1,
+          weapons: [
+            {
+              index: 0,
+              weaponArchetypeId: 'pistol',
+              cooldownStartedAtSimMs: 0,
+              cooldownReadyAtSimMs: 0,
+              modifiers: [],
+              timedEffects: []
+            },
+            {
+              index: 1,
+              weaponArchetypeId: 'shotgun',
+              cooldownStartedAtSimMs: 200,
+              cooldownReadyAtSimMs: 700,
+              modifiers: [
+                { kind: 'projectileSizeMultiplier', multiplier: 2 },
+                { kind: 'projectileSizeMultiplier', multiplier: 1.5 }
+              ],
+              timedEffects: [
+                {
+                  kind: 'temporaryOverdrive',
+                  cooldownMultiplier: 0.5,
+                  startedAtSimMs: 100,
+                  expiresAtSimMs: 900
+                }
+              ]
+            }
+          ]
+        }
+      });
+
+      hud.update(makeSnapshotPair(firstSnapshot));
+
+      const weaponBar = requireElement(findByDataset(parent, 'role', 'hud-weapon-bar'));
+      const shotgunSlot = requireElement(findByDataset(weaponBar, 'weaponSlot', '1'));
+      const frame = childAt(shotgunSlot, 1);
+      const cooldownFill = childAt(frame, 1);
+      const projectileImage = findAllByTag(shotgunSlot, 'img').at(-1);
+      if (projectileImage === undefined) {
+        throw new Error('expected projectile image');
+      }
+      expect(cooldownFill.style.height).toBe('50%');
+
+      const createCountAfterFirstSnapshot = fakeDocument.createCount;
+      const styleWritesAfterFirstSnapshot = totalStyleWrites(parent);
+      const secondSnapshot = makeSnapshot({
+        simTimeMs: 600,
+        weaponHud: {
+          selectedIndex: 1,
+          weapons: [
+            {
+              index: 0,
+              weaponArchetypeId: 'pistol',
+              cooldownStartedAtSimMs: 0,
+              cooldownReadyAtSimMs: 0,
+              modifiers: [],
+              timedEffects: []
+            },
+            {
+              index: 1,
+              weaponArchetypeId: 'shotgun',
+              cooldownStartedAtSimMs: 200,
+              cooldownReadyAtSimMs: 700,
+              modifiers: [
+                { kind: 'projectileSizeMultiplier', multiplier: 2 },
+                { kind: 'projectileSizeMultiplier', multiplier: 1.5 }
+              ],
+              timedEffects: [
+                {
+                  kind: 'temporaryOverdrive',
+                  cooldownMultiplier: 0.5,
+                  startedAtSimMs: 100,
+                  expiresAtSimMs: 900
+                }
+              ]
+            }
+          ]
+        }
+      });
+
+      hud.update(makeSnapshotPair(secondSnapshot));
+
+      expect(fakeDocument.createCount).toBe(createCountAfterFirstSnapshot);
+      expect(requireElement(findByDataset(weaponBar, 'weaponSlot', '1'))).toBe(shotgunSlot);
+      expect(findAllByTag(shotgunSlot, 'img').at(-1)).toBe(projectileImage);
+      expect(cooldownFill.style.height).toBe('20%');
+      expect(totalStyleWrites(parent)).toBeGreaterThan(styleWritesAfterFirstSnapshot);
+
+      const styleWritesAfterSecondSnapshot = totalStyleWrites(parent);
+      hud.update({ ...makeSnapshotPair(secondSnapshot), nowMs: 1000 });
+
+      expect(fakeDocument.createCount).toBe(createCountAfterFirstSnapshot);
+      expect(totalStyleWrites(parent)).toBe(styleWritesAfterSecondSnapshot);
+    });
   });
 
   it('fails fast when a weapon slot has no projectile visual', () => {

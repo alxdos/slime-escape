@@ -98,23 +98,30 @@ export function createHud(init: HudInit): Hud {
   root.style.display = 'none';
 
   const hudDom = createHudDom(root);
+  const renderState = createHudRenderState();
 
   init.parent.appendChild(root);
 
   let session: SessionDefinition | null = null;
+  let lastRenderedSnapshot: Snapshot | null | undefined;
 
   return {
     attach(nextSession): void {
       session = nextSession;
       root.style.display = 'block';
-      render(deriveHudViewModel(nextSession, null), hudDom);
+      resetHudRenderState(renderState);
+      render(deriveHudViewModel(nextSession, null), hudDom, renderState);
+      lastRenderedSnapshot = null;
     },
     update(snapshotPair): void {
       if (session === null) return;
-      render(deriveHudViewModel(session, snapshotPair.curr), hudDom);
+      if (lastRenderedSnapshot === snapshotPair.curr) return;
+      render(deriveHudViewModel(session, snapshotPair.curr), hudDom, renderState);
+      lastRenderedSnapshot = snapshotPair.curr;
     },
     detach(): void {
       session = null;
+      lastRenderedSnapshot = undefined;
       root.style.display = 'none';
     },
     dispose(): void {
@@ -146,12 +153,17 @@ export function formatElapsedMs(elapsedMs: number): string {
   return `${pad2(minutes)}:${pad2(seconds)}`;
 }
 
-function render(viewModel: HudViewModel, dom: HudDom): void {
-  dom.timer.textContent = viewModel.runTimerText;
-  dom.hpText.textContent = viewModel.playerHp.text;
-  dom.hpFill.style.width = `${Math.round(viewModel.playerHp.ratio * 100)}%`;
-  renderBossStrip(viewModel.boss, dom);
-  renderWeaponSlots(viewModel.weaponSlots, dom.weaponBar);
+function render(viewModel: HudViewModel, dom: HudDom, state: HudRenderState): void {
+  setTextContent(dom.timer, viewModel.runTimerText, 'timerText', state);
+  setTextContent(dom.hpText, viewModel.playerHp.text, 'hpText', state);
+  setStyleWidth(
+    dom.hpFill,
+    `${Math.round(viewModel.playerHp.ratio * 100)}%`,
+    'hpFillWidth',
+    state
+  );
+  renderBossStrip(viewModel.boss, dom, state);
+  renderWeaponSlots(viewModel.weaponSlots, dom.weaponBar, state.weaponBar);
 }
 
 type HudDom = Readonly<{
@@ -164,6 +176,86 @@ type HudDom = Readonly<{
   bossFill: HTMLElement;
   weaponBar: HTMLElement;
 }>;
+
+type HudRenderState = {
+  timerText: string | null;
+  hpText: string | null;
+  hpFillWidth: string | null;
+  bossVisible: boolean | null;
+  bossTitle: string | null;
+  bossMeta: string | null;
+  bossFillWidth: string | null;
+  weaponBar: WeaponBarRenderState;
+};
+
+type HudTextStateKey = 'timerText' | 'hpText' | 'bossTitle' | 'bossMeta';
+type HudWidthStateKey = 'hpFillWidth' | 'bossFillWidth';
+
+type WeaponBarRenderState = {
+  signature: string | null;
+  display: string | null;
+  slots: WeaponSlotDom[];
+};
+
+type WeaponSlotDom = {
+  root: HTMLElement;
+  frame: HTMLElement;
+  hotkey: HTMLElement;
+  cooldownFill: HTMLElement;
+  image: HTMLImageElement;
+  badges: HTMLElement;
+  modifierBadges: Map<WeaponModifier['kind'], ModifierBadgeDom>;
+  timedBadges: Map<WeaponTimedBadgeViewModel['kind'], TimedBadgeDom>;
+  badgeOrderSignature: string | null;
+  isSelected: boolean | null;
+  hotkeyText: string | null;
+  projectileImage: string | null;
+  cooldownHeight: string | null;
+};
+
+type ModifierBadgeDom = {
+  root: HTMLElement;
+  image: HTMLImageElement;
+  count: HTMLElement | null;
+  countText: string | null;
+};
+
+type TimedBadgeDom = {
+  root: HTMLElement;
+  fill: HTMLElement;
+  image: HTMLImageElement;
+  remainingHeight: string | null;
+};
+
+function createHudRenderState(): HudRenderState {
+  return {
+    timerText: null,
+    hpText: null,
+    hpFillWidth: null,
+    bossVisible: null,
+    bossTitle: null,
+    bossMeta: null,
+    bossFillWidth: null,
+    weaponBar: {
+      signature: null,
+      display: null,
+      slots: []
+    }
+  };
+}
+
+function resetHudRenderState(state: HudRenderState): void {
+  state.timerText = null;
+  state.hpText = null;
+  state.hpFillWidth = null;
+  state.bossVisible = null;
+  state.bossTitle = null;
+  state.bossMeta = null;
+  state.bossFillWidth = null;
+  state.weaponBar.signature = null;
+  state.weaponBar.display = null;
+  state.weaponBar.slots = [];
+}
 
 function createHudDom(root: HTMLElement): HudDom {
   const topLeft = document.createElement('section');
@@ -215,56 +307,119 @@ function createHudDom(root: HTMLElement): HudDom {
   return { timer, hpText, hpFill, bossStrip, bossTitle, bossMeta, bossFill, weaponBar };
 }
 
-function renderBossStrip(viewModel: BossViewModel | null, dom: HudDom): void {
+function renderBossStrip(
+  viewModel: BossViewModel | null,
+  dom: HudDom,
+  state: HudRenderState
+): void {
   if (viewModel === null) {
-    dom.bossStrip.style.display = 'none';
-    dom.bossTitle.textContent = '';
-    dom.bossMeta.textContent = '';
-    dom.bossFill.style.width = '0%';
+    if (state.bossVisible !== false) {
+      dom.bossStrip.style.display = 'none';
+      state.bossVisible = false;
+    }
+    setTextContent(dom.bossTitle, '', 'bossTitle', state);
+    setTextContent(dom.bossMeta, '', 'bossMeta', state);
+    setStyleWidth(dom.bossFill, '0%', 'bossFillWidth', state);
     return;
   }
-  dom.bossStrip.style.display = 'grid';
-  dom.bossTitle.textContent = viewModel.titleText;
-  dom.bossMeta.textContent = `${viewModel.phaseText} · ${viewModel.hpText}`;
-  dom.bossFill.style.width = `${Math.round(viewModel.hpRatio * 100)}%`;
+  if (state.bossVisible !== true) {
+    dom.bossStrip.style.display = 'grid';
+    state.bossVisible = true;
+  }
+  setTextContent(dom.bossTitle, viewModel.titleText, 'bossTitle', state);
+  setTextContent(dom.bossMeta, `${viewModel.phaseText} · ${viewModel.hpText}`, 'bossMeta', state);
+  setStyleWidth(
+    dom.bossFill,
+    `${Math.round(viewModel.hpRatio * 100)}%`,
+    'bossFillWidth',
+    state
+  );
+}
+
+function setTextContent(
+  element: HTMLElement,
+  value: string,
+  key: HudTextStateKey,
+  state: HudRenderState
+): void {
+  if (state[key] === value) return;
+  element.textContent = value;
+  state[key] = value;
+}
+
+function setStyleWidth(
+  element: HTMLElement,
+  value: string,
+  key: HudWidthStateKey,
+  state: HudRenderState
+): void {
+  if (state[key] === value) return;
+  element.style.width = value;
+  state[key] = value;
 }
 
 function renderWeaponSlots(
   slots: ReadonlyArray<WeaponSlotViewModel>,
-  weaponBar: HTMLElement
+  weaponBar: HTMLElement,
+  state: WeaponBarRenderState
 ): void {
-  weaponBar.replaceChildren(...slots.map(createWeaponSlotElement));
-  weaponBar.style.display = slots.length === 0 ? 'none' : 'flex';
+  const signature = weaponSlotsSignature(slots);
+  if (state.signature !== signature) {
+    state.slots = slots.map(createWeaponSlotElement);
+    weaponBar.replaceChildren(...state.slots.map((slot) => slot.root));
+    state.signature = signature;
+  }
+  const display = slots.length === 0 ? 'none' : 'flex';
+  if (state.display !== display) {
+    weaponBar.style.display = display;
+    state.display = display;
+  }
+  for (let i = 0; i < slots.length; i += 1) {
+    const slot = slots[i];
+    const slotDom = state.slots[i];
+    if (slot === undefined || slotDom === undefined) continue;
+    updateWeaponSlotElement(slot, slotDom);
+  }
 }
 
-function createWeaponSlotElement(slot: WeaponSlotViewModel): HTMLElement {
+function ratioHeight(ratio: number): string {
+  return `${Math.round(clampRatio(ratio) * 100)}%`;
+}
+
+function applyWeaponSlotSelectedState(frame: HTMLElement, isSelected: boolean): void {
+  frame.style.borderColor = isSelected ? 'rgba(255,255,255,0.94)' : 'rgba(255,255,255,0.18)';
+  frame.style.background = isSelected ? 'rgba(30,39,62,0.82)' : 'rgba(5,8,14,0.56)';
+  frame.style.boxShadow = isSelected
+    ? '0 0 0 3px rgba(125,211,252,0.22), 0 10px 26px rgba(0,0,0,0.3)'
+    : '0 8px 22px rgba(0,0,0,0.24)';
+}
+
+function weaponSlotsSignature(slots: ReadonlyArray<WeaponSlotViewModel>): string {
+  return slots.map((slot) => `${slot.index}:${slot.weaponArchetypeId}`).join('|');
+}
+
+function createWeaponSlotElement(slot: WeaponSlotViewModel): WeaponSlotDom {
   const root = document.createElement('div');
   root.dataset['weaponSlot'] = String(slot.index);
-  root.dataset['selected'] = slot.isSelected ? 'true' : 'false';
+  root.dataset['selected'] = 'false';
   root.style.cssText = weaponSlotWrapperStyle();
 
   const badges = document.createElement('div');
   badges.style.cssText = weaponBadgeRowStyle();
-  badges.replaceChildren(...slot.modifierBadges.map(createModifierBadgeElement));
-  for (const timedBadge of slot.timedBadges) {
-    badges.appendChild(createTimedBadgeElement(timedBadge));
-  }
   root.appendChild(badges);
 
   const frame = document.createElement('div');
-  frame.style.cssText = weaponSlotStyle(slot.isSelected);
+  frame.style.cssText = weaponSlotStyle();
 
   const hotkey = document.createElement('span');
-  hotkey.textContent = slot.hotkeyText;
   hotkey.style.cssText = weaponSlotHotkeyStyle();
   frame.appendChild(hotkey);
 
   const cooldownFill = document.createElement('div');
-  cooldownFill.style.cssText = cooldownFillStyle(slot.cooldownRatio);
+  cooldownFill.style.cssText = cooldownFillStyle();
   frame.appendChild(cooldownFill);
 
   const image = document.createElement('img');
-  image.src = slot.projectileImage;
   image.alt = '';
   image.draggable = false;
   image.style.cssText = weaponSlotImageStyle();
@@ -272,29 +427,154 @@ function createWeaponSlotElement(slot: WeaponSlotViewModel): HTMLElement {
 
   root.appendChild(frame);
 
-  return root;
+  const dom: WeaponSlotDom = {
+    root,
+    frame,
+    hotkey,
+    cooldownFill,
+    image,
+    badges,
+    modifierBadges: new Map(),
+    timedBadges: new Map(),
+    badgeOrderSignature: null,
+    isSelected: null,
+    hotkeyText: null,
+    projectileImage: null,
+    cooldownHeight: null
+  };
+  updateWeaponSlotElement(slot, dom);
+  return dom;
 }
 
-function createModifierBadgeElement(badge: WeaponModifierBadgeViewModel): HTMLElement {
+function updateWeaponSlotElement(slot: WeaponSlotViewModel, dom: WeaponSlotDom): void {
+  if (dom.isSelected !== slot.isSelected) {
+    dom.root.dataset['selected'] = slot.isSelected ? 'true' : 'false';
+    applyWeaponSlotSelectedState(dom.frame, slot.isSelected);
+    dom.isSelected = slot.isSelected;
+  }
+  if (dom.hotkeyText !== slot.hotkeyText) {
+    dom.hotkey.textContent = slot.hotkeyText;
+    dom.hotkeyText = slot.hotkeyText;
+  }
+  if (dom.projectileImage !== slot.projectileImage) {
+    dom.image.src = slot.projectileImage;
+    dom.projectileImage = slot.projectileImage;
+  }
+  const cooldownHeight = ratioHeight(slot.cooldownRatio);
+  if (dom.cooldownHeight !== cooldownHeight) {
+    dom.cooldownFill.style.height = cooldownHeight;
+    dom.cooldownHeight = cooldownHeight;
+  }
+  renderWeaponBadges(slot.modifierBadges, slot.timedBadges, dom);
+}
+
+function renderWeaponBadges(
+  modifierBadges: ReadonlyArray<WeaponModifierBadgeViewModel>,
+  timedBadges: ReadonlyArray<WeaponTimedBadgeViewModel>,
+  slotDom: WeaponSlotDom
+): void {
+  const nextKinds = new Set<WeaponModifier['kind']>();
+  const orderedBadges: HTMLElement[] = [];
+  for (const badge of modifierBadges) {
+    nextKinds.add(badge.kind);
+    const badgeDom = slotDom.modifierBadges.get(badge.kind) ?? createModifierBadgeElement(badge);
+    slotDom.modifierBadges.set(badge.kind, badgeDom);
+    updateModifierBadgeElement(badge, badgeDom);
+    orderedBadges.push(badgeDom.root);
+  }
+  for (const kind of slotDom.modifierBadges.keys()) {
+    if (!nextKinds.has(kind)) {
+      slotDom.modifierBadges.delete(kind);
+    }
+  }
+  const nextTimedKinds = new Set<WeaponTimedBadgeViewModel['kind']>();
+  for (const badge of timedBadges) {
+    nextTimedKinds.add(badge.kind);
+    const badgeDom = slotDom.timedBadges.get(badge.kind) ?? createTimedBadgeElement(badge);
+    slotDom.timedBadges.set(badge.kind, badgeDom);
+    updateTimedBadgeElement(badge, badgeDom);
+    orderedBadges.push(badgeDom.root);
+  }
+  for (const kind of slotDom.timedBadges.keys()) {
+    if (!nextTimedKinds.has(kind)) {
+      slotDom.timedBadges.delete(kind);
+    }
+  }
+  const badgeOrderSignature = [
+    ...modifierBadges.map((badge) => `m:${badge.kind}`),
+    ...timedBadges.map((badge) => `t:${badge.kind}`)
+  ].join('|');
+  if (slotDom.badgeOrderSignature !== badgeOrderSignature) {
+    slotDom.badges.replaceChildren(...orderedBadges);
+    slotDom.badgeOrderSignature = badgeOrderSignature;
+  }
+}
+
+function createModifierBadgeElement(badge: WeaponModifierBadgeViewModel): ModifierBadgeDom {
   const root = createBadgeShell();
   const image = createBadgeImage(badge.image);
   root.appendChild(image);
-  if (badge.count > 1) {
-    const count = document.createElement('span');
-    count.textContent = String(badge.count);
-    count.style.cssText = badgeCountStyle();
-    root.appendChild(count);
-  }
-  return root;
+  const dom: ModifierBadgeDom = {
+    root,
+    image,
+    count: null,
+    countText: null
+  };
+  updateModifierBadgeElement(badge, dom);
+  return dom;
 }
 
-function createTimedBadgeElement(badge: WeaponTimedBadgeViewModel): HTMLElement {
+function updateModifierBadgeElement(
+  badge: WeaponModifierBadgeViewModel,
+  dom: ModifierBadgeDom
+): void {
+  if (dom.image.src !== badge.image) {
+    dom.image.src = badge.image;
+  }
+  if (badge.count > 1) {
+    if (dom.count === null) {
+      dom.count = document.createElement('span');
+      dom.count.style.cssText = badgeCountStyle();
+      dom.root.appendChild(dom.count);
+    }
+    const countText = String(badge.count);
+    if (dom.countText !== countText) {
+      dom.count.textContent = countText;
+      dom.countText = countText;
+    }
+  } else if (dom.count !== null) {
+    dom.count.remove();
+    dom.count = null;
+    dom.countText = null;
+  }
+}
+
+function createTimedBadgeElement(badge: WeaponTimedBadgeViewModel): TimedBadgeDom {
   const root = createBadgeShell();
   const fill = document.createElement('div');
-  fill.style.cssText = timedBadgeFillStyle(badge.remainingRatio);
+  fill.style.cssText = timedBadgeFillStyle();
   root.appendChild(fill);
-  root.appendChild(createBadgeImage(badge.image));
-  return root;
+  const image = createBadgeImage(badge.image);
+  root.appendChild(image);
+  const dom: TimedBadgeDom = {
+    root,
+    fill,
+    image,
+    remainingHeight: null
+  };
+  updateTimedBadgeElement(badge, dom);
+  return dom;
+}
+
+function updateTimedBadgeElement(badge: WeaponTimedBadgeViewModel, dom: TimedBadgeDom): void {
+  if (dom.image.src !== badge.image) {
+    dom.image.src = badge.image;
+  }
+  const remainingHeight = ratioHeight(badge.remainingRatio);
+  if (dom.remainingHeight !== remainingHeight) {
+    dom.fill.style.height = remainingHeight;
+    dom.remainingHeight = remainingHeight;
+  }
 }
 
 function createBadgeShell(): HTMLElement {
@@ -303,7 +583,7 @@ function createBadgeShell(): HTMLElement {
   return root;
 }
 
-function createBadgeImage(src: string): HTMLElement {
+function createBadgeImage(src: string): HTMLImageElement {
   const image = document.createElement('img');
   image.src = src;
   image.alt = '';
@@ -442,11 +722,11 @@ function groupModifierBadges(
   modifiers: ReadonlyArray<WeaponModifier>,
   visualRegistries: HudVisualRegistries
 ): ReadonlyArray<WeaponModifierBadgeViewModel> {
-  const badges: WeaponModifierBadgeViewModel[] = [];
+  const badges = new Map<WeaponModifier['kind'], WeaponModifierBadgeViewModel>();
   for (const modifier of modifiers) {
-    const existing = badges.find((badge) => badge.kind === modifier.kind);
+    const existing = badges.get(modifier.kind);
     if (existing === undefined) {
-      badges.push({
+      badges.set(modifier.kind, {
         kind: modifier.kind,
         count: 1,
         image: requireVisualImage(
@@ -456,14 +736,14 @@ function groupModifierBadges(
         )
       });
     } else {
-      badges[badges.indexOf(existing)] = {
+      badges.set(modifier.kind, {
         kind: existing.kind,
         count: existing.count + 1,
         image: existing.image
-      };
+      });
     }
   }
-  return badges;
+  return [...badges.values()];
 }
 
 function requireVisualImage(
@@ -731,7 +1011,7 @@ function weaponBadgeRowStyle(): string {
   ].join(';');
 }
 
-function weaponSlotStyle(isSelected: boolean): string {
+function weaponSlotStyle(): string {
   return [
     'position:relative',
     'display:grid',
@@ -740,9 +1020,9 @@ function weaponSlotStyle(isSelected: boolean): string {
     'height:58px',
     'box-sizing:border-box',
     'border-radius:8px',
-    `border:${isSelected ? '2px solid rgba(255,255,255,0.94)' : '1px solid rgba(255,255,255,0.18)'}`,
-    `background:${isSelected ? 'rgba(30,39,62,0.82)' : 'rgba(5,8,14,0.56)'}`,
-    `box-shadow:${isSelected ? '0 0 0 3px rgba(125,211,252,0.22), 0 10px 26px rgba(0,0,0,0.3)' : '0 8px 22px rgba(0,0,0,0.24)'}`,
+    'border:2px solid rgba(255,255,255,0.18)',
+    'background:rgba(5,8,14,0.56)',
+    'box-shadow:0 8px 22px rgba(0,0,0,0.24)',
     'overflow:hidden'
   ].join(';');
 }
@@ -770,13 +1050,13 @@ function weaponSlotImageStyle(): string {
   ].join(';');
 }
 
-function cooldownFillStyle(ratio: number): string {
+function cooldownFillStyle(): string {
   return [
     'position:absolute',
     'left:0',
     'right:0',
     'bottom:0',
-    `height:${Math.round(clampRatio(ratio) * 100)}%`,
+    'height:0%',
     'background:rgba(126,188,255,0.26)',
     'z-index:0'
   ].join(';');
@@ -821,13 +1101,13 @@ function badgeCountStyle(): string {
   ].join(';');
 }
 
-function timedBadgeFillStyle(ratio: number): string {
+function timedBadgeFillStyle(): string {
   return [
     'position:absolute',
     'left:0',
     'right:0',
     'bottom:0',
-    `height:${Math.round(clampRatio(ratio) * 100)}%`,
+    'height:0%',
     'background:rgba(126,188,255,0.34)',
     'z-index:0'
   ].join(';');
