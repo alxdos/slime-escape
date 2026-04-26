@@ -171,7 +171,7 @@ export function createCombatSystem(
       const maxContactBoundsRadius = computeMaxContactBoundsRadius(store);
       const maxProjectileTargetBoundsRadius = computeMaxProjectileTargetBoundsRadius(store);
       const projectileRemovals = new Set<EntityId>();
-      runFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit);
+      runPlayerFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit);
       runProjectileMovement(store, simTimeMs, projectileRemovals);
       markLifetimeCleanup(store, simTimeMs, arena, projectileRemovals);
       index.rebuild(store);
@@ -209,7 +209,7 @@ export function createCombatSystem(
   };
 }
 
-function runFiringDecisions(
+function runPlayerFiringDecisions(
   input: RuntimeInputState,
   store: EntityStore,
   simTimeMs: number,
