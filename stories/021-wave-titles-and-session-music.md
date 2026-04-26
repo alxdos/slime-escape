@@ -6,7 +6,7 @@
 
 ## Player-facing
 
-- Видит: перед каждой волной на несколько секунд появляется большой титр поверх арены. Первая строка сообщает номер волны внутри текущего сета (`Волна 1`, `Волна 2`, `Волна 3`), вторая строка, если задана в контенте, даёт художественное название волны (`Каменные взгляды`). Слаймы начинают выходить только после титра.
+- Видит: перед каждой волной на несколько секунд появляется большой титр поверх арены. Первая строка сообщает глобальный номер волны в сессии (`Волна 1`, `Волна 2`, `Волна 3`, ...), вторая строка, если задана в контенте, даёт художественное название волны (`Каменные взгляды`). Слаймы начинают выходить только после титра.
 - Видит: в коротких break-окнах после босса может появляться переходный текст, например `Дальше: Индустриальные мутанты`. Это не меню и не карточка, а такая же яркая надпись поверх арены.
 - Слышит: обычная музыка больше не выбирается случайно из захардкоженного пула. У каждой session есть свой трек, который играет во всех обычных волнах и break-ах. На boss encounter музыка временно переключается на текущий boss-track; после босса возвращается трек сессии.
 - Чувствует: кампания становится читаемой как глава за главой: сет объявляется коротким break-текстом, волна объявляется номером и названием, а музыка сессии удерживает общий тон забега.
@@ -15,12 +15,12 @@
 
 История добавляет presentation-поля encounter (`introDurationMs`/`name`/`text`), session-level обычную музыку (`musicSampleId`) и отдельный UI-слой title overlay поверх существующей MD-системы из 015. Архитектурные контракты — в design/:
 
-- Форма полей encounter, парные ограничения по `type`, intro delay для `SpawnSystem`/`ZoneSystem`/`SessionFlowSystem`, set-local нумерация волн (run-length of consecutive `type: wave`), render-контракт wave/break overlay — [encounter-presentation.md](../design/encounter-presentation.md).
+- Форма полей encounter, парные ограничения по `type`, intro delay для `SpawnSystem`/`ZoneSystem`/`SessionFlowSystem`, глобальная нумерация wave encounter-ов, render-контракт wave/break overlay — [encounter-presentation.md](../design/encounter-presentation.md).
 - `SessionDefinition.musicSampleId: string | null` и ссылка на audio-валидацию — [session-definition.md](../design/session-definition.md).
 - Source обычной музыки = `attachedSession.musicSampleId`, boss override сохраняется, `category: 'music'` ⇒ `loop: true`, `musicSampleId` обязан быть music-категории — [audio.md](../design/audio.md).
 - Authoring: `# Session` получает поле `musicSampleId` (`none` → `null`), encounter field|value получает `introDurationMs`/`name`/`text` с hard-error на нарушение парных ограничений — [content-authoring.md](../design/content-authoring.md).
 
-HUD-нумерация волн остаётся глобальной — set-local число живёт только в overlay (по [main-ui-shell.md](../design/main-ui-shell.md) и [encounter-presentation.md](../design/encounter-presentation.md)). Снапшот не расширяется: intro-активность derive-ится из `snapshot.encounter.elapsedMs` и `SessionDefinition.encounters[i].introDurationMs`.
+HUD-нумерация волн, overlay и итоговое окно используют глобальный порядок wave encounter-ов (по [main-ui-shell.md](../design/main-ui-shell.md) и [encounter-presentation.md](../design/encounter-presentation.md)). Снапшот не расширяется: intro-активность derive-ится из `snapshot.encounter.elapsedMs` и `SessionDefinition.encounters[i].introDurationMs`.
 
 ### Visual style
 
@@ -97,7 +97,7 @@ Easy использует только set-1 / set-3 / set-5 по две вол�
 
 - В начале каждой wave с `introDurationMs > 0` появляется overlay. Во время overlay `waveProgress.dispatched` остаётся `0`, enemy count не увеличивается, зона остаётся на стартовом margin.
 - После окончания intro первая волна начинает спавнить слаймов по существующим `spawnIntervalMs`, а зона начинает сжиматься с нулевой точки своего wave-таймера.
-- Overlay показывает set-local номер: `campaign-set-2-wave-1` отображается как `Волна 1`, не `Волна 4`.
+- Overlay показывает глобальный номер: `campaign-set-2-wave-1` отображается как `Волна 4`, не `Волна 1`.
 - Overlay не показывает "Wave 1" из markdown: номер вычисляется из `session.encounters`.
 - Если `name` задан, видны две строки; если `name` отсутствует, видна только строка номера.
 - Break с `text` показывает этот текст в течение break encounter и исчезает при переходе к следующему encounter.
@@ -124,10 +124,10 @@ Easy использует только set-1 / set-3 / set-5 по две вол�
 | T4 | [x] | Обновить все `content/sessions/*.md` (все три кампании + `training`/`sandbox`/`sandbox-with-combat`/`combat-modifiers-demo`): добавить `musicSampleId` (`none` для sandbox-ов, явный трек для кампаний); campaign wave-ам добавить `introDurationMs: 2500` и `name` из раздела Content naming; after-boss break-ам добавить `text` и при необходимости поднять `transitionDurationMs`. | Контент, не код. Регенерация `sessions.generated.ts` через `content:build`. |
 | T5 | [x] | `Audio`: убрать `REGULAR_MUSIC_POOL` и `lastRegularMusicSampleId`, источник regular music = `attachedSession.musicSampleId`; boss override и pause ducking не трогать; в `SampleRegistry` прописать `loop: true` для всех entries с `category: 'music'`; в `createAudio`/`attach` добавить валидации из [audio.md](../design/audio.md). | Дозаполнить `SampleRegistry` всеми уже лежащими `/sfx/music/*.mp3`, если они нужны контенту. |
 | T6 | [x] | Реализовать intro delay в sim: `SpawnSystem`, `ZoneSystem` и `SessionFlowSystem` уважают `encounter.elapsedMs < encounter.introDurationMs` по правилам [encounter-presentation.md](../design/encounter-presentation.md); `'allEnemiesCleared'` подавляется во время intro. | `encounter.elapsedMs` уже в snapshot — дополнительные поля не нужны. |
-| T7 | [x] | Реализовать wave/break title overlay в `src/main/ui/**`: отдельный компонент, подключённый `UiShell` параллельно `Hud`; данные — `SessionDefinition` + `snapshot.encounter`; set-local нумерация по run-length; condition показа и z-order — по [encounter-presentation.md](../design/encounter-presentation.md). | Не делать карточку. Стили (обводка, тень, fade) — раздел Visual style этой истории. |
+| T7 | [x] | Реализовать wave/break title overlay в `src/main/ui/**`: отдельный компонент, подключённый `UiShell` параллельно `Hud`; данные — `SessionDefinition` + `snapshot.encounter`; глобальная нумерация по всем wave encounter-ам; condition показа и z-order — по [encounter-presentation.md](../design/encounter-presentation.md). | Не делать карточку. Стили (обводка, тень, fade) — раздел Visual style этой истории. |
 | T8 | [x] | Тесты content-build: валидный `musicSampleId`, `none`, неизвестный sample, sample не music-category; `introDurationMs`/`name`/`text` с валидными комбинациями и hard-error на нарушение парных ограничений. | Поверх `scripts/content-build/sessions/**` unit-тесты. |
-| T9 | [x] | Тесты sim/UI/audio: set-local wave number по run-length (включая кейс «два сета подряд без break-а между ними» для регрессии); delayed spawn и zone при intro; `allEnemiesCleared` не срабатывает во время intro, включая `spawnPlan: { kind: 'empty' }` wave; overlay lifecycle; session music → boss music → session music; `musicSampleId: null` = silent; `category: 'music'` && `!loop` = ошибка модуля. | `Hud.test.ts`, `Audio.test.ts`, `SessionFlowSystem` tests, новый overlay test. |
-| T10 | [ ] | Финальная верификация: `npm run content:check && tsc -p tsconfig.scripts.json && npm run typecheck && npm test`; dev-server visual/audio sanity. | Проверить набор: set-1 wave-1 (intro + название + первый slime), set-1 pre-boss break, set-1 boss (musicSampleId → boss music), set-1 after-boss break (text), set-2 wave-1 (set-local «Волна 1», не «Волна 4»). |
+| T9 | [x] | Тесты sim/UI/audio: глобальный wave number поверх break/boss границ; delayed spawn и zone при intro; `allEnemiesCleared` не срабатывает во время intro, включая `spawnPlan: { kind: 'empty' }` wave; overlay lifecycle; session music → boss music → session music; `musicSampleId: null` = silent; `category: 'music'` && `!loop` = ошибка модуля. | `Hud.test.ts`, `Audio.test.ts`, `SessionFlowSystem` tests, новый overlay test. |
+| T10 | [ ] | Финальная верификация: `npm run content:check && tsc -p tsconfig.scripts.json && npm run typecheck && npm test`; dev-server visual/audio sanity. | Проверить набор: set-1 wave-1 (intro + название + первый slime), set-1 pre-boss break, set-1 boss (musicSampleId → boss music), set-1 after-boss break (text), set-2 wave-1 (глобальная «Волна 4», не «Волна 1»). |
 
 ## Related
 

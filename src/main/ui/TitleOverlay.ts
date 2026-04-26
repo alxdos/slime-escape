@@ -104,14 +104,14 @@ export function deriveTitleOverlayViewModel(
       return HIDDEN_VIEW_MODEL;
     }
 
-    const setPosition = resolveWaveSetPosition(session, index);
-    if (setPosition === null) {
+    const wavePosition = resolveWavePosition(session, index);
+    if (wavePosition === null) {
       return HIDDEN_VIEW_MODEL;
     }
 
     return {
       kind: 'wave',
-      titleText: `Волна ${setPosition.setIndex}`,
+      titleText: `Волна ${wavePosition.index}`,
       nameText: definition.name,
       opacity: calculateIntroOpacity(encounter.elapsedMs, definition.introDurationMs)
     };
@@ -171,30 +171,21 @@ function resolveEncounterDefinition(
   return { definition: session.encounters[index]!, index };
 }
 
-function resolveWaveSetPosition(
+function resolveWavePosition(
   session: SessionDefinition,
   encounterIndex: number
-): Readonly<{ setIndex: number; setTotal: number }> | null {
+): Readonly<{ index: number; total: number }> | null {
   if (session.encounters[encounterIndex]?.type !== 'wave') {
     return null;
   }
 
-  let startIndex = encounterIndex;
-  while (startIndex > 0 && session.encounters[startIndex - 1]?.type === 'wave') {
-    startIndex -= 1;
-  }
-
-  let endIndex = encounterIndex;
-  while (
-    endIndex + 1 < session.encounters.length &&
-    session.encounters[endIndex + 1]?.type === 'wave'
-  ) {
-    endIndex += 1;
-  }
-
+  const wavesBeforeOrAtEncounter = session.encounters
+    .slice(0, encounterIndex + 1)
+    .filter((encounter) => encounter.type === 'wave').length;
+  const totalWaves = session.encounters.filter((encounter) => encounter.type === 'wave').length;
   return {
-    setIndex: encounterIndex - startIndex + 1,
-    setTotal: endIndex - startIndex + 1
+    index: wavesBeforeOrAtEncounter,
+    total: totalWaves
   };
 }
 

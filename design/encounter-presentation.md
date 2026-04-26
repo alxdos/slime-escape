@@ -10,17 +10,17 @@
 
 История 021 одновременно вводит:
 
-- двухстрочный overlay для wave с номером волны внутри сета и художественным названием;
+- двухстрочный overlay для wave с глобальным номером волны в сессии и художественным названием;
 - однострочный break-overlay с переходным текстом;
 - задержку `SpawnSystem` и `ZoneSystem` на intro, чтобы гарантировать обещание «титр закончился — волна началась»;
-- set-local нумерацию волн, при которой `campaign-set-2-wave-1` на overlay выглядит как «Волна 1», а не как глобальный порядковый номер.
+- глобальную нумерацию волн, при которой `campaign-set-2-wave-1` на overlay выглядит как «Волна 4» и совпадает с итоговым окном.
 
 Без явного контракта:
 
 - поля `name`/`introDurationMs`/`text` заведут «по месту» либо в `EncounterDefinition`, либо в `tuning`, и authoring-форма в `content-authoring.md` разойдётся с runtime;
 - «wave не должна завершиться во время intro» растечётся между `SpawnSystem` (не спавнит), `ZoneSystem` (не двигает margin) и `SessionFlowSystem` (проверяет `transitionRules`) разными способами;
 - правило нумерации волн в overlay окажется завязано на `backgroundId` (presentation-поле) или на имя encounter-id (текст), и любая будущая кампания, в которой сет разделяет background с другим, сломает счёт молча;
-- main-ui-shell зафиксирует overlay как «ещё один HUD» и смешает его с HUD wave progress, чья нумерация (из `main-ui-shell.md`) осталась глобальной.
+- main-ui-shell зафиксирует overlay как «ещё один HUD» и смешает его с HUD wave progress, хотя overlay остаётся отдельным presentation-слоем.
 
 Этот файл закрывает все четыре пункта одним решением.
 
@@ -65,19 +65,18 @@ type EncounterDefinition = Readonly<{
 
 Другие runtime-системы (`MovementSystem`, `CombatSystem`, `InputCommand` handling) во время intro работают штатно: игрок может двигаться, целиться и стрелять — это ожидаемое поведение.
 
-### Set-local wave numbering
+### Global Wave Numbering
 
-Номер волны в overlay считается **run-length of consecutive `type === 'wave'` encounters**:
+Номер волны в overlay считается **глобально по всем `type === 'wave'` encounters** в рамках текущей `SessionDefinition`:
 
-- Сет = максимальная непрерывная последовательность encounter-ов с `type === 'wave'` в `session.encounters`; граница сета — любой encounter, у которого `type !== 'wave'`, либо начало/конец списка.
 - Для активного wave encounter с индексом `i` в `session.encounters`:
-  - `setTotal` = длина сета, содержащего `i`;
-  - `setIndex` = позиция `i` в этом сете (1-based).
-- Для отображения overlay используется `setIndex`; `setTotal` вычисляется тем же правилом и доступен, если overlay захочет показывать «Волна setIndex / setTotal» (в стартовой реализации не используется — см. «Render contract» ниже).
+  - `waveTotal` = количество всех encounter-ов с `type === 'wave'` в сессии;
+  - `waveIndex` = количество wave encounter-ов на отрезке `session.encounters[0..i]` (1-based).
+- Для отображения overlay используется `waveIndex`; `waveTotal` вычисляется тем же правилом и доступен, если overlay захочет показывать «Волна waveIndex / waveTotal» (в стартовой реализации не используется — см. «Render contract» ниже).
 
-Алгоритм стабилен, детерминирован по содержимому `session.encounters` и не зависит ни от `backgroundId`, ни от текстовой формы `encounter.id`. Для текущих трёх кампаний (`campaign-easy`, `campaign-normal`, `campaign-hard`) сеты в `session.encounters` уже разделены `break`/`boss` encounter-ами, поэтому правило даёт ожидаемый результат «Волна 1/2/3» внутри каждого сета.
+Алгоритм стабилен, детерминирован по содержимому `session.encounters` и не зависит ни от `backgroundId`, ни от текстовой формы `encounter.id`. Для текущих кампаний после первого босса номер продолжает расти: `campaign-set-2-wave-1` отображается как «Волна 4», а не как «Волна 1».
 
-HUD-нумерация волн (`main-ui-shell.md`, «HUD data derivation») остаётся **глобальной** по всем wave encounter-ам сессии. Overlay и HUD показывают разные числа осознанно: HUD — общий прогресс забега, overlay — драматургия сета. Переписывание HUD под set-local — отдельное решение и отдельная история.
+HUD-нумерация волн (`main-ui-shell.md`, «HUD data derivation») и итоговое окно используют тот же глобальный смысл номера. Overlay не вводит отдельную локальную формулу, чтобы игрок видел один и тот же порядок волн во всех UI-слоях.
 
 ### Render contract (main UI)
 
@@ -86,7 +85,7 @@ Wave/break title overlay — отдельный UI-слой в `src/main/ui/**`,
 - **Видимость по фазам**: виден в `running` и `paused` (в `paused` — заморожен на текущем состоянии); скрыт в `menu`, `loading`, `result`, `error('preload')`. Поведение в `paused` аналогично HUD: overlay остаётся, его условия не пересчитываются новыми снапшотами.
 - **Условие показа wave overlay**: активный encounter `type === 'wave'`, `introDurationMs > 0` и `encounter.elapsedMs < introDurationMs`. Во всех остальных случаях wave overlay скрыт.
 - **Содержимое wave overlay**:
-  - первая строка: `Волна {setIndex}` (см. «Set-local wave numbering»);
+  - первая строка: `Волна {waveIndex}` (см. «Global Wave Numbering»);
   - вторая строка: `encounter.name`, если `name !== null`; иначе вторая строка не рисуется.
 - **Условие показа break overlay**: активный encounter `type === 'break'` и `text !== null`. Виден весь период encounter, без отдельного intro-окна.
 - **Содержимое break overlay**: одна строка — `encounter.text`.
@@ -106,8 +105,8 @@ Intro и overlay не вводят новых `runtime events`. `encounterStart`
 
 - `EncounterDefinition` получает три устойчивых presentation-поля, авторская поверхность расширяется предсказуемо в `content/sessions/*.md`.
 - Intro delay выражается одним инвариантом `encounter.elapsedMs < encounter.introDurationMs`, который применяется локально в `SpawnSystem`, `ZoneSystem` и `SessionFlowSystem`; снапшот и runtime events не расширяются.
-- Set-local нумерация не зависит от `backgroundId` и от текста id-а encounter, поэтому не ломается при будущих кампаниях, где два сета разделяют фон или называются без `set-N-` префикса.
-- HUD и overlay намеренно считают «номер волны» разными формулами; это out of scope 021 и закрепляет, что overlay — это презентация сета, а HUD — прогресс забега.
+- Глобальная нумерация overlay не зависит от `backgroundId` и от текста id-а encounter, поэтому не ломается при будущих кампаниях, где сеты называются без `set-N-` префикса.
+- HUD, overlay и Result UI говорят об одном глобальном порядке волн, поэтому итоговый прогресс не спорит с титром последней увиденной волны.
 - Пустой wave (`spawnPlan: { kind: 'empty' }`) с `introDurationMs > 0` теперь ведёт себя корректно: SessionFlowSystem держит encounter до конца intro, потом `allEnemiesCleared` срабатывает мгновенно. Content-build не обязан запрещать такую комбинацию, потому что runtime её переживает.
 - Будущие расширения overlay (fade-in/out параметры, per-set сцены) — дополнения этого файла или новые файлы `design/`, а не правки содержимого `EncounterDefinition`.
 

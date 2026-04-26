@@ -67,6 +67,23 @@ function breakEncounter(id: string, text: string | null): EncounterDefinition {
   };
 }
 
+function bossEncounter(id: string): EncounterDefinition {
+  return {
+    id,
+    type: 'boss',
+    backgroundId: null,
+    introDurationMs: 0,
+    name: null,
+    text: null,
+    spawnPlan: { kind: 'boss', bossArchetypeId: 'test-boss', position: { x: 0, y: 0 } },
+    zoneBehavior: { kind: 'disabled' },
+    objectives: [],
+    rewardRules: null,
+    transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+    tuning: null
+  };
+}
+
 function snapshot(
   encounter: NonNullable<Snapshot['encounter']> | null
 ): Snapshot {
@@ -116,28 +133,30 @@ class FakeDocument {
 }
 
 describe('TitleOverlay view model', () => {
-  it('shows wave title with set-local numbering during intro', () => {
+  it('shows wave title with global numbering during intro', () => {
     const session = makeSession([
       wave('set-1-wave-1', 'First'),
       wave('set-1-wave-2', 'Second'),
-      breakEncounter('set-1-break', null),
+      breakEncounter('set-1-pre-boss-break', null),
+      bossEncounter('set-1-boss'),
+      breakEncounter('set-1-after-boss-break', 'Дальше'),
       wave('set-2-wave-1', 'Один глаз в темноте')
     ]);
 
     const view = deriveTitleOverlayViewModel(
       session,
-      snapshot({ id: 'set-2-wave-1', type: 'wave', index: 3, elapsedMs: 1000 })
+      snapshot({ id: 'set-2-wave-1', type: 'wave', index: 5, elapsedMs: 1000 })
     );
 
     expect(view).toMatchObject({
       kind: 'wave',
-      titleText: 'Волна 1',
+      titleText: 'Волна 3',
       nameText: 'Один глаз в темноте',
       opacity: 1
     });
   });
 
-  it('treats consecutive waves as one run when no non-wave encounter separates them', () => {
+  it('keeps global numbering for consecutive waves', () => {
     const session = makeSession([
       wave('wave-1', 'First'),
       wave('wave-2', 'Second'),
