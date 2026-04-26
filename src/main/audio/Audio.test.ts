@@ -202,6 +202,7 @@ function makeBossSession(): SessionDefinition {
     },
     loadout: { weapons: ['pistol'], selectedIndex: 0 },
     backgrounds: [],
+    musicSampleId: null,
     modifiers: [],
     rules: {
       damage: { slimeFriendlyFire: false },
@@ -212,6 +213,9 @@ function makeBossSession(): SessionDefinition {
         id: 'boss-encounter',
         type: 'boss',
         backgroundId: null,
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: 'boss-scrap-king',

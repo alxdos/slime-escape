@@ -238,6 +238,9 @@ function emptyEncounter(id: string, transitionRules: EncounterDefinition['transi
     id,
     type: 'wave',
     backgroundId: null,
+    introDurationMs: 0,
+    name: null,
+    text: null,
     spawnPlan: { kind: 'empty' },
     zoneBehavior: { kind: 'disabled' },
     objectives: [],
@@ -252,6 +255,9 @@ function waveEncounter(id: string, transitionRules: EncounterDefinition['transit
     id,
     type: 'wave',
     backgroundId: null,
+    introDurationMs: 0,
+    name: null,
+    text: null,
     spawnPlan: {
       kind: 'wave',
       spawns: [{ archetypeId: 'test-wave-enemy' }],
@@ -287,6 +293,7 @@ function makeSession(
     },
     loadout: options?.loadout ?? null,
     backgrounds: [],
+    musicSampleId: null,
     modifiers: [],
     rules: {
       damage: { slimeFriendlyFire: false },
@@ -444,6 +451,9 @@ describe('SessionFlowSystem bossDefeated', () => {
     id,
     type: 'boss',
     backgroundId: null,
+    introDurationMs: 0,
+    name: null,
+    text: null,
     spawnPlan: {
       kind: 'boss',
       bossArchetypeId: 'test-boss',

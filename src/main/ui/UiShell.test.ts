@@ -95,6 +95,7 @@ function makeSession(id = 'test-session'): SessionDefinition {
     },
     loadout: { weapons: ['pistol'], selectedIndex: 0 },
     backgrounds: [],
+    musicSampleId: null,
     modifiers: [],
     rules: {
       damage: { slimeFriendlyFire: false },

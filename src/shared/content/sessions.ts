@@ -47,6 +47,7 @@ export type SessionPresetTemplate = Readonly<{
   player: PlayerSpawn;
   loadout: Loadout | null;
   backgrounds: ReadonlyArray<SessionBackground>;
+  musicSampleId: string | null;
   rules: SessionRules;
   winCondition: WinCondition;
   lossCondition: LossCondition;
