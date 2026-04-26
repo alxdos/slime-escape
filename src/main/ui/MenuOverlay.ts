@@ -275,7 +275,6 @@ function menuOverlayCss(): string {
   0%, 100% {
     filter:
       brightness(1.08)
-      saturate(1)
       drop-shadow(3px 0 0 #7cf58f)
       drop-shadow(-3px 0 0 #7cf58f)
       drop-shadow(0 3px 0 #7cf58f)
@@ -283,13 +282,11 @@ function menuOverlayCss(): string {
       drop-shadow(2px 2px 0 #7cf58f)
       drop-shadow(-2px 2px 0 #7cf58f)
       drop-shadow(2px -2px 0 #7cf58f)
-      drop-shadow(-2px -2px 0 #7cf58f)
-      drop-shadow(0 0 0 #000000);
+      drop-shadow(-2px -2px 0 #7cf58f);
   }
   50% {
     filter:
       brightness(1.16)
-      saturate(1)
       drop-shadow(3px 0 0 #fff38b)
       drop-shadow(-3px 0 0 #fff38b)
       drop-shadow(0 3px 0 #fff38b)
@@ -297,8 +294,7 @@ function menuOverlayCss(): string {
       drop-shadow(2px 2px 0 #fff38b)
       drop-shadow(-2px 2px 0 #fff38b)
       drop-shadow(2px -2px 0 #fff38b)
-      drop-shadow(-2px -2px 0 #fff38b)
-      drop-shadow(0 0 0 #000000);
+      drop-shadow(-2px -2px 0 #fff38b);
   }
 }
 
@@ -317,7 +313,7 @@ function menuOverlayCss(): string {
 
 .menu-image-button img {
   transition: filter 140ms ease, transform 140ms ease, opacity 140ms ease;
-  filter: brightness(1) saturate(1) drop-shadow(0 0 0 #000000);
+  filter: none;
 }
 
 .menu-image-button:hover img,
@@ -349,7 +345,7 @@ function menuOverlayCss(): string {
 }
 
 .menu-image-button[data-soon="true"] img {
-  filter: saturate(0.86) brightness(0.92) drop-shadow(0 0 0 #000000);
+  filter: saturate(0.86) brightness(0.92);
 }
 
 .menu-image-button[data-soon="true"]:hover img,
@@ -374,7 +370,6 @@ function menuOverlayCss(): string {
     animation: none;
     filter:
       brightness(1.1)
-      saturate(1)
       drop-shadow(3px 0 0 #7cf58f)
       drop-shadow(-3px 0 0 #7cf58f)
       drop-shadow(0 3px 0 #7cf58f)
@@ -382,8 +377,7 @@ function menuOverlayCss(): string {
       drop-shadow(2px 2px 0 #7cf58f)
       drop-shadow(-2px 2px 0 #7cf58f)
       drop-shadow(2px -2px 0 #7cf58f)
-      drop-shadow(-2px -2px 0 #7cf58f)
-      drop-shadow(0 0 0 #000000);
+      drop-shadow(-2px -2px 0 #7cf58f);
   }
 
   .menu-image-button[data-selected="true"]:hover img,
