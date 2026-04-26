@@ -24,6 +24,16 @@ export type MenuControlLayout = Readonly<{
   aspectRatio: number;
 }>;
 
+export type MenuImageLayout = Readonly<{
+  id: 'logo';
+  src: string;
+  alt: string;
+  leftPercent: number;
+  topPercent: number;
+  widthPercent: number;
+  aspectRatio: number;
+}>;
+
 export const MAIN_MENU_STAGE = Object.freeze({
   width: 1000,
   height: 707,
@@ -31,6 +41,16 @@ export const MAIN_MENU_STAGE = Object.freeze({
 });
 
 export const MAIN_MENU_STAGE_WIDTH_VH = (MAIN_MENU_STAGE.width / MAIN_MENU_STAGE.height) * 100;
+
+export const MAIN_MENU_LOGO = Object.freeze({
+  id: 'logo',
+  src: '/images/title-800.png',
+  alt: 'Slime Escape',
+  leftPercent: 1.5,
+  topPercent: 1.2,
+  widthPercent: 24,
+  aspectRatio: 800 / 360
+} as const satisfies MenuImageLayout);
 
 export const MAIN_MENU_CONTROLS = Object.freeze([
   {

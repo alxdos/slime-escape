@@ -6,6 +6,7 @@ describe('startup assets', () => {
   it('declares every required first-screen UI image', () => {
     expect(STARTUP_UI_IMAGE_URLS).toEqual([
       '/images/slime-escape.jpg',
+      '/images/title-800.png',
       '/images/bg/bg-main.jpg',
       '/images/menu/menu-main-settings.png',
       '/images/menu/menu-main-soon.png',

@@ -3,8 +3,10 @@ import type { ModePresetId, PlayableModeEntry } from '../../shared/content/sessi
 import { comicTextStyle } from './comicTextStyle';
 import {
   MAIN_MENU_CONTROLS,
+  MAIN_MENU_LOGO,
   MAIN_MENU_STAGE,
   MAIN_MENU_STAGE_WIDTH_VH,
+  type MenuImageLayout,
   type MenuControlLayout
 } from './MenuOverlayLayout';
 import {
@@ -44,6 +46,9 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   const stage = document.createElement('div');
   stage.dataset['role'] = 'menu-stage';
   stage.style.cssText = stageStyle();
+
+  const logo = createStageImage(MAIN_MENU_LOGO);
+  stage.appendChild(logo);
 
   const modeButtons = new Map<ModePresetId, HTMLButtonElement>();
   const controlButtons: HTMLButtonElement[] = [];
@@ -150,6 +155,16 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   }
 }
 
+function createStageImage(layout: MenuImageLayout): HTMLImageElement {
+  const image = document.createElement('img');
+  image.dataset['role'] = `menu-${layout.id}`;
+  image.alt = layout.alt;
+  image.src = layout.src;
+  image.draggable = false;
+  image.style.cssText = stageImageStyle(layout);
+  return image;
+}
+
 function createControlButton(
   control: MenuControlLayout,
   index: number,
@@ -180,6 +195,21 @@ function createControlButton(
   button.addEventListener('click', () => onControl(control.id));
 
   return button;
+}
+
+function stageImageStyle(layout: MenuImageLayout): string {
+  return [
+    'position:absolute',
+    `left:${layout.leftPercent}%`,
+    `top:${layout.topPercent}%`,
+    `width:${layout.widthPercent}%`,
+    `aspect-ratio:${layout.aspectRatio}`,
+    'display:block',
+    'height:auto',
+    'object-fit:contain',
+    'pointer-events:none',
+    'user-select:none'
+  ].join(';');
 }
 
 function baseOverlayStyle(): string {

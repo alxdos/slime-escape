@@ -14,6 +14,7 @@ export const STARTUP_SPRITE_SPECS = Object.freeze([
 
 export const STARTUP_UI_IMAGE_URLS = Object.freeze([
   '/images/slime-escape.jpg',
+  '/images/title-800.png',
   '/images/bg/bg-main.jpg',
   '/images/menu/menu-main-settings.png',
   '/images/menu/menu-main-soon.png',

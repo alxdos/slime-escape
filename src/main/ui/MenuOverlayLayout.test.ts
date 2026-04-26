@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   MAIN_MENU_CONTROLS,
+  MAIN_MENU_LOGO,
   MAIN_MENU_STAGE,
   MAIN_MENU_STAGE_WIDTH_VH
 } from './MenuOverlayLayout';
@@ -14,6 +15,18 @@ describe('MenuOverlayLayout', () => {
       background: '/images/bg/bg-main.jpg'
     });
     expect(MAIN_MENU_STAGE_WIDTH_VH).toBeCloseTo(141.443, 3);
+  });
+
+  it('places the title logo in the top-left stage area', () => {
+    expect(MAIN_MENU_LOGO).toEqual({
+      id: 'logo',
+      src: '/images/title-800.png',
+      alt: 'Slime Escape',
+      leftPercent: 1.5,
+      topPercent: 1.2,
+      widthPercent: 24,
+      aspectRatio: 800 / 360
+    });
   });
 
   it('contains every sliced main menu asset exactly once', () => {

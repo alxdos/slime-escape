@@ -8,7 +8,7 @@
 
 - Видит: startup-заставка больше не растягивает реальную загрузку ассетов фейковыми счётчиками. После загрузки ассетов она продолжает короткий игровой ритуал подготовки мира: `Пробуждаем слизь`, `Замешиваем липкость`, `Спавним слаймов`, `Проектируем босса`, `Открываем путь побега`.
 - Видит: заставка уходит через fade out в тёмный переходный фон, а главное меню появляется через fade in. Первый экран не моргает и не меняется резким hard-swap.
-- Видит: главное меню как hand-drawn сцену по референсу [001-main.jpg](../mockups/001-main.jpg), собранную из `public/images/bg/bg-main.jpg` и нарезанных `public/images/menu/menu-main-*.png`.
+- Видит: главное меню как hand-drawn сцену по референсу [001-main.jpg](../mockups/001-main.jpg), собранную из `public/images/bg/bg-main.jpg`, логотипа `public/images/title-800.png` и нарезанных `public/images/menu/menu-main-*.png`.
 - Видит: тексты меню, настроек, HUD и runtime-надписи в game/comic стиле: светлая или ярко-пастельная заливка, псевдо-обводка четырьмя резкими чёрными text-shadow без blur и отдельная резкая чёрная тень.
 - Видит: Settings и Pause overlay не как тёмные системные карточки, а как рисованный UI приложения: светлая бумага, яркие элементы, чёрная рамка и резкая тень.
 - Может: выбрать `easy`, `normal` или `hard`; выбранный режим выделяется плотной цветной обводкой и мягко дышит.
@@ -34,6 +34,7 @@
 - Добавить `UiShell`-owned phase transition curtain для `loading -> menu` и `menu -> running`: dark midpoint, commit phase switch while covered, fade in next screen, блокировка повторного input во время перехода.
 - Пересобрать `MenuOverlay` из card-based DOM UI в fixed stage из image-ассетов:
   - background: `public/images/bg/bg-main.jpg`;
+  - logo: `public/images/title-800.png`;
   - top-right buttons: `menu-main-settings.png`, `menu-main-soon.png`, `menu-main-fullscreen.png`;
   - difficulty buttons: `menu-main-mode-easy.png`, `menu-main-mode-normal.png`, `menu-main-mode-hard.png`;
   - launch buttons: `menu-main-play.png`, `menu-main-training.png`;
@@ -73,7 +74,7 @@
 | ID | Status | Task | Note |
 |----|--------|------|------|
 | T1 | [x] | Architect: оформить [menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md), обновить [main-ui-shell.md](../design/main-ui-shell.md), [design/README.md](../design/README.md), Related/Technical/Tasks этой истории и индекс [stories/README.md](README.md). | Закрывает contract для honest preload, post-load ritual, transition curtain, menu stage, typography и reduced-motion. |
-| T2 | [x] | Расширить startup preload required asset set: gameplay textures + first-screen UI images (`slime-escape`, `bg-main`, `menu-main-*`), с hard-error через существующий startup error path. | UI images не становятся `SpriteVisualSpec`; список живёт в `src/main/ui/**`. |
+| T2 | [x] | Расширить startup preload required asset set: gameplay textures + first-screen UI images (`slime-escape`, `title-800`, `bg-main`, `menu-main-*`), с hard-error через существующий startup error path. | UI images не становятся `SpriteVisualSpec`; список живёт в `src/main/ui/**`. |
 | T3 | [x] | Переработать `StartupOverlay` view model/rendering: honest asset progress, отдельный themed post-load ritual, progress to `100%`, no fake asset counts. | Покрыть тестами различие actual asset progress vs ritual progress. |
 | T4 | [x] | Добавить `UiShell` phase transition curtain для `loading -> menu` и `menu -> running`, включая input guard от повторного старта. | Commit phase switch while curtain is opaque; `StartupErrorOverlay` остаётся emergency top layer. |
 | T5 | [x] | Пересобрать `MenuOverlay` stage layout по [001-main.jpg](../mockups/001-main.jpg): `bg-main`, top-right controls, difficulty buttons, Play, Training, Pets/Dungeon/Lab blocks. | Stable reference coordinates/aspect ratio; no card UI fallback. |

@@ -31,7 +31,7 @@
 
 - Startup preload has two asset groups:
   1. gameplay textures from the visual registries defined by [sprite-assets.md](sprite-assets.md);
-  2. required first-screen UI images: `/images/slime-escape.jpg`, `/images/bg/bg-main.jpg`, and the `menu-main-*` images used by the main menu.
+  2. required first-screen UI images: `/images/slime-escape.jpg`, `/images/title-800.png`, `/images/bg/bg-main.jpg`, and the `menu-main-*` images used by the main menu.
 - `loading -> menu` is allowed only after all required startup assets are loaded and decoded. A missing first-screen UI image is a startup preload error, not a degraded menu.
 - Asset progress shown while assets are loading must be honest: if the UI displays `loaded/total`, those values are the actual loaded/decoded count from the required asset set. Time-gating must not invent lower loaded counts after an asset has actually completed.
 - After all required assets are ready, `StartupOverlay` switches from asset progress to a themed post-load ritual. This ritual is the only place where startup duration may be intentionally extended for presentation.
@@ -66,10 +66,12 @@
 
 - The main menu is a fixed viewport stage based on [../mockups/001-main.jpg](../mockups/001-main.jpg), not a floating card layout.
 - The base background is `/images/bg/bg-main.jpg`.
+- The top-left logo is `/images/title-800.png`.
 - The stage uses a stable reference coordinate system matching the mockup aspect ratio (`1000 x 707`). UI elements are placed in normalized stage coordinates and scaled with the stage.
 - The stage is fitted into the viewport with `contain` behavior. On narrow or short viewports it may scale down and/or allow page-level scrolling, but it must preserve the relative mockup composition rather than reflow into generic cards.
 - Interactive image controls are real `button` elements containing `img` assets, so keyboard focus and accessibility labels remain possible. The visual footprint is defined by stable width/height or aspect-ratio constraints; hover/selected states must not resize layout boxes.
 - Required menu assets:
+  - logo: `/images/title-800.png`;
   - top-right: `/images/menu/menu-main-settings.png`, `/images/menu/menu-main-soon.png`, `/images/menu/menu-main-fullscreen.png`;
   - difficulty: `/images/menu/menu-main-mode-easy.png`, `/images/menu/menu-main-mode-normal.png`, `/images/menu/menu-main-mode-hard.png`;
   - launch: `/images/menu/menu-main-play.png`, `/images/menu/menu-main-training.png`;
