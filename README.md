@@ -21,3 +21,11 @@ npm run build    # production-сборка в dist/
 npm run preview  # локальный preview-сервер для собранного билда
 npm run typecheck
 ```
+
+## Credits
+
+Game design by Wertakull.
+
+---
+
+© 2026 Wertakull

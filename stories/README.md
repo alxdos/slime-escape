@@ -56,3 +56,7 @@
 | [023-main-menu-and-startup-ux.md](023-main-menu-and-startup-ux.md) | [/] | Заставка честно грузит ассеты и переходит через тематические шаги/fade в hand-drawn главное меню по mockup-референсу; игрок выбирает easy/normal/hard, запускает Play или Training | [menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md), переходы `loading → menu → running`, `MenuOverlay` на `bg-main.jpg` и `menu-main-*` ассетах, hover/selected/appear/reduced-motion states |
 | [024-session-end-results.md](024-session-end-results.md) | [x] | Финальный экран забега становится production-style итогом: victory salutes, defeat slime splash, progress, duration, kills by slime type, boss state and optional defeat cause | [session-result-summary.md](../design/session-result-summary.md), расширение `win`/`loss` summary payload, `RunSummaryTracker`, Result UI view model, deterministic presentation-only outcome effects |
 | [_template.md](_template.md) | — | Шаблон новой истории | — |
+
+---
+
+© 2026 Wertakull

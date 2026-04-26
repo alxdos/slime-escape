@@ -13,3 +13,7 @@
 | [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) | Открытые вопросы |
 
 Начать чтение с **VISION**, затем **GDD_CORE** и **SCOPE**.
+
+---
+
+© 2026 Wertakull

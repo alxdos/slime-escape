@@ -46,6 +46,12 @@ export function createStartupOverlay(init: StartupOverlayInit): StartupOverlay {
   progressTrack.appendChild(progressFill);
   footer.appendChild(progressTrack);
 
+  const credit = document.createElement('div');
+  credit.dataset['role'] = 'startup-credit';
+  credit.textContent = 'Game design by Wertakull';
+  credit.style.cssText = creditStyle();
+  footer.appendChild(credit);
+
   root.appendChild(footer);
   init.parent.appendChild(root);
 
@@ -148,5 +154,17 @@ function progressFillStyle(): string {
     'height:100%',
     'background:linear-gradient(90deg, #17b26a 0%, #12b76a 100%)',
     'border-radius:999px'
+  ].join(';');
+}
+
+function creditStyle(): string {
+  return [
+    ...comicTextStyle({
+      fontSize: '14px',
+      color: '#ffffff',
+      lineHeight: '1.2',
+      textAlign: 'center'
+    }),
+    'opacity:0.95'
   ].join(';');
 }

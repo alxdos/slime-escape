@@ -95,3 +95,7 @@
 | [hud-presentation.md](hud-presentation.md) | accepted | Player-facing combat HUD: viewport regions, run timer, compact HP/boss state, control hints, weapon slots, cooldown interval, modifier badges and timed overdrive progress |
 | [session-result-summary.md](session-result-summary.md) | accepted | Terminal run summary for `win`/`loss`: progress, duration, kills, drops, boss state, defeat cause and Result UI ownership |
 | [_template.md](_template.md) | template | Минимальный шаблон нового решения |
+
+---
+
+© 2026 Wertakull
