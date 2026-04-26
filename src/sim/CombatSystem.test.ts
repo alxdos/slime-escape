@@ -1110,6 +1110,20 @@ describe('CombatSystem', () => {
       combat.setPlayerLoadout(player.id, { weapons: ['no-such-weapon'], selectedIndex: 0 }, 0)
     ).toThrow(/unknown weapon archetype/);
   });
+
+  it('setEnemyLoadout uses the same weapon registry validation as player loadout', () => {
+    const combat = createCombatSystem();
+
+    expect(() =>
+      combat.setEnemyLoadout(999 as EntityId, { weapons: ['no-such-weapon'], selectedIndex: 0 }, 0)
+    ).toThrow(/unknown weapon archetype for enemy loadout/);
+  });
+
+  it('removeShooter is safe for entities without registered weapons', () => {
+    const combat = createCombatSystem();
+
+    expect(() => combat.removeShooter(999 as EntityId)).not.toThrow();
+  });
 });
 
 function cleanZero(value: number): number {

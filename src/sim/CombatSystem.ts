@@ -78,6 +78,8 @@ type ShooterWeapons = {
 export type CombatSystem = Readonly<{
   setDamageRules(rules: DamageRules): void;
   setPlayerLoadout(playerId: EntityId, loadout: Loadout, simTimeMs: number): void;
+  setEnemyLoadout(enemyId: EntityId, loadout: Loadout, simTimeMs: number): void;
+  removeShooter(entityId: EntityId): void;
   addModifierToSelectedWeapon(ownerId: EntityId, modifier: WeaponModifier): boolean;
   applyTemporaryOverdriveToSelectedWeapon(
     ownerId: EntityId,
@@ -114,6 +116,12 @@ export function createCombatSystem(
         playerId,
         buildShooterWeapons(loadout, 'player', weaponRegistry, simTimeMs)
       );
+    },
+    setEnemyLoadout(enemyId, loadout, simTimeMs): void {
+      shooterWeapons.set(enemyId, buildShooterWeapons(loadout, 'enemy', weaponRegistry, simTimeMs));
+    },
+    removeShooter(entityId): void {
+      shooterWeapons.delete(entityId);
     },
     addModifierToSelectedWeapon(ownerId, modifier): boolean {
       const weapon = selectedWeaponForOwner(shooterWeapons, ownerId);
@@ -319,10 +327,14 @@ function normalizedVector(dx: number, dy: number): Vec2 | null {
   return { x: dx / len, y: dy / len };
 }
 
-function createWeaponInstance(archetypeId: string, simTimeMs: number): WeaponInstance {
+function createWeaponInstance(
+  archetype: WeaponArchetype,
+  ownerKind: ShooterWeapons['ownerKind'],
+  simTimeMs: number
+): WeaponInstance {
   return {
-    archetypeId,
-    nextFireSimMs: simTimeMs,
+    archetypeId: archetype.id,
+    nextFireSimMs: ownerKind === 'enemy' ? simTimeMs + archetype.cooldownMs : simTimeMs,
     modifiers: [],
     overdriveUntilSimMs: null,
     overdriveCooldownMultiplier: null
@@ -348,7 +360,7 @@ function buildShooterWeapons(
     if (archetype === undefined) {
       throw new Error(`unknown weapon archetype for ${ownerKind} loadout: ${weaponId}`);
     }
-    return createWeaponInstance(archetype.id, simTimeMs);
+    return createWeaponInstance(archetype, ownerKind, simTimeMs);
   });
   if (weapons.length === 0) {
     throw new Error(`${ownerKind} loadout must contain at least one weapon`);
