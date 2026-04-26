@@ -169,6 +169,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-star",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-lifter",
@@ -219,6 +227,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-door",
@@ -263,6 +279,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
@@ -278,6 +302,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-mech",
@@ -518,6 +550,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-star",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-lifter",
@@ -568,6 +608,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-door",
@@ -612,6 +660,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
@@ -627,6 +683,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-mech",
@@ -867,6 +931,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-star",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-lifter",
@@ -917,6 +989,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-door",
@@ -961,6 +1041,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
@@ -976,6 +1064,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-mech",
@@ -6748,6 +6844,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-spark",
@@ -6757,6 +6861,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -6859,6 +6971,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-wraith",
@@ -6868,6 +6988,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -6903,6 +7031,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
@@ -6918,6 +7054,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
@@ -6927,6 +7071,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
@@ -6965,24 +7117,64 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-flame",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-wraith",
@@ -6992,9 +7184,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-flame",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
         ],
       },
@@ -7147,6 +7355,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-echo",
@@ -7162,6 +7378,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-echo",
@@ -7174,6 +7398,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -7212,6 +7444,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-drone",
@@ -7221,6 +7461,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-drone",
@@ -7236,6 +7484,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-drone",
@@ -7338,6 +7594,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-tadpole",
@@ -7347,6 +7611,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-tadpole",
@@ -7356,6 +7628,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -7388,6 +7668,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -7456,6 +7744,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -7480,6 +7776,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -7591,12 +7895,28 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-door",
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-candle",
@@ -7606,9 +7926,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-door",
@@ -7647,9 +7983,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-obelisk",
@@ -7674,6 +8026,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
@@ -7683,6 +8043,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
         ],
       },
@@ -7718,9 +8086,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-ninja",
@@ -7736,9 +8120,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-obelisk",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-mech",
@@ -7751,6 +8151,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-obelisk",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-obelisk",
@@ -7827,11 +8235,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "shotgun",
       "smg",
       "sniper",
-      "laser",
-      "rock-thrower",
-      "grenade-launcher",
-      "bomb-placer",
-      "fireball-staff",
+      "demo-hazard-grenade",
+      "demo-proximity-mine",
     ],
   },
   "lossCondition": {
@@ -7859,7 +8264,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "strength": 0,
     },
     "damage": {
-      "slimeFriendlyFire": false,
+      "slimeFriendlyFire": true,
     },
   },
   "seed": 0,
@@ -8039,6 +8444,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-spark",
@@ -8048,6 +8461,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -8150,6 +8571,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-wraith",
@@ -8159,6 +8588,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -8194,6 +8631,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
@@ -8209,6 +8654,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
@@ -8218,6 +8671,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
@@ -8256,24 +8717,64 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-flame",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-wraith",
@@ -8283,9 +8784,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-flame",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
         ],
       },
@@ -8438,6 +8955,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-echo",
@@ -8453,6 +8978,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-echo",
@@ -8465,6 +8998,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -8503,6 +9044,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-drone",
@@ -8512,6 +9061,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-drone",
@@ -8527,6 +9084,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-drone",
@@ -8629,6 +9194,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-tadpole",
@@ -8638,6 +9211,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-tadpole",
@@ -8647,6 +9228,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -8679,6 +9268,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -8747,6 +9344,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -8771,6 +9376,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -8882,12 +9495,28 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-door",
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-candle",
@@ -8897,9 +9526,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-door",
@@ -8938,9 +9583,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-obelisk",
@@ -8965,6 +9626,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
@@ -8974,6 +9643,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
         ],
       },
@@ -9009,9 +9686,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-ninja",
@@ -9027,9 +9720,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-obelisk",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-mech",
@@ -9042,6 +9751,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-obelisk",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-obelisk",
@@ -9118,11 +9835,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "shotgun",
       "smg",
       "sniper",
-      "laser",
-      "rock-thrower",
-      "grenade-launcher",
-      "bomb-placer",
-      "fireball-staff",
+      "demo-hazard-grenade",
+      "demo-proximity-mine",
     ],
   },
   "lossCondition": {
@@ -9150,7 +9864,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "strength": 0,
     },
     "damage": {
-      "slimeFriendlyFire": false,
+      "slimeFriendlyFire": true,
     },
   },
   "seed": 1,
@@ -9330,6 +10044,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-spark",
@@ -9339,6 +10061,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -9441,6 +10171,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-wraith",
@@ -9450,6 +10188,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -9485,6 +10231,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
@@ -9500,6 +10254,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
@@ -9509,6 +10271,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
@@ -9547,24 +10317,64 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-shell",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-stack",
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-flame",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-wraith",
@@ -9574,9 +10384,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech-crab",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-flame",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
         ],
       },
@@ -9729,6 +10555,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-echo",
@@ -9744,6 +10578,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-echo",
@@ -9756,6 +10598,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -9794,6 +10644,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-drone",
@@ -9803,6 +10661,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-drone",
@@ -9818,6 +10684,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-lifter",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-drone",
@@ -9920,6 +10794,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-tadpole",
@@ -9929,6 +10811,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-tadpole",
@@ -9938,6 +10828,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
         ],
       },
@@ -9970,6 +10868,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -10038,6 +10944,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -10062,6 +10976,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-fortress",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-splitter",
@@ -10173,12 +11095,28 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-door",
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-candle",
@@ -10188,9 +11126,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-door",
@@ -10229,9 +11183,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-obelisk",
@@ -10256,6 +11226,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
@@ -10265,6 +11243,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
         ],
       },
@@ -10300,9 +11286,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-mech",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-clamper",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-proximity-mine",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-ninja",
@@ -10318,9 +11320,25 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-obelisk",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-candle",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-mech",
@@ -10333,6 +11351,14 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
           },
           {
             "archetypeId": "slime-obelisk",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "demo-hazard-grenade",
+                ],
+              },
+            },
           },
           {
             "archetypeId": "slime-obelisk",
@@ -10409,11 +11435,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "shotgun",
       "smg",
       "sniper",
-      "laser",
-      "rock-thrower",
-      "grenade-launcher",
-      "bomb-placer",
-      "fireball-staff",
+      "demo-hazard-grenade",
+      "demo-proximity-mine",
     ],
   },
   "lossCondition": {
@@ -10441,7 +11464,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "strength": 0,
     },
     "damage": {
-      "slimeFriendlyFire": false,
+      "slimeFriendlyFire": true,
     },
   },
   "seed": 42,

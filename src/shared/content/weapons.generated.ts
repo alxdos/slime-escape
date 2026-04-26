@@ -258,7 +258,7 @@ export const DEMO_PROXIMITY_MINE: WeaponArchetype = {
       damage: 4,
       knockbackImpulse: 16,
       fragments: null,
-      fieldEffect: { archetypeId: 'demo-slow-field', radius: 1.9, durationMs: 1800, applyEveryMs: 300, effects: [{ kind: 'status', status: { kind: 'slow', speedMultiplier: 0.45, durationMs: 1200 } }] },
+      fieldEffect: { archetypeId: 'demo-slow-field', radius: 1.9, durationMs: 6000, applyEveryMs: 300, effects: [{ kind: 'status', status: { kind: 'slow', speedMultiplier: 0.45, durationMs: 1200 } }] },
       effects: [{ kind: 'status', status: { kind: 'poison', damagePerTick: 1, tickEveryMs: 700, durationMs: 1800 } }]
     },
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: false, pulseWhenGrounded: true, explosionRadiusIndicator: true }

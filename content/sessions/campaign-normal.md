@@ -3,14 +3,14 @@
 | field | value |
 |---|---|
 | displayName | Кампания — normal |
-| description | Основной забег: пять тематических сетов слаймов, после каждого — свой босс. |
+| description | Основной забег: пять тематических сетов с камнями, минами и опасными лужами. |
 | visibleInMenu | true |
 | order | 1 |
 | arenaId | sandbox |
 | playerId | hero-training |
-| loadoutWeaponIds | pistol, shotgun, smg, sniper, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |
+| loadoutWeaponIds | pistol, shotgun, smg, sniper, demo-hazard-grenade, demo-proximity-mine |
 | selectedWeaponIndex | 0 |
-| slimeFriendlyFire | false |
+| slimeFriendlyFire | true |
 | aimAssistEnabled | false |
 | aimAssistMaxAngleRadians | 0 |
 | aimAssistMaxDistance | 0 |
@@ -119,6 +119,11 @@
 | 11 | slime-many-eye |
 | 12 | slime-stonehead |
 
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 9 | none | none | none | none | rock-thrower | 0 |
+| 12 | none | none | none | none | rock-thrower | 0 |
+
 ## campaign-set-1-pre-boss-break
 
 | field | value |
@@ -187,6 +192,11 @@
 | 6 | slime-trickster |
 | 7 | slime-shell |
 
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 4 | none | none | none | none | rock-thrower | 0 |
+| 7 | none | none | none | none | rock-thrower | 0 |
+
 ## campaign-set-2-wave-2
 
 | field | value |
@@ -219,7 +229,10 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
+| 3 | none | none | none | none | rock-thrower | 0 |
 | 5 | multi-shot | empty | none | none | none | none |
+| 6 | none | none | none | none | rock-thrower | 0 |
+| 9 | none | none | none | none | demo-proximity-mine | 0 |
 
 ## campaign-set-2-wave-3
 
@@ -253,6 +266,16 @@
 | 11 | slime-stack |
 | 12 | slime-mech-crab |
 | 13 | slime-flame |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 3 | none | none | none | none | rock-thrower | 0 |
+| 5 | none | none | none | none | demo-proximity-mine | 0 |
+| 6 | none | none | none | none | rock-thrower | 0 |
+| 8 | none | none | none | none | demo-proximity-mine | 0 |
+| 9 | none | none | none | none | demo-hazard-grenade | 0 |
+| 12 | none | none | none | none | demo-proximity-mine | 0 |
+| 13 | none | none | none | none | demo-hazard-grenade | 0 |
 
 ## campaign-set-2-pre-boss-break
 
@@ -356,7 +379,10 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
+| 4 | none | none | none | none | rock-thrower | 0 |
 | 5 | magnet | empty | none | none | none | none |
+| 7 | none | none | none | none | rock-thrower | 0 |
+| 11 | none | none | none | none | rock-thrower | 0 |
 
 ## campaign-set-3-wave-3
 
@@ -391,6 +417,12 @@
 | 12 | slime-lifter |
 | 13 | slime-drone |
 | 14 | slime-saw |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 4 | none | none | none | none | rock-thrower | 0 |
+| 7 | none | none | none | none | rock-thrower | 0 |
+| 12 | none | none | none | none | rock-thrower | 0 |
 
 ## campaign-set-3-pre-boss-break
 
@@ -461,6 +493,12 @@
 | 7 | slime-splitter |
 | 8 | slime-fortress |
 
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 2 | none | none | none | none | rock-thrower | 0 |
+| 5 | none | none | none | none | rock-thrower | 0 |
+| 8 | none | none | none | none | rock-thrower | 0 |
+
 ## campaign-set-4-wave-2
 
 | field | value |
@@ -495,6 +533,7 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
+| 2 | none | none | none | none | rock-thrower | 0 |
 | 5 | fragment | empty | none | none | none | none |
 
 ## campaign-set-4-wave-3
@@ -531,6 +570,11 @@
 | 13 | slime-dasher |
 | 14 | slime-kingling |
 | 15 | slime-kingling |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 2 | none | none | none | none | rock-thrower | 0 |
+| 10 | none | none | none | none | rock-thrower | 0 |
 
 ## campaign-set-4-pre-boss-break
 
@@ -602,6 +646,13 @@
 | 8 | slime-candle |
 | 9 | slime-door |
 
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 2 | none | none | none | none | demo-hazard-grenade | 0 |
+| 4 | none | none | none | none | demo-proximity-mine | 0 |
+| 7 | none | none | none | none | demo-proximity-mine | 0 |
+| 8 | none | none | none | none | demo-hazard-grenade | 0 |
+
 ## campaign-set-5-wave-2
 
 | field | value |
@@ -637,7 +688,11 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
+| 3 | none | none | none | none | demo-proximity-mine | 0 |
+| 4 | none | none | none | none | demo-proximity-mine | 0 |
 | 5 | overdrive | empty | none | none | none | none |
+| 10 | none | none | none | none | demo-proximity-mine | 0 |
+| 13 | none | none | none | none | demo-hazard-grenade | 0 |
 
 ## campaign-set-5-wave-3
 
@@ -674,6 +729,14 @@
 | 14 | slime-obelisk |
 | 15 | slime-obelisk |
 | 16 | slime-ninja |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 3 | none | none | none | none | demo-proximity-mine | 0 |
+| 4 | none | none | none | none | demo-proximity-mine | 0 |
+| 9 | none | none | none | none | demo-hazard-grenade | 0 |
+| 10 | none | none | none | none | demo-hazard-grenade | 0 |
+| 14 | none | none | none | none | demo-hazard-grenade | 0 |
 
 ## campaign-set-5-pre-boss-break
 

@@ -12,7 +12,7 @@ export const SESSION_PRESET_TEMPLATES = {
   'campaign-easy': {
     presetId: 'campaign-easy',
     displayName: 'Кампания — easy',
-    description: 'Короткий мягкий забег: friendly fire слаймов, щедрый aim assist и понятные волны.',
+    description: 'Короткий мягкий забег: friendly fire слаймов, щедрый aim assist, лужи и понятные волны.',
     visibleInMenu: true,
     order: 0,
     arena: SANDBOX_ARENA,
@@ -117,7 +117,10 @@ export const SESSION_PRESET_TEMPLATES = {
           spawns: [
             { archetypeId: SLIME_ECHO.id },
             { archetypeId: SLIME_BUG.id },
-            { archetypeId: SLIME_STAR.id },
+            {
+              archetypeId: SLIME_STAR.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
             {
               archetypeId: SLIME_LIFTER.id,
               override: { guaranteedDrops: [HEAL_ORB.id], dropTable: [] }
@@ -144,7 +147,10 @@ export const SESSION_PRESET_TEMPLATES = {
           kind: 'wave',
           spawns: [
             { archetypeId: SLIME_DOOR.id },
-            { archetypeId: SLIME_CANDLE.id },
+            {
+              archetypeId: SLIME_CANDLE.id,
+              override: { loadout: { weapons: [DEMO_HAZARD_GRENADE.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_DOOR.id },
             { archetypeId: SLIME_MECH.id },
             { archetypeId: SLIME_CANDLE.id }
@@ -168,13 +174,19 @@ export const SESSION_PRESET_TEMPLATES = {
           spawns: [
             { archetypeId: SLIME_DOOR.id },
             { archetypeId: SLIME_CANDLE.id },
-            { archetypeId: SLIME_MECH.id },
+            {
+              archetypeId: SLIME_MECH.id,
+              override: { loadout: { weapons: [DEMO_HAZARD_GRENADE.id], selectedIndex: 0 } }
+            },
             {
               archetypeId: SLIME_CLAMPER.id,
               override: { guaranteedDrops: [HEAL_ORB.id], dropTable: [] }
             },
             { archetypeId: SLIME_DOOR.id },
-            { archetypeId: SLIME_CANDLE.id },
+            {
+              archetypeId: SLIME_CANDLE.id,
+              override: { loadout: { weapons: [DEMO_HAZARD_GRENADE.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_MECH.id }
           ],
           spawnIntervalMs: 1450,
@@ -1270,12 +1282,12 @@ export const SESSION_PRESET_TEMPLATES = {
   'campaign-normal': {
     presetId: 'campaign-normal',
     displayName: 'Кампания — normal',
-    description: 'Основной забег: пять тематических сетов слаймов, после каждого — свой босс.',
+    description: 'Основной забег: пять тематических сетов с камнями, минами и опасными лужами.',
     visibleInMenu: true,
     order: 1,
     arena: SANDBOX_ARENA,
     player: TRAINING_PLAYER,
-    loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, LASER.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 0 },
+    loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, DEMO_HAZARD_GRENADE.id, DEMO_PROXIMITY_MINE.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'set-1',
@@ -1298,7 +1310,7 @@ export const SESSION_PRESET_TEMPLATES = {
         imageUrl: '/images/bg/bg-05.jpg'
       }
     ],
-    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     encounters: [
@@ -1371,10 +1383,16 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_HORNLING.id },
             { archetypeId: SLIME_SPARK.id },
             { archetypeId: SLIME_MANY_EYE.id },
-            { archetypeId: SLIME_STONEHEAD.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_SPARK.id },
             { archetypeId: SLIME_MANY_EYE.id },
-            { archetypeId: SLIME_STONEHEAD.id }
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            }
           ],
           spawnIntervalMs: 1100,
           maxAlive: 6,
@@ -1434,10 +1452,16 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_TRICKSTER.id },
             { archetypeId: SLIME_WRAITH.id },
             { archetypeId: SLIME_TRICKSTER.id },
-            { archetypeId: SLIME_SHELL.id },
+            {
+              archetypeId: SLIME_SHELL.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_WRAITH.id },
             { archetypeId: SLIME_TRICKSTER.id },
-            { archetypeId: SLIME_SHELL.id }
+            {
+              archetypeId: SLIME_SHELL.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            }
           ],
           spawnIntervalMs: 1400,
           maxAlive: 5,
@@ -1458,16 +1482,25 @@ export const SESSION_PRESET_TEMPLATES = {
           spawns: [
             { archetypeId: SLIME_TRICKSTER.id },
             { archetypeId: SLIME_WRAITH.id },
-            { archetypeId: SLIME_SHELL.id },
+            {
+              archetypeId: SLIME_SHELL.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_STACK.id },
             {
               archetypeId: SLIME_STACK.id,
               override: { guaranteedDrops: [MULTI_SHOT.id], dropTable: [] }
             },
-            { archetypeId: SLIME_SHELL.id },
+            {
+              archetypeId: SLIME_SHELL.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_STACK.id },
             { archetypeId: SLIME_TRICKSTER.id },
-            { archetypeId: SLIME_MECH_CRAB.id },
+            {
+              archetypeId: SLIME_MECH_CRAB.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_STACK.id }
           ],
           spawnIntervalMs: 1150,
@@ -1489,17 +1522,38 @@ export const SESSION_PRESET_TEMPLATES = {
           spawns: [
             { archetypeId: SLIME_TRICKSTER.id },
             { archetypeId: SLIME_WRAITH.id },
-            { archetypeId: SLIME_SHELL.id },
+            {
+              archetypeId: SLIME_SHELL.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_STACK.id },
-            { archetypeId: SLIME_MECH_CRAB.id },
-            { archetypeId: SLIME_SHELL.id },
+            {
+              archetypeId: SLIME_MECH_CRAB.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
+            {
+              archetypeId: SLIME_SHELL.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_STACK.id },
-            { archetypeId: SLIME_MECH_CRAB.id },
-            { archetypeId: SLIME_FLAME.id },
+            {
+              archetypeId: SLIME_MECH_CRAB.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
+            {
+              archetypeId: SLIME_FLAME.id,
+              override: { loadout: { weapons: [DEMO_HAZARD_GRENADE.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_WRAITH.id },
             { archetypeId: SLIME_STACK.id },
-            { archetypeId: SLIME_MECH_CRAB.id },
-            { archetypeId: SLIME_FLAME.id }
+            {
+              archetypeId: SLIME_MECH_CRAB.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
+            {
+              archetypeId: SLIME_FLAME.id,
+              override: { loadout: { weapons: [DEMO_HAZARD_GRENADE.id], selectedIndex: 0 } }
+            }
           ],
           spawnIntervalMs: 1000,
           maxAlive: 6,
@@ -1585,17 +1639,26 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_ECHO.id },
             { archetypeId: SLIME_BUG.id },
             { archetypeId: SLIME_STAR.id },
-            { archetypeId: SLIME_LIFTER.id },
+            {
+              archetypeId: SLIME_LIFTER.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             {
               archetypeId: SLIME_ECHO.id,
               override: { guaranteedDrops: [MAGNET.id], dropTable: [] }
             },
             { archetypeId: SLIME_STAR.id },
-            { archetypeId: SLIME_LIFTER.id },
+            {
+              archetypeId: SLIME_LIFTER.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_ECHO.id },
             { archetypeId: SLIME_DRONE.id },
             { archetypeId: SLIME_STAR.id },
-            { archetypeId: SLIME_LIFTER.id }
+            {
+              archetypeId: SLIME_LIFTER.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            }
           ],
           spawnIntervalMs: 1050,
           maxAlive: 6,
@@ -1617,15 +1680,24 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_ECHO.id },
             { archetypeId: SLIME_BUG.id },
             { archetypeId: SLIME_STAR.id },
-            { archetypeId: SLIME_LIFTER.id },
+            {
+              archetypeId: SLIME_LIFTER.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_DRONE.id },
             { archetypeId: SLIME_STAR.id },
-            { archetypeId: SLIME_LIFTER.id },
+            {
+              archetypeId: SLIME_LIFTER.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_DRONE.id },
             { archetypeId: SLIME_SAW.id },
             { archetypeId: SLIME_BUG.id },
             { archetypeId: SLIME_STAR.id },
-            { archetypeId: SLIME_LIFTER.id },
+            {
+              archetypeId: SLIME_LIFTER.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_DRONE.id },
             { archetypeId: SLIME_SAW.id }
           ],
@@ -1685,13 +1757,22 @@ export const SESSION_PRESET_TEMPLATES = {
           kind: 'wave',
           spawns: [
             { archetypeId: SLIME_TADPOLE.id },
-            { archetypeId: SLIME_FORTRESS.id },
+            {
+              archetypeId: SLIME_FORTRESS.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_TADPOLE.id },
             { archetypeId: SLIME_SPLITTER.id },
-            { archetypeId: SLIME_FORTRESS.id },
+            {
+              archetypeId: SLIME_FORTRESS.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_TADPOLE.id },
             { archetypeId: SLIME_SPLITTER.id },
-            { archetypeId: SLIME_FORTRESS.id }
+            {
+              archetypeId: SLIME_FORTRESS.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            }
           ],
           spawnIntervalMs: 1200,
           maxAlive: 6,
@@ -1711,7 +1792,10 @@ export const SESSION_PRESET_TEMPLATES = {
           kind: 'wave',
           spawns: [
             { archetypeId: SLIME_TADPOLE.id },
-            { archetypeId: SLIME_FORTRESS.id },
+            {
+              archetypeId: SLIME_FORTRESS.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_SPLITTER.id },
             { archetypeId: SLIME_PRINCE.id },
             {
@@ -1744,7 +1828,10 @@ export const SESSION_PRESET_TEMPLATES = {
           kind: 'wave',
           spawns: [
             { archetypeId: SLIME_TADPOLE.id },
-            { archetypeId: SLIME_FORTRESS.id },
+            {
+              archetypeId: SLIME_FORTRESS.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_SPLITTER.id },
             { archetypeId: SLIME_PRINCE.id },
             { archetypeId: SLIME_DASHER.id },
@@ -1752,7 +1839,10 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_PRINCE.id },
             { archetypeId: SLIME_DASHER.id },
             { archetypeId: SLIME_KINGLING.id },
-            { archetypeId: SLIME_FORTRESS.id },
+            {
+              archetypeId: SLIME_FORTRESS.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_SPLITTER.id },
             { archetypeId: SLIME_PRINCE.id },
             { archetypeId: SLIME_DASHER.id },
@@ -1815,13 +1905,25 @@ export const SESSION_PRESET_TEMPLATES = {
           kind: 'wave',
           spawns: [
             { archetypeId: SLIME_DOOR.id },
+            {
+              archetypeId: SLIME_CANDLE.id,
+              override: { loadout: { weapons: [DEMO_HAZARD_GRENADE.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_DOOR.id },
+            {
+              archetypeId: SLIME_MECH.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_CANDLE.id },
             { archetypeId: SLIME_DOOR.id },
-            { archetypeId: SLIME_MECH.id },
-            { archetypeId: SLIME_CANDLE.id },
-            { archetypeId: SLIME_DOOR.id },
-            { archetypeId: SLIME_MECH.id },
-            { archetypeId: SLIME_CANDLE.id },
+            {
+              archetypeId: SLIME_MECH.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
+            {
+              archetypeId: SLIME_CANDLE.id,
+              override: { loadout: { weapons: [DEMO_HAZARD_GRENADE.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_DOOR.id }
           ],
           spawnIntervalMs: 1100,
@@ -1843,8 +1945,14 @@ export const SESSION_PRESET_TEMPLATES = {
           spawns: [
             { archetypeId: SLIME_DOOR.id },
             { archetypeId: SLIME_CANDLE.id },
-            { archetypeId: SLIME_MECH.id },
-            { archetypeId: SLIME_CLAMPER.id },
+            {
+              archetypeId: SLIME_MECH.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
+            {
+              archetypeId: SLIME_CLAMPER.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
             {
               archetypeId: SLIME_OBELISK.id,
               override: { guaranteedDrops: [OVERDRIVE.id], dropTable: [] }
@@ -1853,10 +1961,16 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_CLAMPER.id },
             { archetypeId: SLIME_DOOR.id },
             { archetypeId: SLIME_NINJA.id },
-            { archetypeId: SLIME_MECH.id },
+            {
+              archetypeId: SLIME_MECH.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_CLAMPER.id },
             { archetypeId: SLIME_NINJA.id },
-            { archetypeId: SLIME_CANDLE.id }
+            {
+              archetypeId: SLIME_CANDLE.id,
+              override: { loadout: { weapons: [DEMO_HAZARD_GRENADE.id], selectedIndex: 0 } }
+            }
           ],
           spawnIntervalMs: 850,
           maxAlive: 8,
@@ -1877,18 +1991,33 @@ export const SESSION_PRESET_TEMPLATES = {
           spawns: [
             { archetypeId: SLIME_DOOR.id },
             { archetypeId: SLIME_CANDLE.id },
-            { archetypeId: SLIME_MECH.id },
-            { archetypeId: SLIME_CLAMPER.id },
+            {
+              archetypeId: SLIME_MECH.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
+            {
+              archetypeId: SLIME_CLAMPER.id,
+              override: { loadout: { weapons: [DEMO_PROXIMITY_MINE.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_NINJA.id },
             { archetypeId: SLIME_MECH.id },
             { archetypeId: SLIME_CLAMPER.id },
             { archetypeId: SLIME_NINJA.id },
-            { archetypeId: SLIME_OBELISK.id },
-            { archetypeId: SLIME_CANDLE.id },
+            {
+              archetypeId: SLIME_OBELISK.id,
+              override: { loadout: { weapons: [DEMO_HAZARD_GRENADE.id], selectedIndex: 0 } }
+            },
+            {
+              archetypeId: SLIME_CANDLE.id,
+              override: { loadout: { weapons: [DEMO_HAZARD_GRENADE.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_MECH.id },
             { archetypeId: SLIME_CLAMPER.id },
             { archetypeId: SLIME_NINJA.id },
-            { archetypeId: SLIME_OBELISK.id },
+            {
+              archetypeId: SLIME_OBELISK.id,
+              override: { loadout: { weapons: [DEMO_HAZARD_GRENADE.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_OBELISK.id },
             { archetypeId: SLIME_NINJA.id }
           ],

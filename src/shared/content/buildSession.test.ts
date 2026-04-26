@@ -6,12 +6,21 @@ import { BOSS_ARCHETYPES } from './bosses';
 import {
   ENEMY_ARCHETYPES,
   SLIME_BUG,
+  SLIME_CANDLE,
+  SLIME_CLAMPER,
   SLIME_DOOR,
+  SLIME_FLAME,
   SLIME_FORTRESS,
   SLIME_IDOL,
   SLIME_KINGLING,
+  SLIME_LIFTER,
+  SLIME_MECH,
+  SLIME_MECH_CRAB,
+  SLIME_OBELISK,
   SLIME_ONE_EYE,
-  SLIME_SHELL
+  SLIME_SHELL,
+  SLIME_STAR,
+  SLIME_STONEHEAD
 } from './enemies';
 import { HEAL_ORB } from './drops';
 import type { SessionDefinition, SpawnOverride } from '../session';
@@ -26,6 +35,8 @@ import {
 } from './sessions';
 import {
   BOMB_PLACER,
+  DEMO_HAZARD_GRENADE,
+  DEMO_PROXIMITY_MINE,
   FIREBALL_STAFF,
   GRENADE_LAUNCHER,
   LASER,
@@ -297,7 +308,7 @@ describe('buildSessionDefinition (campaign)', () => {
 });
 
 describe('buildSessionDefinition shooting slime difficulty pillars', () => {
-  it('campaign-easy has no enemy loadouts and guarantees heal carriers in every second wave', () => {
+  it('campaign-easy keeps enemy loadouts to late hazard fields and guarantees heal carriers', () => {
     const session = buildSessionDefinition(resolveModePreset('campaign-easy'), { seed: 2 });
     const entries = spawnEntries(session);
     const waveCount = session.encounters.filter((encounter) => encounter.spawnPlan.kind === 'wave')
@@ -305,6 +316,8 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
     const healCarrierCount = entries.filter((entry) =>
       entry.override?.guaranteedDrops?.includes(HEAL_ORB.id)
     ).length;
+    const hazardEntries = entries.filter((entry) => entry.override?.loadout !== undefined);
+    const allowedEasyHazards = new Set([DEMO_HAZARD_GRENADE.id, DEMO_PROXIMITY_MINE.id]);
 
     expect(session.rules.damage.slimeFriendlyFire).toBe(true);
     expect(session.rules.aimAssist.enabled).toBe(true);
@@ -322,8 +335,69 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
       FIREBALL_STAFF.id
     ]);
     expect(session.loadout?.selectedIndex).toBe(1);
-    expect(entries.some((entry) => entry.override?.loadout !== undefined)).toBe(false);
+    expect(hazardEntries.some((entry) => entry.setIndex === 1)).toBe(false);
+    expect(hazardEntries.map((entry) => entry.archetypeId)).toEqual([
+      SLIME_STAR.id,
+      SLIME_CANDLE.id,
+      SLIME_MECH.id,
+      SLIME_CANDLE.id
+    ]);
+    expect(
+      hazardEntries.every(
+        (entry) =>
+          entry.override?.loadout?.weapons.every((weaponId) => allowedEasyHazards.has(weaponId)) ??
+          false
+      )
+    ).toBe(true);
+    expect(
+      hazardEntries.some((entry) => hasWeapon(entry.override!.loadout!, DEMO_HAZARD_GRENADE.id))
+    ).toBe(true);
+    expect(
+      hazardEntries.some((entry) => hasWeapon(entry.override!.loadout!, DEMO_PROXIMITY_MINE.id))
+    ).toBe(true);
     expect(healCarrierCount).toBeGreaterThanOrEqual(Math.floor(waveCount / 2));
+  });
+
+  it('campaign-normal uses spatial enemy hazards without gun shooters', () => {
+    const session = buildSessionDefinition(resolveModePreset('campaign-normal'), { seed: 2 });
+    const entries = spawnEntries(session);
+    const normalEnemyHazards = new Set([
+      ROCK_THROWER.id,
+      DEMO_HAZARD_GRENADE.id,
+      DEMO_PROXIMITY_MINE.id
+    ]);
+    const enemyLoadouts = entries.flatMap((entry) =>
+      entry.override?.loadout === undefined ? [] : [entry.override.loadout]
+    );
+
+    expect(session.rules.damage.slimeFriendlyFire).toBe(true);
+    expect(session.rules.aimAssist.enabled).toBe(false);
+    expect(session.loadout).toEqual({
+      weapons: [
+        PISTOL.id,
+        SHOTGUN.id,
+        SMG.id,
+        SNIPER.id,
+        DEMO_HAZARD_GRENADE.id,
+        DEMO_PROXIMITY_MINE.id
+      ],
+      selectedIndex: 0
+    });
+    expect(
+      enemyLoadouts.every((loadout) =>
+        loadout.weapons.every((weaponId) => normalEnemyHazards.has(weaponId))
+      )
+    ).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_STONEHEAD.id, ROCK_THROWER.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_SHELL.id, ROCK_THROWER.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_LIFTER.id, ROCK_THROWER.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_FORTRESS.id, ROCK_THROWER.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_FLAME.id, DEMO_HAZARD_GRENADE.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_CANDLE.id, DEMO_HAZARD_GRENADE.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_OBELISK.id, DEMO_HAZARD_GRENADE.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_MECH_CRAB.id, DEMO_PROXIMITY_MINE.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_MECH.id, DEMO_PROXIMITY_MINE.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_CLAMPER.id, DEMO_PROXIMITY_MINE.id)).toBe(true);
   });
 
   it('campaign-hard encodes the per-set shooter progression structurally', () => {
@@ -462,5 +536,17 @@ function hasWeapon(
 ): boolean {
   return weaponArchetypeIds.some((weaponArchetypeId) =>
     loadout.weapons.includes(weaponArchetypeId)
+  );
+}
+
+function hasSpawnWeapon(
+  entries: ReadonlyArray<SpawnEntry>,
+  archetypeId: string,
+  weaponArchetypeId: string
+): boolean {
+  return entries.some(
+    (entry) =>
+      entry.archetypeId === archetypeId &&
+      entry.override?.loadout?.weapons.includes(weaponArchetypeId) === true
   );
 }

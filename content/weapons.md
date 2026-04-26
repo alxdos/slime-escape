@@ -92,7 +92,7 @@
 
 ## demo-hazard-grenade
 
-![Demo Hazard Grenade projectile](../public/assets/projectiles/grenade-launcher.png)
+![Demo Hazard Grenade projectile](../public/assets/projectiles/grenade-launcher-demo.png)
 
 [weapons/shotgun](../public/sfx/weapons/shotgun.mp3)
 
@@ -102,7 +102,7 @@
 
 ## demo-proximity-mine
 
-![Demo Proximity Mine projectile](../public/assets/projectiles/bomb-placer.png)
+![Demo Proximity Mine projectile](../public/assets/projectiles/bomb-placer-demo.png)
 
 [weapons/shotgun](../public/sfx/weapons/shotgun.mp3)
 
@@ -254,7 +254,7 @@
 | bomb-placer | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
 | fireball-staff | none | 0 | 0 | 0 | none | none | 0 | 0 | 0 |
 | demo-hazard-grenade | demo-burning-puddle | 1.6 | 2200 | 450 | 1 | burn | 1 | 600 | 1800 |
-| demo-proximity-mine | demo-slow-field | 1.9 | 1800 | 300 | none | slow | 0.45 | 0 | 1200 |
+| demo-proximity-mine | demo-slow-field | 1.9 | 6000 | 300 | none | slow | 0.45 | 0 | 1200 |
 
 ## Explosion Status
 

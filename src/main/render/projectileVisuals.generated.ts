@@ -76,7 +76,7 @@ export const FIREBALL_STAFF_PROJECTILE_VISUAL: SpriteVisualSpec = {
 
 export const DEMO_HAZARD_GRENADE_PROJECTILE_VISUAL: SpriteVisualSpec = {
   archetypeId: 'demo-hazard-grenade',
-  image: '/assets/projectiles/grenade-launcher.png',
+  image: '/assets/projectiles/grenade-launcher-demo.png',
   sourceSizePx: { width: 80, height: 93 },
   worldSize: { width: 0.3333333333333333, height: 0.3875 },
   anchor: { x: 0.5, y: 0.5 }
@@ -84,7 +84,7 @@ export const DEMO_HAZARD_GRENADE_PROJECTILE_VISUAL: SpriteVisualSpec = {
 
 export const DEMO_PROXIMITY_MINE_PROJECTILE_VISUAL: SpriteVisualSpec = {
   archetypeId: 'demo-proximity-mine',
-  image: '/assets/projectiles/bomb-placer.png',
+  image: '/assets/projectiles/bomb-placer-demo.png',
   sourceSizePx: { width: 184, height: 175 },
   worldSize: { width: 0.7666666666666667, height: 0.7291666666666666 },
   anchor: { x: 0.5, y: 0.5 }

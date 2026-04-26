@@ -101,8 +101,8 @@ describe('content-build sessions area', () => {
       mutate: (source: string) =>
         replaceExact(
           source,
-          '| loadoutWeaponIds | pistol, shotgun, smg, sniper, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |',
-          '| loadoutWeaponIds | pistol, shotgun, smg, railgun, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |'
+          '| loadoutWeaponIds | pistol, shotgun, smg, sniper, demo-hazard-grenade, demo-proximity-mine |',
+          '| loadoutWeaponIds | pistol, shotgun, smg, railgun, demo-hazard-grenade, demo-proximity-mine |'
         ),
       pattern: /section "# Session": unknown loadoutWeaponIds "railgun"/
     },

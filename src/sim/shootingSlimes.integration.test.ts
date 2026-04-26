@@ -15,7 +15,12 @@ import type { SessionDefinition } from '../shared/session';
 import type { ProjectileSnapshot } from '../shared/snapshot';
 import { SIM_STEP_MS } from '../shared/timing';
 
-import { createCombatSystem, type DamageIntent, type DamageSource } from './CombatSystem';
+import {
+  createCombatSystem,
+  SLIME_WEAPON_COOLDOWN_MULTIPLIER,
+  type DamageIntent,
+  type DamageSource
+} from './CombatSystem';
 import { createDropSystem } from './DropSystem';
 import { createEntityStore, type EntityId, type Projectile } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
@@ -52,7 +57,7 @@ describe('shooting slime difficulty acceptance', () => {
     ).toHaveLength(0);
   });
 
-  it('campaign-hard kills a stationary player from enemy projectiles before contact damage', () => {
+  it('campaign-hard still produces enemy projectile pressure with slowed slime weapons', () => {
     const world = setupSimWorld(
       buildSessionDefinition(resolveModePreset('campaign-hard'), { seed: 0x020 })
     );
@@ -60,14 +65,11 @@ describe('shooting slime difficulty acceptance', () => {
     world.start();
     world.runFor(30_000);
 
-    expect(world.playerDeathCause).not.toBeNull();
-    if (world.playerDeathCause === null) throw new Error('expected player death cause');
-    expect(world.playerDeathCause.kind).toBe('projectile');
-    if (world.playerDeathCause.kind !== 'projectile') {
-      throw new Error('expected projectile death cause');
-    }
-    expect(world.playerDeathCause.ownerKind).toBe('enemy');
-    expect(world.playerDamageSources.some((source) => source.kind === 'enemyContact')).toBe(false);
+    expect(
+      world.playerDamageSources.some(
+        (source) => source.kind === 'projectile' && source.ownerKind === 'enemy'
+      )
+    ).toBe(true);
   });
 
   it('campaign-easy spawns at least one heal orb for every second wave', () => {
@@ -107,11 +109,11 @@ describe('shooting slime landing telegraph snapshots', () => {
 
     const projectile = world.spawnEnemyArcProjectile();
     expect(projectile.arcEnd).not.toBeNull();
-    const flying = world.snapshotProjectile(projectile.id, ROCK_THROWER.cooldownMs);
+    const flying = world.snapshotProjectile(projectile.id, enemyCooldownMs(ROCK_THROWER.cooldownMs));
     expect(flying?.state).toBe('flying');
     expect(flying?.arcEnd).toEqual(projectile.arcEnd);
 
-    world.tickAt(projectile.arcEndSimMs ?? ROCK_THROWER.cooldownMs + 1);
+    world.tickAt(projectile.arcEndSimMs ?? enemyCooldownMs(ROCK_THROWER.cooldownMs) + 1);
 
     const grounded = world.snapshotProjectile(projectile.id, projectile.arcEndSimMs ?? 0);
     expect(grounded?.state).toBe('grounded');
@@ -298,7 +300,7 @@ function setupSimWorld(session: SessionDefinition) {
       color: 0xff7766
     });
     combat.setEnemyLoadout(enemy.id, { weapons: [ROCK_THROWER.id], selectedIndex: 0 }, 0);
-    tickAt(ROCK_THROWER.cooldownMs);
+    tickAt(enemyCooldownMs(ROCK_THROWER.cooldownMs));
     const projectile = [...entities.projectiles()].find(
       (candidate) =>
         candidate.ownerId === enemy.id && candidate.weaponArchetypeId === ROCK_THROWER.id
@@ -339,6 +341,10 @@ function setupSimWorld(session: SessionDefinition) {
     spawnEnemyArcProjectile,
     snapshotProjectile
   };
+}
+
+function enemyCooldownMs(cooldownMs: number): number {
+  return cooldownMs * SLIME_WEAPON_COOLDOWN_MULTIPLIER;
 }
 
 function environmentKillIntent(

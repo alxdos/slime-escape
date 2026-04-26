@@ -25,6 +25,7 @@ import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const WEAPON_MODIFIER_MIN_SPREAD_RADIANS = 0.25;
 const MAX_STACKS_PER_WEAPON_MODIFIER = 2;
+export const SLIME_WEAPON_COOLDOWN_MULTIPLIER = 4;
 
 export type DamageSource =
   | {
@@ -255,7 +256,8 @@ function runPlayerFiringDecisions(
   if (result === null) return;
 
   selectedWeapon.nextFireSimMs =
-    simTimeMs + effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs);
+    simTimeMs +
+    effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs, weapons.ownerKind);
   emit({
     kind: 'fire',
     simTime: simTimeMs,
@@ -306,7 +308,8 @@ function runEnemyFiringDecisions(
     if (result === null) continue;
 
     selectedWeapon.nextFireSimMs =
-      simTimeMs + effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs);
+      simTimeMs +
+      effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs, weapons.ownerKind);
     emit({
       kind: 'fire',
       simTime: simTimeMs,
@@ -387,7 +390,7 @@ function createWeaponInstance(
 ): WeaponInstance {
   return {
     archetypeId: archetype.id,
-    nextFireSimMs: ownerKind === 'enemy' ? simTimeMs + archetype.cooldownMs : simTimeMs,
+    nextFireSimMs: simTimeMs + initialFireDelayMs(archetype.cooldownMs, ownerKind),
     modifiers: [],
     overdriveUntilSimMs: null,
     overdriveCooldownMultiplier: null
@@ -593,14 +596,26 @@ function applySpeedModifier(
 function effectiveCooldownMs(
   baseCooldownMs: number,
   weapon: WeaponInstance,
-  simTimeMs: number
+  simTimeMs: number,
+  ownerKind: ShooterWeapons['ownerKind']
 ): number {
   const overdriveActive =
     weapon.overdriveCooldownMultiplier !== null &&
     weapon.overdriveUntilSimMs !== null &&
     simTimeMs < weapon.overdriveUntilSimMs;
-  const multiplier = overdriveActive ? weapon.overdriveCooldownMultiplier! : 1;
+  const multiplier =
+    ownerCooldownMultiplier(ownerKind) *
+    (overdriveActive ? weapon.overdriveCooldownMultiplier! : 1);
   return Math.max(1, Math.round(baseCooldownMs * multiplier));
+}
+
+function initialFireDelayMs(baseCooldownMs: number, ownerKind: ShooterWeapons['ownerKind']): number {
+  if (ownerKind !== 'enemy') return 0;
+  return Math.max(1, Math.round(baseCooldownMs * ownerCooldownMultiplier(ownerKind)));
+}
+
+function ownerCooldownMultiplier(ownerKind: ShooterWeapons['ownerKind']): number {
+  return ownerKind === 'enemy' ? SLIME_WEAPON_COOLDOWN_MULTIPLIER : 1;
 }
 
 function aimedSpreadDirections(

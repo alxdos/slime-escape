@@ -14,7 +14,7 @@ import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
-import { createCombatSystem } from './CombatSystem';
+import { createCombatSystem, SLIME_WEAPON_COOLDOWN_MULTIPLIER } from './CombatSystem';
 import {
   createEntityStore,
   type BossSpawnSpec,
@@ -1244,20 +1244,21 @@ describe('CombatSystem', () => {
     expect(() => combat.removeShooter(999 as EntityId)).not.toThrow();
   });
 
-  it('enemy loadout fires at the player after the initial weapon cooldown', () => {
+  it('enemy loadout applies the slime cooldown multiplier before firing', () => {
     const { store, index, combat } = setupCombat();
     const enemy = store.spawnEnemy(stationaryEnemySpec({ x: -4, y: 0 }));
     const input = makeInput({ firing: false });
     const events: RuntimeEvent[] = [];
+    const slimeCooldownMs = PISTOL.cooldownMs * SLIME_WEAPON_COOLDOWN_MULTIPLIER;
 
     combat.setEnemyLoadout(enemy.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
 
-    combat.tick(input, store, index, PISTOL.cooldownMs - 1, ARENA, (event) => {
+    combat.tick(input, store, index, slimeCooldownMs - 1, ARENA, (event) => {
       events.push(event);
     });
     expect(events.filter((event) => event.kind === 'fire')).toHaveLength(0);
 
-    combat.tick(input, store, index, PISTOL.cooldownMs, ARENA, (event) => {
+    combat.tick(input, store, index, slimeCooldownMs, ARENA, (event) => {
       events.push(event);
     });
 
@@ -1267,11 +1268,23 @@ describe('CombatSystem', () => {
     if (fire?.kind !== 'fire') throw new Error('expected enemy fire event');
     expect(fire.ownerKind).toBe('enemy');
     expect(fire.weaponArchetypeId).toBe(PISTOL.id);
-    expect(fire.simTime).toBe(PISTOL.cooldownMs);
+    expect(fire.simTime).toBe(slimeCooldownMs);
     expect(fire.originX).toBe(enemy.position.x);
     expect(fire.originY).toBe(enemy.position.y);
     expect(fire.dirX).toBeCloseTo(1);
     expect(fire.dirY).toBeCloseTo(0);
+
+    combat.tick(input, store, index, slimeCooldownMs * 2 - 1, ARENA, (event) => {
+      events.push(event);
+    });
+    expect(events.filter((event) => event.kind === 'fire')).toHaveLength(1);
+
+    combat.tick(input, store, index, slimeCooldownMs * 2, ARENA, (event) => {
+      events.push(event);
+    });
+    expect(
+      events.filter((event) => event.kind === 'fire' && event.shooterId === enemy.id)
+    ).toHaveLength(2);
   });
 
   it('removeShooter stops future enemy firing', () => {

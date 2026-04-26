@@ -3,7 +3,7 @@
 | field | value |
 |---|---|
 | displayName | Кампания — easy |
-| description | Короткий мягкий забег: friendly fire слаймов, щедрый aim assist и понятные волны. |
+| description | Короткий мягкий забег: friendly fire слаймов, щедрый aim assist, лужи и понятные волны. |
 | visibleInMenu | true |
 | order | 0 |
 | arenaId | sandbox |
@@ -134,6 +134,7 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
+| 3 | none | none | none | none | demo-proximity-mine | 0 |
 | 4 | heal-orb | empty | none | none | none | none |
 
 ## campaign-easy-set-5-wave-1
@@ -160,6 +161,10 @@
 | 3 | slime-door |
 | 4 | slime-mech |
 | 5 | slime-candle |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 2 | none | none | none | none | demo-hazard-grenade | 0 |
 
 ## campaign-easy-set-5-wave-2
 
@@ -190,4 +195,6 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
+| 3 | none | none | none | none | demo-hazard-grenade | 0 |
 | 4 | heal-orb | empty | none | none | none | none |
+| 6 | none | none | none | none | demo-hazard-grenade | 0 |
