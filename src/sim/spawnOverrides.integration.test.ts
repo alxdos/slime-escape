@@ -26,6 +26,36 @@ type RecordedSpawnOverrideEvent =
       y: number;
     }>
   | Readonly<{
+      kind: 'fire';
+      simTime: number;
+      ownerKind: 'player' | 'enemy' | 'boss';
+      weaponArchetypeId: string;
+      x: number;
+      y: number;
+      dirX: number;
+      dirY: number;
+    }>
+  | Readonly<{
+      kind: 'hit';
+      simTime: number;
+      targetKind: 'enemy' | 'player' | 'boss';
+      targetArchetypeId: string | null;
+      weaponArchetypeId: string;
+      damage: number;
+      x: number;
+      y: number;
+    }>
+  | Readonly<{
+      kind: 'explosion';
+      simTime: number;
+      ownerKind: 'player' | 'enemy' | 'boss';
+      weaponArchetypeId: string;
+      damage: number;
+      radius: number;
+      x: number;
+      y: number;
+    }>
+  | Readonly<{
       kind: 'death';
       simTime: number;
       entityKind: 'enemy' | 'player' | 'boss';
@@ -75,8 +105,12 @@ function setupCampaignRegressionWorld() {
   const entities = createEntityStore();
   const exporter = createSnapshotExportSystem();
   const movement = createMovementSystem();
-  const spawn = createSpawnSystem();
   const combat = createCombatSystem();
+  const spawn = createSpawnSystem({
+    onEnemySpawned(enemyId, loadout, simTimeMs) {
+      combat.setEnemyLoadout(enemyId, loadout, simTimeMs);
+    }
+  });
   const healthDeath = createHealthDeathSystem();
   const spatialIndex = createSpatialIndex();
   const zone = createZoneSystem();
@@ -102,6 +136,7 @@ function setupCampaignRegressionWorld() {
       spawn.setRng(rng);
       drops.setRng(rng);
       seenEnemyIds.clear();
+      combat.setDamageRules(session.rules.damage);
       const player = entities.spawnPlayer(session.player);
       if (session.loadout !== null) {
         combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
@@ -130,6 +165,7 @@ function setupCampaignRegressionWorld() {
 
   healthDeath.registerHook((ctx) => {
     if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
+    if (ctx.entityKind === 'enemy') combat.removeShooter(ctx.entityId);
     if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
@@ -237,6 +273,39 @@ function runCampaignRegression(seed: number): ReadonlyArray<RecordedSpawnOverrid
 
 function normalizeRuntimeEvent(event: RuntimeEvent): RecordedSpawnOverrideEvent | null {
   switch (event.kind) {
+    case 'fire':
+      return {
+        kind: 'fire',
+        simTime: roundNumber(event.simTime),
+        ownerKind: event.ownerKind,
+        weaponArchetypeId: event.weaponArchetypeId,
+        x: roundNumber(event.originX),
+        y: roundNumber(event.originY),
+        dirX: roundNumber(event.dirX),
+        dirY: roundNumber(event.dirY)
+      };
+    case 'hit':
+      return {
+        kind: 'hit',
+        simTime: roundNumber(event.simTime),
+        targetKind: event.targetKind,
+        targetArchetypeId: event.targetArchetypeId,
+        weaponArchetypeId: event.weaponArchetypeId,
+        damage: roundNumber(event.damage),
+        x: roundNumber(event.x),
+        y: roundNumber(event.y)
+      };
+    case 'explosion':
+      return {
+        kind: 'explosion',
+        simTime: roundNumber(event.simTime),
+        ownerKind: event.ownerKind,
+        weaponArchetypeId: event.weaponArchetypeId,
+        damage: roundNumber(event.damage),
+        radius: roundNumber(event.radius),
+        x: roundNumber(event.x),
+        y: roundNumber(event.y)
+      };
     case 'death':
       return {
         kind: 'death',
@@ -275,8 +344,8 @@ const REMOVED_FORK_ARCHETYPE_IDS = new Set([
   'demo-retaliator-slime'
 ]);
 
-describe('spawn override campaign regression', () => {
-  it('matches the post-migration campaign event baseline for a fixed seed', () => {
+describe('spawn override campaign-normal regression', () => {
+  it('matches the post-migration campaign-normal event baseline for a fixed seed', () => {
     const events = runCampaignRegression(0x019);
 
     expect(events).toMatchSnapshot();

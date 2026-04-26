@@ -104,6 +104,35 @@ function pistolProjectileSpawnSpec(
   };
 }
 
+function bombProjectileSpawnSpec(
+  overrides: Partial<ProjectileSpawnSpec> = {}
+): ProjectileSpawnSpec {
+  const explosion = BOMB_PLACER.projectile.explosion;
+  if (explosion === null) throw new Error('expected bomb placer explosion');
+  return {
+    weaponArchetypeId: BOMB_PLACER.id,
+    ownerId: 0 as EntityId,
+    ownerKind: 'enemy',
+    motionKind: 'placed',
+    position: { x: 4, y: 0 },
+    velocity: { vx: 0, vy: 0 },
+    size: BOMB_PLACER.projectile.size,
+    hitRadius: BOMB_PLACER.projectile.hitRadius,
+    impactDamage: BOMB_PLACER.projectile.impactDamage,
+    knockbackImpulse: BOMB_PLACER.projectile.knockbackImpulse,
+    pierceRemaining: BOMB_PLACER.projectile.pierceCount,
+    groundOnImpact: BOMB_PLACER.projectile.groundOnImpact,
+    groundedLifetimeMs: BOMB_PLACER.projectile.groundedLifetimeMs,
+    detonationTrigger: BOMB_PLACER.projectile.detonationTrigger,
+    explosion,
+    state: 'grounded',
+    groundAtSimMs: 0,
+    detonateAtSimMs: explosion.delayMs,
+    expireAtSimMs: 10_000,
+    ...overrides
+  };
+}
+
 function stationaryEnemySpec(position: { x: number; y: number }): EnemySpawnSpec {
   return {
     archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
@@ -697,6 +726,96 @@ describe('CombatSystem', () => {
 
     expect(intents).toHaveLength(1);
     expect(intents[0]?.targetId).toBe(target.id);
+  });
+
+  it('prevents enemy projectile impacts from damaging their owner', () => {
+    const { store, index, combat } = setupCombat();
+    const owner = store.spawnEnemy(stationaryEnemySpec({ x: 4, y: 0 }));
+    store.spawnProjectile(
+      pistolProjectileSpawnSpec({
+        ownerId: owner.id,
+        position: { x: owner.position.x, y: owner.position.y }
+      })
+    );
+
+    const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, () => {});
+
+    expect(intents.some((intent) => intent.targetId === owner.id)).toBe(false);
+  });
+
+  it('honours friendly-fire: enemy explosions do not damage other enemies', () => {
+    const { store, index, combat } = setupCombat();
+    const owner = store.spawnEnemy(stationaryEnemySpec({ x: -4, y: 0 }));
+    const target = store.spawnEnemy(stationaryEnemySpec({ x: 4, y: 0 }));
+    const events: RuntimeEvent[] = [];
+    store.spawnProjectile(
+      bombProjectileSpawnSpec({
+        ownerId: owner.id,
+        position: { x: target.position.x, y: target.position.y }
+      })
+    );
+
+    const intents = combat.tick(
+      makeInput(),
+      store,
+      index,
+      BOMB_PLACER.projectile.explosion!.delayMs,
+      ARENA,
+      (event) => events.push(event)
+    );
+
+    expect(intents.some((intent) => intent.targetId === target.id)).toBe(false);
+    expect(events.filter((event) => event.kind === 'explosion')).toHaveLength(1);
+  });
+
+  it('uses session damage rules to allow enemy explosions to hit another enemy', () => {
+    const { store, index, combat } = setupCombat();
+    combat.setDamageRules({ slimeFriendlyFire: true });
+    const owner = store.spawnEnemy(stationaryEnemySpec({ x: -4, y: 0 }));
+    const target = store.spawnEnemy(stationaryEnemySpec({ x: 4, y: 0 }));
+    store.spawnProjectile(
+      bombProjectileSpawnSpec({
+        ownerId: owner.id,
+        position: { x: target.position.x, y: target.position.y }
+      })
+    );
+
+    const intents = combat.tick(
+      makeInput(),
+      store,
+      index,
+      BOMB_PLACER.projectile.explosion!.delayMs,
+      ARENA,
+      () => {}
+    );
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(target.id);
+    expect(intents[0]?.amount).toBe(BOMB_PLACER.projectile.explosion!.damage);
+    expect(intents[0]?.source.kind).toBe('explosion');
+  });
+
+  it('prevents enemy explosions from damaging their owner', () => {
+    const { store, index, combat } = setupCombat();
+    combat.setDamageRules({ slimeFriendlyFire: true });
+    const owner = store.spawnEnemy(stationaryEnemySpec({ x: 4, y: 0 }));
+    store.spawnProjectile(
+      bombProjectileSpawnSpec({
+        ownerId: owner.id,
+        position: { x: owner.position.x, y: owner.position.y }
+      })
+    );
+
+    const intents = combat.tick(
+      makeInput(),
+      store,
+      index,
+      BOMB_PLACER.projectile.explosion!.delayMs,
+      ARENA,
+      () => {}
+    );
+
+    expect(intents.some((intent) => intent.targetId === owner.id)).toBe(false);
   });
 
   it('detonates placed bombs with radial explosion damage and owner filtering', () => {
