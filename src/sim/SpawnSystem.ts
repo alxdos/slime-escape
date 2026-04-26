@@ -42,10 +42,14 @@ type BossSpawnState = {
   alive: Set<EntityId>;
 };
 
-export function createSpawnSystem(
-  enemyRegistry: Readonly<Record<string, EnemyArchetype>> = ENEMY_ARCHETYPES,
-  bossRegistry: Readonly<Record<string, BossArchetype>> = BOSS_ARCHETYPES
-): SpawnSystem {
+export type SpawnSystemOptions = Readonly<{
+  enemyRegistry?: Readonly<Record<string, EnemyArchetype>>;
+  bossRegistry?: Readonly<Record<string, BossArchetype>>;
+}>;
+
+export function createSpawnSystem(options: SpawnSystemOptions = {}): SpawnSystem {
+  const enemyRegistry = options.enemyRegistry ?? ENEMY_ARCHETYPES;
+  const bossRegistry = options.bossRegistry ?? BOSS_ARCHETYPES;
   let rng: Rng | null = null;
   let waveState: WaveState | null = null;
   let bossState: BossSpawnState | null = null;
