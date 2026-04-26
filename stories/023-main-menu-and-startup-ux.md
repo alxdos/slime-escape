@@ -52,7 +52,7 @@
 - Полный редизайн Result, combat HUD или wave title overlay за пределами общей comic-типографики и fix-ов обрезания текста. Settings и Pause overlay в этой истории получают визуальную оболочку, чтобы не выбиваться из нового главного меню.
 - Сохранение последнего выбранного режима между перезагрузками страницы.
 - XP/progression поведение для верхнего левого sketch-блока до отдельной истории прогрессии.
-- Новые audio assets; история может только переиспользовать существующие UI click/overlay sounds.
+- Новые audio assets; история может только переиспользовать существующие UI click/hover/overlay sounds.
 
 ## Acceptance
 
@@ -60,6 +60,7 @@
 - Завершение startup выполняет `splash fade out -> dark midpoint -> menu fade in` без белого/пустого мигания.
 - При входе в меню все интерактивные menu assets появляются через opacity `0 -> 1` и scale `0.5 -> 1`.
 - Обычные menu assets не имеют тени в покое; hover любой активной кнопки использует brightness и резкую чёрную drop-shadow, не меняя layout footprint.
+- Hover по menu-кнопкам может проигрывать короткий UI-звук из существующих assets; компоненты меню не обращаются к Audio напрямую.
 - Клик по `easy`, `normal` или `hard` обновляет selected state; одновременно выбран ровно один режим, он выделен плотной цветной обводкой.
 - Play в idle-состоянии мягко дышит через presentation-only scale/filter animation без чёрной тени; hover/focus по Play добавляет обычный lifted button response, но не прерывает breathing.
 - Play запускает текущий выбранный campaign preset.

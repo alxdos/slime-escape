@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-26 (story 021: music selector больше не хранит `regularPool` внутри `Audio` — выбор обычной музыки переносится на session-level поле `SessionDefinition.musicSampleId` ([session-definition.md](session-definition.md)); boss override по `encounter.type === 'boss'` сохраняется без изменений, pause ducking тоже. `SampleRegistry`-инвариант: любой entry с `category: 'music'` обязан иметь `loop: true`, иначе ошибка модуля на инициализации `Audio`; валидатор музыки теперь явно проверяет category+loop. Для `musicSampleId: null` регулярная музыка молчит весь забег — это legitimate конфигурация. Earlier: 2026-04-23 story 014: авторская поверхность для `WEAPON_AUDIO_MAPPINGS[*].fire` переезжает на inline audio-link-узел под H2 weapon в `content/weapons.md`, для `ENEMY_AUDIO_MAPPINGS[*].hit/death/voice` — на новую партицию `# Sound sets` в `content/enemies.md` с `## Members` (`setId | slimes`) и узкими group-таблицами `## Hit`/`## Death`/`## Voice`, чьи `sampleId`-ячейки тоже допускают inline audio-link-форму (см. разделы «Inline media-узлы как derive-источники» и «Shared resource set partition» в [content-authoring.md](content-authoring.md)); рантайм-формы `EnemyAudioMapping`, `BOSS_AUDIO_MAPPINGS`, `WEAPON_AUDIO_MAPPINGS`, `SampleRegistry`, `createAudioMappings` и валидаторы — не меняются, генератор разворачивает sound-set N→1 в тот же `Record<enemyArchetypeId, EnemyAudioMapping>` байт-в-байт. story 013 расширяет `ENEMY_AUDIO_MAPPINGS` на все 30 slime-архетипов и `BOSS_AUDIO_MAPPINGS` на все 5 boss-архетипов через те же три пула `slimes/hit-*`/`slimes/death-*`/`slimes/voice-*` и существующие boss sample id; формы маппингов и `SampleRegistry` не меняются. story 012 покрывает MD-генерацией weapon/boss audio-маппинги и дозаполнение enemy sound по пулам из `SampleRegistry`; типы и валидации не меняются)
+- Updated: 2026-04-26 (story 023: `AudioUiEventId` расширен на `buttonHover`, который маппится на существующий `ui/open-1` и вызывается через `UiShell` для hover-feedback кнопок меню; новых audio assets не вводится. story 021: music selector больше не хранит `regularPool` внутри `Audio` — выбор обычной музыки переносится на session-level поле `SessionDefinition.musicSampleId` ([session-definition.md](session-definition.md)); boss override по `encounter.type === 'boss'` сохраняется без изменений, pause ducking тоже. `SampleRegistry`-инвариант: любой entry с `category: 'music'` обязан иметь `loop: true`, иначе ошибка модуля на инициализации `Audio`; валидатор музыки теперь явно проверяет category+loop. Для `musicSampleId: null` регулярная музыка молчит весь забег — это legitimate конфигурация. Earlier: 2026-04-23 story 014: авторская поверхность для `WEAPON_AUDIO_MAPPINGS[*].fire` переезжает на inline audio-link-узел под H2 weapon в `content/weapons.md`, для `ENEMY_AUDIO_MAPPINGS[*].hit/death/voice` — на новую партицию `# Sound sets` в `content/enemies.md` с `## Members` (`setId | slimes`) и узкими group-таблицами `## Hit`/`## Death`/`## Voice`, чьи `sampleId`-ячейки тоже допускают inline audio-link-форму (см. разделы «Inline media-узлы как derive-источники» и «Shared resource set partition» в [content-authoring.md](content-authoring.md)); рантайм-формы `EnemyAudioMapping`, `BOSS_AUDIO_MAPPINGS`, `WEAPON_AUDIO_MAPPINGS`, `SampleRegistry`, `createAudioMappings` и валидаторы — не меняются, генератор разворачивает sound-set N→1 в тот же `Record<enemyArchetypeId, EnemyAudioMapping>` байт-в-байт. story 013 расширяет `ENEMY_AUDIO_MAPPINGS` на все 30 slime-архетипов и `BOSS_AUDIO_MAPPINGS` на все 5 boss-архетипов через те же три пула `slimes/hit-*`/`slimes/death-*`/`slimes/voice-*` и существующие boss sample id; формы маппингов и `SampleRegistry` не меняются. story 012 покрывает MD-генерацией weapon/boss audio-маппинги и дозаполнение enemy sound по пулам из `SampleRegistry`; типы и валидации не меняются)
 
 ## Context
 
@@ -101,7 +101,7 @@
 - `weapons: Record<weaponArchetypeId, { fire: SampleSpec }>` — на 008 ровно один реальный потребитель (`pistol`); записи под `shotgun`/`smg`/`sniper`/`laser` могут существовать заранее, не дожидаясь WeaponArchetype-ов в `content/**`.
 - `enemies: Record<enemyArchetypeId, { hit?: SampleSpec; death?: SampleSpec; voice?: SampleSpec }>` — для архетипов слаймов; стационарные «training-target» допускают пустую запись.
 - `bosses: Record<bossArchetypeId, { fire?: SampleSpec; hit?: SampleSpec; death?: SampleSpec; phaseChange?: SampleSpec }>` — на 008 baseline для `slime-king`: `fire = boss-fireball`, `phaseChange = boss-ahaha`.
-- `events: { dropPickup?: SampleSpec; dropSpawn?: SampleSpec; dropExpire?: SampleSpec; uiOverlayShow?: SampleSpec; uiButtonClick?: SampleSpec }` — события без естественной привязки к архетипу. На 008 заполняются как минимум `dropPickup`, `uiOverlayShow`, `uiButtonClick`.
+- `events: { dropPickup?: SampleSpec; dropSpawn?: SampleSpec; dropExpire?: SampleSpec; uiOverlayShow?: SampleSpec; uiButtonClick?: SampleSpec; uiButtonHover?: SampleSpec }` — события без естественной привязки к архетипу. На 008 заполняются как минимум `dropPickup`, `uiOverlayShow`, `uiButtonClick`; история 023 добавляет `uiButtonHover` как переиспользование существующего UI-сэмпла.
 - `SampleSpec` допускает либо одиночный `sampleId`, либо набор `sampleId[]` — в этом случае воспроизводится случайный из набора (presentation RNG, см. ниже). Это нужно для коротких пулов вариаций (`slime-1..4` как варианты hit/voice).
 - Отсутствие маппинга — **не** ошибка, а явный «звук пропускается»: `Audio` логирует один warning на уникальный `archetypeId`/`event` через единый log-модуль ([logging.md](logging.md)) и больше не дёргает на той же сессии. Это намеренно: новые архетипы не должны падать ран только из-за отсутствия аудио-маппинга.
 - Маппинги валидируются на инициализации: каждый `sampleId` обязан резолвиться в `SampleEntry` реестра; неизвестный `sampleId` — ошибка модуля, не runtime-фолбэк (по аналогии с правилом «неизвестный архетипный id — ошибка сборки/старта сессии» из [content-archetypes.md](content-archetypes.md)).
@@ -156,6 +156,7 @@
 
 - `events.uiOverlayShow` (например, `ui/open-1.mp3`) — на показе `PauseOverlay` и `ResultOverlay`. Один-шот при переходе фазы.
 - `events.uiButtonClick` (например, рандомный из `ui/switch-1..4`) — на клик любой кнопки `MenuOverlay`, `PauseOverlay`, `ResultOverlay`. Привязка идёт через явный вызов `Audio.playUi('buttonClick')` из этих компонентов; компоненты не касаются `AudioContext` напрямую и не знают о `sampleId`.
+- `events.uiButtonHover` (например, `ui/open-1.mp3`) — на hover/focus-like feedback кнопок меню. Привязка идёт через явный вызов `Audio.playUi('buttonHover')` из `UiShell`; `MenuOverlay` только сообщает о hover-событии кнопки и не знает о `sampleId`.
 - UI-звуки относятся к категории `ui` и проходят через `uiBus`, что позволит 009 регулировать их отдельно от sfx/music.
 
 ### Pause семантика
@@ -176,7 +177,7 @@
     update(snapshotPair: SnapshotPair, phase: UiShellPhase, encounter: EncounterSnapshot | null): void;
     attach(session: SessionDefinition): void;
     detach(): void;
-    playUi(eventId: 'overlayShow' | 'buttonClick'): void;
+    playUi(eventId: 'overlayShow' | 'buttonClick' | 'buttonHover'): void;
     setMasterGain(value: number): void;
     dispose(): void;
   }>;
@@ -187,7 +188,7 @@
   - фан-аутить `SimWorkerHost.onEvent` в `audio.handleEvent` так же, как сейчас в `handleSimEvent`;
   - вызывать `audio.update(snapshotPair, phase, encounter)` ровно один раз за кадр в `onFrame`, после `hud.update`;
   - вызывать `audio.attach(session)` на старте сессии и `audio.detach()` на её завершении/выходе в меню (как сейчас для `hud`);
-  - вызывать `audio.playUi('overlayShow')` на показе pause/result-overlay-ев и пробрасывать `audio.playUi('buttonClick')` в обработчики кликов overlay-ев.
+  - вызывать `audio.playUi('overlayShow')` на показе pause/result-overlay-ев, пробрасывать `audio.playUi('buttonClick')` в обработчики кликов overlay-ев и `audio.playUi('buttonHover')` в menu hover-feedback.
 - `Audio` ни при каких условиях не использует `SimWorkerHost.onEvent` напрямую и не разводит собственного listener-а на `pointerdown`/`keydown` — это гарантия инварианта «один owner оркестрации» из [main-ui-shell.md](main-ui-shell.md).
 
 ### Бюджеты и инварианты

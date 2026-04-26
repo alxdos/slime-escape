@@ -38,6 +38,7 @@ export type EventAudioMapping = Readonly<{
   dropExpire?: SampleSpec;
   uiOverlayShow?: SampleSpec;
   uiButtonClick?: SampleSpec;
+  uiButtonHover?: SampleSpec;
 }>;
 
 export type AudioMappingsInit = Readonly<{
@@ -68,6 +69,7 @@ const EVENT_AUDIO_MAPPINGS: EventAudioMapping = Object.freeze({
   explosion: 'events/explosion',
   dropPickup: 'events/drop-pickup',
   uiOverlayShow: ['ui/open-1', 'ui/open-2'],
+  uiButtonHover: 'ui/open-1',
   uiButtonClick: ['ui/switch-1', 'ui/switch-2', 'ui/switch-3', 'ui/switch-4']
 });
 
@@ -137,6 +139,8 @@ export function createAudioMappings(init: AudioMappingsInit): AudioMappings {
       switch (eventId) {
         case 'overlayShow':
           return resolveSampleSpec(EVENT_AUDIO_MAPPINGS.uiOverlayShow, 'events.uiOverlayShow');
+        case 'buttonHover':
+          return resolveSampleSpec(EVENT_AUDIO_MAPPINGS.uiButtonHover, 'events.uiButtonHover');
         case 'buttonClick':
           return resolveSampleSpec(EVENT_AUDIO_MAPPINGS.uiButtonClick, 'events.uiButtonClick');
         default:
@@ -171,6 +175,7 @@ function validateMappings(sampleRegistry: Pick<SampleRegistry, 'require'>): void
   validateOptionalSampleSpec(EVENT_AUDIO_MAPPINGS.dropSpawn, sampleRegistry);
   validateOptionalSampleSpec(EVENT_AUDIO_MAPPINGS.dropExpire, sampleRegistry);
   validateOptionalSampleSpec(EVENT_AUDIO_MAPPINGS.uiOverlayShow, sampleRegistry);
+  validateOptionalSampleSpec(EVENT_AUDIO_MAPPINGS.uiButtonHover, sampleRegistry);
   validateOptionalSampleSpec(EVENT_AUDIO_MAPPINGS.uiButtonClick, sampleRegistry);
 }
 

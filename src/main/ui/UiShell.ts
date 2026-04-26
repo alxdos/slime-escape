@@ -244,6 +244,12 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
       audio.playUi('buttonClick');
       log.info('menu teaser selected', { controlId });
+    },
+    onButtonHover() {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
+        return;
+      }
+      audio.playUi('buttonHover');
     }
   });
 

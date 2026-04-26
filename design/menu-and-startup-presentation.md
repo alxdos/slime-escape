@@ -24,7 +24,7 @@
 - Startup overlay, phase transition curtain and main menu stay under `src/main/ui/**`, following [web-stack.md](web-stack.md) and [main-ui-shell.md](main-ui-shell.md).
 - Menu/startup presentation code may import from `src/shared/content/**` only through the existing playable preset APIs (`ModePresetId`, `getPlayableModeCatalog`, `resolveModePreset`). It must not import from `src/sim/**`.
 - Static menu/startup images live under `public/images/**`. They are presentation assets, not content library records and not `SpriteVisualSpec` entries.
-- `UiShell` remains the only owner of phase changes, session start/stop, settings visibility, audio UI click routing and fullscreen side effects.
+- `UiShell` remains the only owner of phase changes, session start/stop, settings visibility, audio UI interaction routing and fullscreen side effects.
 - `MenuOverlay` remains a presentation component. It receives callbacks such as `onStart`, `onStartTraining`, `onOpenSettings` and `onToggleFullscreen`; it does not call `SimWorkerHost`, `Audio`, `ClientSettingsStore` or browser fullscreen APIs directly.
 
 ### Startup assets and honest preload

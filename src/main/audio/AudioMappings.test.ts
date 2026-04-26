@@ -124,6 +124,7 @@ describe('createAudioMappings', () => {
     expect(mappings.resolveEventSample('explosion')).toBe('events/explosion');
     expect(mappings.resolveEventSample('dropPickup')).toBe('events/drop-pickup');
     expect(mappings.resolveUiSample('overlayShow')).toBe('ui/open-1');
+    expect(mappings.resolveUiSample('buttonHover')).toBe('ui/open-1');
     expect(mappings.resolveEnemyVoice('slime-shell')).toEqual({
       sampleIds: ['slimes/voice-1', 'slimes/voice-2', 'slimes/voice-3', 'slimes/voice-4'],
       intervalMinMs: 3000,

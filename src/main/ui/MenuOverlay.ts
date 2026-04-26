@@ -28,6 +28,7 @@ export type MenuOverlayInit = Readonly<{
   onOpenSettings(): void;
   onToggleFullscreen(): void;
   onTeaser(controlId: TeaserControlId): void;
+  onButtonHover(): void;
 }>;
 
 export type MenuOverlay = Readonly<{
@@ -63,7 +64,7 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   teaserFeedback.style.cssText = teaserFeedbackStyle();
 
   for (const [index, control] of MAIN_MENU_CONTROLS.entries()) {
-    const button = createControlButton(control, index, handleControl);
+    const button = createControlButton(control, index, handleControl, init.onButtonHover);
     controlButtons.push(button);
     if (isCampaignModeControl(control.id)) {
       modeButtons.set(CAMPAIGN_MODE_BY_CONTROL[control.id], button);
@@ -174,7 +175,8 @@ function createStageImage(layout: MenuImageLayout): HTMLImageElement {
 function createControlButton(
   control: MenuControlLayout,
   index: number,
-  onControl: (controlId: MenuControlLayout['id']) => void
+  onControl: (controlId: MenuControlLayout['id']) => void,
+  onHover: () => void
 ): HTMLButtonElement {
   const button = document.createElement('button');
   button.type = 'button';
@@ -199,6 +201,7 @@ function createControlButton(
   button.appendChild(image);
 
   button.addEventListener('click', () => onControl(control.id));
+  button.addEventListener('pointerenter', onHover);
 
   return button;
 }
