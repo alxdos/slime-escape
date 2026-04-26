@@ -9,13 +9,13 @@ import { createCombatSystem } from './CombatSystem';
 import { createEntityStore } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
+import { createRunSummaryTracker } from './RunSummaryTracker';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSimulationClock, type SimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
 import { createZoneSystem } from './ZoneSystem';
-import { makeTestResultSummary } from './testSessionResultSummary';
 
 function fakeClock(): SimulationClock & {
   state: { running: boolean; paused: boolean; simTime: number };
@@ -56,6 +56,7 @@ function setupWorld() {
   const healthDeath = createHealthDeathSystem();
   const spatialIndex = createSpatialIndex();
   const zone = createZoneSystem();
+  const runSummary = createRunSummaryTracker();
   const clock = fakeClock();
   const events: RuntimeEvent[] = [];
   const emitEvent = (event: RuntimeEvent) => events.push(event);
@@ -63,12 +64,19 @@ function setupWorld() {
   const sessionFlow = createSessionFlowSystem({
     clock,
     emitEvent,
-    buildResultSummary: (outcome, simTimeMs) => makeTestResultSummary(outcome, simTimeMs),
+    buildResultSummary: (outcome, simTimeMs) =>
+      runSummary.buildSummary(outcome, simTimeMs, {
+        session: sessionFlow.activeSession(),
+        activeEncounter: sessionFlow.activeEncounter(),
+        waveProgress: spawn.waveProgress(),
+        store: entities
+      }),
     waveProgress: () => spawn.waveProgress(),
     onSessionStart(session, rng) {
       entities.clear();
       exporter.reset();
       combat.clear();
+      runSummary.reset();
       zone.reset();
       spawn.setRng(rng);
       const player = entities.spawnPlayer(session.player);
@@ -80,6 +88,7 @@ function setupWorld() {
       entities.clear();
       exporter.reset();
       combat.clear();
+      runSummary.reset();
       zone.reset();
       spawn.setRng(null);
     },
@@ -96,6 +105,7 @@ function setupWorld() {
   });
 
   healthDeath.registerHook((ctx) => {
+    runSummary.onDeath(ctx, entities);
     if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
@@ -182,6 +192,11 @@ describe('training run integration', () => {
     expect(kinds.filter((k) => k === 'loss')).toHaveLength(0);
     expect(kinds.filter((k) => k === 'encounterStart')).toHaveLength(3);
     expect(kinds.filter((k) => k === 'encounterEnd')).toHaveLength(3);
+    const win = terminalEvent(world.events, 'win');
+    expect(win.summary.progress.percent).toBe(100);
+    expect(win.summary.progress.completedWaves).toBe(2);
+    expect(win.summary.progress.totalWaves).toBe(2);
+    expect(win.summary.kills.total).toBeGreaterThan(0);
   });
 
   it('publishes a single loss when player dies mid-run and stops further ticks', () => {
@@ -208,6 +223,11 @@ describe('training run integration', () => {
 
     const losses = world.events.filter((e) => e.kind === 'loss');
     expect(losses).toHaveLength(1);
+    const loss = terminalEvent(world.events, 'loss');
+    expect(loss.summary.outcome).toBe('loss');
+    expect(loss.summary.durationMs).toBeGreaterThan(0);
+    expect(loss.summary.progress.percent).not.toBe(100);
+    expect(loss.summary.defeat?.cause.kind).toBe('enemyContact');
     expect(world.clock.isRunning()).toBe(false);
     expect(world.entities.player()).toBeNull();
 
@@ -242,3 +262,16 @@ describe('training run integration', () => {
     expect(a.length).toBeGreaterThan(0);
   });
 });
+
+function terminalEvent<TKind extends 'win' | 'loss'>(
+  events: ReadonlyArray<RuntimeEvent>,
+  kind: TKind
+): Extract<RuntimeEvent, { kind: TKind }> {
+  const event = events.find((candidate): candidate is Extract<RuntimeEvent, { kind: TKind }> => {
+    return candidate.kind === kind;
+  });
+  if (event === undefined) {
+    throw new Error(`missing terminal event: ${kind}`);
+  }
+  return event;
+}

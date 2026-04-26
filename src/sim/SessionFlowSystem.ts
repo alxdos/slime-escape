@@ -238,6 +238,16 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
 
   function emitTerminalEvent(outcome: SessionResultOutcome, simTimeMs: number): void {
     const summary = deps.buildResultSummary(outcome, simTimeMs);
+    if (summary.outcome !== outcome) {
+      throw new Error(
+        `result summary outcome mismatch: event=${outcome}, summary=${summary.outcome}`
+      );
+    }
+    if (summary.durationMs !== simTimeMs) {
+      throw new Error(
+        `result summary duration mismatch: event=${simTimeMs}, summary=${summary.durationMs}`
+      );
+    }
     emitEvent({ kind: outcome, simTime: simTimeMs, summary });
   }
 

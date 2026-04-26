@@ -1,7 +1,6 @@
 import type { RuntimeEvent } from '../shared/events';
 import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
-import type { SessionResultOutcome, SessionResultSummary } from '../shared/sessionResult';
 
 import { createBossPhaseSystem } from './BossPhaseSystem';
 import { createCombatSystem } from './CombatSystem';
@@ -17,6 +16,7 @@ import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
 import { createStatusEffectSystem } from './StatusEffectSystem';
 import { createRetaliationSystem } from './RetaliationSystem';
+import { createRunSummaryTracker } from './RunSummaryTracker';
 import { createZoneSystem } from './ZoneSystem';
 
 const entities = createEntityStore();
@@ -35,21 +35,27 @@ const statusEffects = createStatusEffectSystem();
 const retaliation = createRetaliationSystem();
 const spatialIndex = createSpatialIndex();
 const zone = createZoneSystem();
+const runSummary = createRunSummaryTracker();
 let pendingFieldDamageIntents: ReturnType<typeof fieldEffects.tick>['damageIntents'] = [];
 let pendingStatusDamageIntents: ReturnType<typeof statusEffects.tick> = [];
-const drops = createDropSystem(undefined, undefined, {
-  addModifierToSelectedWeapon(ownerId, modifier) {
-    combat.addModifierToSelectedWeapon(ownerId, modifier);
+const drops = createDropSystem(
+  undefined,
+  undefined,
+  {
+    addModifierToSelectedWeapon(ownerId, modifier) {
+      combat.addModifierToSelectedWeapon(ownerId, modifier);
+    },
+    applyTemporaryOverdriveToSelectedWeapon(ownerId, cooldownMultiplier, durationMs, simTimeMs) {
+      combat.applyTemporaryOverdriveToSelectedWeapon(
+        ownerId,
+        cooldownMultiplier,
+        durationMs,
+        simTimeMs
+      );
+    }
   },
-  applyTemporaryOverdriveToSelectedWeapon(ownerId, cooldownMultiplier, durationMs, simTimeMs) {
-    combat.applyTemporaryOverdriveToSelectedWeapon(
-      ownerId,
-      cooldownMultiplier,
-      durationMs,
-      simTimeMs
-    );
-  }
-});
+  (fact) => runSummary.onDropPickup(fact)
+);
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);
@@ -57,34 +63,6 @@ function postToMain(msg: SimToMain): void {
 
 function emitEvent(event: RuntimeEvent): void {
   postToMain({ kind: 'event', event });
-}
-
-function buildProtocolOnlyResultSummary(
-  outcome: SessionResultOutcome,
-  simTimeMs: number
-): SessionResultSummary {
-  return {
-    outcome,
-    durationMs: simTimeMs,
-    progress: {
-      percent: outcome === 'win' ? 100 : null,
-      completedObjectiveEncounters: 0,
-      totalObjectiveEncounters: 0,
-      completedWaves: 0,
-      totalWaves: 0,
-      activeEncounterId: null,
-      activeEncounterIndex: null
-    },
-    kills: {
-      total: 0,
-      byArchetype: []
-    },
-    drops: {
-      pickedUpTotal: 0
-    },
-    boss: null,
-    defeat: null
-  };
 }
 
 const clock = createSimulationClock((_dtMs, simTimeMs) => {
@@ -142,7 +120,13 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
 const sessionFlow = createSessionFlowSystem({
   clock,
   emitEvent,
-  buildResultSummary: buildProtocolOnlyResultSummary,
+  buildResultSummary: (outcome, simTimeMs) =>
+    runSummary.buildSummary(outcome, simTimeMs, {
+      session: sessionFlow.activeSession(),
+      activeEncounter: sessionFlow.activeEncounter(),
+      waveProgress: spawn.waveProgress(),
+      store: entities
+    }),
   waveProgress: () => spawn.waveProgress(),
   onSessionStart(session, rng) {
     entities.clear();
@@ -151,6 +135,7 @@ const sessionFlow = createSessionFlowSystem({
     fieldEffects.clear();
     statusEffects.clear();
     drops.clear();
+    runSummary.reset();
     zone.reset();
     pendingFieldDamageIntents = [];
     pendingStatusDamageIntents = [];
@@ -170,6 +155,7 @@ const sessionFlow = createSessionFlowSystem({
     fieldEffects.clear();
     statusEffects.clear();
     drops.clear();
+    runSummary.reset();
     zone.reset();
     pendingFieldDamageIntents = [];
     pendingStatusDamageIntents = [];
@@ -188,6 +174,7 @@ const sessionFlow = createSessionFlowSystem({
 });
 
 healthDeath.registerHook((ctx) => {
+  runSummary.onDeath(ctx, entities);
   if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
   if (ctx.entityKind === 'enemy') combat.removeShooter(ctx.entityId);
   if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);

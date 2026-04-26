@@ -32,10 +32,20 @@ export type WeaponDropEffectSink = Readonly<{
   ): void;
 }>;
 
+export type DropPickupFact = Readonly<{
+  entityId: EntityId;
+  archetypeId: string;
+  pickerId: EntityId;
+  simTime: number;
+}>;
+
+export type DropPickupObserver = (fact: DropPickupFact) => void;
+
 export function createDropSystem(
   enemyRegistry: Readonly<Record<string, EnemyArchetype>> = ENEMY_ARCHETYPES,
   dropRegistry: Readonly<Record<string, DropArchetype>> = DROP_ARCHETYPES,
-  weaponEffects: WeaponDropEffectSink | null = null
+  weaponEffects: WeaponDropEffectSink | null = null,
+  onPickup: DropPickupObserver | null = null
 ): DropSystem {
   let rng: Rng | null = null;
   const pickupModifiers = new Map<EntityId, PickupModifier>();
@@ -108,6 +118,12 @@ export function createDropSystem(
 
           applyDropEffect(drop.effect, store, simTimeMs, weaponEffects, pickupModifiers);
           pickedUp.add(drop.id);
+          onPickup?.({
+            entityId: drop.id,
+            archetypeId: drop.archetypeId,
+            pickerId: player.id,
+            simTime: simTimeMs
+          });
           emit({
             kind: 'dropPickup',
             simTime: simTimeMs,

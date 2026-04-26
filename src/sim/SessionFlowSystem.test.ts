@@ -510,6 +510,38 @@ describe('SessionFlowSystem encounter transitions', () => {
     expect(terminalEvent(events, 'win').summary).toBe(summary);
   });
 
+  it('rejects terminal summaries that do not match the terminal event', () => {
+    const clock = createFakeClock();
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: () => {},
+      buildResultSummary: () => makeTestResultSummary('loss', 0)
+    });
+    const session = makeSession([
+      emptyEncounter('only', { kind: 'allEnemiesCleared', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+
+    expect(() => flow.checkTransitions(0)).toThrow(/outcome mismatch/);
+  });
+
+  it('rejects terminal summaries with a mismatched duration', () => {
+    const clock = createFakeClock();
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: () => {},
+      buildResultSummary: (outcome) => makeTestResultSummary(outcome, 999)
+    });
+    const session = makeSession([
+      emptyEncounter('only', { kind: 'allEnemiesCleared', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+
+    expect(() => flow.checkTransitions(0)).toThrow(/duration mismatch/);
+  });
+
   it("does not publish 'win' if winCondition is none, but still publishes sessionStop", () => {
     const clock = createFakeClock();
     const events: RuntimeEvent[] = [];
