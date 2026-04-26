@@ -33,6 +33,7 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   root.appendChild(style);
 
   const card = document.createElement('div');
+  card.dataset['role'] = 'pause-card';
   card.style.cssText = cardStyle();
 
   const title = document.createElement('h2');
@@ -239,6 +240,7 @@ function baseOverlayStyle(): string {
     'justify-content:center',
     'box-sizing:border-box',
     'padding:24px',
+    'overflow:auto',
     'background:rgba(255,255,255,0.34)',
     'z-index:90',
     'cursor:default'
@@ -252,8 +254,10 @@ function cardStyle(): string {
     'align-items:center',
     'gap:16px',
     'box-sizing:border-box',
-    'padding:26px 34px 28px',
-    'width:min(440px, calc(100vw - 48px))',
+    'padding:26px 30px 30px',
+    'width:min(640px, calc(100vw - 48px))',
+    'max-height:calc(100vh - 48px)',
+    'overflow:auto',
     'background:#fffdf4',
     'border:4px solid #050505',
     'border-radius:8px',
@@ -387,6 +391,7 @@ function primaryButtonStyle(): string {
     'box-shadow:4px 4px 0 #000000',
     'cursor:pointer',
     'width:100%',
+    'max-width:380px',
     'min-height:46px'
   ].join(';');
 }
@@ -406,6 +411,7 @@ function secondaryButtonStyle(): string {
     'box-shadow:4px 4px 0 #000000',
     'cursor:pointer',
     'width:100%',
+    'max-width:380px',
     'min-height:46px'
   ].join(';');
 }

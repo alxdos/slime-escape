@@ -96,6 +96,9 @@ describe('PauseOverlay', () => {
     });
 
     const escapePath = findByRole(parent, 'pause-escape-path');
+    const card = findByRole(parent, 'pause-card');
+    expect(card.style.cssText).toContain('width:min(640px, calc(100vw - 48px))');
+    expect(card.style.cssText).toContain('max-height:calc(100vh - 48px)');
     expect(escapePath.style.display).toBe('none');
 
     overlay.setEscapePath(makeEscapePathViewModel());
