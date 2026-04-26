@@ -430,6 +430,31 @@ describe('SessionFlowSystem encounter transitions', () => {
     expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'encounterStart']);
   });
 
+  it("'allEnemiesCleared' for wave waits for intro even when waveProgress is already complete", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: (e) => events.push(e),
+      waveProgress: () => ({ dispatched: 2, total: 2, alive: 0 })
+    });
+    const session = makeSession([
+      {
+        ...waveEncounter('w', { kind: 'allEnemiesCleared', next: 'sequential' }),
+        introDurationMs: 100
+      },
+      emptyEncounter('end', { kind: 'never', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+    events.length = 0;
+    flow.checkTransitions(99);
+    expect(events).toHaveLength(0);
+    expect(flow.activeEncounter()?.encounter.id).toBe('w');
+    flow.checkTransitions(100);
+    expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'encounterStart']);
+  });
+
   it("publishes 'win' once when last encounter ends and winCondition is allEncountersComplete", () => {
     const clock = createFakeClock();
     const events: RuntimeEvent[] = [];

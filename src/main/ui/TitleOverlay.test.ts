@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { EncounterDefinition, SessionDefinition } from '../../shared/session';
 import type { Snapshot } from '../../shared/snapshot';
+import type { SnapshotPair } from '../sim/SimWorkerHost';
 
-import { deriveTitleOverlayViewModel } from './TitleOverlay';
+import { createTitleOverlay, deriveTitleOverlayViewModel } from './TitleOverlay';
 
 function makeSession(encounters: ReadonlyArray<EncounterDefinition>): SessionDefinition {
   return {
@@ -80,6 +81,40 @@ function snapshot(
   };
 }
 
+function snapshotPair(curr: Snapshot | null): SnapshotPair {
+  return {
+    prev: null,
+    curr,
+    currReceivedAtMs: 0,
+    nowMs: 0
+  };
+}
+
+class FakeElement {
+  readonly children: FakeElement[] = [];
+  readonly dataset: Record<string, string> = {};
+  readonly style: Record<string, string> = {};
+  textContent = '';
+  parent: FakeElement | null = null;
+
+  appendChild(child: FakeElement): void {
+    child.parent = this;
+    this.children.push(child);
+  }
+
+  remove(): void {
+    if (this.parent === null) return;
+    this.parent.children.splice(this.parent.children.indexOf(this), 1);
+    this.parent = null;
+  }
+}
+
+class FakeDocument {
+  createElement(): FakeElement {
+    return new FakeElement();
+  }
+}
+
 describe('TitleOverlay view model', () => {
   it('shows wave title with set-local numbering during intro', () => {
     const session = makeSession([
@@ -145,5 +180,56 @@ describe('TitleOverlay view model', () => {
       text: 'Дальше: Хламные призраки',
       opacity: 1
     });
+  });
+
+  it('renders, freezes while paused, hides on detach, and removes itself on dispose', () => {
+    const originalDocument = globalThis.document;
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: new FakeDocument()
+    });
+
+    try {
+      const parent = new FakeElement();
+      const session = makeSession([wave('wave-1', 'First wave')]);
+      const overlay = createTitleOverlay({ parent: parent as unknown as HTMLElement });
+
+      overlay.attach(session);
+      const root = parent.children[0]!;
+      const titleLine = root.children[0]!;
+      const subtitleLine = root.children[1]!;
+
+      overlay.update(
+        snapshotPair(snapshot({ id: 'wave-1', type: 'wave', index: 0, elapsedMs: 1000 })),
+        { kind: 'running' }
+      );
+
+      expect(root.style.display).toBe('flex');
+      expect(titleLine.textContent).toBe('Волна 1');
+      expect(subtitleLine.textContent).toBe('First wave');
+
+      overlay.update(
+        snapshotPair(snapshot({ id: 'wave-1', type: 'wave', index: 0, elapsedMs: 2500 })),
+        { kind: 'paused' }
+      );
+
+      expect(root.style.display).toBe('flex');
+      expect(titleLine.textContent).toBe('Волна 1');
+
+      overlay.detach();
+      expect(root.style.display).toBe('none');
+
+      overlay.dispose();
+      expect(parent.children).toHaveLength(0);
+    } finally {
+      if (originalDocument === undefined) {
+        delete (globalThis as Partial<typeof globalThis>).document;
+      } else {
+        Object.defineProperty(globalThis, 'document', {
+          configurable: true,
+          value: originalDocument
+        });
+      }
+    }
   });
 });
