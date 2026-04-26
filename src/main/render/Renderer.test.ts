@@ -6,10 +6,11 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 import { BOSS_GARGOYLE } from '../../shared/content/bosses';
 import { HEAL_ORB } from '../../shared/content/drops';
 import { SLIME_BUG } from '../../shared/content/enemies';
-import { BOMB_PLACER, PISTOL, ROCK_THROWER } from '../../shared/content/weapons';
+import { BOMB_PLACER, GRENADE_LAUNCHER, PISTOL, ROCK_THROWER } from '../../shared/content/weapons';
 import type { SessionDefinition } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import { DROP_VISUALS } from './dropVisuals';
+import { LANDING_TELEGRAPH_NAME } from './landingTelegraph';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
 import { PROJECTILE_VISUALS } from './projectileVisuals';
 import { createRenderer } from './Renderer';
@@ -192,6 +193,13 @@ function findArcPreviewMesh(scene: THREE.Scene | null): THREE.Mesh | null {
   if (scene === null) return null;
   return scene.children.find((child): child is THREE.Mesh => {
     return child instanceof THREE.Mesh && child.geometry instanceof THREE.RingGeometry;
+  }) ?? null;
+}
+
+function findLandingTelegraphMesh(scene: THREE.Scene | null): THREE.Mesh | null {
+  if (scene === null) return null;
+  return scene.children.find((child): child is THREE.Mesh => {
+    return child instanceof THREE.Mesh && child.name === LANDING_TELEGRAPH_NAME;
   }) ?? null;
 }
 
@@ -740,6 +748,85 @@ describe('createRenderer', () => {
 
     const farProjectile = findProjectileMesh(backend.lastScene());
     expect(farProjectile?.visible).toBe(true);
+  });
+
+  it('renders and clears enemy arc projectile landing telegraphs', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    let pair = createSnapshotPairWithEntities([
+      { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+      {
+        id: 20,
+        kind: 'projectile',
+        weaponArchetypeId: GRENADE_LAUNCHER.id,
+        ownerKind: 'enemy',
+        originX: 0,
+        originY: 0,
+        x: 1,
+        y: 0,
+        state: 'flying',
+        visualState: {
+          angleRadians: 0,
+          spinRadians: 0,
+          pulsePhase: 0
+        },
+        explosionRadius: GRENADE_LAUNCHER.projectile.explosion!.radius,
+        detonateAtSimMs: null,
+        arcEnd: { x: 3, y: -2 }
+      }
+    ]);
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const marker = findLandingTelegraphMesh(backend.lastScene());
+    expect(marker).not.toBeNull();
+    expect(marker?.position.x).toBeCloseTo(3);
+    expect(marker?.position.y).toBeCloseTo(-2);
+    expect(marker?.scale.x).toBeCloseTo(GRENADE_LAUNCHER.projectile.explosion!.radius * 2);
+
+    pair = createSnapshotPairWithEntities([
+      { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+      {
+        id: 20,
+        kind: 'projectile',
+        weaponArchetypeId: GRENADE_LAUNCHER.id,
+        ownerKind: 'enemy',
+        originX: 0,
+        originY: 0,
+        x: 3,
+        y: -2,
+        state: 'grounded',
+        visualState: {
+          angleRadians: 0,
+          spinRadians: 0,
+          pulsePhase: 0
+        },
+        explosionRadius: GRENADE_LAUNCHER.projectile.explosion!.radius,
+        detonateAtSimMs: 1000,
+        arcEnd: null
+      }
+    ]);
+    renderer.render();
+
+    expect(findLandingTelegraphMesh(backend.lastScene())).toBeNull();
   });
 
   it('renders drops as sprite-backed plane meshes', () => {
