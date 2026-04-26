@@ -9,7 +9,9 @@ import { parseSessionsArea, validateUniqueSessionPresetIds } from './parse';
 import { renderSessionContent } from './renderContent';
 
 const SESSION_SOURCE_FILES = [
-  'campaign.md',
+  'campaign-easy.md',
+  'campaign-hard.md',
+  'campaign-normal.md',
   'sandbox.md',
   'sandbox-with-combat.md',
   'training.md'
@@ -82,20 +84,20 @@ describe('content-build sessions area', () => {
   for (const testCase of [
     {
       name: 'arenaId',
-      file: 'campaign.md' as const,
+      file: 'campaign-normal.md' as const,
       mutate: (source: string) => replaceExact(source, '| arenaId | sandbox |', '| arenaId | sndbox |'),
       pattern: /section "# Session": unknown arenaId "sndbox"/
     },
     {
       name: 'playerId',
-      file: 'campaign.md' as const,
+      file: 'campaign-normal.md' as const,
       mutate: (source: string) =>
         replaceExact(source, '| playerId | hero-training |', '| playerId | hero-ghost |'),
       pattern: /section "# Session": unknown playerId "hero-ghost"/
     },
     {
       name: 'loadoutWeaponIds',
-      file: 'campaign.md' as const,
+      file: 'campaign-normal.md' as const,
       mutate: (source: string) =>
         replaceExact(
           source,
@@ -106,7 +108,7 @@ describe('content-build sessions area', () => {
     },
     {
       name: 'bossArchetypeId',
-      file: 'campaign.md' as const,
+      file: 'campaign-normal.md' as const,
       mutate: (source: string) =>
         replaceExact(
           source,
@@ -162,7 +164,7 @@ describe('content-build sessions area', () => {
   it('rejects a spawn table on a boss encounter', async () => {
     await expectParseRejects(
       {
-        'campaign.md': (source) => `${source}\n| seq | archetypeId |\n|---:|---|\n| 1 | slime-one-eye |\n`
+        'campaign-normal.md': (source) => `${source}\n| seq | archetypeId |\n|---:|---|\n| 1 | slime-one-eye |\n`
       },
       /spawnKind "boss" forbids seq\/archetypeId table/
     );
@@ -189,7 +191,7 @@ describe('content-build sessions area', () => {
   it('rejects a spawn override table on an empty encounter', async () => {
     await expectParseRejects(
       {
-        'sandbox.md': (source) => `${source}\n${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | heal-orb | none | none | none |\n`
+        'sandbox.md': (source) => `${source}\n${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | heal-orb | none | none | none | none | none |\n`
       },
       /spawnKind "empty" forbids spawn override table/
     );
@@ -201,7 +203,7 @@ describe('content-build sessions area', () => {
         'training.md': (source) =>
           addTrainingWave1OverrideTable(
             source,
-            `${SPAWN_OVERRIDE_TABLE_HEADER}| 99 | heal-orb | none | none | none |\n`
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 99 | heal-orb | none | none | none | none | none |\n`
           )
       },
       /override references missing seq "99"/
@@ -214,7 +216,7 @@ describe('content-build sessions area', () => {
         'training.md': (source) =>
           addTrainingWave1OverrideTable(
             source,
-            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | heal-orb | none | none | none |\n| 1 | magnet | none | none | none |\n`
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | heal-orb | none | none | none | none | none |\n| 1 | magnet | none | none | none | none | none |\n`
           )
       },
       /duplicate seq "1"/
@@ -227,7 +229,7 @@ describe('content-build sessions area', () => {
         'training.md': (source) =>
           addTrainingWave1OverrideTable(
             source,
-            `| seq | bonusDrops | dropTable | retaliationEnabled | retaliationDurationMs |\n|---:|---|---|---|---:|\n| 1 | heal-orb | none | none | none |\n`
+            `| seq | bonusDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |\n|---:|---|---|---|---:|---|---|\n| 1 | heal-orb | none | none | none | none | none |\n`
           )
       },
       /unknown spawn override field "bonusDrops"/
@@ -240,7 +242,7 @@ describe('content-build sessions area', () => {
         'training.md': (source) =>
           addTrainingWave1OverrideTable(
             source,
-            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | missing-drop | none | none | none |\n`
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | missing-drop | none | none | none | none | none |\n`
           )
       },
       /unknown guaranteedDrops "missing-drop"/
@@ -253,7 +255,7 @@ describe('content-build sessions area', () => {
         'training.md': (source) =>
           addTrainingWave1OverrideTable(
             source,
-            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | missing-drop:0.2 | none | none |\n`
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | missing-drop:0.2 | none | none | none | none |\n`
           )
       },
       /unknown dropTable "missing-drop"/
@@ -265,7 +267,7 @@ describe('content-build sessions area', () => {
       'training.md': (source) =>
         addTrainingWave1OverrideTable(
           source,
-          `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | empty | none | none |\n| 2 | heal-orb | none | none | none |\n| 3 | none | none | none | none |\n`
+          `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | empty | none | none | none | none |\n| 2 | heal-orb | none | none | none | none | none |\n| 3 | none | none | none | none | none | none |\n`
         )
     });
 
@@ -290,7 +292,7 @@ describe('content-build sessions area', () => {
         'training.md': (source) =>
           addTrainingWave1OverrideTable(
             source,
-            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | empty | none | none | none |\n`
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | empty | none | none | none | none | none |\n`
           )
       },
       /guaranteedDrops.*expected comma-separated drop ids or none/
@@ -303,10 +305,93 @@ describe('content-build sessions area', () => {
         'training.md': (source) =>
           addTrainingWave1OverrideTable(
             source,
-            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | true | none |\n`
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | true | none | none | none |\n`
           )
       },
       /retaliationEnabled and retaliationDurationMs must be set together/
+    );
+  });
+
+  it('parses spawn override loadout with nullable selected weapon index', async () => {
+    const fixture = await copySessionsFixture({
+      'training.md': (source) =>
+        addTrainingWave1OverrideTable(
+          source,
+          `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | none | none | pistol, smg | null |\n`
+        )
+    });
+
+    const area = await parseSessionsArea(fixture.sourceDirectory);
+    const trainingPreset = area.presets.find((preset) => preset.presetId === 'training');
+    const encounter = trainingPreset?.encounters.find(({ id }) => id === 'training-wave-1');
+
+    expect(encounter?.spawnPlan.kind).toBe('wave');
+    if (encounter?.spawnPlan.kind !== 'wave') {
+      throw new Error('training-wave-1 fixture must stay a wave encounter');
+    }
+    expect(encounter.spawnPlan.spawns[0]?.override).toEqual({
+      loadout: {
+        weapons: [
+          { id: 'pistol', constName: 'PISTOL' },
+          { id: 'smg', constName: 'SMG' }
+        ],
+        selectedIndex: null
+      }
+    });
+  });
+
+  it('renders spawn override loadout into generated session content', async () => {
+    const fixture = await copySessionsFixture({
+      'training.md': (source) =>
+        addTrainingWave1OverrideTable(
+          source,
+          `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | none | none | pistol, smg | 1 |\n`
+        )
+    });
+
+    const rendered = renderSessionContent(await parseSessionsArea(fixture.sourceDirectory));
+
+    expect(rendered).toContain(
+      'override: { loadout: { weapons: [PISTOL.id, SMG.id], selectedIndex: 1 } }'
+    );
+  });
+
+  it('rejects unknown weapon ids in spawn override loadouts', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | none | none | railgun | 0 |\n`
+          )
+      },
+      /unknown loadoutWeaponIds "railgun"/
+    );
+  });
+
+  it('rejects selectedWeaponIndex outside spawn override loadout', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | none | none | pistol, smg | 2 |\n`
+          )
+      },
+      /selectedWeaponIndex.*expected 0\.\.1 or null/
+    );
+  });
+
+  it('rejects partially authored spawn override loadout', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | none | none | pistol | none |\n`
+          )
+      },
+      /loadoutWeaponIds and selectedWeaponIndex must be set together/
     );
   });
 
@@ -316,7 +401,7 @@ describe('content-build sessions area', () => {
         'training.md': (source) =>
           addTrainingWave1OverrideTable(
             source,
-            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | heal-orb:1.2 | none | none |\n`
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | heal-orb:1.2 | none | none | none | none |\n`
           )
       },
       'spawn override drop table entry chance out of [0, 1] per design/spawn-overrides.md'
@@ -329,7 +414,7 @@ describe('content-build sessions area', () => {
         'training.md': (source) =>
           addTrainingWave1OverrideTable(
             source,
-            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | heal-orb:0.6, magnet:0.5 | none | none |\n`
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | heal-orb:0.6, magnet:0.5 | none | none | none | none |\n`
           )
       },
       'spawn override drop table chances sum exceeds 1 per design/spawn-overrides.md'
@@ -342,7 +427,7 @@ describe('content-build sessions area', () => {
         'training.md': (source) =>
           addTrainingWave1OverrideTable(
             source,
-            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | true | 0 |\n`
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | true | 0 | none | none |\n`
           )
       },
       'enabled spawn override retaliation duration must be positive per design/spawn-overrides.md'
@@ -352,7 +437,7 @@ describe('content-build sessions area', () => {
   it('rejects an encounter background id that is not declared in the session table', async () => {
     await expectParseRejects(
       {
-        'campaign.md': (source) =>
+        'campaign-normal.md': (source) =>
           replaceExact(source, '| backgroundId | set-1 |', '| backgroundId | set-missing |')
       },
       /unknown backgroundId "set-missing"/
@@ -362,7 +447,7 @@ describe('content-build sessions area', () => {
   it('rejects a session background image cell without an inline image', async () => {
     await expectParseRejects(
       {
-        'campaign.md': (source) =>
+        'campaign-normal.md': (source) =>
           replaceExact(
             source,
             '| set-1 | ![Set 1](../../public/images/bg/bg-01.jpg) |',
@@ -387,7 +472,7 @@ describe('content-build sessions area', () => {
     const targetPath = join(fixture.directory, 'sessions.generated.ts');
     const baselineGenerated = renderSessionContent(await parseSessionsArea(fixture.sourceDirectory));
     await writeFile(targetPath, baselineGenerated, 'utf8');
-    const campaignPath = join(fixture.sourceDirectory, 'campaign.md');
+    const campaignPath = join(fixture.sourceDirectory, 'campaign-normal.md');
     await writeFile(
       campaignPath,
       replaceExact(
@@ -472,8 +557,8 @@ function identity(value: string): string {
   return value;
 }
 
-const SPAWN_OVERRIDE_TABLE_HEADER = `| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
-|---:|---|---|---|---:|
+const SPAWN_OVERRIDE_TABLE_HEADER = `| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
 `;
 
 const TRAINING_WAVE_1_SPAWNS = `| seq | archetypeId |

@@ -21,9 +21,13 @@ import { createZoneSystem } from './ZoneSystem';
 const entities = createEntityStore();
 const exporter = createSnapshotExportSystem();
 const movement = createMovementSystem();
-const spawn = createSpawnSystem();
 const bossPhase = createBossPhaseSystem();
 const combat = createCombatSystem();
+const spawn = createSpawnSystem({
+  onEnemySpawned(enemyId, loadout, simTimeMs) {
+    combat.setEnemyLoadout(enemyId, loadout, simTimeMs);
+  }
+});
 const fieldEffects = createFieldEffectSystem();
 const healthDeath = createHealthDeathSystem();
 const statusEffects = createStatusEffectSystem();
@@ -141,7 +145,7 @@ const sessionFlow = createSessionFlowSystem({
   onEncounterStart(encounter) {
     const session = sessionFlow.activeSession();
     if (session === null) return;
-    spawn.onEncounterStart(encounter, entities, session.arena);
+    spawn.onEncounterStart(encounter, entities, session.arena, clock.simTimeMs());
     zone.onEncounterStart(encounter);
   },
   onEncounterEnd(encounter) {
@@ -152,6 +156,7 @@ const sessionFlow = createSessionFlowSystem({
 
 healthDeath.registerHook((ctx) => {
   if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
+  if (ctx.entityKind === 'enemy') combat.removeShooter(ctx.entityId);
   if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
   if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
   if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);

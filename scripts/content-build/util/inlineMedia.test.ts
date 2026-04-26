@@ -64,7 +64,7 @@ describe('inline media content-build helpers', () => {
 
   it('resolves inline media from nested content folders with an extra ../ segment', () => {
     const section = parseMarkdown(
-      'content/sessions/campaign.md',
+      'content/sessions/campaign-normal.md',
       [
         '# Session',
         '',
@@ -80,7 +80,7 @@ describe('inline media content-build helpers', () => {
 
     expect(
       requireInlineImageCell(cell, {
-        sourcePath: 'content/sessions/campaign.md',
+        sourcePath: 'content/sessions/campaign-normal.md',
         context: 'background "set-1" image'
       })
     ).toEqual({

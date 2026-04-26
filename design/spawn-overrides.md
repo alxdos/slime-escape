@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-25
-- Updated: 2026-04-26
+- Updated: 2026-04-26 (story 020 correction: уточнено, что `loadout` — единственное override-поле, эффективное значение которого **не копируется в поле runtime-сущности `enemy`**. Runtime-`WeaponInstance` слайма живёт в `shooterWeapons: Map<EntityId, ShooterWeapons>` внутри closure `CombatSystem`, симметрично player loadout; SpawnSystem вызывает callback `onEnemySpawned` в worker-обвязку, которая зовёт `combat.setEnemyLoadout`. Полный контракт — [non-player-firing.md](non-player-firing.md). Earlier 2026-04-25: closed list расширен четвёртым полем `loadout?: Loadout` — выдача оружия слайму per spawn для firing path не-игрока ([non-player-firing.md](non-player-firing.md)). Семантика replace-or-`null`, момент применения и валидация — те же, что для трёх существующих полей. MD-форма третьей override-таблицы расширена двумя колонками `loadoutWeaponIds | selectedWeaponIndex` (см. [content-authoring.md](content-authoring.md), раздел про override-таблицу области `sessions`). Контракт «расширение допускается только дописыванием новых полей» соблюдается буквально. Story 019 finalized on main — design файл полностью аккомодирует финальную реализацию.)
 
 ## Context
 
@@ -55,10 +55,20 @@ type SpawnOverride = Readonly<{
    *  Семантика: REPLACE архетипной политики.
    *  Отсутствие поля = используется архетипный default. */
   retaliation?: RetaliationPolicy;
+
+  /** Loadout оружия, выданный этому спавну для firing path не-игрока (story 020).
+   *  Семантика: REPLACE-or-`null`. На этом горизонте у `EnemyArchetype` нет архетипного
+   *  default-loadout, поэтому effective loadout = `override.loadout` если задан, иначе `null`.
+   *  Отсутствие поля = «у этого спавна оружия нет, он не стреляет».
+   *  Пустой `weapons: []` запрещён (выражается тем же отсутствием поля), чтобы исключить
+   *  «два разных нет данных».
+   *  Полная семантика «как из этого поля рождаются runtime WeaponInstance и как идёт
+   *  стрельба слайма» — в [non-player-firing.md](non-player-firing.md). */
+  loadout?: Loadout;
 }>;
 ```
 
-`DropTableEntry` и `RetaliationPolicy` — те же типы, что у `EnemyArchetype` ([content-archetypes.md](content-archetypes.md), [drops.md](drops.md), [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)). Никаких новых типов и никаких параллельных копий не вводится.
+`DropTableEntry`, `RetaliationPolicy` и `Loadout` — те же типы, что у `EnemyArchetype` и `SessionDefinition` ([content-archetypes.md](content-archetypes.md), [drops.md](drops.md), [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md), [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)). Никаких новых типов и никаких параллельных копий не вводится. `Loadout.selectedIndex` обязан быть `null` или попадать в `[0, weapons.length)`; `weapons[i]` — существующий `WeaponArchetype.id` из `WEAPON_ARCHETYPES`. Эти три инварианта дублируют session-level loadout-валидацию и обязательны на стороне валидатора sessions-области.
 
 ### Где SpawnOverride живёт в плане
 
@@ -86,8 +96,9 @@ type WaveSpawn = Readonly<{
 - `guaranteedDrops` — **add поверх** dropTable. На каждом срабатывании death hook ([drops.md](drops.md)) сначала спавнятся все элементы `guaranteedDrops` в позиции смерти, затем выполняется обычный weighted-pick ролл по эффективной dropTable (см. ниже). Гарантированные дропы **не дёргают** session RNG: фиксированный набор не зависит от случайности и не сбивает воспроизводимость. Это уже зафиксировано в [drops.md](drops.md) для существующего carrier-механизма; здесь правило сохраняется буквально, меняется только источник списка id.
 - `dropTable` — **replace** dropTable архетипа. Если поле задано (включая `[]`), DropSystem использует именно его как «эффективную dropTable» этого спавна; архетипная таблица в этом случае **не читается** для этого спавна. Если поле опущено — эффективная dropTable равна архетипной.
 - `retaliation` — **replace** архетипной политики. Если поле задано, RetaliationSystem ([combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)) реагирует именно на эту политику; архетипная не читается. Если поле опущено — используется архетипная.
+- `loadout` — **replace-or-`null`** (story 020). У `EnemyArchetype` архетипного default-loadout нет, поэтому effective loadout — это либо копия `override.loadout`, либо `null`. Если effective loadout — `null`, runtime-сущность `enemy` не получает полей `weapons`/`selectedWeaponIndex` (или получает пустыми), и фаза firing decisions для этой сущности — no-op. Если effective loadout — объект, `SpawnSystem` материализует runtime `WeaponInstance[]` и `selectedWeaponIndex` симметрично игроку (см. [non-player-firing.md](non-player-firing.md)).
 
-«Эффективная dropTable» и «эффективная retaliation» — внутренние термины этого решения; они описывают, что именно положено в runtime-сущность на момент спавна. Никакой `Map<seq, override>` в runtime не передаётся.
+«Эффективная dropTable», «эффективная retaliation» и «эффективный loadout» — внутренние термины этого решения; они описывают, что именно положено в runtime-сущность на момент спавна. Никакой `Map<seq, override>` в runtime не передаётся.
 
 ### Момент применения
 
@@ -99,7 +110,9 @@ Override применяется **один раз** при материализ�
 - `dropTable: ReadonlyArray<DropTableEntry>` — копия `override.dropTable` если задано, иначе копия `archetype.dropTable`. DropSystem ([drops.md](drops.md)) для weighted-pick читает **только** это поле сущности; архетипный `dropTable` остаётся источником **default-копии**, не источником per-tick правды.
 - `retaliation: RetaliationPolicy` — копия `override.retaliation` если задано, иначе копия `archetype.retaliation`. RetaliationSystem читает **только** это поле сущности.
 
-То же правило симметрично уже зафиксированному правилу копирования полей с архетипа на runtime-сущность для `Drop` ([drops.md](drops.md)): тик не зависит от лишних lookup-ов, и runtime устойчив к будущим мутациям архетипа в редакторе/тестах.
+`loadout` (story 020) — исключение из этого правила: его эффективное значение **не копируется в поле сущности `enemy`**. Вместо этого `SpawnSystem` при материализации каждой сущности `enemy` с effective `loadout !== null` вызывает callback `onEnemySpawned(enemyId, loadout, simTimeMs)`, который на уровне worker-обвязки переадресуется в `combat.setEnemyLoadout(enemyId, loadout, simTimeMs)`. Runtime-`WeaponInstance[]` и `selectedWeaponIndex` слайма живут в `shooterWeapons: Map<EntityId, ShooterWeapons>` внутри closure `CombatSystem`, симметрично player loadout. Cleanup — `combat.removeShooter(enemyId)` из существующего death hook. Полный контракт — [non-player-firing.md](non-player-firing.md). Смысл этого исключения: WeaponInstance — это не «поле архетипа, отсроченное до спавна», а **ranтайм-state со своим lifecycle**, которым владеет `CombatSystem`; player loadout в реализации 017 уже хранится там же, и слаймы используют ту же структуру.
+
+То же правило (копирование полей с архетипа на runtime-сущность) для `guaranteedDrops`/`dropTable`/`retaliation` симметрично уже зафиксированному правилу для `Drop` ([drops.md](drops.md)): тик не зависит от лишних lookup-ов, и runtime устойчив к будущим мутациям архетипа в редакторе/тестах.
 
 ### Удаление поля `EnemyArchetype.carrierDrop`
 
@@ -124,28 +137,34 @@ Override применяется **один раз** при материализ�
   - hard-error на ссылку на неизвестный `dropArchetypeId` в любом из полей override (используется тот же `requireDropRef`, что для cross-area refs из [content-authoring.md](content-authoring.md));
   - warn на `chance < 0`, `chance > 1` и `sum(chance) > 1` в `override.dropTable` — те же warn-правила, что в `validateEnemyRegistry` для архетипного dropTable;
   - warn на `retaliation.enabled === true && retaliation.durationMs <= 0`;
-  - hard-error на пустой список `guaranteedDrops` в MD-ячейке (выражается значением `none`, а не пустой ячейкой; см. правило ниже).
+  - hard-error на пустой список `guaranteedDrops` в MD-ячейке (выражается значением `none`, а не пустой ячейкой; см. правило ниже);
+  - hard-error на ссылку на неизвестный `weaponArchetypeId` в `override.loadout.weapons` (используется cross-area ref в область `weapons` через TS-импорт `WEAPON_ARCHETYPES`, аналогично `requireDropRef`);
+  - hard-error на `override.loadout.selectedIndex`, не попадающий в `[0, weapons.length)` и не равный `null`;
+  - hard-error на пустой список `loadout.weapons: []` (выражается значением `none` в обеих колонках `loadoutWeaponIds`/`selectedWeaponIndex`, а не пустой ячейкой; то же правило единственного «нет данных», что и для `guaranteedDrops`);
+  - hard-error на частично заданный loadout: `loadoutWeaponIds = none` при не-`none` `selectedWeaponIndex` и наоборот — обе колонки задают одно поле `SpawnOverride.loadout` целиком.
 - **builder сессии (`src/shared/content/buildSession.ts`)** — second-pass на собранном `SessionDefinition`. Сюда переезжает бывший `assertCarrierDropsResolve`:
   - все `dropArchetypeId`, упомянутые в любом `override.guaranteedDrops` и любом `override.dropTable` любого encounter всех presets, обязаны резолвиться в `DROP_ARCHETYPES`. Это duplicate-safety на случай drift между MD и `drops.generated.ts`. На MD-стороне это уже проверено генератором, но runtime-проверка на старте сессии остаётся как защитный слой по тому же правилу, что и сегодня для архетипов-врагов.
+  - все `weaponArchetypeId`, упомянутые в любом `override.loadout.weapons`, обязаны резолвиться в `WEAPON_ARCHETYPES`; та же duplicate-safety на случай drift между MD и `weapons.generated.ts`.
 - **runtime-системы** — никаких новых проверок. К моменту тика всё уже резолвлено в полях runtime-сущности; `SpawnSystem`/`DropSystem`/`RetaliationSystem` читают только готовые поля сущности.
 
 ### MD-форма (правило-ссылка на content-authoring)
 
-Этот файл фиксирует только то, что геймдизайнер обязан описывать override **в encounter-секции preset-а** в `content/sessions/<presetId>.md`, а не в `content/enemies.md` и не в `content/sessions.md`. Конкретный формат третьей optional-таблицы (`seq | guaranteedDrops | dropTable | retaliation`) и допустимые мини-синтаксисы внутри её ячеек живут в [content-authoring.md](content-authoring.md), раздел «Несколько таблиц в одной H2-секции» (расширенный для области `sessions` с двух таблиц до трёх). Здесь дублирование запрещено правилом «без двух источников правды».
+Этот файл фиксирует только то, что геймдизайнер обязан описывать override **в encounter-секции preset-а** в `content/sessions/<presetId>.md`, а не в `content/enemies.md` и не в `content/sessions.md`. Конкретный формат третьей optional-таблицы (`seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex`) и допустимые мини-синтаксисы внутри её ячеек живут в [content-authoring.md](content-authoring.md), раздел «Несколько таблиц в одной H2-секции» (расширенный для области `sessions` с двух таблиц до трёх и контролируемое исключение из правила «узкая таблица: id + ≤4 поля» на 6 полей сверх `seq` ровно для override-таблицы). Здесь дублирование запрещено правилом «без двух источников правды».
 
 Ровно одно дополнение, которое область обязана соблюсти и которое попадает в скоуп этого решения, а не authoring-правил:
 
 - **присутствие override-таблицы в encounter** допустимо только при `spawnKind ∈ {wave, static}`. При `spawnKind ∈ {empty, boss}` третья таблица запрещена (см. «Где SpawnOverride живёт в плане»).
 
-### Что запрещено вводить «по месту» в 019
+### Что запрещено вводить «по месту»
 
 - множители статов (`hpMultiplier`, `speedMultiplier`, `damageMultiplier`, …) как override — отдельное design-решение, scope этого файла не расширяется молча;
 - per-encounter override (одна запись на «все слаймы вида X в этой волне») в дополнение к per-`seq` — избыточно при наличии per-`seq`; если когда-нибудь понадобится, оформляется как новое решение;
 - массив `modifiers: [{ kind, ... }]` как форма записи. Закрытый плоский набор именованных полей — намеренно: каждое поле имеет свою семантику (replace vs add), и discriminated union по `kind` не упрощает ни авторскую, ни runtime-сторону;
-- override `behavior` (per-spawn смена `chase ↔ stationary`) и любых других «как существо устроено»-полей. Это «новый архетип», а не «модификатор спавна». Такие задачи должны идти через `content/enemies.md`, не через override;
-- сосуществование `EnemyArchetype.carrierDrop` и spawn-override параллельно. Миграция жёсткая, форки удаляются в этой же истории;
+- override `behavior` (per-spawn смена `chase ↔ stationary`) и любых других «как существо устроено»-полей. Это «новый архетип», а не «модификатор спавна». Такие задачи должны идти через `content/enemies.md`, не через override. В частности, «стационарная турель» в 020 — это новый общий архетип `slime-idol` в `content/enemies.md` ([../stories/020-shooting-slimes.md](../stories/020-shooting-slimes.md)), а не override `behavior` существующего слайма;
+- per-archetype default loadout на `EnemyArchetype` («слайм-X всегда стреляет») — сознательно вне 020. Решение 020 проходит по принципу «стрельба = контекст появления, не идентичность». Если архетип реально стреляет везде и всегда, это решается дублированием `loadout` в каждом spawn-override, либо отдельным design-решением о поле архетипа (тогда правило override меняется на replace-or-archetype-default, а не replace-or-`null`);
+- сосуществование `EnemyArchetype.carrierDrop` и spawn-override параллельно. Миграция жёсткая, форки удаляются в истории 019;
 - шаблоны/наследование между файлами `content/sessions/<preset>.md`. Каждый пресет живёт самостоятельно (это уже зафиксировано в [content-authoring.md](content-authoring.md), здесь повторяется только как след «не делать заодно»);
-- `loadout` как поле override (выдача оружия слайму per spawn) — сознательно вне 019. Вводится в 020 ([../stories/020-shooting-slimes.md](../stories/020-shooting-slimes.md)) вместе с runtime firing path для не-игрока. До 020 слайм всё равно не умеет стрелять, и поле в 019 было бы «ничего не делающим».
+- `loadout` для `spawnPlan.kind === 'boss'`. Boss-стрельба остаётся за `BossPhaseSystem` ([boss-encounter.md](boss-encounter.md)), не за firing path не-игрока. Override-таблица для `'boss'` плана уже запрещена правилом «присутствие override-таблицы допустимо только при `spawnKind ∈ {wave, static}`» — поле `loadout` это правило не ослабляет.
 
 ## Consequences
 
@@ -157,6 +176,7 @@ Override применяется **один раз** при материализ�
 - Расширение в 020 (`loadout` как поле override) укладывается в этот же закрытый плоский набор полей: добавляется одно `loadout?: Loadout` без структурных изменений в SpawnSystem (firing path для не-игрока — отдельная история). Никаких контрактных коллизий не возникает: `Loadout` уже зафиксирован в [content-archetypes.md](content-archetypes.md) и [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md), и его пере-использование в override — естественное продолжение «контекст появления, а не идентичность».
 - Миграция сохраняет **контекстные особенности спавнов** (`guaranteedDrops`, `dropTable`, `retaliation`) и удаляет семь исторических fork-архетипов как отдельные identity-записи. Если старый fork отличался от выбранного визуального base-архетипа статами (`radius`, `maxHp`, movement/contact/knockback/color), эти stat-отличия намеренно не переносятся: spawn override не расширяется до stat override на горизонте 019, а баланс кампании считается подвижным. Детерминизм по `seed` сохраняется для новой модели, но byte-for-byte идентичность с pre-019 симуляцией не является архитектурным инвариантом.
 - Появляется новый ровно-одно-место-правды для «контекст появления»: следующая история, которой захочется добавить ещё одну особенность спавна (например, alternate цвет для рендера или временный modifier), будет вводить новое поле в `SpawnOverride`, а не плодить новые форки архетипов.
+- Поле `loadout` (story 020) подтверждает работоспособность принципа: добавление крупной новой механики («слаймы стреляют») сводится к одному optional-полю в закрытом наборе, без структурных изменений в `SpawnSystem` и без новых kind спавн-плана. Стоимость — одно правило в валидаторе и две новые колонки в MD-таблице override; всё runtime-поведение (firing path, тик-фаза, cleanup) живёт отдельно в [non-player-firing.md](non-player-firing.md). Это иллюстрация дизайна «контекст появления»: даже стреляющий слайм описан тем же закрытым плоским набором.
 
 ## Related
 
@@ -170,5 +190,6 @@ Override применяется **один раз** при материализ�
 - [snapshot-shape.md](snapshot-shape.md)
 - [boss-encounter.md](boss-encounter.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
+- [non-player-firing.md](non-player-firing.md)
 - [../stories/019-spawn-overrides.md](../stories/019-spawn-overrides.md)
 - [../stories/020-shooting-slimes.md](../stories/020-shooting-slimes.md)

@@ -29,6 +29,7 @@ import {
   type HitImpulseEffect,
   type SlimeDropletEffect
 } from './ImpactEffectStore';
+import { createLandingTelegraphLayer } from './landingTelegraph';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
 import { PROJECTILE_VISUALS } from './projectileVisuals';
 import {
@@ -225,6 +226,7 @@ export function createRenderer(init: RendererInit): Renderer {
     bossRegistry: BOSS_ARCHETYPES,
     weaponRegistry
   });
+  const landingTelegraphs = createLandingTelegraphLayer(scene, weaponRegistry);
   const projectileHideDistance = Math.max(
     DEFAULT_PLAYER_VISUAL.worldSize.width,
     DEFAULT_PLAYER_VISUAL.worldSize.height
@@ -447,6 +449,7 @@ export function createRenderer(init: RendererInit): Renderer {
             projectileHideDistance
           )
       );
+      landingTelegraphs.update(pair.curr, pair.nowMs);
       updateEntities(
         pair,
         alpha,
@@ -527,6 +530,7 @@ export function createRenderer(init: RendererInit): Renderer {
       (arenaBorder.material as THREE.Material).dispose();
       zoneOverlay.dispose();
       impactEffects.clear();
+      landingTelegraphs.dispose();
       debugHud.dispose();
       renderer.dispose();
     }

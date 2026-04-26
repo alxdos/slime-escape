@@ -116,6 +116,7 @@ function assertSpawnOverridesResolve(
     if (override === undefined) continue;
     assertOverrideGuaranteedDropsResolve(override, template, encounter, index);
     assertOverrideDropTableResolves(override, template, encounter, index);
+    assertOverrideLoadoutResolves(override, template, encounter, index);
   }
 }
 
@@ -153,6 +154,21 @@ function assertDropArchetypeResolves(
     `session preset "${template.presetId}" encounter "${encounter.id}" spawn #${spawnIndex + 1} ` +
       `override.${fieldName} references unknown drop archetype "${dropArchetypeId}"`
   );
+}
+
+function assertOverrideLoadoutResolves(
+  override: SpawnOverride,
+  template: SessionPresetTemplate,
+  encounter: SessionPresetEncounterTemplate,
+  spawnIndex: number
+): void {
+  for (const weaponArchetypeId of override.loadout?.weapons ?? []) {
+    if (WEAPON_ARCHETYPES[weaponArchetypeId] !== undefined) continue;
+    throw new Error(
+      `session preset "${template.presetId}" encounter "${encounter.id}" spawn #${spawnIndex + 1} ` +
+        `override.loadout.weapons references unknown weapon archetype "${weaponArchetypeId}"`
+    );
+  }
 }
 
 function resolveBossSpawnPlan(

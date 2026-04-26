@@ -104,6 +104,35 @@ function pistolProjectileSpawnSpec(
   };
 }
 
+function bombProjectileSpawnSpec(
+  overrides: Partial<ProjectileSpawnSpec> = {}
+): ProjectileSpawnSpec {
+  const explosion = BOMB_PLACER.projectile.explosion;
+  if (explosion === null) throw new Error('expected bomb placer explosion');
+  return {
+    weaponArchetypeId: BOMB_PLACER.id,
+    ownerId: 0 as EntityId,
+    ownerKind: 'enemy',
+    motionKind: 'placed',
+    position: { x: 4, y: 0 },
+    velocity: { vx: 0, vy: 0 },
+    size: BOMB_PLACER.projectile.size,
+    hitRadius: BOMB_PLACER.projectile.hitRadius,
+    impactDamage: BOMB_PLACER.projectile.impactDamage,
+    knockbackImpulse: BOMB_PLACER.projectile.knockbackImpulse,
+    pierceRemaining: BOMB_PLACER.projectile.pierceCount,
+    groundOnImpact: BOMB_PLACER.projectile.groundOnImpact,
+    groundedLifetimeMs: BOMB_PLACER.projectile.groundedLifetimeMs,
+    detonationTrigger: BOMB_PLACER.projectile.detonationTrigger,
+    explosion,
+    state: 'grounded',
+    groundAtSimMs: 0,
+    detonateAtSimMs: explosion.delayMs,
+    expireAtSimMs: 10_000,
+    ...overrides
+  };
+}
+
 function stationaryEnemySpec(position: { x: number; y: number }): EnemySpawnSpec {
   return {
     archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
@@ -699,6 +728,96 @@ describe('CombatSystem', () => {
     expect(intents[0]?.targetId).toBe(target.id);
   });
 
+  it('prevents enemy projectile impacts from damaging their owner', () => {
+    const { store, index, combat } = setupCombat();
+    const owner = store.spawnEnemy(stationaryEnemySpec({ x: 4, y: 0 }));
+    store.spawnProjectile(
+      pistolProjectileSpawnSpec({
+        ownerId: owner.id,
+        position: { x: owner.position.x, y: owner.position.y }
+      })
+    );
+
+    const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, () => {});
+
+    expect(intents.some((intent) => intent.targetId === owner.id)).toBe(false);
+  });
+
+  it('honours friendly-fire: enemy explosions do not damage other enemies', () => {
+    const { store, index, combat } = setupCombat();
+    const owner = store.spawnEnemy(stationaryEnemySpec({ x: -4, y: 0 }));
+    const target = store.spawnEnemy(stationaryEnemySpec({ x: 4, y: 0 }));
+    const events: RuntimeEvent[] = [];
+    store.spawnProjectile(
+      bombProjectileSpawnSpec({
+        ownerId: owner.id,
+        position: { x: target.position.x, y: target.position.y }
+      })
+    );
+
+    const intents = combat.tick(
+      makeInput(),
+      store,
+      index,
+      BOMB_PLACER.projectile.explosion!.delayMs,
+      ARENA,
+      (event) => events.push(event)
+    );
+
+    expect(intents.some((intent) => intent.targetId === target.id)).toBe(false);
+    expect(events.filter((event) => event.kind === 'explosion')).toHaveLength(1);
+  });
+
+  it('uses session damage rules to allow enemy explosions to hit another enemy', () => {
+    const { store, index, combat } = setupCombat();
+    combat.setDamageRules({ slimeFriendlyFire: true });
+    const owner = store.spawnEnemy(stationaryEnemySpec({ x: -4, y: 0 }));
+    const target = store.spawnEnemy(stationaryEnemySpec({ x: 4, y: 0 }));
+    store.spawnProjectile(
+      bombProjectileSpawnSpec({
+        ownerId: owner.id,
+        position: { x: target.position.x, y: target.position.y }
+      })
+    );
+
+    const intents = combat.tick(
+      makeInput(),
+      store,
+      index,
+      BOMB_PLACER.projectile.explosion!.delayMs,
+      ARENA,
+      () => {}
+    );
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(target.id);
+    expect(intents[0]?.amount).toBe(BOMB_PLACER.projectile.explosion!.damage);
+    expect(intents[0]?.source.kind).toBe('explosion');
+  });
+
+  it('prevents enemy explosions from damaging their owner', () => {
+    const { store, index, combat } = setupCombat();
+    combat.setDamageRules({ slimeFriendlyFire: true });
+    const owner = store.spawnEnemy(stationaryEnemySpec({ x: 4, y: 0 }));
+    store.spawnProjectile(
+      bombProjectileSpawnSpec({
+        ownerId: owner.id,
+        position: { x: owner.position.x, y: owner.position.y }
+      })
+    );
+
+    const intents = combat.tick(
+      makeInput(),
+      store,
+      index,
+      BOMB_PLACER.projectile.explosion!.delayMs,
+      ARENA,
+      () => {}
+    );
+
+    expect(intents.some((intent) => intent.targetId === owner.id)).toBe(false);
+  });
+
   it('detonates placed bombs with radial explosion damage and owner filtering', () => {
     const store = createEntityStore();
     const index = createSpatialIndex();
@@ -1109,6 +1228,67 @@ describe('CombatSystem', () => {
     expect(() =>
       combat.setPlayerLoadout(player.id, { weapons: ['no-such-weapon'], selectedIndex: 0 }, 0)
     ).toThrow(/unknown weapon archetype/);
+  });
+
+  it('setEnemyLoadout uses the same weapon registry validation as player loadout', () => {
+    const combat = createCombatSystem();
+
+    expect(() =>
+      combat.setEnemyLoadout(999 as EntityId, { weapons: ['no-such-weapon'], selectedIndex: 0 }, 0)
+    ).toThrow(/unknown weapon archetype for enemy loadout/);
+  });
+
+  it('removeShooter is safe for entities without registered weapons', () => {
+    const combat = createCombatSystem();
+
+    expect(() => combat.removeShooter(999 as EntityId)).not.toThrow();
+  });
+
+  it('enemy loadout fires at the player after the initial weapon cooldown', () => {
+    const { store, index, combat } = setupCombat();
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: -4, y: 0 }));
+    const input = makeInput({ firing: false });
+    const events: RuntimeEvent[] = [];
+
+    combat.setEnemyLoadout(enemy.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+
+    combat.tick(input, store, index, PISTOL.cooldownMs - 1, ARENA, (event) => {
+      events.push(event);
+    });
+    expect(events.filter((event) => event.kind === 'fire')).toHaveLength(0);
+
+    combat.tick(input, store, index, PISTOL.cooldownMs, ARENA, (event) => {
+      events.push(event);
+    });
+
+    const fire = events.find(
+      (event) => event.kind === 'fire' && event.shooterId === enemy.id
+    );
+    if (fire?.kind !== 'fire') throw new Error('expected enemy fire event');
+    expect(fire.ownerKind).toBe('enemy');
+    expect(fire.weaponArchetypeId).toBe(PISTOL.id);
+    expect(fire.simTime).toBe(PISTOL.cooldownMs);
+    expect(fire.originX).toBe(enemy.position.x);
+    expect(fire.originY).toBe(enemy.position.y);
+    expect(fire.dirX).toBeCloseTo(1);
+    expect(fire.dirY).toBeCloseTo(0);
+  });
+
+  it('removeShooter stops future enemy firing', () => {
+    const { store, index, combat } = setupCombat();
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: -4, y: 0 }));
+    const events: RuntimeEvent[] = [];
+
+    combat.setEnemyLoadout(enemy.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+    combat.removeShooter(enemy.id);
+
+    combat.tick(makeInput({ firing: false }), store, index, PISTOL.cooldownMs, ARENA, (event) => {
+      events.push(event);
+    });
+
+    expect(
+      events.filter((event) => event.kind === 'fire' && event.shooterId === enemy.id)
+    ).toHaveLength(0);
   });
 });
 

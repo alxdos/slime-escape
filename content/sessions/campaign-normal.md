@@ -2,10 +2,10 @@
 
 | field | value |
 |---|---|
-| displayName | Побег |
+| displayName | Кампания — normal |
 | description | Основной забег: пять тематических сетов слаймов, после каждого — свой босс. |
 | visibleInMenu | true |
-| order | 0 |
+| order | 1 |
 | arenaId | sandbox |
 | playerId | hero-training |
 | loadoutWeaponIds | pistol, shotgun, smg, sniper, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |
@@ -83,9 +83,9 @@
 | 8 | slime-sleeper |
 | 9 | slime-hornling |
 
-| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
-|---:|---|---|---|---:|
-| 5 | size-up | empty | none | none |
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 5 | size-up | empty | none | none | none | none |
 
 ## campaign-set-1-wave-3
 
@@ -217,9 +217,9 @@
 | 9 | slime-mech-crab |
 | 10 | slime-stack |
 
-| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
-|---:|---|---|---|---:|
-| 5 | multi-shot | empty | none | none |
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 5 | multi-shot | empty | none | none | none | none |
 
 ## campaign-set-2-wave-3
 
@@ -354,9 +354,9 @@
 | 10 | slime-star |
 | 11 | slime-lifter |
 
-| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
-|---:|---|---|---|---:|
-| 5 | magnet | empty | none | none |
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 5 | magnet | empty | none | none | none | none |
 
 ## campaign-set-3-wave-3
 
@@ -493,9 +493,9 @@
 | 11 | slime-prince |
 | 12 | slime-dasher |
 
-| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
-|---:|---|---|---|---:|
-| 5 | fragment | empty | none | none |
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 5 | fragment | empty | none | none | none | none |
 
 ## campaign-set-4-wave-3
 
@@ -635,9 +635,9 @@
 | 12 | slime-ninja |
 | 13 | slime-candle |
 
-| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
-|---:|---|---|---|---:|
-| 5 | overdrive | empty | none | none |
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 5 | overdrive | empty | none | none | none | none |
 
 ## campaign-set-5-wave-3
 

@@ -3,7 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { SANDBOX_ARENA } from './arenas';
 import { buildSessionDefinition } from './buildSession';
 import { BOSS_ARCHETYPES } from './bosses';
-import { SLIME_BUG, SLIME_ONE_EYE, SLIME_SHELL } from './enemies';
+import {
+  ENEMY_ARCHETYPES,
+  SLIME_BUG,
+  SLIME_DOOR,
+  SLIME_FORTRESS,
+  SLIME_IDOL,
+  SLIME_KINGLING,
+  SLIME_ONE_EYE,
+  SLIME_SHELL
+} from './enemies';
+import { HEAL_ORB } from './drops';
+import type { SessionDefinition, SpawnOverride } from '../session';
 import {
   CAMPAIGN_PRESET,
   resolveModePreset,
@@ -17,10 +28,12 @@ import {
   BOMB_PLACER,
   FIREBALL_STAFF,
   GRENADE_LAUNCHER,
+  LASER,
   PISTOL,
   ROCK_THROWER,
   SHOTGUN,
-  SMG
+  SMG,
+  SNIPER
 } from './weapons';
 
 const ACCEPTANCE_PRESET_IDS = Object.keys(SESSION_PRESET_TEMPLATES) as ModePresetId[];
@@ -283,8 +296,100 @@ describe('buildSessionDefinition (campaign)', () => {
   });
 });
 
+describe('buildSessionDefinition shooting slime difficulty pillars', () => {
+  it('campaign-easy has no enemy loadouts and guarantees heal carriers in every second wave', () => {
+    const session = buildSessionDefinition(resolveModePreset('campaign-easy'), { seed: 2 });
+    const entries = spawnEntries(session);
+    const waveCount = session.encounters.filter((encounter) => encounter.spawnPlan.kind === 'wave')
+      .length;
+    const healCarrierCount = entries.filter((entry) =>
+      entry.override?.guaranteedDrops?.includes(HEAL_ORB.id)
+    ).length;
+
+    expect(session.rules.damage.slimeFriendlyFire).toBe(true);
+    expect(session.rules.aimAssist.enabled).toBe(true);
+    expect(session.rules.aimAssist.maxAngleRadians).toBeGreaterThanOrEqual(0.3);
+    expect(session.rules.aimAssist.strength).toBeGreaterThan(0);
+    expect(session.loadout?.weapons).toEqual([
+      PISTOL.id,
+      SHOTGUN.id,
+      SMG.id,
+      SNIPER.id,
+      LASER.id,
+      ROCK_THROWER.id,
+      GRENADE_LAUNCHER.id,
+      BOMB_PLACER.id,
+      FIREBALL_STAFF.id
+    ]);
+    expect(session.loadout?.selectedIndex).toBe(1);
+    expect(entries.some((entry) => entry.override?.loadout !== undefined)).toBe(false);
+    expect(healCarrierCount).toBeGreaterThanOrEqual(Math.floor(waveCount / 2));
+  });
+
+  it('campaign-hard encodes the per-set shooter progression structurally', () => {
+    const session = buildSessionDefinition(resolveModePreset('campaign-hard'), { seed: 2 });
+    const entries = spawnEntries(session);
+
+    expect(session.rules.damage.slimeFriendlyFire).toBe(false);
+    expect(session.rules.aimAssist.enabled).toBe(false);
+    expect(session.loadout).toEqual({
+      weapons: [PISTOL.id, SMG.id, ROCK_THROWER.id],
+      selectedIndex: 0
+    });
+    expect(loadoutsForSet(entries, 1).some((loadout) => hasWeapon(loadout, PISTOL.id, SMG.id))).toBe(
+      true
+    );
+    expect(
+      loadoutsForSet(entries, 2).some((loadout) =>
+        hasWeapon(loadout, ROCK_THROWER.id, GRENADE_LAUNCHER.id)
+      )
+    ).toBe(true);
+    expect(loadoutsForSet(entries, 3).some((loadout) => hasWeapon(loadout, LASER.id, SNIPER.id))).toBe(
+      true
+    );
+    expect(loadoutsForSet(entries, 4).some((loadout) => hasWeapon(loadout, BOMB_PLACER.id))).toBe(
+      true
+    );
+    expect(
+      loadoutsForSet(entries, 5).some((loadout) => hasWeapon(loadout, FIREBALL_STAFF.id))
+    ).toBe(true);
+    expect(entries.some((entry) => entry.setIndex === 3 && entry.archetypeId === SLIME_IDOL.id)).toBe(
+      true
+    );
+    expect(entries.some((entry) => entry.setIndex === 4 && entry.archetypeId === SLIME_IDOL.id)).toBe(
+      true
+    );
+    expect(
+      entries.some((entry) => entry.setIndex === 4 && entry.override?.retaliation?.enabled === true)
+    ).toBe(true);
+  });
+
+  it('campaign-hard keeps heal drops off ordinary spawns', () => {
+    const session = buildSessionDefinition(resolveModePreset('campaign-hard'), { seed: 2 });
+    const allowedHealCarrierIds = new Set([
+      SLIME_FORTRESS.id,
+      SLIME_DOOR.id,
+      SLIME_KINGLING.id,
+      SLIME_SHELL.id
+    ]);
+
+    for (const entry of spawnEntries(session)) {
+      const archetype = ENEMY_ARCHETYPES[entry.archetypeId];
+      if (archetype === undefined) throw new Error(`unknown enemy archetype ${entry.archetypeId}`);
+      const effectiveDropTable = entry.override?.dropTable ?? archetype.dropTable;
+      const hasHealDrop =
+        effectiveDropTable.some((drop) => drop.archetypeId === HEAL_ORB.id) ||
+        (entry.override?.guaranteedDrops?.includes(HEAL_ORB.id) ?? false);
+
+      if (hasHealDrop) {
+        expect(allowedHealCarrierIds.has(entry.archetypeId)).toBe(true);
+      }
+    }
+  });
+});
+
 function campaignSetIndex(encounterId: string): number {
-  const match = /^campaign-set-(\d)-/.exec(encounterId);
+  const match = /^campaign(?:-easy)?-set-(\d)-/.exec(encounterId);
   if (match === null) {
     throw new Error(`expected campaign set encounter id, got ${encounterId}`);
   }
@@ -303,4 +408,59 @@ function assertBossSpawnInsideArena(bossArchetypeId: string, position: { x: numb
   expect(position.x + boss.contactBox.width / 2).toBeLessThanOrEqual(SANDBOX_ARENA.width / 2);
   expect(position.y - boss.contactBox.height / 2).toBeGreaterThanOrEqual(-SANDBOX_ARENA.height / 2);
   expect(position.y + boss.contactBox.height / 2).toBeLessThanOrEqual(SANDBOX_ARENA.height / 2);
+}
+
+type SpawnEntry = Readonly<{
+  encounterId: string;
+  setIndex: number;
+  archetypeId: string;
+  override: SpawnOverride | undefined;
+}>;
+
+function spawnEntries(session: SessionDefinition): SpawnEntry[] {
+  const entries: SpawnEntry[] = [];
+  for (const encounter of session.encounters) {
+    const setIndex = campaignSetIndex(encounter.id);
+    const plan = encounter.spawnPlan;
+    if (plan.kind === 'wave') {
+      for (const spawn of plan.spawns) {
+        entries.push({
+          encounterId: encounter.id,
+          setIndex,
+          archetypeId: spawn.archetypeId,
+          override: spawn.override
+        });
+      }
+    }
+    if (plan.kind === 'static') {
+      for (const spawn of plan.spawns) {
+        entries.push({
+          encounterId: encounter.id,
+          setIndex,
+          archetypeId: spawn.archetypeId,
+          override: spawn.override
+        });
+      }
+    }
+  }
+  return entries;
+}
+
+function loadoutsForSet(
+  entries: ReadonlyArray<SpawnEntry>,
+  setIndex: number
+): ReadonlyArray<NonNullable<SpawnOverride['loadout']>> {
+  return entries.flatMap((entry) => {
+    if (entry.setIndex !== setIndex || entry.override?.loadout === undefined) return [];
+    return [entry.override.loadout];
+  });
+}
+
+function hasWeapon(
+  loadout: NonNullable<SpawnOverride['loadout']>,
+  ...weaponArchetypeIds: string[]
+): boolean {
+  return weaponArchetypeIds.some((weaponArchetypeId) =>
+    loadout.weapons.includes(weaponArchetypeId)
+  );
 }

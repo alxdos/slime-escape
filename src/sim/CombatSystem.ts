@@ -78,6 +78,8 @@ type ShooterWeapons = {
 export type CombatSystem = Readonly<{
   setDamageRules(rules: DamageRules): void;
   setPlayerLoadout(playerId: EntityId, loadout: Loadout, simTimeMs: number): void;
+  setEnemyLoadout(enemyId: EntityId, loadout: Loadout, simTimeMs: number): void;
+  removeShooter(entityId: EntityId): void;
   addModifierToSelectedWeapon(ownerId: EntityId, modifier: WeaponModifier): boolean;
   applyTemporaryOverdriveToSelectedWeapon(
     ownerId: EntityId,
@@ -110,29 +112,16 @@ export function createCombatSystem(
       damageRules = { slimeFriendlyFire: rules.slimeFriendlyFire };
     },
     setPlayerLoadout(playerId, loadout, simTimeMs): void {
-      if (
-        loadout.selectedIndex !== null &&
-        (loadout.selectedIndex < 0 || loadout.selectedIndex >= loadout.weapons.length)
-      ) {
-        throw new Error(
-          `invalid selected weapon index on session start: ${loadout.selectedIndex}`
-        );
-      }
-      const weapons = loadout.weapons.map((weaponId) => {
-        const archetype = weaponRegistry[weaponId];
-        if (archetype === undefined) {
-          throw new Error(`unknown weapon archetype on session start: ${weaponId}`);
-        }
-        return createWeaponInstance(archetype.id, simTimeMs);
-      });
-      if (weapons.length === 0) {
-        throw new Error('player loadout must contain at least one weapon');
-      }
-      shooterWeapons.set(playerId, {
-        ownerKind: 'player',
-        weapons,
-        selectedIndex: loadout.selectedIndex
-      });
+      shooterWeapons.set(
+        playerId,
+        buildShooterWeapons(loadout, 'player', weaponRegistry, simTimeMs)
+      );
+    },
+    setEnemyLoadout(enemyId, loadout, simTimeMs): void {
+      shooterWeapons.set(enemyId, buildShooterWeapons(loadout, 'enemy', weaponRegistry, simTimeMs));
+    },
+    removeShooter(entityId): void {
+      shooterWeapons.delete(entityId);
     },
     addModifierToSelectedWeapon(ownerId, modifier): boolean {
       const weapon = selectedWeaponForOwner(shooterWeapons, ownerId);
@@ -190,7 +179,8 @@ export function createCombatSystem(
       const maxContactBoundsRadius = computeMaxContactBoundsRadius(store);
       const maxProjectileTargetBoundsRadius = computeMaxProjectileTargetBoundsRadius(store);
       const projectileRemovals = new Set<EntityId>();
-      runFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit);
+      runPlayerFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit);
+      runEnemyFiringDecisions(store, simTimeMs, shooterWeapons, weaponRegistry, emit);
       runProjectileMovement(store, simTimeMs, projectileRemovals);
       markLifetimeCleanup(store, simTimeMs, arena, projectileRemovals);
       index.rebuild(store);
@@ -228,7 +218,7 @@ export function createCombatSystem(
   };
 }
 
-function runFiringDecisions(
+function runPlayerFiringDecisions(
   input: RuntimeInputState,
   store: EntityStore,
   simTimeMs: number,
@@ -277,6 +267,58 @@ function runFiringDecisions(
     dirX: result.eventDirection.x,
     dirY: result.eventDirection.y
   });
+}
+
+function runEnemyFiringDecisions(
+  store: EntityStore,
+  simTimeMs: number,
+  shooterWeapons: Map<EntityId, ShooterWeapons>,
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
+  emit: (event: RuntimeEvent) => void
+): void {
+  const player = store.player();
+  if (player === null) return;
+
+  for (const enemy of store.enemies()) {
+    if (enemy.hp <= 0) continue;
+    const weapons = shooterWeapons.get(enemy.id);
+    if (weapons === undefined || weapons.ownerKind !== 'enemy') continue;
+    const selectedWeapon = selectedWeaponInstance(weapons);
+    if (selectedWeapon === null) continue;
+    if (simTimeMs < selectedWeapon.nextFireSimMs) continue;
+
+    const aimDx = player.position.x - enemy.position.x;
+    const aimDy = player.position.y - enemy.position.y;
+    if (aimDx === 0 && aimDy === 0) continue;
+
+    const archetype = weaponRegistry[selectedWeapon.archetypeId];
+    if (archetype === undefined) continue;
+    const result = fireWeaponProjectiles(
+      store,
+      archetype,
+      selectedWeapon.modifiers,
+      enemy.id,
+      'enemy',
+      enemy.position,
+      player.position,
+      simTimeMs
+    );
+    if (result === null) continue;
+
+    selectedWeapon.nextFireSimMs =
+      simTimeMs + effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs);
+    emit({
+      kind: 'fire',
+      simTime: simTimeMs,
+      shooterId: enemy.id,
+      ownerKind: 'enemy',
+      weaponArchetypeId: archetype.id,
+      originX: enemy.position.x,
+      originY: enemy.position.y,
+      dirX: result.eventDirection.x,
+      dirY: result.eventDirection.y
+    });
+  }
 }
 
 export function fireWeaponProjectiles(
@@ -338,13 +380,48 @@ function normalizedVector(dx: number, dy: number): Vec2 | null {
   return { x: dx / len, y: dy / len };
 }
 
-function createWeaponInstance(archetypeId: string, simTimeMs: number): WeaponInstance {
+function createWeaponInstance(
+  archetype: WeaponArchetype,
+  ownerKind: ShooterWeapons['ownerKind'],
+  simTimeMs: number
+): WeaponInstance {
   return {
-    archetypeId,
-    nextFireSimMs: simTimeMs,
+    archetypeId: archetype.id,
+    nextFireSimMs: ownerKind === 'enemy' ? simTimeMs + archetype.cooldownMs : simTimeMs,
     modifiers: [],
     overdriveUntilSimMs: null,
     overdriveCooldownMultiplier: null
+  };
+}
+
+function buildShooterWeapons(
+  loadout: Loadout,
+  ownerKind: 'player' | 'enemy' | 'boss',
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
+  simTimeMs: number
+): ShooterWeapons {
+  if (
+    loadout.selectedIndex !== null &&
+    (loadout.selectedIndex < 0 || loadout.selectedIndex >= loadout.weapons.length)
+  ) {
+    throw new Error(
+      `invalid selected weapon index for ${ownerKind} loadout: ${loadout.selectedIndex}`
+    );
+  }
+  const weapons = loadout.weapons.map((weaponId) => {
+    const archetype = weaponRegistry[weaponId];
+    if (archetype === undefined) {
+      throw new Error(`unknown weapon archetype for ${ownerKind} loadout: ${weaponId}`);
+    }
+    return createWeaponInstance(archetype, ownerKind, simTimeMs);
+  });
+  if (weapons.length === 0) {
+    throw new Error(`${ownerKind} loadout must contain at least one weapon`);
+  }
+  return {
+    ownerKind,
+    weapons,
+    selectedIndex: loadout.selectedIndex
   };
 }
 

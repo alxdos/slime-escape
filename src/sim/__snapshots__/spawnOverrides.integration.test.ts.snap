@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`spawn override campaign regression > matches the post-migration campaign event baseline for a fixed seed 1`] = `
+exports[`spawn override campaign-normal regression > matches the post-migration campaign-normal event baseline for a fixed seed 1`] = `
 [
   {
     "archetypeId": "slime-one-eye",

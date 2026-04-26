@@ -178,7 +178,7 @@ function createMenuHarness() {
       appendHarnessRoot(init.parent, root);
       return overlay;
     },
-    start(presetId: ModePresetId = 'campaign'): void {
+    start(presetId: ModePresetId = 'campaign-normal'): void {
       onStart?.(presetId);
     },
     isVisible(): boolean {

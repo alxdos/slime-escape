@@ -4,7 +4,7 @@
 |---|---|
 | displayName | Тренировка |
 | description | Короткая сессия без босса, чтобы размяться и проверить сборку. |
-| visibleInMenu | true |
+| visibleInMenu | false |
 | order | 1 |
 | arenaId | sandbox |
 | playerId | hero-training |

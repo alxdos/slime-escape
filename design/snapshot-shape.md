@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
+- Updated: 2026-04-25 (story 020: `ProjectileSnapshot` получает обязательное поле `arcEnd: { x: number; y: number } | null` — fixed мировая позиция приземления для arc-снаряда в `state: 'flying'`, `null` для grounded и для linear/placed motion. Источник правды — `CombatSystem` в момент создания снаряда; `SnapshotExportSystem` копирует значение, не пересчитывает. Render-контракт landing-telegraph для in-flight arc от не-игрока — [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
 
 ## Context
 
@@ -78,9 +78,11 @@ type EntitySnapshot =
     };
     explosionRadius: number | null;
     detonateAtSimMs: number | null;
+    arcEnd: { x: number; y: number } | null;
   }
   ```
 - `state`, `visualState`, `explosionRadius` and `detonateAtSimMs` are required by story 017 presentation: sprite orientation/spin, grounded pulse and radius indicators must not be inferred from hidden sim state. `detonateAtSimMs` is presentation timing; gameplay detonation remains owned by `CombatSystem`.
+- `arcEnd` (story 020) — fixed мировая позиция приземления arc-снаряда в `state: 'flying'`, копируется из runtime `Projectile` без пересчёта на каждом снапшоте; `null` для arc в `state: 'grounded'` (приземление уже произошло) и **всегда** `null` для linear/placed motion. Поле обязательное (значение `null` — единственный способ выразить «не применимо», без `undefined`/`?`-маркера). Полный render-контракт landing-telegraph (когда показывать, размер маркера, исключение для player-owned arc) живёт в [landing-telegraph.md](landing-telegraph.md); сам snapshot не несёт «нужен ли telegraph» — это derive renderer-а из `state + arcEnd + ownerKind`.
 - `DropSnapshot` (история 005, см. [drops.md](drops.md)):
   ```ts
   {
@@ -343,3 +345,5 @@ type EntitySnapshot =
 - [boss-encounter.md](boss-encounter.md)
 - [simulation-timing.md](simulation-timing.md)
 - [impact-feedback.md](impact-feedback.md)
+- [landing-telegraph.md](landing-telegraph.md)
+- [non-player-firing.md](non-player-firing.md)

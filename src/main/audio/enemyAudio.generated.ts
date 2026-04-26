@@ -285,6 +285,15 @@ export const ENEMY_AUDIO_MAPPINGS: Readonly<Record<string, EnemyAudioMapping>> =
       intervalMaxMs: 6000
     })
   }),
+  'slime-idol': Object.freeze({
+    hit: SLIME_HIT_VARIANTS,
+    death: SLIME_DEATH_VARIANTS,
+    voice: Object.freeze({
+      sample: SLIME_VOICE_VARIANTS,
+      intervalMinMs: 3000,
+      intervalMaxMs: 6000
+    })
+  }),
   'slime-ninja': Object.freeze({
     hit: SLIME_HIT_VARIANTS,
     death: SLIME_DEATH_VARIANTS,

@@ -39,6 +39,7 @@ export type ProjectileSnapshot = Readonly<{
   }>;
   explosionRadius: number | null;
   detonateAtSimMs: number | null;
+  arcEnd: Readonly<{ x: number; y: number }> | null;
 }>;
 
 export type DropSnapshot = Readonly<{

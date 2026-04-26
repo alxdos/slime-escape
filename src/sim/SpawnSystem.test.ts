@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { BossArchetype } from '../shared/content/bosses';
 import type { EnemyArchetype } from '../shared/content/enemies';
 import { createRng } from '../shared/rng';
-import type { ArenaConfig, EncounterDefinition, WaveSpawn } from '../shared/session';
+import type { ArenaConfig, EncounterDefinition, Loadout, WaveSpawn } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import { createEntityStore } from './EntityStore';
@@ -101,6 +101,7 @@ const ENEMY_REGISTRY: Readonly<Record<string, EnemyArchetype>> = {
 const BOSS_REGISTRY: Readonly<Record<string, BossArchetype>> = {
   [TEST_BOSS.id]: TEST_BOSS
 };
+const TEST_LOADOUT: Loadout = { weapons: ['pistol'], selectedIndex: 0 };
 
 function makeEncounter(plan: EncounterDefinition['spawnPlan']): EncounterDefinition {
   return {
@@ -119,15 +120,15 @@ function makeEncounter(plan: EncounterDefinition['spawnPlan']): EncounterDefinit
 describe('SpawnSystem static / empty', () => {
   it("'empty' plan spawns nothing", () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
-    spawn.onEncounterStart(makeEncounter({ kind: 'empty' }), store, ARENA);
+    const spawn = createSpawnSystem({ enemyRegistry: ENEMY_REGISTRY, bossRegistry: BOSS_REGISTRY });
+    spawn.onEncounterStart(makeEncounter({ kind: 'empty' }), store, ARENA, 0);
 
     expect(store.enemyCount()).toBe(0);
   });
 
   it("'static' plan resolves archetype by id and spawns enemies via the store", () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
+    const spawn = createSpawnSystem({ enemyRegistry: ENEMY_REGISTRY, bossRegistry: BOSS_REGISTRY });
     spawn.onEncounterStart(
       makeEncounter({
         kind: 'static',
@@ -137,7 +138,8 @@ describe('SpawnSystem static / empty', () => {
         ]
       }),
       store,
-      ARENA
+      ARENA,
+      0
     );
 
     expect(store.enemyCount()).toBe(2);
@@ -157,7 +159,7 @@ describe('SpawnSystem static / empty', () => {
 
   it('throws on unknown archetypeId', () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
+    const spawn = createSpawnSystem({ enemyRegistry: ENEMY_REGISTRY, bossRegistry: BOSS_REGISTRY });
 
     expect(() =>
       spawn.onEncounterStart(
@@ -166,14 +168,15 @@ describe('SpawnSystem static / empty', () => {
           spawns: [{ archetypeId: 'no-such-thing', position: { x: 0, y: 0 } }]
         }),
         store,
-        ARENA
+        ARENA,
+        0
       )
     ).toThrow(/unknown enemy archetype/);
   });
 
   it('applies static spawn override as runtime enemy fields', () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
+    const spawn = createSpawnSystem({ enemyRegistry: ENEMY_REGISTRY, bossRegistry: BOSS_REGISTRY });
     spawn.onEncounterStart(
       makeEncounter({
         kind: 'static',
@@ -190,7 +193,8 @@ describe('SpawnSystem static / empty', () => {
         ]
       }),
       store,
-      ARENA
+      ARENA,
+      0
     );
 
     const enemy = [...store.enemies()][0]!;
@@ -200,12 +204,42 @@ describe('SpawnSystem static / empty', () => {
     expect(enemy.carrierDropMarker).toBe('reward');
   });
 
+  it('notifies static spawn override loadout with enemy id and encounter start time', () => {
+    const store = createEntityStore();
+    const observed: Array<{ enemyId: number; loadout: Loadout; simTimeMs: number }> = [];
+    const spawn = createSpawnSystem({
+      enemyRegistry: ENEMY_REGISTRY,
+      bossRegistry: BOSS_REGISTRY,
+      onEnemySpawned(enemyId, loadout, simTimeMs) {
+        observed.push({ enemyId, loadout, simTimeMs });
+      }
+    });
+    spawn.onEncounterStart(
+      makeEncounter({
+        kind: 'static',
+        spawns: [
+          {
+            archetypeId: STATIONARY_TEST_ENEMY.id,
+            position: { x: 0, y: 0 },
+            override: { loadout: TEST_LOADOUT }
+          }
+        ]
+      }),
+      store,
+      ARENA,
+      1234
+    );
+
+    const enemy = [...store.enemies()][0]!;
+    expect(observed).toEqual([{ enemyId: enemy.id, loadout: TEST_LOADOUT, simTimeMs: 1234 }]);
+  });
+
   it('rejects unknown SpawnPlan.kind via assertNever', () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
+    const spawn = createSpawnSystem({ enemyRegistry: ENEMY_REGISTRY, bossRegistry: BOSS_REGISTRY });
     const bogus = { kind: 'unknown-kind' } as unknown as EncounterDefinition['spawnPlan'];
 
-    expect(() => spawn.onEncounterStart(makeEncounter(bogus), store, ARENA)).toThrow(
+    expect(() => spawn.onEncounterStart(makeEncounter(bogus), store, ARENA, 0)).toThrow(
       /unexpected value/
     );
   });
@@ -220,7 +254,7 @@ describe('SpawnSystem wave', () => {
     seed?: number;
   }) {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
+    const spawn = createSpawnSystem({ enemyRegistry: ENEMY_REGISTRY, bossRegistry: BOSS_REGISTRY });
     spawn.setRng(createRng(opts?.seed ?? 1));
     const plan: EncounterDefinition['spawnPlan'] = {
       kind: 'wave',
@@ -234,7 +268,7 @@ describe('SpawnSystem wave', () => {
       maxAlive: opts?.maxAlive ?? 10,
       edgeMargin: opts?.edgeMargin ?? 0
     };
-    spawn.onEncounterStart(makeEncounter(plan), store, ARENA);
+    spawn.onEncounterStart(makeEncounter(plan), store, ARENA, 0);
     return { store, spawn, plan };
   }
 
@@ -264,6 +298,40 @@ describe('SpawnSystem wave', () => {
     expect(enemy.dropTable).toEqual([]);
     expect(enemy.retaliation).toEqual({ enabled: true, durationMs: 900 });
     expect(enemy.carrierDropMarker).toBe('reward');
+  });
+
+  it('notifies wave spawn override loadout with enemy id and tick time', () => {
+    const store = createEntityStore();
+    const observed: Array<{ enemyId: number; loadout: Loadout; simTimeMs: number }> = [];
+    const spawn = createSpawnSystem({
+      enemyRegistry: ENEMY_REGISTRY,
+      bossRegistry: BOSS_REGISTRY,
+      onEnemySpawned(enemyId, loadout, simTimeMs) {
+        observed.push({ enemyId, loadout, simTimeMs });
+      }
+    });
+    spawn.setRng(createRng(1));
+    spawn.onEncounterStart(
+      makeEncounter({
+        kind: 'wave',
+        spawns: [
+          {
+            archetypeId: FAST_TEST_ENEMY.id,
+            override: { loadout: TEST_LOADOUT }
+          }
+        ],
+        spawnIntervalMs: 0,
+        maxAlive: 1
+      }),
+      store,
+      ARENA,
+      0
+    );
+
+    spawn.onTick(4567, store);
+
+    const enemy = [...store.enemies()][0]!;
+    expect(observed).toEqual([{ enemyId: enemy.id, loadout: TEST_LOADOUT, simTimeMs: 4567 }]);
   });
 
   it('spawns at most one enemy per tick', () => {
@@ -369,7 +437,7 @@ describe('SpawnSystem wave', () => {
 
   it('throws on tick if RNG was not provided', () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
+    const spawn = createSpawnSystem({ enemyRegistry: ENEMY_REGISTRY, bossRegistry: BOSS_REGISTRY });
     spawn.onEncounterStart(
       makeEncounter({
         kind: 'wave',
@@ -378,7 +446,8 @@ describe('SpawnSystem wave', () => {
         maxAlive: 1
       }),
       store,
-      ARENA
+      ARENA,
+      0
     );
     expect(() => spawn.onTick(0, store)).toThrow(/Rng/);
   });
@@ -398,7 +467,7 @@ describe('SpawnSystem wave', () => {
 describe('SpawnSystem boss', () => {
   it('boss plan spawns exactly one boss; waveProgress tracks alive until onBossDeath', () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
+    const spawn = createSpawnSystem({ enemyRegistry: ENEMY_REGISTRY, bossRegistry: BOSS_REGISTRY });
     spawn.onEncounterStart(
       makeEncounter({
         kind: 'boss',
@@ -406,7 +475,8 @@ describe('SpawnSystem boss', () => {
         position: { x: 2, y: -1 }
       }),
       store,
-      ARENA
+      ARENA,
+      0
     );
 
     expect(store.bossCount()).toBe(1);
@@ -424,7 +494,7 @@ describe('SpawnSystem boss', () => {
 
   it('throws on unknown boss archetype id', () => {
     const store = createEntityStore();
-    const spawn = createSpawnSystem(ENEMY_REGISTRY, BOSS_REGISTRY);
+    const spawn = createSpawnSystem({ enemyRegistry: ENEMY_REGISTRY, bossRegistry: BOSS_REGISTRY });
 
     expect(() =>
       spawn.onEncounterStart(
@@ -434,7 +504,8 @@ describe('SpawnSystem boss', () => {
           position: { x: 0, y: 0 }
         }),
         store,
-        ARENA
+        ARENA,
+        0
       )
     ).toThrow(/unknown boss archetype/);
   });
