@@ -36,11 +36,9 @@
 - Asset progress shown while assets are loading must be honest: if the UI displays `loaded/total`, those values are the actual loaded/decoded count from the required asset set. Time-gating must not invent lower loaded counts after an asset has actually completed.
 - After all required assets are ready, `StartupOverlay` switches from asset progress to a themed post-load ritual. This ritual is the only place where startup duration may be intentionally extended for presentation.
 - The post-load ritual is a fixed ordered list of short `StartupPresentationStep` entries owned by `src/main/ui/**`. Initial Russian copy:
-  - `Пробуждаем слизь`
-  - `Замешиваем липкость`
+  - `Активируем слизь`
   - `Спавним слаймов`
-  - `Проектируем босса`
-  - `Открываем путь побега`
+  - `Пробуждаем босса`
 - The ritual advances the visible progress from the completed asset portion to `100%`. It must not continue showing fake asset counts.
 - The ritual uses wall-clock presentation time in `main thread`; it is not seeded and does not affect simulation determinism.
 - A reasonable initial ritual duration is hundreds of milliseconds, not seconds. The implementation may tune exact per-step durations locally, but the whole ritual should stay short enough to feel like an intro beat rather than a second loading screen.
