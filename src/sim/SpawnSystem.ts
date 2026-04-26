@@ -34,9 +34,17 @@ export type SpawnSystem = Readonly<{
 type WaveState = {
   plan: WaveSpawnPlan;
   arena: ArenaConfig;
+  encounterStartSimMs: number;
+  introDurationMs: number;
   dispatched: number;
   lastSpawnSimMs: number;
   alive: Set<EntityId>;
+};
+
+type StaticState = {
+  plan: StaticSpawnPlan;
+  encounterStartSimMs: number;
+  introDurationMs: number;
 };
 
 type BossSpawnState = {
@@ -55,6 +63,7 @@ export function createSpawnSystem(options: SpawnSystemOptions = {}): SpawnSystem
   const bossRegistry = options.bossRegistry ?? BOSS_ARCHETYPES;
   const onEnemySpawned = options.onEnemySpawned ?? null;
   let rng: Rng | null = null;
+  let staticState: StaticState | null = null;
   let waveState: WaveState | null = null;
   let bossState: BossSpawnState | null = null;
 
@@ -63,6 +72,7 @@ export function createSpawnSystem(options: SpawnSystemOptions = {}): SpawnSystem
       rng = next;
     },
     onEncounterStart(encounter, store, arena, simTimeMs): void {
+      staticState = null;
       waveState = null;
       bossState = null;
       const plan = encounter.spawnPlan;
@@ -70,12 +80,22 @@ export function createSpawnSystem(options: SpawnSystemOptions = {}): SpawnSystem
         case 'empty':
           return;
         case 'static':
+          if (encounter.introDurationMs > 0) {
+            staticState = {
+              plan,
+              encounterStartSimMs: simTimeMs,
+              introDurationMs: encounter.introDurationMs
+            };
+            return;
+          }
           executeStatic(plan, store, enemyRegistry, simTimeMs, onEnemySpawned);
           return;
         case 'wave':
           waveState = {
             plan,
             arena,
+            encounterStartSimMs: simTimeMs,
+            introDurationMs: encounter.introDurationMs,
             dispatched: 0,
             lastSpawnSimMs: Number.NEGATIVE_INFINITY,
             alive: new Set()
@@ -92,12 +112,23 @@ export function createSpawnSystem(options: SpawnSystemOptions = {}): SpawnSystem
       }
     },
     onEncounterEnd(_encounter): void {
+      staticState = null;
       waveState = null;
       bossState = null;
     },
     onTick(simTimeMs, store): void {
+      if (staticState !== null) {
+        if (isIntroActive(staticState, simTimeMs)) {
+          return;
+        }
+        const state = staticState;
+        staticState = null;
+        executeStatic(state.plan, store, enemyRegistry, simTimeMs, onEnemySpawned);
+      }
+
       const state = waveState;
       if (state === null) return;
+      if (isIntroActive(state, simTimeMs)) return;
       if (state.dispatched >= state.plan.spawns.length) return;
       if (state.alive.size >= state.plan.maxAlive) return;
       if (simTimeMs - state.lastSpawnSimMs < state.plan.spawnIntervalMs) return;
@@ -129,6 +160,16 @@ export function createSpawnSystem(options: SpawnSystemOptions = {}): SpawnSystem
       return null;
     }
   };
+}
+
+function isIntroActive(
+  state: Readonly<{
+    encounterStartSimMs: number;
+    introDurationMs: number;
+  }>,
+  simTimeMs: number
+): boolean {
+  return simTimeMs - state.encounterStartSimMs < state.introDurationMs;
 }
 
 function resolveBossArchetype(

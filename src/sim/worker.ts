@@ -90,7 +90,10 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
   pendingFieldDamageIntents = fieldEffectResult.damageIntents;
   drops.tick(simTimeMs, entities, emitEvent);
   sessionFlow.checkTransitions(simTimeMs);
-  zone.onTick();
+  const zoneEncounterCtx = sessionFlow.activeEncounter();
+  zone.onTick(
+    zoneEncounterCtx === null ? undefined : simTimeMs - zoneEncounterCtx.startSimMs
+  );
   const encounterCtx = sessionFlow.activeEncounter();
   const waveSnap =
     encounterCtx !== null && encounterCtx.encounter.spawnPlan.kind === 'wave'

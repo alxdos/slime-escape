@@ -81,14 +81,6 @@ const MIN_MASTER_GAIN = 0;
 const MAX_MASTER_GAIN = 1;
 const MAX_ACTIVE_ONE_SHOTS = 32;
 const PAUSED_MUSIC_DUCK_GAIN = 0.5;
-const REGULAR_MUSIC_POOL = Object.freeze([
-  'music/100-waves',
-  'music/101-clock-ticking',
-  'music/001-calm',
-  'music/005-forest',
-  'music/007-nature',
-  'music/009-windy-forest'
-]);
 const BOSS_MUSIC_SAMPLE_ID = 'boss/boss-music';
 
 export function createAudio(init: AudioInit = {}): Audio {
@@ -122,6 +114,10 @@ export function createAudio(init: AudioInit = {}): Audio {
           random: init.random
         });
 
+  if (sampleRegistry !== null) {
+    validateMusicSampleId(sampleRegistry, BOSS_MUSIC_SAMPLE_ID, 'bossTrack');
+  }
+
   let attachedSession: SessionDefinition | null = null;
   let latestSnapshot: Snapshot | null = null;
   let unlockInFlight: Promise<void> | null = null;
@@ -130,7 +126,6 @@ export function createAudio(init: AudioInit = {}): Audio {
   const activeOneShots: ActiveOneShotPlayback[] = [];
   let activeMusic: ActiveMusicPlayback | null = null;
   let musicRequestToken = 0;
-  let lastRegularMusicSampleId: string | null = null;
   const enemyVoiceTimers = new Map<number, number>();
 
   function getPlaybackDependencies(): PlaybackDependencies | null {
@@ -280,6 +275,7 @@ export function createAudio(init: AudioInit = {}): Audio {
     musicRequestToken = requestToken;
 
     const sample = dependencies.sampleRegistry.require(sampleId);
+    validateMusicSampleEntry(sample, sampleId, 'musicSampleId');
     void dependencies.sampleRegistry.decode(sampleId).then((buffer) => {
       const readyDependencies = getPlaybackDependencies();
       if (
@@ -310,29 +306,11 @@ export function createAudio(init: AudioInit = {}): Audio {
       source.onended = () => {
         if (activeMusic === playback) {
           activeMusic = null;
-          if (REGULAR_MUSIC_POOL.includes(playback.sampleId)) {
-            lastRegularMusicSampleId = playback.sampleId;
-          }
         }
         disconnectMusicPlayback(playback);
       };
       source.start();
     });
-  }
-
-  function pickNextRegularMusicSampleId(): string {
-    const random = init.random ?? Math.random;
-    const rawIndex = Math.floor(Math.min(0.999999, Math.max(0, random())) * REGULAR_MUSIC_POOL.length);
-    const candidate = REGULAR_MUSIC_POOL[rawIndex] ?? REGULAR_MUSIC_POOL[0];
-    if (
-      candidate !== undefined &&
-      candidate === lastRegularMusicSampleId &&
-      REGULAR_MUSIC_POOL.length > 1
-    ) {
-      const candidateIndex = REGULAR_MUSIC_POOL.indexOf(candidate);
-      return REGULAR_MUSIC_POOL[(candidateIndex + 1) % REGULAR_MUSIC_POOL.length] ?? candidate;
-    }
-    return candidate ?? BOSS_MUSIC_SAMPLE_ID;
   }
 
   function syncMusicForPhase(phase: UiShellPhase): void {
@@ -350,18 +328,16 @@ export function createAudio(init: AudioInit = {}): Audio {
     }
 
     const desiredMusicSampleId =
-      latestSnapshot?.encounter?.type === 'boss' ? BOSS_MUSIC_SAMPLE_ID : null;
+      latestSnapshot?.encounter?.type === 'boss'
+        ? BOSS_MUSIC_SAMPLE_ID
+        : attachedSession?.musicSampleId ?? null;
 
     if (desiredMusicSampleId !== null) {
       startMusicSample(desiredMusicSampleId);
       return;
     }
 
-    if (activeMusic !== null && REGULAR_MUSIC_POOL.includes(activeMusic.sampleId)) {
-      return;
-    }
-
-    startMusicSample(pickNextRegularMusicSampleId());
+    stopMusicPlayback();
   }
 
   function nextRandomFloat(): number {
@@ -622,6 +598,9 @@ export function createAudio(init: AudioInit = {}): Audio {
       syncEnemyAmbient(snapshotPair, phase);
     },
     attach(session): void {
+      if (session.musicSampleId !== null && sampleRegistry !== null) {
+        validateMusicSampleId(sampleRegistry, session.musicSampleId, 'session.musicSampleId');
+      }
       attachedSession = session;
     },
     detach(): void {
@@ -754,6 +733,27 @@ function normalizeMasterGain(value: number, currentValue: number, audioLog: Log)
     clampedValue
   });
   return clampedValue;
+}
+
+function validateMusicSampleId(
+  sampleRegistry: SampleRegistry,
+  sampleId: string,
+  field: string
+): void {
+  const sample = sampleRegistry.get(sampleId);
+  if (sample === null) {
+    throw new Error(`audio ${field} "${sampleId}" is missing from the registry`);
+  }
+  validateMusicSampleEntry(sample, sampleId, field);
+}
+
+function validateMusicSampleEntry(sample: SampleEntry, sampleId: string, field: string): void {
+  if (sample.category !== 'music') {
+    throw new Error(`audio ${field} "${sampleId}" must reference a music sample`);
+  }
+  if (sample.loop !== true) {
+    throw new Error(`audio ${field} "${sampleId}" must reference a looped music sample`);
+  }
 }
 
 export function calculateEffectiveGain(

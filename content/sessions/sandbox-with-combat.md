@@ -4,6 +4,7 @@
 |---|---|
 | displayName | Песочница с боем |
 | description | Свободная арена с оружием и одним статическим тестовым противником. |
+| musicSampleId | none |
 | visibleInMenu | false |
 | order | 0 |
 | arenaId | sandbox |
@@ -30,6 +31,9 @@
 |---|---|
 | type | sandbox |
 | backgroundId | sandbox |
+| introDurationMs | none |
+| name | none |
+| text | none |
 | spawnKind | static |
 | zoneKind | disabled |
 | transitionKind | never |

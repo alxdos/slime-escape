@@ -20,6 +20,9 @@ describe('BossPhaseSystem', () => {
         id: 'boss-only',
         type: 'boss',
         backgroundId: null,
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_SCRAP_KING.id,
@@ -59,6 +62,9 @@ describe('BossPhaseSystem', () => {
         id: 'boss-only',
         type: 'boss',
         backgroundId: null,
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: BOSS_SCRAP_KING.id,

@@ -177,42 +177,104 @@ export const DEFAULT_SAMPLE_ENTRIES: ReadonlyArray<SampleEntry> = Object.freeze(
     url: '/sfx/music/100-waves.mp3',
     category: 'music',
     normalizedGain: 1,
-    defaultGain: 1
+    defaultGain: 1,
+    loop: true
   },
   {
     id: 'music/101-clock-ticking',
     url: '/sfx/music/101-clock-ticking.mp3',
     category: 'music',
     normalizedGain: 1,
-    defaultGain: 1
+    defaultGain: 1,
+    loop: true
   },
   {
     id: 'music/001-calm',
     url: '/sfx/music/001-calm.mp3',
     category: 'music',
     normalizedGain: 1,
-    defaultGain: 1
+    defaultGain: 1,
+    loop: true
+  },
+  {
+    id: 'music/002-night',
+    url: '/sfx/music/002-night.mp3',
+    category: 'music',
+    normalizedGain: 1,
+    defaultGain: 1,
+    loop: true
+  },
+  {
+    id: 'music/003-lawnmower',
+    url: '/sfx/music/003-lawnmower.mp3',
+    category: 'music',
+    normalizedGain: 1,
+    defaultGain: 1,
+    loop: true
+  },
+  {
+    id: 'music/004-factory',
+    url: '/sfx/music/004-factory.mp3',
+    category: 'music',
+    normalizedGain: 1,
+    defaultGain: 1,
+    loop: true
   },
   {
     id: 'music/005-forest',
     url: '/sfx/music/005-forest.mp3',
     category: 'music',
     normalizedGain: 1,
-    defaultGain: 1
+    defaultGain: 1,
+    loop: true
+  },
+  {
+    id: 'music/006-industrial',
+    url: '/sfx/music/006-industrial.mp3',
+    category: 'music',
+    normalizedGain: 1,
+    defaultGain: 1,
+    loop: true
   },
   {
     id: 'music/007-nature',
     url: '/sfx/music/007-nature.mp3',
     category: 'music',
     normalizedGain: 1,
-    defaultGain: 1
+    defaultGain: 1,
+    loop: true
+  },
+  {
+    id: 'music/008-outdoor',
+    url: '/sfx/music/008-outdoor.mp3',
+    category: 'music',
+    normalizedGain: 1,
+    defaultGain: 1,
+    loop: true
   },
   {
     id: 'music/009-windy-forest',
     url: '/sfx/music/009-windy-forest.mp3',
     category: 'music',
     normalizedGain: 1,
-    defaultGain: 1
+    defaultGain: 1,
+    loop: true
+  },
+  {
+    id: 'music/010-water',
+    url: '/sfx/music/010-water.mp3',
+    category: 'music',
+    normalizedGain: 1,
+    defaultGain: 1,
+    loop: true
+  },
+  {
+    id: 'music/011-summer',
+    url: '/sfx/music/011-summer.mp3',
+    category: 'music',
+    normalizedGain: 1,
+    defaultGain: 1,
+    loop: true
   },
   {
     id: 'events/explosion',
@@ -333,6 +395,10 @@ function validateSampleEntries(
       throw new Error(`audio sample registry contains duplicate id "${entry.id}"`);
     }
     seenIds.add(entry.id);
+
+    if (entry.category === 'music' && entry.loop !== true) {
+      throw new Error(`audio sample "${entry.id}" has category "music" but loop is not true`);
+    }
 
     sanitizedEntries.push(
       Object.freeze({

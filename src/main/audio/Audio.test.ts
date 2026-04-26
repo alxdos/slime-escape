@@ -143,11 +143,13 @@ function createLogHarness(): Log {
 function createAudioHarness(random?: () => number) {
   const context = new FakeAudioContext();
   const log = createLogHarness();
+  const fetchedUrls: string[] = [];
   const audioApi: AudioApi = {
     createContext(): AudioContextLike {
       return context;
     },
-    async fetchArrayBuffer(): Promise<ArrayBuffer> {
+    async fetchArrayBuffer(url: string): Promise<ArrayBuffer> {
+      fetchedUrls.push(url);
       return new Uint8Array([1, 2, 3, 4]).buffer;
     }
   };
@@ -158,7 +160,7 @@ function createAudioHarness(random?: () => number) {
     random
   });
 
-  return { audio, context, log };
+  return { audio, context, log, fetchedUrls };
 }
 
 function makeFireEvent(): RuntimeEvent {
@@ -188,7 +190,11 @@ function makeSnapshotPair(curr: SnapshotInput = null, nowMs = 0): SnapshotPair {
   };
 }
 
-function makeBossSession(): SessionDefinition {
+function makeBossSession(
+  overrides: Readonly<{
+    musicSampleId?: string | null;
+  }> = {}
+): SessionDefinition {
   return {
     id: 'boss-session',
     seed: 1,
@@ -202,6 +208,7 @@ function makeBossSession(): SessionDefinition {
     },
     loadout: { weapons: ['pistol'], selectedIndex: 0 },
     backgrounds: [],
+    musicSampleId: overrides.musicSampleId ?? null,
     modifiers: [],
     rules: {
       damage: { slimeFriendlyFire: false },
@@ -212,6 +219,9 @@ function makeBossSession(): SessionDefinition {
         id: 'boss-encounter',
         type: 'boss',
         backgroundId: null,
+        introDurationMs: 0,
+        name: null,
+        text: null,
         spawnPlan: {
           kind: 'boss',
           bossArchetypeId: 'boss-scrap-king',
@@ -825,12 +835,13 @@ describe('createAudio', () => {
     expect(context.sources.slice(1).every((source) => source.stopCalls === 0)).toBe(true);
   });
 
-  it('starts regular music in running and ducks the dedicated music duck gain without overwriting the music bus', async () => {
-    const { audio, context } = createAudioHarness(() => 0);
+  it('starts session music in running and ducks the dedicated music duck gain without overwriting the music bus', async () => {
+    const { audio, context, fetchedUrls } = createAudioHarness(() => 0);
     const { masterGain, musicGain, musicDuckGain } = getRequiredGainNodes(context);
     context.setState('running');
     masterGain.gain.value = 0.8;
     musicGain.gain.value = 0.2;
+    audio.attach(makeBossSession({ musicSampleId: 'music/005-forest' }));
 
     audio.update(
       makeSnapshotPair({
@@ -852,7 +863,8 @@ describe('createAudio', () => {
     await flushAudioWork();
 
     expect(context.sources).toHaveLength(1);
-    expect(context.sources[0]?.loop).toBe(false);
+    expect(fetchedUrls).toEqual(['/sfx/music/005-forest.mp3']);
+    expect(context.sources[0]?.loop).toBe(true);
     expect(getPlaybackTrimGain(context).gain.value).toBe(1);
     expect(masterGain.gain.value).toBe(0.8);
     expect(musicGain.gain.value).toBe(0.2);
@@ -881,6 +893,41 @@ describe('createAudio', () => {
     expect(context.sources).toHaveLength(1);
     expect(musicGain.gain.value).toBe(0.2);
     expect(musicDuckGain.gain.value).toBe(0.5);
+  });
+
+  it('keeps regular music silent when the attached session has no music sample', async () => {
+    const { audio, context } = createAudioHarness(() => 0);
+    context.setState('running');
+    audio.attach(makeBossSession({ musicSampleId: null }));
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 300,
+        entities: [],
+        encounter: {
+          id: 'wave-1',
+          type: 'wave',
+          index: 0,
+          elapsedMs: 0
+        },
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }),
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(0);
+  });
+
+  it('rejects attached session music that does not reference a music sample', () => {
+    const { audio } = createAudioHarness();
+
+    expect(() =>
+      audio.attach(makeBossSession({ musicSampleId: 'weapons/pistol' }))
+    ).toThrow('audio session.musicSampleId "weapons/pistol" must reference a music sample');
   });
 
   it('warns instead of throwing when one-shot eviction hits an invalid stop state', async () => {
@@ -928,9 +975,10 @@ describe('createAudio', () => {
     });
   });
 
-  it('switches to boss music and silences it in menu/result phases', async () => {
-    const { audio, context } = createAudioHarness(() => 0);
+  it('switches session music to boss music, then returns to session music before menu silence', async () => {
+    const { audio, context, fetchedUrls } = createAudioHarness(() => 0);
     context.setState('running');
+    audio.attach(makeBossSession({ musicSampleId: 'music/005-forest' }));
 
     audio.update(
       makeSnapshotPair({
@@ -950,8 +998,10 @@ describe('createAudio', () => {
       null
     );
     await flushAudioWork();
+    expect(fetchedUrls).toEqual(['/sfx/music/005-forest.mp3']);
+    expect(context.sources).toHaveLength(1);
+    expect(context.sources[0]?.loop).toBe(true);
 
-    audio.attach(makeBossSession());
     audio.update(
       makeSnapshotPair({
         simTimeMs: 450,
@@ -992,11 +1042,35 @@ describe('createAudio', () => {
     await flushAudioWork();
 
     expect(context.sources).toHaveLength(2);
+    expect(fetchedUrls).toEqual(['/sfx/music/005-forest.mp3', '/sfx/boss/boss-music.mp3']);
     expect(context.sources[0]?.stopCalls).toBe(1);
     expect(context.sources[1]?.loop).toBe(true);
 
-    audio.update(makeSnapshotPair(), { kind: 'menu' }, null);
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 500,
+        entities: [],
+        encounter: {
+          id: 'wave-2',
+          type: 'wave',
+          index: 1,
+          elapsedMs: 0
+        },
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }),
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(3);
     expect(context.sources[1]?.stopCalls).toBe(1);
+    expect(context.sources[2]?.loop).toBe(true);
+
+    audio.update(makeSnapshotPair(), { kind: 'menu' }, null);
+    expect(context.sources[2]?.stopCalls).toBe(1);
   });
 
   it('pauses ambient slime voice timers while paused and resumes them in running', async () => {

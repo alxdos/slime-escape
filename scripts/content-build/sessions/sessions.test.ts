@@ -47,6 +47,31 @@ describe('content-build sessions area', () => {
     await expect(readFile(targetPath, 'utf8')).resolves.toBe('old target');
   });
 
+  it('parses session music and encounter presentation fields', async () => {
+    const fixture = await copySessionsFixture();
+    const area = await parseSessionsArea(fixture.sourceDirectory);
+    const training = area.presets.find((preset) => preset.presetId === 'training');
+    const sandbox = area.presets.find((preset) => preset.presetId === 'sandbox');
+    const normal = area.presets.find((preset) => preset.presetId === 'campaign-normal');
+    const firstWave = normal?.encounters.find((encounter) => encounter.id === 'campaign-set-1-wave-1');
+    const afterBossBreak = normal?.encounters.find(
+      (encounter) => encounter.id === 'campaign-set-1-after-boss-break'
+    );
+
+    expect(training?.musicSampleId).toBe('music/001-calm');
+    expect(sandbox?.musicSampleId).toBeNull();
+    expect(firstWave).toMatchObject({
+      introDurationMs: 2500,
+      name: 'Один глаз в темноте',
+      text: null
+    });
+    expect(afterBossBreak).toMatchObject({
+      introDurationMs: 0,
+      name: null,
+      text: 'Дальше: Хламные призраки'
+    });
+  });
+
   for (const testCase of [
     {
       name: 'spawnKind',
@@ -129,6 +154,91 @@ describe('content-build sessions area', () => {
       await expectParseRejects({
         [testCase.file]: testCase.mutate
       }, testCase.pattern);
+    });
+  }
+
+  for (const testCase of [
+    {
+      name: 'unknown musicSampleId',
+      mutate: (source: string) =>
+        replaceExact(source, '| musicSampleId | music/001-calm |', '| musicSampleId | music/missing |'),
+      pattern: /unknown musicSampleId "music\/missing"/
+    },
+    {
+      name: 'non-music musicSampleId',
+      mutate: (source: string) =>
+        replaceExact(source, '| musicSampleId | music/001-calm |', '| musicSampleId | weapons\/pistol |'),
+      pattern: /musicSampleId "weapons\/pistol" must reference category "music"/
+    }
+  ]) {
+    it(`rejects ${testCase.name}`, async () => {
+      await expectParseRejects({ 'training.md': testCase.mutate }, testCase.pattern);
+    });
+  }
+
+  for (const testCase of [
+    {
+      name: 'negative introDurationMs',
+      file: 'training.md' as const,
+      mutate: (source: string) =>
+        replaceInSection(source, 'training-wave-1', '| introDurationMs | none |', '| introDurationMs | -1 |'),
+      pattern: /introDurationMs.*expected integer >= 0 or none/
+    },
+    {
+      name: 'empty wave name',
+      file: 'campaign-normal.md' as const,
+      mutate: (source: string) =>
+        replaceInSection(source, 'campaign-set-1-wave-1', '| name | Один глаз в темноте |', '| name |  |'),
+      pattern: /name.*expected non-empty value/
+    },
+    {
+      name: 'wave text',
+      file: 'campaign-normal.md' as const,
+      mutate: (source: string) =>
+        replaceInSection(source, 'campaign-set-1-wave-1', '| text | none |', '| text | Incoming |'),
+      pattern: /text.*expected none for encounter type "wave"/
+    },
+    {
+      name: 'break introDurationMs',
+      file: 'campaign-normal.md' as const,
+      mutate: (source: string) =>
+        replaceInSection(
+          source,
+          'campaign-set-1-after-boss-break',
+          '| introDurationMs | none |',
+          '| introDurationMs | 100 |'
+        ),
+      pattern: /introDurationMs.*expected none or 0 for encounter type "break"/
+    },
+    {
+      name: 'break name',
+      file: 'campaign-normal.md' as const,
+      mutate: (source: string) =>
+        replaceInSection(
+          source,
+          'campaign-set-1-after-boss-break',
+          '| name | none |',
+          '| name | Next set |'
+        ),
+      pattern: /name.*expected none for encounter type "break"/
+    },
+    {
+      name: 'boss text',
+      file: 'campaign-normal.md' as const,
+      mutate: (source: string) =>
+        replaceInSection(source, 'campaign-set-1-boss', '| text | none |', '| text | Boss time |'),
+      pattern: /text.*expected none for encounter type "boss"/
+    },
+    {
+      name: 'timer introDurationMs longer than transitionDurationMs',
+      file: 'training.md' as const,
+      mutate: (source: string) =>
+        replaceInSection(source, 'training-break', '| introDurationMs | none |', '| introDurationMs | 4000 |'),
+      pattern: /introDurationMs.*expected <= transitionDurationMs/
+    }
+  ]) {
+    it(`rejects invalid encounter presentation field: ${testCase.name}`, async () => {
+      await expectParseRejects({ [testCase.file]: testCase.mutate }, testCase.pattern);
     });
   }
 
@@ -547,6 +657,25 @@ function replaceExact(source: string, search: string, replacement: string): stri
 
 function removeExact(source: string, search: string): string {
   return replaceExact(source, search, '');
+}
+
+function replaceInSection(
+  source: string,
+  sectionTitle: string,
+  search: string,
+  replacement: string
+): string {
+  const sectionHeading = `## ${sectionTitle}\n`;
+  const sectionStart = source.indexOf(sectionHeading);
+  if (sectionStart < 0) {
+    throw new Error(`test fixture is missing section "${sectionTitle}"`);
+  }
+  const nextSectionStart = source.indexOf('\n## ', sectionStart + sectionHeading.length);
+  const sectionEnd = nextSectionStart < 0 ? source.length : nextSectionStart;
+  const before = source.slice(0, sectionStart);
+  const section = source.slice(sectionStart, sectionEnd);
+  const after = source.slice(sectionEnd);
+  return `${before}${replaceExact(section, search, replacement)}${after}`;
 }
 
 function addTrainingWave1OverrideTable(source: string, table: string): string {

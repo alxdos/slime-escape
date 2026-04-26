@@ -117,6 +117,9 @@ export type EncounterDefinition = Readonly<{
   id: string;
   type: EncounterType;
   backgroundId: string | null;
+  introDurationMs: number;
+  name: string | null;
+  text: string | null;
   spawnPlan: SpawnPlan;
   zoneBehavior: ZoneBehavior;
   objectives: ReadonlyArray<Objective>;
@@ -146,6 +149,7 @@ export type SessionDefinition = Readonly<{
   player: PlayerSpawn;
   loadout: Loadout | null;
   backgrounds: ReadonlyArray<SessionBackground>;
+  musicSampleId: string | null;
   modifiers: ReadonlyArray<Modifier>;
   rules: SessionRules;
   encounters: ReadonlyArray<EncounterDefinition>;

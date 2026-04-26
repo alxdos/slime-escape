@@ -274,6 +274,10 @@ function shouldTransition(
   encounter: EncounterDefinition,
   deps: SessionFlowDeps
 ): boolean {
+  if (elapsedMs < encounter.introDurationMs) {
+    return false;
+  }
+
   switch (rules.kind) {
     case 'never':
       return false;
