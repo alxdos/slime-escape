@@ -1,3 +1,4 @@
+import type { WeaponModifier } from './content/weapons';
 import type { EncounterType } from './session';
 
 export type PlayerSnapshot = Readonly<{
@@ -118,14 +119,24 @@ export type BossHudSnapshot = Readonly<{
   activeAttackIds: ReadonlyArray<string>;
 }>;
 
+export type WeaponTimedEffectHudSnapshot =
+  | Readonly<{
+      kind: 'temporaryOverdrive';
+      cooldownMultiplier: number;
+      startedAtSimMs: number;
+      expiresAtSimMs: number;
+    }>;
+
 export type WeaponHudSnapshot = Readonly<{
   selectedIndex: number | null;
   weapons: ReadonlyArray<
     Readonly<{
       index: number;
       weaponArchetypeId: string;
+      cooldownStartedAtSimMs: number;
       cooldownReadyAtSimMs: number;
-      overdriveUntilSimMs: number | null;
+      modifiers: ReadonlyArray<WeaponModifier>;
+      timedEffects: ReadonlyArray<WeaponTimedEffectHudSnapshot>;
     }>
   >;
 }>;

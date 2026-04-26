@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { PISTOL } from '../shared/content/weapons';
-import type { ZoneSnapshot } from '../shared/snapshot';
+import { PISTOL, type WeaponModifier } from '../shared/content/weapons';
+import type { WeaponTimedEffectHudSnapshot, ZoneSnapshot } from '../shared/snapshot';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../shared/timing';
 
 import { createEntityStore, type EntityId } from './EntityStore';
@@ -321,6 +321,15 @@ describe('SnapshotExportSystem top-level fields', () => {
     const store = createEntityStore();
     spawnPlayerAt(store);
     const exporter = createSnapshotExportSystem();
+    const sourceModifier = { kind: 'pierceBonus' as const, amount: 1 };
+    const sourceTimedEffect = {
+      kind: 'temporaryOverdrive' as const,
+      cooldownMultiplier: 0.5,
+      startedAtSimMs: 200,
+      expiresAtSimMs: 1200
+    };
+    const modifiers: WeaponModifier[] = [sourceModifier];
+    const timedEffects: WeaponTimedEffectHudSnapshot[] = [sourceTimedEffect];
 
     const snap = exporter.onTick(0, store, {
       encounter: null,
@@ -332,18 +341,26 @@ describe('SnapshotExportSystem top-level fields', () => {
           {
             index: 0,
             weaponArchetypeId: 'pistol',
+            cooldownStartedAtSimMs: 0,
             cooldownReadyAtSimMs: 0,
-            overdriveUntilSimMs: null
+            modifiers: [],
+            timedEffects: []
           },
           {
             index: 1,
             weaponArchetypeId: 'shotgun',
+            cooldownStartedAtSimMs: 200,
             cooldownReadyAtSimMs: 900,
-            overdriveUntilSimMs: 1200
+            modifiers,
+            timedEffects
           }
         ]
       }
     });
+    sourceModifier.amount = 3;
+    sourceTimedEffect.expiresAtSimMs = 2400;
+    modifiers.push({ kind: 'projectileSpeedMultiplier', multiplier: 2 });
+    timedEffects.length = 0;
 
     expect(snap?.weaponHud).toEqual({
       selectedIndex: 1,
@@ -351,14 +368,25 @@ describe('SnapshotExportSystem top-level fields', () => {
         {
           index: 0,
           weaponArchetypeId: 'pistol',
+          cooldownStartedAtSimMs: 0,
           cooldownReadyAtSimMs: 0,
-          overdriveUntilSimMs: null
+          modifiers: [],
+          timedEffects: []
         },
         {
           index: 1,
           weaponArchetypeId: 'shotgun',
+          cooldownStartedAtSimMs: 200,
           cooldownReadyAtSimMs: 900,
-          overdriveUntilSimMs: 1200
+          modifiers: [{ kind: 'pierceBonus', amount: 1 }],
+          timedEffects: [
+            {
+              kind: 'temporaryOverdrive',
+              cooldownMultiplier: 0.5,
+              startedAtSimMs: 200,
+              expiresAtSimMs: 1200
+            }
+          ]
         }
       ]
     });

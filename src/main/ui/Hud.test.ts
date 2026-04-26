@@ -185,14 +185,18 @@ describe('Hud view model', () => {
             {
               index: 0,
               weaponArchetypeId: 'pistol',
+              cooldownStartedAtSimMs: 0,
               cooldownReadyAtSimMs: 0,
-              overdriveUntilSimMs: null
+              modifiers: [],
+              timedEffects: []
             },
             {
               index: 1,
               weaponArchetypeId: 'shotgun',
+              cooldownStartedAtSimMs: 200,
               cooldownReadyAtSimMs: 700,
-              overdriveUntilSimMs: null
+              modifiers: [],
+              timedEffects: []
             }
           ]
         }
@@ -216,8 +220,10 @@ describe('Hud view model', () => {
             {
               index: 0,
               weaponArchetypeId: 'pistol',
+              cooldownStartedAtSimMs: 0,
               cooldownReadyAtSimMs: 0,
-              overdriveUntilSimMs: null
+              modifiers: [],
+              timedEffects: []
             }
           ]
         }

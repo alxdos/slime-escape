@@ -100,7 +100,7 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     encounter: encounterCtx,
     zone: zone.zone(),
     waveProgress: waveSnap,
-    weaponHud: combat.weaponHudFor(entities.player()?.id ?? null)
+    weaponHud: combat.weaponHudFor(entities.player()?.id ?? null, simTimeMs)
   });
   if (snapshot !== null) {
     postToMain({ kind: 'snapshot', snapshot });

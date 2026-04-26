@@ -4,10 +4,12 @@ import type {
   EntitySnapshot,
   Snapshot,
   WeaponHudSnapshot,
+  WeaponTimedEffectHudSnapshot,
   WaveProgressSnapshot,
   ZoneSnapshot
 } from '../shared/snapshot';
-import { WEAPON_ARCHETYPES } from '../shared/content/weapons';
+import { WEAPON_ARCHETYPES, type WeaponModifier } from '../shared/content/weapons';
+import { assertNever } from '../shared/protocol';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../shared/timing';
 
 import type { EntityStore } from './EntityStore';
@@ -154,8 +156,10 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
                 weapons: sources.weaponHud.weapons.map((weapon) => ({
                   index: weapon.index,
                   weaponArchetypeId: weapon.weaponArchetypeId,
+                  cooldownStartedAtSimMs: weapon.cooldownStartedAtSimMs,
                   cooldownReadyAtSimMs: weapon.cooldownReadyAtSimMs,
-                  overdriveUntilSimMs: weapon.overdriveUntilSimMs
+                  modifiers: weapon.modifiers.map(copyWeaponModifier),
+                  timedEffects: weapon.timedEffects.map(copyTimedWeaponEffect)
                 }))
               }
       };
@@ -163,6 +167,39 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
     reset(): void {
       tickCount = 0;
     }
+  };
+}
+
+function copyWeaponModifier(modifier: WeaponModifier): WeaponModifier {
+  switch (modifier.kind) {
+    case 'projectileSizeMultiplier':
+      return { kind: modifier.kind, multiplier: modifier.multiplier };
+    case 'projectileSpeedMultiplier':
+      return { kind: modifier.kind, multiplier: modifier.multiplier };
+    case 'symmetricProjectileMultiplier':
+      return { kind: modifier.kind, multiplier: modifier.multiplier };
+    case 'pierceBonus':
+      return { kind: modifier.kind, amount: modifier.amount };
+    case 'fragmentExplosion':
+      return {
+        kind: modifier.kind,
+        fragmentWeaponArchetypeId: modifier.fragmentWeaponArchetypeId,
+        count: modifier.count,
+        spreadRadians: modifier.spreadRadians
+      };
+    default:
+      return assertNever(modifier);
+  }
+}
+
+function copyTimedWeaponEffect(
+  effect: WeaponTimedEffectHudSnapshot
+): WeaponTimedEffectHudSnapshot {
+  return {
+    kind: effect.kind,
+    cooldownMultiplier: effect.cooldownMultiplier,
+    startedAtSimMs: effect.startedAtSimMs,
+    expiresAtSimMs: effect.expiresAtSimMs
   };
 }
 

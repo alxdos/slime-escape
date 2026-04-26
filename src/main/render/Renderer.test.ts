@@ -981,8 +981,10 @@ describe('createRenderer', () => {
               {
                 index: 0,
                 weaponArchetypeId: ROCK_THROWER.id,
+                cooldownStartedAtSimMs: 0,
                 cooldownReadyAtSimMs: 0,
-                overdriveUntilSimMs: null
+                modifiers: [],
+                timedEffects: []
               }
             ]
           }
