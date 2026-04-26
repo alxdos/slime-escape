@@ -293,13 +293,6 @@ ${extraBodyRow}
 | slime-one-eye | heal-orb | 0.25 |
 ${extraRunnerDropRow}
 
-## Carrier Drops
-
-| id | guaranteedDropArchetypeIds |
-|---|---|
-| test-stationary | none |
-| slime-one-eye | none |
-
 ## Retaliation
 
 | id | enabled | durationMs |

@@ -10,6 +10,7 @@ import type {
   WinCondition,
   ZoneBehavior
 } from '../../../src/shared/session';
+import { log } from '../../../src/shared/log';
 import {
   type MarkdownCell,
   type MarkdownDocument,
@@ -29,6 +30,7 @@ import {
   type ResolvedContentRef,
   requireArenaRef,
   requireBossRef,
+  requireDropRef,
   requireEnemyRef,
   requirePlayerRef,
   requireWeaponRef
@@ -43,14 +45,14 @@ export type ParsedSpawnPlan =
   | Readonly<{ kind: 'empty' }>
   | Readonly<{
       kind: 'wave';
-      spawns: ReadonlyArray<Readonly<{ archetype: ParsedRef }>>;
+      spawns: ReadonlyArray<ParsedWaveSpawn>;
       spawnIntervalMs: number;
       maxAlive: number;
       edgeMargin: number;
     }>
   | Readonly<{
       kind: 'static';
-      spawns: ReadonlyArray<Readonly<{ archetype: ParsedRef; position: Readonly<{ x: number; y: number }> }>>;
+      spawns: ReadonlyArray<ParsedStaticSpawn>;
     }>
   | Readonly<{
       kind: 'boss';
@@ -58,6 +60,33 @@ export type ParsedSpawnPlan =
       position: 'top-center';
       bossEdgeMargin: number;
     }>;
+
+export type ParsedOverrideDropTableEntry = Readonly<{
+  archetype: ParsedRef;
+  chance: number;
+}>;
+
+export type ParsedRetaliationPolicy = Readonly<{
+  enabled: boolean;
+  durationMs: number;
+}>;
+
+export type ParsedSpawnOverride = Readonly<{
+  guaranteedDrops?: ReadonlyArray<ParsedRef>;
+  dropTable?: ReadonlyArray<ParsedOverrideDropTableEntry>;
+  retaliation?: ParsedRetaliationPolicy;
+}>;
+
+export type ParsedWaveSpawn = Readonly<{
+  archetype: ParsedRef;
+  override?: ParsedSpawnOverride;
+}>;
+
+export type ParsedStaticSpawn = Readonly<{
+  archetype: ParsedRef;
+  position: Readonly<{ x: number; y: number }>;
+  override?: ParsedSpawnOverride;
+}>;
 
 export type ParsedTransitionRules =
   | Readonly<{ kind: 'never'; next: TransitionNext }>
@@ -112,6 +141,7 @@ type TransitionKind = ParsedTransitionRules['kind'];
 type EncounterTables = Readonly<{
   fields: MarkdownTable;
   spawns: MarkdownTable | null;
+  overrides: MarkdownTable | null;
 }>;
 
 type SessionTables = Readonly<{
@@ -291,9 +321,10 @@ export function requireEncounterTables(
 ): EncounterTables {
   const fields = requireFirstEncounterTable(section);
   const spawns = section.tables[1] ?? null;
+  const overrides = section.tables[2] ?? null;
 
-  if (section.tables.length > 2) {
-    throw sectionError(section, 'expected at most two GFM tables');
+  if (section.tables.length > 3) {
+    throw sectionError(section, 'expected at most three GFM tables');
   }
 
   if (spawnKind === 'wave' || spawnKind === 'static') {
@@ -301,11 +332,17 @@ export function requireEncounterTables(
       throw sectionError(section, `spawnKind "${spawnKind}" requires seq/archetypeId table`);
     }
     assertSpawnTableHeader(section, spawns, spawnKind);
+    if (overrides !== null) {
+      assertSpawnOverrideTableHeader(section, overrides);
+    }
   } else if (spawns !== null) {
+    if (looksLikeSpawnOverrideTable(spawns)) {
+      throw sectionError(section, `spawnKind "${spawnKind}" forbids spawn override table`);
+    }
     throw sectionError(section, `spawnKind "${spawnKind}" forbids seq/archetypeId table`);
   }
 
-  return { fields, spawns };
+  return { fields, spawns, overrides };
 }
 
 function parseSpawnPlan(field: FieldReader, tables: EncounterTables): ParsedSpawnPlan {
@@ -316,7 +353,11 @@ function parseSpawnPlan(field: FieldReader, tables: EncounterTables): ParsedSpaw
     case 'wave':
       return {
         kind: 'wave',
-        spawns: parseWaveSpawns(field.section, requireSpawnTable(tables, spawnKind)),
+        spawns: parseWaveSpawns(
+          field.section,
+          requireSpawnTable(tables, spawnKind),
+          tables.overrides
+        ),
         spawnIntervalMs: field.readNumber('spawnIntervalMs'),
         maxAlive: field.readNumber('maxAlive'),
         edgeMargin: field.readNumber('edgeMargin')
@@ -324,7 +365,11 @@ function parseSpawnPlan(field: FieldReader, tables: EncounterTables): ParsedSpaw
     case 'static':
       return {
         kind: 'static',
-        spawns: parseStaticSpawns(field.section, requireSpawnTable(tables, spawnKind))
+        spawns: parseStaticSpawns(
+          field.section,
+          requireSpawnTable(tables, spawnKind),
+          tables.overrides
+        )
       };
     case 'boss':
       return {
@@ -340,35 +385,67 @@ function parseSpawnPlan(field: FieldReader, tables: EncounterTables): ParsedSpaw
 
 function parseWaveSpawns(
   section: MarkdownSection,
-  table: MarkdownTable
-): ReadonlyArray<Readonly<{ archetype: ParsedRef }>> {
-  return sortedSpawnRows(section, table).map((row) => ({
-    archetype: parseEnemyRef(section, table, row, 'archetypeId')
-  }));
+  table: MarkdownTable,
+  overrideTable: MarkdownTable | null
+): ReadonlyArray<ParsedWaveSpawn> {
+  const entries = sortedSpawnEntries(section, table);
+  const overrides = parseSpawnOverrides(section, overrideTable, seqSet(entries));
+  return entries.map(({ row, seq }) =>
+    withOptionalOverride(
+      {
+        archetype: parseEnemyRef(section, table, row, 'archetypeId')
+      },
+      overrides.get(seq)
+    )
+  );
 }
 
 function parseStaticSpawns(
   section: MarkdownSection,
-  table: MarkdownTable
-): ReadonlyArray<Readonly<{ archetype: ParsedRef; position: Readonly<{ x: number; y: number }> }>> {
-  return sortedSpawnRows(section, table).map((row) => ({
-    archetype: parseEnemyRef(section, table, row, 'archetypeId'),
-    position: {
-      x: requireNumber(section, table, row, 'x'),
-      y: requireNumber(section, table, row, 'y')
-    }
-  }));
+  table: MarkdownTable,
+  overrideTable: MarkdownTable | null
+): ReadonlyArray<ParsedStaticSpawn> {
+  const entries = sortedSpawnEntries(section, table);
+  const overrides = parseSpawnOverrides(section, overrideTable, seqSet(entries));
+  return entries.map(({ row, seq }) =>
+    withOptionalOverride(
+      {
+        archetype: parseEnemyRef(section, table, row, 'archetypeId'),
+        position: {
+          x: requireNumber(section, table, row, 'x'),
+          y: requireNumber(section, table, row, 'y')
+        }
+      },
+      overrides.get(seq)
+    )
+  );
 }
 
-function sortedSpawnRows(
+type SpawnRowEntry = Readonly<{
+  row: MarkdownTableRow;
+  seq: number;
+}>;
+
+function sortedSpawnEntries(
   section: MarkdownSection,
   table: MarkdownTable
-): ReadonlyArray<MarkdownTableRow> {
+): ReadonlyArray<SpawnRowEntry> {
   const seen = new Set<number>();
   return table.rows
     .map((row) => ({ row, seq: readSeq(section, table, row, seen) }))
     .sort((left, right) => left.seq - right.seq)
-    .map((entry) => entry.row);
+}
+
+function seqSet(entries: ReadonlyArray<SpawnRowEntry>): ReadonlySet<number> {
+  return new Set(entries.map((entry) => entry.seq));
+}
+
+function withOptionalOverride<T extends object>(
+  spawn: T,
+  override: ParsedSpawnOverride | undefined
+): T | (T & Readonly<{ override: ParsedSpawnOverride }>) {
+  if (override === undefined) return spawn;
+  return { ...spawn, override };
 }
 
 function readSeq(
@@ -386,6 +463,201 @@ function readSeq(
   }
   seen.add(seq);
   return seq;
+}
+
+const SPAWN_OVERRIDE_HEADER = [
+  'seq',
+  'guaranteedDrops',
+  'dropTable',
+  'retaliationEnabled',
+  'retaliationDurationMs'
+] as const;
+
+function parseSpawnOverrides(
+  section: MarkdownSection,
+  table: MarkdownTable | null,
+  validSeqs: ReadonlySet<number>
+): ReadonlyMap<number, ParsedSpawnOverride> {
+  if (table === null) return new Map();
+  assertSpawnOverrideTableHeader(section, table);
+
+  const seen = new Set<number>();
+  const overrides = new Map<number, ParsedSpawnOverride>();
+  for (const row of table.rows) {
+    const seq = readSeq(section, table, row, seen);
+    if (!validSeqs.has(seq)) {
+      throw cellError(
+        section,
+        row.position,
+        String(seq),
+        'seq',
+        `override references missing seq "${seq}"`
+      );
+    }
+    const override = parseSpawnOverrideRow(section, table, row);
+    if (!isSpawnOverrideEmpty(override)) {
+      overrides.set(seq, override);
+    }
+  }
+  return overrides;
+}
+
+function parseSpawnOverrideRow(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow
+): ParsedSpawnOverride {
+  return {
+    ...parseGuaranteedDropsOverride(section, table, row),
+    ...parseDropTableOverride(section, table, row),
+    ...parseRetaliationOverride(section, table, row)
+  };
+}
+
+function parseGuaranteedDropsOverride(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow
+): Pick<ParsedSpawnOverride, 'guaranteedDrops'> {
+  const cell = requireColumnCell(section, table, row, 'guaranteedDrops');
+  if (cell.value === 'none') return {};
+  if (cell.value === 'empty') {
+    throw cellError(
+      section,
+      cell.position,
+      getRowId(row),
+      'guaranteedDrops',
+      'expected comma-separated drop ids or none'
+    );
+  }
+  const drops = cell.value.split(',').map((rawDropId) => {
+    const dropId = rawDropId.trim();
+    if (dropId.length === 0) {
+      throw cellError(
+        section,
+        cell.position,
+        getRowId(row),
+        'guaranteedDrops',
+        'expected comma-separated drop ids or none'
+      );
+    }
+    return requireDropRef(section, cell.position, 'guaranteedDrops', dropId);
+  });
+  return { guaranteedDrops: drops };
+}
+
+function parseDropTableOverride(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow
+): Pick<ParsedSpawnOverride, 'dropTable'> {
+  const cell = requireColumnCell(section, table, row, 'dropTable');
+  if (cell.value === 'none') return {};
+  if (cell.value === 'empty') return { dropTable: [] };
+
+  let sum = 0;
+  const dropTable = cell.value.split(',').map((rawEntry) => {
+    const [rawDropId, rawChance, ...extra] = rawEntry.split(':');
+    const dropId = rawDropId?.trim() ?? '';
+    const chanceRaw = rawChance?.trim() ?? '';
+    if (dropId.length === 0 || chanceRaw.length === 0 || extra.length > 0) {
+      throw cellError(
+        section,
+        cell.position,
+        getRowId(row),
+        'dropTable',
+        'expected empty, none, or comma-separated dropId:chance pairs'
+      );
+    }
+    const chance = Number(chanceRaw);
+    if (!Number.isFinite(chance)) {
+      throw cellError(section, cell.position, getRowId(row), 'dropTable', 'expected numeric chance');
+    }
+    if (!(chance >= 0 && chance <= 1)) {
+      log.warn('spawn override drop table entry chance out of [0, 1] per design/spawn-overrides.md', {
+        filePath: section.filePath,
+        encounterId: section.title,
+        seq: getRowId(row),
+        dropArchetypeId: dropId,
+        chance
+      });
+    }
+    sum += chance;
+    return {
+      archetype: requireDropRef(section, cell.position, 'dropTable', dropId),
+      chance
+    };
+  });
+  if (sum > 1 + 1e-9) {
+    log.warn('spawn override drop table chances sum exceeds 1 per design/spawn-overrides.md', {
+      filePath: section.filePath,
+      encounterId: section.title,
+      seq: getRowId(row),
+      sum
+    });
+  }
+  return { dropTable };
+}
+
+function parseRetaliationOverride(
+  section: MarkdownSection,
+  table: MarkdownTable,
+  row: MarkdownTableRow
+): Pick<ParsedSpawnOverride, 'retaliation'> {
+  const enabledCell = requireColumnCell(section, table, row, 'retaliationEnabled');
+  const durationCell = requireColumnCell(section, table, row, 'retaliationDurationMs');
+  const enabledIsNone = enabledCell.value === 'none';
+  const durationIsNone = durationCell.value === 'none';
+  if (enabledIsNone && durationIsNone) return {};
+  if (enabledIsNone !== durationIsNone) {
+    throw cellError(
+      section,
+      enabledIsNone ? durationCell.position : enabledCell.position,
+      getRowId(row),
+      enabledIsNone ? 'retaliationDurationMs' : 'retaliationEnabled',
+      'retaliationEnabled and retaliationDurationMs must be set together'
+    );
+  }
+
+  const enabled = parseOverrideBoolean(section, enabledCell, getRowId(row), 'retaliationEnabled');
+  const durationMs = Number(durationCell.value);
+  if (!Number.isInteger(durationMs) || durationMs < 0) {
+    throw cellError(
+      section,
+      durationCell.position,
+      getRowId(row),
+      'retaliationDurationMs',
+      'expected integer >= 0 or none'
+    );
+  }
+  if (enabled && durationMs <= 0) {
+    log.warn('enabled spawn override retaliation duration must be positive per design/spawn-overrides.md', {
+      filePath: section.filePath,
+      encounterId: section.title,
+      seq: getRowId(row),
+      durationMs
+    });
+  }
+  return { retaliation: { enabled, durationMs } };
+}
+
+function parseOverrideBoolean(
+  section: MarkdownSection,
+  cell: MarkdownCell,
+  rowId: string,
+  columnName: string
+): boolean {
+  if (cell.value === 'true') return true;
+  if (cell.value === 'false') return false;
+  throw cellError(section, cell.position, rowId, columnName, 'expected true, false, or none');
+}
+
+function isSpawnOverrideEmpty(override: ParsedSpawnOverride): boolean {
+  return (
+    override.guaranteedDrops === undefined &&
+    override.dropTable === undefined &&
+    override.retaliation === undefined
+  );
 }
 
 function parseZoneBehavior(field: FieldReader): ZoneBehavior {
@@ -750,6 +1022,65 @@ function assertSpawnTableHeader(
   if (table.header.length !== expected.length) {
     throw cellError(section, table.position, '<header>', expected.at(-1) ?? '<unknown>', `expected ${expected.join(' | ')} table`);
   }
+}
+
+function assertSpawnOverrideTableHeader(
+  section: MarkdownSection,
+  table: MarkdownTable
+): void {
+  for (const [index, columnName] of SPAWN_OVERRIDE_HEADER.entries()) {
+    const actual = table.header[index]?.value;
+    if (actual === columnName) continue;
+    if (
+      actual !== undefined &&
+      index > 0 &&
+      !(SPAWN_OVERRIDE_HEADER as ReadonlyArray<string>).includes(actual)
+    ) {
+      throw cellError(
+        section,
+        table.position,
+        '<header>',
+        actual,
+        `unknown spawn override field "${actual}"`
+      );
+    }
+    throw cellError(
+      section,
+      table.position,
+      '<header>',
+      columnName,
+      `expected ${SPAWN_OVERRIDE_HEADER.join(' | ')} table`
+    );
+  }
+  if (table.header.length !== SPAWN_OVERRIDE_HEADER.length) {
+    const extra = table.header[SPAWN_OVERRIDE_HEADER.length]?.value;
+    if (extra !== undefined) {
+      throw cellError(
+        section,
+        table.position,
+        '<header>',
+        extra,
+        `unknown spawn override field "${extra}"`
+      );
+    }
+    throw cellError(
+      section,
+      table.position,
+      '<header>',
+      SPAWN_OVERRIDE_HEADER.at(-1) ?? '<unknown>',
+      `expected ${SPAWN_OVERRIDE_HEADER.join(' | ')} table`
+    );
+  }
+}
+
+function looksLikeSpawnOverrideTable(table: MarkdownTable): boolean {
+  return (
+    table.header[0]?.value === 'seq' &&
+    table.header.some((cell) =>
+      (SPAWN_OVERRIDE_HEADER as ReadonlyArray<string>).includes(cell.value)
+    ) &&
+    table.header.some((cell) => cell.value !== 'seq' && cell.value !== 'archetypeId')
+  );
 }
 
 function requireColumnCell(

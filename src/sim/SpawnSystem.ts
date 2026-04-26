@@ -6,6 +6,7 @@ import type {
   ArenaConfig,
   BossSpawnPlan,
   EncounterDefinition,
+  SpawnOverride,
   StaticSpawnPlan,
   Vec2,
   WaveSpawnPlan
@@ -166,7 +167,7 @@ function executeStatic(
 ): void {
   for (const spec of plan.spawns) {
     const archetype = resolveArchetype(spec.archetypeId, enemyRegistry);
-    store.spawnEnemy(makeEnemySpawnSpec(archetype, spec.position));
+    store.spawnEnemy(makeEnemySpawnSpec(archetype, spec.override, spec.position));
   }
 }
 
@@ -189,7 +190,7 @@ function spawnNextWaveEnemy(
     archetype.radius,
     rng
   );
-  const enemy = store.spawnEnemy(makeEnemySpawnSpec(archetype, position));
+  const enemy = store.spawnEnemy(makeEnemySpawnSpec(archetype, spec.override, position));
   state.alive.add(enemy.id);
   state.dispatched += 1;
   state.lastSpawnSimMs = simTimeMs;
@@ -206,15 +207,20 @@ function resolveArchetype(
   return archetype;
 }
 
-function makeEnemySpawnSpec(archetype: EnemyArchetype, position: Vec2): EnemySpawnSpec {
+function makeEnemySpawnSpec(
+  archetype: EnemyArchetype,
+  override: SpawnOverride | undefined,
+  position: Vec2
+): EnemySpawnSpec {
   return {
     archetypeId: archetype.id,
     position,
     radius: archetype.radius,
     contactBox: archetype.contactBox,
     behavior: archetype.behavior,
-    carrierDropMarker: archetype.carrierDrop?.marker ?? null,
-    retaliation: archetype.retaliation,
+    guaranteedDrops: override?.guaranteedDrops ?? [],
+    dropTable: override?.dropTable ?? archetype.dropTable,
+    retaliation: override?.retaliation ?? archetype.retaliation,
     maxHp: archetype.maxHp,
     maxSpeed: archetype.maxSpeed,
     contactDamage: archetype.contactDamage,

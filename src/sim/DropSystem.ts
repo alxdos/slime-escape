@@ -50,24 +50,29 @@ export function createDropSystem(
     },
     onDeathHook(ctx, store, emit): void {
       if (ctx.entityKind !== 'enemy') return;
-      if (ctx.archetypeId === null) return;
-
-      const enemyArchetype = enemyRegistry[ctx.archetypeId];
-      if (enemyArchetype === undefined) {
+      if (ctx.archetypeId !== null && enemyRegistry[ctx.archetypeId] === undefined) {
         log.error('drop hook: unknown enemy archetype on death', {
           enemyArchetypeId: ctx.archetypeId,
           entityId: ctx.entityId
         });
+      }
+
+      const enemy = store.enemyById(ctx.entityId);
+      if (enemy === null) {
+        log.error('drop hook: missing runtime enemy on death', {
+          entityId: ctx.entityId,
+          enemyArchetypeId: ctx.archetypeId
+        });
         return;
       }
 
-      spawnCarrierDrops(enemyArchetype, ctx, store, emit, dropRegistry);
+      spawnGuaranteedDrops(enemy.guaranteedDrops, ctx, store, emit, dropRegistry);
 
-      if (enemyArchetype.dropTable.length === 0) return;
+      if (enemy.dropTable.length === 0) return;
       if (rng === null) throw new Error('drop hook fired without a session Rng (see design/rng.md)');
 
       const roll = rng.nextFloat();
-      const picked = pickDropFromTable(enemyArchetype.dropTable, roll, dropRegistry);
+      const picked = pickDropFromTable(enemy.dropTable, roll, dropRegistry);
       if (picked === null) return;
 
       spawnDropAtDeath(picked, ctx, store, emit);
@@ -146,21 +151,21 @@ function pickDropFromTable(
   return null;
 }
 
-function spawnCarrierDrops(
-  enemyArchetype: EnemyArchetype,
+function spawnGuaranteedDrops(
+  guaranteedDrops: ReadonlyArray<string>,
   ctx: DeathContext,
   store: EntityStore,
   emit: (event: RuntimeEvent) => void,
   dropRegistry: Readonly<Record<string, DropArchetype>>
 ): void {
-  const carrierDrop = enemyArchetype.carrierDrop;
-  if (carrierDrop === null) return;
-  for (const archetypeId of carrierDrop.guaranteedDropArchetypeIds) {
+  for (const archetypeId of guaranteedDrops) {
     const drop = dropRegistry[archetypeId];
     if (drop === undefined) {
-      throw new Error(
-        `carrier drop references unknown drop archetype at runtime: "${archetypeId}"`
-      );
+      log.error('guaranteed drop references unknown drop archetype at runtime', {
+        dropArchetypeId: archetypeId,
+        entityId: ctx.entityId
+      });
+      continue;
     }
     spawnDropAtDeath(drop, ctx, store, emit);
   }

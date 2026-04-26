@@ -8,7 +8,7 @@ import { SIM_STEP_MS } from '../shared/timing';
 
 import type { DamageIntent } from './CombatSystem';
 import { createDropSystem, type WeaponDropEffectSink } from './DropSystem';
-import { createEntityStore, type EntityId } from './EntityStore';
+import { createEntityStore, type Enemy, type EntityId } from './EntityStore';
 import { createHealthDeathSystem, type DeathContext } from './HealthDeathSystem';
 
 function squareContactBox(radius: number) {
@@ -37,7 +37,6 @@ const NO_DROP_TEST_ENEMY: EnemyArchetype = {
   knockbackDurationMs: 1,
   color: 0xff7766,
   dropTable: [],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 const LIGHT_DROPPER: EnemyArchetype = {
@@ -88,8 +87,7 @@ const GUARANTEED_DROPPER: EnemyArchetype = {
 const CARRIER_DROPPER: EnemyArchetype = {
   ...NO_DROP_TEST_ENEMY,
   id: 'test-carrier-dropper',
-  displayName: 'Test Carrier Dropper',
-  carrierDrop: { marker: 'reward', guaranteedDropArchetypeIds: [MAGNET.id, HEAL_ORB.id] }
+  displayName: 'Test Carrier Dropper'
 };
 const REGISTRY_WITH_GUARANTEED: Readonly<Record<string, EnemyArchetype>> = {
   ...REGISTRY,
@@ -141,21 +139,59 @@ function makeDeathContext(opts: {
   };
 }
 
+function spawnRuntimeEnemy(
+  store: ReturnType<typeof createEntityStore>,
+  archetype: EnemyArchetype,
+  opts: Readonly<{
+    position?: { x: number; y: number };
+    guaranteedDrops?: ReadonlyArray<string>;
+    dropTable?: EnemyArchetype['dropTable'];
+  }> = {}
+): Enemy {
+  return store.spawnEnemy({
+    archetypeId: archetype.id,
+    position: opts.position ?? { x: 0, y: 0 },
+    radius: archetype.radius,
+    contactBox: archetype.contactBox,
+    behavior: archetype.behavior,
+    guaranteedDrops: opts.guaranteedDrops,
+    dropTable: opts.dropTable ?? archetype.dropTable,
+    retaliation: archetype.retaliation,
+    maxHp: archetype.maxHp,
+    maxSpeed: archetype.maxSpeed,
+    contactDamage: archetype.contactDamage,
+    contactCooldownMs: archetype.contactCooldownMs,
+    knockbackBaseImpulse: archetype.knockbackBaseImpulse,
+    knockbackVelocityScale: archetype.knockbackVelocityScale,
+    knockbackDurationMs: archetype.knockbackDurationMs,
+    color: archetype.color
+  });
+}
+
+function makeEnemyDeathContext(
+  enemy: Enemy,
+  simTime: number,
+  position: { x: number; y: number } = enemy.position
+): DeathContext {
+  return makeDeathContext({
+    entityId: enemy.id,
+    archetypeId: enemy.archetypeId,
+    position,
+    simTime
+  });
+}
+
 describe('DropSystem death hook (RNG discipline)', () => {
   it('does not consume RNG when the dropTable is empty', () => {
     const store = createEntityStore();
+    const enemy = spawnRuntimeEnemy(store, NO_DROP_TEST_ENEMY, { position: { x: 1, y: 2 } });
     const drops = createDropSystem(REGISTRY);
     const spy = spyRng(42);
     drops.setRng(spy.rng);
 
     const events: RuntimeEvent[] = [];
     drops.onDeathHook(
-      makeDeathContext({
-        entityId: 7,
-        archetypeId: NO_DROP_TEST_ENEMY.id,
-        position: { x: 1, y: 2 },
-        simTime: 100
-      }),
+      makeEnemyDeathContext(enemy, 100),
       store,
       (e) => events.push(e)
     );
@@ -167,18 +203,14 @@ describe('DropSystem death hook (RNG discipline)', () => {
 
   it('consumes exactly one nextFloat per non-empty dropTable death', () => {
     const store = createEntityStore();
+    const enemy = spawnRuntimeEnemy(store, HEAVY_DROPPER, { position: { x: 3, y: -1 } });
     const drops = createDropSystem(REGISTRY);
     const spy = spyRng(42);
     drops.setRng(spy.rng);
 
     const events: RuntimeEvent[] = [];
     drops.onDeathHook(
-      makeDeathContext({
-        entityId: 8,
-        archetypeId: HEAVY_DROPPER.id,
-        position: { x: 3, y: -1 },
-        simTime: 200
-      }),
+      makeEnemyDeathContext(enemy, 200),
       store,
       (e) => events.push(e)
     );
@@ -188,15 +220,11 @@ describe('DropSystem death hook (RNG discipline)', () => {
 
   it('throws if rng was not provided', () => {
     const store = createEntityStore();
+    const enemy = spawnRuntimeEnemy(store, LIGHT_DROPPER);
     const drops = createDropSystem(REGISTRY);
     expect(() =>
       drops.onDeathHook(
-        makeDeathContext({
-          entityId: 1,
-          archetypeId: LIGHT_DROPPER.id,
-          position: { x: 0, y: 0 },
-          simTime: 0
-        }),
+        makeEnemyDeathContext(enemy, 0),
         store,
         () => {}
       )
@@ -229,17 +257,13 @@ describe('DropSystem death hook (RNG discipline)', () => {
 describe('DropSystem death hook (spawn semantics)', () => {
   it('spawns drop at the death position with expireAtSimMs = simTime + ttlMs', () => {
     const store = createEntityStore();
+    const enemy = spawnRuntimeEnemy(store, GUARANTEED_DROPPER, { position: { x: 4.25, y: -2.5 } });
     const drops = createDropSystem(REGISTRY_WITH_GUARANTEED);
     drops.setRng(createRng(1));
 
     const events: RuntimeEvent[] = [];
     drops.onDeathHook(
-      makeDeathContext({
-        entityId: 1,
-        archetypeId: GUARANTEED_DROPPER.id,
-        position: { x: 4.25, y: -2.5 },
-        simTime: 1234
-      }),
+      makeEnemyDeathContext(enemy, 1234),
       store,
       (e) => events.push(e)
     );
@@ -275,17 +299,13 @@ describe('DropSystem death hook (spawn semantics)', () => {
         { archetypeId: LIGHT_DROPPER.id, position: { x: 5, y: 5 } },
         { archetypeId: GUARANTEED_DROPPER.id, position: { x: -3, y: -1 } }
       ];
-      let nextEntity = 100;
       for (let i = 0; i < deaths.length; i += 1) {
-        nextEntity += 1;
         const death = deaths[i]!;
+        const archetype = REGISTRY_WITH_GUARANTEED[death.archetypeId];
+        if (archetype === undefined) throw new Error(`missing test archetype ${death.archetypeId}`);
+        const enemy = spawnRuntimeEnemy(store, archetype, { position: death.position });
         drops.onDeathHook(
-          makeDeathContext({
-            entityId: nextEntity,
-            archetypeId: death.archetypeId,
-            position: death.position,
-            simTime: 100 * i
-          }),
+          makeEnemyDeathContext(enemy, 100 * i),
           store,
           () => {}
         );
@@ -306,18 +326,18 @@ describe('DropSystem death hook (spawn semantics)', () => {
 
   it('spawns carrier guaranteed drops without consuming RNG', () => {
     const store = createEntityStore();
+    const enemy = spawnRuntimeEnemy(store, CARRIER_DROPPER, {
+      position: { x: -1, y: 2 },
+      guaranteedDrops: [MAGNET.id, HEAL_ORB.id],
+      dropTable: []
+    });
     const drops = createDropSystem(REGISTRY_WITH_GUARANTEED, DROP_ARCHETYPES);
     const spy = spyRng(123);
     drops.setRng(spy.rng);
     const events: RuntimeEvent[] = [];
 
     drops.onDeathHook(
-      makeDeathContext({
-        entityId: 77,
-        archetypeId: CARRIER_DROPPER.id,
-        position: { x: -1, y: 2 },
-        simTime: 444
-      }),
+      makeEnemyDeathContext(enemy, 444),
       store,
       (e) => events.push(e)
     );

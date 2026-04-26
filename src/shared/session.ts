@@ -1,3 +1,5 @@
+import type { DropTableEntry, RetaliationPolicy } from './content/enemies';
+
 export type Vec2 = Readonly<{ x: number; y: number }>;
 
 export type ArenaConfig = Readonly<{
@@ -22,9 +24,16 @@ export type EncounterType = 'wave' | 'break' | 'boss' | 'survivalTimer' | 'sandb
 
 export type EmptySpawnPlan = Readonly<{ kind: 'empty' }>;
 
+export type SpawnOverride = Readonly<{
+  guaranteedDrops?: ReadonlyArray<string>;
+  dropTable?: ReadonlyArray<DropTableEntry>;
+  retaliation?: RetaliationPolicy;
+}>;
+
 export type StaticSpawn = Readonly<{
   archetypeId: string;
   position: Vec2;
+  override?: SpawnOverride;
 }>;
 
 export type StaticSpawnPlan = Readonly<{
@@ -34,6 +43,7 @@ export type StaticSpawnPlan = Readonly<{
 
 export type WaveSpawn = Readonly<{
   archetypeId: string;
+  override?: SpawnOverride;
 }>;
 
 export type WaveSpawnPlan = Readonly<{

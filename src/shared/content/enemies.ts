@@ -12,11 +12,6 @@ export type DropTableEntry = Readonly<{
   chance: number;
 }>;
 
-export type CarrierDropMetadata = Readonly<{
-  marker: 'reward';
-  guaranteedDropArchetypeIds: ReadonlyArray<string>;
-}>;
-
 export type RetaliationPolicy = Readonly<{
   enabled: boolean;
   durationMs: number;
@@ -37,7 +32,6 @@ export type EnemyArchetype = Readonly<{
   knockbackDurationMs: number;
   color: number;
   dropTable: ReadonlyArray<DropTableEntry>;
-  carrierDrop: CarrierDropMetadata | null;
   retaliation: RetaliationPolicy;
 }>;
 
@@ -69,7 +63,6 @@ export function validateEnemyRegistry(
     warnIfEnemyMayTunnelThroughPlayer(archetype, playerContactBox);
     warnIfDropTableInvalid(archetype);
     assertDropTableArchetypesResolve(archetype, dropRegistry);
-    assertCarrierDropsResolve(archetype, dropRegistry);
     warnIfRetaliationInvalid(archetype);
   }
 }
@@ -142,21 +135,6 @@ function assertDropTableArchetypesResolve(
       throw new Error(
         `enemy archetype "${archetype.id}" drop table references unknown drop archetype ` +
           `"${entry.archetypeId}" (see design/drops.md and design/content-archetypes.md)`
-      );
-    }
-  }
-}
-
-function assertCarrierDropsResolve(
-  archetype: EnemyArchetype,
-  dropRegistry: Readonly<Record<string, DropArchetype>>
-): void {
-  if (archetype.carrierDrop === null) return;
-  for (const dropArchetypeId of archetype.carrierDrop.guaranteedDropArchetypeIds) {
-    if (dropRegistry[dropArchetypeId] === undefined) {
-      throw new Error(
-        `enemy archetype "${archetype.id}" carrier drop references unknown drop archetype ` +
-          `"${dropArchetypeId}" (see design/combat-modifiers-and-field-effects.md and design/drops.md)`
       );
     }
   }

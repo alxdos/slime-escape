@@ -113,7 +113,7 @@ describe('SnapshotExportSystem', () => {
       radius: STATIONARY_TEST_ENEMY.radius,
       contactBox: STATIONARY_TEST_ENEMY.contactBox,
       behavior: 'stationary',
-      carrierDropMarker: 'reward',
+      guaranteedDrops: ['magnet'],
       maxHp: STATIONARY_TEST_ENEMY.maxHp,
       maxSpeed: STATIONARY_TEST_ENEMY.maxSpeed,
       contactDamage: STATIONARY_TEST_ENEMY.contactDamage,
