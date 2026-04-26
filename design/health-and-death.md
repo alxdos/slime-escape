@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (017 alignment: projectile and explosion damage both flow through `DamageIntent`; 018 alignment: field/status damage sources are added for future `FieldEffectSystem`/`StatusEffectSystem`. Earlier: 016 impact direction, 006 boss, 005 drops.)
+- Updated: 2026-04-26 (story 024: `RunSummaryTracker` becomes the explicit session-level stats/progression death hook consumer; see [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-24 017 alignment: projectile and explosion damage both flow through `DamageIntent`; 018 alignment: field/status damage sources are added for future `FieldEffectSystem`/`StatusEffectSystem`. Earlier: 016 impact direction, 006 boss, 005 drops.)
 
 ## Context
 
@@ -81,7 +81,7 @@
 - Минимальные потребители death hooks (зафиксированы здесь как контракт; реализация — по соответствующим историям):
   - `DropSystem` ([drops.md](drops.md)) — реагирует на смерти врагов: фильтрует по `entityKind === 'enemy'`, при непустой `dropTable` делает один `nextFloat` через session RNG и при выпавшем dropArchetype спавнит `Drop` через `EntityStore.spawnDrop` в позиции `ctx.position`. Полный контракт hook'a — в [drops.md](drops.md); смерть `entityKind === 'boss'` дроп не порождает, если отдельно не оговорено контентом;
   - `SessionFlowSystem` — session-level hooks на `player` ([session-definition.md](session-definition.md)) и, при `winCondition: bossDefeated`, на смерть босса ([boss-encounter.md](boss-encounter.md));
-  - session-level статистика и progression — счётчики убитых, прогресс волны и т.п.;
+  - `RunSummaryTracker` ([session-result-summary.md](session-result-summary.md)) — session-level статистика и progression для результата: счётчики убитых, причина поражения, boss-defeated summary. Его hook должен отработать до hook-ов, которые могут завершить run через `SessionFlowSystem`;
   - runtime events для HUD/audio/debug — публикация события `death` (см. [snapshot-shape.md](snapshot-shape.md)).
 - Hooks вызываются **синхронно**, в порядке регистрации, для каждой смерти отдельно. Hook не имеет права:
   - наносить новый урон в том же тике (это создаст цепочку смертей с непредсказуемым порядком и сломает воспроизводимость по `seed`);
@@ -134,3 +134,4 @@
 - [impact-feedback.md](impact-feedback.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
+- [session-result-summary.md](session-result-summary.md)

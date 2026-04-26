@@ -147,7 +147,10 @@ Defeat palette:
 
 ## Technical
 
-_Заполняет архитектор._
+- Новый shared-контракт `SessionResultSummary` и расширение terminal runtime events `win`/`loss` полем `summary` по [session-result-summary.md](../design/session-result-summary.md).
+- Simulation-side `RunSummaryTracker`: hook-driven агрегатор смертей, pickup-ов, boss/progress state; `SessionFlowSystem` прикладывает summary к `win`/`loss` до teardown.
+- `UiShell` хранит summary в `result` фазе и передаёт Result UI; Result UI строит main-side view model из summary, `SessionDefinition`, content registries и visual registries, без импортов из `src/sim/**`.
+- Result overlay получает outcome-specific stats layout и presentation-only victory/defeat effects; gameplay renderer в `result` фазе остаётся уничтоженным по [main-ui-shell.md](../design/main-ui-shell.md).
 
 ## Out of scope
 
@@ -172,8 +175,26 @@ _Заполняет архитектор._
 
 ## Tasks
 
-_Заполняет архитектор._
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [ ] | Shared protocol: ввести `SessionResultSummary`, расширить `RuntimeEvent.win/loss` полем `summary`, обновить типы, тест-хелперы и существующие ожидания terminal events. | Опора: [session-result-summary.md](../design/session-result-summary.md), [snapshot-shape.md](../design/snapshot-shape.md). |
+| T2 | [ ] | Simulation summary: добавить `RunSummaryTracker`, сброс lifecycle, death/drop pickup hooks, kill counts, defeat cause, boss state, progress percent; подключить к `SessionFlowSystem` так, чтобы `win/loss` публиковались с authoritative summary до teardown. | Summary hook должен отработать до terminal death hooks. Покрыть unit/integration tests для win, loss, boss loss/win и sandbox/no-progress. |
+| T3 | [ ] | Main result data flow: обновить `UiShell` и Result UI API на `outcome + summary`; построить pure view model для labels/icons/stats из summary + session/content/visual registries. | Result UI не импортирует `src/sim/**`; zero-count rows omit. |
+| T4 | [ ] | Result presentation: реализовать production-style victory/defeat result screen с progress, duration, total kills, kills by slime type, boss block, optional defeat cause, responsive layout and single back-to-menu action. | Визуально продолжает comic-card стиль pause/settings/menu. |
+| T5 | [ ] | Outcome effects and verification: добавить deterministic presentation-only victory fireworks/confetti and defeat slime splash/drip effects with `prefers-reduced-motion` fallback; покрыть DOM/unit tests where practical and run player demo checks for win/loss. | Эффекты живут в Result UI, не в gameplay Renderer. |
 
 ## Related
 
-_Заполняет архитектор._
+- [session-result-summary.md](../design/session-result-summary.md)
+- [main-ui-shell.md](../design/main-ui-shell.md)
+- [snapshot-shape.md](../design/snapshot-shape.md)
+- [runtime-systems.md](../design/runtime-systems.md)
+- [health-and-death.md](../design/health-and-death.md)
+- [drops.md](../design/drops.md)
+- [boss-encounter.md](../design/boss-encounter.md)
+- [session-definition.md](../design/session-definition.md)
+- [thread-model.md](../design/thread-model.md)
+- [content-archetypes.md](../design/content-archetypes.md)
+- [sprite-assets.md](../design/sprite-assets.md)
+- [testing.md](../design/testing.md)
+- [../docs/VISION.md](../docs/VISION.md)

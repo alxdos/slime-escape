@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (017 alignment: `CombatSystem` owns universal weapon/projectile lifecycle from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `FieldEffectSystem` and `StatusEffectSystem` are added after health/death and before drops; see [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: boss encounter, bossPhaseChange, drops.)
+- Updated: 2026-04-26 (story 024: `RunSummaryTracker` observes deaths/drop pickups/progress and provides `SessionResultSummary` for terminal `win`/`loss` events; see [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-24 017 alignment: `CombatSystem` owns universal weapon/projectile lifecycle from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `FieldEffectSystem` and `StatusEffectSystem` are added after health/death and before drops; see [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: boss encounter, bossPhaseChange, drops.)
 
 ## Context
 
@@ -24,6 +24,7 @@
   - `StatusEffectSystem` - actor-local status ticks, expiry and movement-affecting status resolution;
   - `DropSystem` - спавн, время жизни и подбор дропа;
   - `BossPhaseSystem` - переходы фаз и атаки босса;
+  - `RunSummaryTracker` - hook-driven aggregation for terminal run summary; it observes deaths/drop pickups/progress and does not mutate gameplay state;
   - `SnapshotExportSystem` - сбор данных для рендера и HUD.
 - Системы должны работать на простых runtime-структурах и явном update-order.
 - Минимальный update order на тике:
@@ -55,6 +56,7 @@
   - `DropSystem` реагирует на death hooks (спавн `Drop` в `EntityStore`) и в собственной фазе тика управляет только жизненным циклом дропа (ttl, pickup, удаление); полный контракт — [drops.md](drops.md);
   - `ZoneSystem` управляет состоянием зоны и её экспортом, но не завершает encounter самостоятельно и не наносит урона; полный контракт зоны (форма `margin`, режимы, lifecycle, экспорт) — в [zone.md](zone.md);
   - `BossPhaseSystem` управляет фазами и boss-specific attack rules, не подменяя `SessionFlowSystem`.
+  - `RunSummaryTracker` наблюдает уже случившиеся факты (`DeathContext`, pickup дропа, текущий encounter/wave/boss state) и строит `SessionResultSummary` по запросу `SessionFlowSystem` перед публикацией `win`/`loss`; он не публикует events самостоятельно, не принимает решений о победе/поражении и не влияет на update order.
 - `SpatialIndex` — минимальный контракт уровня архитектуры:
   - используется как акселератор соседских запросов и не является источником истины: исходное состояние сущностей живёт в `EntityStore`;
   - перестраивается каждый тик из текущего `EntityStore` после фаз, которые могут менять позиции (`MovementSystem`, фаза движения снарядов в `CombatSystem`);
@@ -64,6 +66,7 @@
 - `death hooks` должны срабатывать после того, как `HealthDeathSystem` зафиксировал смерть сущности, но до финального экспорта снапшота. Минимальные потребители death hooks:
   - `DropSystem`;
   - session-level статистика и progression;
+  - `RunSummaryTracker` для `kills`, `defeat.cause` и boss-defeated summary; этот hook должен отработать до death hook-а, который вызывает `SessionFlowSystem.onPlayerDeath` / `onBossDeath`;
   - runtime events для HUD/аудио/debug.
 - Runtime events должны порождаться системами, которые владеют фактом события:
   - `SessionFlowSystem` - pause/resume, encounter start/end, win/loss;
@@ -79,7 +82,7 @@
   - При получении `startSession` `SessionFlowSystem` инициализирует `runtime state` из `SessionDefinition`, активирует первый encounter и переводит `SimulationClock` в **running**. С этого момента системы тикают по обычному update order.
   - При получении `stopSession` `SessionFlowSystem` сбрасывает `runtime state` (включая входной state из [input-commands.md](input-commands.md)) и возвращает `SimulationClock` в idle. После этого приходящие input commands отбрасываются с warning через единый log-модуль.
   - `pause`/`resume` действуют только когда сессия активна; `pause` без активной сессии — no-op с warning. Семантика `pause`/`resume` для running-состояния не меняется и описана в [simulation-timing.md](simulation-timing.md).
-  - `SessionFlowSystem` обязан публиковать runtime events lifecycle: `sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`, и при наличии — `win`/`loss`. Конкретный набор полей этих events фиксируется по мере появления потребителей (HUD из 007, audio из 008); до этого допускается публиковать минимальную форму `{ kind, simTime }`. При `winCondition`/`lossCondition` категории `none` ([session-definition.md](session-definition.md)) `win`/`loss` события не генерируются автоматически.
+  - `SessionFlowSystem` обязан публиковать runtime events lifecycle: `sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`, и при наличии — `win`/`loss`. Для `win`/`loss` после story 024 обязательна форма `{ kind, simTime, summary }` из [session-result-summary.md](session-result-summary.md); остальные lifecycle events остаются в минимальной форме `{ kind, simTime }` до появления потребителей. При `winCondition`/`lossCondition` категории `none` ([session-definition.md](session-definition.md)) `win`/`loss` события не генерируются автоматически.
 
 - Encounter transitions владеет `SessionFlowSystem` (это уточнение для зоны ответственности; форма `transitionRules` — в [session-definition.md](session-definition.md)):
   - проверка `transitionRules` активного encounter выполняется **один раз за тик**, после `HealthDeathSystem` (когда мёртвые сущности уже удалены и `aliveFromThisPlan` в `SpawnSystem` отражает реальность) и **до** `SnapshotExportSystem` (чтобы транзиция и связанные lifecycle-events успели до экспорта);
@@ -87,8 +90,10 @@
   - при срабатывании transition: `SessionFlowSystem` публикует `encounterEnd` для текущего encounter, выбирает следующий по `transitionRules.next` (по умолчанию sequential), активирует его (`SpawnSystem.onEncounterStart`, `ZoneSystem` инициализация, публикация `encounterStart`). Если следующего encounter нет, run завершается по `winCondition`;
   - смена encounter происходит **в одном и том же тике**: между двумя последовательными снапшотами `main` видит либо старый encounter, либо новый, без промежуточного «никакого». Это сохраняет контракт «снапшот несёт консистентное state».
 - Завершение run (win/loss) владеет тем же `SessionFlowSystem`:
-  - при `winCondition: { kind: 'allEncountersComplete' }` после `encounterEnd` последнего encounter `SessionFlowSystem` публикует `win` ровно один раз;
+  - при `winCondition: { kind: 'allEncountersComplete' }` после `encounterEnd` последнего encounter `SessionFlowSystem` строит `SessionResultSummary` через `RunSummaryTracker` и публикует `win` ровно один раз;
   - при `lossCondition: { kind: 'playerDeath' }` `SessionFlowSystem` регистрирует session-level death hook на `entityKind === 'player'` ([health-and-death.md](health-and-death.md)) на старте симуляции (или сессии, в одной точке). Hook на смерть игрока публикует `loss` ровно один раз и инициирует завершение run;
+  - при `winCondition: { kind: 'bossDefeated' }` death hook на босса строит `SessionResultSummary` через `RunSummaryTracker` перед публикацией terminal `win`;
+  - `win`/`loss` event payload includes `summary` by [session-result-summary.md](session-result-summary.md); terminal event without summary is invalid after story 024;
   - после публикации `win` или `loss` `SessionFlowSystem` выполняет тот же сброс runtime state и перевод clock в idle, что и `stopSession`. Дальнейшие encounter transitions не выполняются. Повторное `pause`/`resume`/`input` отбрасываются с warning через единый log-модуль ([logging.md](logging.md)).
 
 ## Consequences
@@ -121,3 +126,4 @@
 - [impact-feedback.md](impact-feedback.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
+- [session-result-summary.md](session-result-summary.md)
