@@ -26,6 +26,7 @@ import type { ResultOutcome, ResultOverlay, ResultOverlayInit } from './ResultOv
 import type { SettingsOverlay, SettingsOverlayInit } from './SettingsOverlay';
 import type { StartupErrorOverlay, StartupErrorOverlayInit } from './StartupErrorOverlay';
 import type { StartupOverlay, StartupOverlayInit } from './StartupOverlay';
+import type { TitleOverlay, TitleOverlayInit } from './TitleOverlay';
 
 class FakeEventTarget {
   private readonly listeners = new Map<string, Set<EventListener>>();
@@ -135,8 +136,10 @@ function createDeferredPreload() {
 }
 
 function createUiShellForTest(init: UiShellInit) {
+  const titleOverlay = createTitleOverlayHarness();
   return createUiShell({
     runStartupPreload: () => Promise.resolve(EMPTY_TEXTURE_MAP),
+    createTitleOverlay: titleOverlay.factory,
     ...init
   });
 }
@@ -645,6 +648,35 @@ function createHudHarness() {
   };
 }
 
+function createTitleOverlayHarness() {
+  const calls = {
+    attach: 0,
+    update: 0,
+    detach: 0,
+    dispose: 0
+  };
+
+  return {
+    factory(_init: TitleOverlayInit): TitleOverlay {
+      return {
+        attach(): void {
+          calls.attach += 1;
+        },
+        update(): void {
+          calls.update += 1;
+        },
+        detach(): void {
+          calls.detach += 1;
+        },
+        dispose(): void {
+          calls.dispose += 1;
+        }
+      };
+    },
+    calls
+  };
+}
+
 function createAudioHarness() {
   const events: RuntimeEvent[] = [];
   const uiEvents: AudioUiEventId[] = [];
@@ -791,6 +823,7 @@ describe('UiShell', () => {
     const input = createInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const titleOverlay = createTitleOverlayHarness();
     const audio = createAudioHarness();
     const deferredPreload = createDeferredPreload();
     const windowTarget = new FakeEventTarget();
@@ -811,6 +844,7 @@ describe('UiShell', () => {
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
+      createTitleOverlay: titleOverlay.factory,
       createAudio: audio.factory,
       runStartupPreload(onProgress) {
         onProgress(1, 4);
@@ -920,6 +954,7 @@ describe('UiShell', () => {
     const input = createInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const titleOverlay = createTitleOverlayHarness();
     const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
@@ -943,6 +978,7 @@ describe('UiShell', () => {
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
+      createTitleOverlay: titleOverlay.factory,
       createAudio: audio.factory,
       windowTarget,
       documentTarget
@@ -972,6 +1008,7 @@ describe('UiShell', () => {
     expect(input.calls.create).toBe(1);
     expect(input.calls.start).toBe(1);
     expect(hud.calls.attach).toBe(1);
+    expect(titleOverlay.calls.attach).toBe(1);
     expect(menu.isVisible()).toBe(false);
     expect(pause.isVisible()).toBe(false);
     expect(result.isVisible()).toBe(false);
@@ -979,6 +1016,7 @@ describe('UiShell', () => {
 
     shell.onFrame();
     expect(hud.calls.update).toBe(1);
+    expect(titleOverlay.calls.update).toBe(1);
     expect(audio.calls.update).toBe(1);
   });
 
@@ -991,6 +1029,7 @@ describe('UiShell', () => {
     const input = createInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const titleOverlay = createTitleOverlayHarness();
     const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
@@ -1009,6 +1048,7 @@ describe('UiShell', () => {
       createRenderer: renderer.factory,
       createInputController: input.factory,
       createHud: hud.factory,
+      createTitleOverlay: titleOverlay.factory,
       createAudio: audio.factory,
       windowTarget,
       documentTarget
@@ -1036,6 +1076,7 @@ describe('UiShell', () => {
     expect(sim.calls.stop).toBe(1);
     expect(input.calls.stop).toBe(1);
     expect(renderer.calls.dispose).toBe(1);
+    expect(titleOverlay.calls.detach).toBe(1);
     expect(hud.calls.detach).toBe(1);
     expect(audio.calls.detach).toBe(1);
     expect(menu.isVisible()).toBe(true);

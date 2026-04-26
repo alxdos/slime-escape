@@ -57,6 +57,11 @@ import {
   type StartupOverlay,
   type StartupOverlayInit
 } from './StartupOverlay';
+import {
+  createTitleOverlay,
+  type TitleOverlay,
+  type TitleOverlayInit
+} from './TitleOverlay';
 import type { UiShellPhase } from './UiShellPhase';
 
 export type SessionResult = ResultOutcome;
@@ -78,6 +83,7 @@ type CreateStartupErrorOverlayFn = (init: StartupErrorOverlayInit) => StartupErr
 type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
+type CreateTitleOverlayFn = (init: TitleOverlayInit) => TitleOverlay;
 type CreateAudioFn = () => Audio;
 type CreateClientSettingsStoreFn = () => ClientSettingsStore;
 type RunStartupPreloadFn = (
@@ -99,6 +105,7 @@ export type UiShellInit = Readonly<{
   createRenderer?: CreateRendererFn;
   createInputController?: CreateInputControllerFn;
   createHud?: CreateHudFn;
+  createTitleOverlay?: CreateTitleOverlayFn;
   createAudio?: CreateAudioFn;
   createClientSettingsStore?: CreateClientSettingsStoreFn;
   runStartupPreload?: RunStartupPreloadFn;
@@ -147,6 +154,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const rendererFactory = init.createRenderer ?? createRenderer;
   const inputFactory = init.createInputController ?? createInputController;
   const hudFactory = init.createHud ?? createHud;
+  const titleOverlayFactory = init.createTitleOverlay ?? createTitleOverlay;
   const audioFactory = init.createAudio ?? createAudio;
   const clientSettingsStoreFactory =
     init.createClientSettingsStore ?? createClientSettingsStore;
@@ -164,6 +172,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let phase: UiShellPhase = LOADING_PHASE;
   let disposed = false;
   const hud = hudFactory({ parent: init.parent });
+  const titleOverlay = titleOverlayFactory({ parent: init.parent });
   const clientSettingsStore = clientSettingsStoreFactory();
   const audio = audioFactory();
   audio.setMasterGain(clientSettingsStore.get().masterVolume);
@@ -410,6 +419,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     let audioAttached = false;
     let sessionStarted = false;
     let hudAttached = false;
+    let titleOverlayAttached = false;
     try {
       audio.attach(session);
       audioAttached = true;
@@ -418,7 +428,12 @@ export function createUiShell(init: UiShellInit): UiShell {
       nextInput.start();
       hud.attach(session);
       hudAttached = true;
+      titleOverlay.attach(session);
+      titleOverlayAttached = true;
     } catch (error: unknown) {
+      if (titleOverlayAttached) {
+        titleOverlay.detach();
+      }
       if (hudAttached) {
         hud.detach();
       }
@@ -460,6 +475,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     previousUnsubscribeRendererSettings?.();
     previousRenderer?.dispose();
     if (hadClientSession) {
+      titleOverlay.detach();
       hud.detach();
       audio.detach();
     }
@@ -618,6 +634,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       if (isRunningSessionActive()) {
         hud.update(snapshotPair);
       }
+      if (activeSession !== null) {
+        titleOverlay.update(snapshotPair, phase);
+      }
       audio.update(snapshotPair, phase, snapshotPair.curr?.encounter ?? null);
       renderer?.render();
     },
@@ -635,6 +654,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       pause.dispose();
       result.dispose();
       settingsOverlay.dispose();
+      titleOverlay.dispose();
       hud.dispose();
       unsubscribeAudioSettings();
       clientSettingsStore.dispose();
