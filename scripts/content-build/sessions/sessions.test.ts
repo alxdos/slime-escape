@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { runContentBuild, type ContentArea } from '../index';
 import { parseSessionsArea, validateUniqueSessionPresetIds } from './parse';
@@ -186,6 +186,169 @@ describe('content-build sessions area', () => {
     );
   });
 
+  it('rejects a spawn override table on an empty encounter', async () => {
+    await expectParseRejects(
+      {
+        'sandbox.md': (source) => `${source}\n${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | heal-orb | none | none | none |\n`
+      },
+      /spawnKind "empty" forbids spawn override table/
+    );
+  });
+
+  it('rejects a spawn override that references a missing seq', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 99 | heal-orb | none | none | none |\n`
+          )
+      },
+      /override references missing seq "99"/
+    );
+  });
+
+  it('rejects duplicate seq values in a spawn override table', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | heal-orb | none | none | none |\n| 1 | magnet | none | none | none |\n`
+          )
+      },
+      /duplicate seq "1"/
+    );
+  });
+
+  it('rejects an unknown spawn override field name', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `| seq | bonusDrops | dropTable | retaliationEnabled | retaliationDurationMs |\n|---:|---|---|---|---:|\n| 1 | heal-orb | none | none | none |\n`
+          )
+      },
+      /unknown spawn override field "bonusDrops"/
+    );
+  });
+
+  it('rejects unknown drop ids in guaranteed spawn override drops', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | missing-drop | none | none | none |\n`
+          )
+      },
+      /unknown guaranteedDrops "missing-drop"/
+    );
+  });
+
+  it('rejects unknown drop ids in spawn override drop tables', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | missing-drop:0.2 | none | none |\n`
+          )
+      },
+      /unknown dropTable "missing-drop"/
+    );
+  });
+
+  it('keeps dropTable empty distinct from none in spawn overrides', async () => {
+    const fixture = await copySessionsFixture({
+      'training.md': (source) =>
+        addTrainingWave1OverrideTable(
+          source,
+          `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | empty | none | none |\n| 2 | heal-orb | none | none | none |\n| 3 | none | none | none | none |\n`
+        )
+    });
+
+    const area = await parseSessionsArea(fixture.sourceDirectory);
+    const trainingPreset = area.presets.find((preset) => preset.presetId === 'training');
+    const encounter = trainingPreset?.encounters.find(({ id }) => id === 'training-wave-1');
+
+    expect(encounter?.spawnPlan.kind).toBe('wave');
+    if (encounter?.spawnPlan.kind !== 'wave') {
+      throw new Error('training-wave-1 fixture must stay a wave encounter');
+    }
+    expect(encounter.spawnPlan.spawns[0]?.override).toEqual({ dropTable: [] });
+    expect(encounter.spawnPlan.spawns[1]?.override).toEqual({
+      guaranteedDrops: [{ id: 'heal-orb', constName: 'HEAL_ORB' }]
+    });
+    expect(encounter.spawnPlan.spawns[2]?.override).toBeUndefined();
+  });
+
+  it('rejects empty as a guaranteed spawn override drop list', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | empty | none | none | none |\n`
+          )
+      },
+      /guaranteedDrops.*expected comma-separated drop ids or none/
+    );
+  });
+
+  it('rejects partially authored spawn override retaliation', async () => {
+    await expectParseRejects(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | true | none |\n`
+          )
+      },
+      /retaliationEnabled and retaliationDurationMs must be set together/
+    );
+  });
+
+  it('warns on spawn override drop table chances outside [0, 1]', async () => {
+    await expectParseWarns(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | heal-orb:1.2 | none | none |\n`
+          )
+      },
+      'spawn override drop table entry chance out of [0, 1] per design/spawn-overrides.md'
+    );
+  });
+
+  it('warns on spawn override drop table chance sums above 1', async () => {
+    await expectParseWarns(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | heal-orb:0.6, magnet:0.5 | none | none |\n`
+          )
+      },
+      'spawn override drop table chances sum exceeds 1 per design/spawn-overrides.md'
+    );
+  });
+
+  it('warns on enabled spawn override retaliation without positive duration', async () => {
+    await expectParseWarns(
+      {
+        'training.md': (source) =>
+          addTrainingWave1OverrideTable(
+            source,
+            `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | true | 0 |\n`
+          )
+      },
+      'enabled spawn override retaliation duration must be positive per design/spawn-overrides.md'
+    );
+  });
+
   it('rejects an encounter background id that is not declared in the session table', async () => {
     await expectParseRejects(
       {
@@ -256,6 +419,21 @@ async function expectParseRejects(
   await expect(parseSessionsArea(fixture.sourceDirectory)).rejects.toThrow(pattern);
 }
 
+async function expectParseWarns(
+  mutations: SessionMutations,
+  message: string
+): Promise<void> {
+  const fixture = await copySessionsFixture(mutations);
+  const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+  try {
+    await expect(parseSessionsArea(fixture.sourceDirectory)).resolves.toBeDefined();
+    expect(warnSpy).toHaveBeenCalledWith('[unknown]', message, expect.any(Object));
+  } finally {
+    warnSpy.mockRestore();
+  }
+}
+
 async function copySessionsFixture(
   mutations: SessionMutations = {}
 ): Promise<Readonly<{ directory: string; sourceDirectory: string }>> {
@@ -286,9 +464,17 @@ function removeExact(source: string, search: string): string {
   return replaceExact(source, search, '');
 }
 
+function addTrainingWave1OverrideTable(source: string, table: string): string {
+  return replaceExact(source, TRAINING_WAVE_1_SPAWNS, `${TRAINING_WAVE_1_SPAWNS}\n${table}`);
+}
+
 function identity(value: string): string {
   return value;
 }
+
+const SPAWN_OVERRIDE_TABLE_HEADER = `| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
+|---:|---|---|---|---:|
+`;
 
 const TRAINING_WAVE_1_SPAWNS = `| seq | archetypeId |
 |---:|---|

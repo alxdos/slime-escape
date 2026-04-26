@@ -77,11 +77,15 @@
 | 2 | slime-sleeper |
 | 3 | slime-hornling |
 | 4 | slime-spark |
-| 5 | campaign-set-1-carrier-slime |
+| 5 | slime-spark |
 | 6 | slime-hornling |
 | 7 | slime-spark |
 | 8 | slime-sleeper |
 | 9 | slime-hornling |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
+|---:|---|---|---|---:|
+| 5 | size-up | empty | none | none |
 
 ## campaign-set-1-wave-3
 
@@ -206,12 +210,16 @@
 | 2 | slime-wraith |
 | 3 | slime-shell |
 | 4 | slime-stack |
-| 5 | campaign-set-2-carrier-slime |
+| 5 | slime-stack |
 | 6 | slime-shell |
 | 7 | slime-stack |
 | 8 | slime-trickster |
 | 9 | slime-mech-crab |
 | 10 | slime-stack |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
+|---:|---|---|---|---:|
+| 5 | multi-shot | empty | none | none |
 
 ## campaign-set-2-wave-3
 
@@ -338,13 +346,17 @@
 | 2 | slime-bug |
 | 3 | slime-star |
 | 4 | slime-lifter |
-| 5 | campaign-set-3-carrier-slime |
+| 5 | slime-echo |
 | 6 | slime-star |
 | 7 | slime-lifter |
 | 8 | slime-echo |
 | 9 | slime-drone |
 | 10 | slime-star |
 | 11 | slime-lifter |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
+|---:|---|---|---|---:|
+| 5 | magnet | empty | none | none |
 
 ## campaign-set-3-wave-3
 
@@ -472,7 +484,7 @@
 | 2 | slime-fortress |
 | 3 | slime-splitter |
 | 4 | slime-prince |
-| 5 | campaign-set-4-carrier-slime |
+| 5 | slime-prince |
 | 6 | slime-splitter |
 | 7 | slime-prince |
 | 8 | slime-tadpole |
@@ -480,6 +492,10 @@
 | 10 | slime-splitter |
 | 11 | slime-prince |
 | 12 | slime-dasher |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
+|---:|---|---|---|---:|
+| 5 | fragment | empty | none | none |
 
 ## campaign-set-4-wave-3
 
@@ -609,7 +625,7 @@
 | 2 | slime-candle |
 | 3 | slime-mech |
 | 4 | slime-clamper |
-| 5 | campaign-set-5-carrier-slime |
+| 5 | slime-obelisk |
 | 6 | slime-mech |
 | 7 | slime-clamper |
 | 8 | slime-door |
@@ -618,6 +634,10 @@
 | 11 | slime-clamper |
 | 12 | slime-ninja |
 | 13 | slime-candle |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
+|---:|---|---|---|---:|
+| 5 | overdrive | empty | none | none |
 
 ## campaign-set-5-wave-3
 

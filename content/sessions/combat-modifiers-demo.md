@@ -37,7 +37,13 @@
 
 | seq | archetypeId | x | y |
 |---:|---|---:|---:|
-| 1 | demo-carrier-slime | 4 | 1.5 |
-| 2 | demo-retaliator-slime | 5 | -1 |
-| 3 | demo-retaliator-slime | 7 | -1 |
+| 1 | slime-star | 4 | 1.5 |
+| 2 | slime-saw | 5 | -1 |
+| 3 | slime-saw | 7 | -1 |
 | 4 | slime-bug | 6 | 2.5 |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs |
+|---:|---|---|---|---:|
+| 1 | magnet, heal-orb | empty | none | none |
+| 2 | none | heal-orb:0.20 | true | 2500 |
+| 3 | none | heal-orb:0.20 | true | 2500 |
