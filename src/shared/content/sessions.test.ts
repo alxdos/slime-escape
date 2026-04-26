@@ -9,9 +9,9 @@ describe('getPlayableModeCatalog', () => {
 
     expect(catalog).toHaveLength(3);
     expect(catalog.map((entry) => entry.presetId)).toEqual([
+      'campaign-easy',
       'campaign-normal',
-      'combat-modifiers-demo',
-      'training'
+      'campaign-hard'
     ]);
     expect([...catalog].sort((left, right) => left.order - right.order)).toEqual(catalog);
   });

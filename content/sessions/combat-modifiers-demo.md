@@ -4,7 +4,7 @@
 |---|---|
 | displayName | Combat Modifiers Demo |
 | description | Проверочная арена для puddles, statuses, proximity mines, carrier drops, magnet pickup, retaliation and aim assist. |
-| visibleInMenu | true |
+| visibleInMenu | false |
 | order | 1 |
 | arenaId | sandbox |
 | playerId | hero-sandbox |

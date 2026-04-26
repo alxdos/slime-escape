@@ -9,6 +9,8 @@ import { parseSessionsArea, validateUniqueSessionPresetIds } from './parse';
 import { renderSessionContent } from './renderContent';
 
 const SESSION_SOURCE_FILES = [
+  'campaign-easy.md',
+  'campaign-hard.md',
   'campaign-normal.md',
   'sandbox.md',
   'sandbox-with-combat.md',
