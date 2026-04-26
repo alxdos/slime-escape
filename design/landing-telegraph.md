@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-25
-- Updated: 2026-04-25
+- Updated: 2026-04-26 (correction: runtime `Projectile` **уже** несёт `arcEnd: Vec2 | null` в 017 ([src/sim/EntityStore.ts](../src/sim/EntityStore.ts)), никаких правок runtime для этого файла не требуется — только `SnapshotExportSystem` копирует поле в `ProjectileSnapshot` с принудительным `null` для `state !== 'flying'`. Прошлая формулировка «CombatSystem копирует arcEnd в runtime Projectile в момент создания» — описывала то, что уже реализовано в 017 при spawn arc-снаряда; для 020 это не новая работа.)
 
 ## Context
 
@@ -40,7 +40,12 @@ Story 020 разрешает не-игроку (слайму) бросать arc
   - для linear/placed motion — **всегда** `null` независимо от `state`. Никаких эвристик «угадать landing point по originX/originY» renderer не делает.
 - Поле обязательно (не optional на типе `Readonly<{...}>`), значение `null` — единственный способ выразить «landing telegraph не применим». Это устраняет «два разных нет данных» (`undefined` vs `null`).
 - Расширение допускается общим правилом «новое поле в существующем `kind` допустимо только дописыванием» из [snapshot-shape.md](snapshot-shape.md). Удаления полей не происходит, других потребителей `ProjectileSnapshot` контракт не ломает.
-- Источник вычисления — `CombatSystem` в момент создания снаряда, по той же формуле, что определяет арку траектории (см. [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md), раздел «Projectile motion and state», правила `arc`). На каждом снапшоте `SnapshotExportSystem` копирует значение из runtime-сущности `Projectile`, не пересчитывает.
+- Источник вычисления — `CombatSystem` в момент создания снаряда, по той же формуле, что определяет арку траектории (см. [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md), раздел «Projectile motion and state», правила `arc`). В реализации 017 это уже выставляется в `store.spawnProjectile({ motionKind: 'arc', arcEnd, … })`: поле `arcEnd` уже есть у runtime `Projectile` и заполнено корректно для arc-снарядов, `null` для linear/placed. Для story 020 никаких правок runtime по этой части не требуется.
+- На каждом снапшоте `SnapshotExportSystem` копирует значение из runtime-сущности `Projectile`, **принудительно выставляя `null` при `state !== 'flying'`**: это единственное место, где семантика «после grounding arcEnd больше не несёт презентационного смысла» материализуется в данных snapshot. Конкретно — одна строка в projectile-экспорте `SnapshotExportSystem.ts`:
+  ```ts
+  arcEnd: projectile.state === 'flying' ? projectile.arcEnd : null,
+  ```
+  Этот подход держит renderer-фильтр чистым и не требует «эвристики arcEnd vs state» на стороне renderer-а. Runtime `Projectile.arcEnd` при этом продолжает жить до удаления снаряда; в runtime фазе explosion / fragments / cleanup поле доступно по необходимости для дальнейших систем (сегодня ни одна из них его не читает).
 
 ### Render contract
 
@@ -85,7 +90,7 @@ Story 020 разрешает не-игроку (слайму) бросать arc
 ## Consequences
 
 - `ProjectileSnapshot` получает одно новое поле `arcEnd: {x,y} | null`. Стоимость трафика — два числа на снаряд, для типичного числа одновременных снарядов в кампании (десятки) — пренебрежимо.
-- `CombatSystem` копирует `arcEnd` в runtime-сущность `Projectile` в момент создания arc-снаряда (одно дополнительное умножение и сложение на спавн). Никакого per-tick пересчёта.
+- Единственная реальная правка для 020 в этой части — добавить одну строку в `SnapshotExportSystem.ts` при конструировании `ProjectileSnapshot`-литерала. Runtime `Projectile.arcEnd` уже выставляется корректно в 017, в момент спавна arc-снаряда. Ни `CombatSystem`, ни `EntityStore`, ни spawn-path тут не трогаются.
 - Renderer получает одну новую категорию object-pool (landing telegraph mesh-ы), управляемую по жизненному циклу projectile snapshot. Симметрично уже существующим pool-ам (droplets из [impact-feedback.md](impact-feedback.md), grounded pulse).
 - UX-инвариант: игрок никогда не получает explosion-урон от arc-снаряда не-игрока без видимого telegraph-маркера в течение всего полёта. Это конкретно проверяется тестом story 020 («слайм бросает arc-снаряд → маркер виден на всё время полёта → исчезает при импакте»).
 - Player pre-shot preview из [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) и in-flight landing telegraph остаются **двумя разными аффордансами с непересекающимися окнами времени** (до выстрела vs после выстрела) и непересекающимися owner-ами (player vs non-player). Это два чистых UX-слоя без конфликта.
