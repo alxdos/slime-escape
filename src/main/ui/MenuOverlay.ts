@@ -17,6 +17,9 @@ import {
   type TeaserControlId
 } from './MenuOverlayState';
 
+const TEASER_FEEDBACK_VISIBLE_MS = 20_000;
+const TEASER_FEEDBACK_FADE_MS = 900;
+
 export type MenuOverlayInit = Readonly<{
   parent: HTMLElement;
   modes: ReadonlyArray<PlayableModeEntry>;
@@ -58,7 +61,6 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   const teaserFeedback = document.createElement('div');
   teaserFeedback.dataset['role'] = 'menu-teaser-feedback';
   teaserFeedback.style.cssText = teaserFeedbackStyle();
-  stage.appendChild(teaserFeedback);
 
   for (const [index, control] of MAIN_MENU_CONTROLS.entries()) {
     const button = createControlButton(control, index, handleControl);
@@ -68,6 +70,7 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     }
     stage.appendChild(button);
   }
+  stage.appendChild(teaserFeedback);
 
   root.appendChild(stage);
   init.parent.appendChild(root);
@@ -141,7 +144,7 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     feedbackTimeout = window.setTimeout(() => {
       teaserFeedback.style.opacity = '0';
       feedbackTimeout = null;
-    }, 900);
+    }, TEASER_FEEDBACK_VISIBLE_MS);
   }
 
   function restartAppearAnimations(): void {
@@ -275,17 +278,19 @@ function controlImageStyle(): string {
 function teaserFeedbackStyle(): string {
   return [
     'position:absolute',
-    'left:38%',
-    'top:61%',
-    'width:24%',
+    'left:50%',
+    'top:14%',
+    'width:36%',
+    'transform:translateX(-50%)',
+    'z-index:30',
     'opacity:0',
     ...comicTextStyle({
-      fontSize: '32px',
+      fontSize: '40px',
       color: '#f8f0a8',
       textAlign: 'center'
     }),
     'pointer-events:none',
-    'transition:opacity 140ms ease'
+    `transition:opacity ${TEASER_FEEDBACK_FADE_MS}ms ease`
   ].join(';');
 }
 
