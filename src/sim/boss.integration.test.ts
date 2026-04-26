@@ -127,7 +127,7 @@ function setupBossWorld() {
     onEncounterStart(encounter) {
       const session = sessionFlow.activeSession();
       if (session === null) return;
-      spawn.onEncounterStart(encounter, entities, session.arena);
+      spawn.onEncounterStart(encounter, entities, session.arena, clock.simTimeMs());
       zone.onEncounterStart(encounter);
     },
     onEncounterEnd(encounter) {

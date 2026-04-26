@@ -32,7 +32,8 @@ describe('BossPhaseSystem', () => {
         tuning: null
       },
       store,
-      ARENA
+      ARENA,
+      0
     );
 
     const boss = [...store.bosses()][0]!;
@@ -70,7 +71,8 @@ describe('BossPhaseSystem', () => {
         tuning: null
       },
       store,
-      ARENA
+      ARENA,
+      0
     );
     store.spawnPlayer({ ...TRAINING_PLAYER, position: { x: 4, y: 0 } });
 

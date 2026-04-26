@@ -6,6 +6,7 @@ import type {
   ArenaConfig,
   BossSpawnPlan,
   EncounterDefinition,
+  Loadout,
   SpawnOverride,
   StaticSpawnPlan,
   Vec2,
@@ -20,7 +21,8 @@ export type SpawnSystem = Readonly<{
   onEncounterStart(
     encounter: EncounterDefinition,
     store: EntityStore,
-    arena: ArenaConfig
+    arena: ArenaConfig,
+    simTimeMs: number
   ): void;
   onEncounterEnd(encounter: EncounterDefinition): void;
   onTick(simTimeMs: number, store: EntityStore): void;
@@ -45,11 +47,13 @@ type BossSpawnState = {
 export type SpawnSystemOptions = Readonly<{
   enemyRegistry?: Readonly<Record<string, EnemyArchetype>>;
   bossRegistry?: Readonly<Record<string, BossArchetype>>;
+  onEnemySpawned?: (enemyId: EntityId, loadout: Loadout, simTimeMs: number) => void;
 }>;
 
 export function createSpawnSystem(options: SpawnSystemOptions = {}): SpawnSystem {
   const enemyRegistry = options.enemyRegistry ?? ENEMY_ARCHETYPES;
   const bossRegistry = options.bossRegistry ?? BOSS_ARCHETYPES;
+  const onEnemySpawned = options.onEnemySpawned ?? null;
   let rng: Rng | null = null;
   let waveState: WaveState | null = null;
   let bossState: BossSpawnState | null = null;
@@ -58,7 +62,7 @@ export function createSpawnSystem(options: SpawnSystemOptions = {}): SpawnSystem
     setRng(next): void {
       rng = next;
     },
-    onEncounterStart(encounter, store, arena): void {
+    onEncounterStart(encounter, store, arena, simTimeMs): void {
       waveState = null;
       bossState = null;
       const plan = encounter.spawnPlan;
@@ -66,7 +70,7 @@ export function createSpawnSystem(options: SpawnSystemOptions = {}): SpawnSystem
         case 'empty':
           return;
         case 'static':
-          executeStatic(plan, store, enemyRegistry);
+          executeStatic(plan, store, enemyRegistry, simTimeMs, onEnemySpawned);
           return;
         case 'wave':
           waveState = {
@@ -97,7 +101,7 @@ export function createSpawnSystem(options: SpawnSystemOptions = {}): SpawnSystem
       if (state.dispatched >= state.plan.spawns.length) return;
       if (state.alive.size >= state.plan.maxAlive) return;
       if (simTimeMs - state.lastSpawnSimMs < state.plan.spawnIntervalMs) return;
-      spawnNextWaveEnemy(state, simTimeMs, store, enemyRegistry, rng);
+      spawnNextWaveEnemy(state, simTimeMs, store, enemyRegistry, rng, onEnemySpawned);
     },
     onEnemyDeath(entityId): void {
       if (waveState === null) return;
@@ -167,11 +171,14 @@ function makeBossSpawnSpec(archetype: BossArchetype, position: Vec2): BossSpawnS
 function executeStatic(
   plan: StaticSpawnPlan,
   store: EntityStore,
-  enemyRegistry: Readonly<Record<string, EnemyArchetype>>
+  enemyRegistry: Readonly<Record<string, EnemyArchetype>>,
+  simTimeMs: number,
+  onEnemySpawned: ((enemyId: EntityId, loadout: Loadout, simTimeMs: number) => void) | null
 ): void {
   for (const spec of plan.spawns) {
     const archetype = resolveArchetype(spec.archetypeId, enemyRegistry);
-    store.spawnEnemy(makeEnemySpawnSpec(archetype, spec.override, spec.position));
+    const enemy = store.spawnEnemy(makeEnemySpawnSpec(archetype, spec.override, spec.position));
+    notifyEnemyLoadout(enemy.id, spec.override, simTimeMs, onEnemySpawned);
   }
 }
 
@@ -180,7 +187,8 @@ function spawnNextWaveEnemy(
   simTimeMs: number,
   store: EntityStore,
   enemyRegistry: Readonly<Record<string, EnemyArchetype>>,
-  rng: Rng | null
+  rng: Rng | null,
+  onEnemySpawned: ((enemyId: EntityId, loadout: Loadout, simTimeMs: number) => void) | null
 ): void {
   if (rng === null) {
     throw new Error("wave spawn plan requires a session Rng (see design/rng.md)");
@@ -195,9 +203,20 @@ function spawnNextWaveEnemy(
     rng
   );
   const enemy = store.spawnEnemy(makeEnemySpawnSpec(archetype, spec.override, position));
+  notifyEnemyLoadout(enemy.id, spec.override, simTimeMs, onEnemySpawned);
   state.alive.add(enemy.id);
   state.dispatched += 1;
   state.lastSpawnSimMs = simTimeMs;
+}
+
+function notifyEnemyLoadout(
+  enemyId: EntityId,
+  override: SpawnOverride | undefined,
+  simTimeMs: number,
+  onEnemySpawned: ((enemyId: EntityId, loadout: Loadout, simTimeMs: number) => void) | null
+): void {
+  if (override?.loadout === undefined || onEnemySpawned === null) return;
+  onEnemySpawned(enemyId, override.loadout, simTimeMs);
 }
 
 function resolveArchetype(
