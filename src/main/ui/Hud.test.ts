@@ -141,60 +141,64 @@ describe('Hud view model', () => {
     expect(formatElapsedMs(601000)).toBe('10:01');
   });
 
-  it('derives hp, encounter and wave text from session + snapshot', () => {
-    const view = deriveHudViewModel(makeSession(), makeSnapshot());
-
-    expect(view.hpText).toBe('4 / 5');
-    expect(view.encounterIdText).toBe('wave-2');
-    expect(view.encounterTypeText).toBe('wave');
-    expect(view.encounterElapsedText).toBe('01:05');
-    expect(view.waveTitleText).toBe('Волна 2 из 2');
-    expect(view.waveProgressText).toBe('Выпущено 3/7 · Живых 2');
-    expect(view.weapon).toBeNull();
-    expect(view.boss).toBeNull();
-  });
-
-  it('hides wave text for non-wave encounters or missing waveProgress', () => {
-    const breakView = deriveHudViewModel(
-      makeSession(),
-      makeSnapshot({
-        encounter: {
-          id: 'break-1',
-          type: 'break',
-          index: 1,
-          elapsedMs: 2000
-        },
-        waveProgress: null
-      })
-    );
-
-    expect(breakView.waveTitleText).toBeNull();
-    expect(breakView.waveProgressText).toBeNull();
-    expect(breakView.weapon).toBeNull();
-    expect(breakView.boss).toBeNull();
-  });
-
-  it('derives selected weapon name, slot and cooldown from weaponHud', () => {
+  it('derives run timer from sim time and compact player HP', () => {
     const view = deriveHudViewModel(
       makeSession(),
       makeSnapshot({
-        simTimeMs: 200,
+        simTimeMs: 125000,
+        encounter: {
+          id: 'wave-2',
+          type: 'wave',
+          index: 2,
+          elapsedMs: 65000
+        }
+      })
+    );
+
+    expect(view.runTimerText).toBe('02:05');
+    expect(view.playerHp).toEqual({
+      text: '4 / 5',
+      current: 4,
+      max: 5,
+      ratio: 0.8
+    });
+    expect(view.weaponSlots).toEqual([]);
+    expect(view.selectedWeaponIndex).toBeNull();
+    expect(view.boss).toBeNull();
+  });
+
+  it('derives sorted weapon slots with cooldown, modifier badges and timed badges', () => {
+    const view = deriveHudViewModel(
+      makeSession(),
+      makeSnapshot({
+        simTimeMs: 450,
         weaponHud: {
           selectedIndex: 1,
           weapons: [
-            {
-              index: 0,
-              weaponArchetypeId: 'pistol',
-              cooldownStartedAtSimMs: 0,
-              cooldownReadyAtSimMs: 0,
-              modifiers: [],
-              timedEffects: []
-            },
             {
               index: 1,
               weaponArchetypeId: 'shotgun',
               cooldownStartedAtSimMs: 200,
               cooldownReadyAtSimMs: 700,
+              modifiers: [
+                { kind: 'projectileSizeMultiplier', multiplier: 2 },
+                { kind: 'pierceBonus', amount: 1 },
+                { kind: 'projectileSizeMultiplier', multiplier: 1.5 }
+              ],
+              timedEffects: [
+                {
+                  kind: 'temporaryOverdrive',
+                  cooldownMultiplier: 0.5,
+                  startedAtSimMs: 100,
+                  expiresAtSimMs: 900
+                }
+              ]
+            },
+            {
+              index: 0,
+              weaponArchetypeId: 'pistol',
+              cooldownStartedAtSimMs: 0,
+              cooldownReadyAtSimMs: 0,
               modifiers: [],
               timedEffects: []
             }
@@ -203,14 +207,35 @@ describe('Hud view model', () => {
       })
     );
 
-    expect(view.weapon).toEqual({
-      titleText: 'Shotgun',
-      slotText: '2 / 2',
-      cooldownText: '0.5s'
-    });
+    expect(view.selectedWeaponIndex).toBe(1);
+    expect(view.weaponSlots).toEqual([
+      {
+        index: 0,
+        hotkeyText: '1',
+        weaponArchetypeId: 'pistol',
+        titleText: 'Pistol',
+        isSelected: false,
+        cooldownRatio: 0,
+        modifierBadges: [],
+        timedBadges: []
+      },
+      {
+        index: 1,
+        hotkeyText: '2',
+        weaponArchetypeId: 'shotgun',
+        titleText: 'Shotgun',
+        isSelected: true,
+        cooldownRatio: 0.5,
+        modifierBadges: [
+          { kind: 'projectileSizeMultiplier', count: 2 },
+          { kind: 'pierceBonus', count: 1 }
+        ],
+        timedBadges: [{ kind: 'temporaryOverdrive', remainingRatio: 0.5625 }]
+      }
+    ]);
   });
 
-  it('shows a holstered weapon summary when no weapon slot is selected', () => {
+  it('keeps weapon slots visible and unselected while holstered', () => {
     const view = deriveHudViewModel(
       makeSession(),
       makeSnapshot({
@@ -230,11 +255,9 @@ describe('Hud view model', () => {
       })
     );
 
-    expect(view.weapon).toEqual({
-      titleText: 'Holstered',
-      slotText: '— / 1',
-      cooldownText: '—'
-    });
+    expect(view.selectedWeaponIndex).toBeNull();
+    expect(view.weaponSlots).toHaveLength(1);
+    expect(view.weaponSlots[0]?.isSelected).toBe(false);
   });
 
   it('shows boss block only when bossHud is present and resolves phase through archetype data', () => {
@@ -337,13 +360,15 @@ describe('Hud view model', () => {
   it('falls back to waiting state before the first snapshot arrives', () => {
     const view = deriveHudViewModel(makeSession(), null);
 
-    expect(view.hpText).toBe('-- / 5');
-    expect(view.encounterIdText).toBe('waiting');
-    expect(view.encounterTypeText).toBe('none');
-    expect(view.encounterElapsedText).toBe('--:--');
-    expect(view.waveTitleText).toBeNull();
-    expect(view.waveProgressText).toBeNull();
-    expect(view.weapon).toBeNull();
+    expect(view.runTimerText).toBe('00:00');
+    expect(view.playerHp).toEqual({
+      text: '-- / 5',
+      current: null,
+      max: 5,
+      ratio: 0
+    });
+    expect(view.weaponSlots).toEqual([]);
+    expect(view.selectedWeaponIndex).toBeNull();
     expect(view.boss).toBeNull();
   });
 });

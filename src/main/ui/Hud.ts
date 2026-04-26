@@ -1,13 +1,11 @@
 import { BOSS_ARCHETYPES, type BossArchetype } from '../../shared/content/bosses';
-import { WEAPON_ARCHETYPES } from '../../shared/content/weapons';
+import { WEAPON_ARCHETYPES, type WeaponModifier } from '../../shared/content/weapons';
 import type { SessionDefinition } from '../../shared/session';
 import type {
   BossHudSnapshot,
   BossSnapshot,
-  EncounterSnapshot,
   PlayerSnapshot,
-  Snapshot,
-  WaveProgressSnapshot
+  Snapshot
 } from '../../shared/snapshot';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
@@ -23,20 +21,39 @@ export type Hud = Readonly<{
 }>;
 
 export type HudViewModel = Readonly<{
-  hpText: string;
-  encounterIdText: string;
-  encounterTypeText: string;
-  encounterElapsedText: string;
-  weapon: WeaponViewModel | null;
-  waveTitleText: string | null;
-  waveProgressText: string | null;
+  runTimerText: string;
+  playerHp: PlayerHpViewModel;
+  weaponSlots: ReadonlyArray<WeaponSlotViewModel>;
+  selectedWeaponIndex: number | null;
   boss: BossViewModel | null;
 }>;
 
-export type WeaponViewModel = Readonly<{
+export type PlayerHpViewModel = Readonly<{
+  text: string;
+  current: number | null;
+  max: number;
+  ratio: number;
+}>;
+
+export type WeaponSlotViewModel = Readonly<{
+  index: number;
+  hotkeyText: string;
+  weaponArchetypeId: string;
   titleText: string;
-  slotText: string;
-  cooldownText: string;
+  isSelected: boolean;
+  cooldownRatio: number;
+  modifierBadges: ReadonlyArray<WeaponModifierBadgeViewModel>;
+  timedBadges: ReadonlyArray<WeaponTimedBadgeViewModel>;
+}>;
+
+export type WeaponModifierBadgeViewModel = Readonly<{
+  kind: WeaponModifier['kind'];
+  count: number;
+}>;
+
+export type WeaponTimedBadgeViewModel = Readonly<{
+  kind: 'temporaryOverdrive';
+  remainingRatio: number;
 }>;
 
 export type BossViewModel = Readonly<{
@@ -52,16 +69,12 @@ export function createHud(init: HudInit): Hud {
   root.style.cssText = rootStyle();
   root.style.display = 'none';
 
-  const hpBlock = createBlock('HP');
-  const weaponBlock = createBlock('Weapon');
-  const encounterBlock = createBlock('Encounter');
-  const waveBlock = createBlock('Wave');
+  const statusBlock = createBlock('Run');
+  const weaponBlock = createBlock('Weapons');
   const bossBlock = createBossBlock();
 
-  root.appendChild(hpBlock.root);
+  root.appendChild(statusBlock.root);
   root.appendChild(weaponBlock.root);
-  root.appendChild(encounterBlock.root);
-  root.appendChild(waveBlock.root);
   root.appendChild(bossBlock.root);
   init.parent.appendChild(root);
 
@@ -73,10 +86,8 @@ export function createHud(init: HudInit): Hud {
       root.style.display = 'grid';
       render(
         deriveHudViewModel(nextSession, null),
-        hpBlock,
+        statusBlock,
         weaponBlock,
-        encounterBlock,
-        waveBlock,
         bossBlock
       );
     },
@@ -84,10 +95,8 @@ export function createHud(init: HudInit): Hud {
       if (session === null) return;
       render(
         deriveHudViewModel(session, snapshotPair.curr),
-        hpBlock,
+        statusBlock,
         weaponBlock,
-        encounterBlock,
-        waveBlock,
         bossBlock
       );
     },
@@ -106,20 +115,12 @@ export function deriveHudViewModel(
   snapshot: Snapshot | null
 ): HudViewModel {
   const player = snapshot === null ? null : findPlayerSnapshot(snapshot);
-  const encounter = snapshot?.encounter ?? null;
-  const wave = deriveWaveSummary(session, encounter, snapshot?.waveProgress ?? null);
 
   return {
-    hpText:
-      player === null
-        ? `-- / ${session.player.maxHp}`
-        : `${clampHp(player.hp)} / ${player.maxHp}`,
-    encounterIdText: encounter?.id ?? 'waiting',
-    encounterTypeText: encounter?.type ?? 'none',
-    encounterElapsedText: encounter === null ? '--:--' : formatElapsedMs(encounter.elapsedMs),
-    weapon: deriveWeaponSummary(snapshot),
-    waveTitleText: wave?.title ?? null,
-    waveProgressText: wave?.progress ?? null,
+    runTimerText: formatElapsedMs(snapshot?.simTimeMs ?? 0),
+    playerHp: derivePlayerHp(session, player),
+    weaponSlots: deriveWeaponSlots(snapshot),
+    selectedWeaponIndex: snapshot?.weaponHud?.selectedIndex ?? null,
     boss: deriveBossSummary(snapshot)
   };
 }
@@ -133,27 +134,13 @@ export function formatElapsedMs(elapsedMs: number): string {
 
 function render(
   viewModel: HudViewModel,
-  hpBlock: HudBlock,
+  statusBlock: HudBlock,
   weaponBlock: HudBlock,
-  encounterBlock: HudBlock,
-  waveBlock: HudBlock,
   bossBlock: BossHudBlock
 ): void {
-  hpBlock.value.textContent = viewModel.hpText;
-  hpBlock.meta.textContent = '';
-  renderOptionalBlock(weaponBlock, viewModel.weapon);
-  encounterBlock.value.textContent = `${viewModel.encounterTypeText} • ${viewModel.encounterIdText}`;
-  encounterBlock.meta.textContent = `t=${viewModel.encounterElapsedText}`;
-
-  if (viewModel.waveTitleText === null || viewModel.waveProgressText === null) {
-    waveBlock.root.style.display = 'none';
-    waveBlock.value.textContent = '';
-    waveBlock.meta.textContent = '';
-  } else {
-    waveBlock.root.style.display = 'flex';
-    waveBlock.value.textContent = viewModel.waveTitleText;
-    waveBlock.meta.textContent = viewModel.waveProgressText;
-  }
+  statusBlock.value.textContent = viewModel.runTimerText;
+  statusBlock.meta.textContent = `HP ${viewModel.playerHp.text}`;
+  renderWeaponBlock(weaponBlock, viewModel);
 
   if (viewModel.boss === null) {
     bossBlock.root.style.display = 'none';
@@ -169,16 +156,27 @@ function render(
   bossBlock.barFill.style.width = `${Math.round(viewModel.boss.hpRatio * 100)}%`;
 }
 
-function renderOptionalBlock(block: HudBlock, viewModel: WeaponViewModel | null): void {
-  if (viewModel === null) {
+function renderWeaponBlock(block: HudBlock, viewModel: HudViewModel): void {
+  if (viewModel.weaponSlots.length === 0) {
     block.root.style.display = 'none';
     block.value.textContent = '';
     block.meta.textContent = '';
     return;
   }
   block.root.style.display = 'flex';
-  block.value.textContent = viewModel.titleText;
-  block.meta.textContent = `${viewModel.slotText} · ${viewModel.cooldownText}`;
+  const selected = viewModel.weaponSlots.find((slot) => slot.isSelected);
+  if (selected === undefined) {
+    block.value.textContent = 'Holstered';
+    block.meta.textContent = `${viewModel.weaponSlots.length} slots`;
+    return;
+  }
+  const badgeCount =
+    selected.modifierBadges.reduce((total, badge) => total + badge.count, 0) +
+    selected.timedBadges.length;
+  block.value.textContent = selected.titleText;
+  block.meta.textContent = `${selected.hotkeyText} · cooldown ${Math.round(
+    selected.cooldownRatio * 100
+  )}% · upgrades ${badgeCount}`;
 }
 
 type HudBlock = Readonly<{
@@ -240,28 +238,14 @@ function createBossBlock(): BossHudBlock {
   return { root, value, meta, barFill };
 }
 
-function deriveWaveSummary(
-  session: SessionDefinition,
-  encounter: EncounterSnapshot | null,
-  waveProgress: WaveProgressSnapshot | null
-): Readonly<{ title: string; progress: string }> | null {
-  if (encounter === null || waveProgress === null || encounter.type !== 'wave') {
-    return null;
-  }
-
-  const totalWaves = session.encounters.filter((entry) => entry.type === 'wave').length;
-  if (totalWaves === 0) {
-    return null;
-  }
-
-  const waveNumber = resolveWaveNumber(session, encounter);
-  if (waveNumber === null) {
-    return null;
-  }
-
+function derivePlayerHp(session: SessionDefinition, player: PlayerSnapshot | null): PlayerHpViewModel {
+  const max = player?.maxHp ?? session.player.maxHp;
+  const current = player === null ? null : clampHp(player.hp);
   return {
-    title: `Волна ${waveNumber} из ${totalWaves}`,
-    progress: `Выпущено ${waveProgress.dispatched}/${waveProgress.total} · Живых ${waveProgress.alive}`
+    text: current === null ? `-- / ${max}` : `${current} / ${max}`,
+    current,
+    max,
+    ratio: current === null || max <= 0 ? 0 : clampRatio(current / max)
   };
 }
 
@@ -283,41 +267,71 @@ function deriveBossSummary(snapshot: Snapshot | null): BossViewModel | null {
   };
 }
 
-function deriveWeaponSummary(snapshot: Snapshot | null): WeaponViewModel | null {
+function deriveWeaponSlots(snapshot: Snapshot | null): ReadonlyArray<WeaponSlotViewModel> {
   const weaponHud = snapshot?.weaponHud ?? null;
-  if (weaponHud === null) return null;
-  const weaponCount = weaponHud.weapons.length;
-  if (weaponCount === 0) {
-    return {
-      titleText: 'No weapons',
-      slotText: '0 / 0',
-      cooldownText: '—'
-    };
-  }
-  if (weaponHud.selectedIndex === null) {
-    return {
-      titleText: 'Holstered',
-      slotText: `— / ${weaponCount}`,
-      cooldownText: '—'
-    };
-  }
+  if (weaponHud === null) return [];
+  const simTimeMs = snapshot?.simTimeMs ?? 0;
+  return [...weaponHud.weapons]
+    .sort((a, b) => a.index - b.index)
+    .map((weapon) => {
+      const archetype = WEAPON_ARCHETYPES[weapon.weaponArchetypeId];
+      return {
+        index: weapon.index,
+        hotkeyText: `${weapon.index + 1}`,
+        weaponArchetypeId: weapon.weaponArchetypeId,
+        titleText: archetype?.displayName ?? weapon.weaponArchetypeId,
+        isSelected: weaponHud.selectedIndex === weapon.index,
+        cooldownRatio: deriveCooldownRatio(
+          weapon.cooldownStartedAtSimMs,
+          weapon.cooldownReadyAtSimMs,
+          simTimeMs
+        ),
+        modifierBadges: groupModifierBadges(weapon.modifiers),
+        timedBadges: weapon.timedEffects.map((effect) => ({
+          kind: effect.kind,
+          remainingRatio: deriveTimedEffectRemainingRatio(
+            effect.startedAtSimMs,
+            effect.expiresAtSimMs,
+            simTimeMs
+          )
+        }))
+      };
+    });
+}
 
-  const selected = weaponHud.weapons.find((weapon) => weapon.index === weaponHud.selectedIndex);
-  if (selected === undefined) {
-    return {
-      titleText: 'Unknown weapon',
-      slotText: `${weaponHud.selectedIndex + 1} / ${weaponCount}`,
-      cooldownText: '—'
-    };
-  }
+function deriveCooldownRatio(
+  cooldownStartedAtSimMs: number,
+  cooldownReadyAtSimMs: number,
+  simTimeMs: number
+): number {
+  if (simTimeMs >= cooldownReadyAtSimMs) return 0;
+  const durationMs = Math.max(1, cooldownReadyAtSimMs - cooldownStartedAtSimMs);
+  return clampRatio((cooldownReadyAtSimMs - simTimeMs) / durationMs);
+}
 
-  const archetype = WEAPON_ARCHETYPES[selected.weaponArchetypeId];
-  const remainingMs = Math.max(0, selected.cooldownReadyAtSimMs - (snapshot?.simTimeMs ?? 0));
-  return {
-    titleText: archetype?.displayName ?? selected.weaponArchetypeId,
-    slotText: `${selected.index + 1} / ${weaponCount}`,
-    cooldownText: remainingMs === 0 ? 'Ready' : `${(remainingMs / 1000).toFixed(1)}s`
-  };
+function deriveTimedEffectRemainingRatio(
+  startedAtSimMs: number,
+  expiresAtSimMs: number,
+  simTimeMs: number
+): number {
+  if (simTimeMs >= expiresAtSimMs) return 0;
+  const durationMs = Math.max(1, expiresAtSimMs - startedAtSimMs);
+  return clampRatio((expiresAtSimMs - simTimeMs) / durationMs);
+}
+
+function groupModifierBadges(
+  modifiers: ReadonlyArray<WeaponModifier>
+): ReadonlyArray<WeaponModifierBadgeViewModel> {
+  const badges: WeaponModifierBadgeViewModel[] = [];
+  for (const modifier of modifiers) {
+    const existing = badges.find((badge) => badge.kind === modifier.kind);
+    if (existing === undefined) {
+      badges.push({ kind: modifier.kind, count: 1 });
+    } else {
+      badges[badges.indexOf(existing)] = { kind: existing.kind, count: existing.count + 1 };
+    }
+  }
+  return badges;
 }
 
 function formatBossPhaseText(
@@ -328,37 +342,6 @@ function formatBossPhaseText(
     bossArchetype === null ? '?' : `${Math.max(1, bossArchetype.phases.length)}`;
   const phaseId = bossArchetype?.phases[bossHud.phaseIndex]?.id ?? bossHud.phaseId;
   return `Фаза ${bossHud.phaseIndex + 1}/${phaseCountText} · ${phaseId}`;
-}
-
-function resolveWaveNumber(
-  session: SessionDefinition,
-  encounter: EncounterSnapshot
-): number | null {
-  const encounterIndex = resolveEncounterIndex(session, encounter);
-  if (encounterIndex === null) {
-    return null;
-  }
-
-  let waveNumber = 0;
-  for (let index = 0; index <= encounterIndex; index += 1) {
-    if (session.encounters[index]?.type === 'wave') {
-      waveNumber += 1;
-    }
-  }
-  return waveNumber > 0 ? waveNumber : null;
-}
-
-function resolveEncounterIndex(
-  session: SessionDefinition,
-  encounter: EncounterSnapshot
-): number | null {
-  const fromIndex = session.encounters[encounter.index];
-  if (fromIndex?.id === encounter.id) {
-    return encounter.index;
-  }
-
-  const byId = session.encounters.findIndex((entry) => entry.id === encounter.id);
-  return byId >= 0 ? byId : null;
 }
 
 function findPlayerSnapshot(snapshot: Snapshot): PlayerSnapshot | null {
