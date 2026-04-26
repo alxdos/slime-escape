@@ -142,7 +142,8 @@ describe('createSampleRegistry', () => {
           url: '/clamped.mp3',
           category: 'music',
           normalizedGain: 0,
-          defaultGain: 4
+          defaultGain: 4,
+          loop: true
         }
       ]
     });
@@ -152,9 +153,38 @@ describe('createSampleRegistry', () => {
       url: '/clamped.mp3',
       category: 'music',
       normalizedGain: 0.0001,
-      defaultGain: 2
+      defaultGain: 2,
+      loop: true
     });
     expect(log.warn).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws when a music sample is not marked as looped', () => {
+    const context = new FakeAudioContext();
+    const audioApi: AudioApi = {
+      createContext(): AudioContextLike {
+        return context;
+      },
+      async fetchArrayBuffer(): Promise<ArrayBuffer> {
+        return createArrayBuffer(4);
+      }
+    };
+
+    expect(() =>
+      createSampleRegistry({
+        audioApi,
+        context,
+        entries: [
+          {
+            id: 'music/not-looped',
+            url: '/music/not-looped.mp3',
+            category: 'music',
+            normalizedGain: 1,
+            defaultGain: 1
+          }
+        ]
+      })
+    ).toThrow('audio sample "music/not-looped" has category "music" but loop is not true');
   });
 
   it('keeps the drop pickup placeholder on the sfx bus even when it reuses a ui file', () => {
