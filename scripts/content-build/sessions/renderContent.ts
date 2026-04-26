@@ -176,6 +176,9 @@ function renderSpawnOverride(override: ParsedSpawnOverride | undefined): string 
       `retaliation: { enabled: ${override.retaliation.enabled ? 'true' : 'false'}, durationMs: ${formatNumber(override.retaliation.durationMs)} }`
     );
   }
+  if (override.loadout !== undefined) {
+    fields.push(`loadout: ${renderLoadout(override.loadout)}`);
+  }
   return fields.length === 0 ? null : `{ ${fields.join(', ')} }`;
 }
 
@@ -294,6 +297,9 @@ function collectOverrideImports(
   }
   for (const entry of override.dropTable ?? []) {
     addImport(imports, 'drops', entry.archetype.constName);
+  }
+  for (const weapon of override.loadout?.weapons ?? []) {
+    addImport(imports, 'weapons', weapon.constName);
   }
 }
 

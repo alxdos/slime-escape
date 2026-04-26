@@ -338,6 +338,22 @@ describe('content-build sessions area', () => {
     });
   });
 
+  it('renders spawn override loadout into generated session content', async () => {
+    const fixture = await copySessionsFixture({
+      'training.md': (source) =>
+        addTrainingWave1OverrideTable(
+          source,
+          `${SPAWN_OVERRIDE_TABLE_HEADER}| 1 | none | none | none | none | pistol, smg | 1 |\n`
+        )
+    });
+
+    const rendered = renderSessionContent(await parseSessionsArea(fixture.sourceDirectory));
+
+    expect(rendered).toContain(
+      'override: { loadout: { weapons: [PISTOL.id, SMG.id], selectedIndex: 1 } }'
+    );
+  });
+
   it('rejects unknown weapon ids in spawn override loadouts', async () => {
     await expectParseRejects(
       {
