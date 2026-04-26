@@ -110,29 +110,10 @@ export function createCombatSystem(
       damageRules = { slimeFriendlyFire: rules.slimeFriendlyFire };
     },
     setPlayerLoadout(playerId, loadout, simTimeMs): void {
-      if (
-        loadout.selectedIndex !== null &&
-        (loadout.selectedIndex < 0 || loadout.selectedIndex >= loadout.weapons.length)
-      ) {
-        throw new Error(
-          `invalid selected weapon index on session start: ${loadout.selectedIndex}`
-        );
-      }
-      const weapons = loadout.weapons.map((weaponId) => {
-        const archetype = weaponRegistry[weaponId];
-        if (archetype === undefined) {
-          throw new Error(`unknown weapon archetype on session start: ${weaponId}`);
-        }
-        return createWeaponInstance(archetype.id, simTimeMs);
-      });
-      if (weapons.length === 0) {
-        throw new Error('player loadout must contain at least one weapon');
-      }
-      shooterWeapons.set(playerId, {
-        ownerKind: 'player',
-        weapons,
-        selectedIndex: loadout.selectedIndex
-      });
+      shooterWeapons.set(
+        playerId,
+        buildShooterWeapons(loadout, 'player', weaponRegistry, simTimeMs)
+      );
     },
     addModifierToSelectedWeapon(ownerId, modifier): boolean {
       const weapon = selectedWeaponForOwner(shooterWeapons, ownerId);
@@ -345,6 +326,37 @@ function createWeaponInstance(archetypeId: string, simTimeMs: number): WeaponIns
     modifiers: [],
     overdriveUntilSimMs: null,
     overdriveCooldownMultiplier: null
+  };
+}
+
+function buildShooterWeapons(
+  loadout: Loadout,
+  ownerKind: 'player' | 'enemy' | 'boss',
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
+  simTimeMs: number
+): ShooterWeapons {
+  if (
+    loadout.selectedIndex !== null &&
+    (loadout.selectedIndex < 0 || loadout.selectedIndex >= loadout.weapons.length)
+  ) {
+    throw new Error(
+      `invalid selected weapon index for ${ownerKind} loadout: ${loadout.selectedIndex}`
+    );
+  }
+  const weapons = loadout.weapons.map((weaponId) => {
+    const archetype = weaponRegistry[weaponId];
+    if (archetype === undefined) {
+      throw new Error(`unknown weapon archetype for ${ownerKind} loadout: ${weaponId}`);
+    }
+    return createWeaponInstance(archetype.id, simTimeMs);
+  });
+  if (weapons.length === 0) {
+    throw new Error(`${ownerKind} loadout must contain at least one weapon`);
+  }
+  return {
+    ownerKind,
+    weapons,
+    selectedIndex: loadout.selectedIndex
   };
 }
 
