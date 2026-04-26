@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { Log } from '../../shared/log';
 
-import { createSampleRegistry } from './SampleRegistry';
+import { createSampleRegistry, DEFAULT_SAMPLE_ENTRIES } from './SampleRegistry';
 import type {
   AudioApi,
   AudioBufferLike,
@@ -211,6 +211,14 @@ describe('createSampleRegistry', () => {
       defaultGain: 1
     });
     expect(registry.require('ui/open-2').category).toBe('ui');
+  });
+
+  it('normalizes all public music folder tracks above unity gain', () => {
+    const musicFolderEntries = DEFAULT_SAMPLE_ENTRIES.filter((entry) => entry.id.startsWith('music/'));
+
+    expect(musicFolderEntries).not.toHaveLength(0);
+    expect(musicFolderEntries.every((entry) => entry.normalizedGain === 1.6)).toBe(true);
+    expect(DEFAULT_SAMPLE_ENTRIES.find((entry) => entry.id === 'boss/boss-music')?.normalizedGain).toBe(1);
   });
 
   it('decodes lazily and caches decoded buffers per sample id', async () => {

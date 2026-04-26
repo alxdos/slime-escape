@@ -865,7 +865,7 @@ describe('createAudio', () => {
     expect(context.sources).toHaveLength(1);
     expect(fetchedUrls).toEqual(['/sfx/music/005-forest.mp3']);
     expect(context.sources[0]?.loop).toBe(true);
-    expect(getPlaybackTrimGain(context).gain.value).toBe(1);
+    expect(getPlaybackTrimGain(context).gain.value).toBe(1.6);
     expect(masterGain.gain.value).toBe(0.8);
     expect(musicGain.gain.value).toBe(0.2);
     expect(musicDuckGain.gain.value).toBe(1);
@@ -1075,6 +1075,7 @@ describe('createAudio', () => {
 
     expect(context.sources).toHaveLength(4);
     expect(context.sources[3]?.loop).toBe(true);
+    expect(getPlaybackTrimGain(context, 3).gain.value).toBe(1.6);
     expect(fetchedUrls).toEqual([
       '/sfx/music/005-forest.mp3',
       '/sfx/boss/boss-music.mp3',
