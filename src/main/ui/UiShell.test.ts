@@ -21,6 +21,7 @@ import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/S
 import type { Hud, HudInit } from './Hud';
 import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
+import type { TeaserControlId } from './MenuOverlayState';
 import type {
   PhaseTransitionCurtain,
   PhaseTransitionCurtainInit
@@ -167,7 +168,10 @@ function createUiShellForTest(init: UiShellInit) {
 function createMenuHarness() {
   let visible = true;
   let onStart: ((presetId: ModePresetId) => void) | null = null;
+  let onStartTraining: (() => void) | null = null;
   let onOpenSettings: (() => void) | null = null;
+  let onToggleFullscreen: (() => void) | null = null;
+  let onTeaser: ((controlId: TeaserControlId) => void) | null = null;
   let modes: ReadonlyArray<{ presetId: ModePresetId }> = [];
   let root: FakeDomElement | null = null;
 
@@ -194,7 +198,10 @@ function createMenuHarness() {
     factory(init: MenuOverlayInit): MenuOverlay {
       modes = init.modes;
       onStart = init.onStart;
+      onStartTraining = init.onStartTraining;
       onOpenSettings = init.onOpenSettings;
+      onToggleFullscreen = init.onToggleFullscreen;
+      onTeaser = init.onTeaser;
       root = new FakeDomElement();
       root.dataset['role'] = 'menu-overlay';
       root.style.zIndex = '100';
@@ -204,6 +211,9 @@ function createMenuHarness() {
     },
     start(presetId: ModePresetId = 'campaign-normal'): void {
       onStart?.(presetId);
+    },
+    startTraining(): void {
+      onStartTraining?.();
     },
     isVisible(): boolean {
       return visible;
@@ -216,6 +226,18 @@ function createMenuHarness() {
         return;
       }
       onOpenSettings?.();
+    },
+    toggleFullscreen(): void {
+      if (!visible) {
+        return;
+      }
+      onToggleFullscreen?.();
+    },
+    teaser(controlId: TeaserControlId): void {
+      if (!visible) {
+        return;
+      }
+      onTeaser?.(controlId);
     },
     root(): FakeDomElement | null {
       return root;
@@ -1310,6 +1332,61 @@ describe('UiShell', () => {
     await flushUiShellStartup();
 
     expect(input.calls.start).toBe(1);
+  });
+
+  it('routes training, fullscreen, and teaser menu callbacks without starting teaser sessions', async () => {
+    const menu = createMenuHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const requestFullscreen = vi.fn(() => Promise.resolve());
+    const documentTarget = Object.assign(documentEvents, {
+      pointerLockElement: null,
+      fullscreenElement: null,
+      documentElement: { requestFullscreen }
+    });
+    let builtPresetId: ModePresetId | null = null;
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 777,
+      buildSessionDefinition: (preset) => {
+        builtPresetId = preset.id;
+        return makeSession('training-session');
+      },
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: createHudHarness().factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    menu.teaser('pets');
+    expect(sim.startSessions).toHaveLength(0);
+
+    menu.toggleFullscreen();
+    expect(requestFullscreen).toHaveBeenCalledTimes(1);
+
+    menu.startTraining();
+
+    expect(builtPresetId).toBe('training');
+    expect(sim.startSessions).toHaveLength(1);
+    expect(renderer.calls.create).toBe(1);
+    expect(input.calls.start).toBe(1);
+    expect(audio.uiEvents).toEqual(['buttonClick', 'buttonClick', 'buttonClick']);
+    expect(shell.phase()).toEqual({ kind: 'running' });
   });
 
   it('routes Escape into overlay pause and exit back to menu with stopSession', async () => {

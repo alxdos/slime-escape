@@ -1,12 +1,22 @@
 import type { ModePresetId, PlayableModeEntry } from '../../shared/content/sessions';
 
 import { MAIN_MENU_CONTROLS, MAIN_MENU_STAGE, type MenuControlLayout } from './MenuOverlayLayout';
+import {
+  CAMPAIGN_MODE_BY_CONTROL,
+  DEFAULT_SELECTED_CAMPAIGN_MODE,
+  isCampaignModeControl,
+  resolveMenuControlAction,
+  type TeaserControlId
+} from './MenuOverlayState';
 
 export type MenuOverlayInit = Readonly<{
   parent: HTMLElement;
   modes: ReadonlyArray<PlayableModeEntry>;
   onStart(presetId: ModePresetId): void;
+  onStartTraining(): void;
   onOpenSettings(): void;
+  onToggleFullscreen(): void;
+  onTeaser(controlId: TeaserControlId): void;
 }>;
 
 export type MenuOverlay = Readonly<{
@@ -25,14 +35,28 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   stage.dataset['role'] = 'menu-stage';
   stage.style.cssText = stageStyle();
 
+  const modeButtons = new Map<ModePresetId, HTMLButtonElement>();
+  let selectedMode: ModePresetId = DEFAULT_SELECTED_CAMPAIGN_MODE;
+  let feedbackTimeout: number | null = null;
+
+  const teaserFeedback = document.createElement('div');
+  teaserFeedback.dataset['role'] = 'menu-teaser-feedback';
+  teaserFeedback.style.cssText = teaserFeedbackStyle();
+  stage.appendChild(teaserFeedback);
+
   for (const control of MAIN_MENU_CONTROLS) {
-    stage.appendChild(createControlButton(control, init));
+    const button = createControlButton(control, handleControl);
+    if (isCampaignModeControl(control.id)) {
+      modeButtons.set(CAMPAIGN_MODE_BY_CONTROL[control.id], button);
+    }
+    stage.appendChild(button);
   }
 
   root.appendChild(stage);
   init.parent.appendChild(root);
 
   let visible = true;
+  applyModeSelection();
 
   return {
     show(): void {
@@ -47,21 +71,75 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
       return visible;
     },
     dispose(): void {
+      if (feedbackTimeout !== null) {
+        window.clearTimeout(feedbackTimeout);
+        feedbackTimeout = null;
+      }
       root.remove();
     }
   };
+
+  function handleControl(controlId: MenuControlLayout['id']): void {
+    const action = resolveMenuControlAction(controlId, selectedMode);
+
+    switch (action.kind) {
+      case 'selectMode':
+        selectedMode = action.presetId;
+        applyModeSelection();
+        return;
+      case 'start':
+        init.onStart(action.presetId);
+        return;
+      case 'startTraining':
+        init.onStartTraining();
+        return;
+      case 'openSettings':
+        init.onOpenSettings();
+        return;
+      case 'toggleFullscreen':
+        init.onToggleFullscreen();
+        return;
+      case 'teaser':
+        showTeaserFeedback();
+        init.onTeaser(action.controlId);
+        return;
+    }
+  }
+
+  function applyModeSelection(): void {
+    for (const [presetId, button] of modeButtons.entries()) {
+      const selected = presetId === selectedMode;
+      button.dataset['selected'] = selected ? 'true' : 'false';
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    }
+  }
+
+  function showTeaserFeedback(): void {
+    teaserFeedback.textContent = 'Скоро';
+    teaserFeedback.style.opacity = '1';
+    if (feedbackTimeout !== null) {
+      window.clearTimeout(feedbackTimeout);
+    }
+    feedbackTimeout = window.setTimeout(() => {
+      teaserFeedback.style.opacity = '0';
+      feedbackTimeout = null;
+    }, 900);
+  }
 }
 
 function createControlButton(
   control: MenuControlLayout,
-  init: MenuOverlayInit
+  onControl: (controlId: MenuControlLayout['id']) => void
 ): HTMLButtonElement {
   const button = document.createElement('button');
   button.type = 'button';
   button.dataset['role'] = 'menu-image-button';
   button.dataset['controlId'] = control.id;
   button.dataset['controlKind'] = control.kind;
-  button.ariaLabel = control.label;
+  button.setAttribute('aria-label', control.label);
+  if (isCampaignModeControl(control.id)) {
+    button.setAttribute('aria-pressed', 'false');
+  }
   button.style.cssText = controlButtonStyle(control);
 
   const image = document.createElement('img');
@@ -71,9 +149,7 @@ function createControlButton(
   image.style.cssText = controlImageStyle();
   button.appendChild(image);
 
-  if (control.id === 'settings') {
-    button.addEventListener('click', () => init.onOpenSettings());
-  }
+  button.addEventListener('click', () => onControl(control.id));
 
   return button;
 }
@@ -134,5 +210,23 @@ function controlImageStyle(): string {
     'object-fit:contain',
     'pointer-events:none',
     'user-select:none'
+  ].join(';');
+}
+
+function teaserFeedbackStyle(): string {
+  return [
+    'position:absolute',
+    'left:38%',
+    'top:61%',
+    'width:24%',
+    'opacity:0',
+    'font-size:clamp(18px, 4vw, 36px)',
+    'font-weight:900',
+    'text-align:center',
+    'color:#f8f0a8',
+    '-webkit-text-stroke:1px #000000',
+    'text-shadow:3px 3px 0 #000000',
+    'pointer-events:none',
+    'transition:opacity 140ms ease'
   ].join(';');
 }

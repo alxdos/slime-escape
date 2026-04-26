@@ -73,6 +73,11 @@ export { STARTUP_SPRITE_SPECS } from './startupAssets';
 type WindowTarget = Pick<Window, 'addEventListener' | 'removeEventListener'>;
 type DocumentTarget = Pick<Document, 'addEventListener' | 'removeEventListener'> & {
   pointerLockElement: Element | null;
+  fullscreenElement?: Element | null;
+  documentElement?: {
+    requestFullscreen?: () => Promise<void>;
+  };
+  exitFullscreen?: () => Promise<void>;
 };
 
 type BuildSessionDefinitionFn = typeof buildSessionDefinition;
@@ -212,12 +217,33 @@ export function createUiShell(init: UiShellInit): UiShell {
       audio.playUi('buttonClick');
       startPresetId(presetId);
     },
+    onStartTraining() {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
+        return;
+      }
+      audio.playUi('buttonClick');
+      startPresetId('training');
+    },
     onOpenSettings() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
       }
       audio.playUi('buttonClick');
       openSettings();
+    },
+    onToggleFullscreen() {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
+        return;
+      }
+      audio.playUi('buttonClick');
+      void toggleFullscreen();
+    },
+    onTeaser(controlId) {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
+        return;
+      }
+      audio.playUi('buttonClick');
+      log.info('menu teaser selected', { controlId });
     }
   });
 
@@ -351,6 +377,27 @@ export function createUiShell(init: UiShellInit): UiShell {
   function closeSettings(): void {
     settingsVisible = false;
     syncSettingsVisibility();
+  }
+
+  async function toggleFullscreen(): Promise<void> {
+    try {
+      if (documentTarget.fullscreenElement != null) {
+        const exitFullscreen = documentTarget.exitFullscreen;
+        if (typeof exitFullscreen === 'function') {
+          await exitFullscreen.call(documentTarget);
+        }
+        return;
+      }
+
+      const requestFullscreen = documentTarget.documentElement?.requestFullscreen;
+      if (typeof requestFullscreen !== 'function') {
+        log.warn('fullscreen request is not supported');
+        return;
+      }
+      await requestFullscreen.call(documentTarget.documentElement);
+    } catch (error: unknown) {
+      log.warn('fullscreen request failed', { error: formatStartupError(error) });
+    }
   }
 
   function setPhase(next: UiShellPhase): void {
