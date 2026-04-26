@@ -82,7 +82,7 @@ const MAX_MASTER_GAIN = 1;
 const MAX_ACTIVE_ONE_SHOTS = 32;
 const PAUSED_MUSIC_DUCK_GAIN = 0.5;
 const BOSS_MUSIC_SAMPLE_ID = 'boss/boss-music';
-const MENU_MUSIC_SAMPLE_ID = 'music/101-clock-ticking';
+const MENU_MUSIC_SAMPLE_ID = 'music/digital-dawn';
 
 export function createAudio(init: AudioInit = {}): Audio {
   const audioLog = init.log ?? defaultLog;
@@ -550,11 +550,17 @@ export function createAudio(init: AudioInit = {}): Audio {
       case 'encounterEnd':
       case 'pause':
       case 'resume':
-      case 'win':
       case 'loss':
       case 'dropSpawn':
       case 'dropExpire':
         return;
+      case 'win': {
+        const sampleId = dependencies.audioMappings.resolveEventSample('victoryFanfare');
+        if (sampleId !== null) {
+          playSampleById(sampleId);
+        }
+        return;
+      }
       default:
         assertNever(event);
     }

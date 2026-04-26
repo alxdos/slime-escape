@@ -22,6 +22,7 @@ export type ResultOverlay = Readonly<{
 
 type ResultOverlayParts = Readonly<{
   root: HTMLElement;
+  effectsLayer: HTMLElement;
   title: HTMLElement;
   summary: HTMLElement;
   statGrid: HTMLElement;
@@ -34,6 +35,56 @@ type ResultOverlayParts = Readonly<{
   backButton: HTMLElement;
 }>;
 
+type ResultEffectShape = 'spark' | 'confetti' | 'slime';
+
+type ResultEffectSpec = Readonly<{
+  id: string;
+  shape: ResultEffectShape;
+  leftPercent: number;
+  topPercent: number;
+  sizePx: number;
+  color: string;
+  travelX: number;
+  travelY: number;
+  rotationDeg: number;
+  delayMs: number;
+  durationMs: number;
+}>;
+
+const VICTORY_EFFECTS: ReadonlyArray<ResultEffectSpec> = [
+  makeEffect('left-spark-a', 'spark', 0, 20, 22, '#fff38b', -158, -78, -16, 0, 950),
+  makeEffect('right-spark-a', 'spark', 100, 20, 20, '#7cf58f', 154, -72, 22, 45, 980),
+  makeEffect('left-spark-b', 'spark', 0, 34, 18, '#b8f1ff', -148, -26, 34, 105, 940),
+  makeEffect('right-spark-b', 'spark', 100, 34, 19, '#ffcf6b', 146, -20, -24, 155, 1010),
+  makeEffect('left-confetti-a', 'confetti', 0, 24, 12, '#ff9fcf', -118, 192, 18, 20, 2600),
+  makeEffect('right-confetti-a', 'confetti', 100, 24, 10, '#b8f1ff', 116, 198, -30, 160, 2680),
+  makeEffect('left-confetti-b', 'confetti', 0, 34, 11, '#7cf58f', -92, 222, 48, 320, 2520),
+  makeEffect('right-confetti-b', 'confetti', 100, 34, 13, '#fff38b', 88, 230, -42, 470, 2620),
+  makeEffect('left-slime-pop', 'slime', 0, 48, 18, '#7cf58f', -118, 64, 10, 260, 1080),
+  makeEffect('right-slime-pop', 'slime', 100, 48, 16, '#b8f1ff', 118, 68, -18, 310, 1110),
+  makeEffect('left-confetti-c', 'confetti', 0, 40, 9, '#ffcf6b', -74, 238, 62, 640, 2500),
+  makeEffect('right-spark-c', 'spark', 100, 42, 15, '#fff38b', 126, 10, -8, 420, 920),
+  makeEffect('left-confetti-d', 'confetti', 0, 22, 10, '#b8f1ff', -132, 170, -28, 820, 2720),
+  makeEffect('right-confetti-d', 'confetti', 100, 22, 12, '#ff9fcf', 128, 178, 36, 990, 2760),
+  makeEffect('left-confetti-e', 'confetti', 0, 56, 13, '#fff38b', -112, 214, -54, 1160, 2660),
+  makeEffect('right-confetti-e', 'confetti', 100, 56, 11, '#7cf58f', 108, 222, 58, 1330, 2700),
+  makeEffect('left-confetti-f', 'confetti', 0, 24, 8, '#ffcf6b', -152, 152, 72, 1500, 2540),
+  makeEffect('right-confetti-f', 'confetti', 100, 24, 9, '#b8f1ff', 148, 158, -68, 1660, 2580),
+  makeEffect('left-spark-c', 'spark', 0, 44, 14, '#ffcf6b', -142, 26, -36, 805, 930),
+  makeEffect('right-slime-pop-b', 'slime', 100, 50, 14, '#ff9fcf', 138, 72, 24, 865, 1040)
+];
+
+const DEFEAT_EFFECTS: ReadonlyArray<ResultEffectSpec> = [
+  makeEffect('slime-a', 'slime', 22, 31, 30, '#b7df79', -10, 20, -12, 0, 920),
+  makeEffect('slime-b', 'slime', 77, 33, 24, '#ff9fcf', 12, 24, 18, 80, 980),
+  makeEffect('slime-c', 'slime', 28, 68, 22, '#d7f7a2', -8, 28, 26, 120, 900),
+  makeEffect('slime-d', 'slime', 72, 70, 28, '#ffb5a7', 10, 30, -22, 170, 1040),
+  makeEffect('drop-a', 'slime', 45, 23, 14, '#b7df79', -4, 38, 8, 210, 960),
+  makeEffect('drop-b', 'slime', 56, 22, 16, '#ff9fcf', 5, 42, -10, 250, 1020),
+  makeEffect('splash-a', 'confetti', 38, 52, 12, '#ffe7f3', -18, 20, 34, 300, 840),
+  makeEffect('splash-b', 'confetti', 62, 51, 12, '#d7f7a2', 18, 22, -34, 340, 880)
+];
+
 export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   const root = document.createElement('div');
   root.dataset['role'] = 'result-overlay';
@@ -42,6 +93,16 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   const style = document.createElement('style');
   style.textContent = resultOverlayCss();
   root.appendChild(style);
+
+  const stage = document.createElement('div');
+  stage.className = 'result-stage';
+  stage.style.cssText = stageStyle();
+
+  const effectsLayer = document.createElement('div');
+  effectsLayer.className = 'result-effects';
+  effectsLayer.dataset['role'] = 'result-effects';
+  effectsLayer.style.cssText = effectsLayerStyle();
+  stage.appendChild(effectsLayer);
 
   const card = document.createElement('div');
   card.className = 'result-card';
@@ -114,13 +175,15 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   backButton.addEventListener('click', () => init.onBackToMenu());
   card.appendChild(backButton);
 
-  root.appendChild(card);
+  stage.appendChild(card);
+  root.appendChild(stage);
   init.parent.appendChild(root);
   root.style.display = 'none';
 
   let visible = false;
   const parts: ResultOverlayParts = {
     root,
+    effectsLayer,
     title,
     summary,
     statGrid,
@@ -145,6 +208,8 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
       root.style.display = 'none';
       title.textContent = '';
       summary.textContent = '';
+      effectsLayer.replaceChildren();
+      delete effectsLayer.dataset['outcome'];
       statGrid.replaceChildren();
       killList.replaceChildren();
       hideBoss(bossPanel, bossIcon, bossText);
@@ -163,6 +228,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
 function applyViewModel(viewModel: ResultViewModel, parts: ResultOverlayParts): void {
   const outcome = viewModel.outcome;
   parts.root.dataset['outcome'] = outcome;
+  renderEffects(parts.effectsLayer, outcome);
 
   if (outcome === 'win') {
     parts.title.textContent = viewModel.title;
@@ -193,6 +259,22 @@ function renderDynamicSections(viewModel: ResultViewModel, parts: ResultOverlayP
   renderBoss(parts.bossPanel, parts.bossIcon, parts.bossText, viewModel.boss);
   renderDefeatCause(parts.defeatCause, viewModel.defeatCause);
   renderKillRows(parts.killsSection, parts.killList, viewModel.killRows, viewModel.outcome);
+}
+
+function renderEffects(effectsLayer: HTMLElement, outcome: ResultOutcome): void {
+  effectsLayer.dataset['outcome'] = outcome;
+  const specs = outcome === 'win' ? VICTORY_EFFECTS : DEFEAT_EFFECTS;
+  effectsLayer.replaceChildren(...specs.map((spec) => createEffectParticle(spec, outcome)));
+}
+
+function createEffectParticle(spec: ResultEffectSpec, outcome: ResultOutcome): HTMLElement {
+  const particle = document.createElement('div');
+  particle.className = 'result-effect-particle';
+  particle.dataset['role'] = 'result-effect-particle';
+  particle.dataset['effectId'] = spec.id;
+  particle.dataset['effectShape'] = spec.shape;
+  particle.style.cssText = effectParticleStyle(spec, outcome);
+  return particle;
 }
 
 function createStatTile(
@@ -327,15 +409,37 @@ function baseOverlayStyle(): string {
   ].join(';');
 }
 
+function effectsLayerStyle(): string {
+  return [
+    'position:absolute',
+    'inset:0',
+    'overflow:visible',
+    'pointer-events:none',
+    'z-index:2'
+  ].join(';');
+}
+
+function stageStyle(): string {
+  return [
+    'position:relative',
+    'width:min(820px, calc(100vw - 48px))',
+    'max-height:calc(100vh - 48px)',
+    'overflow:visible',
+    'flex:0 1 auto'
+  ].join(';');
+}
+
 function cardStyle(): string {
   return [
+    'position:relative',
+    'z-index:1',
     'display:flex',
     'flex-direction:column',
     'align-items:center',
     'gap:16px',
     'box-sizing:border-box',
     'padding:26px 30px 30px',
-    'width:min(820px, calc(100vw - 48px))',
+    'width:100%',
     'max-height:calc(100vh - 48px)',
     'overflow:auto',
     'background:#fffdf4',
@@ -343,6 +447,52 @@ function cardStyle(): string {
     'border-radius:8px',
     'box-shadow:8px 8px 0 #000000'
   ].join(';');
+}
+
+function effectParticleStyle(spec: ResultEffectSpec, outcome: ResultOutcome): string {
+  return [
+    'position:absolute',
+    `left:${spec.leftPercent}%`,
+    `top:${spec.topPercent}%`,
+    `width:${spec.sizePx}px`,
+    `height:${effectHeight(spec)}px`,
+    `background:${spec.color}`,
+    'border:3px solid #050505',
+    `border-radius:${effectRadius(spec)}`,
+    'box-shadow:3px 3px 0 #000000',
+    `--result-effect-x:${spec.travelX}px`,
+    `--result-effect-y:${spec.travelY}px`,
+    `--result-effect-rotation:${spec.rotationDeg}deg`,
+    `transform:translate(-50%, -50%) rotate(${spec.rotationDeg}deg)`,
+    `animation:${effectAnimation(spec, outcome)} ${spec.durationMs}ms ${effectTiming(spec, outcome)} ${spec.delayMs}ms ${effectIterations(spec, outcome)} both`
+  ].join(';');
+}
+
+function effectHeight(spec: ResultEffectSpec): number {
+  if (spec.shape === 'confetti') return Math.max(8, Math.round(spec.sizePx * 0.55));
+  if (spec.shape === 'spark') return spec.sizePx;
+  return Math.max(12, Math.round(spec.sizePx * 0.78));
+}
+
+function effectRadius(spec: ResultEffectSpec): string {
+  if (spec.shape === 'spark') return '50% 18% 50% 18%';
+  if (spec.shape === 'confetti') return '4px';
+  return '55% 45% 62% 38%';
+}
+
+function effectAnimation(spec: ResultEffectSpec, outcome: ResultOutcome): string {
+  if (outcome === 'win' && spec.shape === 'confetti') return 'result-victory-confetti';
+  return outcome === 'win' ? 'result-victory-pop' : 'result-defeat-drip';
+}
+
+function effectIterations(spec: ResultEffectSpec, outcome: ResultOutcome): number {
+  if (outcome === 'win') return spec.shape === 'confetti' ? 5 : 3;
+  return 1;
+}
+
+function effectTiming(spec: ResultEffectSpec, outcome: ResultOutcome): string {
+  if (outcome === 'win' && spec.shape === 'confetti') return 'cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  return 'ease-out';
 }
 
 function titleStyle(color = '#fff38b'): string {
@@ -594,10 +744,42 @@ function statBackground(outcome: ResultOutcome, index: number): string {
   return palette[index % palette.length] ?? (outcome === 'win' ? '#fff38b' : '#ffe7f3');
 }
 
+function makeEffect(
+  id: string,
+  shape: ResultEffectShape,
+  leftPercent: number,
+  topPercent: number,
+  sizePx: number,
+  color: string,
+  travelX: number,
+  travelY: number,
+  rotationDeg: number,
+  delayMs: number,
+  durationMs: number
+): ResultEffectSpec {
+  return {
+    id,
+    shape,
+    leftPercent,
+    topPercent,
+    sizePx,
+    color,
+    travelX,
+    travelY,
+    rotationDeg,
+    delayMs,
+    durationMs
+  };
+}
+
 function resultOverlayCss(): string {
   return `
 .result-card {
   animation: result-card-enter 180ms ease-out;
+}
+
+.result-effect-particle {
+  will-change: transform, opacity;
 }
 
 .result-comic-button {
@@ -621,9 +803,64 @@ function resultOverlayCss(): string {
   }
 }
 
+@keyframes result-victory-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.38) rotate(var(--result-effect-rotation));
+  }
+  32% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--result-effect-x)), calc(-50% + var(--result-effect-y))) scale(1.08) rotate(var(--result-effect-rotation));
+  }
+}
+
+@keyframes result-victory-confetti {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72) rotate(var(--result-effect-rotation));
+  }
+  18% {
+    opacity: 1;
+    transform: translate(calc(-50% + (var(--result-effect-x) * 0.22)), calc(-50% - 92px)) scale(1) rotate(calc(var(--result-effect-rotation) + 70deg));
+  }
+  34% {
+    opacity: 0.96;
+    transform: translate(calc(-50% + (var(--result-effect-x) * 0.38)), calc(-50% - 74px)) scale(0.98) rotate(calc(var(--result-effect-rotation) + 135deg));
+  }
+  68% {
+    opacity: 0.78;
+    transform: translate(calc(-50% + (var(--result-effect-x) * 0.72)), calc(-50% + (var(--result-effect-y) * 0.44))) scale(0.9) rotate(calc(var(--result-effect-rotation) + 245deg));
+  }
+  to {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--result-effect-x)), calc(-50% + var(--result-effect-y))) scale(0.78) rotate(calc(var(--result-effect-rotation) + 320deg));
+  }
+}
+
+@keyframes result-defeat-drip {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% - 16px)) scale(0.72) rotate(var(--result-effect-rotation));
+  }
+  42% {
+    opacity: 0.95;
+  }
+  to {
+    opacity: 0.5;
+    transform: translate(calc(-50% + var(--result-effect-x)), calc(-50% + var(--result-effect-y))) scale(1) rotate(var(--result-effect-rotation));
+  }
+}
+
 @media (max-width: 560px) {
-  .result-card {
+  .result-stage {
     width: calc(100vw - 24px) !important;
+    max-height: calc(100vh - 24px) !important;
+  }
+
+  .result-card {
     max-height: calc(100vh - 24px) !important;
     padding: 18px 16px 20px !important;
     gap: 12px !important;
@@ -638,6 +875,11 @@ function resultOverlayCss(): string {
 @media (prefers-reduced-motion: reduce) {
   .result-card {
     animation: none;
+  }
+
+  .result-effect-particle {
+    animation: none !important;
+    opacity: 0.42 !important;
   }
 
   .result-comic-button {

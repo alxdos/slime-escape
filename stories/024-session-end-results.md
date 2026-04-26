@@ -150,7 +150,7 @@ Defeat palette:
 - Новый shared-контракт `SessionResultSummary` и расширение terminal runtime events `win`/`loss` полем `summary` по [session-result-summary.md](../design/session-result-summary.md).
 - Simulation-side `RunSummaryTracker`: hook-driven агрегатор смертей, pickup-ов, boss/progress state; `SessionFlowSystem` прикладывает summary к `win`/`loss` до teardown.
 - `UiShell` хранит summary в `result` фазе и передаёт Result UI; Result UI строит main-side view model из summary, `SessionDefinition`, content registries и visual registries, без импортов из `src/sim/**`.
-- Result overlay получает outcome-specific stats layout и presentation-only victory/defeat effects; gameplay renderer в `result` фазе остаётся уничтоженным по [main-ui-shell.md](../design/main-ui-shell.md).
+- Result overlay получает outcome-specific stats layout и presentation-only victory/defeat effects; gameplay renderer в `result` фазе остаётся уничтоженным по [main-ui-shell.md](../design/main-ui-shell.md). Victory fanfare идёт через `Audio.handleEvent(win)` по [audio.md](../design/audio.md), не из Result UI.
 
 ## Out of scope
 
@@ -181,7 +181,7 @@ Defeat palette:
 | T2 | [x] | Simulation summary: добавить `RunSummaryTracker`, сброс lifecycle, death/drop pickup hooks, kill counts, defeat cause, boss state, progress percent; подключить к `SessionFlowSystem` так, чтобы `win/loss` публиковались с authoritative summary до teardown. | Summary hook должен отработать до terminal death hooks. Покрыть unit/integration tests для win, loss, boss loss/win и sandbox/no-progress. |
 | T3 | [x] | Main result data flow: обновить `UiShell` и Result UI API на `outcome + summary`; построить pure view model для labels/icons/stats из summary + session/content/visual registries. | Result UI не импортирует `src/sim/**`; zero-count rows omit. |
 | T4 | [x] | Result presentation: реализовать production-style victory/defeat result screen с progress, duration, total kills, kills by slime type, boss block, optional defeat cause, responsive layout and single back-to-menu action. | Визуально продолжает comic-card стиль pause/settings/menu. |
-| T5 | [ ] | Outcome effects and verification: добавить deterministic presentation-only victory fireworks/confetti and defeat slime splash/drip effects with `prefers-reduced-motion` fallback; покрыть DOM/unit tests where practical and run player demo checks for win/loss. | Эффекты живут в Result UI, не в gameplay Renderer. |
+| T5 | [x] | Outcome effects and verification: добавить deterministic presentation-only victory fireworks/confetti and defeat slime splash/drip effects with `prefers-reduced-motion` fallback; покрыть DOM/unit tests where practical and run player demo checks for win/loss. | Эффекты живут в Result UI, не в gameplay Renderer. |
 
 ## Related
 
@@ -193,6 +193,7 @@ Defeat palette:
 - [drops.md](../design/drops.md)
 - [boss-encounter.md](../design/boss-encounter.md)
 - [session-definition.md](../design/session-definition.md)
+- [audio.md](../design/audio.md)
 - [thread-model.md](../design/thread-model.md)
 - [content-archetypes.md](../design/content-archetypes.md)
 - [sprite-assets.md](../design/sprite-assets.md)

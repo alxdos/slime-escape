@@ -177,6 +177,8 @@ describe('createResultOverlay', () => {
     });
 
     const root = findByRole(parent, 'result-overlay');
+    const style = root.children[0];
+    const effectsLayer = findByRole(root, 'result-effects');
     const title = findByRole(root, 'result-title');
     const summary = findByRole(root, 'result-summary');
     const statGrid = findByRole(root, 'result-stat-grid');
@@ -189,6 +191,10 @@ describe('createResultOverlay', () => {
 
     expect(root.style.display).toBe('none');
     expect(root.style.cssText).toContain('background:rgba(255,255,255,0.46)');
+    expect(style?.textContent).toContain('prefers-reduced-motion');
+    expect(style?.textContent).toContain('.result-effect-particle');
+    expect(style?.textContent).toContain('result-victory-confetti');
+    expect(effectsLayer.parent?.className).toBe('result-stage');
     expect(backButton.textContent).toBe('Вернуться в меню');
     expect(backButton.className).toBe('result-comic-button');
 
@@ -200,6 +206,14 @@ describe('createResultOverlay', () => {
     expect(summary.textContent).toBe('Ты выбрался из мира слаймов');
     expect(summary.style.cssText).toContain('background:#e9fbff');
     expect(backButton.style.cssText).toContain('background:#7cf58f');
+    expect(effectsLayer.dataset['outcome']).toBe('win');
+    const victoryParticles = findAllByRole(effectsLayer, 'result-effect-particle');
+    expect(victoryParticles).toHaveLength(20);
+    expect(victoryParticles[0]?.dataset['effectId']).toBe('left-spark-a');
+    expect(victoryParticles[0]?.style.cssText).toContain('animation:result-victory-pop');
+    expect(victoryParticles[4]?.dataset['effectId']).toBe('left-confetti-a');
+    expect(victoryParticles[4]?.style.cssText).toContain('animation:result-victory-confetti');
+    expect(victoryParticles[4]?.style.cssText).toContain('5 both');
     expect(findAllByRole(statGrid, 'result-stat')).toHaveLength(4);
     const firstStat = findAllByRole(statGrid, 'result-stat')[0];
     expect(firstStat?.dataset['statId']).toBe('progress');
@@ -222,6 +236,11 @@ describe('createResultOverlay', () => {
     expect(summary.textContent).toBe('Слизни снова сомкнули ловушку');
     expect(summary.style.cssText).toContain('background:#ffe7f3');
     expect(backButton.style.cssText).toContain('background:#ff9fcf');
+    expect(effectsLayer.dataset['outcome']).toBe('loss');
+    const defeatParticles = findAllByRole(effectsLayer, 'result-effect-particle');
+    expect(defeatParticles).toHaveLength(8);
+    expect(defeatParticles[0]?.dataset['effectId']).toBe('slime-a');
+    expect(defeatParticles[0]?.style.cssText).toContain('animation:result-defeat-drip');
     expect(bossPanel.dataset['defeated']).toBe('false');
     expect(bossText.textContent).toBe('Босс: осталось 28% HP');
     expect(defeatCause.style.display).toBe('block');
@@ -238,6 +257,8 @@ describe('createResultOverlay', () => {
     expect(root.dataset['outcome']).toBeUndefined();
     expect(title.textContent).toBe('');
     expect(summary.textContent).toBe('');
+    expect(effectsLayer.dataset['outcome']).toBeUndefined();
+    expect(findAllByRole(effectsLayer, 'result-effect-particle')).toHaveLength(0);
     expect(findAllByRole(statGrid, 'result-stat')).toHaveLength(0);
     expect(killSection.style.display).toBe('none');
     expect(bossPanel.style.display).toBe('none');

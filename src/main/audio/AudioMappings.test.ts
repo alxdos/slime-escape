@@ -38,6 +38,7 @@ function createSampleRegistryHarness(): Pick<SampleRegistry, 'require'> {
     'events/drop-pickup',
     'ui/open-1',
     'ui/open-2',
+    'ui/fanfare',
     'ui/switch-1',
     'ui/switch-2',
     'ui/switch-3',
@@ -123,6 +124,7 @@ describe('createAudioMappings', () => {
     expect(mappings.resolveBossSample('fire', 'boss-scrap-king')).toBe('boss/boss-fireball');
     expect(mappings.resolveEventSample('explosion')).toBe('events/explosion');
     expect(mappings.resolveEventSample('dropPickup')).toBe('events/drop-pickup');
+    expect(mappings.resolveEventSample('victoryFanfare')).toBe('ui/fanfare');
     expect(mappings.resolveUiSample('overlayShow')).toBe('ui/open-1');
     expect(mappings.resolveUiSample('buttonHover')).toBe('ui/open-1');
     expect(mappings.resolveUiSample('modeSwitch')).toBe('ui/switch-2');
