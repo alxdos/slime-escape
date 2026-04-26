@@ -28,6 +28,7 @@ export type SpawnOverride = Readonly<{
   guaranteedDrops?: ReadonlyArray<string>;
   dropTable?: ReadonlyArray<DropTableEntry>;
   retaliation?: RetaliationPolicy;
+  loadout?: Loadout;
 }>;
 
 export type StaticSpawn = Readonly<{
