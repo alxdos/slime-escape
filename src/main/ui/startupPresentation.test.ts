@@ -30,6 +30,7 @@ describe('startup presentation view model', () => {
       'Проектируем босса',
       'Открываем путь побега'
     ]);
+    expect(STARTUP_PRESENTATION_STEPS.reduce((sum, step) => sum + step.durationMs, 0)).toBe(900);
 
     expect(createStartupRitualViewModel(0)).toMatchObject({
       kind: 'ritual',

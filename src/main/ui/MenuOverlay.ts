@@ -1,6 +1,12 @@
 import type { ModePresetId, PlayableModeEntry } from '../../shared/content/sessions';
 
-import { MAIN_MENU_CONTROLS, MAIN_MENU_STAGE, type MenuControlLayout } from './MenuOverlayLayout';
+import { comicTextStyle } from './comicTextStyle';
+import {
+  MAIN_MENU_CONTROLS,
+  MAIN_MENU_STAGE,
+  MAIN_MENU_STAGE_WIDTH_VH,
+  type MenuControlLayout
+} from './MenuOverlayLayout';
 import {
   CAMPAIGN_MODE_BY_CONTROL,
   DEFAULT_SELECTED_CAMPAIGN_MODE,
@@ -194,7 +200,7 @@ function baseOverlayStyle(): string {
 function stageStyle(): string {
   return [
     'position:relative',
-    `width:min(100vw, calc(100vh * ${MAIN_MENU_STAGE.width / MAIN_MENU_STAGE.height}))`,
+    `width:min(100vw, ${MAIN_MENU_STAGE_WIDTH_VH.toFixed(3)}vh)`,
     `aspect-ratio:${MAIN_MENU_STAGE.width} / ${MAIN_MENU_STAGE.height}`,
     `background-image:url("${MAIN_MENU_STAGE.background}")`,
     'background-size:100% 100%',
@@ -243,14 +249,11 @@ function teaserFeedbackStyle(): string {
     'top:61%',
     'width:24%',
     'opacity:0',
-    'font-family:"M PLUS Rounded 1c", "Noto Sans Display", system-ui, sans-serif',
-    'font-size:32px',
-    'font-weight:900',
-    'letter-spacing:0',
-    'text-align:center',
-    'color:#f8f0a8',
-    '-webkit-text-stroke:1px #000000',
-    'text-shadow:3px 3px 0 #000000',
+    ...comicTextStyle({
+      fontSize: '32px',
+      color: '#f8f0a8',
+      textAlign: 'center'
+    }),
     'pointer-events:none',
     'transition:opacity 140ms ease'
   ].join(';');
@@ -270,10 +273,10 @@ function menuOverlayCss(): string {
 
 @keyframes menu-selected-breathe {
   0%, 100% {
-    filter: brightness(1.08) drop-shadow(0 0 12px rgba(255, 245, 122, 0.95)) drop-shadow(4px 4px 0 #000000);
+    filter: brightness(1.1) drop-shadow(0 0 12px rgba(255, 245, 122, 0.95));
   }
   50% {
-    filter: brightness(1.24) drop-shadow(0 0 22px rgba(111, 244, 255, 0.95)) drop-shadow(4px 4px 0 #000000);
+    filter: brightness(1.24) drop-shadow(0 0 22px rgba(111, 244, 255, 0.95));
   }
 }
 
@@ -296,7 +299,7 @@ function menuOverlayCss(): string {
 
 .menu-image-button:hover img,
 .menu-image-button:focus-visible img {
-  filter: brightness(1.18) drop-shadow(0 0 16px rgba(255, 255, 190, 0.95)) drop-shadow(4px 4px 0 #000000);
+  filter: brightness(1.2) saturate(1.05) drop-shadow(0 0 14px rgba(255, 255, 190, 0.95));
   transform: scale(1.025);
 }
 
@@ -305,12 +308,12 @@ function menuOverlayCss(): string {
 }
 
 .menu-image-button[data-soon="true"] img {
-  filter: saturate(0.86) brightness(0.92) drop-shadow(3px 3px 0 #000000);
+  filter: saturate(0.86) brightness(0.92);
 }
 
 .menu-image-button[data-soon="true"]:hover img,
 .menu-image-button[data-soon="true"]:focus-visible img {
-  filter: saturate(1) brightness(1.08) drop-shadow(0 0 12px rgba(190, 240, 255, 0.9)) drop-shadow(4px 4px 0 #000000);
+  filter: saturate(1) brightness(1.08) drop-shadow(0 0 10px rgba(190, 240, 255, 0.9));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -328,7 +331,7 @@ function menuOverlayCss(): string {
 
   .menu-image-button[data-selected="true"] img {
     animation: none;
-    filter: brightness(1.14) drop-shadow(0 0 14px rgba(255, 245, 122, 0.95)) drop-shadow(4px 4px 0 #000000);
+    filter: brightness(1.14) drop-shadow(0 0 14px rgba(255, 245, 122, 0.95));
   }
 }
 `;

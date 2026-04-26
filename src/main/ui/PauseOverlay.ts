@@ -1,3 +1,5 @@
+import { comicTextStyle } from './comicTextStyle';
+
 export type PauseOverlayInit = Readonly<{
   parent: HTMLElement;
   onResume(): void;
@@ -100,10 +102,13 @@ function cardStyle(): string {
 function titleStyle(): string {
   return [
     'margin:0',
-    'font-size:22px',
-    'font-weight:600',
-    'color:#e6e8ef',
-    'letter-spacing:0.04em'
+    ...comicTextStyle({
+      fontSize: '26px',
+      color: '#fff38b',
+      lineHeight: '1',
+      textAlign: 'center',
+      shadow: 'strong'
+    })
   ].join(';');
 }
 
@@ -112,10 +117,11 @@ function primaryButtonStyle(): string {
     'appearance:none',
     'border:none',
     'padding:10px 28px',
-    'font-size:15px',
-    'font-weight:600',
-    'letter-spacing:0.04em',
-    'color:#0a0c10',
+    ...comicTextStyle({
+      fontSize: '16px',
+      color: '#ffffff',
+      lineHeight: '1'
+    }),
     'background:#9ad6ff',
     'border-radius:4px',
     'cursor:pointer',
@@ -127,10 +133,11 @@ function secondaryButtonStyle(): string {
   return [
     'appearance:none',
     'padding:10px 28px',
-    'font-size:15px',
-    'font-weight:500',
-    'letter-spacing:0.04em',
-    'color:#cdd5e3',
+    ...comicTextStyle({
+      fontSize: '16px',
+      color: '#f4fbff',
+      lineHeight: '1'
+    }),
     'background:transparent',
     'border:1px solid #2a3142',
     'border-radius:4px',

@@ -30,6 +30,8 @@ export const MAIN_MENU_STAGE = Object.freeze({
   background: '/images/bg/bg-main.jpg'
 });
 
+export const MAIN_MENU_STAGE_WIDTH_VH = (MAIN_MENU_STAGE.width / MAIN_MENU_STAGE.height) * 100;
+
 export const MAIN_MENU_CONTROLS = Object.freeze([
   {
     id: 'settings',

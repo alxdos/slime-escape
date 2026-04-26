@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { MAIN_MENU_CONTROLS, MAIN_MENU_STAGE } from './MenuOverlayLayout';
+import {
+  MAIN_MENU_CONTROLS,
+  MAIN_MENU_STAGE,
+  MAIN_MENU_STAGE_WIDTH_VH
+} from './MenuOverlayLayout';
 
 describe('MenuOverlayLayout', () => {
   it('uses the mockup reference stage and bg-main background', () => {
@@ -9,6 +13,7 @@ describe('MenuOverlayLayout', () => {
       height: 707,
       background: '/images/bg/bg-main.jpg'
     });
+    expect(MAIN_MENU_STAGE_WIDTH_VH).toBeCloseTo(141.443, 3);
   });
 
   it('contains every sliced main menu asset exactly once', () => {

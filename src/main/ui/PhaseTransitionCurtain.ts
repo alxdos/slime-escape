@@ -14,7 +14,7 @@ export type PhaseTransitionCurtain = Readonly<{
   dispose(): void;
 }>;
 
-const DEFAULT_TRANSITION_DURATION_MS = 180;
+const DEFAULT_TRANSITION_DURATION_MS = 360;
 
 export function createPhaseTransitionCurtain(
   init: PhaseTransitionCurtainInit
