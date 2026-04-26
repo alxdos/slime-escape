@@ -11,7 +11,7 @@
 - Видит: главное меню как hand-drawn сцену по референсу [001-main.jpg](../mockups/001-main.jpg), собранную из `public/images/bg/bg-main.jpg` и нарезанных `public/images/menu/menu-main-*.png`.
 - Видит: тексты меню, настроек, HUD и runtime-надписи в game/comic стиле: светлая или ярко-пастельная заливка, псевдо-обводка четырьмя резкими чёрными text-shadow без blur и отдельная резкая чёрная тень.
 - Видит: Settings и Pause overlay не как тёмные системные карточки, а как рисованный UI приложения: светлая бумага, яркие элементы, чёрная рамка и резкая тень.
-- Может: выбрать `easy`, `normal` или `hard`; выбранный режим выделяется резкой тенью и мягко дышит.
+- Может: выбрать `easy`, `normal` или `hard`; выбранный режим выделяется плотной цветной обводкой и мягко дышит.
 - Может: запустить выбранную кампанию большой кнопкой Play.
 - Может: запустить тренировочную сессию отдельной кнопкой Training, не смешанной с выбором сложности.
 - Может: открыть настройки верхней правой кнопкой Settings и включить fullscreen верхней правой кнопкой Fullscreen.
@@ -57,8 +57,8 @@
 - На холодном старте прогресс загрузки ассетов отражает фактическое preload-состояние. После готовности ассетов любая оставшаяся задержка показывается только как themed game-prep steps, а не как fake asset counts.
 - Завершение startup выполняет `splash fade out -> dark midpoint -> menu fade in` без белого/пустого мигания.
 - При входе в меню все интерактивные menu assets появляются через opacity `0 -> 1` и scale `0.5 -> 1`.
-- Hover любой активной кнопки использует brightness и резкую чёрную drop-shadow без glow-подсветки и не меняет её layout footprint.
-- Клик по `easy`, `normal` или `hard` обновляет selected state; одновременно выбран ровно один режим, он светится и мягко дышит.
+- Обычные menu assets не имеют тени в покое; hover любой активной кнопки использует brightness и резкую чёрную drop-shadow, не меняя layout footprint.
+- Клик по `easy`, `normal` или `hard` обновляет selected state; одновременно выбран ровно один режим, он выделен плотной цветной обводкой и мягко дышит.
 - Play запускает текущий выбранный campaign preset.
 - Training запускает preset `training`.
 - Settings открывает overlay в рисованном стиле приложения: светлый фон, яркие controls, чёрная рамка и резкая тень.
@@ -78,7 +78,7 @@
 | T4 | [x] | Добавить `UiShell` phase transition curtain для `loading -> menu` и `menu -> running`, включая input guard от повторного старта. | Commit phase switch while curtain is opaque; `StartupErrorOverlay` остаётся emergency top layer. |
 | T5 | [x] | Пересобрать `MenuOverlay` stage layout по [001-main.jpg](../mockups/001-main.jpg): `bg-main`, top-right controls, difficulty buttons, Play, Training, Pets/Dungeon/Lab blocks. | Stable reference coordinates/aspect ratio; no card UI fallback. |
 | T6 | [x] | Реализовать menu behavior: default `campaign-normal`, difficulty selection, Play selected campaign, Training preset, Settings callback, Fullscreen callback, Soon/Pets/Dungeon/Lab teaser feedback. | `MenuOverlay` не обращается к sim/audio/settings/fullscreen напрямую; всё через callbacks from `UiShell`. |
-| T7 | [x] | Реализовать menu/startup visual states: appear opacity/scale, active hover/focus shadow, selected difficulty shadow + breathing, disabled/soon state, comic text style and reduced-motion fallback. | Motion must not resize layout footprint; font loading is progressive enhancement. |
+| T7 | [x] | Реализовать menu/startup visual states: appear opacity/scale, active hover/focus shadow, selected difficulty concentrated color outline + breathing, disabled/soon state, comic text style and reduced-motion fallback. | Motion must not resize layout footprint; font loading is progressive enhancement. |
 | T8 | [ ] | Финальная проверка: unit tests for startup/menu state, `npm test`, dev-server visual sanity on desktop and narrow viewport, plus start flows for easy/normal/hard/training. | Проверить no flashing, no overlap, clickable buttons, selected mode visibility, fullscreen graceful failure. |
 
 ## Related

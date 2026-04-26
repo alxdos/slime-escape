@@ -273,10 +273,20 @@ function menuOverlayCss(): string {
 
 @keyframes menu-selected-breathe {
   0%, 100% {
-    filter: brightness(1.08) drop-shadow(5px 5px 0 #000000);
+    filter:
+      brightness(1.08)
+      drop-shadow(2px 0 0 #7cf58f)
+      drop-shadow(-2px 0 0 #7cf58f)
+      drop-shadow(0 2px 0 #7cf58f)
+      drop-shadow(0 -2px 0 #7cf58f);
   }
   50% {
-    filter: brightness(1.18) drop-shadow(7px 7px 0 #000000);
+    filter:
+      brightness(1.16)
+      drop-shadow(2px 0 0 #fff38b)
+      drop-shadow(-2px 0 0 #fff38b)
+      drop-shadow(0 2px 0 #fff38b)
+      drop-shadow(0 -2px 0 #fff38b);
   }
 }
 
@@ -295,7 +305,7 @@ function menuOverlayCss(): string {
 
 .menu-image-button img {
   transition: filter 140ms ease, transform 140ms ease, opacity 140ms ease;
-  filter: drop-shadow(4px 4px 0 #000000);
+  filter: none;
 }
 
 .menu-image-button:hover img,
@@ -309,7 +319,7 @@ function menuOverlayCss(): string {
 }
 
 .menu-image-button[data-soon="true"] img {
-  filter: saturate(0.86) brightness(0.92) drop-shadow(3px 3px 0 #000000);
+  filter: saturate(0.86) brightness(0.92);
 }
 
 .menu-image-button[data-soon="true"]:hover img,
@@ -332,7 +342,12 @@ function menuOverlayCss(): string {
 
   .menu-image-button[data-selected="true"] img {
     animation: none;
-    filter: brightness(1.12) drop-shadow(5px 5px 0 #000000);
+    filter:
+      brightness(1.1)
+      drop-shadow(2px 0 0 #7cf58f)
+      drop-shadow(-2px 0 0 #7cf58f)
+      drop-shadow(0 2px 0 #7cf58f)
+      drop-shadow(0 -2px 0 #7cf58f);
   }
 }
 `;
