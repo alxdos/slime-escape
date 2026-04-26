@@ -261,6 +261,15 @@
 | displayName | Obelisk Slime |
 | color | #5522a7 |
 
+## slime-idol
+
+![Idol Slime](../public/assets/slime-45.png)
+
+| field | value |
+|---|---|
+| displayName | Idol Slime |
+| color | #6f78a8 |
+
 ## slime-ninja
 
 ![Ninja Slime](../public/assets/slime-46.png)
@@ -305,6 +314,7 @@
 | slime-clamper | 0.52 | 4 | chase |
 | slime-candle | 0.46 | 3 | chase |
 | slime-obelisk | 0.50 | 5 | chase |
+| slime-idol | 0.50 | 6 | stationary |
 | slime-ninja | 0.54 | 5 | chase |
 
 ## Movement
@@ -340,6 +350,7 @@
 | slime-clamper | 2.5 |
 | slime-candle | 2.5 |
 | slime-obelisk | 2.0 |
+| slime-idol | 0 |
 | slime-ninja | 2.6 |
 
 ## Contact damage
@@ -375,6 +386,7 @@
 | slime-clamper | 2 | 900 |
 | slime-candle | 1 | 850 |
 | slime-obelisk | 2 | 1000 |
+| slime-idol | 0 | 1000 |
 | slime-ninja | 3 | 950 |
 
 ## Knockback
@@ -410,6 +422,7 @@
 | slime-clamper | 5 | 1.0 | 280 |
 | slime-candle | 5 | 1.0 | 280 |
 | slime-obelisk | 5 | 1.0 | 280 |
+| slime-idol | 0 | 0 | 100 |
 | slime-ninja | 8 | 1.5 | 350 |
 
 ## Drops
@@ -512,6 +525,7 @@
 | slime-clamper | false | 0 |
 | slime-candle | false | 0 |
 | slime-obelisk | false | 0 |
+| slime-idol | false | 0 |
 | slime-ninja | false | 0 |
 
 # Sound sets
@@ -520,7 +534,7 @@
 
 | setId | slimes |
 |---|---|
-| default | slime-one-eye, slime-hornling, slime-many-eye, slime-stonehead, slime-sleeper, slime-spark, slime-wraith, slime-shell, slime-flame, slime-mech-crab, slime-stack, slime-trickster, slime-bug, slime-lifter, slime-saw, slime-drone, slime-star, slime-echo, slime-splitter, slime-prince, slime-kingling, slime-fortress, slime-dasher, slime-tadpole, slime-door, slime-mech, slime-clamper, slime-candle, slime-obelisk, slime-ninja |
+| default | slime-one-eye, slime-hornling, slime-many-eye, slime-stonehead, slime-sleeper, slime-spark, slime-wraith, slime-shell, slime-flame, slime-mech-crab, slime-stack, slime-trickster, slime-bug, slime-lifter, slime-saw, slime-drone, slime-star, slime-echo, slime-splitter, slime-prince, slime-kingling, slime-fortress, slime-dasher, slime-tadpole, slime-door, slime-mech, slime-clamper, slime-candle, slime-obelisk, slime-idol, slime-ninja |
 
 ## Hit
 

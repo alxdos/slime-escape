@@ -524,6 +524,24 @@ export const SLIME_OBELISK: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
+export const SLIME_IDOL: EnemyArchetype = {
+  id: 'slime-idol',
+  displayName: 'Idol Slime',
+  radius: 0.5,
+  contactBox: { width: 0.6875, height: 2.0833333333333335 },
+  maxHp: 6,
+  behavior: 'stationary',
+  maxSpeed: 0,
+  contactDamage: 0,
+  contactCooldownMs: 1000,
+  knockbackBaseImpulse: 0,
+  knockbackVelocityScale: 0,
+  knockbackDurationMs: 100,
+  color: 0x6f78a8,
+  dropTable: [],
+  retaliation: { enabled: false, durationMs: 0 }
+};
+
 export const SLIME_NINJA: EnemyArchetype = {
   id: 'slime-ninja',
   displayName: 'Ninja Slime',
