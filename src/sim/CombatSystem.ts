@@ -180,6 +180,7 @@ export function createCombatSystem(
       const maxProjectileTargetBoundsRadius = computeMaxProjectileTargetBoundsRadius(store);
       const projectileRemovals = new Set<EntityId>();
       runPlayerFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit);
+      runEnemyFiringDecisions(store, simTimeMs, shooterWeapons, weaponRegistry, emit);
       runProjectileMovement(store, simTimeMs, projectileRemovals);
       markLifetimeCleanup(store, simTimeMs, arena, projectileRemovals);
       index.rebuild(store);
@@ -266,6 +267,58 @@ function runPlayerFiringDecisions(
     dirX: result.eventDirection.x,
     dirY: result.eventDirection.y
   });
+}
+
+function runEnemyFiringDecisions(
+  store: EntityStore,
+  simTimeMs: number,
+  shooterWeapons: Map<EntityId, ShooterWeapons>,
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
+  emit: (event: RuntimeEvent) => void
+): void {
+  const player = store.player();
+  if (player === null) return;
+
+  for (const enemy of store.enemies()) {
+    if (enemy.hp <= 0) continue;
+    const weapons = shooterWeapons.get(enemy.id);
+    if (weapons === undefined || weapons.ownerKind !== 'enemy') continue;
+    const selectedWeapon = selectedWeaponInstance(weapons);
+    if (selectedWeapon === null) continue;
+    if (simTimeMs < selectedWeapon.nextFireSimMs) continue;
+
+    const aimDx = player.position.x - enemy.position.x;
+    const aimDy = player.position.y - enemy.position.y;
+    if (aimDx === 0 && aimDy === 0) continue;
+
+    const archetype = weaponRegistry[selectedWeapon.archetypeId];
+    if (archetype === undefined) continue;
+    const result = fireWeaponProjectiles(
+      store,
+      archetype,
+      selectedWeapon.modifiers,
+      enemy.id,
+      'enemy',
+      enemy.position,
+      player.position,
+      simTimeMs
+    );
+    if (result === null) continue;
+
+    selectedWeapon.nextFireSimMs =
+      simTimeMs + effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs);
+    emit({
+      kind: 'fire',
+      simTime: simTimeMs,
+      shooterId: enemy.id,
+      ownerKind: 'enemy',
+      weaponArchetypeId: archetype.id,
+      originX: enemy.position.x,
+      originY: enemy.position.y,
+      dirX: result.eventDirection.x,
+      dirY: result.eventDirection.y
+    });
+  }
 }
 
 export function fireWeaponProjectiles(

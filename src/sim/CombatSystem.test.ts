@@ -1124,6 +1124,53 @@ describe('CombatSystem', () => {
 
     expect(() => combat.removeShooter(999 as EntityId)).not.toThrow();
   });
+
+  it('enemy loadout fires at the player after the initial weapon cooldown', () => {
+    const { store, index, combat } = setupCombat();
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: -4, y: 0 }));
+    const input = makeInput({ firing: false });
+    const events: RuntimeEvent[] = [];
+
+    combat.setEnemyLoadout(enemy.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+
+    combat.tick(input, store, index, PISTOL.cooldownMs - 1, ARENA, (event) => {
+      events.push(event);
+    });
+    expect(events.filter((event) => event.kind === 'fire')).toHaveLength(0);
+
+    combat.tick(input, store, index, PISTOL.cooldownMs, ARENA, (event) => {
+      events.push(event);
+    });
+
+    const fire = events.find(
+      (event) => event.kind === 'fire' && event.shooterId === enemy.id
+    );
+    if (fire?.kind !== 'fire') throw new Error('expected enemy fire event');
+    expect(fire.ownerKind).toBe('enemy');
+    expect(fire.weaponArchetypeId).toBe(PISTOL.id);
+    expect(fire.simTime).toBe(PISTOL.cooldownMs);
+    expect(fire.originX).toBe(enemy.position.x);
+    expect(fire.originY).toBe(enemy.position.y);
+    expect(fire.dirX).toBeCloseTo(1);
+    expect(fire.dirY).toBeCloseTo(0);
+  });
+
+  it('removeShooter stops future enemy firing', () => {
+    const { store, index, combat } = setupCombat();
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: -4, y: 0 }));
+    const events: RuntimeEvent[] = [];
+
+    combat.setEnemyLoadout(enemy.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+    combat.removeShooter(enemy.id);
+
+    combat.tick(makeInput({ firing: false }), store, index, PISTOL.cooldownMs, ARENA, (event) => {
+      events.push(event);
+    });
+
+    expect(
+      events.filter((event) => event.kind === 'fire' && event.shooterId === enemy.id)
+    ).toHaveLength(0);
+  });
 });
 
 function cleanZero(value: number): number {
