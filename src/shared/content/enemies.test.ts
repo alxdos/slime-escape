@@ -19,7 +19,6 @@ const BASE_TEST_ENEMY: EnemyArchetype = {
   knockbackDurationMs: 350,
   color: 0x77ff99,
   dropTable: [],
-  carrierDrop: null,
   retaliation: { enabled: false, durationMs: 0 }
 };
 
