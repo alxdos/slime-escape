@@ -321,29 +321,21 @@ function menuOverlayCss(): string {
   }
 }
 
-@keyframes menu-logo-shimmer {
-  0%, 100% {
-    filter:
-      brightness(1.06)
-      saturate(1.04)
-      drop-shadow(0 0 0 rgba(124, 245, 143, 0))
-      drop-shadow(0 0 0 rgba(125, 199, 255, 0));
-  }
-  50% {
-    filter:
-      brightness(1.24)
-      saturate(1.16)
-      drop-shadow(0 0 10px rgba(124, 245, 143, 0.88))
-      drop-shadow(0 0 18px rgba(125, 199, 255, 0.72));
-  }
-}
-
 .menu-stage-logo {
-  transition: filter 180ms ease;
+  filter:
+    brightness(1)
+    saturate(1)
+    drop-shadow(0 0 0 rgba(124, 245, 143, 0))
+    drop-shadow(0 0 0 rgba(125, 199, 255, 0));
+  transition: filter 460ms ease-out;
 }
 
 .menu-stage-logo:hover {
-  animation: menu-logo-shimmer 1200ms ease-in-out infinite;
+  filter:
+    brightness(1.22)
+    saturate(1.14)
+    drop-shadow(0 0 10px rgba(124, 245, 143, 0.86))
+    drop-shadow(0 0 18px rgba(125, 199, 255, 0.7));
 }
 
 .menu-image-button {
@@ -454,7 +446,6 @@ function menuOverlayCss(): string {
   }
 
   .menu-stage-logo:hover {
-    animation: none;
     filter:
       brightness(1.18)
       saturate(1.1)
