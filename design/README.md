@@ -77,6 +77,7 @@
 | [drops.md](drops.md) | accepted | `DropArchetype`, `Drop` как сущность, `DropSystem` (spawn-on-death-hook + ttl/pickup), `dropTable` на `EnemyArchetype`, heal-эффект |
 | [rng.md](rng.md) | accepted | Session RNG (`mulberry32` от `seed`) как единственный источник случайности в `sim` |
 | [main-ui-shell.md](main-ui-shell.md) | accepted | `UiShell` (фазы `menu`/`running`/`paused`/`result`), HUD как пассивный потребитель снапшотов, playable preset catalog |
+| [menu-and-startup-presentation.md](menu-and-startup-presentation.md) | accepted | Startup ritual, phase transition curtain and hand-drawn main menu presentation |
 | [audio.md](audio.md) | accepted | Аудио-стек в `src/main/audio/**`: единый `AudioContext`, mixer (`master` + `sfx`/`music`/`ui` buses), двухслойная громкость sample-реестра, маппинги архетип/событие → sampleId, music selector, ambient слаймов и `setMasterGain` для 009 |
 | [client-settings.md](client-settings.md) | accepted | `ClientSettingsStore` в `src/main/settings/**`: поля 009 (`masterVolume`, `renderScalePreset`), `localStorage` с `schemaVersion`, валидация/clamp, subscriber-модель, владение `UiShell` |
 | [render-scale.md](render-scale.md) | accepted | Render scale policy в `src/main/render/**`: три пресета `low`/`medium`/`high`, чистая `resolveRenderScale`, `Renderer.applyScalePolicy`, инварианты «без преимущества от железа» |
