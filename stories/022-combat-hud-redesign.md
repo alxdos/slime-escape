@@ -77,7 +77,7 @@
 | T4 | [x] | Пересобрать HUD view model в `src/main/ui/Hud.ts`: run timer из `snapshot.simTimeMs`, compact HP, boss strip, weapon slot descriptors, cooldown ratio, timed-effect ratio, badge grouping. | Сохранить пассивный lifecycle `attach/update/detach`; обновить `Hud.test.ts`. |
 | T5 | [x] | Реализовать новый DOM/CSS HUD layout: top-left status, top-center boss strip, bottom-left `WASD`, bottom-center weapon bar, bottom-right mouse hint. | `pointer-events:none`, viewport-fixed positioning, stable square slots, monospace/tabular timer, responsive desktop/mobile constraints. |
 | T6 | [x] | Подключить visual assets and badge mapping: projectile images from `PROJECTILE_VISUALS`, modifier/effect badges from `DROP_VISUALS`, selected-slot highlight, cooldown fill and timed overdrive fill. | Missing visual for known weapon/modifier is a test failure, not silent text fallback. |
-| T7 | [ ] | Финальная проверка: unit/integration tests for snapshot + HUD, `npm test`, and dev-server visual sanity on desktop/mobile with multiple weapons, active cooldown, stacked modifiers and overdrive. | Проверить отсутствие overlap, отсутствие старой debug-панели, FPS справа сверху, `ЛКМ: выстрел` без pointer-lock текста. |
+| T7 | [/] | Финальная проверка: unit/integration tests for snapshot + HUD, `npm test`, and dev-server visual sanity on desktop/mobile with multiple weapons, active cooldown, stacked modifiers and overdrive. | Проверить отсутствие overlap, отсутствие старой debug-панели, FPS справа сверху, `ЛКМ: выстрел` без pointer-lock текста. |
 
 ## Related
 
