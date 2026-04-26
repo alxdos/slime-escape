@@ -1,3 +1,9 @@
+import {
+  createStartupAssetProgressViewModel,
+  playStartupPresentationRitual,
+  type StartupOverlayViewModel
+} from './startupPresentation';
+
 export type StartupOverlayInit = Readonly<{
   parent: HTMLElement;
 }>;
@@ -7,6 +13,7 @@ export type StartupOverlay = Readonly<{
   hide(): void;
   isVisible(): boolean;
   setProgress(loaded: number, total: number): void;
+  playRitual(): Promise<void>;
   dispose(): void;
 }>;
 
@@ -42,16 +49,17 @@ export function createStartupOverlay(init: StartupOverlayInit): StartupOverlay {
   init.parent.appendChild(root);
 
   let visible = true;
+  let disposed = false;
 
-  function applyProgress(loaded: number, total: number): void {
-    const safeLoaded = Math.max(0, Math.floor(loaded));
-    const safeTotal = Math.max(0, Math.floor(total));
-    const ratio = safeTotal <= 0 ? 0 : Math.min(1, safeLoaded / safeTotal);
-    status.textContent = `Loading assets ${safeLoaded}/${safeTotal}`;
-    progressFill.style.width = `${Math.round(ratio * 100)}%`;
+  function applyViewModel(viewModel: StartupOverlayViewModel): void {
+    if (disposed) {
+      return;
+    }
+    status.textContent = viewModel.label;
+    progressFill.style.width = `${viewModel.progressPercent}%`;
   }
 
-  applyProgress(0, 0);
+  applyViewModel(createStartupAssetProgressViewModel(0, 0));
 
   return {
     show(): void {
@@ -66,9 +74,13 @@ export function createStartupOverlay(init: StartupOverlayInit): StartupOverlay {
       return visible;
     },
     setProgress(loaded, total): void {
-      applyProgress(loaded, total);
+      applyViewModel(createStartupAssetProgressViewModel(loaded, total));
+    },
+    playRitual(): Promise<void> {
+      return playStartupPresentationRitual(applyViewModel);
     },
     dispose(): void {
+      disposed = true;
       root.remove();
     }
   };

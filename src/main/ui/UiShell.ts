@@ -599,6 +599,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         disposeTextureMap(textures);
         return;
       }
+      await startupOverlay.playRitual();
+      if (disposed) {
+        disposeTextureMap(textures);
+        return;
+      }
       preloadedTextures = textures;
       setPhase(MENU_PHASE);
     } catch (error: unknown) {
@@ -681,6 +686,9 @@ function createNullStartupOverlay(_init: StartupOverlayInit): StartupOverlay {
       return false;
     },
     setProgress(): void {},
+    playRitual(): Promise<void> {
+      return Promise.resolve();
+    },
     dispose(): void {}
   };
 }

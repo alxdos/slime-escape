@@ -135,6 +135,20 @@ function createDeferredPreload() {
   };
 }
 
+function createDeferredVoid() {
+  let resolvePromise: (() => void) | null = null;
+  const promise = new Promise<void>((resolve) => {
+    resolvePromise = resolve;
+  });
+
+  return {
+    promise,
+    resolve(): void {
+      resolvePromise?.();
+    }
+  };
+}
+
 function createUiShellForTest(init: UiShellInit) {
   const titleOverlay = createTitleOverlayHarness();
   return createUiShell({
@@ -369,9 +383,12 @@ function createSettingsOverlayHarness() {
   };
 }
 
-function createStartupOverlayHarness() {
+function createStartupOverlayHarness(
+  options: Readonly<{ ritualPromise?: Promise<void> }> = {}
+) {
   let visible = true;
   let progress = { loaded: 0, total: 0 };
+  let ritualCalls = 0;
   let root: FakeDomElement | null = null;
 
   const overlay: StartupOverlay = {
@@ -393,6 +410,10 @@ function createStartupOverlayHarness() {
     setProgress(loaded: number, total: number): void {
       progress = { loaded, total };
     },
+    playRitual(): Promise<void> {
+      ritualCalls += 1;
+      return options.ritualPromise ?? Promise.resolve();
+    },
     dispose(): void {
       root?.remove();
       root = null;
@@ -413,6 +434,9 @@ function createStartupOverlayHarness() {
     },
     progress(): Readonly<{ loaded: number; total: number }> {
       return progress;
+    },
+    ritualCalls(): number {
+      return ritualCalls;
     },
     root(): FakeDomElement | null {
       return root;
@@ -879,6 +903,57 @@ describe('UiShell', () => {
 
     windowTarget.dispatch('pointerdown', new Event('pointerdown'));
     expect(audio.calls.unlock).toBe(1);
+  });
+
+  it('keeps the startup overlay visible while the post-load ritual runs', async () => {
+    const parent = new FakeDomElement();
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const ritual = createDeferredVoid();
+    const startupOverlay = createStartupOverlayHarness({ ritualPromise: ritual.promise });
+    const startupErrorOverlay = createStartupErrorOverlayHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: parent as unknown as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession(),
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createStartupOverlay: startupOverlay.factory,
+      createStartupErrorOverlay: startupErrorOverlay.factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      runStartupPreload(onProgress) {
+        onProgress(4, 4);
+        return Promise.resolve(EMPTY_TEXTURE_MAP);
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(startupOverlay.ritualCalls()).toBe(1);
+    expect(shell.phase()).toEqual({ kind: 'loading' });
+    expect(startupOverlay.isVisible()).toBe(true);
+    expect(menu.isVisible()).toBe(false);
+
+    ritual.resolve();
+    await flushUiShellStartup();
+
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+    expect(startupOverlay.isVisible()).toBe(false);
+    expect(menu.isVisible()).toBe(true);
   });
 
   it('transitions loading into preload error and exposes only reload', async () => {
