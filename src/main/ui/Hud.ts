@@ -7,6 +7,9 @@ import type {
   PlayerSnapshot,
   Snapshot
 } from '../../shared/snapshot';
+import { DROP_VISUALS } from '../render/dropVisuals';
+import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
+import type { SpriteVisualSpec } from '../render/SpriteVisualSpec';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 export type HudInit = Readonly<{
@@ -40,6 +43,7 @@ export type WeaponSlotViewModel = Readonly<{
   hotkeyText: string;
   weaponArchetypeId: string;
   titleText: string;
+  projectileImage: string;
   isSelected: boolean;
   cooldownRatio: number;
   modifierBadges: ReadonlyArray<WeaponModifierBadgeViewModel>;
@@ -49,11 +53,13 @@ export type WeaponSlotViewModel = Readonly<{
 export type WeaponModifierBadgeViewModel = Readonly<{
   kind: WeaponModifier['kind'];
   count: number;
+  image: string;
 }>;
 
 export type WeaponTimedBadgeViewModel = Readonly<{
   kind: 'temporaryOverdrive';
   remainingRatio: number;
+  image: string;
 }>;
 
 export type BossViewModel = Readonly<{
@@ -62,6 +68,28 @@ export type BossViewModel = Readonly<{
   hpText: string;
   hpRatio: number;
 }>;
+
+export type HudVisualRegistries = Readonly<{
+  projectileVisuals: Readonly<Record<string, Pick<SpriteVisualSpec, 'image'>>>;
+  dropVisuals: Readonly<Record<string, Pick<SpriteVisualSpec, 'image'>>>;
+}>;
+
+const DEFAULT_HUD_VISUAL_REGISTRIES: HudVisualRegistries = {
+  projectileVisuals: PROJECTILE_VISUALS,
+  dropVisuals: DROP_VISUALS
+};
+
+const MODIFIER_BADGE_DROP_IDS: Readonly<Record<WeaponModifier['kind'], string>> = {
+  projectileSizeMultiplier: 'size-up',
+  projectileSpeedMultiplier: 'speed-up',
+  symmetricProjectileMultiplier: 'multi-shot',
+  pierceBonus: 'pierce',
+  fragmentExplosion: 'fragment'
+};
+
+const TIMED_EFFECT_BADGE_DROP_IDS: Readonly<Record<WeaponTimedBadgeViewModel['kind'], string>> = {
+  temporaryOverdrive: 'overdrive'
+};
 
 export function createHud(init: HudInit): Hud {
   const root = document.createElement('div');
@@ -97,14 +125,15 @@ export function createHud(init: HudInit): Hud {
 
 export function deriveHudViewModel(
   session: SessionDefinition,
-  snapshot: Snapshot | null
+  snapshot: Snapshot | null,
+  visualRegistries: HudVisualRegistries = DEFAULT_HUD_VISUAL_REGISTRIES
 ): HudViewModel {
   const player = snapshot === null ? null : findPlayerSnapshot(snapshot);
 
   return {
     runTimerText: formatElapsedMs(snapshot?.simTimeMs ?? 0),
     playerHp: derivePlayerHp(session, player),
-    weaponSlots: deriveWeaponSlots(snapshot),
+    weaponSlots: deriveWeaponSlots(snapshot, visualRegistries),
     selectedWeaponIndex: snapshot?.weaponHud?.selectedIndex ?? null,
     boss: deriveBossSummary(snapshot)
   };
@@ -212,19 +241,75 @@ function createWeaponSlotElement(slot: WeaponSlotViewModel): HTMLElement {
   const root = document.createElement('div');
   root.dataset['weaponSlot'] = String(slot.index);
   root.dataset['selected'] = slot.isSelected ? 'true' : 'false';
-  root.style.cssText = weaponSlotStyle(slot.isSelected);
+  root.style.cssText = weaponSlotWrapperStyle();
+
+  const badges = document.createElement('div');
+  badges.style.cssText = weaponBadgeRowStyle();
+  badges.replaceChildren(...slot.modifierBadges.map(createModifierBadgeElement));
+  for (const timedBadge of slot.timedBadges) {
+    badges.appendChild(createTimedBadgeElement(timedBadge));
+  }
+  root.appendChild(badges);
+
+  const frame = document.createElement('div');
+  frame.style.cssText = weaponSlotStyle(slot.isSelected);
 
   const hotkey = document.createElement('span');
   hotkey.textContent = slot.hotkeyText;
   hotkey.style.cssText = weaponSlotHotkeyStyle();
-  root.appendChild(hotkey);
+  frame.appendChild(hotkey);
 
-  const placeholder = document.createElement('span');
-  placeholder.textContent = weaponPlaceholderText(slot.titleText);
-  placeholder.style.cssText = weaponSlotPlaceholderStyle();
-  root.appendChild(placeholder);
+  const cooldownFill = document.createElement('div');
+  cooldownFill.style.cssText = cooldownFillStyle(slot.cooldownRatio);
+  frame.appendChild(cooldownFill);
+
+  const image = document.createElement('img');
+  image.src = slot.projectileImage;
+  image.alt = '';
+  image.draggable = false;
+  image.style.cssText = weaponSlotImageStyle();
+  frame.appendChild(image);
+
+  root.appendChild(frame);
 
   return root;
+}
+
+function createModifierBadgeElement(badge: WeaponModifierBadgeViewModel): HTMLElement {
+  const root = createBadgeShell();
+  const image = createBadgeImage(badge.image);
+  root.appendChild(image);
+  if (badge.count > 1) {
+    const count = document.createElement('span');
+    count.textContent = String(badge.count);
+    count.style.cssText = badgeCountStyle();
+    root.appendChild(count);
+  }
+  return root;
+}
+
+function createTimedBadgeElement(badge: WeaponTimedBadgeViewModel): HTMLElement {
+  const root = createBadgeShell();
+  const fill = document.createElement('div');
+  fill.style.cssText = timedBadgeFillStyle(badge.remainingRatio);
+  root.appendChild(fill);
+  root.appendChild(createBadgeImage(badge.image));
+  return root;
+}
+
+function createBadgeShell(): HTMLElement {
+  const root = document.createElement('div');
+  root.style.cssText = badgeShellStyle();
+  return root;
+}
+
+function createBadgeImage(src: string): HTMLElement {
+  const image = document.createElement('img');
+  image.src = src;
+  image.alt = '';
+  image.draggable = false;
+  image.style.cssText = badgeImageStyle();
+  return image;
 }
 
 function createMovementHint(): HTMLElement {
@@ -288,7 +373,10 @@ function deriveBossSummary(snapshot: Snapshot | null): BossViewModel | null {
   };
 }
 
-function deriveWeaponSlots(snapshot: Snapshot | null): ReadonlyArray<WeaponSlotViewModel> {
+function deriveWeaponSlots(
+  snapshot: Snapshot | null,
+  visualRegistries: HudVisualRegistries
+): ReadonlyArray<WeaponSlotViewModel> {
   const weaponHud = snapshot?.weaponHud ?? null;
   if (weaponHud === null) return [];
   const simTimeMs = snapshot?.simTimeMs ?? 0;
@@ -301,19 +389,29 @@ function deriveWeaponSlots(snapshot: Snapshot | null): ReadonlyArray<WeaponSlotV
         hotkeyText: `${weapon.index + 1}`,
         weaponArchetypeId: weapon.weaponArchetypeId,
         titleText: archetype?.displayName ?? weapon.weaponArchetypeId,
+        projectileImage: requireVisualImage(
+          visualRegistries.projectileVisuals,
+          weapon.weaponArchetypeId,
+          'projectile'
+        ),
         isSelected: weaponHud.selectedIndex === weapon.index,
         cooldownRatio: deriveCooldownRatio(
           weapon.cooldownStartedAtSimMs,
           weapon.cooldownReadyAtSimMs,
           simTimeMs
         ),
-        modifierBadges: groupModifierBadges(weapon.modifiers),
+        modifierBadges: groupModifierBadges(weapon.modifiers, visualRegistries),
         timedBadges: weapon.timedEffects.map((effect) => ({
           kind: effect.kind,
           remainingRatio: deriveTimedEffectRemainingRatio(
             effect.startedAtSimMs,
             effect.expiresAtSimMs,
             simTimeMs
+          ),
+          image: requireVisualImage(
+            visualRegistries.dropVisuals,
+            TIMED_EFFECT_BADGE_DROP_IDS[effect.kind],
+            'drop badge'
           )
         }))
       };
@@ -341,18 +439,43 @@ function deriveTimedEffectRemainingRatio(
 }
 
 function groupModifierBadges(
-  modifiers: ReadonlyArray<WeaponModifier>
+  modifiers: ReadonlyArray<WeaponModifier>,
+  visualRegistries: HudVisualRegistries
 ): ReadonlyArray<WeaponModifierBadgeViewModel> {
   const badges: WeaponModifierBadgeViewModel[] = [];
   for (const modifier of modifiers) {
     const existing = badges.find((badge) => badge.kind === modifier.kind);
     if (existing === undefined) {
-      badges.push({ kind: modifier.kind, count: 1 });
+      badges.push({
+        kind: modifier.kind,
+        count: 1,
+        image: requireVisualImage(
+          visualRegistries.dropVisuals,
+          MODIFIER_BADGE_DROP_IDS[modifier.kind],
+          'drop badge'
+        )
+      });
     } else {
-      badges[badges.indexOf(existing)] = { kind: existing.kind, count: existing.count + 1 };
+      badges[badges.indexOf(existing)] = {
+        kind: existing.kind,
+        count: existing.count + 1,
+        image: existing.image
+      };
     }
   }
   return badges;
+}
+
+function requireVisualImage(
+  visuals: Readonly<Record<string, Pick<SpriteVisualSpec, 'image'>>>,
+  archetypeId: string,
+  area: string
+): string {
+  const visual = visuals[archetypeId];
+  if (visual === undefined) {
+    throw new Error(`${area} visual missing for HUD archetype "${archetypeId}"`);
+  }
+  return visual.image;
 }
 
 function formatBossPhaseText(
@@ -580,6 +703,34 @@ function weaponBarStyle(): string {
   ].join(';');
 }
 
+function weaponSlotWrapperStyle(): string {
+  return [
+    'position:relative',
+    'width:58px',
+    'height:80px',
+    'box-sizing:border-box',
+    'flex:0 0 58px',
+    'display:flex',
+    'align-items:end',
+    'justify-content:center'
+  ].join(';');
+}
+
+function weaponBadgeRowStyle(): string {
+  return [
+    'position:absolute',
+    'left:0',
+    'right:0',
+    'top:0',
+    'height:22px',
+    'display:flex',
+    'align-items:end',
+    'justify-content:center',
+    'gap:2px',
+    'overflow:visible'
+  ].join(';');
+}
+
 function weaponSlotStyle(isSelected: boolean): string {
   return [
     'position:relative',
@@ -588,11 +739,10 @@ function weaponSlotStyle(isSelected: boolean): string {
     'width:58px',
     'height:58px',
     'box-sizing:border-box',
-    'flex:0 0 58px',
     'border-radius:8px',
-    `border:${isSelected ? '2px solid rgba(255,255,255,0.92)' : '1px solid rgba(255,255,255,0.18)'}`,
-    `background:${isSelected ? 'rgba(36,44,62,0.78)' : 'rgba(5,8,14,0.54)'}`,
-    'box-shadow:0 8px 22px rgba(0,0,0,0.24)',
+    `border:${isSelected ? '2px solid rgba(255,255,255,0.94)' : '1px solid rgba(255,255,255,0.18)'}`,
+    `background:${isSelected ? 'rgba(30,39,62,0.82)' : 'rgba(5,8,14,0.56)'}`,
+    `box-shadow:${isSelected ? '0 0 0 3px rgba(125,211,252,0.22), 0 10px 26px rgba(0,0,0,0.3)' : '0 8px 22px rgba(0,0,0,0.24)'}`,
     'overflow:hidden'
   ].join(';');
 }
@@ -609,18 +759,77 @@ function weaponSlotHotkeyStyle(): string {
   ].join(';');
 }
 
-function weaponSlotPlaceholderStyle(): string {
+function weaponSlotImageStyle(): string {
   return [
-    'max-width:44px',
-    'padding:0 4px',
+    'position:relative',
+    'z-index:1',
+    'max-width:38px',
+    'max-height:38px',
+    'object-fit:contain',
+    'filter:drop-shadow(0 2px 5px rgba(0,0,0,0.38))'
+  ].join(';');
+}
+
+function cooldownFillStyle(ratio: number): string {
+  return [
+    'position:absolute',
+    'left:0',
+    'right:0',
+    'bottom:0',
+    `height:${Math.round(clampRatio(ratio) * 100)}%`,
+    'background:rgba(126,188,255,0.26)',
+    'z-index:0'
+  ].join(';');
+}
+
+function badgeShellStyle(): string {
+  return [
+    'position:relative',
+    'width:18px',
+    'height:18px',
     'box-sizing:border-box',
-    'font-size:11px',
-    'font-weight:800',
-    'line-height:1.1',
-    'text-align:center',
-    'color:#eef4ff',
-    'overflow:hidden',
-    'text-overflow:ellipsis'
+    'border-radius:4px',
+    'border:1px solid rgba(255,255,255,0.24)',
+    'background:rgba(5,8,14,0.68)',
+    'box-shadow:0 4px 10px rgba(0,0,0,0.24)',
+    'overflow:hidden'
+  ].join(';');
+}
+
+function badgeImageStyle(): string {
+  return [
+    'position:relative',
+    'z-index:1',
+    'display:block',
+    'width:100%',
+    'height:100%',
+    'object-fit:contain'
+  ].join(';');
+}
+
+function badgeCountStyle(): string {
+  return [
+    'position:absolute',
+    'right:1px',
+    'bottom:0',
+    'z-index:2',
+    'font:800 9px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    'font-variant-numeric:tabular-nums',
+    'letter-spacing:0',
+    'color:#ffffff',
+    'text-shadow:0 1px 3px #000000'
+  ].join(';');
+}
+
+function timedBadgeFillStyle(ratio: number): string {
+  return [
+    'position:absolute',
+    'left:0',
+    'right:0',
+    'bottom:0',
+    `height:${Math.round(clampRatio(ratio) * 100)}%`,
+    'background:rgba(126,188,255,0.34)',
+    'z-index:0'
   ].join(';');
 }
 
@@ -673,15 +882,6 @@ function fireHintTextStyle(): string {
     'white-space:nowrap',
     'color:#f4f8ff'
   ].join(';');
-}
-
-function weaponPlaceholderText(titleText: string): string {
-  return titleText
-    .split(/\s+/)
-    .map((part) => part[0] ?? '')
-    .join('')
-    .slice(0, 3)
-    .toUpperCase();
 }
 
 function pad2(value: number): string {

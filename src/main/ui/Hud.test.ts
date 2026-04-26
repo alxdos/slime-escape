@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import type { SessionDefinition } from '../../shared/session';
 import type { Snapshot } from '../../shared/snapshot';
+import { DROP_VISUALS } from '../render/dropVisuals';
+import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 
 import { deriveHudViewModel, formatElapsedMs } from './Hud';
 
@@ -214,6 +216,7 @@ describe('Hud view model', () => {
         hotkeyText: '1',
         weaponArchetypeId: 'pistol',
         titleText: 'Pistol',
+        projectileImage: PROJECTILE_VISUALS['pistol']!.image,
         isSelected: false,
         cooldownRatio: 0,
         modifierBadges: [],
@@ -224,15 +227,74 @@ describe('Hud view model', () => {
         hotkeyText: '2',
         weaponArchetypeId: 'shotgun',
         titleText: 'Shotgun',
+        projectileImage: PROJECTILE_VISUALS['shotgun']!.image,
         isSelected: true,
         cooldownRatio: 0.5,
         modifierBadges: [
-          { kind: 'projectileSizeMultiplier', count: 2 },
-          { kind: 'pierceBonus', count: 1 }
+          {
+            kind: 'projectileSizeMultiplier',
+            count: 2,
+            image: DROP_VISUALS['size-up']!.image
+          },
+          { kind: 'pierceBonus', count: 1, image: DROP_VISUALS['pierce']!.image }
         ],
-        timedBadges: [{ kind: 'temporaryOverdrive', remainingRatio: 0.5625 }]
+        timedBadges: [
+          {
+            kind: 'temporaryOverdrive',
+            remainingRatio: 0.5625,
+            image: DROP_VISUALS['overdrive']!.image
+          }
+        ]
       }
     ]);
+  });
+
+  it('fails fast when a weapon slot has no projectile visual', () => {
+    expect(() =>
+      deriveHudViewModel(
+        makeSession(),
+        makeSnapshot({
+          weaponHud: {
+            selectedIndex: 0,
+            weapons: [
+              {
+                index: 0,
+                weaponArchetypeId: 'pistol',
+                cooldownStartedAtSimMs: 0,
+                cooldownReadyAtSimMs: 0,
+                modifiers: [],
+                timedEffects: []
+              }
+            ]
+          }
+        }),
+        { projectileVisuals: {}, dropVisuals: DROP_VISUALS }
+      )
+    ).toThrow('projectile visual missing for HUD archetype "pistol"');
+  });
+
+  it('fails fast when an upgrade badge has no drop visual', () => {
+    expect(() =>
+      deriveHudViewModel(
+        makeSession(),
+        makeSnapshot({
+          weaponHud: {
+            selectedIndex: 0,
+            weapons: [
+              {
+                index: 0,
+                weaponArchetypeId: 'pistol',
+                cooldownStartedAtSimMs: 0,
+                cooldownReadyAtSimMs: 0,
+                modifiers: [{ kind: 'projectileSizeMultiplier', multiplier: 2 }],
+                timedEffects: []
+              }
+            ]
+          }
+        }),
+        { projectileVisuals: PROJECTILE_VISUALS, dropVisuals: {} }
+      )
+    ).toThrow('drop badge visual missing for HUD archetype "size-up"');
   });
 
   it('keeps weapon slots visible and unselected while holstered', () => {
