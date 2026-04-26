@@ -122,12 +122,15 @@ function footerStyle(): string {
 
 function statusStyle(): string {
   return [
-    'font-size:14px',
-    'font-weight:600',
-    'letter-spacing:0.04em',
-    'text-transform:uppercase',
-    'color:#344054',
-    'text-align:center'
+    'font-family:"M PLUS Rounded 1c", "Noto Sans Display", system-ui, sans-serif',
+    'font-size:18px',
+    'font-weight:900',
+    'letter-spacing:0',
+    'color:#f6ffb8',
+    '-webkit-text-stroke:1px #000000',
+    'text-shadow:3px 3px 0 #000000',
+    'text-align:center',
+    'line-height:1.2'
   ].join(';');
 }
 

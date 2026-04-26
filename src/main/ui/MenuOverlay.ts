@@ -31,11 +31,16 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   root.dataset['role'] = 'menu-overlay';
   root.style.cssText = baseOverlayStyle();
 
+  const style = document.createElement('style');
+  style.textContent = menuOverlayCss();
+  root.appendChild(style);
+
   const stage = document.createElement('div');
   stage.dataset['role'] = 'menu-stage';
   stage.style.cssText = stageStyle();
 
   const modeButtons = new Map<ModePresetId, HTMLButtonElement>();
+  const controlButtons: HTMLButtonElement[] = [];
   let selectedMode: ModePresetId = DEFAULT_SELECTED_CAMPAIGN_MODE;
   let feedbackTimeout: number | null = null;
 
@@ -44,8 +49,9 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   teaserFeedback.style.cssText = teaserFeedbackStyle();
   stage.appendChild(teaserFeedback);
 
-  for (const control of MAIN_MENU_CONTROLS) {
-    const button = createControlButton(control, handleControl);
+  for (const [index, control] of MAIN_MENU_CONTROLS.entries()) {
+    const button = createControlButton(control, index, handleControl);
+    controlButtons.push(button);
     if (isCampaignModeControl(control.id)) {
       modeButtons.set(CAMPAIGN_MODE_BY_CONTROL[control.id], button);
     }
@@ -62,6 +68,7 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     show(): void {
       visible = true;
       root.style.display = 'flex';
+      restartAppearAnimations();
     },
     hide(): void {
       visible = false;
@@ -125,22 +132,37 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
       feedbackTimeout = null;
     }, 900);
   }
+
+  function restartAppearAnimations(): void {
+    for (const button of controlButtons) {
+      button.classList.remove('menu-control-enter');
+    }
+    for (const button of controlButtons) {
+      void button.offsetWidth;
+      button.classList.add('menu-control-enter');
+    }
+  }
 }
 
 function createControlButton(
   control: MenuControlLayout,
+  index: number,
   onControl: (controlId: MenuControlLayout['id']) => void
 ): HTMLButtonElement {
   const button = document.createElement('button');
   button.type = 'button';
+  button.className = 'menu-image-button';
   button.dataset['role'] = 'menu-image-button';
   button.dataset['controlId'] = control.id;
   button.dataset['controlKind'] = control.kind;
+  if (control.kind === 'teaser' || control.id === 'soon') {
+    button.dataset['soon'] = 'true';
+  }
   button.setAttribute('aria-label', control.label);
   if (isCampaignModeControl(control.id)) {
     button.setAttribute('aria-pressed', 'false');
   }
-  button.style.cssText = controlButtonStyle(control);
+  button.style.cssText = controlButtonStyle(control, index);
 
   const image = document.createElement('img');
   image.alt = '';
@@ -183,7 +205,7 @@ function stageStyle(): string {
   ].join(';');
 }
 
-function controlButtonStyle(control: MenuControlLayout): string {
+function controlButtonStyle(control: MenuControlLayout, index: number): string {
   return [
     'appearance:none',
     'position:absolute',
@@ -198,7 +220,8 @@ function controlButtonStyle(control: MenuControlLayout): string {
     'background:transparent',
     'cursor:pointer',
     'line-height:0',
-    'touch-action:manipulation'
+    'touch-action:manipulation',
+    `animation-delay:${index * 35}ms`
   ].join(';');
 }
 
@@ -220,8 +243,10 @@ function teaserFeedbackStyle(): string {
     'top:61%',
     'width:24%',
     'opacity:0',
-    'font-size:clamp(18px, 4vw, 36px)',
+    'font-family:"M PLUS Rounded 1c", "Noto Sans Display", system-ui, sans-serif',
+    'font-size:32px',
     'font-weight:900',
+    'letter-spacing:0',
     'text-align:center',
     'color:#f8f0a8',
     '-webkit-text-stroke:1px #000000',
@@ -229,4 +254,82 @@ function teaserFeedbackStyle(): string {
     'pointer-events:none',
     'transition:opacity 140ms ease'
   ].join(';');
+}
+
+function menuOverlayCss(): string {
+  return `
+@keyframes menu-control-appear {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes menu-control-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes menu-selected-breathe {
+  0%, 100% {
+    filter: brightness(1.08) drop-shadow(0 0 12px rgba(255, 245, 122, 0.95)) drop-shadow(4px 4px 0 #000000);
+  }
+  50% {
+    filter: brightness(1.24) drop-shadow(0 0 22px rgba(111, 244, 255, 0.95)) drop-shadow(4px 4px 0 #000000);
+  }
+}
+
+.menu-image-button {
+  opacity: 1;
+  transform: scale(1);
+  outline: none;
+}
+
+.menu-image-button.menu-control-enter {
+  animation-name: menu-control-appear;
+  animation-duration: 360ms;
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.2, 1.15);
+  animation-fill-mode: both;
+}
+
+.menu-image-button img {
+  transition: filter 140ms ease, transform 140ms ease, opacity 140ms ease;
+}
+
+.menu-image-button:hover img,
+.menu-image-button:focus-visible img {
+  filter: brightness(1.18) drop-shadow(0 0 16px rgba(255, 255, 190, 0.95)) drop-shadow(4px 4px 0 #000000);
+  transform: scale(1.025);
+}
+
+.menu-image-button[data-selected="true"] img {
+  animation: menu-selected-breathe 1500ms ease-in-out infinite;
+}
+
+.menu-image-button[data-soon="true"] img {
+  filter: saturate(0.86) brightness(0.92) drop-shadow(3px 3px 0 #000000);
+}
+
+.menu-image-button[data-soon="true"]:hover img,
+.menu-image-button[data-soon="true"]:focus-visible img {
+  filter: saturate(1) brightness(1.08) drop-shadow(0 0 12px rgba(190, 240, 255, 0.9)) drop-shadow(4px 4px 0 #000000);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-image-button.menu-control-enter {
+    animation-name: menu-control-fade;
+    animation-duration: 160ms;
+    animation-timing-function: ease;
+  }
+
+  .menu-image-button,
+  .menu-image-button:hover img,
+  .menu-image-button:focus-visible img {
+    transform: none;
+  }
+
+  .menu-image-button[data-selected="true"] img {
+    animation: none;
+    filter: brightness(1.14) drop-shadow(0 0 14px rgba(255, 245, 122, 0.95)) drop-shadow(4px 4px 0 #000000);
+  }
+}
+`;
 }
