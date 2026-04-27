@@ -1,6 +1,6 @@
 # Social Links
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-27
 - Updated: 2026-04-27
 

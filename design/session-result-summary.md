@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-27 (story 026 prep: `portal` encounters are non-objective presentation encounters and do not contribute to result progress; the `/portal` flow normally redirects before any win result.)
+- Updated: 2026-04-27 (story 027 prep: loss-only Restart is an orchestration/UI action and does not change the `SessionResultSummary` payload. Earlier: story 026 prep: `portal` encounters are non-objective presentation encounters and do not contribute to result progress; the `/portal` flow normally redirects before any win result.)
 
 ## Context
 
@@ -127,7 +127,7 @@ type ResultDefeatCause =
 ### Main thread presentation
 
 - `UiShell` keeps the existing phase machine. On `win`/`loss`, it stores the `SessionResultSummary` from the event and passes it to Result UI.
-- Result UI still lives under `src/main/ui/**` and still has only one required action: back to menu. Story 024 enriches what it displays; it does not introduce retry/share/leaderboards.
+- Result UI still lives under `src/main/ui/**` and still has one required action: back to menu. Story 027 may add a loss-only Restart action through `UiShell` orchestration. Restart does not require any additional summary fields and does not change the terminal event payload.
 - A main-side pure mapper may convert `SessionDefinition + SessionResultSummary + content registries + visual registries` into a `ResultViewModel`. `ResultOverlay` should render that view model and should not import from `src/sim/**`.
 - Enemy/boss labels come from `EnemyArchetype.displayName` / `BossArchetype.displayName`. Icons use existing sprite visual registries (`enemyVisuals`, `bossVisuals`) and the preloaded/public image paths from [sprite-assets.md](sprite-assets.md). Missing visual/content mappings are hard errors under the existing sprite/content contracts, not silent fallback rows.
 - Result rows with zero counts are omitted.
@@ -161,4 +161,5 @@ type ResultDefeatCause =
 - [sprite-assets.md](sprite-assets.md)
 - [testing.md](testing.md)
 - [../stories/024-session-end-results.md](../stories/024-session-end-results.md)
+- [../stories/027-social-links.md](../stories/027-social-links.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
