@@ -27,6 +27,20 @@ The failure loop should be short. If the player loses, the Result screen should 
 - Sees: after losing a run, the Result screen has a clear Replay/Restart button at the top.
 - Can do: after losing, start the same game session again directly from the Result screen.
 
+## Technical
+
+No new `design/` decision file is needed for this story. It stays inside existing contracts:
+
+- menu and pause UI live under `src/main/ui/**` per [main-ui-shell.md](../design/main-ui-shell.md), [menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md), and [web-stack.md](../design/web-stack.md);
+- result presentation already belongs to `ResultOverlay`/`UiShell` per [main-ui-shell.md](../design/main-ui-shell.md) and [session-result-summary.md](../design/session-result-summary.md);
+- metadata changes are static page `<head>` updates in `index.html` and `portal/index.html`.
+
+For GitHub and Discord icons, use a shared main-UI link rail with real `<a>` elements and the local social SVG assets checked into the repository: `/images/social/github.svg` and `/images/social/discord.svg`. Do not add a new icon dependency or external font. The anchors own `href`, `target="_blank"`, `rel="noopener noreferrer"`, and accessible English labels.
+
+The SVGs should use `currentColor` for their fill so the UI can set normal, hover, and focus colors through CSS. Do not paste unknown SVG path data into code without a recorded source.
+
+For loss replay, do not introduce a new public phase. The one-click Result action may internally clear the result state through the existing return-to-menu path and then reuse the normal start-session path for the last started preset/source. The player sees this as Replay/Restart, while `UiShell` still owns session start and teardown.
+
 ## Out of scope
 
 - Adding links to HUD, Result UI, Settings, loading, or startup error screens.
@@ -93,3 +107,24 @@ Portal page:
 - Replay/Restart should feel like the primary action after a loss, while Menu stays secondary.
 - The icons should sit at the side of each screen, so they are available but not competing with the main actions.
 - The two screens should use the same icon treatment so the links feel like a consistent project/community affordance.
+
+## Tasks
+
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [ ] | Add static metadata to `index.html` and `portal/index.html`: SEO title/description, Open Graph title/description/image/url, and PNG favicon/touch icon links. | Use the copy and asset paths from `Metadata Copy` / `Product Notes`; no runtime code needed. |
+| T2 | [ ] | Add shared social link UI under `src/main/ui/**`: GitHub/Discord link data, rendering for `/images/social/github.svg` and `/images/social/discord.svg`, stable side-rail layout, accessible anchor labels, `target="_blank"`, and `rel="noopener noreferrer"`. | The local SVGs use `currentColor`, so normal/hover/focus colors can be set through CSS; no icon dependency. |
+| T3 | [ ] | Integrate the social link rail into `MenuOverlay` and `PauseOverlay`, keeping it visually secondary and clear of existing menu/pause controls on desktop and narrow viewports. | Pause links must not call sim, resume, exit, settings, or change phase. |
+| T4 | [ ] | Add loss-only Replay/Restart: `ResultOverlay` renders a primary top action for `loss`, `UiShell` restarts the last started preset/source through the existing session start path, and victory result flow stays unchanged. | Avoid a new public `result -> running` phase; internally reuse existing cleanup/start orchestration. |
+| T5 | [ ] | Add focused tests and verification notes for metadata, social anchors, menu/pause placement, loss replay, and no incoherent overlap. | Per pipeline, ask the user for live browser verification instead of starting the dev server directly. |
+
+## Related
+
+- [main-ui-shell.md](../design/main-ui-shell.md)
+- [menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md)
+- [session-result-summary.md](../design/session-result-summary.md)
+- [input-commands.md](../design/input-commands.md)
+- [web-stack.md](../design/web-stack.md)
+- [testing.md](../design/testing.md)
+- [023-main-menu-and-startup-ux.md](023-main-menu-and-startup-ux.md)
+- [024-session-end-results.md](024-session-end-results.md)
