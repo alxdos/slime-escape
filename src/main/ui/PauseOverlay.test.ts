@@ -105,9 +105,9 @@ describe('PauseOverlay', () => {
     overlay.show();
 
     expect(escapePath.style.display).toBe('grid');
-    expect(findByRole(escapePath, 'pause-escape-path-label').textContent).toBe('Волна 2/3');
+    expect(findByRole(escapePath, 'pause-escape-path-label').textContent).toBe('Wave 2/3');
     expect(findByRole(escapePath, 'pause-escape-path-text').textContent).toBe(
-      'До выхода: 2 волны'
+      'Exit in 2 waves'
     );
     const points = findAllByRole(escapePath, 'pause-escape-path-point');
     expect(points.map((point) => point.dataset['state'])).toEqual([
@@ -132,9 +132,9 @@ function makeEscapePathViewModel(): EscapeProgressPathViewModel {
     completedWaves: 1,
     activeWaveIndex: 2,
     points: [
-      { index: 1, state: 'completed', label: 'Волна 1' },
-      { index: 2, state: 'active', label: 'Волна 2' },
-      { index: 3, state: 'upcoming', label: 'Волна 3' }
+      { index: 1, state: 'completed', label: 'Wave 1' },
+      { index: 2, state: 'active', label: 'Wave 2' },
+      { index: 3, state: 'upcoming', label: 'Wave 3' }
     ],
     stop: { kind: 'none' },
     flagState: 'pending'

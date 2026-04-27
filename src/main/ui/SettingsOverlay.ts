@@ -33,7 +33,7 @@ export function createSettingsOverlay(init: SettingsOverlayInit): SettingsOverla
   card.style.cssText = cardStyle();
 
   const title = document.createElement('h2');
-  title.textContent = 'Настройки';
+  title.textContent = 'Settings';
   title.style.cssText = titleStyle();
   card.appendChild(title);
 
@@ -44,7 +44,7 @@ export function createSettingsOverlay(init: SettingsOverlayInit): SettingsOverla
   volumeHeader.style.cssText = rowStyle();
 
   const volumeLabel = document.createElement('span');
-  volumeLabel.textContent = 'Громкость';
+  volumeLabel.textContent = 'Volume';
   volumeLabel.style.cssText = sectionLabelStyle();
   volumeHeader.appendChild(volumeLabel);
 
@@ -73,7 +73,7 @@ export function createSettingsOverlay(init: SettingsOverlayInit): SettingsOverla
   renderScaleSection.style.cssText = sectionStyle();
 
   const renderScaleLabel = document.createElement('span');
-  renderScaleLabel.textContent = 'Разрешение арены';
+  renderScaleLabel.textContent = 'Graphics resolution';
   renderScaleLabel.style.cssText = sectionLabelStyle();
   renderScaleSection.appendChild(renderScaleLabel);
 
@@ -95,7 +95,7 @@ export function createSettingsOverlay(init: SettingsOverlayInit): SettingsOverla
   closeButton.dataset['role'] = 'settings-close';
   closeButton.className = 'settings-comic-button';
   closeButton.type = 'button';
-  closeButton.textContent = 'Закрыть';
+  closeButton.textContent = 'Close';
   closeButton.style.cssText = closeButtonStyle();
   closeButton.addEventListener('click', () => {
     init.onButtonClick?.();

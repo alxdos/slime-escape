@@ -37,7 +37,7 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   card.style.cssText = cardStyle();
 
   const title = document.createElement('h2');
-  title.textContent = 'Пауза';
+  title.textContent = 'Paused';
   title.style.cssText = titleStyle();
   card.appendChild(title);
 
@@ -50,7 +50,7 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   const resumeButton = document.createElement('button');
   resumeButton.className = 'pause-comic-button';
   resumeButton.type = 'button';
-  resumeButton.textContent = 'Продолжить';
+  resumeButton.textContent = 'Resume';
   resumeButton.style.cssText = primaryButtonStyle();
   resumeButton.addEventListener('click', () => init.onResume());
   card.appendChild(resumeButton);
@@ -58,7 +58,7 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   const settingsButton = document.createElement('button');
   settingsButton.className = 'pause-comic-button';
   settingsButton.type = 'button';
-  settingsButton.textContent = 'Настройки';
+  settingsButton.textContent = 'Settings';
   settingsButton.style.cssText = secondaryButtonStyle();
   settingsButton.addEventListener('click', () => init.onOpenSettings());
   card.appendChild(settingsButton);
@@ -66,7 +66,7 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   const exitButton = document.createElement('button');
   exitButton.className = 'pause-comic-button';
   exitButton.type = 'button';
-  exitButton.textContent = 'Выйти в меню';
+  exitButton.textContent = 'Exit to Menu';
   exitButton.style.cssText = secondaryButtonStyle();
   exitButton.addEventListener('click', () => init.onExit());
   card.appendChild(exitButton);
@@ -168,7 +168,7 @@ function createEscapePathTrack(
   const flag = document.createElement('span');
   flag.dataset['role'] = 'pause-escape-path-flag';
   flag.dataset['state'] = viewModel.flagState;
-  flag.setAttribute('aria-label', 'Флаг выхода');
+  flag.setAttribute('aria-label', 'Exit flag');
   flag.textContent = '🏁';
   flag.style.cssText = pauseEscapePathFlagStyle(viewModel.flagState);
   track.replaceChildren(...nodes, flag);
@@ -189,19 +189,19 @@ function pauseEscapePathLabel(
   viewModel: Extract<EscapeProgressPathViewModel, { kind: 'path' }>
 ): string {
   if (viewModel.activeWaveIndex !== null) {
-    return `Волна ${viewModel.activeWaveIndex}/${viewModel.totalWaves}`;
+    return `Wave ${viewModel.activeWaveIndex}/${viewModel.totalWaves}`;
   }
   if (viewModel.completedWaves > 0) {
-    return `Волна ${viewModel.completedWaves} пройдена`;
+    return `Wave ${viewModel.completedWaves} cleared`;
   }
-  return 'Карта Побега';
+  return 'Escape Map';
 }
 
 function pauseEscapePathText(
   viewModel: Extract<EscapeProgressPathViewModel, { kind: 'path' }>
 ): string {
   const remaining = Math.max(0, viewModel.totalWaves - viewModel.completedWaves);
-  return remaining === 0 ? 'Флаг рядом' : `До выхода: ${formatWaveCount(remaining)}`;
+  return remaining === 0 ? 'Exit is close' : `Exit in ${formatWaveCount(remaining)}`;
 }
 
 function pointSymbol(state: EscapeProgressPathPointViewModel['state']): string {
@@ -224,10 +224,10 @@ function formatWaveCount(count: number): string {
   const remainder100 = count % 100;
   const noun =
     remainder10 === 1 && remainder100 !== 11
-      ? 'волна'
+      ? 'wave'
       : remainder10 >= 2 && remainder10 <= 4 && (remainder100 < 12 || remainder100 > 14)
-        ? 'волны'
-        : 'волн';
+        ? 'waves'
+        : 'waves';
   return `${count} ${noun}`;
 }
 

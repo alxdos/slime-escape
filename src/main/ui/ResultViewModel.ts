@@ -84,10 +84,10 @@ export function buildResultViewModel(
 
   return {
     outcome,
-    title: outcome === 'win' ? 'Победа!' : 'Забег окончен',
+    title: outcome === 'win' ? 'Victory!' : 'Run Over',
     subtitle:
       outcome === 'win'
-        ? 'Ты выбрался из мира слаймов'
+        ? 'You escaped the slime world'
         : defeatSubtitle(summary.progress.percent),
     primaryStats: buildPrimaryStats(session, summary),
     killRows,
@@ -112,8 +112,8 @@ function buildEscapePathViewModel(
   if (summary.outcome === 'win') {
     return {
       path,
-      title: 'Карта Побега',
-      summaryText: 'Путь до флага пройден',
+      title: 'Escape Map',
+      summaryText: 'You reached the exit flag',
       detailText: null
     };
   }
@@ -122,12 +122,12 @@ function buildEscapePathViewModel(
   const remainingWaves = Math.max(0, path.totalWaves - reachedWave);
   return {
     path,
-    title: 'Карта Побега',
-    summaryText: `Ты добрался до волны ${reachedWave} из ${path.totalWaves}`,
+    title: 'Escape Map',
+    summaryText: `You reached wave ${reachedWave} of ${path.totalWaves}`,
     detailText:
       path.stop.kind === 'loss' && path.stop.anchor === 'beforeFlag'
-        ? 'Флаг был уже рядом'
-        : `До выхода оставалось ${formatWaveCount(remainingWaves)}`
+        ? 'The exit was close'
+        : `${formatWaveCount(remainingWaves)} left to the exit`
   };
 }
 
@@ -138,7 +138,7 @@ function buildPrimaryStats(
   const stats: ResultStatViewModel[] = [
     {
       id: 'progress',
-      label: 'Прогресс',
+      label: 'Progress',
       value:
         summary.progress.percent === null
           ? progressFallback(session)
@@ -146,12 +146,12 @@ function buildPrimaryStats(
     },
     {
       id: 'duration',
-      label: 'Время',
+      label: 'Time',
       value: formatDuration(summary.durationMs)
     },
     {
       id: 'total-kills',
-      label: 'Убито слаймов',
+      label: 'Slimes defeated',
       value: String(summary.kills.total)
     }
   ];
@@ -159,7 +159,7 @@ function buildPrimaryStats(
   if (summary.progress.totalWaves > 0) {
     stats.push({
       id: 'waves',
-      label: 'Волна',
+      label: 'Wave',
       value: `${summary.progress.completedWaves} / ${summary.progress.totalWaves}`
     });
   }
@@ -167,7 +167,7 @@ function buildPrimaryStats(
   if (summary.drops.pickedUpTotal > 0) {
     stats.push({
       id: 'drops',
-      label: 'Собрано усилений',
+      label: 'Power-ups collected',
       value: String(summary.drops.pickedUpTotal)
     });
   }
@@ -225,7 +225,7 @@ function buildBossViewModel(
     archetypeId: summary.boss.archetypeId,
     label: archetype.displayName,
     iconUrl: visual.image,
-    text: defeated ? 'Босс повержен' : `Босс: осталось ${summary.boss.hpPercent}% HP`,
+    text: defeated ? 'Boss defeated' : `Boss: ${summary.boss.hpPercent}% HP left`,
     defeated,
     hpPercent: summary.boss.hpPercent
   };
@@ -239,26 +239,26 @@ function describeDefeatCause(
   switch (cause.kind) {
     case 'enemyContact':
       if (cause.sourceEntityKind === 'enemy' && cause.archetypeId !== null) {
-        return `Добил: ${requireRegistryEntry(enemies, cause.archetypeId, 'enemy archetype').displayName}`;
+        return `Defeated by: ${requireRegistryEntry(enemies, cause.archetypeId, 'enemy archetype').displayName}`;
       }
       if (cause.sourceEntityKind === 'boss' && cause.archetypeId !== null) {
-        return `Добил: ${requireRegistryEntry(bosses, cause.archetypeId, 'boss archetype').displayName}`;
+        return `Defeated by: ${requireRegistryEntry(bosses, cause.archetypeId, 'boss archetype').displayName}`;
       }
-      return 'Причина: контактный урон';
+      return 'Cause: contact damage';
     case 'projectile':
     case 'explosion':
-      return 'Причина: снаряд';
+      return 'Cause: projectile';
     case 'boss':
       if (cause.bossArchetypeId !== null) {
-        return `Добил: ${requireRegistryEntry(bosses, cause.bossArchetypeId, 'boss archetype').displayName}`;
+        return `Defeated by: ${requireRegistryEntry(bosses, cause.bossArchetypeId, 'boss archetype').displayName}`;
       }
-      return 'Причина: атака босса';
+      return 'Cause: boss attack';
     case 'fieldEffect':
-      return 'Причина: опасная зона';
+      return 'Cause: hazard zone';
     case 'statusEffect':
-      return 'Причина: эффект статуса';
+      return 'Cause: status effect';
     case 'environment':
-      return 'Причина: окружение';
+      return 'Cause: environment';
     default:
       return assertNever(cause);
   }
@@ -266,16 +266,16 @@ function describeDefeatCause(
 
 function defeatSubtitle(progressPercent: number | null): string {
   if (progressPercent !== null && progressPercent >= 80) {
-    return 'Побег почти удался';
+    return 'Almost escaped';
   }
-  return 'Слизни снова сомкнули ловушку';
+  return 'The slimes caught you';
 }
 
 function progressFallback(session: SessionDefinition): string {
   if (session.winCondition.kind === 'none' && session.lossCondition.kind === 'none') {
-    return 'Свободный режим';
+    return 'Free Play';
   }
-  return 'Без процента';
+  return 'No progress score';
 }
 
 function formatDuration(durationMs: number): string {
@@ -290,10 +290,10 @@ function formatWaveCount(count: number): string {
   const remainder100 = count % 100;
   const noun =
     remainder10 === 1 && remainder100 !== 11
-      ? 'волна'
+      ? 'wave'
       : remainder10 >= 2 && remainder10 <= 4 && (remainder100 < 12 || remainder100 > 14)
-        ? 'волны'
-        : 'волн';
+        ? 'waves'
+        : 'waves';
   return `${count} ${noun}`;
 }
 

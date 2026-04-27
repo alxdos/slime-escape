@@ -12,9 +12,9 @@ export type StartupOverlayViewModel = Readonly<{
 export const STARTUP_ASSET_PROGRESS_END_PERCENT = 82;
 
 export const STARTUP_PRESENTATION_STEPS = Object.freeze([
-  { label: 'Активируем слизь', durationMs: 700 },
-  { label: 'Спавним слаймов', durationMs: 700 },
-  { label: 'Пробуждаем босса', durationMs: 700 }
+  { label: 'Priming slime', durationMs: 700 },
+  { label: 'Spawning slimes', durationMs: 700 },
+  { label: 'Waking the boss', durationMs: 700 }
 ]) satisfies ReadonlyArray<StartupPresentationStep>;
 
 export function createStartupAssetProgressViewModel(

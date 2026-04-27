@@ -262,7 +262,7 @@ function breakEncounter(id: string): EncounterDefinition {
     backgroundId: null,
     introDurationMs: 0,
     name: null,
-    text: 'Дальше',
+    text: 'Next',
     spawnPlan: { kind: 'empty' },
     zoneBehavior: { kind: 'disabled' },
     objectives: [],

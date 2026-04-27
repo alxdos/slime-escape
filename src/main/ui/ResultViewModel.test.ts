@@ -12,11 +12,11 @@ describe('buildResultViewModel', () => {
   it('resolves labels/icons, formats stats and omits zero-count kill rows', () => {
     const viewModel = buildResultViewModel(makeSession(), makeSummary(), {
       enemies: {
-        slime: makeEnemy('slime', 'Обычный слайм'),
-        unused: makeEnemy('unused', 'Нулевой слайм')
+        slime: makeEnemy('slime', 'Basic Slime'),
+        unused: makeEnemy('unused', 'Unused Slime')
       },
       bosses: {
-        boss: makeBoss('boss', 'Король слаймов')
+        boss: makeBoss('boss', 'Slime King')
       },
       enemyVisuals: {
         slime: makeVisual('slime', '/slime.png'),
@@ -27,21 +27,21 @@ describe('buildResultViewModel', () => {
       }
     });
 
-    expect(viewModel.title).toBe('Победа!');
-    expect(viewModel.subtitle).toBe('Ты выбрался из мира слаймов');
+    expect(viewModel.title).toBe('Victory!');
+    expect(viewModel.subtitle).toBe('You escaped the slime world');
     expect(viewModel.primaryStats).toContainEqual({
       id: 'duration',
-      label: 'Время',
+      label: 'Time',
       value: '04:18'
     });
     expect(viewModel.primaryStats).toContainEqual({
       id: 'drops',
-      label: 'Собрано усилений',
+      label: 'Power-ups collected',
       value: '1'
     });
     expect(viewModel.escapePath).toMatchObject({
-      title: 'Карта Побега',
-      summaryText: 'Путь до флага пройден',
+      title: 'Escape Map',
+      summaryText: 'You reached the exit flag',
       detailText: null,
       path: {
         completedWaves: 2,
@@ -54,7 +54,7 @@ describe('buildResultViewModel', () => {
         id: 'enemy:slime',
         entityKind: 'enemy',
         archetypeId: 'slime',
-        label: 'Обычный слайм',
+        label: 'Basic Slime',
         count: 2,
         iconUrl: '/slime.png'
       },
@@ -62,12 +62,12 @@ describe('buildResultViewModel', () => {
         id: 'boss:boss',
         entityKind: 'boss',
         archetypeId: 'boss',
-        label: 'Король слаймов',
+        label: 'Slime King',
         count: 1,
         iconUrl: '/boss.png'
       }
     ]);
-    expect(viewModel.boss?.text).toBe('Босс повержен');
+    expect(viewModel.boss?.text).toBe('Boss defeated');
   });
 
   it('describes defeat causes from content registries', () => {
@@ -85,15 +85,15 @@ describe('buildResultViewModel', () => {
         }
       },
       {
-        enemies: { slime: makeEnemy('slime', 'Прыгающий слайм') },
-        bosses: { boss: makeBoss('boss', 'Король слаймов') },
+        enemies: { slime: makeEnemy('slime', 'Jumping Slime') },
+        bosses: { boss: makeBoss('boss', 'Slime King') },
         enemyVisuals: { slime: makeVisual('slime', '/slime.png') },
         bossVisuals: { boss: makeVisual('boss', '/boss.png') }
       }
     );
 
-    expect(viewModel.title).toBe('Забег окончен');
-    expect(viewModel.defeatCause).toBe('Добил: Прыгающий слайм');
+    expect(viewModel.title).toBe('Run Over');
+    expect(viewModel.defeatCause).toBe('Defeated by: Jumping Slime');
   });
 
   it('uses a mode fallback when progress percent is unavailable', () => {
@@ -115,8 +115,8 @@ describe('buildResultViewModel', () => {
         }
       },
       {
-        enemies: { slime: makeEnemy('slime', 'Обычный слайм') },
-        bosses: { boss: makeBoss('boss', 'Король слаймов') },
+        enemies: { slime: makeEnemy('slime', 'Basic Slime') },
+        bosses: { boss: makeBoss('boss', 'Slime King') },
         enemyVisuals: { slime: makeVisual('slime', '/slime.png') },
         bossVisuals: { boss: makeVisual('boss', '/boss.png') }
       }
@@ -124,8 +124,8 @@ describe('buildResultViewModel', () => {
 
     expect(viewModel.primaryStats).toContainEqual({
       id: 'progress',
-      label: 'Прогресс',
-      value: 'Свободный режим'
+      label: 'Progress',
+      value: 'Free Play'
     });
     expect(viewModel.escapePath).toBeNull();
   });
@@ -148,16 +148,16 @@ describe('buildResultViewModel', () => {
         }
       },
       {
-        enemies: { slime: makeEnemy('slime', 'Обычный слайм') },
-        bosses: { boss: makeBoss('boss', 'Король слаймов') },
+        enemies: { slime: makeEnemy('slime', 'Basic Slime') },
+        bosses: { boss: makeBoss('boss', 'Slime King') },
         enemyVisuals: { slime: makeVisual('slime', '/slime.png') },
         bossVisuals: { boss: makeVisual('boss', '/boss.png') }
       }
     );
 
     expect(viewModel.escapePath).toMatchObject({
-      summaryText: 'Ты добрался до волны 2 из 3',
-      detailText: 'До выхода оставалось 1 волна',
+      summaryText: 'You reached wave 2 of 3',
+      detailText: '1 wave left to the exit',
       path: {
         activeWaveIndex: 2,
         flagState: 'pending',
@@ -184,16 +184,16 @@ describe('buildResultViewModel', () => {
         }
       },
       {
-        enemies: { slime: makeEnemy('slime', 'Обычный слайм') },
-        bosses: { boss: makeBoss('boss', 'Король слаймов') },
+        enemies: { slime: makeEnemy('slime', 'Basic Slime') },
+        bosses: { boss: makeBoss('boss', 'Slime King') },
         enemyVisuals: { slime: makeVisual('slime', '/slime.png') },
         bossVisuals: { boss: makeVisual('boss', '/boss.png') }
       }
     );
 
     expect(viewModel.escapePath).toMatchObject({
-      summaryText: 'Ты добрался до волны 2 из 2',
-      detailText: 'Флаг был уже рядом',
+      summaryText: 'You reached wave 2 of 2',
+      detailText: 'The exit was close',
       path: {
         completedWaves: 2,
         flagState: 'pending',
@@ -205,8 +205,8 @@ describe('buildResultViewModel', () => {
   it('throws when summary references missing presentation data', () => {
     expect(() =>
       buildResultViewModel(makeSession(), makeSummary(), {
-        enemies: { slime: makeEnemy('slime', 'Обычный слайм') },
-        bosses: { boss: makeBoss('boss', 'Король слаймов') },
+        enemies: { slime: makeEnemy('slime', 'Basic Slime') },
+        bosses: { boss: makeBoss('boss', 'Slime King') },
         enemyVisuals: {},
         bossVisuals: { boss: makeVisual('boss', '/boss.png') }
       })

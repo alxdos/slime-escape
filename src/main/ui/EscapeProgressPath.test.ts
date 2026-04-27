@@ -82,7 +82,7 @@ describe('EscapeProgressPath', () => {
 
       expect(root.style.display).toBe('grid');
       expect(root.dataset['presentation']).toBe('compact');
-      expect(label.textContent).toBe('Волна 1/2');
+      expect(label.textContent).toBe('Wave 1/2');
       expect(footer.textContent).toBe('');
       expect(trackStates(track)).toEqual(['active', 'upcoming', 'pending']);
       expect(childAt(track, 0).style.cssText).toContain('#ffd166');
@@ -95,8 +95,8 @@ describe('EscapeProgressPath', () => {
       );
 
       expect(root.dataset['presentation']).toBe('expandedBreak');
-      expect(label.textContent).toBe('Волна 1 пройдена');
-      expect(footer.textContent).toBe('До выхода: 1 волна');
+      expect(label.textContent).toBe('Wave 1 cleared');
+      expect(footer.textContent).toBe('Exit in 1 wave');
       expect(trackStates(track)).toEqual(['completed', 'upcoming', 'pending']);
 
       path.update(
@@ -105,7 +105,7 @@ describe('EscapeProgressPath', () => {
       );
 
       expect(root.dataset['presentation']).toBe('expandedBreak');
-      expect(label.textContent).toBe('Волна 1 пройдена');
+      expect(label.textContent).toBe('Wave 1 cleared');
 
       path.update(
         snapshotPair(snapshot({ id: 'wave-2', type: 'wave', index: 2, elapsedMs: 100 })),
@@ -113,7 +113,7 @@ describe('EscapeProgressPath', () => {
       );
 
       expect(root.dataset['presentation']).toBe('compact');
-      expect(label.textContent).toBe('Волна 2/2');
+      expect(label.textContent).toBe('Wave 2/2');
       expect(trackStates(track)).toEqual(['completed', 'active', 'pending']);
 
       path.update(
@@ -234,7 +234,7 @@ function breakEncounter(id: string): EncounterDefinition {
     backgroundId: null,
     introDurationMs: 0,
     name: null,
-    text: 'Дальше',
+    text: 'Next',
     spawnPlan: { kind: 'empty' },
     zoneBehavior: { kind: 'disabled' },
     objectives: [],

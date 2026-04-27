@@ -635,7 +635,7 @@ function createFireHint(): HTMLElement {
   button.style.cssText = mouseButtonStyle();
   mouse.appendChild(button);
   const label = document.createElement('span');
-  label.textContent = 'ЛКМ: выстрел';
+  label.textContent = 'Left click: shoot';
   label.style.cssText = fireHintTextStyle();
   root.appendChild(mouse);
   root.appendChild(label);
@@ -783,7 +783,7 @@ function formatBossPhaseText(
   const phaseCountText =
     bossArchetype === null ? '?' : `${Math.max(1, bossArchetype.phases.length)}`;
   const phaseId = bossArchetype?.phases[bossHud.phaseIndex]?.id ?? bossHud.phaseId;
-  return `Фаза ${bossHud.phaseIndex + 1}/${phaseCountText} · ${phaseId}`;
+  return `Phase ${bossHud.phaseIndex + 1}/${phaseCountText} · ${phaseId}`;
 }
 
 function findPlayerSnapshot(snapshot: Snapshot): PlayerSnapshot | null {

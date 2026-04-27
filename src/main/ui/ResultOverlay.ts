@@ -165,7 +165,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   killsSection.style.cssText = killsSectionStyle();
 
   const killsHeading = document.createElement('h3');
-  killsHeading.textContent = 'Трофеи забега';
+  killsHeading.textContent = 'Run Trophies';
   killsHeading.style.cssText = killsHeadingStyle();
   killsSection.appendChild(killsHeading);
 
@@ -180,7 +180,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   backButton.dataset['role'] = 'result-back-to-menu';
   backButton.className = 'result-comic-button';
   backButton.type = 'button';
-  backButton.textContent = 'Вернуться в меню';
+  backButton.textContent = 'Back to Menu';
   backButton.style.cssText = primaryButtonStyle();
   backButton.addEventListener('click', () => init.onBackToMenu());
   card.appendChild(backButton);

@@ -136,7 +136,7 @@ function buildPoints(
     return {
       index,
       state,
-      label: `Волна ${index}`
+      label: `Wave ${index}`
     };
   });
 }

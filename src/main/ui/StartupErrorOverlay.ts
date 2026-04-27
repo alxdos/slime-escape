@@ -19,7 +19,7 @@ export function createStartupErrorOverlay(init: StartupErrorOverlayInit): Startu
   card.style.cssText = cardStyle();
 
   const title = document.createElement('h2');
-  title.textContent = 'Ошибка загрузки';
+  title.textContent = 'Loading Error';
   title.style.cssText = titleStyle();
   card.appendChild(title);
 
@@ -30,7 +30,7 @@ export function createStartupErrorOverlay(init: StartupErrorOverlayInit): Startu
 
   const reloadButton = document.createElement('button');
   reloadButton.type = 'button';
-  reloadButton.textContent = 'Перезагрузить страницу';
+  reloadButton.textContent = 'Reload Page';
   reloadButton.style.cssText = buttonStyle();
   reloadButton.addEventListener('click', () => init.onReload());
   card.appendChild(reloadButton);

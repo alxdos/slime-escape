@@ -114,20 +114,20 @@ function makeViewModel(
 ): ResultViewModel {
   return {
     outcome,
-    title: outcome === 'win' ? 'Победа!' : 'Забег окончен',
+    title: outcome === 'win' ? 'Victory!' : 'Run Over',
     subtitle:
-      outcome === 'win' ? 'Ты выбрался из мира слаймов' : 'Слизни снова сомкнули ловушку',
+      outcome === 'win' ? 'You escaped the slime world' : 'The slimes caught you',
     primaryStats: [
-      { id: 'progress', label: 'Прогресс', value: outcome === 'win' ? '100%' : '73%' },
-      { id: 'duration', label: 'Время', value: outcome === 'win' ? '04:18' : '03:12' },
-      { id: 'total-kills', label: 'Убито слаймов', value: outcome === 'win' ? '143' : '96' },
-      { id: 'drops', label: 'Собрано усилений', value: '12' }
+      { id: 'progress', label: 'Progress', value: outcome === 'win' ? '100%' : '73%' },
+      { id: 'duration', label: 'Time', value: outcome === 'win' ? '04:18' : '03:12' },
+      { id: 'total-kills', label: 'Slimes defeated', value: outcome === 'win' ? '143' : '96' },
+      { id: 'drops', label: 'Power-ups collected', value: '12' }
     ],
     escapePath: {
-      title: 'Карта Побега',
+      title: 'Escape Map',
       summaryText:
-        outcome === 'win' ? 'Путь до флага пройден' : 'Ты добрался до волны 2 из 3',
-      detailText: outcome === 'win' ? null : 'До выхода оставалось 1 волна',
+        outcome === 'win' ? 'You reached the exit flag' : 'You reached wave 2 of 3',
+      detailText: outcome === 'win' ? null : '1 wave left to the exit',
       path: {
         kind: 'path',
         presentation: 'result',
@@ -137,14 +137,14 @@ function makeViewModel(
         points:
           outcome === 'win'
             ? [
-                { index: 1, state: 'completed', label: 'Волна 1' },
-                { index: 2, state: 'completed', label: 'Волна 2' },
-                { index: 3, state: 'completed', label: 'Волна 3' }
+                { index: 1, state: 'completed', label: 'Wave 1' },
+                { index: 2, state: 'completed', label: 'Wave 2' },
+                { index: 3, state: 'completed', label: 'Wave 3' }
               ]
             : [
-                { index: 1, state: 'completed', label: 'Волна 1' },
-                { index: 2, state: 'stopped', label: 'Волна 2' },
-                { index: 3, state: 'upcoming', label: 'Волна 3' }
+                { index: 1, state: 'completed', label: 'Wave 1' },
+                { index: 2, state: 'stopped', label: 'Wave 2' },
+                { index: 3, state: 'upcoming', label: 'Wave 3' }
               ],
         stop:
           outcome === 'win' ? { kind: 'none' } : { kind: 'loss', anchor: 'activeWave' },
@@ -156,7 +156,7 @@ function makeViewModel(
         id: 'enemy:slime',
         entityKind: 'enemy',
         archetypeId: 'slime',
-        label: 'Обычный слайм',
+        label: 'Basic Slime',
         count: 80,
         iconUrl: '/slime.png'
       },
@@ -164,20 +164,20 @@ function makeViewModel(
         id: 'boss:king',
         entityKind: 'boss',
         archetypeId: 'king',
-        label: 'Король слаймов',
+        label: 'Slime King',
         count: 1,
         iconUrl: '/king.png'
       }
     ],
     boss: {
       archetypeId: 'king',
-      label: 'Король слаймов',
+      label: 'Slime King',
       iconUrl: '/king.png',
-      text: outcome === 'win' ? 'Босс повержен' : 'Босс: осталось 28% HP',
+      text: outcome === 'win' ? 'Boss defeated' : 'Boss: 28% HP left',
       defeated: outcome === 'win',
       hpPercent: outcome === 'win' ? 0 : 28
     },
-    defeatCause: outcome === 'loss' ? 'Добил: Прыгающий слайм' : null,
+    defeatCause: outcome === 'loss' ? 'Defeated by: Jumping Slime' : null,
     ...overrides
   };
 }
@@ -229,21 +229,21 @@ describe('createResultOverlay', () => {
     expect(style?.textContent).toContain('.result-effect-particle');
     expect(style?.textContent).toContain('result-victory-confetti');
     expect(effectsLayer.parent?.className).toBe('result-stage');
-    expect(backButton.textContent).toBe('Вернуться в меню');
+    expect(backButton.textContent).toBe('Back to Menu');
     expect(backButton.className).toBe('result-comic-button');
 
     overlay.show(makeViewModel('win'));
     expect(overlay.isVisible()).toBe(true);
     expect(root.style.display).toBe('flex');
     expect(root.dataset['outcome']).toBe('win');
-    expect(title.textContent).toBe('Победа!');
-    expect(summary.textContent).toBe('Ты выбрался из мира слаймов');
+    expect(title.textContent).toBe('Victory!');
+    expect(summary.textContent).toBe('You escaped the slime world');
     expect(summary.style.cssText).toContain('background:#e9fbff');
     const winEscapePathTrack = findByRole(root, 'result-escape-path-track');
     expect(escapePath.style.display).toBe('grid');
-    expect(findByRole(root, 'result-escape-path-title').textContent).toBe('Карта Побега');
+    expect(findByRole(root, 'result-escape-path-title').textContent).toBe('Escape Map');
     expect(findByRole(root, 'result-escape-path-summary').textContent).toBe(
-      'Путь до флага пройден'
+      'You reached the exit flag'
     );
     expect(findAllByRole(winEscapePathTrack, 'result-escape-path-point').map((point) => point.dataset['state'])).toEqual([
       'completed',
@@ -265,30 +265,30 @@ describe('createResultOverlay', () => {
     expect(findAllByRole(statGrid, 'result-stat')).toHaveLength(4);
     const firstStat = findAllByRole(statGrid, 'result-stat')[0];
     expect(firstStat?.dataset['statId']).toBe('progress');
-    expect(findByRole(firstStat!, 'result-stat-label').textContent).toBe('Прогресс');
+    expect(findByRole(firstStat!, 'result-stat-label').textContent).toBe('Progress');
     expect(findByRole(firstStat!, 'result-stat-value').textContent).toBe('100%');
     expect(bossPanel.style.display).toBe('flex');
     expect(bossPanel.dataset['defeated']).toBe('true');
-    expect(bossText.textContent).toBe('Босс повержен');
+    expect(bossText.textContent).toBe('Boss defeated');
     expect(defeatCause.style.display).toBe('none');
     const killRows = findAllByRole(killList, 'result-kill-row');
     expect(killSection.style.display).toBe('flex');
     expect(killRows).toHaveLength(2);
-    expect(findByRole(killRows[0]!, 'result-kill-label').textContent).toBe('Обычный слайм');
+    expect(findByRole(killRows[0]!, 'result-kill-label').textContent).toBe('Basic Slime');
     expect(findByRole(killRows[0]!, 'result-kill-count').textContent).toBe('x80');
     expect(findByRole(killRows[0]!, 'result-kill-icon').src).toBe('/slime.png');
 
     overlay.show(makeViewModel('loss', { killRows: [] }));
     expect(root.dataset['outcome']).toBe('loss');
-    expect(title.textContent).toBe('Забег окончен');
-    expect(summary.textContent).toBe('Слизни снова сомкнули ловушку');
+    expect(title.textContent).toBe('Run Over');
+    expect(summary.textContent).toBe('The slimes caught you');
     expect(summary.style.cssText).toContain('background:#ffe7f3');
     const lossEscapePathTrack = findByRole(root, 'result-escape-path-track');
     expect(findByRole(root, 'result-escape-path-summary').textContent).toBe(
-      'Ты добрался до волны 2 из 3'
+      'You reached wave 2 of 3'
     );
     expect(findByRole(root, 'result-escape-path-detail').textContent).toBe(
-      'До выхода оставалось 1 волна'
+      '1 wave left to the exit'
     );
     expect(findAllByRole(lossEscapePathTrack, 'result-escape-path-point').map((point) => point.dataset['state'])).toEqual([
       'completed',
@@ -303,9 +303,9 @@ describe('createResultOverlay', () => {
       makeViewModel('loss', {
         killRows: [],
         escapePath: {
-          title: 'Карта Побега',
-          summaryText: 'Ты добрался до волны 2 из 2',
-          detailText: 'Флаг был уже рядом',
+          title: 'Escape Map',
+          summaryText: 'You reached wave 2 of 2',
+          detailText: 'The exit was close',
           path: {
             kind: 'path',
             presentation: 'result',
@@ -313,8 +313,8 @@ describe('createResultOverlay', () => {
             completedWaves: 2,
             activeWaveIndex: null,
             points: [
-              { index: 1, state: 'completed', label: 'Волна 1' },
-              { index: 2, state: 'completed', label: 'Волна 2' }
+              { index: 1, state: 'completed', label: 'Wave 1' },
+              { index: 2, state: 'completed', label: 'Wave 2' }
             ],
             stop: { kind: 'loss', anchor: 'beforeFlag' },
             flagState: 'pending'
@@ -344,9 +344,9 @@ describe('createResultOverlay', () => {
     expect(defeatParticles[6]?.style.cssText).toContain('left:0%');
     expect(defeatParticles[7]?.style.cssText).toContain('left:100%');
     expect(bossPanel.dataset['defeated']).toBe('false');
-    expect(bossText.textContent).toBe('Босс: осталось 28% HP');
+    expect(bossText.textContent).toBe('Boss: 28% HP left');
     expect(defeatCause.style.display).toBe('block');
-    expect(defeatCause.textContent).toBe('Добил: Прыгающий слайм');
+    expect(defeatCause.textContent).toBe('Defeated by: Jumping Slime');
     expect(killSection.style.display).toBe('none');
     expect(findAllByRole(killList, 'result-kill-row')).toHaveLength(0);
 

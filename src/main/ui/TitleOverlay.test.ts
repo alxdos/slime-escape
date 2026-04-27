@@ -139,8 +139,8 @@ describe('TitleOverlay view model', () => {
       wave('set-1-wave-2', 'Second'),
       breakEncounter('set-1-pre-boss-break', null),
       bossEncounter('set-1-boss'),
-      breakEncounter('set-1-after-boss-break', 'Дальше'),
-      wave('set-2-wave-1', 'Один глаз в темноте')
+      breakEncounter('set-1-after-boss-break', 'Next'),
+      wave('set-2-wave-1', 'One Eye in the Dark')
     ]);
 
     const view = deriveTitleOverlayViewModel(
@@ -150,8 +150,8 @@ describe('TitleOverlay view model', () => {
 
     expect(view).toMatchObject({
       kind: 'wave',
-      titleText: 'Волна 3',
-      nameText: 'Один глаз в темноте',
+      titleText: 'Wave 3',
+      nameText: 'One Eye in the Dark',
       opacity: 1
     });
   });
@@ -170,7 +170,7 @@ describe('TitleOverlay view model', () => {
 
     expect(view).toMatchObject({
       kind: 'wave',
-      titleText: 'Волна 3',
+      titleText: 'Wave 3',
       nameText: 'Third'
     });
   });
@@ -187,7 +187,7 @@ describe('TitleOverlay view model', () => {
   });
 
   it('shows break transition text for the full break encounter', () => {
-    const session = makeSession([breakEncounter('after-boss-break', 'Дальше: Хламные призраки')]);
+    const session = makeSession([breakEncounter('after-boss-break', 'Scrap Ghosts Ahead')]);
 
     expect(
       deriveTitleOverlayViewModel(
@@ -196,7 +196,7 @@ describe('TitleOverlay view model', () => {
       )
     ).toEqual({
       kind: 'break',
-      text: 'Дальше: Хламные призраки',
+      text: 'Scrap Ghosts Ahead',
       opacity: 1
     });
   });
@@ -224,7 +224,7 @@ describe('TitleOverlay view model', () => {
       );
 
       expect(root.style.display).toBe('flex');
-      expect(titleLine.textContent).toBe('Волна 1');
+      expect(titleLine.textContent).toBe('Wave 1');
       expect(subtitleLine.textContent).toBe('First wave');
 
       overlay.update(
@@ -233,7 +233,7 @@ describe('TitleOverlay view model', () => {
       );
 
       expect(root.style.display).toBe('flex');
-      expect(titleLine.textContent).toBe('Волна 1');
+      expect(titleLine.textContent).toBe('Wave 1');
 
       overlay.detach();
       expect(root.style.display).toBe('none');

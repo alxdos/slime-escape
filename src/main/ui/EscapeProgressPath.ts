@@ -143,7 +143,7 @@ function createTrackNodes(
   flag.className = 'escape-progress-flag';
   flag.dataset['role'] = 'escape-progress-flag';
   flag.dataset['state'] = flagState;
-  flag.setAttribute('aria-label', 'Флаг выхода');
+  flag.setAttribute('aria-label', 'Exit flag');
   flag.textContent = '🏁';
   flag.style.cssText = flagStyle(flagState);
   nodes.push(flag);
@@ -153,11 +153,11 @@ function createTrackNodes(
 function labelText(viewModel: Extract<EscapeProgressPathViewModel, { kind: 'path' }>): string {
   if (viewModel.presentation === 'expandedBreak') {
     return viewModel.completedWaves > 0
-      ? `Волна ${viewModel.completedWaves} пройдена`
-      : 'Карта Побега';
+      ? `Wave ${viewModel.completedWaves} cleared`
+      : 'Escape Map';
   }
   const current = viewModel.activeWaveIndex ?? viewModel.completedWaves;
-  return `Волна ${current}/${viewModel.totalWaves}`;
+  return `Wave ${current}/${viewModel.totalWaves}`;
 }
 
 function footerText(viewModel: Extract<EscapeProgressPathViewModel, { kind: 'path' }>): string {
@@ -165,7 +165,7 @@ function footerText(viewModel: Extract<EscapeProgressPathViewModel, { kind: 'pat
     return '';
   }
   const remaining = Math.max(0, viewModel.totalWaves - viewModel.completedWaves);
-  return remaining === 0 ? 'Флаг рядом' : `До выхода: ${formatWaveCount(remaining)}`;
+  return remaining === 0 ? 'Exit is close' : `Exit in ${formatWaveCount(remaining)}`;
 }
 
 function pointSymbol(state: EscapeProgressPathPointViewModel['state']): string {
@@ -188,10 +188,10 @@ function formatWaveCount(count: number): string {
   const remainder100 = count % 100;
   const noun =
     remainder10 === 1 && remainder100 !== 11
-      ? 'волна'
+      ? 'wave'
       : remainder10 >= 2 && remainder10 <= 4 && (remainder100 < 12 || remainder100 > 14)
-        ? 'волны'
-        : 'волн';
+        ? 'waves'
+        : 'waves';
   return `${count} ${noun}`;
 }
 

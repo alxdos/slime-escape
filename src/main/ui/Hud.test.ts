@@ -660,7 +660,7 @@ describe('Hud view model', () => {
 
     expect(bossView.boss).not.toBeNull();
     expect(bossView.boss?.titleText).toBe('Scrap King');
-    expect(bossView.boss?.phaseText).toBe('Фаза 2/2 · desperation');
+    expect(bossView.boss?.phaseText).toBe('Phase 2/2 · desperation');
     expect(bossView.boss?.hpText).toBe('22 / 40');
     expect(bossView.boss?.hpRatio).toBe(0.55);
   });
@@ -749,7 +749,7 @@ describe('Hud view model', () => {
       })
     );
 
-    expect(bossView.boss?.phaseText).toBe('Фаза 2/? · desperation');
+    expect(bossView.boss?.phaseText).toBe('Phase 2/? · desperation');
   });
 
   it('falls back to waiting state before the first snapshot arrives', () => {

@@ -143,7 +143,7 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   }
 
   function showTeaserFeedback(): void {
-    teaserFeedback.textContent = 'Скоро';
+    teaserFeedback.textContent = 'Coming Soon';
     teaserFeedback.style.opacity = '1';
     if (feedbackTimeout !== null) {
       window.clearTimeout(feedbackTimeout);

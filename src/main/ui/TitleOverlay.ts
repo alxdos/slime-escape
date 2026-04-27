@@ -111,7 +111,7 @@ export function deriveTitleOverlayViewModel(
 
     return {
       kind: 'wave',
-      titleText: `Волна ${wavePosition.index}`,
+      titleText: `Wave ${wavePosition.index}`,
       nameText: definition.name,
       opacity: calculateIntroOpacity(encounter.elapsedMs, definition.introDurationMs)
     };
