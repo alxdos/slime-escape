@@ -380,6 +380,7 @@ function createResultHarness() {
   let outcome: ResultOutcome | null = null;
   let viewModel: ResultViewModel | null = null;
   let onBackToMenu: (() => void) | null = null;
+  let onRestart: (() => void) | null = null;
   let root: FakeDomElement | null = null;
 
   const overlay: ResultOverlay = {
@@ -408,6 +409,7 @@ function createResultHarness() {
   return {
     factory(init: ResultOverlayInit): ResultOverlay {
       onBackToMenu = init.onBackToMenu;
+      onRestart = init.onRestart;
       root = new FakeDomElement();
       root.dataset['role'] = 'result-overlay';
       root.style.zIndex = '110';
@@ -417,6 +419,9 @@ function createResultHarness() {
     },
     backToMenu(): void {
       onBackToMenu?.();
+    },
+    restart(): void {
+      onRestart?.();
     },
     isVisible(): boolean {
       return visible;
@@ -2753,5 +2758,71 @@ describe('UiShell', () => {
     expect(result.isVisible()).toBe(false);
     expect(audio.uiEvents.filter((eventId) => eventId === 'buttonClick')).toHaveLength(2);
     expect(shell.phase()).toEqual({ kind: 'menu' });
+  });
+
+  it('restarts the last started preset from a loss result through the normal start path', async () => {
+    const menu = createMenuHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    const builtPresetIds: ModePresetId[] = [];
+    let nextSeed = 10;
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => nextSeed++,
+      buildSessionDefinition: (preset, options) => {
+        builtPresetIds.push(preset.id);
+        return makeSession(`${preset.id}-${options.seed}`);
+      },
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    menu.start('campaign-hard');
+    await flushUiShellStartup();
+    sim.emit(makeTerminalEvent('loss', 123));
+
+    expect(shell.phase()).toMatchObject({ kind: 'result', outcome: 'loss' });
+    expect(sim.calls.stop).toBe(0);
+    expect(input.calls.stop).toBe(1);
+    expect(renderer.calls.dispose).toBe(1);
+    expect(builtPresetIds).toEqual(['campaign-hard']);
+
+    result.restart();
+    await flushUiShellStartup();
+
+    expect(sim.calls.stop).toBe(0);
+    expect(builtPresetIds).toEqual(['campaign-hard', 'campaign-hard']);
+    expect(sim.startSessions.map((session) => session.id)).toEqual([
+      'campaign-hard-10',
+      'campaign-hard-11'
+    ]);
+    expect(renderer.calls.create).toBe(2);
+    expect(input.calls.start).toBe(2);
+    expect(hud.calls.attach).toBe(2);
+    expect(result.isVisible()).toBe(false);
+    expect(menu.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'running' });
+    expect(audio.uiEvents.filter((eventId) => eventId === 'buttonClick')).toHaveLength(2);
   });
 });
