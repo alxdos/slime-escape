@@ -18,6 +18,10 @@ import {
   type RenderScalePreset
 } from '../settings/ClientSettingsStore';
 import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/SimWorkerHost';
+import type {
+  VibeJamPortalController,
+  VibeJamPortalControllerInit
+} from '../VibeJamPortalController';
 
 import type { EscapeProgressPath, EscapeProgressPathInit } from './EscapeProgressPath';
 import type { EscapeProgressPathViewModel } from './EscapeProgressPathViewModel';
@@ -902,6 +906,45 @@ function createTitleOverlayHarness() {
   };
 }
 
+function createVibeJamPortalControllerHarness() {
+  const calls = {
+    create: 0,
+    attachSession: 0,
+    update: 0,
+    detachSession: 0
+  };
+  let lastInit: VibeJamPortalControllerInit | null = null;
+
+  return {
+    factory(init: VibeJamPortalControllerInit): VibeJamPortalController {
+      calls.create += 1;
+      lastInit = init;
+      return {
+        attachSession(): void {
+          calls.attachSession += 1;
+        },
+        update(): ReadonlyArray<never> {
+          calls.update += 1;
+          return [];
+        },
+        detachSession(): void {
+          calls.detachSession += 1;
+        },
+        portals(): ReadonlyArray<never> {
+          return [];
+        },
+        hasActiveReturnContext(): boolean {
+          return false;
+        }
+      };
+    },
+    calls,
+    lastInit(): VibeJamPortalControllerInit | null {
+      return lastInit;
+    }
+  };
+}
+
 function createAudioHarness() {
   const events: RuntimeEvent[] = [];
   const uiEvents: AudioUiEventId[] = [];
@@ -1395,6 +1438,62 @@ describe('UiShell', () => {
     expect(escapeProgressPath.calls.update).toBe(1);
     expect(titleOverlay.calls.update).toBe(1);
     expect(audio.calls.update).toBe(1);
+  });
+
+  it('wires the Vibe Jam portal controller to session attach, frames, and teardown', async () => {
+    const menu = createMenuHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const portalController = createVibeJamPortalControllerHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      portalHref: 'https://slimeescape.com/portal?portal=true&ref=https%3A%2F%2Fprevious.example',
+      portalStorage: null,
+      buildSessionDefinition: () => makeSession('portal-controller-session'),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createVibeJamPortalController: portalController.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(portalController.calls.create).toBe(1);
+    expect(portalController.lastInit()?.href).toBe(
+      'https://slimeescape.com/portal?portal=true&ref=https%3A%2F%2Fprevious.example'
+    );
+
+    menu.start('training');
+    shell.onFrame();
+
+    expect(portalController.calls.attachSession).toBe(1);
+    expect(portalController.calls.update).toBe(1);
+
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Escape',
+        preventDefault() {},
+        repeat: false
+      } as unknown as Event
+    );
+    shell.dispose();
+
+    expect(portalController.calls.detachSession).toBe(1);
   });
 
   it('ignores repeated start clicks while the menu-to-running curtain is active', async () => {
