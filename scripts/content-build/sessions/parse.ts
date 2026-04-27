@@ -252,19 +252,28 @@ function parseEncounterSection(
 ): ParsedEncounter {
   const firstTable = requireFirstEncounterTable(section);
   const field = fieldReader(section, firstTable);
-  const spawnKind = parseEnumField(field, 'spawnKind', ['empty', 'wave', 'static', 'boss']);
-  const tables = requireEncounterTables(section, spawnKind);
   const type = parseEncounterType(field);
+  const spawnKind = parseEnumField(field, 'spawnKind', ['empty', 'wave', 'static', 'boss']);
+  const zoneKind = parseEnumField(field, 'zoneKind', ['disabled', 'shrinkLinear', 'expandLinear']);
+  const transitionKind = parseEnumField(field, 'transitionKind', [
+    'never',
+    'allEnemiesCleared',
+    'timer'
+  ]);
+  validatePortalEncounterKindPairings(field, type, spawnKind, zoneKind, transitionKind);
+  const tables = requireEncounterTables(section, spawnKind);
   const transitionRules = parseTransitionRules(field);
   const presentation = parseEncounterPresentation(field, type, transitionRules);
+  const spawnPlan = parseSpawnPlan(field, tables);
+  const zoneBehavior = parseZoneBehavior(field);
 
   return {
     id: section.title,
     type,
     backgroundId: parseEncounterBackgroundId(field, type, backgroundIds),
     ...presentation,
-    spawnPlan: parseSpawnPlan(field, tables),
-    zoneBehavior: parseZoneBehavior(field),
+    spawnPlan,
+    zoneBehavior,
     transitionRules
   };
 }
@@ -830,6 +839,7 @@ function validateEncounterPresentationFields(
     case 'boss':
     case 'survivalTimer':
     case 'sandbox':
+    case 'portal':
       requireZeroIntro(field, type, introDurationMs);
       requireNoName(field, type, name);
       requireNoText(field, type, text);
@@ -858,7 +868,33 @@ function requireNoText(field: FieldReader, type: EncounterType, text: string | n
 }
 
 function parseEncounterType(field: FieldReader): EncounterType {
-  return parseEnumField(field, 'type', ['wave', 'break', 'boss', 'survivalTimer', 'sandbox']);
+  return parseEnumField(field, 'type', [
+    'wave',
+    'break',
+    'boss',
+    'survivalTimer',
+    'sandbox',
+    'portal'
+  ]);
+}
+
+function validatePortalEncounterKindPairings(
+  field: FieldReader,
+  type: EncounterType,
+  spawnKind: SpawnKind,
+  zoneKind: ZoneKind,
+  transitionKind: TransitionKind
+): void {
+  if (type !== 'portal') return;
+  if (spawnKind !== 'empty') {
+    throw fieldError(field, 'spawnKind', 'expected empty for encounter type "portal"');
+  }
+  if (zoneKind !== 'disabled') {
+    throw fieldError(field, 'zoneKind', 'expected disabled for encounter type "portal"');
+  }
+  if (transitionKind !== 'never') {
+    throw fieldError(field, 'transitionKind', 'expected never for encounter type "portal"');
+  }
 }
 
 function parseEncounterBackgroundId(

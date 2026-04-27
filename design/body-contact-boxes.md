@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-23 (follow-up: `projectiles-and-combat.md` reuses the same `contactBox` contract for projectile hit detection against `player` / `enemy` / `boss`; session-builder static/boss spawn fit is no longer part of radius-based transition debt)
+- Updated: 2026-04-27 (story 026 prep: Vibe Jam portal size and main-thread overlap checks use `SessionDefinition.player.contactBox`; see [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: 2026-04-23 follow-up: `projectiles-and-combat.md` reuses the same `contactBox` contract for projectile hit detection against `player` / `enemy` / `boss`; session-builder static/boss spawn fit is no longer part of radius-based transition debt.)
 
 ## Context
 
@@ -92,3 +92,4 @@ Moving the whole simulation to ellipses or arbitrary masks for the MVP is excess
 - [runtime-systems.md](runtime-systems.md)
 - [content-authoring.md](content-authoring.md)
 - [../stories/013-sprite-assets-and-loader.md](../stories/013-sprite-assets-and-loader.md)
+- [vibe-jam-portals.md](vibe-jam-portals.md)

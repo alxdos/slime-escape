@@ -18,6 +18,7 @@ import type {
 } from '../../shared/snapshot';
 import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
+import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
 
 import { BOSS_VISUALS } from './bossVisuals';
 import { DROP_VISUALS } from './dropVisuals';
@@ -41,7 +42,8 @@ import type { TextureMap } from './spritePreload';
 
 export type AimAccessor = () => { x: number; y: number } | null;
 
-type RendererWindowTarget = Pick<Window, 'innerWidth' | 'innerHeight' | 'devicePixelRatio'>;
+type RendererWindowTarget = Pick<Window, 'innerWidth' | 'innerHeight' | 'devicePixelRatio'> &
+  Partial<Pick<Window, 'matchMedia'>>;
 
 type WebGlRendererLike = Readonly<{
   setPixelRatio(value: number): void;
@@ -71,9 +73,11 @@ export type RendererInit = Readonly<{
   session: Pick<SessionDefinition, 'backgrounds' | 'encounters'>;
   spriteTextures: TextureMap;
   getSnapshotPair: () => SnapshotPair;
+  getPortalDescriptors?: () => ReadonlyArray<VibeJamPortalDescriptor>;
   getAim?: AimAccessor;
   weaponRegistry?: Readonly<Record<string, WeaponArchetype>>;
   windowTarget?: RendererWindowTarget;
+  prefersReducedMotion?: boolean;
   createRendererBackend?: CreateRendererBackendFn;
   loadBackgroundTexture?: LoadTextureFn;
   createDebugHud?: () => DebugHud;
@@ -132,6 +136,17 @@ const ZONE_OVERLAY_Z = 0.2;
 const ZONE_CORNER_RADIUS_FACTOR = 0.25;
 const ZONE_FEATHER_WU = 1.5;
 const PICKUP_GHOST_TTL_MS = 280;
+const PORTAL_Z = 0.16;
+const PORTAL_GROUP_NAME = 'vibe-jam-portal';
+const PORTAL_INTERIOR_NAME = 'vibe-jam-portal-interior';
+const PORTAL_OUTLINE_NAME = 'vibe-jam-portal-outline';
+const PORTAL_INTERIOR_COLOR = 0x000000;
+const PORTAL_PURPLE = 0x8b5cf6;
+const PORTAL_LIME = 0xa7f070;
+const PORTAL_OUTLINE_OPACITY = 0.94;
+const PORTAL_RENDER_ORDER = 18;
+const PORTAL_PURPLE_COLOR = new THREE.Color(PORTAL_PURPLE);
+const PORTAL_LIME_COLOR = new THREE.Color(PORTAL_LIME);
 
 type EntityMeshEntry = {
   mesh: THREE.Mesh;
@@ -153,9 +168,16 @@ type CharacterSnapGrid = Readonly<{
   stepY: number;
 }>;
 
+type PortalMeshEntry = Readonly<{
+  group: THREE.Group;
+  interior: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+  outline: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
+}>;
+
 export function createRenderer(init: RendererInit): Renderer {
   const weaponRegistry = init.weaponRegistry ?? WEAPON_ARCHETYPES;
   const windowTarget = init.windowTarget ?? window;
+  const prefersReducedMotion = init.prefersReducedMotion ?? prefersReducedMotionFromWindow(windowTarget);
 
   const renderer =
     (init.createRendererBackend ?? createThreeRendererBackend)({
@@ -240,6 +262,7 @@ export function createRenderer(init: RendererInit): Renderer {
   const pickupGhostMeshes = new Map<number, PickupGhostEntry>();
   const slimeDropletMeshes = new Map<number, EntityMeshEntry>();
   const deathGhostMeshes = new Map<number, EntityMeshEntry>();
+  const portalMeshes = new Map<VibeJamPortalDescriptor['kind'], PortalMeshEntry>();
 
   function applyResolvedScalePolicy(
     preset: RenderScalePreset,
@@ -473,6 +496,13 @@ export function createRenderer(init: RendererInit): Renderer {
       updateCrosshair(crosshair, init.getAim);
       updateArcPreview(arcPreview, pair.curr, init.getAim, weaponRegistry);
       updateZoneOverlay(zoneOverlay, pair, alpha);
+      updatePortalMeshes(
+        init.getPortalDescriptors?.() ?? [],
+        portalMeshes,
+        scene,
+        pair.nowMs,
+        prefersReducedMotion
+      );
       updateSlimeDropletMeshes(
         impactSnapshot.droplets,
         slimeDropletMeshes,
@@ -522,6 +552,8 @@ export function createRenderer(init: RendererInit): Renderer {
       slimeDropletMeshes.clear();
       for (const entry of deathGhostMeshes.values()) disposeEntityMesh(entry);
       deathGhostMeshes.clear();
+      for (const entry of portalMeshes.values()) disposePortalMesh(scene, entry);
+      portalMeshes.clear();
       arenaGeometry.dispose();
       arenaMaterial.dispose();
       arenaBackground.dispose();
@@ -755,6 +787,100 @@ function createStatusMarker(entityHeight: number): THREE.Mesh {
   return mesh;
 }
 
+function createPortalMesh(): PortalMeshEntry {
+  const group = new THREE.Group();
+  group.name = PORTAL_GROUP_NAME;
+  group.position.z = PORTAL_Z;
+  group.renderOrder = PORTAL_RENDER_ORDER;
+
+  const interior = new THREE.Mesh(
+    new THREE.CircleGeometry(0.5, 64),
+    new THREE.MeshBasicMaterial({
+      color: PORTAL_INTERIOR_COLOR,
+      transparent: true,
+      opacity: 0.96,
+      depthWrite: false,
+      depthTest: false
+    })
+  );
+  interior.name = PORTAL_INTERIOR_NAME;
+  interior.renderOrder = PORTAL_RENDER_ORDER;
+  group.add(interior);
+
+  const outline = new THREE.Mesh(
+    new THREE.RingGeometry(0.52, 0.68, 64),
+    new THREE.MeshBasicMaterial({
+      color: PORTAL_PURPLE,
+      transparent: true,
+      opacity: PORTAL_OUTLINE_OPACITY,
+      depthWrite: false,
+      depthTest: false
+    })
+  );
+  outline.name = PORTAL_OUTLINE_NAME;
+  outline.position.z = 0.01;
+  outline.renderOrder = PORTAL_RENDER_ORDER + 1;
+  group.add(outline);
+
+  return { group, interior, outline };
+}
+
+function updatePortalMeshes(
+  descriptors: ReadonlyArray<VibeJamPortalDescriptor>,
+  entries: Map<VibeJamPortalDescriptor['kind'], PortalMeshEntry>,
+  scene: THREE.Scene,
+  nowMs: number,
+  prefersReducedMotion: boolean
+): void {
+  const active = new Set<VibeJamPortalDescriptor['kind']>();
+  for (const descriptor of descriptors) {
+    active.add(descriptor.kind);
+    const entry = ensurePortalMesh(entries, scene, descriptor.kind);
+    entry.group.position.x = descriptor.x;
+    entry.group.position.y = descriptor.y;
+    entry.group.scale.set(descriptor.width, descriptor.height, 1);
+    applyPortalPresentation(entry, nowMs, prefersReducedMotion);
+  }
+
+  for (const [kind, entry] of entries) {
+    if (active.has(kind)) continue;
+    disposePortalMesh(scene, entry);
+    entries.delete(kind);
+  }
+}
+
+function ensurePortalMesh(
+  entries: Map<VibeJamPortalDescriptor['kind'], PortalMeshEntry>,
+  scene: THREE.Scene,
+  kind: VibeJamPortalDescriptor['kind']
+): PortalMeshEntry {
+  const existing = entries.get(kind);
+  if (existing !== undefined) return existing;
+  const entry = createPortalMesh();
+  scene.add(entry.group);
+  entries.set(kind, entry);
+  return entry;
+}
+
+function applyPortalPresentation(
+  entry: PortalMeshEntry,
+  nowMs: number,
+  prefersReducedMotion: boolean
+): void {
+  const shimmer = prefersReducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(nowMs / 220);
+  entry.outline.material.color
+    .copy(PORTAL_PURPLE_COLOR)
+    .lerp(PORTAL_LIME_COLOR, shimmer);
+  entry.outline.material.opacity = prefersReducedMotion
+    ? PORTAL_OUTLINE_OPACITY
+    : 0.82 + 0.16 * shimmer;
+}
+
+function disposePortalMesh(scene: THREE.Scene, entry: PortalMeshEntry): void {
+  scene.remove(entry.group);
+  disposeObjectTree(entry.group);
+}
+
 function applyEnemyPresentation(
   mesh: THREE.Mesh,
   entity: EnemySnapshot,
@@ -950,6 +1076,10 @@ function createCharacterSnapGrid(
 function parseCssPixels(value: string): number {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function prefersReducedMotionFromWindow(windowTarget: RendererWindowTarget): boolean {
+  return windowTarget.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }
 
 function computeAlpha(pair: SnapshotPair): number {

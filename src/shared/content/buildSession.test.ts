@@ -357,6 +357,35 @@ describe('buildSessionDefinition (campaign)', () => {
   });
 });
 
+describe('buildSessionDefinition (portal)', () => {
+  it('uses external redirect completion with a terminal portal encounter after the gargoyle boss', () => {
+    const session = buildSessionDefinition(resolveModePreset('portal'), { seed: 26 });
+    const finalEncounter = session.encounters.at(-1);
+    const penultimateEncounter = session.encounters.at(-2);
+
+    expect(session.winCondition).toEqual({ kind: 'none' });
+    expect(session.lossCondition).toEqual({ kind: 'playerDeath' });
+    expect(penultimateEncounter?.id).toBe('portal-boss');
+    expect(penultimateEncounter?.type).toBe('boss');
+    expect(penultimateEncounter?.spawnPlan.kind).toBe('boss');
+    if (penultimateEncounter?.spawnPlan.kind !== 'boss') {
+      throw new Error('expected portal-boss to keep a boss spawn plan');
+    }
+    expect(penultimateEncounter.spawnPlan.bossArchetypeId).toBe('boss-gargoyle');
+    expect(finalEncounter).toMatchObject({
+      id: 'portal-exit',
+      type: 'portal',
+      backgroundId: 'portal',
+      introDurationMs: 0,
+      name: null,
+      text: null,
+      spawnPlan: { kind: 'empty' },
+      zoneBehavior: { kind: 'disabled' },
+      transitionRules: { kind: 'never', next: 'sequential' }
+    });
+  });
+});
+
 describe('buildSessionDefinition shooting slime difficulty pillars', () => {
   it('campaign-easy keeps enemy loadouts to late readable shooters and guarantees heal carriers', () => {
     const session = buildSessionDefinition(resolveModePreset('campaign-easy'), { seed: 2 });

@@ -16,7 +16,7 @@
 | aimAssistMaxAngleRadians | 0 |
 | aimAssistMaxDistance | 0 |
 | aimAssistStrength | 0 |
-| winCondition | allEncountersComplete |
+| winCondition | none |
 | lossCondition | playerDeath |
 
 | backgroundId | image |
@@ -653,4 +653,18 @@
 | bossEdgeMargin | 0.5 |
 | zoneKind | disabled |
 | transitionKind | allEnemiesCleared |
+| next | sequential |
+
+## portal-exit
+
+| field | value |
+|---|---|
+| type | portal |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | none |
+| spawnKind | empty |
+| zoneKind | disabled |
+| transitionKind | never |
 | next | sequential |

@@ -2,11 +2,11 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-26
+- Updated: 2026-04-27 (story 026 prep: the existing entrypoint `autoStartPresetId` path is recorded for `/portal`; after preload it may transition directly into the configured session, and the Training button routes to that configured preset when present.)
 
 ## Context
 
-[main-ui-shell.md](main-ui-shell.md) already defines the `UiShell` phase model: the app starts in `loading`, moves to `menu` after successful preload, and starts an active session only after an explicit player action. [sprite-assets.md](sprite-assets.md) requires gameplay sprites to be preloaded and decoded before the menu, so the first run does not show lazy-load flicker.
+[main-ui-shell.md](main-ui-shell.md) already defines the `UiShell` phase model: the app starts in `loading`, normally moves to `menu` after successful preload, and starts an active session after an explicit player action. Special page entrypoints may provide a configured `autoStartPresetId`; in that case the shell moves from `loading` into the configured run after preload without showing the standard menu. [sprite-assets.md](sprite-assets.md) requires gameplay sprites to be preloaded and decoded before the menu or auto-started run, so the first run does not show lazy-load flicker.
 
 Before story 023, startup UX was technical: `StartupOverlay` showed `Loading assets X/Y`, and minimum splash duration lived next to preload logic. That visually stabilized startup, but mixed two separate concerns:
 
@@ -48,6 +48,7 @@ This decision defines the presentation contract for the startup splash, phase vi
 - `UiShell` owns a full-viewport phase transition curtain for visual transitions between high-level screens. It is a presentation barrier, not a new public `UiShellPhase`.
 - The transition curtain is used for:
   - successful `loading -> menu`;
+  - successful `loading -> running` for configured entrypoint auto-start;
   - player-initiated `menu -> running`;
   - future return-to-menu transitions only if the story touching them explicitly opts in.
 - The transition sequence is:
@@ -85,7 +86,8 @@ This decision defines the presentation contract for the startup splash, phase vi
   - Hard -> `campaign-hard`.
 - Exactly one difficulty is selected at a time.
 - The large Play button starts the currently selected campaign preset.
-- Training is a separate entry point and starts preset `training` directly, even if `training.visibleInMenu === false`. This is an explicit special-case presentation entry, not a fourth difficulty and not a change to the generic playable catalog.
+- Training is a separate entry point and normally starts preset `training` directly, even if `training.visibleInMenu === false`. This is an explicit special-case presentation entry, not a fourth difficulty and not a change to the generic playable catalog.
+- If the current page entrypoint configured `autoStartPresetId`, the Training action starts that configured preset instead. This keeps special entrypoints such as `/portal` inside their dedicated session even after the player returns to the menu from a result screen.
 - Settings opens the existing settings overlay through `UiShell`.
 - Fullscreen requests browser fullscreen through `UiShell`. Rejection or unsupported fullscreen is handled as a no-op with optional warning/log; it must not break menu state.
 - Soon, Pets, Dungeon and Lab do not start sessions in this story. If they are interactive, they only provide a lightweight "not yet" feedback through existing UI feedback paths.
@@ -135,5 +137,6 @@ This decision defines the presentation contract for the startup splash, phase vi
 - [hud-presentation.md](hud-presentation.md)
 - [web-stack.md](web-stack.md)
 - [testing.md](testing.md)
+- [vibe-jam-portals.md](vibe-jam-portals.md)
 - [../mockups/001-main.jpg](../mockups/001-main.jpg)
 - [../stories/023-main-menu-and-startup-ux.md](../stories/023-main-menu-and-startup-ux.md)

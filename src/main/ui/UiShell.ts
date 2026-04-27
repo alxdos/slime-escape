@@ -24,6 +24,15 @@ import {
   type SimWorkerHost,
   type SimWorkerHostOptions
 } from '../sim/SimWorkerHost';
+import {
+  createBrowserVibeJamPortalStorage,
+  type VibeJamPortalStorage
+} from '../VibeJamPortalContext';
+import {
+  createVibeJamPortalController,
+  type VibeJamPortalController,
+  type VibeJamPortalControllerInit
+} from '../VibeJamPortalController';
 
 import {
   createEscapeProgressPath,
@@ -104,12 +113,16 @@ type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
 type CreateEscapeProgressPathFn = (init: EscapeProgressPathInit) => EscapeProgressPath;
 type CreateTitleOverlayFn = (init: TitleOverlayInit) => TitleOverlay;
+type CreateVibeJamPortalControllerFn = (
+  init: VibeJamPortalControllerInit
+) => VibeJamPortalController;
 type CreateAudioFn = () => Audio;
 type CreateClientSettingsStoreFn = () => ClientSettingsStore;
 type RunStartupPreloadFn = (
   onProgress: (loaded: number, total: number) => void
 ) => Promise<TextureMap>;
 type ReloadPageFn = () => void;
+type AssignLocationFn = (url: string) => void;
 
 export type UiShellInit = Readonly<{
   parent: HTMLElement;
@@ -130,11 +143,15 @@ export type UiShellInit = Readonly<{
   createHud?: CreateHudFn;
   createEscapeProgressPath?: CreateEscapeProgressPathFn;
   createTitleOverlay?: CreateTitleOverlayFn;
+  createVibeJamPortalController?: CreateVibeJamPortalControllerFn;
   createAudio?: CreateAudioFn;
   createClientSettingsStore?: CreateClientSettingsStoreFn;
   runStartupPreload?: RunStartupPreloadFn;
   reloadPage?: ReloadPageFn;
+  assignLocation?: AssignLocationFn;
   makeSeed?: () => number;
+  portalHref?: string;
+  portalStorage?: VibeJamPortalStorage | null;
   windowTarget?: WindowTarget;
   documentTarget?: DocumentTarget;
 }>;
@@ -177,14 +194,24 @@ export function createUiShell(init: UiShellInit): UiShell {
   const escapeProgressPathFactory =
     init.createEscapeProgressPath ?? createEscapeProgressPath;
   const titleOverlayFactory = init.createTitleOverlay ?? createTitleOverlay;
+  const portalControllerFactory =
+    init.createVibeJamPortalController ?? createVibeJamPortalController;
   const audioFactory = init.createAudio ?? createAudio;
   const clientSettingsStoreFactory =
     init.createClientSettingsStore ?? createClientSettingsStore;
   const runStartupPreload = init.runStartupPreload ?? defaultRunStartupPreload;
   const reloadPage = init.reloadPage ?? defaultReloadPage;
+  const assignLocation = init.assignLocation ?? defaultAssignLocation;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
   const autoStartPresetId = init.autoStartPresetId ?? null;
+  const portalStorage =
+    init.portalStorage === undefined ? createBrowserVibeJamPortalStorage() : init.portalStorage;
+  const portalController = portalControllerFactory({
+    href: init.portalHref ?? defaultPortalHref(),
+    storage: portalStorage,
+    redirect: assignLocation
+  });
 
   let activeSession: SessionDefinition | null = null;
   let preloadedTextures: TextureMap | null = null;
@@ -497,6 +524,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         session,
         spriteTextures,
         getSnapshotPair: sim.snapshotPair,
+        getPortalDescriptors: portalController.portals,
         getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
       });
       const activeRenderer = nextRenderer;
@@ -529,6 +557,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     let hudAttached = false;
     let escapeProgressPathAttached = false;
     let titleOverlayAttached = false;
+    let portalControllerAttached = false;
     try {
       audio.attach(session);
       audioAttached = true;
@@ -543,7 +572,12 @@ export function createUiShell(init: UiShellInit): UiShell {
       escapeProgressPathAttached = true;
       titleOverlay.attach(session);
       titleOverlayAttached = true;
+      portalController.attachSession(session);
+      portalControllerAttached = true;
     } catch (error: unknown) {
+      if (portalControllerAttached) {
+        portalController.detachSession();
+      }
       if (titleOverlayAttached) {
         titleOverlay.detach();
       }
@@ -591,6 +625,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     previousUnsubscribeRendererSettings?.();
     previousRenderer?.dispose();
     if (hadClientSession) {
+      portalController.detachSession();
       titleOverlay.detach();
       escapeProgressPath.detach();
       hud.detach();
@@ -792,6 +827,9 @@ export function createUiShell(init: UiShellInit): UiShell {
   return {
     onFrame(): void {
       const snapshotPair = sim.snapshotPair();
+      if (activeSession !== null) {
+        portalController.update(snapshotPair.curr, phase);
+      }
       if (isRunningSessionActive()) {
         hud.update(snapshotPair);
       }
@@ -841,6 +879,17 @@ async function defaultRunStartupPreload(
 
 function defaultReloadPage(): void {
   location.reload();
+}
+
+function defaultAssignLocation(url: string): void {
+  location.assign(url);
+}
+
+function defaultPortalHref(): string {
+  if (typeof location === 'undefined') {
+    return '';
+  }
+  return location.href;
 }
 
 function formatStartupError(error: unknown): string {

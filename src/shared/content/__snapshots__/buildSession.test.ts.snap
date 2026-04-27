@@ -13789,6 +13789,27 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
         "kind": "disabled",
       },
     },
+    {
+      "backgroundId": "portal",
+      "id": "portal-exit",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "portal",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
   ],
   "id": "portal-session",
   "loadout": {
@@ -13833,7 +13854,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
   "seed": 0,
   "uiMeta": null,
   "winCondition": {
-    "kind": "allEncountersComplete",
+    "kind": "none",
   },
 }
 `;
@@ -15144,6 +15165,27 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
         "kind": "disabled",
       },
     },
+    {
+      "backgroundId": "portal",
+      "id": "portal-exit",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "portal",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
   ],
   "id": "portal-session",
   "loadout": {
@@ -15188,7 +15230,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
   "seed": 1,
   "uiMeta": null,
   "winCondition": {
-    "kind": "allEncountersComplete",
+    "kind": "none",
   },
 }
 `;
@@ -16499,6 +16541,27 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
         "kind": "disabled",
       },
     },
+    {
+      "backgroundId": "portal",
+      "id": "portal-exit",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "portal",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
   ],
   "id": "portal-session",
   "loadout": {
@@ -16543,7 +16606,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
   "seed": 42,
   "uiMeta": null,
   "winCondition": {
-    "kind": "allEncountersComplete",
+    "kind": "none",
   },
 }
 `;
