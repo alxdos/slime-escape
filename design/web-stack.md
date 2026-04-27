@@ -2,53 +2,53 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (для истории 011 явно зафиксировано, что buildtime-инструменты живут вне `src/**`; разрешение на корневой каталог `scripts/` оформлено отдельным решением — `content-authoring.md`)
+- Updated: 2026-04-23 (for story 011, explicitly recorded that build-time tools live outside `src/**`; permission for the root-level `scripts/` directory is covered by a separate decision, `content-authoring.md`)
 
 ## Context
 
-Игра запускается в браузере и должна одновременно держать `main thread` с DOM/UI/audio/render и `simulation worker` (см. [thread-model.md](thread-model.md)). Стек сборки, язык и раскладка исходников должны быть выбраны один раз и оставаться стабильными на весь проект, потому что менять их позже означает трогать одновременно все истории, worker entry и контракты сообщений. Дополнительно проект open-source, и порог входа для жюри/контрибьюторов должен быть минимальным.
+The game runs in the browser and must keep both a `main thread` with DOM/UI/audio/rendering and a `simulation worker` (see [thread-model.md](thread-model.md)). The build stack, language, and source layout must be chosen once and remain stable for the project, because changing them later would touch all stories, the worker entry point, and message contracts at the same time. The project is also open source, so the entry barrier for judges and contributors should stay low.
 
 ## Decision
 
-- Сборщик: `Vite`.
-  - Нативная поддержка TypeScript без отдельной сборки.
-  - ESM-workers через `new Worker(new URL(...), { type: 'module' })` — это та же конструкция, которая нужна для `010` (render worker через `OffscreenCanvas`), без отдельного worker-bundler.
-  - Простой dev-сервер с HMR для main и автоматическим ребилдом worker-ов.
-  - Сборка в статику: `npm run build` → `dist/`, деплой как обычный статический сайт.
-- Язык: `TypeScript` со `strict: true`.
-  - Типизированный протокол `main ↔ sim` обязателен по [thread-model.md](thread-model.md); без статической типизации он деградирует в комментарии и теряет ценность.
-  - `noImplicitAny`, `strictNullChecks`, `noUncheckedIndexedAccess` включены.
-- Менеджер пакетов: `npm`.
-  - Открытый код для конкурса; npm есть у любого, кто поставил Node, без дополнительных шагов.
-  - lockfile — `package-lock.json`, коммитим в репозиторий.
-  - Миграция на `pnpm` или `yarn` возможна позже без изменения исходного кода.
-- Раскладка исходников по слоям, а не по фичам:
-  - `src/main/**` — всё, что живёт в `main thread`: бутстрап, render, DOM/HUD, audio, feature detection, host-обёртки worker-ов.
-  - `src/sim/**` — содержимое `simulation worker`: clock, runtime-системы, world, worker entry.
-  - `src/shared/**` — типы и чистые утилиты, разрешённые в обоих контекстах: протокол сообщений, snapshot-типы, общие константы и математика.
-- Внутри `src/shared/**` зарезервированы две именованные подпапки с фиксированной ролью:
-  - `src/shared/content/**` — `content library` ([content-boundaries.md](content-boundaries.md)): архетипы врагов и оружия, профили босса, параметры арены, таблицы дропа, стандартные `ModePreset`, builder-функции `ModePreset + options → SessionDefinition`. Внутри только данные и чистые функции, без runtime state и без DOM/three.js.
-  - Остальные модули `src/shared/**` (протокол, snapshot, общие константы, математика) свободно соседствуют с `content/`.
-- Правила импортов между слоями:
-  - `src/sim/**` не имеет права импортировать из `src/main/**`.
-  - `src/shared/**` не имеет права импортировать из `src/main/**` или `src/sim/**`.
-  - `src/main/**` может импортировать из `src/shared/**`; `src/sim/**` может импортировать из `src/shared/**`.
-  - Это даёт инвариант: `simulation worker` остаётся headless, общий контракт не утаскивает за собой DOM/three.js, и любой код в `src/shared/**` (включая `src/shared/content/**`) безопасен в любом контексте.
-- `content library` физически живёт в `src/shared/content/**`, потому что его читают и `main` (для сборки `SessionDefinition` в UI и настройки камеры/рендера под арену), и `sim` (для исполнения `spawnPlan`, чтения параметров арены и т.п.). Размещение в `src/main/**` или `src/sim/**` потребовало бы дублирования или нарушения направлений импортов.
-- Worker entry — единственный файл `src/sim/worker.ts`. Подключение из main:
+- Bundler: `Vite`.
+  - Native TypeScript support without a separate compile step.
+  - ESM workers through `new Worker(new URL(...), { type: 'module' })`; this is the same shape needed for `010` (render worker through `OffscreenCanvas`) without a separate worker bundler.
+  - Simple dev server with HMR for main code and automatic worker rebuilds.
+  - Static build: `npm run build` -> `dist/`, deployed as a regular static site.
+- Language: `TypeScript` with `strict: true`.
+  - A typed `main ↔ sim` protocol is required by [thread-model.md](thread-model.md); without static typing, it degrades into comments and loses value.
+  - `noImplicitAny`, `strictNullChecks`, and `noUncheckedIndexedAccess` are enabled.
+- Package manager: `npm`.
+  - The project is open source for a contest; anyone with Node already has npm, with no extra step.
+  - The lockfile is `package-lock.json` and is committed to the repository.
+  - Migration to `pnpm` or `yarn` remains possible later without changing source code.
+- Source layout is by layer, not by feature:
+  - `src/main/**` — everything that lives on the `main thread`: bootstrap, render, DOM/HUD, audio, feature detection, and worker host wrappers.
+  - `src/sim/**` — the `simulation worker`: clock, runtime systems, world, and worker entry point.
+  - `src/shared/**` — types and pure utilities allowed in both contexts: message protocol, snapshot types, shared constants, and math.
+- Inside `src/shared/**`, two named subfolders are reserved with fixed roles:
+  - `src/shared/content/**` — the `content library` ([content-boundaries.md](content-boundaries.md)): enemy and weapon archetypes, boss profiles, arena parameters, drop tables, standard `ModePreset` values, and builder functions for `ModePreset + options → SessionDefinition`. It contains only data and pure functions, with no runtime state and no DOM/three.js.
+  - Other `src/shared/**` modules (protocol, snapshot, shared constants, math) may sit next to `content/`.
+- Import rules between layers:
+  - `src/sim/**` must not import from `src/main/**`.
+  - `src/shared/**` must not import from `src/main/**` or `src/sim/**`.
+  - `src/main/**` may import from `src/shared/**`; `src/sim/**` may import from `src/shared/**`.
+  - This gives one invariant: the `simulation worker` stays headless, the shared contract does not pull in DOM/three.js, and any code in `src/shared/**` (including `src/shared/content/**`) is safe in any context.
+- The `content library` physically lives in `src/shared/content/**` because both `main` (for building `SessionDefinition` in UI and configuring camera/rendering for the arena) and `sim` (for executing `spawnPlan`, reading arena parameters, and so on) need to read it. Putting it in `src/main/**` or `src/sim/**` would require duplication or would violate import direction rules.
+- The worker entry point is the single file `src/sim/worker.ts`. Main connects to it as follows:
   ```ts
   new Worker(new URL('../../sim/worker.ts', import.meta.url), { type: 'module' })
   ```
-- Тестовый и debug-код, если появится, живёт рядом с модулем (`*.test.ts`) и не нарушает правила импортов между слоями. Конкретный test runner и команды зафиксированы в [testing.md](testing.md).
-- Все runtime-критичные числовые константы тика, частот и т.п. живут в `src/shared/**` (см. [simulation-timing.md](simulation-timing.md)), а не дублируются по системам.
+- Test and debug code, if added, lives next to the module (`*.test.ts`) and must not violate layer import rules. The concrete test runner and commands are defined in [testing.md](testing.md).
+- All runtime-critical numeric constants for ticks, frequencies, and similar values live in `src/shared/**` (see [simulation-timing.md](simulation-timing.md)) instead of being duplicated across systems.
 
 ## Consequences
 
-- Появляется единая точка правды для скаффолда; будущие истории добавляют файлы только внутри уже определённых слоёв.
-- Контракт между потоками естественно ложится в `src/shared/**` и не зависит от выбранного render backend.
-- Миграция стека (Vite → другой бандлер, npm → pnpm) возможна без переписывания gameplay-кода, но требует синхронного обновления этого решения.
-- Истории не должны самостоятельно вводить новые корневые директории (`src/render`, `src/game` и т.п.) — расширения только внутри `main`, `sim`, `shared`.
-- Зарезервированные подпапки `src/shared/content/**` (и их аналоги, если будут добавлены) фиксируются именно здесь, чтобы не создавать новые контракты «по месту» в отдельных историях.
+- There is one source of truth for scaffolding; future stories add files only inside the layers already defined here.
+- The inter-thread contract naturally belongs in `src/shared/**` and does not depend on the chosen render backend.
+- Stack migration (Vite -> another bundler, npm -> pnpm) is possible without rewriting gameplay code, but requires updating this decision at the same time.
+- Stories must not introduce new root directories on their own (`src/render`, `src/game`, and so on); extensions happen only inside `main`, `sim`, and `shared`.
+- Reserved subfolders such as `src/shared/content/**` (and any analogues added later) are defined here to avoid creating local contracts inside individual stories.
 
 ## Related
 

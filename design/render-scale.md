@@ -6,54 +6,54 @@
 
 ## Context
 
-[arena-and-coordinates.md](arena-and-coordinates.md) фиксирует инвариант «без преимущества от железа»: видимая часть арены, FOV, спавн, радиус тёмной зоны и скорость движения **не зависят** от размера окна, DPR и render scale из 009. Размер и DPR окна влияют только на пиксельную плотность изображения. Само вписывание арены в viewport уже зафиксировано там же (letterbox/pillarbox через CSS, контейнер canvas получает aspect-ratio арены, чёрные полосы — пустое тело страницы). [thread-model.md](thread-model.md) фиксирует, что рендер — отдельный слой `main thread`-а, поддерживающий два backend-режима (main-thread и offscreen render worker), и что смена backend не должна менять контракт `simulation worker`. [client-settings.md](client-settings.md) ввёл `renderScalePreset: 'low' | 'medium' | 'high'` в client settings и subscriber-механизм; что **именно** делает каждый пресет с canvas — этим решением.
+[arena-and-coordinates.md](arena-and-coordinates.md) defines the "no hardware advantage" invariant: the visible arena area, FOV, spawning, dark-zone radius, and movement speed **do not depend** on window size, DPR, or render scale from 009. Window size and DPR affect only image pixel density. Arena fitting to the viewport is already defined there as well (letterbox/pillarbox through CSS, canvas container uses arena aspect ratio, black bars are empty page body). [thread-model.md](thread-model.md) defines rendering as a separate `main thread` layer that supports two backend modes (main-thread and offscreen render worker), and says changing backend must not change the `simulation worker` contract. [client-settings.md](client-settings.md) introduced `renderScalePreset: 'low' | 'medium' | 'high'` in client settings and the subscriber model; this decision defines what each preset **does** to the canvas.
 
-Что **не** зафиксировано до сих пор:
+What is **not** defined yet:
 
-- Конкретная семантика пресетов `low`/`medium`/`high` в терминах «backing pixels canvas», «CSS-размер canvas», `image-rendering`.
-- Где живёт policy (модуль, чистая функция от пресета и viewport → конкретные значения).
-- Кто и как переинициализирует render target при смене пресета без перезапуска сессии.
-- Какие инварианты обязаны соблюдаться при любом пресете (gameplay, прицел, fit).
-- Как 010 (offscreen render worker) переиспользует тот же контракт.
+- Concrete semantics of `low`/`medium`/`high` in terms of backing canvas pixels, CSS canvas size, and `image-rendering`.
+- Where the policy lives (module, pure function from preset and viewport to concrete values).
+- Who reinitializes the render target when the preset changes without restarting the session, and how.
+- Which invariants must hold for every preset (gameplay, aim, fit).
+- How 010 (offscreen render worker) reuses the same contract.
 
-Без явного контракта 009 закрепил бы правила пресетов внутри `Renderer`, 010 переоткрыл бы их «в worker-версии», а инвариант «без преимущества от железа» легко поломался бы любым неосторожным изменением (например, привязкой видимой области камеры к `canvas.width`).
+Without an explicit contract, 009 would lock preset rules inside `Renderer`, 010 would reopen them in the worker version, and the "no hardware advantage" invariant could be broken by any careless change (for example, tying the camera visible area to `canvas.width`).
 
-Решение фиксирует render scale policy как отдельный концепт между client settings и render backend-ом.
+This decision treats render scale policy as a separate concept between client settings and the render backend.
 
 ## Decision
 
-### Размещение
+### Location
 
-- Render scale policy и его применение живут под `src/main/render/**` (см. [web-stack.md](web-stack.md)). Новых корневых каталогов проект не получает.
-- Никакой модуль `src/main/render/**` не имеет права импортировать из `src/main/settings/**`. Поток обратный: `UiShell` подписывает `Renderer` на `ClientSettingsStore` ([client-settings.md](client-settings.md)) и пробрасывает в `Renderer` уже вычисленную policy через явный API. Это сохраняет правило «render не знает про player UI» из [main-ui-shell.md](main-ui-shell.md).
-- Чистая функция «пресет + viewport + fit → render target params» живёт рядом с `fitCanvasToViewport` (см. `src/main/render/**`); фактическое имя файла — деталь реализации, контракт — функция чистая, без сайд-эффектов и без обращения к `window`.
+- Render scale policy and application live under `src/main/render/**` (see [web-stack.md](web-stack.md)). The project gets no new root directories.
+- No module in `src/main/render/**` may import from `src/main/settings/**`. The flow goes the other way: `UiShell` subscribes `Renderer` to `ClientSettingsStore` ([client-settings.md](client-settings.md)) and passes already computed policy to `Renderer` through an explicit API. This preserves the "render does not know about player UI" rule from [main-ui-shell.md](main-ui-shell.md).
+- The pure function "preset + viewport + fit -> render target params" lives next to `fitCanvasToViewport` (see `src/main/render/**`); actual file name is an implementation detail. The contract is that the function is pure, side-effect-free, and does not access `window`.
 
-### Семантика пресетов
+### Preset semantics
 
-Пресеты задают **только** пиксельную плотность изображения. Логические размеры canvas, его CSS-размер по обеим осям и aspect-ratio задаются [arena-and-coordinates.md](arena-and-coordinates.md) и `fitCanvasToViewport`; пресет влияет на:
+Presets define **only** image pixel density. Logical canvas size, CSS size on both axes, and aspect ratio are defined by [arena-and-coordinates.md](arena-and-coordinates.md) and `fitCanvasToViewport`; the preset affects:
 
-- `pixelRatio`, который передаётся в `WebGLRenderer.setPixelRatio` (т.е. фактическое число backing pixels на CSS-пиксель);
-- значение CSS-свойства `image-rendering` для самого `<canvas>`.
+- `pixelRatio`, passed into `WebGLRenderer.setPixelRatio` (the actual number of backing pixels per CSS pixel);
+- the CSS `image-rendering` value on the `<canvas>` itself.
 
-Пусть `cssWidthPx` и `cssHeightPx` — размеры canvas в CSS-пикселях, уже вписанные в viewport через `fitCanvasToViewport` (см. [arena-and-coordinates.md](arena-and-coordinates.md)); `dpr` — `window.devicePixelRatio` (с верхней границей `2`, как сейчас в `src/main/index.ts`).
+Let `cssWidthPx` and `cssHeightPx` be the canvas size in CSS pixels, already fitted to the viewport through `fitCanvasToViewport` (see [arena-and-coordinates.md](arena-and-coordinates.md)); `dpr` is `window.devicePixelRatio` capped at `2`, as currently in `src/main/index.ts`.
 
-| Preset | Backing-pixels canvas | CSS-размер canvas | `image-rendering` | Пояснение |
+| Preset | Backing-pixels canvas | CSS canvas size | `image-rendering` | Meaning |
 |--------|------------------------|-------------------|--------------------|-----------|
-| `low`    | `canvas.width = round(cssWidthPx / 4)`, `canvas.height = round(cssHeightPx / 4)` (минимум `1`); `setPixelRatio(1)` | `cssWidthPx × cssHeightPx` (без изменений) | `pixelated` | Самый дешёвый режим: меньше пикселей под рендер, браузер растягивает картинку без сглаживания. |
-| `medium` | `cssWidthPx × cssHeightPx`, `setPixelRatio(1)` | `cssWidthPx × cssHeightPx` | `auto` (или не задаётся) | «Один пиксель canvas = один пиксель браузера», `devicePixelRatio` игнорируется. Нейтральный дефолт. |
-| `high`   | `cssWidthPx × cssHeightPx`, `setPixelRatio(dpr)` | `cssWidthPx × cssHeightPx` | `auto` (или не задаётся) | Полноценный retina-рендер: backing-pixels = CSS-пиксели × DPR. |
+| `low`    | `canvas.width = round(cssWidthPx / 4)`, `canvas.height = round(cssHeightPx / 4)` (minimum `1`); `setPixelRatio(1)` | `cssWidthPx × cssHeightPx` (unchanged) | `pixelated` | Cheapest mode: fewer pixels rendered, browser scales the image without smoothing. |
+| `medium` | `cssWidthPx × cssHeightPx`, `setPixelRatio(1)` | `cssWidthPx × cssHeightPx` | `auto` (or unset) | One canvas pixel equals one browser pixel; `devicePixelRatio` is ignored. Neutral default. |
+| `high`   | `cssWidthPx × cssHeightPx`, `setPixelRatio(dpr)` | `cssWidthPx × cssHeightPx` | `auto` (or unset) | Full retina rendering: backing pixels = CSS pixels × DPR. |
 
-Семантика пресетов выражена как чистая функция:
+Preset semantics are expressed as a pure function:
 
 ```ts
 type RenderScalePreset = 'low' | 'medium' | 'high';
 
 type RenderScaleResolution = Readonly<{
-  cssWidthPx: number;       // ширина canvas в CSS-пикселях (от fitCanvasToViewport)
-  cssHeightPx: number;      // высота canvas в CSS-пикселях (от fitCanvasToViewport)
-  backingWidthPx: number;   // canvas.width после применения пресета
-  backingHeightPx: number;  // canvas.height после применения пресета
-  pixelRatio: number;       // аргумент WebGLRenderer.setPixelRatio
+  cssWidthPx: number;       // canvas width in CSS pixels (from fitCanvasToViewport)
+  cssHeightPx: number;      // canvas height in CSS pixels (from fitCanvasToViewport)
+  backingWidthPx: number;   // canvas.width after applying the preset
+  backingHeightPx: number;  // canvas.height after applying the preset
+  pixelRatio: number;       // argument to WebGLRenderer.setPixelRatio
   imageRendering: 'auto' | 'pixelated';
 }>;
 
@@ -65,25 +65,25 @@ function resolveRenderScale(input: Readonly<{
 }>): RenderScaleResolution;
 ```
 
-Конкретные пороги (`/4` для `low`, `min(devicePixelRatio, 2)` для `high`) живут в этой функции, а не в `Renderer` или в overlay-е настроек. Любая корректировка значений = правка этого решения и `resolveRenderScale`.
+Concrete thresholds (`/4` for `low`, `min(devicePixelRatio, 2)` for `high`) live in this function, not in `Renderer` or the settings overlay. Any value adjustment means editing this decision and `resolveRenderScale`.
 
-### Инварианты, общие для всех пресетов
+### Invariants shared by all presets
 
-- Видимая часть арены **не меняется** между пресетами. Камера ортографическая, её frustum задан `arena.width × arena.height` ([arena-and-coordinates.md](arena-and-coordinates.md)); ни один пресет не меняет frustum.
-- CSS-размер canvas, его aspect-ratio и letterbox/pillarbox-полосы **не меняются** между пресетами. Пресет влияет только на backing-pixels и на `image-rendering`.
-- Маппинг указателя в мировые координаты опирается на CSS-размеры canvas (`clientHeight`/`clientWidth`), не на backing-pixels. Сейчас это видно по `pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height` в `UiShell`. Любая попытка читать `canvas.width`/`canvas.height` для расчёта прицела — нарушение этого решения.
-- `fitCanvasToViewport` остаётся единственным источником CSS-размера canvas; render scale работает «после» него и не пересчитывает aspect/letterbox.
-- Никакая gameplay-система ни в `src/sim/**`, ни в `src/shared/content/**` не имеет права читать `canvas.width`/`canvas.height`/`devicePixelRatio`/`renderScalePreset`. Render scale — чисто presentation-настройка.
-- Изменение пресета **не** должно менять исход run с тем же `seed` (тот же инвариант, что и для всех client settings, см. [client-settings.md](client-settings.md), [content-boundaries.md](content-boundaries.md)).
+- The visible arena area **does not change** between presets. The camera is orthographic and its frustum is `arena.width × arena.height` ([arena-and-coordinates.md](arena-and-coordinates.md)); no preset changes the frustum.
+- Canvas CSS size, aspect ratio, and letterbox/pillarbox bars **do not change** between presets. The preset affects only backing pixels and `image-rendering`.
+- Pointer-to-world mapping uses canvas CSS size (`clientHeight`/`clientWidth`), not backing pixels. Today this is visible as `pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height` in `UiShell`. Any attempt to read `canvas.width`/`canvas.height` for aim calculation violates this decision.
+- `fitCanvasToViewport` remains the only source of canvas CSS size; render scale runs "after" it and does not recalculate aspect/letterbox.
+- No gameplay system in `src/sim/**` or `src/shared/content/**` may read `canvas.width`/`canvas.height`/`devicePixelRatio`/`renderScalePreset`. Render scale is purely a presentation setting.
+- Changing the preset **must not** change the outcome of a run with the same `seed` (same invariant as all client settings; see [client-settings.md](client-settings.md), [content-boundaries.md](content-boundaries.md)).
 
-### Жизненный цикл и API `Renderer`
+### `Renderer` lifecycle and API
 
-- `Renderer` создаётся `UiShell` при `menu → running` и уничтожается при выходе из `running`/`paused` ([main-ui-shell.md](main-ui-shell.md)). На время своей жизни он — единственный owner свойств canvas, влияющих на пиксели:
+- `Renderer` is created by `UiShell` on `menu → running` and destroyed when leaving `running`/`paused` ([main-ui-shell.md](main-ui-shell.md)). During its lifetime, it is the only owner of canvas properties that affect pixels:
   - `canvas.width` / `canvas.height` (backing pixels);
-  - `canvas.style.width` / `canvas.style.height` (CSS-размеры);
+  - `canvas.style.width` / `canvas.style.height` (CSS sizes);
   - `canvas.style.imageRendering`;
   - `WebGLRenderer.setPixelRatio` / `WebGLRenderer.setSize`.
-- `Renderer` принимает текущий `RenderScalePreset` через `RendererInit` (заменяет/расширяет существующее поле `pixelRatio`), и поддерживает явный метод изменения на лету:
+- `Renderer` receives the current `RenderScalePreset` through `RendererInit` (replacing/extending the existing `pixelRatio` field), and supports an explicit method for changing it live:
   ```ts
   type Renderer = Readonly<{
     render(): void;
@@ -92,51 +92,51 @@ function resolveRenderScale(input: Readonly<{
     dispose(): void;
   }>;
   ```
-- `applyScalePolicy(preset)` обязан:
-  1. Вычислить `RenderScaleResolution` через `resolveRenderScale`, опираясь на текущие CSS-размеры canvas (которые уже корректно вписаны через `fitCanvasToViewport`) и текущее `devicePixelRatio`.
-  2. Применить `imageRendering` к `canvas.style`.
-  3. Вызвать `WebGLRenderer.setPixelRatio(pixelRatio)`.
-  4. Вызвать `WebGLRenderer.setSize(cssWidthPx, cssHeightPx, false)` (третий аргумент `false` сохраняет CSS-размеры неизменными — это критично для инварианта «CSS-размер canvas не меняется между пресетами»).
-- `fitToWindow` после смены viewport также применяет текущий пресет (повторно вычисляет `RenderScaleResolution` от новых CSS-размеров и обновляет backing). Это даёт инвариант «после любого resize backing-плотность остаётся согласована с активным пресетом».
-- Никакой полной пересборки `THREE.Scene`, мешей сущностей или шейдеров `applyScalePolicy` **не** требует. Web Audio-style «переинициализация target» здесь означает ровно «переразмерить backing canvas и пере-разметить pixel ratio на том же `WebGLRenderer`», что `WebGLRenderer.setPixelRatio` + `setSize` делают штатно. Сцена и uniform-ы (включая `uHalfSize` оверлея зоны) не зависят от backing-pixels и пересчёта не требуют.
-- `applyScalePolicy(preset)` идемпотентен: повторный вызов с тем же пресетом и теми же CSS-размерами выполняет ту же последовательность шагов и не создаёт визуального артефакта. Дополнительно `ClientSettingsStore` уже не вызывает listener-а при «значение не изменилось» ([client-settings.md](client-settings.md)), так что повторных вызовов от store не будет, но `fitToWindow` имеет право дёргать применение каждый resize.
+- `applyScalePolicy(preset)` must:
+  1. Compute `RenderScaleResolution` through `resolveRenderScale`, using the current canvas CSS size (already correctly fitted through `fitCanvasToViewport`) and current `devicePixelRatio`.
+  2. Apply `imageRendering` to `canvas.style`.
+  3. Call `WebGLRenderer.setPixelRatio(pixelRatio)`.
+  4. Call `WebGLRenderer.setSize(cssWidthPx, cssHeightPx, false)` (the third argument `false` keeps CSS sizes unchanged, which is critical for the invariant "canvas CSS size does not change between presets").
+- After viewport changes, `fitToWindow` also applies the current preset again (recomputes `RenderScaleResolution` from new CSS sizes and updates backing). This gives the invariant "after any resize, backing density matches the active preset".
+- `applyScalePolicy` **does not** require rebuilding the whole `THREE.Scene`, entity meshes, or shaders. Web Audio-style "target reinitialization" here means exactly resizing backing canvas and reapplying pixel ratio on the same `WebGLRenderer`, which `WebGLRenderer.setPixelRatio` + `setSize` already do. The scene and uniforms (including zone overlay `uHalfSize`) do not depend on backing pixels and need no recalculation.
+- `applyScalePolicy(preset)` is idempotent: repeating it with the same preset and same CSS sizes performs the same steps and creates no visual artifact. `ClientSettingsStore` already does not call listeners when the value is unchanged ([client-settings.md](client-settings.md)), so store-driven repeated calls will not happen, but `fitToWindow` may reapply on every resize.
 
-### Дефолт и старт
+### Default and startup
 
-- При первом `menu → running` `Renderer` строится со значением `renderScalePreset` из `ClientSettingsStore.get()`. Если стора нет (тесты), `Renderer` принимает явно переданный пресет; зашитого в `Renderer` дефолта нет — единственный источник дефолта `'medium'` живёт в [client-settings.md](client-settings.md).
-- Подписку `ClientSettingsStore.subscribe` на изменение `renderScalePreset` оформляет `UiShell`. На стороне `Renderer` подписки нет: `Renderer` headless относительно `ClientSettingsStore` и тестируется без него.
-- В фазе `menu` `Renderer` не существует, и применять policy некуда. Это нормально: при создании следующего Renderer-а будет использован уже актуальный пресет из store. Никаких «отложенных применений» вне `Renderer` хранить не нужно.
+- On the first `menu → running`, `Renderer` is created with `renderScalePreset` from `ClientSettingsStore.get()`. If the store does not exist (tests), `Renderer` receives an explicitly passed preset; `Renderer` has no hardcoded default. The only default source, `'medium'`, lives in [client-settings.md](client-settings.md).
+- `UiShell` owns the `ClientSettingsStore.subscribe` subscription for `renderScalePreset` changes. `Renderer` has no subscription: it is headless relative to `ClientSettingsStore` and can be tested without it.
+- In the `menu` phase, `Renderer` does not exist, so there is nowhere to apply policy. This is fine: the next `Renderer` will be created with the current preset from the store. No pending applications need to be stored outside `Renderer`.
 
-### Совместимость с 010 (offscreen render worker)
+### Compatibility with 010 (offscreen render worker)
 
-- Контракт `Renderer` (`render`/`fitToWindow`/`applyScalePolicy`/`dispose`) не зависит от того, где физически идёт `three.js`: в `main thread` или в render worker через `OffscreenCanvas`.
-- В offscreen-варианте `applyScalePolicy(preset)` пробрасывается в render worker сообщением; worker сам вызывает аналогичные `setPixelRatio` / `setSize` уже на стороне `OffscreenCanvas`. CSS-свойства (`style.width`/`style.height`/`style.imageRendering`) применяются на main, потому что DOM остаётся в main ([thread-model.md](thread-model.md)).
-- `resolveRenderScale` остаётся чистой функцией в `src/main/render/**` и переиспользуется обоими backend-ами. 010 не вводит свою копию.
-- Смена пресета в offscreen-варианте не требует пересоздания render worker. Если конкретный браузер всё-таки требует пересоздания `OffscreenCanvas` для смены backing-size — это будет конкретизировано внутри 010 как деталь реализации backend-а, не контракт policy.
+- The `Renderer` contract (`render`/`fitToWindow`/`applyScalePolicy`/`dispose`) does not depend on where `three.js` physically runs: on the `main thread` or in a render worker through `OffscreenCanvas`.
+- In the offscreen variant, `applyScalePolicy(preset)` is forwarded to the render worker as a message; the worker calls analogous `setPixelRatio` / `setSize` on the `OffscreenCanvas` side. CSS properties (`style.width`/`style.height`/`style.imageRendering`) are applied on main because DOM remains on main ([thread-model.md](thread-model.md)).
+- `resolveRenderScale` remains a pure function in `src/main/render/**` and is reused by both backends. 010 does not introduce its own copy.
+- Changing preset in the offscreen variant does not require recreating the render worker. If a specific browser does require recreating `OffscreenCanvas` for backing-size changes, that is specified inside 010 as a backend implementation detail, not a policy contract.
 
-### Тесты
+### Tests
 
-- `resolveRenderScale` тестируется как чистая функция:
-  - `low` при `cssWidthPx=800, cssHeightPx=600, dpr=2` → `backing=200×150`, `pixelRatio=1`, `imageRendering='pixelated'`;
-  - `medium` при том же входе → `backing=800×600`, `pixelRatio=1`, `imageRendering='auto'`;
-  - `high` при том же входе → `backing=800×600`, `pixelRatio=2`, `imageRendering='auto'`;
-  - вырожденные `cssWidthPx ≤ 0` → backing-минимум `1×1`, без падения (симметрично текущему `fitCanvasToViewport`, который возвращает `0×0` и не падает).
-- `Renderer.applyScalePolicy(preset)` тестируется без реального WebGL/DOM: `THREE.WebGLRenderer` обёрнут узким API в тестах, как уже сделано для аудио и input. Под тестом обязательно:
-  - `setPixelRatio` вызван с `1` для `low` и `medium`, с `min(dpr, 2)` для `high`;
-  - `setSize(cssW, cssH, false)` вызван (третий аргумент `false`);
-  - `canvas.style.imageRendering = 'pixelated'` для `low`, `'auto'`/пусто для остальных;
-  - `applyScalePolicy(samePreset)` повторно — даёт тот же визуальный итог (идемпотентность);
-  - `fitToWindow` после resize применяет текущий пресет (вызовы `setPixelRatio`/`setSize` в правильном порядке).
-- Регрессий [arena-and-coordinates.md](arena-and-coordinates.md) тестами не вводится: видимая часть арены и `fitCanvasToViewport` не меняются.
+- `resolveRenderScale` is tested as a pure function:
+  - `low` with `cssWidthPx=800, cssHeightPx=600, dpr=2` -> `backing=200×150`, `pixelRatio=1`, `imageRendering='pixelated'`;
+  - `medium` with the same input -> `backing=800×600`, `pixelRatio=1`, `imageRendering='auto'`;
+  - `high` with the same input -> `backing=800×600`, `pixelRatio=2`, `imageRendering='auto'`;
+  - degenerate `cssWidthPx ≤ 0` -> backing minimum `1×1`, no crash (symmetric with current `fitCanvasToViewport`, which returns `0×0` and does not crash).
+- `Renderer.applyScalePolicy(preset)` is tested without real WebGL/DOM: `THREE.WebGLRenderer` is wrapped in a narrow API in tests, as already done for audio and input. Required under test:
+  - `setPixelRatio` called with `1` for `low` and `medium`, with `min(dpr, 2)` for `high`;
+  - `setSize(cssW, cssH, false)` called (third argument `false`);
+  - `canvas.style.imageRendering = 'pixelated'` for `low`, `'auto'`/empty for the others;
+  - repeated `applyScalePolicy(samePreset)` gives the same visual result (idempotence);
+  - `fitToWindow` after resize applies the current preset (calls `setPixelRatio`/`setSize` in the correct order).
+- Tests do not introduce regressions for [arena-and-coordinates.md](arena-and-coordinates.md): visible arena area and `fitCanvasToViewport` do not change.
 
 ## Consequences
 
-- 009 получает компактный контракт: «overlay настроек меняет `renderScalePreset` в store; `Renderer` принимает пресет через `applyScalePolicy`; `resolveRenderScale` — единственная точка правды о численных значениях».
-- 010 (offscreen render worker) переиспользует тот же `applyScalePolicy` и ту же `resolveRenderScale`, не открывая параллельный контракт.
-- Инвариант «без преимущества от железа» теперь имеет точку, где он проверяется тестами: ни один пресет не меняет frustum камеры, CSS-размеры canvas и mapping прицела.
-- `Renderer` получает явный API `applyScalePolicy` вместо неявной зависимости от `pixelRatio` в init. Старый `pixelRatio: number` в `RendererInit` либо заменяется на `renderScalePreset: RenderScalePreset`, либо превращается в начальное значение, после которого настоящий источник правды — `applyScalePolicy`. Конкретный шаг — деталь реализации, контракт — единственный legitimate путь смены пресета.
-- Цена: добавляется одна функция (`resolveRenderScale`) и один метод на `Renderer` (`applyScalePolicy`). Расширение списка пресетов или их семантики требует правки этого решения и `resolveRenderScale`, не «по месту» в overlay-е настроек.
-- Решение явно отказывает от расщепления пресетов на отдельные оси («fxaa», «msaa», «постпроцессинг»). Они — расширения этого файла, не молчаливые добавления внутри `Renderer`.
+- 009 gets a compact contract: the settings overlay changes `renderScalePreset` in the store; `Renderer` accepts the preset through `applyScalePolicy`; `resolveRenderScale` is the single source of truth for numeric values.
+- 010 (offscreen render worker) reuses the same `applyScalePolicy` and `resolveRenderScale`, without opening a parallel contract.
+- The "no hardware advantage" invariant now has a place where tests can check it: no preset changes camera frustum, canvas CSS size, or aim mapping.
+- `Renderer` gets explicit API `applyScalePolicy` instead of an implicit dependency on `pixelRatio` in init. The old `pixelRatio: number` in `RendererInit` is either replaced with `renderScalePreset: RenderScalePreset` or becomes an initial value after which the real source of truth is `applyScalePolicy`. The exact implementation step is a detail; the contract is that `applyScalePolicy` is the only legitimate way to change preset.
+- Cost: one function (`resolveRenderScale`) and one method on `Renderer` (`applyScalePolicy`). Extending the preset list or changing their semantics requires editing this decision and `resolveRenderScale`, not local edits in the settings overlay.
+- This decision explicitly rejects splitting presets into separate axes ("fxaa", "msaa", "postprocessing"). Those are extensions of this file, not silent additions inside `Renderer`.
 
 ## Related
 

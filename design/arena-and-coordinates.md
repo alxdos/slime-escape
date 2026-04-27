@@ -6,68 +6,68 @@
 
 ## Context
 
-Геймплей строится вокруг одной арены ([../docs/GDD_CORE.md](../docs/GDD_CORE.md), [../docs/SCOPE.md](../docs/SCOPE.md)), но ни в `docs/`, ни в `design/` не зафиксированы конкретная форма арены, единицы измерения мира, направление осей и правило сопоставления арены с viewport браузера. Без этого:
+Gameplay is built around a single arena ([../docs/GDD_CORE.md](../docs/GDD_CORE.md), [../docs/SCOPE.md](../docs/SCOPE.md)), but neither `docs/` nor `design/` defines the arena shape, world units, axis directions, or the rule for fitting the arena to the browser viewport. Without this:
 
-- `MovementSystem` не может реализовать инвариант «персонаж не выходит за границы арены»;
-- `SessionDefinition.arena` остаётся «магическим объектом неизвестной формы»;
-- спавн «с краёв экрана» из `GDD_CORE.md` неоднозначен (край арены ≠ край viewport);
-- баланс тёмной зоны и спавна становится зависим от размера и aspect ratio окна игрока, что ломает воспроизводимость по `seed` ([session-definition.md](session-definition.md));
-- рендер и input mapping каждый раз будут переоткрывать координатную систему.
+- `MovementSystem` cannot implement the invariant "the character cannot leave arena bounds";
+- `SessionDefinition.arena` remains a magic object with an unknown shape;
+- spawning "from screen edges" in `GDD_CORE.md` is ambiguous (arena edge is not the same concept as viewport edge);
+- dark-zone and spawn balance becomes dependent on the player's window size and aspect ratio, breaking reproducibility by `seed` ([session-definition.md](session-definition.md));
+- rendering and input mapping would keep reopening the coordinate-system decision.
 
 ## Decision
 
-### Координатная система мира
+### World coordinate system
 
-- Мир — двумерный, координаты вещественные.
-- Единица — условная **world unit (wu)**. Конкретные размеры арены, скорости, радиусы и т.п. выражаются в wu, а не в пикселях.
-- Ось X направлена вправо, ось Y — вверх. Точка `(0, 0)` — центр арены.
-- Любые «пиксели» появляются только на стороне рендера ([thread-model.md](thread-model.md)). Ни одна gameplay-система в `src/sim/**` не оперирует пиксельными размерами и не зависит от размера окна.
+- The world is two-dimensional, with real-valued coordinates.
+- The unit is an abstract **world unit (wu)**. Concrete arena sizes, speeds, radii, and similar values are expressed in wu, not pixels.
+- The X axis points right; the Y axis points up. `(0, 0)` is the arena center.
+- "Pixels" exist only on the rendering side ([thread-model.md](thread-model.md)). No gameplay system in `src/sim/**` uses pixel sizes or depends on window size.
 
-### Форма арены
+### Arena shape
 
-- Арена — прямоугольник с центром в `(0, 0)`, описывается двумя положительными числами `width` и `height` в wu.
-- Безопасные границы по координатам: `x ∈ [-width/2, +width/2]`, `y ∈ [-height/2, +height/2]`.
-- Конкретные значения `width`, `height` для каждого режима/преcета задаются в `content library` (см. [content-boundaries.md](content-boundaries.md), [web-stack.md](web-stack.md)) и попадают в `SessionDefinition.arena`. Запрещено хардкодить размеры арены в коде систем.
-- Aspect ratio арены `arenaAspect = width / height` — это часть контента, а не движка. Любая система рендера и UI обязана корректно работать при произвольном `arenaAspect`.
+- The arena is a rectangle centered at `(0, 0)`, described by two positive numbers, `width` and `height`, in wu.
+- Safe coordinate bounds: `x ∈ [-width/2, +width/2]`, `y ∈ [-height/2, +height/2]`.
+- Concrete `width` and `height` values for each mode/preset are defined in the `content library` (see [content-boundaries.md](content-boundaries.md), [web-stack.md](web-stack.md)) and enter `SessionDefinition.arena`. Hardcoding arena size in system code is forbidden.
+- Arena aspect ratio, `arenaAspect = width / height`, is content, not engine behavior. Every render and UI system must work correctly for any `arenaAspect`.
 
-### Сопоставление арены и viewport (fit / letterbox / pillarbox)
+### Mapping arena to viewport (fit / letterbox / pillarbox)
 
-- `main thread` всегда показывает **всю** арену целиком, сохраняя её пропорции. Обрезка арены под viewport запрещена.
-- При несовпадении `arenaAspect` и `viewportAspect`:
-  - если `viewportAspect > arenaAspect` — pillarbox: пустые полосы слева/справа;
-  - если `viewportAspect < arenaAspect` — letterbox: пустые полосы сверху/снизу.
-- Реализация вписывания живёт на уровне CSS: контейнер canvas получает `aspect-ratio: width / height`, центрируется в окне, чёрные полосы — пустое тело страницы за пределами canvas. Это даёт три инварианта:
-  - canvas всегда заполнен ареной без внутренних отступов, поэтому `clientX/Y` мыши тривиально мапятся в world-координаты без отдельного offset (важно для прицела и Pointer Lock из [input-commands.md](input-commands.md));
-  - `Renderer` не знает про окно: ему передаются актуальные размеры canvas после CSS-вписывания;
-  - сцена `three.js` рисует только арену; полосы — это область вне canvas, а не часть рендер-сцены.
+- The `main thread` always shows the **entire** arena while preserving its proportions. Cropping the arena to fit the viewport is forbidden.
+- When `arenaAspect` and `viewportAspect` differ:
+  - if `viewportAspect > arenaAspect`, use pillarbox: empty bars on the left/right;
+  - if `viewportAspect < arenaAspect`, use letterbox: empty bars on the top/bottom.
+- Fitting is implemented at the CSS level: the canvas container gets `aspect-ratio: width / height`, is centered in the window, and black bars are the empty page body outside the canvas. This gives three invariants:
+  - canvas is always filled by the arena without internal padding, so mouse `clientX/Y` maps trivially to world coordinates without a separate offset (important for aiming and Pointer Lock from [input-commands.md](input-commands.md));
+  - `Renderer` does not know about the window; it receives the actual canvas size after CSS fitting;
+  - the `three.js` scene draws only the arena; bars are outside the canvas, not part of the render scene.
 
-### Камера
+### Camera
 
-- Камера ортографическая, выровнена с осями мира. Поворот, наклон и зум во время сессии не меняются.
-- Видимая область камеры в wu всегда равна `width × height`. То есть `1 wu ≡ canvas.height / arena.height` пикселей по обеим осям.
-- Камера статична относительно центра арены `(0, 0)`. Любые «следящие за игроком» режимы — отдельное решение, не часть этого файла.
+- The camera is orthographic and aligned with world axes. Rotation, tilt, and zoom do not change during a session.
+- The visible camera area in wu is always `width × height`. In other words, `1 wu ≡ canvas.height / arena.height` pixels on both axes.
+- The camera is static relative to the arena center `(0, 0)`. Any player-following modes are a separate decision and not part of this file.
 
-### Инвариант «без преимущества от железа»
+### "No hardware advantage" invariant
 
-- Игровая поверхность (то, что видит игрок и в чём живут сущности) и видимая часть арены **не зависят** от размера окна, DPR и render scale из 009.
-- Размер и DPR окна влияют только на пиксельную плотность изображения, не на FOV, не на спавн, не на радиус тёмной зоны, не на скорость движения.
-- Любая попытка сделать видимую область или баланс зависимыми от размера окна — нарушение этого решения.
+- The gameplay surface (what the player sees and where entities live) and the visible arena area **do not depend** on window size, DPR, or render scale from 009.
+- Window size and DPR affect only image pixel density, not FOV, spawning, dark-zone radius, or movement speed.
+- Any attempt to make the visible area or balance depend on window size violates this decision.
 
-### Границы арены и системы
+### Arena bounds and systems
 
-- Инвариант «сущность не выходит за границы арены» принадлежит `MovementSystem` ([runtime-systems.md](runtime-systems.md)). Конкретный механизм (`clamp` после интеграции, отражение, остановка по нормали) — деталь реализации, скрытая за `MovementSystem`.
-- Спавн «с краёв арены» в будущих историях (003, 004) использует именно границы арены, а не границы viewport. Эти два множества по построению совпадают, но семантически источник истины — арена.
-- Мониторы с экстремальным aspect ratio (ультраширокие, портретные) получают одинаковую видимую арену, отличается только размер пустых полос.
+- The invariant "entity cannot leave arena bounds" belongs to `MovementSystem` ([runtime-systems.md](runtime-systems.md)). The concrete mechanism (`clamp` after integration, reflection, normal-based stop) is an implementation detail hidden behind `MovementSystem`.
+- Future "spawn from arena edges" stories (003, 004) use arena bounds, not viewport bounds. These two sets coincide by construction, but semantically the source of truth is the arena.
+- Displays with extreme aspect ratios (ultrawide, portrait) get the same visible arena; only the size of empty bars changes.
 
 ## Consequences
 
-- В `SessionDefinition.arena` появляется обязательная пара `{ width, height }` в wu; формализация — в [session-definition.md](session-definition.md).
-- `MovementSystem` ([runtime-systems.md](runtime-systems.md)) обязан читать границы из активной сессии, а не из глобальной константы.
-- Прицел и Pointer Lock ([input-commands.md](input-commands.md)) могут считать мировую позицию курсора простым линейным mapping без учёта внешних offset.
-- История 002 фиксирует одно конкретное значение `{ width, height }` для sandbox-режима в `content library`; будущие истории добавляют новые арены данными, а не правкой систем.
-- Тёмная зона (004) и спавн (003) могут полагаться на границы арены как на единственный источник «края», без привязки к размеру окна.
-- Поддержка нестандартных aspect ratio (ультраширокие, мобильный портрет) сводится к корректному CSS-вписыванию — gameplay не меняется.
-- Решение явно запрещает обрезку и stretch арены под viewport: эти варианты пересмотрены и отвергнуты как ломающие баланс и контракт «край viewport = край арены».
+- `SessionDefinition.arena` gets a required `{ width, height }` pair in wu; formalized in [session-definition.md](session-definition.md).
+- `MovementSystem` ([runtime-systems.md](runtime-systems.md)) must read bounds from the active session, not from a global constant.
+- Aim and Pointer Lock ([input-commands.md](input-commands.md)) can compute cursor world position with a simple linear mapping without external offsets.
+- Story 002 defines one concrete `{ width, height }` value for sandbox mode in the `content library`; future stories add new arenas through data, not by editing systems.
+- Dark zone (004) and spawning (003) can rely on arena bounds as the only source of "edge", with no dependency on window size.
+- Support for unusual aspect ratios (ultrawide, mobile portrait) is reduced to correct CSS fitting; gameplay does not change.
+- This decision explicitly forbids cropping and stretching the arena to the viewport: those options were considered and rejected because they break balance and the "viewport edge = arena edge" contract.
 
 ## Related
 

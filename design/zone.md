@@ -2,94 +2,94 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-26 (story 021: intro delay — `ZoneSystem` не продвигает внутренний `elapsedMs` и не двигает `margin`, пока у активного encounter активен intro (`encounter.elapsedMs < encounter.introDurationMs`); полный контракт — [encounter-presentation.md](encounter-presentation.md). Форма `zoneBehavior` и экспорт в snapshot не меняются. Earlier: 2026-04-23.)
+- Updated: 2026-04-26 (story 021: intro delay — `ZoneSystem` does not advance internal `elapsedMs` and does not move `margin` while the active encounter intro is active (`encounter.elapsedMs < encounter.introDurationMs`); full contract in [encounter-presentation.md](encounter-presentation.md). `zoneBehavior` shape and snapshot export do not change. Earlier: 2026-04-23.)
 
 ## Context
 
-[runtime-systems.md](runtime-systems.md) фиксирует существование `ZoneSystem` («тёмная зона и другие режимы ограничения видимости»), его место в update order (перед `SnapshotExportSystem`) и общее правило «`ZoneSystem` управляет состоянием зоны и её экспортом, но не завершает encounter самостоятельно». Сама модель зоны не описана.
+[runtime-systems.md](runtime-systems.md) defines `ZoneSystem` ("dark zone and other visibility-limiting modes"), its place in update order (before `SnapshotExportSystem`), and the general rule that "`ZoneSystem` manages zone state and export, but does not end encounters by itself." The zone model itself is not described.
 
-[../docs/GDD_CORE.md](../docs/GDD_CORE.md) и [../docs/WAVES_AND_SCALING.md](../docs/WAVES_AND_SCALING.md) задают продуктовые правила:
+[../docs/GDD_CORE.md](../docs/GDD_CORE.md) and [../docs/WAVES_AND_SCALING.md](../docs/WAVES_AND_SCALING.md) define product rules:
 
-- зона **линейно сжимается** во время волны и **отступает** в передышке;
-- зона **не наносит урона**, её роль — ограничивать обзор;
-- во время боя с боссом зона **не действует**;
-- спавн «с краёв арены» опирается на края арены, а не на текущую границу зоны.
+- the zone **shrinks linearly** during a wave and **retracts** during a break;
+- the zone **does not deal damage**; its role is to limit visibility;
+- during a boss fight, the zone **is inactive**;
+- spawning "from arena edges" uses arena edges, not the current zone boundary.
 
-Без явного контракта история 004 (волны и зона) неявно зафиксирует и форму зоны, и способ её представления в snapshot, и зависимость рендера от gameplay-формы. История 006 (босс, зона отключена) и 007 (HUD) переоткроют те же вопросы.
+Without an explicit contract, story 004 (waves and zone) will implicitly define the zone shape, its snapshot representation, and renderer dependency on gameplay shape. Story 006 (boss with zone disabled) and 007 (HUD) will reopen the same questions.
 
 ## Decision
 
-### Гейплейная форма зоны
+### Gameplay zone shape
 
-- Гейплейная форма зоны — **один скаляр `margin`** (в world units, см. [arena-and-coordinates.md](arena-and-coordinates.md)). `margin` — это inset со всех сторон: безопасная область арены — прямоугольник с центром в `(0, 0)` и полуразмерами `(arena.width / 2 − margin, arena.height / 2 − margin)`.
-- `margin = 0` означает «зона полностью отступила, безопасная область совпадает с ареной». Это нейтральное состояние; оно используется и для encounter с `zoneBehavior: { kind: 'disabled' }`, и для бой-с-боссом из 006.
-- `margin` ограничен снизу нулём и сверху значением, при котором безопасная область вырождается в точку. Конкретные `fromMargin`/`toMargin` задаются в `EncounterDefinition.zoneBehavior` и валидируются на стороне content/builder, а не runtime.
-- **Per-side margins, окружности и асимметричные формы в gameplay-контракте отсутствуют.** Если они потребуются, расширение оформляется отдельным решением; сейчас намеренно один scalar.
+- The gameplay zone shape is **one scalar `margin`** (in world units, see [arena-and-coordinates.md](arena-and-coordinates.md)). `margin` is an inset from all sides: the arena safe area is a rectangle centered at `(0, 0)` with half-size `(arena.width / 2 − margin, arena.height / 2 − margin)`.
+- `margin = 0` means "the zone is fully retracted and the safe area equals the arena." This is the neutral state; it is used both for encounters with `zoneBehavior: { kind: 'disabled' }` and for the boss fight in 006.
+- `margin` is clamped below by zero and above by the value where the safe area degenerates to a point. Concrete `fromMargin`/`toMargin` values are set in `EncounterDefinition.zoneBehavior` and validated by content/builder, not runtime.
+- **Per-side margins, circles, and asymmetric shapes do not exist in the gameplay contract.** If needed, they are added by a separate decision; for now this is intentionally one scalar.
 
-### Никакого урона и гейплей-влияния
+### No damage and no gameplay effect
 
-- Зона **не наносит урон** ни при каких условиях. `ZoneSystem` не формирует `DamageIntent`, не имеет death hook, не убивает сущности.
-- Зона **не ограничивает движение** ни игрока, ни врагов, ни снарядов: `MovementSystem` и `CombatSystem` опираются на границы арены ([arena-and-coordinates.md](arena-and-coordinates.md), [projectiles-and-combat.md](projectiles-and-combat.md)), а не на `margin`.
-- Зона **не завершает encounter**: это уже зафиксировано в [runtime-systems.md](runtime-systems.md). `SessionFlowSystem` смотрит только на `transitionRules`, не на `margin`.
-- Это правило сознательно: «зона — ограничитель видимости, не отдельная среда со своими врагами» из [../docs/GDD_CORE.md](../docs/GDD_CORE.md). Любое будущее «зона бьёт игрока» — это **другая** система (например, `EnvironmentHazardSystem` для газовых облаков), не расширение `ZoneSystem`.
+- The zone **does not deal damage** under any condition. `ZoneSystem` does not produce `DamageIntent`, has no death hook, and does not kill entities.
+- The zone **does not restrict movement** for player, enemies, or projectiles: `MovementSystem` and `CombatSystem` use arena bounds ([arena-and-coordinates.md](arena-and-coordinates.md), [projectiles-and-combat.md](projectiles-and-combat.md)), not `margin`.
+- The zone **does not end encounters**: this is already fixed in [runtime-systems.md](runtime-systems.md). `SessionFlowSystem` looks only at `transitionRules`, not at `margin`.
+- This is intentional: the zone is a visibility limiter, not a separate environment with its own enemies, per [../docs/GDD_CORE.md](../docs/GDD_CORE.md). Any future "zone damages the player" feature is a **different** system (for example, `EnvironmentHazardSystem` for gas clouds), not an extension of `ZoneSystem`.
 
-### Конфигурация зоны на уровне encounter
+### Encounter-level zone configuration
 
-- `EncounterDefinition.zoneBehavior` — дискриминированный union, конкретные kind фиксируются в [session-definition.md](session-definition.md). Для зоны определены три kind:
-  - `{ kind: 'disabled' }` — зона полностью отступлена и не двигается; `margin = 0` весь encounter;
-  - `{ kind: 'shrinkLinear'; fromMargin; toMargin; durationMs }` — линейное сжатие к `toMargin` за `durationMs`; `fromMargin` — номинальное авторское начало;
-  - `{ kind: 'expandLinear'; fromMargin; toMargin; durationMs }` — линейное расширение к `toMargin` за `durationMs`; `fromMargin` — номинальное авторское начало.
-- Для `shrinkLinear`/`expandLinear` `fromMargin` и `toMargin` — оба в `[0, maxMargin]`; направление (сжатие vs расширение) задаётся именно `kind`, а не знаком разности. Это исключает скрытое «расширение через shrink с отрицательным значением».
-- `fromMargin` описывает авторское ожидаемое начало интерполяции и используется content/builder-слоем для проверки связности настроек. Runtime не обязан прыгать к `fromMargin`: фактическая интерполяция всегда стартует из текущего `ZoneSystem.margin`, чтобы переход между encounter оставался гладким, если предыдущая зона ещё не дошла до своего `toMargin`.
-- `durationMs > 0`. Если `durationMs` меньше длительности encounter — после достижения `toMargin` `margin` остаётся равен `toMargin` до `encounterEnd` (clamp, не циклическая интерполяция).
-- Конкретные числовые значения (`fromMargin`, `toMargin`, `durationMs` для `wave`/`break`) задаются в `content library` ([content-boundaries.md](content-boundaries.md)) при сборке `SessionDefinition`. Это контент, а не часть design-решения.
+- `EncounterDefinition.zoneBehavior` is a discriminated union; concrete kinds are defined in [session-definition.md](session-definition.md). The zone has three kinds:
+  - `{ kind: 'disabled' }` — the zone is fully retracted and does not move; `margin = 0` for the whole encounter;
+  - `{ kind: 'shrinkLinear'; fromMargin; toMargin; durationMs }` — linear shrink toward `toMargin` over `durationMs`; `fromMargin` is the nominal authoring start;
+  - `{ kind: 'expandLinear'; fromMargin; toMargin; durationMs }` — linear expansion toward `toMargin` over `durationMs`; `fromMargin` is the nominal authoring start.
+- For `shrinkLinear`/`expandLinear`, both `fromMargin` and `toMargin` are in `[0, maxMargin]`; direction (shrink vs expand) is defined by `kind`, not by the sign of the difference. This avoids hidden "expand through shrink with a negative value".
+- `fromMargin` describes the authoring-expected interpolation start and is used by the content/builder layer to validate setting continuity. Runtime does not have to jump to `fromMargin`: actual interpolation always starts from current `ZoneSystem.margin`, so encounter transitions remain smooth if the previous zone has not reached its `toMargin`.
+- `durationMs > 0`. If `durationMs` is shorter than encounter duration, after reaching `toMargin`, `margin` stays at `toMargin` until `encounterEnd` (clamp, not cyclic interpolation).
+- Concrete numeric values (`fromMargin`, `toMargin`, `durationMs` for `wave`/`break`) are set in the `content library` ([content-boundaries.md](content-boundaries.md)) while building `SessionDefinition`. They are content, not part of the design decision.
 
-### Жизненный цикл `ZoneSystem`
+### `ZoneSystem` lifecycle
 
-- На `encounterStart` `ZoneSystem` инициализируется из `encounter.zoneBehavior` и текущего runtime-состояния:
-  - `disabled` → `mode = 'disabled'`, `margin = 0`, внутренний `elapsedMs = 0`;
-  - `shrinkLinear` → `mode = 'shrink'`, `startMargin = current margin`, `margin = startMargin`, `elapsedMs = 0`, запоминаются `startMargin`/`toMargin`/`durationMs`;
-  - `expandLinear` → `mode = 'expand'`, `startMargin = current margin`, `margin = startMargin`, `elapsedMs = 0`, аналогично.
-- На каждом тике (по [simulation-timing.md](simulation-timing.md), `SIM_STEP_MS`):
-  - для `disabled` — no-op;
-  - иначе `t = clamp(elapsedMs / durationMs, 0, 1)`, `margin = lerp(startMargin, toMargin, t)`, затем `elapsedMs += SIM_STEP_MS`. Первый snapshot нового encounter поэтому остаётся на фактическом `startMargin`; после `t == 1` дальнейших изменений нет (clamp сохраняется).
-- На `encounterEnd` активная интерполяция останавливается (`mode = 'disabled'`), но текущий `margin` сохраняется как фактическое начало для следующего encounter. Полный сброс к `margin = 0` происходит на lifecycle-границе сессии (`sessionStart`/`sessionStop`) или при старте encounter с `zoneBehavior: { kind: 'disabled' }`.
-- `ZoneSystem` встроен в update order по [runtime-systems.md](runtime-systems.md): тикает каждый sim tick, после `HealthDeathSystem`/`DropSystem` и до `SnapshotExportSystem`. Никакая другая система от текущего значения `margin` не зависит, поэтому конкретное место «после `HealthDeathSystem`» — деталь порядка, не gameplay-зависимость.
+- On `encounterStart`, `ZoneSystem` initializes from `encounter.zoneBehavior` and current runtime state:
+  - `disabled` -> `mode = 'disabled'`, `margin = 0`, internal `elapsedMs = 0`;
+  - `shrinkLinear` -> `mode = 'shrink'`, `startMargin = current margin`, `margin = startMargin`, `elapsedMs = 0`, with `startMargin`/`toMargin`/`durationMs` remembered;
+  - `expandLinear` -> `mode = 'expand'`, `startMargin = current margin`, `margin = startMargin`, `elapsedMs = 0`, similarly.
+- On each tick (per [simulation-timing.md](simulation-timing.md), `SIM_STEP_MS`):
+  - for `disabled`, no-op;
+  - otherwise `t = clamp(elapsedMs / durationMs, 0, 1)`, `margin = lerp(startMargin, toMargin, t)`, then `elapsedMs += SIM_STEP_MS`. The first snapshot of the new encounter therefore remains at actual `startMargin`; after `t == 1`, there are no further changes (clamp remains).
+- On `encounterEnd`, active interpolation stops (`mode = 'disabled'`), but current `margin` remains as the actual start for the next encounter. Full reset to `margin = 0` happens at session lifecycle boundaries (`sessionStart`/`sessionStop`) or when starting an encounter with `zoneBehavior: { kind: 'disabled' }`.
+- `ZoneSystem` is part of update order per [runtime-systems.md](runtime-systems.md): it ticks every sim tick, after `HealthDeathSystem`/`DropSystem` and before `SnapshotExportSystem`. No other system depends on the current `margin`, so the exact "after `HealthDeathSystem`" placement is an order detail, not a gameplay dependency.
 
 ### Intro delay
 
-- Пока у активного encounter `encounter.elapsedMs < encounter.introDurationMs` ([encounter-presentation.md](encounter-presentation.md)):
-  - для `disabled` — по-прежнему no-op;
-  - для `shrinkLinear`/`expandLinear` `ZoneSystem` не продвигает внутренний `elapsedMs` и оставляет `margin` равным `startMargin`. Первый tick после окончания intro работает как первый tick обычного encounter: `t = 0`, `margin = startMargin`, `elapsedMs = 0`, дальше обычное продвижение.
-- Это гарантирует, что титр волны сидит поверх «нулевого» состояния зоны: игрок видит зону в том виде, в каком её оставил предыдущий encounter, и сжатие/расширение стартует ровно в момент окончания intro.
-- Детерминизм сохраняется: `ZoneSystem` продолжает быть чистой функцией от `zoneBehavior` + накопленного `elapsedMs`; intro только сдвигает базу `elapsedMs` во времени симуляции.
+- While the active encounter has `encounter.elapsedMs < encounter.introDurationMs` ([encounter-presentation.md](encounter-presentation.md)):
+  - for `disabled`, still no-op;
+  - for `shrinkLinear`/`expandLinear`, `ZoneSystem` does not advance internal `elapsedMs` and keeps `margin` equal to `startMargin`. The first tick after intro ends works like the first tick of a normal encounter: `t = 0`, `margin = startMargin`, `elapsedMs = 0`, then normal advancement.
+- This guarantees that the wave title sits over the "zero" zone state: the player sees the zone as the previous encounter left it, and shrink/expand starts exactly when intro ends.
+- Determinism is preserved: `ZoneSystem` remains a pure function of `zoneBehavior` plus accumulated `elapsedMs`; intro only shifts the `elapsedMs` base in simulation time.
 
-### Экспорт в snapshot
+### Snapshot export
 
-- `ZoneSystem` экспортирует своё состояние в snapshot одним top-level полем (форма поля фиксируется в [snapshot-shape.md](snapshot-shape.md)):
+- `ZoneSystem` exports its state to snapshot through one top-level field (field shape is defined in [snapshot-shape.md](snapshot-shape.md)):
   ```ts
   zone: {
     mode: 'disabled' | 'shrink' | 'expand';
     margin: number; // wu, >= 0
   };
   ```
-- `mode` нужен HUD/рендеру, чтобы различать «зона неподвижна (disabled или достигла toMargin)» и «зона активно меняется». `margin` — единственное число для визуализации.
-- Никакие производные значения (предполагаемое время до «полного схлопывания», `fromMargin`/`toMargin`, `durationMs`) в snapshot не уходят. Если потребуются HUD-подсказкам — добавятся отдельным расширением `snapshot-shape.md`, не «по месту».
+- `mode` lets HUD/render distinguish "zone is static (disabled or reached toMargin)" from "zone is actively changing". `margin` is the only visualization number.
+- No derived values (estimated time to "full collapse", `fromMargin`/`toMargin`, `durationMs`) enter the snapshot. If HUD hints need them, they are added through a separate [snapshot-shape.md](snapshot-shape.md) extension, not locally.
 
-### Визуализация (вне gameplay-контракта)
+### Visualization (outside gameplay contract)
 
-- Геометрия отображения зоны (rounded corners, мягкий градиент по краю, цвет, blur) — **деталь рендера** на стороне `main thread` ([thread-model.md](thread-model.md)) и не часть этого решения. Любые числа вроде «радиус скругления = 0.25 × `arena.height`» или «ширина градиента» живут в `Renderer`, не в `design/` и не в `content library`.
-- Это намеренно: визуальная форма не влияет на gameplay (зона не бьёт, движение и стрельба ориентируются на арену), и привязка её параметров к `margin` через snapshot достаточна.
-- Инвариант «без преимущества от железа» из [arena-and-coordinates.md](arena-and-coordinates.md) сохраняется автоматически: gameplay видит ту же `margin` независимо от render backend, разрешения и качества картинки.
+- Zone display geometry (rounded corners, soft edge gradient, color, blur) is a **render detail** on the `main thread` side ([thread-model.md](thread-model.md)) and not part of this decision. Numbers such as "corner radius = 0.25 × `arena.height`" or "gradient width" live in `Renderer`, not in `design/` or the `content library`.
+- This is intentional: visual shape does not affect gameplay (the zone does not deal damage, movement and shooting use the arena), and tying its parameters to `margin` through the snapshot is enough.
+- The "no hardware advantage" invariant from [arena-and-coordinates.md](arena-and-coordinates.md) is preserved automatically: gameplay sees the same `margin` regardless of render backend, resolution, or image quality.
 
 ## Consequences
 
-- История 004 получает компактный контракт: «один scalar `margin`, линейная интерполяция от фактического текущего margin к `toMargin` за `durationMs`», без дополнительных правил и без побочных эффектов.
-- История 006 (босс) реализуется через `zoneBehavior: { kind: 'disabled' }` без специального флага «зона выключена в боссе»; `ZoneSystem` ничем не отличается между режимами.
-- HUD из 007 и render из 010 могут полагаться на стабильную форму `zone` в snapshot и не вынуждены договариваться с `sim` о «как именно нарисовать тьму».
-- Быстрые завершения волн не создают визуальных скачков зоны: следующий активный encounter продолжает интерполяцию от фактически видимого `margin`, а не от авторского номинального `fromMargin`.
-- Любая будущая «зона, которая бьёт игрока» сразу обозначает себя как **другая** система; этот файл и его инвариант «zone не наносит урон» не размывается.
-- Расширение до per-side margin или окружности затрагивает форму snapshot и `ZoneBehavior`, но не контракт «zone не делает gameplay-решений».
+- Story 004 gets a compact contract: one scalar `margin`, linear interpolation from the actual current margin to `toMargin` over `durationMs`, with no extra rules and no side effects.
+- Story 006 (boss) is implemented through `zoneBehavior: { kind: 'disabled' }` without a special "zone disabled for boss" flag; `ZoneSystem` does not differ between modes.
+- HUD from 007 and render from 010 can rely on stable `zone` shape in snapshots and do not need to negotiate with `sim` about "how exactly to draw darkness".
+- Fast wave completion does not create visual zone jumps: the next active encounter continues interpolation from the actually visible `margin`, not from the nominal authored `fromMargin`.
+- Any future "zone that damages the player" immediately identifies itself as a **different** system; this file and its "zone does not deal damage" invariant stay clear.
+- Extension to per-side margin or circle touches snapshot shape and `ZoneBehavior`, but not the contract that "zone does not make gameplay decisions".
 
 ## Related
 

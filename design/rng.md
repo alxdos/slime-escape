@@ -2,79 +2,79 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (для истории 005 `DropSystem` зафиксирован вторым потребителем session RNG: один `nextFloat` на dropTable-ролл при смерти врага)
+- Updated: 2026-04-19 (for story 005, `DropSystem` is recorded as the second consumer of session RNG: one `nextFloat` for the dropTable roll when an enemy dies)
 
 ## Context
 
-[session-definition.md](session-definition.md) фиксирует, что `seed` — единственный источник детерминизма для RNG в симуляции, а источники недетерминированного времени/случайности (`Math.random`, `Date.now`, `performance.now`) запрещены в коде, который должен быть воспроизводим. [spawn-plan.md](spawn-plan.md) дополнительно требует, чтобы любой случайный выбор в `SpawnSystem` (например, позиция спавна для будущих `kind`) использовал session RNG, а не `Math.random`. [testing.md](testing.md) включил «детерминизм симуляции по `seed`» в обязательно покрываемые инварианты.
+[session-definition.md](session-definition.md) states that `seed` is the only source of RNG determinism in simulation, and that nondeterministic time/randomness sources (`Math.random`, `Date.now`, `performance.now`) are forbidden in code that must be reproducible. [spawn-plan.md](spawn-plan.md) further requires every random choice in `SpawnSystem` (for example, spawn position for future `kind` values) to use session RNG rather than `Math.random`. [testing.md](testing.md) includes "simulation determinism by `seed`" among required invariants under test.
 
-При этом самого источника RNG в проекте нет:
+At the same time, the project has no RNG source yet:
 
-- история 004 (волны) первой реально требует случайности — выбор позиции спавна на периметре арены и порядок выборки из `wave.spawns` могут потребовать `rng.nextFloat()` или `rng.nextInt(n)`;
-- история 006 (босс) добавит случайность в выбор атак фаз;
-- без явного контракта каждая система переоткроет, какой PRNG использовать, как он сидируется и где живёт его state.
+- story 004 (waves) is the first to truly need randomness — choosing a spawn position on the arena perimeter and choosing from `wave.spawns` may require `rng.nextFloat()` or `rng.nextInt(n)`;
+- story 006 (boss) will add randomness to phase attack selection;
+- without an explicit contract, each system will reopen which PRNG to use, how to seed it, and where its state lives.
 
-Решение фиксирует одну общую модель session RNG, чтобы все системы пользовались одним каналом случайности.
+This decision defines one shared session RNG model so all systems use the same randomness channel.
 
 ## Decision
 
-### Алгоритм
+### Algorithm
 
-- Алгоритм session RNG — `mulberry32`. Это 32-битный seedable PRNG, реализуемый в одной короткой функции, без внешних зависимостей, со стабильной известной последовательностью.
-- Выбор обоснован тремя свойствами:
-  - детерминирован относительно одного `uint32` `seed` — ровно ту форму, которую несёт `SessionDefinition.seed`;
-  - не требует внешних зависимостей и работает одинаково в `main` и `sim` (соблюдает [web-stack.md](web-stack.md));
-  - последовательность стабильна между запусками и реализациями, что достаточно для воспроизводимости gameplay-инвариантов; криптографические свойства проекту не нужны.
-- Альтернативы (`xorshift32`, `splitmix32`, `pcg32`) были рассмотрены и отвергнуты как избыточные: для gameplay-случайности качество распределения mulberry32 достаточно, а его реализация короче.
+- The session RNG algorithm is `mulberry32`. It is a 32-bit seedable PRNG implemented as one short function, with no external dependencies and a stable known sequence.
+- The choice is based on three properties:
+  - deterministic from one `uint32` `seed`, exactly the shape carried by `SessionDefinition.seed`;
+  - no external dependencies and works identically in `main` and `sim` (matching [web-stack.md](web-stack.md));
+  - stable sequence across runs and implementations, which is enough to reproduce gameplay invariants; the project does not need cryptographic properties.
+- Alternatives (`xorshift32`, `splitmix32`, `pcg32`) were considered and rejected as unnecessary: mulberry32 has sufficient distribution quality for gameplay randomness and a shorter implementation.
 
-### Размещение и API
+### Location and API
 
-- Реализация живёт в `src/shared/rng.ts` ([web-stack.md](web-stack.md)). Импортируется и из `src/main/**`, и из `src/sim/**` без нарушения направлений импортов.
-- Публичный API:
+- Implementation lives in `src/shared/rng.ts` ([web-stack.md](web-stack.md)). It can be imported from both `src/main/**` and `src/sim/**` without violating import directions.
+- Public API:
   ```ts
   type Rng = Readonly<{
     nextUint32(): number;          // [0, 2^32)
     nextFloat(): number;           // [0, 1)
-    nextInt(maxExclusive: number): number; // целое в [0, maxExclusive); maxExclusive > 0
-    nextRange(min: number, maxExclusive: number): number; // вещественное в [min, maxExclusive)
+    nextInt(maxExclusive: number): number; // integer in [0, maxExclusive); maxExclusive > 0
+    nextRange(min: number, maxExclusive: number): number; // float in [min, maxExclusive)
   }>;
 
   function createRng(seed: number): Rng;
   ```
-- `nextInt` и `nextRange` — производные от `nextUint32`/`nextFloat`. Они не вводят отдельных алгоритмов и не должны переоткрывать форму RNG.
-- `Rng` инстанс **stateful**: каждый вызов `nextUint32` продвигает внутренний state. Гарантия воспроизводимости — поверх одной и той же последовательности вызовов.
+- `nextInt` and `nextRange` are derived from `nextUint32`/`nextFloat`. They do not introduce separate algorithms and must not reopen RNG shape.
+- An `Rng` instance is **stateful**: every `nextUint32` call advances internal state. Reproducibility is guaranteed over the same call sequence.
 
-### Жизненный цикл и владение
+### Lifecycle and ownership
 
-- На каждую сессию создаётся **ровно один** `Rng`. Создание выполняется `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md)) на `startSession`, прямо из `SessionDefinition.seed`. На `stopSession` инстанс выбрасывается вместе с остальным runtime state.
-- Системы, которым нужен RNG, получают его через зависимости, не создают свой собственный и не сидируются «по месту». На горизонт MVP это:
-  - `SpawnSystem` (история 004): один `nextFloat` на спавн в `'wave'` плане для выбора нормированной координаты на периметре арены ([spawn-plan.md](spawn-plan.md));
-  - `DropSystem` (история 005): один `nextFloat` на dropTable-ролл при срабатывании death hook на `entityKind === 'enemy'` с непустой `dropTable`; пустая таблица RNG не дёргает ([drops.md](drops.md)).
-- Порядок RNG-вызовов внутри одного тика определяется update-order ([runtime-systems.md](runtime-systems.md)): сначала `SpawnSystem` (если спавнит на этом тике), затем — внутри death hook от `HealthDeathSystem` — `DropSystem`. Этот порядок стабилен и явный; новые потребители RNG, появляющиеся отдельными решениями, обязаны фиксировать своё место в этой последовательности здесь же, чтобы воспроизводимость по `seed` оставалась проверяемой инвариантом.
-- Если в системе требуется ветка случайности, изолированная от основной (например, отдельный поток для тестов), это оформляется как **отдельное решение** с явным sub-stream, а не как `createRng(rng.nextUint32())` в коде системы.
-- Внутри `Rng` нет глобального state модуля. Запрещены статические синглтоны `globalRng` и т. п. — это нарушит детерминизм между сессиями и сделает порядок инициализации систем значимым.
+- Each session creates **exactly one** `Rng`. `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md)) creates it on `startSession`, directly from `SessionDefinition.seed`. On `stopSession`, the instance is discarded with the rest of runtime state.
+- Systems that need RNG receive it as a dependency; they do not create their own and do not seed locally. For the MVP horizon:
+  - `SpawnSystem` (story 004): one `nextFloat` per spawn in a `'wave'` plan to choose the normalized coordinate on the arena perimeter ([spawn-plan.md](spawn-plan.md));
+  - `DropSystem` (story 005): one `nextFloat` for a dropTable roll when the death hook fires for `entityKind === 'enemy'` with a non-empty `dropTable`; an empty table does not advance RNG ([drops.md](drops.md)).
+- RNG call order within one tick is defined by update order ([runtime-systems.md](runtime-systems.md)): first `SpawnSystem` (if it spawns on that tick), then `DropSystem` inside the death hook from `HealthDeathSystem`. This order is stable and explicit; new RNG consumers added by separate decisions must define their place in this sequence here as well, so reproducibility by `seed` remains testable.
+- If a system needs a randomness branch isolated from the main one (for example, a separate stream for tests), that is handled as a **separate decision** with an explicit sub-stream, not as `createRng(rng.nextUint32())` inside system code.
+- There is no module-global state inside `Rng`. Static singletons such as `globalRng` are forbidden; they would break determinism between sessions and make system initialization order meaningful.
 
-### Запреты и инварианты
+### Bans and invariants
 
-- В `src/sim/**` и в коде, исполняемом на тике симуляции, запрещены:
+- In `src/sim/**` and code executed on the simulation tick, the following are forbidden:
   - `Math.random()`;
-  - `Date.now()`, `performance.now()`, `Date()` для gameplay-логики;
-  - любые источники, не сводимые к `SessionDefinition.seed`.
-- Это правило уже подразумевается в `session-definition.md`; здесь оно конкретизируется как лаконичная проверка на ревью: появление `Math.random` в `src/sim/**` или `src/shared/**` (за пределами `src/shared/rng.ts`) — нарушение этого решения.
-- В `src/main/**` `Math.random` допустим только для чисто визуальных эффектов, **не влияющих** на authoritative state и не уходящих в snapshot/события (например, drift декоративных частиц). На gameplay это не распространяется.
-- Тесты используют `createRng(seed)` напрямую и не подменяют его моками: чтобы инвариант «один и тот же `seed` → одна и та же последовательность gameplay-событий» тестировался по-настоящему, а не имитированно.
+  - `Date.now()`, `performance.now()`, `Date()` for gameplay logic;
+  - any source that cannot be reduced to `SessionDefinition.seed`.
+- This rule is already implied by `session-definition.md`; here it becomes a concise review check: `Math.random` appearing in `src/sim/**` or `src/shared/**` (outside `src/shared/rng.ts`) violates this decision.
+- In `src/main/**`, `Math.random` is allowed only for purely visual effects that **do not** affect authoritative state and do not enter snapshots/events (for example, decorative particle drift). This does not apply to gameplay.
+- Tests use `createRng(seed)` directly and do not mock it, so the invariant "same `seed` -> same gameplay event sequence" is tested for real rather than simulated.
 
-### Расширение
+### Extension
 
-- Добавление новых производных методов (`nextBool(p)`, `pickWeighted(items, weights)`) допустимо в `src/shared/rng.ts` без отдельного решения, если они выражаются через `nextUint32`/`nextFloat` без изменения базового алгоритма.
-- Замена самого алгоритма (например, переход на `pcg32`) считается изменением этого решения и оформляется через `superseded`. Это автоматически инвалидирует записанные где-либо «золотые» последовательности тестов; такие тесты должны быть выражены через инварианты, а не через конкретные числа.
+- Adding new derived methods (`nextBool(p)`, `pickWeighted(items, weights)`) is allowed in `src/shared/rng.ts` without a separate decision if they are expressed through `nextUint32`/`nextFloat` without changing the base algorithm.
+- Replacing the algorithm itself (for example, switching to `pcg32`) is a change to this decision and is handled through `superseded`. This automatically invalidates any recorded golden test sequences; such tests should be expressed through invariants, not exact numbers.
 
 ## Consequences
 
-- Появляется единая точка правды для случайности, и инвариант «один и тот же `seed` → один и тот же ход событий» становится проверяемым.
-- `SpawnSystem` (004), `DropSystem` (005) и любые будущие системы со случайностью получают `Rng` как явную зависимость — их детерминизм виден из конструктора, а не «спрятан» в импорте.
-- Запрет на `Math.random` в `src/sim/**` приобретает конкретное место исключения (`src/shared/rng.ts`), что упрощает ревью.
-- Стоимость минимальная: один файл, одна функция, никаких runtime-зависимостей. Замена backend RNG в будущем затрагивает только этот файл и тесты, опирающиеся на конкретные значения.
+- Randomness gets one source of truth, and the invariant "same `seed` -> same course of events" becomes testable.
+- `SpawnSystem` (004), `DropSystem` (005), and any future system using randomness receive `Rng` as an explicit dependency; their determinism is visible from the constructor, not hidden in an import.
+- The ban on `Math.random` in `src/sim/**` gets one concrete exception location (`src/shared/rng.ts`), which simplifies review.
+- Cost is minimal: one file, one function, no runtime dependencies. Replacing the RNG backend later affects only this file and tests that rely on exact values.
 
 ## Related
 

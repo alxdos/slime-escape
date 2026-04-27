@@ -6,64 +6,64 @@
 
 ## Context
 
-[web-stack.md](web-stack.md) фиксирует место тестового кода (`*.test.ts` рядом с модулем) и правила импортов между слоями. Test runner и команда запуска в `package.json` не зафиксированы. Скилл `game-coder` обязывает поддерживать тестами инварианты, явно зафиксированные в `design/` (детерминизм по `seed`, фиксированный шаг, immutable снапшот после публикации, направления импортов и т. п.). История 002 уже требует тест на инвариант «персонаж не выходит за границы арены» ([arena-and-coordinates.md](arena-and-coordinates.md)). Без выбора раннера каждая история переоткроет вопрос, либо инварианты останутся без проверки.
+[web-stack.md](web-stack.md) defines where test code lives (`*.test.ts` next to the module) and the import rules between layers. The test runner and `package.json` command are not defined. The `game-coder` skill requires tests for invariants explicitly fixed in `design/` (determinism by `seed`, fixed step, immutable snapshots after publication, import directions, and so on). Story 002 already requires a test for the invariant "the character cannot leave arena bounds" ([arena-and-coordinates.md](arena-and-coordinates.md)). Without choosing a runner, every story will reopen the question, or the invariants will remain untested.
 
-Раннер — это runtime/dev-зависимость и общий инструмент для всех будущих историй (003 — `CombatSystem`, 004 — детерминизм по `seed`, 006 — фазы босса), поэтому решение принимается один раз и здесь.
+The runner is a dev/runtime dependency and a shared tool for future stories (003 — `CombatSystem`, 004 — determinism by `seed`, 006 — boss phases), so the decision is made once here.
 
 ## Decision
 
 ### Test runner
 
-- Test runner для проекта — `vitest`.
-  - Нативно работает с Vite и `tsconfig.json` без отдельной сборки и без `ts-jest`/`babel-jest`.
-  - Поддерживает ESM-модули и `import.meta.url`, на которых построен текущий стек ([web-stack.md](web-stack.md)).
-  - Минимальный конфиг: для unit-тестов в `src/sim/**` и `src/shared/**` дополнительная настройка не требуется; `vitest.config.ts` заводится только если становится нужен (например, отдельные test environments).
-- `vitest` добавляется в `devDependencies` `package.json`. Это единственная новая dev-зависимость, оправданная этим решением; никакие другие test-related пакеты (jsdom, happy-dom, testing-library и т. п.) в MVP не вводятся. Они появятся отдельным решением, когда понадобятся (например, для DOM-тестов меню/HUD).
+- The project test runner is `vitest`.
+  - It works natively with Vite and `tsconfig.json` without a separate build and without `ts-jest`/`babel-jest`.
+  - It supports ESM modules and `import.meta.url`, which the current stack relies on ([web-stack.md](web-stack.md)).
+  - Minimal config: unit tests in `src/sim/**` and `src/shared/**` need no extra setup; `vitest.config.ts` is added only when needed (for example, separate test environments).
+- `vitest` is added to `devDependencies` in `package.json`. This is the only new dev dependency justified by this decision; no other test-related packages (jsdom, happy-dom, testing-library, etc.) are introduced in the MVP. They will be added by separate decisions when needed (for example, for DOM tests of menu/HUD).
 
-### Команды
+### Commands
 
-- В `scripts` `package.json` появляются:
-  - `test` — однократный прогон всех тестов;
-  - `test:watch` — watch-режим для разработки.
-- `typecheck` остаётся отдельной командой; `test` сам по себе не подменяет typecheck и не должен его дублировать.
+- Add to `scripts` in `package.json`:
+  - `test` — one-off run of all tests;
+  - `test:watch` — watch mode for development.
+- `typecheck` remains a separate command; `test` does not replace typecheck and must not duplicate it.
 
-### Расположение и нейминг
+### Location and naming
 
-- Тестовый файл живёт рядом с модулем и называется `<module>.test.ts`. Это уже зафиксировано в [web-stack.md](web-stack.md); здесь только повторяется как часть полной картины.
-- Тесты подчиняются тем же направлениям импортов между слоями ([web-stack.md](web-stack.md)): тест в `src/sim/**` не импортирует `src/main/**`; тест в `src/shared/**` не импортирует ни `src/main/**`, ни `src/sim/**`. Это сохраняет инвариант headless-симуляции и переиспользуемого общего слоя.
-- Test environment — `node` (по умолчанию `vitest`). DOM-зависимый код в MVP не покрывается юнит-тестами; такие проверки делаются вручную через acceptance историй.
+- Test files live next to their modules and are named `<module>.test.ts`. This is already defined in [web-stack.md](web-stack.md); it is repeated here only for completeness.
+- Tests follow the same import directions between layers ([web-stack.md](web-stack.md)): a test in `src/sim/**` does not import `src/main/**`; a test in `src/shared/**` imports neither `src/main/**` nor `src/sim/**`. This preserves the headless-simulation invariant and the reusable shared layer.
+- Test environment is `node` (Vitest default). DOM-dependent code in the MVP is not covered by unit tests; those checks are handled manually through story acceptance.
 
-### Что обязательно покрыто тестами
+### Required test coverage
 
-- Любой инвариант, явно зафиксированный в `design/` и затронутый правкой, должен иметь тест, который ломается при нарушении инварианта. Минимально — текущие инварианты:
-  - детерминизм симуляции по `seed` ([session-definition.md](session-definition.md)) — когда появится RNG;
-  - фиксированный шаг тика и пауза без догона wall-clock-времени ([simulation-timing.md](simulation-timing.md));
-  - immutable снапшот после публикации ([thread-model.md](thread-model.md));
-  - «сущность не выходит за границы арены» ([arena-and-coordinates.md](arena-and-coordinates.md));
-  - lifecycle симуляции idle/running и отсутствие тиков в idle ([runtime-systems.md](runtime-systems.md)).
-- Список не претендует на полноту: появление нового инварианта в `design/` автоматически создаёт обязательство покрыть его тестом при ближайшей правке, которая его трогает.
+- Any invariant explicitly fixed in `design/` and touched by a change must have a test that fails when the invariant is broken. Current minimum invariants:
+  - simulation determinism by `seed` ([session-definition.md](session-definition.md)) once RNG exists;
+  - fixed tick step and pause without wall-clock catch-up ([simulation-timing.md](simulation-timing.md));
+  - immutable snapshot after publication ([thread-model.md](thread-model.md));
+  - "entity cannot leave arena bounds" ([arena-and-coordinates.md](arena-and-coordinates.md));
+  - simulation idle/running lifecycle and no ticks while idle ([runtime-systems.md](runtime-systems.md)).
+- This list is not exhaustive: adding a new invariant in `design/` automatically creates an obligation to cover it with a test in the nearest change that touches it.
 
-### Что не обязательно
+### Not required
 
-- Внутренняя реализация за пределами зафиксированных инвариантов покрывается тестами **на усмотрение исполнителя**. Тесты, которые держатся только за форму вспомогательной функции и ломаются при любой рефакторинговой правке, — плохие тесты и не нужны.
-- Coverage gate в проекте не вводится. Метрика покрытия может быть полезна как ориентир, но не как требование к merge.
-- Snapshot/golden-тесты допустимы только там, где результат стабилен и читается человеком; обновление snapshot без объяснения причины — недопустимо (правило перенесено в design из скилла `game-coder` как обязательное).
+- Internal implementation outside fixed invariants is tested **at the implementer's discretion**. Tests that only lock in helper-function shape and break on any refactor are bad tests and are not needed.
+- No coverage gate is introduced. Coverage metrics can be useful as guidance, but not as a merge requirement.
+- Snapshot/golden tests are allowed only where the result is stable and human-readable; updating a snapshot without explaining why is not allowed (this rule is promoted from the `game-coder` skill into design as mandatory).
 
-### Детерминизм в тестах
+### Determinism in tests
 
-- Тесты на детерминизм/время используют только источники, разрешённые контрактом проекта (явный `seed`, `SimulationClock` с управляемым тиком). Использование `Math.random`, `Date.now`, `performance.now` в тестах симуляционного кода запрещено по тем же правилам, что и в самой симуляции ([session-definition.md](session-definition.md)).
+- Tests for determinism/time use only sources allowed by the project contract (explicit `seed`, `SimulationClock` with controlled ticking). `Math.random`, `Date.now`, and `performance.now` are forbidden in simulation-code tests by the same rules that apply to simulation itself ([session-definition.md](session-definition.md)).
 
 ### CI
 
-- Автоматический CI в этом решении не вводится. Запуск тестов перед PR — обязанность исполнителя по чек-листу из скилла `game-coder`. Появление CI — отдельное будущее решение.
+- Automated CI is not introduced by this decision. Running tests before a PR is the implementer's responsibility under the `game-coder` checklist. Adding CI is a separate future decision.
 
 ## Consequences
 
-- В `package.json` появляется ровно одна новая dev-зависимость (`vitest`) и две команды (`test`, `test:watch`).
-- Истории, трогающие зафиксированные инварианты, получают единый способ их защитить — без переоткрытия выбора инструментов.
-- Headless-инвариант симуляции усиливается: тесты работают в node-environment без DOM, и попытка втащить DOM в `src/sim/**`/`src/shared/**` сразу ломает тестовый прогон.
-- Когда понадобятся DOM-тесты (меню, HUD, ввод) — это будет отдельное решение поверх `vitest` (env `jsdom`/`happy-dom` или e2e-инструмент). Никакого «попутного» добавления тестового стека.
-- Расходы: одна dev-зависимость, минимальный конфиг, никаких изменений в gameplay-коде.
+- `package.json` gets exactly one new dev dependency (`vitest`) and two commands (`test`, `test:watch`).
+- Stories that touch fixed invariants get one shared way to protect them, without reopening tool choice.
+- The headless-simulation invariant is stronger: tests run in a node environment without DOM, so pulling DOM into `src/sim/**`/`src/shared/**` breaks the test run immediately.
+- When DOM tests are needed (menu, HUD, input), that will be a separate decision on top of `vitest` (`jsdom`/`happy-dom` env or an e2e tool). No incidental test-stack additions.
+- Cost: one dev dependency, minimal config, no gameplay-code changes.
 
 ## Related
 

@@ -1,32 +1,32 @@
 # Design Decisions
 
-`design/` - слой инженерных решений проекта. Это обязательная точка входа для чтения технического дизайна: сначала читается этот `README`, затем конкретные решения по теме.
+`design/` is the project's engineering decision layer. This is the required entry point for technical design: read this `README` first, then open the topic-specific decision files.
 
-## Роль слоя design
+## Role of the design layer
 
-Иерархия проекта:
+Project hierarchy:
 
-- `docs/` фиксирует геймдизайн, продуктовые правила и ограничения мира.
-- `stories/` режет работу на demoable вертикальные слайсы.
-- `design/` фиксирует устойчивые инженерные правила и контракты, по которым эти истории должны реализовываться.
+- `docs/` records game design, product rules, and world constraints.
+- `stories/` breaks work into demoable vertical slices.
+- `design/` records stable engineering rules and contracts that stories must implement against.
 
-Главный принцип:
+Main principle:
 
-- `stories` отвечают на вопрос "что делаем следующим шагом";
-- `design` отвечает на вопрос "по каким техническим правилам это должно быть устроено".
+- `stories` answer "what do we build next?";
+- `design` answers "what technical rules should this follow?".
 
-## Как читать папку
+## How to read this folder
 
-- Сначала читать этот `README`.
-- Затем открыть решение по теме: например, `session-definition.md` для модели сессии или `thread-model.md` для потоков и рендера.
-- Если история уходит глубже, чем уже описанный design, это считается пробелом в design, а не разрешением зафиксировать архитектуру внутри story.
+- Read this `README` first.
+- Then open the decision for the topic: for example, `session-definition.md` for the session model or `thread-model.md` for threading and rendering.
+- If a story needs more detail than the current design provides, that is a gap in `design`, not permission to define architecture inside the story.
 
-## Правила решений
+## Decision rules
 
-- Один файл = одно инженерное решение.
-- Имя файла должно быть стабильным и семантическим: `session-definition.md`, `thread-model.md`.
-- Дату не включать в имя файла.
-- Каждый decision-файл должен иметь единый минимальный каркас:
+- One file equals one engineering decision.
+- File names must be stable and semantic: `session-definition.md`, `thread-model.md`.
+- Do not include dates in file names.
+- Every decision file must use the same minimal structure:
   - `Status`
   - `Created`
   - `Updated`
@@ -34,68 +34,68 @@
   - `Decision`
   - `Consequences`
   - `Related`
-- При изменении действующего решения обновлять существующий файл и поле `Updated`.
-- Если решение потеряло силу, менять `Status` на `superseded` и ссылаться на новое решение в `Related`.
+- When an active decision changes, update the existing file and its `Updated` field.
+- If a decision is no longer valid, set `Status` to `superseded` and link to the replacement in `Related`.
 
-## Как design эволюционирует через stories
+## How design evolves through stories
 
-- История может обнаружить недостающий инженерный контракт.
-- История не должна молча становиться источником архитектурной истины.
-- Если по ходу работы уточняется устойчивое техническое правило, сначала обновляется соответствующий файл в `design/`, а уже потом история опирается на него.
-- Один design-документ может эволюционировать через несколько историй, сохраняя тему и стабильное имя файла.
-- Design-документы не должны быть копией историй, acceptance criteria или task breakdown.
+- A story may reveal a missing engineering contract.
+- A story must not quietly become the source of architectural truth.
+- If work clarifies a stable technical rule, update the relevant file in `design/` first, then let the story rely on it.
+- A single design document may evolve across several stories while keeping its topic and stable file name.
+- Design documents must not duplicate stories, acceptance criteria, or task breakdowns.
 
-## Что сюда не попадает
+## What does not belong here
 
-- Пошаговый план выполнения истории.
-- Acceptance criteria из `stories/*.md`.
-- Литературный пересказ пользовательского сценария.
-- Временные локальные решения, которые не стали устойчивым правилом уровня архитектуры.
+- Step-by-step story execution plans.
+- Acceptance criteria from `stories/*.md`.
+- Narrative retellings of user scenarios.
+- Temporary local choices that did not become stable architecture-level rules.
 
 ## Index
 
 | Decision | Status | Description |
 |----------|--------|-------------|
-| [session-definition.md](session-definition.md) | accepted | Структура `SessionDefinition`, `EncounterDefinition` и `ModePreset` |
-| [thread-model.md](thread-model.md) | accepted | Граница между `main thread`, `simulation worker` и рендером |
-| [runtime-systems.md](runtime-systems.md) | accepted | Минимальный набор систем `core runtime` и lifecycle симуляции |
-| [content-boundaries.md](content-boundaries.md) | accepted | Разделение `content library`, конфигурации сессии и runtime state |
-| [arena-and-coordinates.md](arena-and-coordinates.md) | accepted | Координатная система мира, форма арены и правило fit-to-viewport |
-| [input-commands.md](input-commands.md) | accepted | Структура `InputCommand`, WASD/Pointer Lock/прицел/ЛКМ, Esc-пауза |
-| [web-stack.md](web-stack.md) | accepted | Сборщик, язык, менеджер пакетов и раскладка `src/main`, `src/sim`, `src/shared` |
-| [simulation-timing.md](simulation-timing.md) | accepted | Частоты `SimulationClock` и снапшотов, правила интерполяции и pause/resume |
-| [logging.md](logging.md) | accepted | Единый log-модуль `src/shared/log.ts`, уровни и запрет прямых `console.*` |
-| [testing.md](testing.md) | accepted | Test runner (`vitest`), команды, обязательные инварианты под тестом |
-| [spawn-plan.md](spawn-plan.md) | accepted | Форма `SpawnPlan` (`empty`/`static` + расширения), ответственность `SpawnSystem` |
-| [content-archetypes.md](content-archetypes.md) | accepted | Минимальные `EnemyArchetype`, `WeaponArchetype`, `Loadout` и резолв архетипов по `id` |
+| [session-definition.md](session-definition.md) | accepted | Shape of `SessionDefinition`, `EncounterDefinition`, and `ModePreset` |
+| [thread-model.md](thread-model.md) | accepted | Boundary between the `main thread`, `simulation worker`, and rendering |
+| [runtime-systems.md](runtime-systems.md) | accepted | Minimal `core runtime` systems and the simulation lifecycle |
+| [content-boundaries.md](content-boundaries.md) | accepted | Separation between the `content library`, session configuration, and runtime state |
+| [arena-and-coordinates.md](arena-and-coordinates.md) | accepted | World coordinate system, arena shape, and fit-to-viewport rule |
+| [input-commands.md](input-commands.md) | accepted | `InputCommand` shape, WASD, Pointer Lock, aiming, left mouse button, and Esc pause |
+| [web-stack.md](web-stack.md) | accepted | Bundler, language, package manager, and the `src/main`, `src/sim`, `src/shared` layout |
+| [simulation-timing.md](simulation-timing.md) | accepted | `SimulationClock` and snapshot frequencies, interpolation rules, and pause/resume |
+| [logging.md](logging.md) | accepted | Shared `src/shared/log.ts` module, log levels, and the ban on direct `console.*` calls |
+| [testing.md](testing.md) | accepted | Test runner (`vitest`), commands, and required invariants under test |
+| [spawn-plan.md](spawn-plan.md) | accepted | `SpawnPlan` shape (`empty`/`static` plus extensions) and `SpawnSystem` ownership |
+| [content-archetypes.md](content-archetypes.md) | accepted | Minimal `EnemyArchetype`, `WeaponArchetype`, `Loadout`, and archetype lookup by `id` |
 | [projectiles-and-combat.md](projectiles-and-combat.md) | accepted | `CombatSystem` ownership for universal weapon/projectile lifecycle, hit tests, damage rules, explosions and damage intents |
-| [health-and-death.md](health-and-death.md) | accepted | HP на сущностях, damage intents, death hooks, удаление сущностей |
-| [snapshot-shape.md](snapshot-shape.md) | accepted | Per-kind поля сущностей в снапшоте, top-level `encounter`/`zone`/`waveProgress`, форма combat и lifecycle runtime events |
-| [zone.md](zone.md) | accepted | `ZoneSystem`: scalar `margin`, режимы `disabled`/`shrinkLinear`/`expandLinear`, экспорт в snapshot, разделение gameplay-формы и визуализации |
-| [enemy-contact.md](enemy-contact.md) | accepted | Контактный урон от врагов: новая фаза `CombatSystem`, `DamageIntent.source: 'enemyContact'`, per-enemy кулдаун |
-| [boss-encounter.md](boss-encounter.md) | accepted | Сущность `kind: 'boss'`, `SpawnPlan` `'boss'`, `BossArchetype`, `BossPhaseSystem`, `winCondition: bossDefeated`, снапшот/HUD босса |
-| [drops.md](drops.md) | accepted | `DropArchetype`, `Drop` как сущность, `DropSystem` (spawn-on-death-hook + ttl/pickup), `dropTable` на `EnemyArchetype`, heal-эффект |
-| [rng.md](rng.md) | accepted | Session RNG (`mulberry32` от `seed`) как единственный источник случайности в `sim` |
-| [main-ui-shell.md](main-ui-shell.md) | accepted | `UiShell` (фазы `menu`/`running`/`paused`/`result`), HUD как пассивный потребитель снапшотов, playable preset catalog |
+| [health-and-death.md](health-and-death.md) | accepted | HP on entities, damage intents, death hooks, and entity removal |
+| [snapshot-shape.md](snapshot-shape.md) | accepted | Per-kind entity fields in snapshots, top-level `encounter`/`zone`/`waveProgress`, combat shape, and lifecycle runtime events |
+| [zone.md](zone.md) | accepted | `ZoneSystem`: scalar `margin`, `disabled`/`shrinkLinear`/`expandLinear` modes, snapshot export, and separation between gameplay shape and visualization |
+| [enemy-contact.md](enemy-contact.md) | accepted | Enemy contact damage: new `CombatSystem` phase, `DamageIntent.source: 'enemyContact'`, and per-enemy cooldown |
+| [boss-encounter.md](boss-encounter.md) | accepted | `kind: 'boss'` entity, `'boss'` `SpawnPlan`, `BossArchetype`, `BossPhaseSystem`, `winCondition: bossDefeated`, and boss snapshot/HUD |
+| [drops.md](drops.md) | accepted | `DropArchetype`, `Drop` as an entity, `DropSystem` (spawn-on-death hook plus ttl/pickup), `dropTable` on `EnemyArchetype`, and heal effect |
+| [rng.md](rng.md) | accepted | Session RNG (`mulberry32` from `seed`) as the only source of randomness in `sim` |
+| [main-ui-shell.md](main-ui-shell.md) | accepted | `UiShell` (`menu`/`running`/`paused`/`result` phases), HUD as a passive snapshot consumer, and playable preset catalog |
 | [menu-and-startup-presentation.md](menu-and-startup-presentation.md) | accepted | Startup ritual, phase transition curtain and hand-drawn main menu presentation |
-| [audio.md](audio.md) | accepted | Аудио-стек в `src/main/audio/**`: единый `AudioContext`, mixer (`master` + `sfx`/`music`/`ui` buses), двухслойная громкость sample-реестра, маппинги архетип/событие → sampleId, music selector, ambient слаймов и `setMasterGain` для 009 |
-| [client-settings.md](client-settings.md) | accepted | `ClientSettingsStore` в `src/main/settings/**`: поля 009 (`masterVolume`, `renderScalePreset`), `localStorage` с `schemaVersion`, валидация/clamp, subscriber-модель, владение `UiShell` |
-| [render-scale.md](render-scale.md) | accepted | Render scale policy в `src/main/render/**`: три пресета `low`/`medium`/`high`, чистая `resolveRenderScale`, `Renderer.applyScalePolicy`, инварианты «без преимущества от железа» |
-| [decision-log-format.md](decision-log-format.md) | accepted | Вспомогательная выжимка формата решений; правила слоя задаются этим `README` |
-| [content-authoring.md](content-authoring.md) | accepted | Авторская поверхность контента в Markdown: `content/<area>.md` как источник правды, генератор `scripts/content-build/`, пары `<area>.ts ↔ <area>.generated.ts` в потребляющих слоях, атомарная запись и CI-чек дрейфа |
-| [sprite-assets.md](sprite-assets.md) | accepted | Sprite-визуал для `player`/`enemy`/`boss`: `SpriteVisualSpec`, три раздельных visual registry рядом с renderer, `PX_PER_WU = 240`, asset-only renderer без circle-fallback, render-only breathing для `enemy`/`boss`, hard-error policy, preload до меню |
-| [body-contact-boxes.md](body-contact-boxes.md) | accepted | `contactBox` как derive shape для body-contact `player`/`enemy`/`boss`: box-vs-box overlap, broadphase через derived bounds radius, clamp игрока по box |
+| [audio.md](audio.md) | accepted | Audio stack in `src/main/audio/**`: one `AudioContext`, mixer (`master` plus `sfx`/`music`/`ui` buses), two-layer sample registry volume, archetype/event to sampleId mappings, music selector, slime ambient, and `setMasterGain` for 009 |
+| [client-settings.md](client-settings.md) | accepted | `ClientSettingsStore` in `src/main/settings/**`: 009 fields (`masterVolume`, `renderScalePreset`), `localStorage` with `schemaVersion`, validation/clamping, subscriber model, and `UiShell` ownership |
+| [render-scale.md](render-scale.md) | accepted | Render scale policy in `src/main/render/**`: three presets `low`/`medium`/`high`, pure `resolveRenderScale`, `Renderer.applyScalePolicy`, and "no hardware advantage" invariants |
+| [decision-log-format.md](decision-log-format.md) | accepted | Short companion summary of the decision format; this `README` defines the layer rules |
+| [content-authoring.md](content-authoring.md) | accepted | Markdown content authoring surface: `content/<area>.md` as the source of truth, `scripts/content-build/` generator, `<area>.ts` and `<area>.generated.ts` pairs in consuming layers, atomic writes, and CI drift check |
+| [sprite-assets.md](sprite-assets.md) | accepted | Sprite visuals for `player`/`enemy`/`boss`: `SpriteVisualSpec`, three separate visual registries near the renderer, `PX_PER_WU = 240`, asset-only renderer with no circle fallback, render-only breathing for `enemy`/`boss`, hard-error policy, and pre-menu preload |
+| [body-contact-boxes.md](body-contact-boxes.md) | accepted | `contactBox` as the derived shape for `player`/`enemy`/`boss` body contact: box-vs-box overlap, broadphase through derived bounds radius, and player clamp by box |
 | [impact-feedback.md](impact-feedback.md) | accepted | Juicy projectile feedback: self-contained `hit`/`death` event payloads, projectile knockback from weapon force, renderer-owned slime droplets/stains, hit squash/flash and death ghost |
 | [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) | accepted | Universal weapon instances, ordered loadouts, fire patterns, projectile motion, explosions, fragments, session friendly-fire rules and weapon modifier drops |
 | [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) | accepted | Follow-up combat layer: field effects, status effects, mines, carrier drops, drop magnet, friendly-fire retaliation and aim assist |
-| [spawn-overrides.md](spawn-overrides.md) | accepted | Per-`seq` `SpawnOverride` (`guaranteedDrops`/`dropTable`/`retaliation`/`loadout`) для `'static'`/`'wave'` плана; вынос `carrierDrop` из `EnemyArchetype`, момент применения, валидация и правило миграции |
-| [non-player-firing.md](non-player-firing.md) | accepted | Firing path для `kind: 'enemy'`: `WeaponInstance` слайма живёт в `CombatSystem.shooterWeapons`, наивный aim в текущую позицию игрока, под-цикл фазы 1 `CombatSystem` в порядке EntityId, инициализация cooldown, cleanup на смерти, единый damage-rule helper для impact и explosion |
-| [landing-telegraph.md](landing-telegraph.md) | accepted | Render-only маркер точки приземления для in-flight arc-снарядов от не-игрока: snapshot-расширение `ProjectileSnapshot.arcEnd`, render-контракт (когда показывать, размер, исключение для player-owned arc), презентация vs геймплей |
-| [encounter-presentation.md](encounter-presentation.md) | accepted | Presentation-поля `EncounterDefinition` (`introDurationMs`/`name`/`text`), intro delay contract для `SpawnSystem`/`ZoneSystem`/`SessionFlowSystem`, global wave numbering, render-контракт wave/break title overlay |
+| [spawn-overrides.md](spawn-overrides.md) | accepted | Per-`seq` `SpawnOverride` (`guaranteedDrops`/`dropTable`/`retaliation`/`loadout`) for `'static'`/`'wave'` plans; moving `carrierDrop` out of `EnemyArchetype`, application timing, validation, and migration rule |
+| [non-player-firing.md](non-player-firing.md) | accepted | Firing path for `kind: 'enemy'`: slime `WeaponInstance` lives in `CombatSystem.shooterWeapons`, naive aim at the current player position, phase-1 `CombatSystem` sub-loop in EntityId order, cooldown initialization, death cleanup, and one shared damage-rule helper for impact and explosion |
+| [landing-telegraph.md](landing-telegraph.md) | accepted | Render-only landing marker for in-flight arc projectiles from non-player shooters: `ProjectileSnapshot.arcEnd` snapshot extension, render contract (when to show it, size, exception for player-owned arc projectiles), and presentation vs gameplay |
+| [encounter-presentation.md](encounter-presentation.md) | accepted | Presentation fields on `EncounterDefinition` (`introDurationMs`/`name`/`text`), intro delay contract for `SpawnSystem`/`ZoneSystem`/`SessionFlowSystem`, global wave numbering, and render contract for wave/break title overlays |
 | [hud-presentation.md](hud-presentation.md) | accepted | Player-facing combat HUD: viewport regions, run timer, compact HP/boss state, control hints, weapon slots, cooldown interval, modifier badges and timed overdrive progress |
 | [session-result-summary.md](session-result-summary.md) | accepted | Terminal run summary for `win`/`loss`: progress, duration, kills, drops, boss state, defeat cause and Result UI ownership |
-| [escape-progress-path.md](escape-progress-path.md) | accepted | Main-thread `Путь Побега`: wave-only progress path for compact HUD, break map and Result UI, derived from `SessionDefinition`, snapshots and result summary without sim contract changes |
-| [_template.md](_template.md) | template | Минимальный шаблон нового решения |
+| [escape-progress-path.md](escape-progress-path.md) | accepted | Main-thread Escape Path: wave-only progress path for compact HUD, break map, and Result UI, derived from `SessionDefinition`, snapshots, and result summary without sim contract changes |
+| [_template.md](_template.md) | template | Minimal template for a new decision |
 
 ---
 

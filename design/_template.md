@@ -6,18 +6,18 @@
 
 ## Context
 
-Коротко: какая проблема или развилка привела к решению.
+Briefly describe the problem or trade-off that led to this decision.
 
 ## Decision
 
-- Что принято.
-- Ещё одно правило, если нужно.
+- State the decision.
+- Add another rule if needed.
 
 ## Consequences
 
-- Что это упрощает, ограничивает или требует дальше.
+- Explain what this makes simpler, what it constrains, and what it requires next.
 
 ## Related
 
-- [Связанный документ](../docs/example.md)
-- [Связанное решение](./other-decision.md)
+- [Related document](../docs/example.md)
+- [Related decision](./other-decision.md)

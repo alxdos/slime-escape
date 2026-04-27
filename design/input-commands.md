@@ -6,120 +6,120 @@
 
 ## Context
 
-[thread-model.md](thread-model.md) фиксирует, что `main → sim` идут input commands игрока, но не задаёт их структуру, частоту, координатное пространство и привязку к клавиатуре/мыши. В `src/shared/protocol.ts` сейчас `InputCommand = unknown`. Без явного контракта:
+[thread-model.md](thread-model.md) states that player input commands flow from `main → sim`, but does not define their shape, frequency, coordinate space, or keyboard/mouse binding. In `src/shared/protocol.ts`, `InputCommand = unknown` today. Without an explicit contract:
 
-- история 002 примет неявное решение по форме команд движения и прицела;
-- история 003 (стрельба) переоткроет тот же вопрос для `fire`;
-- история 007 (HUD/меню/пауза) переоткроет правила Esc/паузы;
-- любой ввод поведёт за собой контракт между потоками, который потом дорого менять.
+- story 002 will make an implicit decision about movement and aim command shape;
+- story 003 (shooting) will reopen the same question for `fire`;
+- story 007 (HUD/menu/pause) will reopen Esc/pause rules;
+- every input feature will drag in an inter-thread contract that is expensive to change later.
 
-Дополнительно есть продуктовые требования:
+There are also product requirements:
 
-- управление WASD не должно зависеть от текущей раскладки клавиатуры;
-- системный курсор скрыт во время сессии, прицел рисуется самой игрой;
-- ЛКМ — стрельба (поведение реализуется в 003, контракт нужен сейчас).
+- WASD movement must not depend on the current keyboard layout;
+- the system cursor is hidden during a session, and the game draws its own aim cursor;
+- left mouse button means shooting (behavior is implemented in 003, but the contract is needed now).
 
 ## Decision
 
-### Слои ответственности
+### Responsibility layers
 
-- Сбор сырого ввода (нажатия клавиш, события мыши, Pointer Lock) — `main thread`. Конкретно — модуль уровня `src/main/input/**` (расположение внутри `src/main` — деталь реализации, не фиксируется здесь).
-- `sim` принимает только уже агрегированные `InputCommand` сообщения и не знает ни о клавиатуре, ни о мыши, ни о viewport.
-- Прицел (визуальный crosshair) рисуется на стороне `main`, его позиция вычисляется в `main` и в `sim` не уходит как отдельная сущность.
+- Raw input collection (key presses, mouse events, Pointer Lock) belongs to the `main thread`. Concretely, this is a module under `src/main/input/**` (exact placement inside `src/main` is an implementation detail, not fixed here).
+- `sim` receives only aggregated `InputCommand` messages and knows nothing about keyboard, mouse, or viewport.
+- The aim cursor (visual crosshair) is drawn on the `main` side; its position is computed in `main` and does not enter `sim` as a separate entity.
 
-### Клавиатура: WASD по физической клавише
+### Keyboard: WASD by physical key
 
-- Команды движения строятся по `KeyboardEvent.code`: `KeyW`, `KeyA`, `KeyS`, `KeyD`. Поле `event.key` не используется для движения, чтобы поведение не зависело от текущей раскладки и от модификаторов.
-- Стрелки `ArrowUp/Down/Left/Right` — допустимый эквивалентный ввод; mapping живёт в `src/main/input/**`.
-- Никакая системная клавиша не отбирается у браузера без необходимости. Конкретно: `e.preventDefault()` вызывается только для тех `code`, которые игра реально использует.
+- Movement commands are built from `KeyboardEvent.code`: `KeyW`, `KeyA`, `KeyS`, `KeyD`. `event.key` is not used for movement, so behavior does not depend on the active layout or modifiers.
+- Arrow keys `ArrowUp/Down/Left/Right` are allowed equivalent input; mapping lives in `src/main/input/**`.
+- No system key is taken from the browser without need. Specifically, `e.preventDefault()` is called only for `code` values the game actually uses.
 
-### Клавиатура: слоты оружия
+### Keyboard: weapon slots
 
-- `Digit1`..`Digit9` выбирают 0-based слот оружия `0..8` и отправляют `selectWeaponSlot`.
-- `Digit0` — dedicated holster hotkey and sends `holsterWeapon`.
-- Для этих команд используется `KeyboardEvent.code`, not `event.key`, по тем же причинам раскладки, что и для движения.
-- `event.repeat` для slot/holster hotkeys игнорируется: это edge-команды, удержание клавиши не должно порождать повторный поток выбора.
+- `Digit1`..`Digit9` select 0-based weapon slot `0..8` and send `selectWeaponSlot`.
+- `Digit0` is the dedicated holster hotkey and sends `holsterWeapon`.
+- These commands use `KeyboardEvent.code`, not `event.key`, for the same layout reasons as movement.
+- `event.repeat` is ignored for slot/holster hotkeys: these are edge commands, and holding the key must not generate a repeated selection stream.
 
-### Команда движения
+### Movement command
 
-- Состояние нажатых WASD-клавиш агрегируется в **направление движения** как пара `(dx, dy)`:
+- The pressed WASD key state is aggregated into a **movement direction** as a `(dx, dy)` pair:
   - `dx = (KeyD ? 1 : 0) - (KeyA ? 1 : 0)`;
-  - `dy = (KeyW ? 1 : 0) - (KeyS ? 1 : 0)` (ось Y вверх, см. [arena-and-coordinates.md](arena-and-coordinates.md));
-  - вектор **нормализуется**, если его длина больше 1; нулевой вектор означает «стоять».
-- Это означает: при одновременном нажатии двух перпендикулярных клавиш игрок движется по диагонали с **той же** скоростью, что и по одной оси. «Сырой» вектор с `sqrt(2)`-бонусом по диагонали запрещён.
-- Команда движения — **state-based**: `main` отправляет в `sim` текущее «желание двигаться», а не события «нажал/отпустил». Это упрощает обработку дребезга и не требует от `sim` хранить state клавиатуры.
+  - `dy = (KeyW ? 1 : 0) - (KeyS ? 1 : 0)` (Y axis points up, see [arena-and-coordinates.md](arena-and-coordinates.md));
+  - the vector is **normalized** if its length is greater than 1; a zero vector means "stand still".
+- This means that when two perpendicular keys are pressed at the same time, the player moves diagonally at the **same** speed as along one axis. A raw vector with a `sqrt(2)` diagonal bonus is forbidden.
+- Movement command is **state-based**: `main` sends the current "movement intent" to `sim`, not "pressed/released" events. This simplifies debounce handling and avoids making `sim` store keyboard state.
 
-### Мышь и прицел
+### Mouse and aiming
 
-- Во время активной сессии `main` запрашивает Pointer Lock на canvas. Пока Pointer Lock активен:
-  - системного курсора не видно;
-  - игра ведёт **виртуальную позицию прицела** в world-координатах, обновляя её на основе `movementX/Y` событий `mousemove`;
-  - виртуальный прицел жёстко зажимается в границы арены ([arena-and-coordinates.md](arena-and-coordinates.md)); выйти прицелом за арену нельзя.
-  - перевод `movementX/Y` (в пикселях canvas) в world-units выполняется по тому же mapping, что и весь рендер: `1 wu ≡ canvas.height / arena.height` пикселей. Это даёт одинаковую чувствительность прицела на любом размере окна и одинаковый «ощущаемый» аим на 4K и FullHD.
-  - чувствительность прицела не вводится в этом решении; до появления настроек ([../stories/009-settings.md](../stories/009-settings.md)) считается равной `1.0` от mapping выше.
-- Если Pointer Lock в данный момент не активен (браузер только что снял по Esc, лок ещё не запрошен заново и т.п.) — прицел остаётся в последней известной world-позиции, движение мыши его не двигает. Это исключает «прыжки» прицела при потере и восстановлении лока.
-- Главный канал «прицела в `sim`» — поле `aim` в команде ввода (см. ниже), в world-координатах. Никакие screen-координаты в `sim` не передаются.
+- During an active session, `main` requests Pointer Lock on the canvas. While Pointer Lock is active:
+  - the system cursor is hidden;
+  - the game maintains a **virtual aim position** in world coordinates, updating it from `movementX/Y` on `mousemove` events;
+  - the virtual aim is strictly clamped to arena bounds ([arena-and-coordinates.md](arena-and-coordinates.md)); aim cannot leave the arena.
+  - `movementX/Y` (in canvas pixels) is converted to world units with the same mapping as rendering: `1 wu ≡ canvas.height / arena.height` pixels. This gives the same aim sensitivity at any window size and the same perceived aim on 4K and FullHD.
+  - aim sensitivity is not introduced by this decision; until settings exist ([../stories/009-settings.md](../stories/009-settings.md)), it is `1.0` of the mapping above.
+- If Pointer Lock is not currently active (the browser just released it on Esc, the lock has not yet been requested again, and so on), aim stays at the last known world position, and mouse movement does not move it. This prevents aim jumps when lock is lost and restored.
+- The main channel for "aim in `sim`" is the `aim` field in input commands (see below), in world coordinates. No screen coordinates are sent to `sim`.
 
-### Стрельба (ЛКМ)
+### Shooting (left mouse button)
 
-- Левая кнопка мыши — единственная кнопка, отвечающая за основную атаку. Это контракт уровня дизайна, не настраиваемая горячая клавиша на этом этапе.
-- ЛКМ порождает команду `fire` с состоянием `start | stop`:
+- The left mouse button is the only button for the primary attack. This is a design-level contract, not a configurable hotkey at this stage.
+- Left mouse button produces a `fire` command with `start | stop` state:
   - `mousedown` → `fire: start`;
   - `mouseup` → `fire: stop`;
-  - удержание ЛКМ не должно генерировать поток повторных команд; темп стрельбы — ответственность `CombatSystem` ([runtime-systems.md](runtime-systems.md)) и параметров оружия.
-- В историях, где `CombatSystem` ещё не существует (002), `sim` принимает команду `fire` как валидную, но игнорирует её действие на gameplay-state. Молча отбрасывать неизвестные команды запрещено — иначе ошибка протокола станет невидимой.
+  - holding LMB must not generate a stream of repeated commands; firing rate is the responsibility of `CombatSystem` ([runtime-systems.md](runtime-systems.md)) and weapon parameters.
+- In stories where `CombatSystem` does not exist yet (002), `sim` accepts `fire` as a valid command but ignores its gameplay effect. Silently dropping unknown commands is forbidden, otherwise protocol errors become invisible.
 
-### Esc, пауза и Pointer Lock
+### Esc, pause, and Pointer Lock
 
-- `Esc` всегда означает «открыть паузу с overlay»; кнопка «Выйти в меню» внутри overlay вызывает `stopSession`.
-- `Space` в активной сессии означает то же player-facing действие, что и `Esc`: открыть `PauseOverlay` и перевести `UiShell` в фазу `paused`. Так как `Space` сам не снимает Pointer Lock браузером, `UiShell` явно вызывает `document.exitPointerLock()` при входе в overlay-паузу, если Pointer Lock активен.
-- Браузер автоматически снимает Pointer Lock на `Esc` — это намеренно совпадает с открытием overlay паузы: системный курсор появляется, и им можно кликнуть кнопки.
-- При выходе из паузы `main` повторно запрашивает Pointer Lock. Пока пользователь не сделал жест (клик), запрос может быть отказан браузером — это корректно и обрабатывается следующим mousedown.
-- Физическая клавиша `KeyP` — **dev-пауза**: переключает `SimWorkerHost.pause()`/`.resume()`, но **не** меняет фазу `UiShell` и **не** показывает `PauseOverlay`. Для неё используется `KeyboardEvent.code === 'KeyP'`, не `event.key`, поэтому поведение не зависит от локали клавиатуры и CapsLock.
-- Маршрутизация хоткеев: `Esc`, `Space` и `KeyP` обрабатывает единственный owner `UiShell` ([main-ui-shell.md](main-ui-shell.md)). Прямые вызовы `SimWorkerHost.pause()`/`.resume()` из обработчиков `keydown` вне `UiShell` запрещены — иначе фаза `UiShell` (`running`/`paused`) разъедется с `isPaused()` симуляции, и появится «двойная пауза» из дев-хоткея + overlay.
-- В фазе `paused` (overlay поднят через `Esc`/`Space`) `KeyP` дополнительно **не** действует: оркестратор игнорирует dev-хоткей, пока активна штатная пауза, чтобы не было сценария «снял dev-хоткеем, но overlay остался видим». В фазах `menu` и `result` все pause hotkeys игнорируются.
+- `Esc` always means "open pause overlay"; the "Exit to menu" button inside the overlay calls `stopSession`.
+- During an active session, `Space` means the same player-facing action as `Esc`: open `PauseOverlay` and move `UiShell` to the `paused` phase. Because `Space` does not make the browser release Pointer Lock by itself, `UiShell` explicitly calls `document.exitPointerLock()` when entering overlay pause if Pointer Lock is active.
+- The browser automatically releases Pointer Lock on `Esc`; this intentionally aligns with opening the pause overlay: the system cursor appears and can click buttons.
+- When leaving pause, `main` requests Pointer Lock again. Until the user makes a gesture (click), the browser may reject the request; this is valid and is handled on the next mousedown.
+- Physical `KeyP` is **dev pause**: it toggles `SimWorkerHost.pause()`/`.resume()`, but **does not** change the `UiShell` phase and **does not** show `PauseOverlay`. It uses `KeyboardEvent.code === 'KeyP'`, not `event.key`, so behavior does not depend on keyboard locale or CapsLock.
+- Hotkey routing: `Esc`, `Space`, and `KeyP` are handled by the single owner `UiShell` ([main-ui-shell.md](main-ui-shell.md)). Direct `SimWorkerHost.pause()`/`.resume()` calls from `keydown` handlers outside `UiShell` are forbidden, otherwise `UiShell` phase (`running`/`paused`) can diverge from simulation `isPaused()`, causing double-pause scenarios from dev hotkey plus overlay.
+- In the `paused` phase (overlay opened by `Esc`/`Space`), `KeyP` also does **nothing**: the orchestrator ignores the dev hotkey while normal pause is active, preventing "unpaused through dev hotkey while overlay stayed visible". In `menu` and `result` phases, all pause hotkeys are ignored.
 
-### Структура `InputCommand`
+### `InputCommand` shape
 
-- Дискриминированный union, единственный источник всех команд `main → sim`:
+- A discriminated union, the only source of all `main → sim` commands:
   ```ts
   type InputCommand =
-    | { kind: 'move'; dx: number; dy: number }       // нормализованный вектор, |v| ∈ [0, 1]
-    | { kind: 'aim';  x: number;  y: number  }       // world-координаты
+    | { kind: 'move'; dx: number; dy: number }       // normalized vector, |v| ∈ [0, 1]
+    | { kind: 'aim';  x: number;  y: number  }       // world coordinates
     | { kind: 'fire'; phase: 'start' | 'stop' }
     | { kind: 'selectWeaponSlot'; slotIndex: number } // 0-based slot for keyboard 1..9
     | { kind: 'holsterWeapon' };
   ```
-- Семантика:
-  - `move` и `aim` — **state**: последняя полученная команда отменяет предыдущую того же `kind`; `sim` хранит «текущее желание» игрока и применяет его на каждом тике.
-  - `fire` — **edge**: каждое сообщение значимо, но дополнительные сообщения того же `phase` подряд не должны менять gameplay-state.
+- Semantics:
+  - `move` and `aim` are **state** commands: the last received command replaces the previous command of the same `kind`; `sim` stores the player's current intent and applies it on each tick.
+  - `fire` is an **edge** command: every message is meaningful, but repeated messages with the same `phase` must not change gameplay state.
   - `selectWeaponSlot` and `holsterWeapon` are **edge** commands. `selectWeaponSlot` changes runtime selected weapon if the index exists in the current ordered loadout; invalid indices are ignored with warning and do not alter selection. `holsterWeapon` sets selected weapon to `null`.
-- Команды `start/stop/pause/resume/debug` остаются на верхнем уровне `MainToSim` ([thread-model.md](thread-model.md)) и не входят в `InputCommand`.
+- `start/stop/pause/resume/debug` commands remain at the top level of `MainToSim` ([thread-model.md](thread-model.md)) and are not part of `InputCommand`.
 
-### Частота отправки
+### Send frequency
 
-- `move` и `aim` отправляются **по изменению** значения, а не каждый кадр. Если ничего не изменилось — `main` молчит.
-- `aim` дополнительно ограничивается: при потоке `mousemove` `main` группирует события за один кадр `requestAnimationFrame` и отправляет максимум одну команду `aim` на кадр.
-- `fire` отправляется по событию (не дросселируется на стороне `main`).
-- Гарантий «команда обязательно дойдёт до конкретного тика» нет: связь `main → sim` асинхронная по контракту [thread-model.md](thread-model.md). `sim` применяет последнее полученное состояние на ближайшем тике.
+- `move` and `aim` are sent **when the value changes**, not every frame. If nothing changed, `main` stays silent.
+- `aim` is additionally limited: during a `mousemove` stream, `main` batches events for one `requestAnimationFrame` and sends at most one `aim` command per frame.
+- `fire` is sent by event and is not throttled on the `main` side.
+- There is no guarantee that a command reaches a specific tick: `main → sim` communication is asynchronous by [thread-model.md](thread-model.md). `sim` applies the latest received state on the nearest tick.
 
-### Обработка в sim
+### Handling in sim
 
-- `sim` хранит per-session «input state» как часть runtime state ([content-boundaries.md](content-boundaries.md)): `{ moveDir, aimWorld, firing }`.
-- При `startSession` input state сбрасывается в нейтральное значение (`moveDir = (0,0)`, `aimWorld = player.position`, `firing = false`).
-- При `stopSession` input state выбрасывается вместе с остальным runtime state.
-- При `startSession` selected weapon state is initialized from `SessionDefinition.loadout.selectedIndex` when `loadout !== null`.
-- Команды, пришедшие до `startSession` или после `stopSession`, отбрасываются с warning через единый log-модуль; молчаливое игнорирование запрещено.
+- `sim` stores per-session input state as part of runtime state ([content-boundaries.md](content-boundaries.md)): `{ moveDir, aimWorld, firing }`.
+- On `startSession`, input state resets to neutral values (`moveDir = (0,0)`, `aimWorld = player.position`, `firing = false`).
+- On `stopSession`, input state is discarded with the rest of runtime state.
+- On `startSession`, selected weapon state is initialized from `SessionDefinition.loadout.selectedIndex` when `loadout !== null`.
+- Commands received before `startSession` or after `stopSession` are dropped with a warning through the shared log module; silent ignore is forbidden.
 
 ## Consequences
 
-- В `src/shared/protocol.ts` `InputCommand` перестаёт быть `unknown` и становится конкретным дискриминированным union; это **изменение контракта** `MainToSim`, оформляется в реализации сразу.
-- `sim` остаётся headless: никаких упоминаний `KeyboardEvent`, `MouseEvent`, `clientX`, `viewport` внутри `src/sim/**`.
-- Прицел и движение ощущаются одинаково на любом разрешении и aspect ratio окна (см. инвариант в [arena-and-coordinates.md](arena-and-coordinates.md)): mapping mouse delta → world делает одна и та же формула.
-- Esc/Space + Pointer Lock + overlay паузы образуют согласованный UX: вход в overlay-паузу открывает меню и даёт системный курсор для кликов.
-- `fire` существует в контракте уже в 002 и игнорируется на уровне gameplay; 003 включает `CombatSystem` без расширения протокола.
-- Настройки чувствительности (009) ложатся как множитель на единственный mapping mouse delta → world и не требуют пересмотра этого решения.
-- Пересмотр клавиш (ремап, геймпад, тач) в будущем = расширение mapping в `src/main/input/**` без изменения формы `InputCommand`. Если потребуется новый `kind` — это уже изменение контракта и обновление этого файла.
+- In `src/shared/protocol.ts`, `InputCommand` stops being `unknown` and becomes a concrete discriminated union; this is a **contract change** to `MainToSim` and is implemented immediately.
+- `sim` stays headless: no `KeyboardEvent`, `MouseEvent`, `clientX`, or `viewport` inside `src/sim/**`.
+- Aim and movement feel the same at any resolution and window aspect ratio (see invariant in [arena-and-coordinates.md](arena-and-coordinates.md)): one formula maps mouse delta to world.
+- Esc/Space + Pointer Lock + pause overlay form a coherent UX: entering overlay pause opens the menu and provides a system cursor for clicks.
+- `fire` exists in the contract already in 002 and is ignored at the gameplay level; 003 enables `CombatSystem` without extending the protocol.
+- Sensitivity settings (009) become a multiplier on the single mouse-delta-to-world mapping and do not require revisiting this decision.
+- Future key changes (remap, gamepad, touch) extend mapping in `src/main/input/**` without changing `InputCommand` shape. If a new `kind` is required, that is a contract change and this file must be updated.
 
 ## Related
 

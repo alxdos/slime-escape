@@ -6,118 +6,118 @@
 
 ## Context
 
-[runtime-systems.md](runtime-systems.md) фиксирует, что `HealthDeathSystem` — единственный слой, который применяет финальную потерю HP и фиксирует смерть, а death hooks срабатывают «после смерти, до экспорта снапшота». Но не описано:
+[runtime-systems.md](runtime-systems.md) states that `HealthDeathSystem` is the only layer that applies final HP loss and records death, and that death hooks fire "after death, before snapshot export." It does not describe:
 
-- где живёт HP и как он связан с сущностями `EntityStore`;
-- как именно в один тик попадает damage и кто его подаёт;
-- что именно получают потребители death hooks (`DropSystem` в 005, статистика, runtime events);
-- когда и кем удаляется погибшая сущность из `EntityStore`.
+- where HP lives and how it relates to `EntityStore` entities;
+- exactly how damage enters one tick and who submits it;
+- exactly what death-hook consumers receive (`DropSystem` in 005, stats, runtime events);
+- when and by whom a dead entity is removed from `EntityStore`.
 
-Без этого контракта история 003 неявно введёт «HP в `EntityStore` напрямую» или «damage применяется внутри `CombatSystem`», а 005/006 потом будут переоткрывать death hooks.
+Without this contract, story 003 will implicitly introduce "HP directly in `EntityStore`" or "damage applied inside `CombatSystem`", and 005/006 will later reopen death hooks.
 
 ## Decision
 
-### HP как описание сущности
+### HP as entity data
 
-- HP хранится **на самой runtime-сущности** в `EntityStore`, не в отдельном HP-реестре. Это держит state локально и делает удаление сущности атомарным.
-- Минимальная форма HP-полей у damageable-сущности:
+- HP is stored **on the runtime entity itself** in `EntityStore`, not in a separate HP registry. This keeps state local and makes entity removal atomic.
+- Minimal HP fields on a damageable entity:
   ```ts
   type HasHealth = {
-    hp: number;       // целое >= 0
-    maxHp: number;    // целое > 0, копия из архетипа
+    hp: number;       // integer >= 0
+    maxHp: number;    // integer > 0, copied from archetype
   };
   ```
-- На 003 `HasHealth` есть только у `enemy`. История 004 даёт `HasHealth` и игроку: `Player` в `EntityStore` получает поля `hp`/`maxHp`, инициализируемые из `SessionDefinition.player.maxHp` ([content-archetypes.md](content-archetypes.md), [session-definition.md](session-definition.md)) на старте сессии. Никаких новых kind не вводится; контракт «HP на сущности» одинаков для `enemy` и `player`.
-- Снаряды (`projectile`) HP не имеют и `HealthDeathSystem` их не трогает.
+- In 003, only `enemy` has `HasHealth`. Story 004 gives `HasHealth` to the player as well: `Player` in `EntityStore` gets `hp`/`maxHp` fields initialized from `SessionDefinition.player.maxHp` ([content-archetypes.md](content-archetypes.md), [session-definition.md](session-definition.md)) at session start. No new kind is introduced; the "HP on entity" contract is the same for `enemy` and `player`.
+- Projectiles (`projectile`) have no HP, and `HealthDeathSystem` does not touch them.
 
 ### Damage intents
 
-- `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md)) формирует за тик список damage intents:
+- `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md)) produces a per-tick list of damage intents:
   ```ts
   type DamageIntent = Readonly<{
     targetId: EntityId;
-    amount: number;     // целое > 0
+    amount: number;     // integer > 0
     source:
       | { kind: 'projectile'; projectileId: EntityId; ownerKind: 'player' | 'enemy' | 'boss'; weaponArchetypeId: string; impactDirX: number; impactDirY: number }
       | { kind: 'explosion'; projectileId: EntityId; ownerKind: 'player' | 'enemy' | 'boss'; weaponArchetypeId: string }
-      | { kind: 'enemyContact'; enemyId: EntityId }                  // активен с 004; контракт — enemy-contact.md
+      | { kind: 'enemyContact'; enemyId: EntityId }                  // active from 004; contract — enemy-contact.md
       | { kind: 'fieldEffect'; fieldEffectId: EntityId; archetypeId: string }
       | { kind: 'statusEffect'; statusKind: string; sourceEntityId: EntityId | null }
-      | { kind: 'environment'; tag: string }                         // зарезервировано: зона/скриптовый урон
-      | { kind: 'boss'; bossId: EntityId; attackId: string };        // активен с 006, [boss-encounter.md](boss-encounter.md)
+      | { kind: 'environment'; tag: string }                         // reserved: zone/scripted damage
+      | { kind: 'boss'; bossId: EntityId; attackId: string };        // active from 006, [boss-encounter.md](boss-encounter.md)
     hitPosition: { x: number; y: number };
   }>;
   ```
 - Active source kinds after story 017 are projectile impact and explosion from `CombatSystem`, enemy contact from [enemy-contact.md](enemy-contact.md), and boss attack damage from [boss-encounter.md](boss-encounter.md). Story 018 activates `fieldEffect` and `statusEffect` sources through dedicated systems. New sources must extend this union explicitly.
-- Damage intents за тик передаются в `HealthDeathSystem` явным списком (по конкретному signature метода), без отдельной глобальной шины событий: один тик — один список.
-- `CombatSystem` не имеет права читать или мутировать HP. Все вычитания выполняет только `HealthDeathSystem`.
-- `HealthDeathSystem` владеет **только decrement HP и death**. Heal (увеличение `hp` в пределах `[0, maxHp]`) под этот контракт не подпадает: единственный санкционированный источник heal на горизонт MVP — `DropSystem` ([drops.md](drops.md)), который мутирует `player.hp` напрямую в фазе pickup, не строит `DamageIntent` и не вызывает `HealthDeathSystem.applyDamage`. Heal не может породить `death`-event, не запускает death hooks и не попадает в общий per-tick damage-список. Если когда-нибудь появится второй источник heal (регенерация, эффект босса), вводится отдельное design-решение об общем heal-канале — но не обходом этого правила «по месту».
+- Per-tick damage intents are passed to `HealthDeathSystem` as an explicit list (through a concrete method signature), without a separate global event bus: one tick, one list.
+- `CombatSystem` must not read or mutate HP. Only `HealthDeathSystem` performs all subtraction.
+- `HealthDeathSystem` owns **only HP decrement and death**. Heal (increasing `hp` within `[0, maxHp]`) is outside this contract: the only sanctioned heal source for the MVP horizon is `DropSystem` ([drops.md](drops.md)), which mutates `player.hp` directly during pickup, does not build `DamageIntent`, and does not call `HealthDeathSystem.applyDamage`. Heal cannot produce a `death` event, does not run death hooks, and does not enter the shared per-tick damage list. If a second heal source ever appears (regeneration, boss effect), a separate design decision introduces a shared heal channel, not a local bypass of this rule.
 
-### Применение урона и фиксация смерти
+### Applying damage and recording death
 
-- За один тик `HealthDeathSystem` обрабатывает intents в порядке поступления:
-  1. для каждой intent: если цель ещё жива, `target.hp = max(0, target.hp − amount)`;
-  2. при переходе `hp > 0 → hp == 0` сущность помечается как «умерла на этом тике»;
-  3. повторные intents в ту же цель в том же тике, пришедшие после её смерти, **игнорируются** — это исключает «пере-убийство» и двойной запуск death hooks.
-- Сущности, помеченные как «умерла на этом тике», образуют упорядоченный список death events для текущего тика.
-- При публикации `death` runtime event `HealthDeathSystem` копирует из финальной `DamageIntent.source` только presentation-safe impact metadata: для projectile-смерти `weaponArchetypeId` и normalized `impactDirX/Y`, для explosion-смерти `weaponArchetypeId` без directional impact, для остальных источников — `null`. Полная форма события зафиксирована в [snapshot-shape.md](snapshot-shape.md), а потребительский смысл — в [impact-feedback.md](impact-feedback.md).
+- Within one tick, `HealthDeathSystem` processes intents in arrival order:
+  1. for each intent: if the target is still alive, `target.hp = max(0, target.hp − amount)`;
+  2. when `hp > 0 → hp == 0`, the entity is marked as "died on this tick";
+  3. repeated intents to the same target later in the same tick after its death are **ignored**, preventing overkill and double death-hook execution.
+- Entities marked as "died on this tick" form an ordered death event list for the current tick.
+- When publishing a `death` runtime event, `HealthDeathSystem` copies only presentation-safe impact metadata from the final `DamageIntent.source`: for projectile death, `weaponArchetypeId` and normalized `impactDirX/Y`; for explosion death, `weaponArchetypeId` without directional impact; for other sources, `null`. Full event shape is defined in [snapshot-shape.md](snapshot-shape.md), and consumer meaning in [impact-feedback.md](impact-feedback.md).
 
 ### Death hooks
 
-- Death hooks регистрируются один раз на старте симуляции (или на старте сессии — в одной точке), не появляются по ходу тика. Зарегистрированный hook остаётся живым между сессиями; своё внутреннее состояние он сбрасывает на `sessionStart`/`sessionStop`.
-- Сигнатура hook:
+- Death hooks are registered once at simulation start (or session start, in one place) and are not added during a tick. A registered hook stays alive between sessions; it resets its own internal state on `sessionStart`/`sessionStop`.
+- Hook signature:
   ```ts
   type DeathContext = Readonly<{
     entityId: EntityId;
     entityKind: 'enemy' | 'player' | 'boss';
-    archetypeId: string | null;          // для enemy/boss; null если архетипа нет
-    position: { x: number; y: number }; // позиция на момент смерти
-    cause: DamageIntent['source'];       // что нанесло финальный удар
-    simTime: number;                     // ms симуляции
+    archetypeId: string | null;          // for enemy/boss; null if there is no archetype
+    position: { x: number; y: number }; // position at death time
+    cause: DamageIntent['source'];       // source of the final blow
+    simTime: number;                     // simulation ms
   }>;
 
   type DeathHook = (ctx: DeathContext) => void;
   ```
-- Минимальные потребители death hooks (зафиксированы здесь как контракт; реализация — по соответствующим историям):
-  - `DropSystem` ([drops.md](drops.md)) — реагирует на смерти врагов: фильтрует по `entityKind === 'enemy'`, при непустой `dropTable` делает один `nextFloat` через session RNG и при выпавшем dropArchetype спавнит `Drop` через `EntityStore.spawnDrop` в позиции `ctx.position`. Полный контракт hook'a — в [drops.md](drops.md); смерть `entityKind === 'boss'` дроп не порождает, если отдельно не оговорено контентом;
-  - `SessionFlowSystem` — session-level hooks на `player` ([session-definition.md](session-definition.md)) и, при `winCondition: bossDefeated`, на смерть босса ([boss-encounter.md](boss-encounter.md));
-  - `RunSummaryTracker` ([session-result-summary.md](session-result-summary.md)) — session-level статистика и progression для результата: счётчики убитых, причина поражения, boss-defeated summary. Его hook должен отработать до hook-ов, которые могут завершить run через `SessionFlowSystem`;
-  - runtime events для HUD/audio/debug — публикация события `death` (см. [snapshot-shape.md](snapshot-shape.md)).
-- Hooks вызываются **синхронно**, в порядке регистрации, для каждой смерти отдельно. Hook не имеет права:
-  - наносить новый урон в том же тике (это создаст цепочку смертей с непредсказуемым порядком и сломает воспроизводимость по `seed`);
-  - модифицировать HP и `EntityStore` для **других** сущностей (создание новых сущностей вроде `Drop` не считается мутацией других — это новые id);
-  - читать состояние сущностей, помеченных к удалению на этом тике, как «живых».
-- Hook **может**: создать новые сущности (например, `DropSystem` спавнит `Drop` в `EntityStore`), записать в свою внутреннюю статистику, опубликовать runtime event (например, `dropSpawn` от `DropSystem`, см. [snapshot-shape.md](snapshot-shape.md)).
+- Minimal death-hook consumers (fixed here as contract; implementation belongs to corresponding stories):
+  - `DropSystem` ([drops.md](drops.md)) reacts to enemy deaths: filters by `entityKind === 'enemy'`, performs one `nextFloat` through session RNG when `dropTable` is non-empty, and spawns `Drop` through `EntityStore.spawnDrop` at `ctx.position` if a dropArchetype rolls. Full hook contract is in [drops.md](drops.md); `entityKind === 'boss'` death does not produce a drop unless content explicitly says so;
+  - `SessionFlowSystem` — session-level hooks for `player` ([session-definition.md](session-definition.md)) and, when `winCondition: bossDefeated`, boss death ([boss-encounter.md](boss-encounter.md));
+  - `RunSummaryTracker` ([session-result-summary.md](session-result-summary.md)) — session-level statistics and progression for results: kill counters, defeat cause, boss-defeated summary. Its hook must run before hooks that may complete the run through `SessionFlowSystem`;
+  - runtime events for HUD/audio/debug — publishing the `death` event (see [snapshot-shape.md](snapshot-shape.md)).
+- Hooks are called **synchronously**, in registration order, separately for each death. A hook must not:
+  - deal new damage in the same tick (this would create death chains with unpredictable order and break reproducibility by `seed`);
+  - mutate HP or `EntityStore` for **other** entities (creating new entities such as `Drop` is not considered mutating others; those are new ids);
+  - read entities marked for removal on this tick as "alive".
+- A hook **may** create new entities (for example, `DropSystem` spawns `Drop` in `EntityStore`), write to its own internal statistics, and publish runtime events (for example, `dropSpawn` from `DropSystem`; see [snapshot-shape.md](snapshot-shape.md)).
 
-### Удаление и порядок внутри тика
+### Removal and order within a tick
 
-- Удаление помеченных сущностей из `EntityStore` выполняется **после** того, как все death hooks для этого тика отработали. Это значит:
-  - на момент работы hook сущность ещё доступна по `entityId`, и hook может прочитать её последнюю позицию;
-  - после удаления сущности её `id` больше не возвращается из `EntityStore` и не попадает в снапшот.
-- Финальный порядок внутри одного тика:
-  1. (внешнее) `CombatSystem` сформировал damage intents;
-  2. `HealthDeathSystem.applyDamage(intents)` — вычисление новых HP, формирование списка смертей;
-  3. публикация runtime events `death` для каждой смерти;
-  4. `HealthDeathSystem.runDeathHooks(deaths)` — синхронные hooks в порядке регистрации;
-  5. `HealthDeathSystem.removeDead()` — удаление сущностей из `EntityStore`;
-  6. дальнейшие системы (`DropSystem`, `ZoneSystem` и т.п.) работают уже на консистентном `EntityStore`, потом — `SnapshotExportSystem`.
-- `SnapshotExportSystem` ([snapshot-shape.md](snapshot-shape.md)) не видит уже удалённую сущность — игрок не успевает увидеть её «лишний кадр».
+- Marked entities are removed from `EntityStore` **after** all death hooks for the tick have run. This means:
+  - while a hook runs, the entity is still available by `entityId`, and the hook can read its final position;
+  - after removal, the entity `id` is no longer returned by `EntityStore` and does not enter snapshots.
+- Final order within one tick:
+  1. (external) `CombatSystem` produced damage intents;
+  2. `HealthDeathSystem.applyDamage(intents)` — compute new HP, build death list;
+  3. publish `death` runtime events for each death;
+  4. `HealthDeathSystem.runDeathHooks(deaths)` — synchronous hooks in registration order;
+  5. `HealthDeathSystem.removeDead()` — remove entities from `EntityStore`;
+  6. later systems (`DropSystem`, `ZoneSystem`, etc.) run on a consistent `EntityStore`, then `SnapshotExportSystem`.
+- `SnapshotExportSystem` ([snapshot-shape.md](snapshot-shape.md)) does not see an already removed entity, so the player does not see an extra frame of it.
 
-### Игрок и player-death (активно с 004)
+### Player and player death (active from 004)
 
-- Игрок получает `HasHealth` (см. выше) и проходит через тот же путь, что и враг: `DamageIntent` → `applyDamage` → возможная смерть на этом тике → death events → death hooks → удаление.
-- `lossCondition: { kind: 'playerDeath' }` ([session-definition.md](session-definition.md)) реализуется через **session-level death hook**: hook регистрируется `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md)) на старте симуляции/сессии, реагирует на `entityKind === 'player'` и инициирует завершение run (публикация `loss`-event и сброс runtime state). Это единственный санкционированный путь loss-by-death; никакая система не имеет права «опережать» этот hook собственной публикацией `loss`.
-- Удаление игрока из `EntityStore` происходит по общему правилу `removeDead()`: после публикации `death`-event и hooks. Это значит, что hook session-level видит позицию игрока на момент смерти. Поведение `EntityStore.player()` после удаления — `null`; `MovementSystem`/`CombatSystem`/`SnapshotExportSystem` обязаны корректно обрабатывать отсутствие игрока (см. ниже).
-- После публикации `loss` `SimulationClock` переводится в idle, дальнейшие тики не выполняются. `SnapshotExportSystem` для следующего расписанного снапшота уже не вызывается; последний валидный снапшот — тот, который был экспортирован в тике смерти (с уже удалённым игроком). HUD реагирует на `loss`-event, а не на «отсутствие игрока в снапшоте».
-- `MovementSystem` и `CombatSystem` обязаны быть толерантны к `player === null`: фаза contact intents и фаза firing decisions становятся no-op. Это не специальное правило 004, а общий контракт «системы не предполагают, что player всегда жив».
+- Player gets `HasHealth` (see above) and goes through the same path as an enemy: `DamageIntent` -> `applyDamage` -> possible death on this tick -> death events -> death hooks -> removal.
+- `lossCondition: { kind: 'playerDeath' }` ([session-definition.md](session-definition.md)) is implemented through a **session-level death hook**: `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md)) registers the hook at simulation/session start, reacts to `entityKind === 'player'`, and initiates run completion (publish `loss` event and reset runtime state). This is the only sanctioned loss-by-death path; no system may "preempt" this hook by publishing its own `loss`.
+- Player removal from `EntityStore` follows the shared `removeDead()` rule: after `death` event publication and hooks. This means the session-level hook sees the player's position at death time. After removal, `EntityStore.player()` returns `null`; `MovementSystem`/`CombatSystem`/`SnapshotExportSystem` must handle absence of player correctly (see below).
+- After publishing `loss`, `SimulationClock` moves to idle and no further ticks run. `SnapshotExportSystem` is not called for the next scheduled snapshot; the last valid snapshot is the one exported on the death tick (with the player already removed). HUD reacts to the `loss` event, not to "player missing in snapshot".
+- `MovementSystem` and `CombatSystem` must tolerate `player === null`: the contact intents phase and firing decisions phase become no-op. This is not a special 004 rule, but the general contract that systems do not assume player is always alive.
 
 ## Consequences
 
-- HP и его мутация остаются в одной точке; багов вида «-1 HP в `CombatSystem` и -1 HP в `BossPhaseSystem`» по построению быть не может.
-- Death hooks фиксируют форму обмена для 005/006 заранее; добавление `DropSystem` не потребует переоткрывать порядок тика.
-- Запрет на «новый урон внутри hook» сохраняет детерминизм относительно `seed`: цепочка смертей в один тик невозможна.
-- `EntityStore` остаётся owner-ом lifecycle сущностей, но удаление инициируется только `HealthDeathSystem` для damageable-сущностей; для снарядов и дропа удалением владеют их собственные системы ([projectiles-and-combat.md](projectiles-and-combat.md), [drops.md](drops.md)).
-- Когда у игрока появится HP, новых архитектурных решений не потребуется — переиспользуются те же intents и hooks.
+- HP and its mutation stay in one place; bugs like "-1 HP in `CombatSystem` and -1 HP in `BossPhaseSystem`" are structurally prevented.
+- Death hooks define the exchange shape for 005/006 in advance; adding `DropSystem` does not require reopening tick order.
+- The ban on "new damage inside hook" preserves determinism relative to `seed`: death chains within one tick are impossible.
+- `EntityStore` remains the owner of entity lifecycle, but removal is initiated only by `HealthDeathSystem` for damageable entities; projectiles and drops are removed by their own systems ([projectiles-and-combat.md](projectiles-and-combat.md), [drops.md](drops.md)).
+- When the player gets HP, no new architecture decision is needed; the same intents and hooks are reused.
 
 ## Related
 

@@ -6,47 +6,47 @@
 
 ## Context
 
-В [runtime-systems.md](runtime-systems.md) уже зафиксированы `BossPhaseSystem` и owner runtime event «phase change». В [session-definition.md](session-definition.md) для `winCondition: { kind: 'bossDefeated' }` указано, что конкретный путь реализации остаётся для истории 006. В [spawn-plan.md](spawn-plan.md) вид `'boss'` отложен до 006. В [snapshot-shape.md](snapshot-shape.md) сущность с `kind: 'boss'` отложена до 006. В [health-and-death.md](health-and-death.md) активирован только `DamageIntent.source.kind === 'projectile'` и `'enemyContact'`; ветка `'boss'` зарезервирована.
+[runtime-systems.md](runtime-systems.md) already defines `BossPhaseSystem` and the owner runtime event for phase changes. [session-definition.md](session-definition.md) says that the concrete implementation path for `winCondition: { kind: 'bossDefeated' }` belongs to story 006. [spawn-plan.md](spawn-plan.md) leaves the `'boss'` kind for 006. [snapshot-shape.md](snapshot-shape.md) leaves the `kind: 'boss'` entity for 006. [health-and-death.md](health-and-death.md) activates only `DamageIntent.source.kind === 'projectile'` and `'enemyContact'`; the `'boss'` branch is reserved.
 
-Без явного решения история 006 закрепит расхождения: босс как «большой враг», двойная публикация `win`, или нестыковка `SpawnSystem` и encounter transitions с session-level победой.
+Without an explicit decision, story 006 may lock in divergence: boss as "large enemy", duplicate `win` publication, or mismatch between `SpawnSystem`, encounter transitions, and session-level victory.
 
-Ограничения продукта — [../docs/BOSS.md](../docs/BOSS.md).
+Product constraints are in [../docs/BOSS.md](../docs/BOSS.md).
 
 ## Decision
 
-### Сущность босса в runtime
+### Boss entity in runtime
 
-- Босс — это отдельный `kind` runtime-сущности **`'boss'`**, не замена `enemy`. У босса есть `HasHealth` по тем же полям `hp`/`maxHp`, что у `enemy` ([health-and-death.md](health-and-death.md)); `maxHp` берётся из `BossArchetype` ([content-archetypes.md](content-archetypes.md)).
-- Резолв архетипа — по стабильному `id` из реестра `bosses` в `content library`; ссылки в данных сессии только по `id` ([content-boundaries.md](content-boundaries.md)).
+- Boss is a separate runtime entity `kind`, **`'boss'`**, not a replacement for `enemy`. Boss has `HasHealth` with the same `hp`/`maxHp` fields as `enemy` ([health-and-death.md](health-and-death.md)); `maxHp` comes from `BossArchetype` ([content-archetypes.md](content-archetypes.md)).
+- Archetype resolution uses the stable `id` from the `bosses` registry in the `content library`; session data references it only by `id` ([content-boundaries.md](content-boundaries.md)).
 
 ### SpawnPlan kind `'boss'`
 
-- Форма и семантика зафиксированы в разделе «Boss spawn» в [spawn-plan.md](spawn-plan.md): ровно один спавн босса при старте encounter, без повторного диспатча по тикам.
-- `EncounterDefinition` для боя с боссом имеет `type: 'boss'` и `spawnPlan.kind: 'boss'`; `transitionRules` для завершения encounter после убийства босса — `{ kind: 'allEnemiesCleared' }` (как для волны: план исчерпан и не осталось живых сущностей из плана — см. [spawn-plan.md](spawn-plan.md), [session-definition.md](session-definition.md)).
+- Shape and semantics are defined in the "Boss spawn" section of [spawn-plan.md](spawn-plan.md): exactly one boss spawn at encounter start, with no repeated dispatch on ticks.
+- `EncounterDefinition` for boss combat has `type: 'boss'` and `spawnPlan.kind: 'boss'`; `transitionRules` for ending the encounter after killing the boss are `{ kind: 'allEnemiesCleared' }` (same as a wave: the plan is exhausted and no live entity from the plan remains; see [spawn-plan.md](spawn-plan.md), [session-definition.md](session-definition.md)).
 
-### Зона
+### Zone
 
-- Для encounter с боссом выставляется `zoneBehavior: { kind: 'disabled' }` ([session-definition.md](session-definition.md), [zone.md](zone.md)): `margin = 0`, зона не сжимается.
+- Boss encounters use `zoneBehavior: { kind: 'disabled' }` ([session-definition.md](session-definition.md), [zone.md](zone.md)): `margin = 0`, zone does not shrink.
 
 ### BossPhaseSystem
 
-- `BossPhaseSystem` владеет **переходами фаз** по полям `BossArchetype.phases[].exitWhenHpFractionAtOrBelow` и спискам `allowedAttackIds` ([content-archetypes.md](content-archetypes.md)), а также **выбором и исполнением атак** босса в своей фазе update order ([runtime-systems.md](runtime-systems.md)).
-- Урон от атак босса к игроку формируется только через `DamageIntent` с `source: { kind: 'boss'; bossId: EntityId; attackId: string }` ([health-and-death.md](health-and-death.md)); кулдауны и выбор `attackId` — ответственность `BossPhaseSystem`, без дублирования списания HP вне `HealthDeathSystem`.
-- Контакт игрока с боссом следует [enemy-contact.md](enemy-contact.md): та же фаза contact intents в `CombatSystem`, те же поля урона и кулдауна на архетипе; в `DamageIntent.source` используется `kind: 'enemyContact'` и поле `enemyId`, равное `entityId` сущности босса (имя поля историческое). Коллизии обрабатываются для сущности `kind: 'boss'` параллельно `enemy`, параметры берутся из `BossArchetype`.
+- `BossPhaseSystem` owns **phase transitions** using `BossArchetype.phases[].exitWhenHpFractionAtOrBelow` and `allowedAttackIds` lists ([content-archetypes.md](content-archetypes.md)), and also owns **boss attack selection and execution** in its update-order phase ([runtime-systems.md](runtime-systems.md)).
+- Boss attack damage to the player is produced only through `DamageIntent` with `source: { kind: 'boss'; bossId: EntityId; attackId: string }` ([health-and-death.md](health-and-death.md)); cooldowns and `attackId` selection are `BossPhaseSystem` responsibility, with no duplicate HP subtraction outside `HealthDeathSystem`.
+- Player contact with boss follows [enemy-contact.md](enemy-contact.md): the same contact-intents phase in `CombatSystem`, the same archetype damage and cooldown fields; `DamageIntent.source` uses `kind: 'enemyContact'` and `enemyId` equal to the boss entity id (the field name is historical). Collisions are handled for `kind: 'boss'` entities alongside `enemy`, with parameters taken from `BossArchetype`.
 
-### Победа `bossDefeated`
+### `bossDefeated` victory
 
-- Если `SessionDefinition.winCondition.kind === 'bossDefeated'`, `SessionFlowSystem` регистрирует **session-level death hook** (та же точка регистрации, что и для смерти игрока — [health-and-death.md](health-and-death.md)): при `ctx.entityKind === 'boss'` и совпадении `ctx.entityId` с идентификатором босса текущей сессии (единственная сущность `kind: 'boss'`, заспавненная в boss-encounter, либо явное поле runtime state «activeBossEntityId», выставляемое при спавне) публикуется **`win` ровно один раз** и выполняется тот же teardown run, что и для прочих побед ([session-definition.md](session-definition.md)).
-- В одном `SessionDefinition` **не комбинируют** `winCondition: { kind: 'bossDefeated' }` с `{ kind: 'allEncountersComplete' }`: для пресета «волны → босс» используется только **`bossDefeated`**. Победа определяется смертью босса, а не отдельным «последним encounterEnd» как альтернативным триггером `win`.
+- If `SessionDefinition.winCondition.kind === 'bossDefeated'`, `SessionFlowSystem` registers a **session-level death hook** (same registration point as player death — [health-and-death.md](health-and-death.md)): when `ctx.entityKind === 'boss'` and `ctx.entityId` matches the current session boss id (the single `kind: 'boss'` entity spawned in the boss encounter, or an explicit runtime-state field `activeBossEntityId` set at spawn), **`win` is published exactly once**, followed by the same run teardown as other victories ([session-definition.md](session-definition.md)).
+- A single `SessionDefinition` must **not combine** `winCondition: { kind: 'bossDefeated' }` with `{ kind: 'allEncountersComplete' }`: the "waves → boss" preset uses only **`bossDefeated`**. Victory is defined by boss death, not by a separate "last encounterEnd" as an alternative `win` trigger.
 
-### Снапшот и события
+### Snapshot and events
 
-- Форма `BossSnapshot`, расширения top-level снапшота и runtime event смены фазы — в [snapshot-shape.md](snapshot-shape.md). Публикация события смены фазы — владение `BossPhaseSystem` ([runtime-systems.md](runtime-systems.md)).
+- `BossSnapshot` shape, top-level snapshot extensions, and the phase-change runtime event are in [snapshot-shape.md](snapshot-shape.md). Publishing the phase-change event is owned by `BossPhaseSystem` ([runtime-systems.md](runtime-systems.md)).
 
 ## Consequences
 
-- Игрок стреляет по боссу как по отдельному kind в hit-detection; в снапшоте и событиях появляется явный `'boss'` там, где раньше был только `'enemy'` ([snapshot-shape.md](snapshot-shape.md), при необходимости [projectiles-and-combat.md](projectiles-and-combat.md)).
-- Контентный пресет кампании обязан задать цепочку encounter-ов и `winCondition: bossDefeated` согласованно; ошибка сборки предпочтительнее двусмысленности на runtime.
+- The player shoots the boss as a separate kind in hit detection; snapshots and events get explicit `'boss'` where only `'enemy'` existed before ([snapshot-shape.md](snapshot-shape.md), and [projectiles-and-combat.md](projectiles-and-combat.md) if needed).
+- The campaign content preset must define its encounter chain and `winCondition: bossDefeated` consistently; build-time failure is preferred to runtime ambiguity.
 
 ## Related
 

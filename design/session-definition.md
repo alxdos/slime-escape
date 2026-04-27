@@ -2,20 +2,20 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-26 (story 021: `SessionDefinition` получает обязательное поле `musicSampleId: string | null`; `EncounterDefinition` получает обязательные presentation-поля `introDurationMs`/`name`/`text` — форма, парные ограничения по `type` и intro delay contract фиксируются в [encounter-presentation.md](encounter-presentation.md); валидация `musicSampleId` — в [audio.md](audio.md). Earlier: 2026-04-25 story 019: per-`seq` записи `spawnPlan` `'static'`/`'wave'` несут optional `SpawnOverride`, форма и семантика — [spawn-overrides.md](spawn-overrides.md); `EncounterDefinition` структурно не меняется. Earlier: 2026-04-24 cleanup pass: legacy `{ primaryWeaponArchetypeId }` `loadout` no longer mentioned as a current shape; only the ordered form remains. 017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules and player maxHp.)
+- Updated: 2026-04-26 (story 021: `SessionDefinition` gets a required `musicSampleId: string | null` field; `EncounterDefinition` gets required presentation fields `introDurationMs`/`name`/`text`; their shape, type-paired constraints, and intro delay contract are defined in [encounter-presentation.md](encounter-presentation.md); `musicSampleId` validation is in [audio.md](audio.md). Earlier: 2026-04-25 story 019: per-`seq` entries in `'static'`/`'wave'` `spawnPlan` carry optional `SpawnOverride`, with shape and semantics in [spawn-overrides.md](spawn-overrides.md); `EncounterDefinition` does not change structurally. Earlier: 2026-04-24 cleanup pass: legacy `{ primaryWeaponArchetypeId }` `loadout` no longer mentioned as a current shape; only the ordered form remains. 017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules, and player maxHp.)
 
 ## Context
 
-Игровой runtime должен запускать не один жёстко зашитый сценарий, а внешне заданную сессию. Это нужно для базовой кампании, тренировок, challenge-режимов и будущих вариаций без переписывания `core runtime`.
+The game runtime must run an externally defined session, not one hardcoded scenario. This is needed for the base campaign, training, challenge modes, and future variants without rewriting `core runtime`.
 
 ## Decision
 
-- `core runtime` не знает о конкретном сценарии вроде "3 волны и затем босс".
-- Каждый запуск описывается объектом `SessionDefinition`.
-- `SessionDefinition` собирается снаружи из `ModePreset`, пользовательских опций и `content library`.
-- `ModePreset` задаёт дефолтную форму режима, но не является authoritative runtime-объектом.
-- Пользовательские опции и challenge-ограничения модифицируют preset на этапе сборки сессии, после чего runtime получает только итоговый `SessionDefinition`.
-- Базовый набор полей `SessionDefinition`:
+- `core runtime` does not know about a concrete scenario such as "3 waves, then a boss".
+- Every run is described by a `SessionDefinition` object.
+- `SessionDefinition` is assembled externally from `ModePreset`, user options, and the `content library`.
+- `ModePreset` defines the default shape of a mode, but is not an authoritative runtime object.
+- User options and challenge restrictions modify the preset during session build; runtime receives only the resulting `SessionDefinition`.
+- Base `SessionDefinition` fields:
 
 ```js
 {
@@ -35,21 +35,21 @@
 }
 ```
 
-- `encounters` - это упорядоченный список `EncounterDefinition`.
-- `backgrounds` — session-level таблица визуальных фонов, доступных encounter'ам. Элемент имеет форму `{ id: string; imageUrl: string }`, где `imageUrl` — уже public-relative URL (`/images/bg/...`), пришедший из content library. Список immutable на время сессии, так же как остальные поля `SessionDefinition`.
-- `musicSampleId` — session-level выбор обычной (не-boss) музыки. Значение — либо `null` (silent regular music на всю сессию, например для sandbox/dev-режимов), либо строковый sampleId, обязанный существовать в `SampleRegistry` с `category: 'music'`; валидация и правила плейбэка (boss override, pause ducking, loop) фиксируются в [audio.md](audio.md). Поле обязательное и immutable на время сессии; builder обязан выставить либо `null`, либо известный music-sampleId — отсутствие поля или неизвестный id запрещены по тому же правилу «без двух разных нет данных», что и для остальных обязательных полей.
-- `SessionDefinition` после старта сессии считается immutable runtime-контрактом.
-- Стабильными частями контракта считаются имена верхнеуровневых полей, общий смысл `EncounterDefinition`, а также модели `winCondition` / `lossCondition`.
-- Допускается эволюция внутренних структур вроде `spawnPlan`, `rewardRules` и `tuning`, если она не ломает верхнеуровневую модель сборки сессии.
-- Минимальная форма обязательных полей:
-  - `arena` — прямоугольник `{ width, height }` в world-units (см. [arena-and-coordinates.md](arena-and-coordinates.md)). Конкретные значения задаются в `content library` ([content-boundaries.md](content-boundaries.md)).
-- `player` — стартовое описание игрока в виде `{ position: { x, y }, radius, contactBox, maxSpeed, maxHp }`, где координаты и размеры — в world-units, скорость — в world-units в секунду, `maxHp` — целое > 0 (источник `HasHealth` из [health-and-death.md](health-and-death.md)). `contactBox` — axis-aligned body footprint для body-contact и player clamp по [body-contact-boxes.md](body-contact-boxes.md). Для preset, в которых игрок не damageable (sandbox без боя), `maxHp` всё равно задаётся явно — отсутствие поля запрещено по тому же правилу «без двух разных «нет данных», что и для других обязательных полей. Дополнительные поля (статус-эффекты, инвентарь) могут добавляться отдельными решениями без слома верхнеуровневой модели.
-  - `seed` — целочисленное значение, единственный источник детерминизма для RNG в симуляции; источники недетерминированного времени/случайности вне `seed` запрещены.
-  - `id` — стабильный строковый идентификатор сессии для логов и debug.
-- Поля `loadout`, `modifiers`, `rules`, `uiMeta` остаются в контракте как стабильные имена; их внутренняя структура и обязательность зависят от preset и могут эволюционировать. Builder обязан явно выставить осмысленное значение или `null`/пустой объект — отсутствие поля как такового запрещено, чтобы потребители не разбирали два разных «нет данных».
-- Минимальная форма `loadout`:
-  - `null` — у preset-а нет встроенного оружия (sandbox без боя, чисто исследовательские bring-up);
-  - `Loadout` — preset имеет хотя бы одно оружие; форма `Loadout` фиксируется в [content-archetypes.md](content-archetypes.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md): `{ weapons: string[]; selectedIndex: number | null }`.
+- `encounters` is an ordered list of `EncounterDefinition`.
+- `backgrounds` is a session-level table of visual backgrounds available to encounters. Each item has shape `{ id: string; imageUrl: string }`, where `imageUrl` is already a public-relative URL (`/images/bg/...`) from the content library. The list is immutable during a session, like the other `SessionDefinition` fields.
+- `musicSampleId` is the session-level selection for regular (non-boss) music. The value is either `null` (silent regular music for the whole session, for example sandbox/dev modes) or a string sampleId that must exist in `SampleRegistry` with `category: 'music'`; validation and playback rules (boss override, pause ducking, loop) are defined in [audio.md](audio.md). The field is required and immutable during the session; the builder must set either `null` or a known music sampleId. Missing field or unknown id are forbidden by the same "no two ways to say no data" rule as other required fields.
+- After session start, `SessionDefinition` is considered an immutable runtime contract.
+- Stable parts of the contract are the top-level field names, the general meaning of `EncounterDefinition`, and the `winCondition` / `lossCondition` models.
+- Internal structures such as `spawnPlan`, `rewardRules`, and `tuning` may evolve as long as they do not break the top-level session assembly model.
+- Minimal required field shape:
+  - `arena` — rectangle `{ width, height }` in world units (see [arena-and-coordinates.md](arena-and-coordinates.md)). Concrete values are defined in the `content library` ([content-boundaries.md](content-boundaries.md)).
+- `player` is the initial player description as `{ position: { x, y }, radius, contactBox, maxSpeed, maxHp }`, where coordinates and sizes are in world units, speed is in world units per second, and `maxHp` is an integer > 0 (source of `HasHealth` from [health-and-death.md](health-and-death.md)). `contactBox` is the axis-aligned body footprint for body contact and player clamp per [body-contact-boxes.md](body-contact-boxes.md). For presets where the player is not damageable (sandbox without combat), `maxHp` is still set explicitly; omitting the field is forbidden by the same "no two ways to say no data" rule as other required fields. Additional fields (status effects, inventory) may be added by separate decisions without breaking the top-level model.
+  - `seed` — integer value, the only source of RNG determinism in simulation; nondeterministic time/randomness sources outside `seed` are forbidden.
+  - `id` — stable string session identifier for logs and debug.
+- `loadout`, `modifiers`, `rules`, and `uiMeta` remain in the contract as stable names; their internal shape and requiredness depend on the preset and may evolve. The builder must explicitly set a meaningful value, `null`, or an empty object; omitting the field itself is forbidden so consumers do not need to distinguish two forms of "no data".
+- Minimal `loadout` shape:
+  - `null` — the preset has no built-in weapon (sandbox without combat, pure exploratory bring-up);
+  - `Loadout` — the preset has at least one weapon; `Loadout` shape is defined in [content-archetypes.md](content-archetypes.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md): `{ weapons: string[]; selectedIndex: number | null }`.
 - `rules` remains the session-owned place for gameplay switches. Story 017 requires:
   ```ts
   type SessionRules = Readonly<{
@@ -59,7 +59,7 @@
   }>;
   ```
   `slimeFriendlyFire` is immutable for the run and is consumed by `CombatSystem` and future field/status systems via the shared damage-rule helper.
-- Базовый набор полей `EncounterDefinition`:
+- Base `EncounterDefinition` fields:
 
 ```js
 {
@@ -78,57 +78,57 @@
 }
 ```
 
-- Presentation-поля `introDurationMs: number`, `name: string | null` и `text: string | null` — плоская форма, обязательные, парные ограничения по `type` и intro delay contract для sim/UI фиксируются в [encounter-presentation.md](encounter-presentation.md). Этот файл закрепляет только то, что поля входят в `EncounterDefinition` как стабильные имена и присутствуют у любого encounter, включая sandbox/bring-up.
+- Presentation fields `introDurationMs: number`, `name: string | null`, and `text: string | null` are flat and required; type-paired constraints and the intro delay contract for sim/UI are defined in [encounter-presentation.md](encounter-presentation.md). This file only records that these fields are stable names in `EncounterDefinition` and are present on every encounter, including sandbox/bring-up.
 
-- `spawnPlan` описывает данные для `SpawnSystem`, а не конкретный код спавна. Форма `spawnPlan` (дискриминированный union, набор `kind`, правила расширения, `'empty'`/`'static'`/`'wave'`/`'boss'`, optional `SpawnOverride` per-`seq` для `'static'`/`'wave'`) фиксируется отдельными решениями [spawn-plan.md](spawn-plan.md) и [spawn-overrides.md](spawn-overrides.md). Будущие категории `kind` и новые поля `SpawnOverride` добавляются туда же, без изменения этого файла.
-- `backgroundId` — явная ссылка на один из `SessionDefinition.backgrounds[].id` или `null`, если encounter не задаёт фон. Для player-facing `wave`/`break`/`boss` encounter'ов background обязателен на уровне content-authoring; sandbox/bring-up encounter'ы могут использовать `null` или тестовый фон. Симуляция не читает это поле; оно принадлежит presentation/runtime-конфигу, который main уже получил вместе с immutable `SessionDefinition`.
-- `zoneBehavior` — дискриминированный union по `kind`. Конкретная семантика и поведение `ZoneSystem` фиксируются в [zone.md](zone.md); этот файл закрепляет только форму поля и набор `kind`:
-  - `{ kind: 'disabled' }` — зона отступлена и не двигается, `margin = 0` весь encounter;
-  - `{ kind: 'shrinkLinear'; fromMargin: number; toMargin: number; durationMs: number }` — линейное сжатие за `durationMs`, `from`/`to` в `[0, maxMargin]`, `durationMs > 0`;
-  - `{ kind: 'expandLinear'; fromMargin: number; toMargin: number; durationMs: number }` — линейное расширение, та же форма полей.
-  Расширения (per-side, окружность, нелинейные кривые) — отдельные решения и новые `kind`, не «дописывание» существующих.
-- `objectives` описывают, что должно быть достигнуто внутри encounter. На горизонт MVP `objectives` остаётся зарезервированным полем без обязательной формы; принятие решения о завершении encounter принадлежит `transitionRules`. Минимальные смысловые категории, ожидаемые в будущем: очистка врагов, выживание по таймеру, убийство босса, переход по внешнему условию.
-- `transitionRules` описывают, когда encounter завершается и что происходит дальше. Дискриминированный union по `kind`; набор `kind` на горизонт MVP:
-  - `{ kind: 'never' }` — encounter не завершается автоматически (sandbox);
-  - `{ kind: 'allEnemiesCleared' }` — encounter завершается, когда `SpawnSystem` диспатчил все запланированные сущности и в `EntityStore` не осталось ни одной живой сущности из `aliveFromThisPlan` ([spawn-plan.md](spawn-plan.md)). Для `spawnPlan: { kind: 'empty' }` это правило срабатывает мгновенно — намеренно: пустые wave-encounter без спавна не должны блокировать flow;
-  - `{ kind: 'timer'; durationMs: number }` — encounter завершается, когда `simTime − encounterStartSimMs >= durationMs`. Используется для `break`-encounter (передышек).
-  Дополнительно у `transitionRules` есть стабильное поле `next: 'sequential' | { kind: 'byId'; id: string }`. По умолчанию `'sequential'` — следующий encounter берётся по индексу из `SessionDefinition.encounters`. Если следующего нет, encounter считается **последним**, и `SessionFlowSystem` инициирует завершение run согласно `winCondition` (см. ниже).
-  Опциональные «передышка между encounter» и «runtime events на переходе» намеренно не вводятся в форму `transitionRules`: первая выражается отдельным `break`-encounter с `transitionRules: { kind: 'timer' }`, вторые покрываются уже зафиксированными lifecycle-events `encounterStart`/`encounterEnd` ([runtime-systems.md](runtime-systems.md)).
-- `winCondition` и `lossCondition` задаются на уровне всей сессии, а не отдельных story-реализаций.
-- Минимальные категории `winCondition`: `{ kind: 'allEncountersComplete' }`, `{ kind: 'bossDefeated' }`, `{ kind: 'scenarioCondition' }`, **`{ kind: 'none' }`** — у сессии в принципе нет автоматического условия победы (sandbox, free-roam, dev-режимы).
-- Минимальные категории `lossCondition`: `{ kind: 'playerDeath' }`, `{ kind: 'timerOrScenarioFail' }`, `{ kind: 'forced' }`, **`{ kind: 'none' }`** — у сессии нет автоматического условия поражения (sandbox; завершение возможно только через `stopSession`).
-- `winCondition` и `lossCondition` остаются обязательными полями `SessionDefinition`. Категория `none` задаётся явно, чтобы исключить «забыл выставить условие» от «осознанно условия нет». `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md)) при категории `none` не должен генерировать соответствующее win/loss событие самостоятельно.
-- Семантика активных категорий, реализуемая `SessionFlowSystem`:
-  - `winCondition: { kind: 'allEncountersComplete' }` — `win` публикуется ровно один раз, после `encounterEnd` последнего encounter в `encounters` (когда `transitionRules.next` упирается в «следующего нет»);
-  - `winCondition: { kind: 'bossDefeated' }` — победа через session-level death hook на сущность `kind: 'boss'` при соблюдении условий из [boss-encounter.md](boss-encounter.md); не смешивается с `allEncountersComplete` в одном `SessionDefinition`;
-  - `lossCondition: { kind: 'playerDeath' }` — `SessionFlowSystem` регистрирует session-level death hook, реагирующий на `entityKind === 'player'` ([health-and-death.md](health-and-death.md)), и публикует `loss` ровно один раз;
-  - после публикации `win` или `loss` `SessionFlowSystem` корректно завершает run: дальнейшие encounter transitions не выполняются, clock переводится в idle, runtime state сбрасывается тем же путём, что и при `stopSession`. Дальнейший запуск возможен только через новый `startSession`.
-- `win`/`loss` события — единственный способ, которым `main` узнаёт об автоматическом завершении сессии. Параллельно с публикацией события `SessionFlowSystem` обязан вызвать тот же сброс runtime state, что и `stopSession`, чтобы `main` мог реагировать на событие без явного `stopSession` в ответ. Конкретная форма событий — в [snapshot-shape.md](snapshot-shape.md).
-- `ModePreset` - это внешний preset, который готовит дефолтную сессию, но не исполняется сам по себе.
-- Минимальные preset-режимы:
-  - `campaign` - 3 волны, передышки, финальный босс;
-  - `training` - короткий тренировочный забег без босса. На горизонт истории 004 фиксируется минимальная форма: ровно два wave-encounter с break-encounter между ними (`wave1 → break → wave2`), боевой `loadout` в актуальной ordered-форме, `winCondition: { kind: 'allEncountersComplete' }`, `lossCondition: { kind: 'playerDeath' }`. Конкретные числовые параметры волн (состав, темп, лимит, длительность break, числа `zoneBehavior`) — содержимое `content library` ([content-boundaries.md](content-boundaries.md)) и не часть этого решения. Расширение `training` на 3+ волн или другую структуру допустимо без правки этого файла, если форма preset-id остаётся прежней;
-  - `pistolOnly` - стартовая экипировка ограничена пистолетом;
-  - `sandbox` - один encounter типа `sandbox` без win/loss-условий и без встроенного оружия (`loadout: null`), используется для bring-up историй, не требующих боевого стека;
-  - `sandbox-with-combat` - вариант sandbox, у которого есть ordered `Loadout` и `spawnPlan: { kind: 'static' }` для bring-up боевых сущностей (например, тренировочной мишени из [../stories/003-combat-foundation.md](../stories/003-combat-foundation.md)). Соблюдает все правила sandbox-encounter ниже: `winCondition: none`, `lossCondition: none`, единственный способ выйти — внешний `stopSession`.
-- Список «Минимальных preset-режимов» расширяется по мере появления историй; новые preset-режимы фиксируются в этом файле и не вводятся «по месту» в `src/shared/content/**`. Удаление существующего preset-id оформляется через `superseded`/обновление этого файла.
-- Encounter типа `sandbox` имеет следующую минимальную форму:
-  - `spawnPlan` — `{ kind: 'empty' }` или `{ kind: 'static' }` (см. [spawn-plan.md](spawn-plan.md)); другие `kind` (`'wave'`, `'boss'`, …) в sandbox-encounter запрещены, потому что подразумевают автоматические переходы и завершение, которые sandbox-семантика исключает.
-  - `objectives` — пустой список или эквивалентный «целей нет».
-  - `transitionRules` — правило «encounter не завершается автоматически»; единственный способ выйти из sandbox-сессии — внешний `stopSession`.
-  - `zoneBehavior`, `rewardRules`, `tuning` могут быть пустыми/нейтральными.
-  - Sandbox-сессия обязана иметь `winCondition: none` и `lossCondition: none`; иные комбинации с sandbox-encounter-ом запрещены, так как они недостижимы по семантике.
-  - Static-спавн в sandbox-encounter оправдан как bring-up: тренировочные сущности для разработки систем (например, мишень в 003), а не игровой контент.
-- Пользовательские challenge-ограничения добавлять через `modifiers`, а не отдельными ветками в runtime.
-- Базовая кампания остаётся preset-режимом. Конкретная форма списка encounter-ов для кампании может эволюционировать, но должна описываться данными сессии, а не логикой `SessionFlowSystem`.
+- `spawnPlan` describes data for `SpawnSystem`, not concrete spawn code. `spawnPlan` shape (discriminated union, set of `kind`, extension rules, `'empty'`/`'static'`/`'wave'`/`'boss'`, optional per-`seq` `SpawnOverride` for `'static'`/`'wave'`) is defined by separate decisions: [spawn-plan.md](spawn-plan.md) and [spawn-overrides.md](spawn-overrides.md). Future `kind` categories and new `SpawnOverride` fields are added there, without changing this file.
+- `backgroundId` is an explicit reference to one of `SessionDefinition.backgrounds[].id` or `null` if the encounter does not define a background. For player-facing `wave`/`break`/`boss` encounters, a background is required at the content-authoring level; sandbox/bring-up encounters may use `null` or a test background. Simulation does not read this field; it belongs to presentation/runtime config that main already received with immutable `SessionDefinition`.
+- `zoneBehavior` is a discriminated union by `kind`. Concrete semantics and `ZoneSystem` behavior are defined in [zone.md](zone.md); this file records only the field shape and set of `kind` values:
+  - `{ kind: 'disabled' }` — the zone is retracted and does not move, `margin = 0` for the whole encounter;
+  - `{ kind: 'shrinkLinear'; fromMargin: number; toMargin: number; durationMs: number }` — linear shrink over `durationMs`, `from`/`to` in `[0, maxMargin]`, `durationMs > 0`;
+  - `{ kind: 'expandLinear'; fromMargin: number; toMargin: number; durationMs: number }` — linear expansion with the same field shape.
+  Extensions (per-side, circle, nonlinear curves) are separate decisions and new `kind` values, not additions to existing ones.
+- `objectives` describes what must be achieved inside the encounter. For the MVP horizon, `objectives` remains a reserved field without a required shape; encounter completion decisions belong to `transitionRules`. Expected future meaning categories: clear enemies, survive by timer, kill boss, transition by external condition.
+- `transitionRules` describes when an encounter ends and what happens next. It is a discriminated union by `kind`; MVP-horizon `kind` values:
+  - `{ kind: 'never' }` — encounter does not end automatically (sandbox);
+  - `{ kind: 'allEnemiesCleared' }` — encounter ends when `SpawnSystem` has dispatched all planned entities and `EntityStore` has no live entity from `aliveFromThisPlan` ([spawn-plan.md](spawn-plan.md)). For `spawnPlan: { kind: 'empty' }`, this rule fires immediately, intentionally: empty wave encounters without spawns must not block flow;
+  - `{ kind: 'timer'; durationMs: number }` — encounter ends when `simTime − encounterStartSimMs >= durationMs`. Used for `break` encounters.
+  `transitionRules` also has a stable field `next: 'sequential' | { kind: 'byId'; id: string }`. By default, `'sequential'` means the next encounter is taken by index from `SessionDefinition.encounters`. If there is no next encounter, the encounter is treated as **last**, and `SessionFlowSystem` initiates run completion according to `winCondition` (see below).
+  Optional "break between encounters" and "runtime events on transition" are intentionally not added to `transitionRules`: the first is expressed as a separate `break` encounter with `transitionRules: { kind: 'timer' }`, and the second is covered by the already defined lifecycle events `encounterStart`/`encounterEnd` ([runtime-systems.md](runtime-systems.md)).
+- `winCondition` and `lossCondition` are defined at the whole-session level, not by individual story implementations.
+- Minimal `winCondition` categories: `{ kind: 'allEncountersComplete' }`, `{ kind: 'bossDefeated' }`, `{ kind: 'scenarioCondition' }`, **`{ kind: 'none' }`** — the session has no automatic victory condition at all (sandbox, free-roam, dev modes).
+- Minimal `lossCondition` categories: `{ kind: 'playerDeath' }`, `{ kind: 'timerOrScenarioFail' }`, `{ kind: 'forced' }`, **`{ kind: 'none' }`** — the session has no automatic loss condition (sandbox; completion is possible only through `stopSession`).
+- `winCondition` and `lossCondition` remain required `SessionDefinition` fields. The `none` category is explicit to separate "forgot to set a condition" from "intentionally no condition". `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md)) must not generate the corresponding win/loss event automatically for `none`.
+- Active category semantics implemented by `SessionFlowSystem`:
+  - `winCondition: { kind: 'allEncountersComplete' }` — `win` is published exactly once, after `encounterEnd` of the last encounter in `encounters` (when `transitionRules.next` reaches "no next encounter");
+  - `winCondition: { kind: 'bossDefeated' }` — victory through a session-level death hook on an entity `kind: 'boss'`, under the conditions from [boss-encounter.md](boss-encounter.md); it is not mixed with `allEncountersComplete` in one `SessionDefinition`;
+  - `lossCondition: { kind: 'playerDeath' }` — `SessionFlowSystem` registers a session-level death hook that reacts to `entityKind === 'player'` ([health-and-death.md](health-and-death.md)) and publishes `loss` exactly once;
+  - after publishing `win` or `loss`, `SessionFlowSystem` ends the run correctly: no further encounter transitions run, the clock moves to idle, and runtime state resets through the same path as `stopSession`. A further run can start only through a new `startSession`.
+- `win`/`loss` events are the only way `main` learns about automatic session completion. While publishing the event, `SessionFlowSystem` must also perform the same runtime-state reset as `stopSession`, so `main` can react to the event without sending an explicit `stopSession` in response. The concrete event shape is in [snapshot-shape.md](snapshot-shape.md).
+- `ModePreset` is an external preset that prepares a default session but is not executed by itself.
+- Minimal preset modes:
+  - `campaign` — 3 waves, breaks, final boss;
+  - `training` — a short training run without a boss. For the story 004 horizon, the minimal shape is exactly two wave encounters with a break encounter between them (`wave1 → break → wave2`), combat `loadout` in the current ordered shape, `winCondition: { kind: 'allEncountersComplete' }`, and `lossCondition: { kind: 'playerDeath' }`. Concrete numeric wave parameters (composition, pace, limit, break duration, `zoneBehavior` numbers) are `content library` content ([content-boundaries.md](content-boundaries.md)) and not part of this decision. Extending `training` to 3+ waves or another structure is allowed without editing this file if the preset id shape stays the same;
+  - `pistolOnly` — starting loadout is limited to the pistol;
+  - `sandbox` — one `sandbox` encounter without win/loss conditions and without built-in weapon (`loadout: null`), used for bring-up stories that do not require the combat stack;
+  - `sandbox-with-combat` — sandbox variant with an ordered `Loadout` and `spawnPlan: { kind: 'static' }` for bring-up combat entities (for example, the training target from [../stories/003-combat-foundation.md](../stories/003-combat-foundation.md)). It follows all sandbox-encounter rules below: `winCondition: none`, `lossCondition: none`, the only exit path is external `stopSession`.
+- The "Minimal preset modes" list grows as stories appear; new preset modes are recorded in this file and not introduced locally in `src/shared/content/**`. Removing an existing preset id is handled through `superseded`/updating this file.
+- A `sandbox` encounter has the following minimal shape:
+  - `spawnPlan` — `{ kind: 'empty' }` or `{ kind: 'static' }` (see [spawn-plan.md](spawn-plan.md)); other `kind` values (`'wave'`, `'boss'`, ...) are forbidden in sandbox encounters because they imply automatic transitions and completion, which sandbox semantics exclude.
+  - `objectives` — empty list or equivalent "no objectives".
+  - `transitionRules` — the "encounter does not end automatically" rule; the only way to leave a sandbox session is external `stopSession`.
+  - `zoneBehavior`, `rewardRules`, and `tuning` may be empty/neutral.
+  - A sandbox session must have `winCondition: none` and `lossCondition: none`; other combinations with sandbox encounters are forbidden because they are semantically unreachable.
+  - Static spawn in a sandbox encounter is justified as bring-up: training entities for system development (for example, target in 003), not gameplay content.
+- Add user challenge restrictions through `modifiers`, not separate runtime branches.
+- The base campaign remains a preset mode. The concrete encounter list for the campaign may evolve, but must be described by session data, not `SessionFlowSystem` logic.
 
 ## Consequences
 
-- Базовая кампания становится одним из preset-режимов, а не специальным режимом в коде.
-- Тренировки и челленджи можно запускать без fork логики рантайма.
-- Появляется единая точка входа для UI: экран выбора режима должен собирать `SessionDefinition`, а затем передавать её в runtime.
-- Контроль сложности и контента переносится в данные и builder-функции.
-- Истории больше не должны самостоятельно определять модель завершения run или структуру переходов, если это устойчивое правило уровня runtime.
+- The base campaign becomes one preset mode, not a special mode in code.
+- Training and challenges can run without forking runtime logic.
+- UI gets one entry point: the mode-selection screen builds a `SessionDefinition`, then passes it to runtime.
+- Difficulty and content control move into data and builder functions.
+- Stories must no longer define the run-completion model or transition structure on their own when the rule is stable at runtime level.
 
 ## Related
 

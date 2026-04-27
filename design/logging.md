@@ -6,55 +6,55 @@
 
 ## Context
 
-В нескольких принятых решениях ([input-commands.md](input-commands.md), [runtime-systems.md](runtime-systems.md)) уже зафиксировано, что часть некорректных ситуаций (команды до `startSession`/после `stopSession`, `pause` без активной сессии) сообщаются «через единый log-модуль». Скилл `game-coder` обязывает не использовать `console.log` напрямую и пользоваться единым log-модулем. Самого модуля в проекте нет, контракта на него тоже нет — каждая история выберет реализацию по-своему, и единое правило «без `console.*` в коммите» окажется невыполнимым.
+Several accepted decisions ([input-commands.md](input-commands.md), [runtime-systems.md](runtime-systems.md)) already state that some invalid situations (commands before `startSession`/after `stopSession`, `pause` without an active session) are reported "through the shared log module". The `game-coder` skill requires avoiding direct `console.log` calls and using a shared log module. The project has no such module and no contract for it, so each story would otherwise choose its own implementation and the shared rule "no `console.*` in committed code" would become unenforceable.
 
-Логирование нужно одинаково в `main thread` и в `simulation worker`, и не должно тащить за собой DOM или внешние зависимости.
+Logging is needed in both the `main thread` and the `simulation worker`, and must not pull in DOM or external runtime dependencies.
 
 ## Decision
 
-### Где живёт модуль
+### Module location
 
-- Единственный канал логирования живёт в `src/shared/log.ts` ([web-stack.md](web-stack.md)) и доступен и `main`, и `sim`. Никаких параллельных «своих» логгеров в `src/main/**` или `src/sim/**` заводить нельзя.
-- Модуль реализуется без внешних runtime-зависимостей: тонкая обёртка над `console.*` достаточна для MVP. Замена backend (in-app overlay, telemetry sink) — будущее решение, для которого этот файл — точка входа.
+- The only logging channel lives in `src/shared/log.ts` ([web-stack.md](web-stack.md)) and is available to both `main` and `sim`. Parallel local loggers in `src/main/**` or `src/sim/**` are not allowed.
+- The module has no external runtime dependencies: a thin wrapper over `console.*` is enough for the MVP. Replacing the backend (in-app overlay, telemetry sink) is a future decision, and this file is its entry point.
 
 ### API
 
-- Экспортируемый объект `log` с фиксированным набором уровней:
+- Export a `log` object with a fixed set of levels:
   ```ts
   log.info(msg: string, meta?: Record<string, unknown>): void;
   log.warn(msg: string, meta?: Record<string, unknown>): void;
   log.error(msg: string, meta?: Record<string, unknown>): void;
   ```
-- Уровень `debug` намеренно отсутствует: дев-печать делается локально и не коммитится.
-- `meta` — необязательный плоский объект структурированного контекста (без функций, без циклов). Сообщение `msg` остаётся коротким и стабильным; всё переменное идёт в `meta`. Это нужно, чтобы будущая замена backend могла фильтровать и группировать события без парсинга строк.
-- Сигнатуры одинаковы и в `main`, и в `sim`.
+- There is intentionally no `debug` level: development-only printing is local and not committed.
+- `meta` is an optional flat object of structured context (no functions, no cycles). The `msg` stays short and stable; all variable data goes into `meta`. This allows a future backend to filter and group events without parsing strings.
+- Signatures are identical in `main` and `sim`.
 
-### Каналы и идентификация источника
+### Channels and source identity
 
-- `log` сам выставляет источник в выводе по контексту: префикс `[main]` для `src/main/**` и `[sim]` для `src/sim/**`. Конкретный механизм определения (отдельные under-the-hood factory `createLog('main' | 'sim')`, импортируемые на уровне entry; или явный аргумент в API) — деталь реализации, скрытая за единым публичным `log`. Внешний код не выбирает источник руками.
-- Никаких таймстемпов от `Date.now()`/`performance.now()` модуль сам не добавляет: они уже есть в `console`-выводе браузера и не должны попадать в детерминированное состояние симуляции ([session-definition.md](session-definition.md)).
+- `log` sets the output source from context: `[main]` for `src/main/**` and `[sim]` for `src/sim/**`. The exact mechanism (under-the-hood factories such as `createLog('main' | 'sim')` imported at entry level, or an explicit API argument) is an implementation detail hidden behind the public `log`. External code does not choose the source manually.
+- The module does not add timestamps from `Date.now()`/`performance.now()` itself: browser console output already has them, and they must not enter deterministic simulation state ([session-definition.md](session-definition.md)).
 
-### Правила использования
+### Usage rules
 
-- В исходных файлах под `src/**` запрещены прямые вызовы `console.log`/`console.warn`/`console.error`/`console.info`. Это проверяется на ревью; на уровне линтера может быть закреплено отдельным конфигурационным шагом, но это уже не контракт.
-- Молчаливое глотание ошибок и warning-условий запрещено: если решение `design/` обязывает выдать warning (например, команда без активной сессии — [input-commands.md](input-commands.md), [runtime-systems.md](runtime-systems.md)), это идёт через `log.warn`.
-- Падение на горячем пути (тик симуляции, кадр рендера) ловится на границе модуля, в `log.error` уходит структурированное сообщение, и состояние не оставляется в полу-валидном виде — общее правило, перенесённое из скилла `game-coder` в design как обязательное.
-- `log.error` не должен бросать сам и не должен зависеть от `try/catch` вокруг себя.
+- Direct calls to `console.log`/`console.warn`/`console.error`/`console.info` are forbidden in source files under `src/**`. This is checked in review; a linter rule may enforce it later, but that is not part of this contract.
+- Silently swallowing errors and warning conditions is forbidden: if a `design/` decision requires a warning (for example, command without an active session — [input-commands.md](input-commands.md), [runtime-systems.md](runtime-systems.md)), it goes through `log.warn`.
+- Failures on hot paths (simulation tick, render frame) are caught at the module boundary, a structured message goes to `log.error`, and state is not left half-valid. This general rule is promoted from the `game-coder` skill into design as mandatory.
+- `log.error` must not throw by itself and must not depend on a surrounding `try/catch`.
 
-### Что не входит
+### Out of scope
 
-- Не задаётся формат сериализации `meta` для будущих sinks; пока это `console`-печать.
-- Не вводится ring-buffer/in-app overlay; он может быть добавлен отдельным решением.
-- Не задаётся уровень фильтрации (production vs dev). Все три уровня печатаются всегда; уровни нужны для дальнейшей фильтрации, не для скрытия.
-- Логирование **не** заменяет `runtime events` ([thread-model.md](thread-model.md)): events — gameplay-канал для HUD/audio, log — разработческий канал. Их аудитории и форматы разные.
+- No serialization format is defined for `meta` in future sinks; for now it is console output.
+- No ring buffer or in-app overlay is introduced; that can be added by a separate decision.
+- No filtering policy is defined (production vs dev). All three levels print all the time; levels exist for future filtering, not for hiding output.
+- Logging **does not** replace `runtime events` ([thread-model.md](thread-model.md)): events are the gameplay channel for HUD/audio, while log is an engineering channel. Their audiences and formats are different.
 
 ## Consequences
 
-- Любая система может позвать `log.warn`/`log.error` без знания о том, в каком потоке она исполняется и без введения локального логгера.
-- Замена backend на in-app overlay или telemetry в будущем сводится к правке одного файла без изменения вызовов в системах.
-- Запрет на `console.*` становится проверяемым правилом, а не «договорённостью в чате».
-- Истории получают единое место, куда уходит «не gameplay, а инженерное». Это снимает с `runtime events` нагрузку быть универсальным каналом.
-- Расходы — минимальные: один файл, один объект, без зависимостей. Стоимость замены/расширения позже остаётся низкой.
+- Any system can call `log.warn`/`log.error` without knowing which thread it runs on and without introducing a local logger.
+- Replacing the backend with an in-app overlay or telemetry later becomes a one-file change without touching system call sites.
+- The ban on `console.*` becomes a checkable rule, not a chat agreement.
+- Stories get one place for "engineering, not gameplay" information. This keeps `runtime events` from becoming a universal channel.
+- Cost is minimal: one file, one object, no dependencies. Future replacement or extension remains cheap.
 
 ## Related
 

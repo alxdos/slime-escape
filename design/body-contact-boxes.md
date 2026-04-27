@@ -2,86 +2,86 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-23 (follow-up: `projectiles-and-combat.md` переиспользует тот же `contactBox` контракт для projectile hit detection по `player` / `enemy` / `boss`; session-builder static/boss spawn fit больше не относится к radius-based переходному долгу)
+- Updated: 2026-04-23 (follow-up: `projectiles-and-combat.md` reuses the same `contactBox` contract for projectile hit detection against `player` / `enemy` / `boss`; session-builder static/boss spawn fit is no longer part of radius-based transition debt)
 
 ## Context
 
-[sprite-assets.md](sprite-assets.md) перевёл `player` / `enemy` / `boss` на прямоугольные PNG-спрайты с `worldSize`, но body-contact в симуляции остался circle-vs-circle через `radius` ([enemy-contact.md](enemy-contact.md)). На живой проверке это дало явный разрыв между тем, что игрок видит, и тем, когда происходит соприкосновение: особенно у вытянутых или широких спрайтов контакт срабатывает заметно раньше или позже видимой границы.
+[sprite-assets.md](sprite-assets.md) moved `player` / `enemy` / `boss` to rectangular PNG sprites with `worldSize`, but body contact in simulation remained circle-vs-circle through `radius` ([enemy-contact.md](enemy-contact.md)). In live checks, this created a clear mismatch between what the player sees and when contact happens: especially for tall or wide sprites, contact triggers noticeably before or after the visible boundary.
 
-Полный переход всей симуляции на эллипсы/произвольные маски для MVP избыточен. Нужен минимальный устойчивый контракт, который:
+Moving the whole simulation to ellipses or arbitrary masks for the MVP is excessive. We need a minimal stable contract that:
 
-- делает соприкосновение `player ↔ enemy/boss` ближе к форме спрайта;
-- не вводит тяжёлую физику и не требует отдельного physics engine;
-- не ломает уже принятый asset pipeline из истории 013.
+- makes `player ↔ enemy/boss` contact closer to sprite shape;
+- does not introduce heavy physics or require a separate physics engine;
+- does not break the asset pipeline already accepted in story 013.
 
 ## Decision
 
 ### Scope
 
-- Исходный owner решения — **body-contact** для `player`, `enemy`, `boss` и player clamp по границам арены.
-- После follow-up в [projectiles-and-combat.md](projectiles-and-combat.md) тот же `contactBox` также используется как target shape для projectile hit detection по `player` / `enemy` / `boss`.
-- `drop`, zone/hazard overlap и прочие circle-based проверки этим решением по-прежнему **не** мигрируются; они остаются отдельной задачей.
-- Форма body-contact — axis-aligned rectangle (`contactBox`), без rotation и без skew. Центр box совпадает с `entity.position`.
+- The original owner of this decision is **body contact** for `player`, `enemy`, `boss`, and player clamp against arena bounds.
+- After the follow-up in [projectiles-and-combat.md](projectiles-and-combat.md), the same `contactBox` is also used as the target shape for projectile hit detection against `player` / `enemy` / `boss`.
+- `drop`, zone/hazard overlap, and other circle-based checks are still **not** migrated by this decision; they remain separate work.
+- Body-contact shape is an axis-aligned rectangle (`contactBox`), with no rotation and no skew. The box center equals `entity.position`.
 
 ### ContactBox contract
 
-- Для `player`, `enemy`, `boss` в shared/runtime-контрактах вводится:
+- Shared/runtime contracts introduce this for `player`, `enemy`, and `boss`:
   ```ts
   type ContactBox = Readonly<{
     width: number;   // wu
     height: number;  // wu
   }>;
   ```
-- `contactBox` хранится:
-  - в `PlayerArchetype`;
-  - в `PlayerSpawn` внутри `SessionDefinition.player`;
-  - в `EnemyArchetype`;
-  - в `BossArchetype`;
-  - на соответствующих runtime-сущностях в `EntityStore`.
-- На горизонте истории 013 `contactBox` — **derive-поле из ассета**: оно равно sprite `worldSize`, полученному из того же PNG и того же `PX_PER_WU`, что и visual registry. Отдельных MD-колонок `contactBox.width` / `contactBox.height` не вводится.
-- Это намеренно минимальный мост между visual и gameplay. Если позже понадобится tighter box (например, игнорировать прозрачные поля PNG или задавать ручной override), это будет расширение данного решения, а не пересмотр потребителей.
+- `contactBox` is stored:
+  - in `PlayerArchetype`;
+  - in `PlayerSpawn` inside `SessionDefinition.player`;
+  - in `EnemyArchetype`;
+  - in `BossArchetype`;
+  - on the corresponding runtime entities in `EntityStore`.
+- For story 013, `contactBox` is a **derived field from the asset**: it equals sprite `worldSize`, derived from the same PNG and the same `PX_PER_WU` as the visual registry. No separate MD columns `contactBox.width` / `contactBox.height` are introduced.
+- This is intentionally a minimal bridge between visual and gameplay. If a tighter box is needed later (for example, ignoring transparent PNG padding or adding a manual override), that will extend this decision rather than revisiting consumers.
 
 ### Body contact in CombatSystem
 
-- Контакт `player ↔ enemy/boss` в `CombatSystem` больше не использует circle-vs-circle по `radius`.
-- Проверка overlap выполняется как axis-aligned box-vs-box:
+- `player ↔ enemy/boss` contact in `CombatSystem` no longer uses circle-vs-circle by `radius`.
+- Overlap check is axis-aligned box-vs-box:
   ```ts
   abs(player.x - enemy.x) <= (player.contactBox.width + enemy.contactBox.width) / 2
   &&
   abs(player.y - enemy.y) <= (player.contactBox.height + enemy.contactBox.height) / 2
   ```
-- Остальная семантика `enemy-contact.md` не меняется: cooldown, `DamageIntent`, knockback, runtime events и owner системы остаются теми же.
+- Other `enemy-contact.md` semantics do not change: cooldown, `DamageIntent`, knockback, runtime events, and system ownership stay the same.
 
 ### Broadphase for body-contact
 
-- Для broadphase-запроса перед body-contact `CombatSystem` использует **derived bounds radius**, а не authored `radius`.
-- Bounds radius не становится новым публичным content-полем. Он вычисляется на стороне runtime как circumscribed circle для `contactBox`:
+- For the broadphase query before body contact, `CombatSystem` uses **derived bounds radius**, not authored `radius`.
+- Bounds radius does not become a new public content field. Runtime computes it as the circumscribed circle for `contactBox`:
   ```ts
   boundsRadius = Math.hypot(contactBox.width / 2, contactBox.height / 2)
   ```
-- Это гарантирует, что `queryRadius(...)` не пропустит потенциальное box-overlap столкновение.
+- This guarantees that `queryRadius(...)` cannot miss a potential box-overlap collision.
 
 ### Arena clamp for player
 
-- `MovementSystem` clamp-ит игрока по границам арены через `contactBox`, а не через `radius`:
+- `MovementSystem` clamps the player to arena bounds through `contactBox`, not through `radius`:
   - `minX = -arena.width / 2 + player.contactBox.width / 2`
   - `maxX = +arena.width / 2 - player.contactBox.width / 2`
-  - аналогично для `Y`.
-- Это выравнивает визуальное тело игрока и правило «игрок не выходит за границы арены».
-- Chase-враги и boss-движение этим решением по-прежнему не clamp-ятся к арене, как уже зафиксировано в [runtime-systems.md](runtime-systems.md).
+  - same for `Y`.
+- This aligns the player's visible body with the rule "player cannot leave arena bounds".
+- Chase enemies and boss movement are still not clamped to the arena by this decision, as already defined in [runtime-systems.md](runtime-systems.md).
 
 ### Relationship with existing radius fields
 
-- Это решение **не удаляет** существующие `radius` поля из `PlayerSpawn` / `EnemyArchetype` / `BossArchetype` в рамках данного прохода.
-- После принятия этого решения `radius` больше не является источником правды для body-contact `player ↔ enemy/boss`, для projectile hit detection по `player` / `enemy` / `boss` и для player clamp.
-- Системы, которые этим решением не мигрируются (например wave edge inset в `SpawnSystem`, boss melee checks или drop overlap), могут продолжать использовать `radius` до отдельного пересмотра. Это осознанный переходный долг, а не скрытая семантика.
+- This decision **does not remove** existing `radius` fields from `PlayerSpawn` / `EnemyArchetype` / `BossArchetype` in this pass.
+- After this decision, `radius` is no longer the source of truth for `player ↔ enemy/boss` body contact, projectile hit detection against `player` / `enemy` / `boss`, or player clamp.
+- Systems not migrated by this decision (for example, wave edge inset in `SpawnSystem`, boss melee checks, or drop overlap) may keep using `radius` until a separate review. This is explicit transition debt, not hidden semantics.
 
 ## Consequences
 
-- История 013 получает body-contact, который лучше совпадает с прямоугольными спрайтами без перехода на ellipses или pixel-perfect masks.
-- Asset pipeline 013 расширяется: одно и то же derive-правило из PNG теперь кормит не только visual registry, но и gameplay `contactBox` в shared content, причём и для body-contact, и для projectile target overlap.
-- `radius` остаётся переходным полем для не-мигрированных consumers. Это честный компромисс: текущая правка лечит главное визуальное расхождение, не притворяясь полной заменой всех collision rules.
-- Будущий tighter-fit вариант (trimmed opaque bounds, ручной override, эллипсы) может расширить producer `contactBox`, не ломая `CombatSystem` и `MovementSystem`.
+- Story 013 gets body contact that better matches rectangular sprites without moving to ellipses or pixel-perfect masks.
+- Asset pipeline 013 expands: the same derive rule from PNG now feeds not only the visual registry, but also gameplay `contactBox` in shared content, for both body contact and projectile target overlap.
+- `radius` remains a transition field for non-migrated consumers. This is an honest compromise: the current change fixes the main visual mismatch without pretending to replace every collision rule.
+- A future tighter-fit variant (trimmed opaque bounds, manual override, ellipses) can extend the `contactBox` producer without breaking `CombatSystem` and `MovementSystem`.
 
 ## Related
 

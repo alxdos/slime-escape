@@ -6,24 +6,24 @@
 
 ## Context
 
-Архитектурные обсуждения нужно фиксировать в репозитории как рабочие инженерные решения, а не как длинные заметки в чате. Основные правила слоя `design` описаны в [README.md](README.md); этот документ остаётся краткой вспомогательной выжимкой формата.
+Architecture discussions should be recorded in the repository as working engineering decisions, not left as long chat notes. The main rules for the `design` layer are defined in [README.md](README.md); this document is a short companion summary of the format.
 
 ## Decision
 
-- Все инженерные решения хранить в `design/`.
-- Один файл описывает одно решение.
-- Имя файла должно быть стабильным и семантическим: `session-definition.md`, `thread-model.md`.
-- Дату не включать в имя файла.
-- Каждый файл решения должен иметь одинаковый минимальный каркас: `Status`, `Created`, `Updated`, `Context`, `Decision`, `Consequences`, `Related`.
-- Основной индекс решений и правила слоя вести в `design/README.md`.
-- При изменении действующего решения обновлять существующий файл и поле `Updated`.
-- Если решение утратило силу, менять `Status` на `superseded` и ссылаться на новое решение в `Related`.
+- Store all engineering decisions in `design/`.
+- One file describes one decision.
+- File names must be stable and semantic: `session-definition.md`, `thread-model.md`.
+- Do not include dates in file names.
+- Every decision file must use the same minimal structure: `Status`, `Created`, `Updated`, `Context`, `Decision`, `Consequences`, `Related`.
+- Keep the main decision index and layer rules in `design/README.md`.
+- When an active decision changes, update the existing file and its `Updated` field.
+- If a decision is no longer valid, set `Status` to `superseded` and link to the replacement in `Related`.
 
 ## Consequences
 
-- Решения проще читать и искать по теме, а не по дате создания.
-- Репозиторий хранит актуальную инженерную позицию, а не только исторический лог.
-- `design/README.md` становится обязательной точкой входа для архитектуры проекта.
+- Decisions are easier to read and find by topic rather than by creation date.
+- The repository keeps the current engineering position, not only a historical log.
+- `design/README.md` becomes the required entry point for project architecture.
 
 ## Related
 

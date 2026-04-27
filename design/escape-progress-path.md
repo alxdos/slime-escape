@@ -6,45 +6,45 @@
 
 ## Context
 
-История 025 добавляет player-facing `Путь Побега`: компактную дорожку волн в бою, расширенную карту прогресса в break и карту достигнутого пути в Result UI.
+Story 025 adds the player-facing Escape Path: a compact wave path during combat, an expanded progress map during breaks, and a reached-path map in the Result UI.
 
-У проекта уже есть все authoritative данные, нужные для такого UI:
+The project already has all authoritative data needed for this UI:
 
-- `SessionDefinition.encounters` даёт полный порядок encounter-ов и глобальную нумерацию `type === 'wave'`;
-- `Snapshot.encounter` сообщает активный encounter и его индекс во время run;
-- `SessionResultSummary.progress` сообщает `completedWaves`, `totalWaves`, `activeEncounterId` и `activeEncounterIndex` на terminal result.
+- `SessionDefinition.encounters` gives the full encounter order and global numbering for `type === 'wave'`;
+- `Snapshot.encounter` reports the active encounter and its index during a run;
+- `SessionResultSummary.progress` reports `completedWaves`, `totalWaves`, `activeEncounterId`, and `activeEncounterIndex` for the terminal result.
 
-Поэтому история не должна расширять simulation worker, `Snapshot`, runtime events или session content. Это presentation-слой main thread, который должен оставаться согласованным с глобальной нумерацией из [encounter-presentation.md](encounter-presentation.md) и итоговой статистикой из [session-result-summary.md](session-result-summary.md).
+Therefore the story must not extend the simulation worker, `Snapshot`, runtime events, or session content. This is a main-thread presentation layer that must stay consistent with global numbering from [encounter-presentation.md](encounter-presentation.md) and result stats from [session-result-summary.md](session-result-summary.md).
 
 ## Decision
 
 ### Ownership
 
-- `Путь Побега` живёт в `src/main/ui/**`.
-- Он не импортирует из `src/sim/**`, не обращается к `SimWorkerHost` напрямую, не отправляет input commands и не подписывается на runtime events.
-- Authoritative источники:
-  - live/break: immutable `SessionDefinition` + текущий `SnapshotPair.curr`;
+- Escape Path lives in `src/main/ui/**`.
+- It does not import from `src/sim/**`, does not call `SimWorkerHost` directly, does not send input commands, and does not subscribe to runtime events.
+- Authoritative sources:
+  - live/break: immutable `SessionDefinition` + current `SnapshotPair.curr`;
   - result: immutable `SessionDefinition` + terminal `SessionResultSummary`.
-- Новые поля в `Snapshot`, `RuntimeEvent`, `SessionDefinition`, `EncounterDefinition` или `SessionResultSummary` не вводятся.
-- Расчёт прогресса — pure main-side derivation. Его нужно держать в отдельном helper/view-model модуле рядом с UI, чтобы compact, break и result использовали одну формулу.
+- No new fields are introduced in `Snapshot`, `RuntimeEvent`, `SessionDefinition`, `EncounterDefinition`, or `SessionResultSummary`.
+- Progress calculation is pure main-side derivation. Keep it in a separate helper/view-model module near the UI so compact, break, and result use one formula.
 
 ### Wave Path Model
 
-Путь строится только по wave encounter-ам:
+The path is built only from wave encounters:
 
-- `totalWaves` = количество encounter-ов с `type === 'wave'` в `session.encounters`;
-- глобальный номер wave encounter-а = количество wave encounter-ов от начала сессии до текущего encounter-а включительно;
-- boss, break, survivalTimer и sandbox encounter-ы не получают собственных точек на пути.
+- `totalWaves` = number of encounters with `type === 'wave'` in `session.encounters`;
+- global wave encounter number = number of wave encounters from session start through the current encounter, inclusive;
+- boss, break, survivalTimer, and sandbox encounters do not get their own path points.
 
-Если `totalWaves === 0`, `Путь Побега` скрыт: для sandbox/режимов без волн нет meaningful path.
+If `totalWaves === 0`, Escape Path is hidden: sandbox/modes without waves have no meaningful path.
 
-Рекомендуемая форма internal view model:
+Recommended internal view model:
 
 ```ts
 type EscapeProgressPathViewModel = Readonly<{
   totalWaves: number;
   completedWaves: number;
-  activeWaveIndex: number | null; // 1-based, только когда active encounter is wave
+  activeWaveIndex: number | null; // 1-based, only when active encounter is wave
   stop:
     | Readonly<{ kind: 'none' }>
     | Readonly<{ kind: 'loss'; anchor: 'activeWave' | 'afterCompletedWaves' | 'beforeFlag' }>;
@@ -52,41 +52,41 @@ type EscapeProgressPathViewModel = Readonly<{
 }>;
 ```
 
-Имена типов — деталь реализации, но семантика обязательна:
+Type names are implementation details, but semantics are required:
 
-- `completedWaves` — число уже закрытых wave encounter-ов;
-- `activeWaveIndex` — текущая wave, если игрок прямо сейчас внутри wave encounter-а;
-- `stop` используется только для result/loss presentation;
-- `flagState: 'reached'` допустим только при победе.
+- `completedWaves` — number of already completed wave encounters;
+- `activeWaveIndex` — current wave if the player is currently inside a wave encounter;
+- `stop` is used only for result/loss presentation;
+- `flagState: 'reached'` is allowed only on victory.
 
 ### Live / Break Derivation
 
-Для live состояния используется `SessionDefinition + Snapshot`:
+Live state uses `SessionDefinition + Snapshot`:
 
-- Если snapshot отсутствует или active encounter не резолвится по `snapshot.encounter.index`/`id`, путь рендерит `completedWaves = 0`, `activeWaveIndex = null` или скрывается до первого валидного snapshot-а. Реализация должна выбрать один стабильный вариант и покрыть тестом; она не должна угадывать encounter по wall-clock.
-- Для active wave encounter-а:
-  - `completedWaves` = количество wave encounter-ов с индексом меньше active encounter index;
+- If snapshot is missing or active encounter cannot resolve by `snapshot.encounter.index`/`id`, the path renders `completedWaves = 0`, `activeWaveIndex = null`, or hides until the first valid snapshot. Implementation must choose one stable option and cover it with a test; it must not infer encounter from wall-clock.
+- For active wave encounters:
+  - `completedWaves` = number of wave encounters with index lower than active encounter index;
   - `activeWaveIndex` = `completedWaves + 1`;
-  - точка active wave выделена, но не считается completed.
-- Для active non-wave encounter-а:
-  - `completedWaves` = количество wave encounter-ов с индексом меньше active encounter index;
+  - the active wave point is highlighted but not counted as completed.
+- For active non-wave encounters:
+  - `completedWaves` = number of wave encounters with index lower than active encounter index;
   - `activeWaveIndex = null`;
-  - все точки до `completedWaves` подсвечены как пройденные.
-- During boss encounter путь остаётся wave-only: boss не получает marker, а флаг остаётся `pending`.
+  - all points through `completedWaves` are highlighted as reached.
+- During boss encounters, the path remains wave-only: boss gets no marker, and the flag stays `pending`.
 
 Presentation modes:
 
-- `compact`: default в `running` для wave/boss/non-wave encounter-ов, кроме break;
+- `compact`: default in `running` for wave/boss/non-wave encounters except break;
 - `expandedBreak`: active encounter `type === 'break'`; expanded path replaces compact path for the duration of break;
 - `hidden`: no session, no valid path, `totalWaves === 0`, or UI phase hides the live component.
 
 ### Result Derivation
 
-Для result состояния используется `SessionDefinition + SessionResultSummary`:
+Result state uses `SessionDefinition + SessionResultSummary`:
 
-- `totalWaves` берётся из `summary.progress.totalWaves`;
-- `completedWaves` берётся из `summary.progress.completedWaves`;
-- `progress.percent` не используется для заполнения точек, потому что percent учитывает boss/objective partial progress, а путь показывает только wave path.
+- `totalWaves` comes from `summary.progress.totalWaves`;
+- `completedWaves` comes from `summary.progress.completedWaves`;
+- `progress.percent` is not used to fill points, because percent includes boss/objective partial progress while the path shows only the wave path.
 
 Outcome rules:
 
@@ -99,7 +99,7 @@ This rule prevents a final-boss loss from looking like a completed escape while 
 
 ### UiShell Integration
 
-Live `Путь Побега` is a separate UI component, not part of `Renderer` and not a simulation system.
+Live Escape Path is a separate UI component, not part of `Renderer` and not a simulation system.
 
 Recommended lifecycle mirrors `Hud` / `TitleOverlay`:
 
@@ -146,7 +146,7 @@ The expanded break path must not cover title overlay text. If the break title te
 
 `ResultOverlay` renders that static path inside the result card/stage. It does not reuse live snapshots, does not keep the live `EscapeProgressPath` component mounted, and does not query `SimWorkerHost` after terminal teardown.
 
-The existing result stat tile `Волна N / M` may remain. The path augments the stat; it is not a replacement for all result stats.
+The existing result stat tile `Wave N / M` may remain. The path augments the stat; it is not a replacement for all result stats.
 
 ### Tests
 

@@ -6,39 +6,39 @@
 
 ## Context
 
-[thread-model.md](thread-model.md) фиксирует только принцип «фиксированный simulation tick + независимый рендер с интерполяцией между снапшотами», но не конкретные частоты, не правила экстраполяции и не поведение времени при паузе. Без явного контракта каждая история (HUD, audio, render backend, боссы) будет переоткрывать одно и то же и расходиться в реализации. Цель решения — задать единые числовые контракты для тика симуляции, частоты снапшотов и интерполяции на рендере.
+[thread-model.md](thread-model.md) defines only the principle of "fixed simulation tick plus independent rendering with interpolation between snapshots"; it does not define concrete frequencies, extrapolation rules, or time behavior during pause. Without an explicit contract, every story (HUD, audio, render backend, bosses) would reopen the same question and diverge in implementation. This decision sets shared numeric contracts for the simulation tick, snapshot frequency, and render interpolation.
 
 ## Decision
 
-- `SimulationClock` тикает с фиксированным шагом `1000 / 60` мс (далее `SIM_HZ = 60`, `SIM_STEP_MS = 1000 / SIM_HZ`).
-- Внутри `SimulationClock` — аккумулятор времени с догоном:
+- `SimulationClock` ticks at a fixed step of `1000 / 60` ms (`SIM_HZ = 60`, `SIM_STEP_MS = 1000 / SIM_HZ`).
+- Inside `SimulationClock`, use a catch-up time accumulator:
   ```ts
   while (lag >= SIM_STEP_MS) { tick(); lag -= SIM_STEP_MS; }
   ```
-  Это устойчиво к джиттеру таймера в worker (`setInterval`/`setTimeout` могут срабатывать неравномерно).
-- `SnapshotExportSystem` публикует снапшот каждые `2` тика, то есть с частотой `SNAPSHOT_HZ = 30`, шаг `SNAPSHOT_INTERVAL_MS = 1000 / SNAPSHOT_HZ ≈ 33.333` мс.
-- Каждый снапшот несёт `simTime` — монотонное время симуляции в миллисекундах от старта симуляции, считаемое исключительно из числа выполненных тиков.
-- Рендер хранит как минимум два последних снапшота (`prev`, `curr`).
-- Рендер искусственно отстаёт от `latestSimTime` на ровно `SNAPSHOT_INTERVAL_MS`:
+  This is resilient to worker timer jitter (`setInterval`/`setTimeout` may fire unevenly).
+- `SnapshotExportSystem` publishes a snapshot every `2` ticks, i.e. at `SNAPSHOT_HZ = 30`, with `SNAPSHOT_INTERVAL_MS = 1000 / SNAPSHOT_HZ ≈ 33.333` ms.
+- Every snapshot carries `simTime`: monotonic simulation time in milliseconds since simulation start, computed only from the number of completed ticks.
+- Rendering keeps at least the two latest snapshots (`prev`, `curr`).
+- Rendering intentionally lags behind `latestSimTime` by exactly `SNAPSHOT_INTERVAL_MS`:
   ```ts
   const renderSimTime = latestSimTime - SNAPSHOT_INTERVAL_MS;
   const alpha = (renderSimTime - prev.simTime) / (curr.simTime - prev.simTime);
   ```
-  `alpha` зажимается в `[0, 1]` — экстраполяция запрещена.
-- Если буфер ещё не содержит двух валидных снапшотов или `renderSimTime` выходит за `curr.simTime`, рендер показывает позицию `curr` без экстраполяции.
-- При `pause` симуляция перестаёт продвигать `simTime` и публиковать новые снапшоты. Рендер продолжает рисовать последнее интерполированное состояние и не движется вперёд во времени симуляции.
-- При `resume` `SimulationClock` НЕ догоняет потерянное wall-clock-время; время симуляции продвигается только новыми тиками после resume. Это сохраняет детерминизм относительно числа тиков и не делает «прыжок» при возобновлении.
-- Все runtime-системы используют `SIM_STEP_MS` как единственный шаг времени; любое поле `dt` в коде систем равно `SIM_STEP_MS`, переменный шаг не допускается.
-- Числовые константы (`SIM_HZ`, `SIM_STEP_MS`, `SNAPSHOT_HZ`, `SNAPSHOT_INTERVAL_MS`) живут в `src/shared/**` (см. [web-stack.md](web-stack.md)) и переиспользуются и main, и worker.
-- Изменение `SIM_HZ` или `SNAPSHOT_HZ` считается изменением этого design-решения, а не локальной правкой; такие изменения требуют обновления данного файла и поднятия `Updated`.
+  Clamp `alpha` to `[0, 1]`; extrapolation is forbidden.
+- If the buffer does not yet contain two valid snapshots, or if `renderSimTime` goes beyond `curr.simTime`, rendering shows the `curr` position without extrapolation.
+- On `pause`, simulation stops advancing `simTime` and stops publishing new snapshots. Rendering continues to draw the last interpolated state and does not move forward in simulation time.
+- On `resume`, `SimulationClock` does **not** catch up lost wall-clock time; simulation time advances only through new ticks after resume. This preserves determinism by tick count and avoids a jump on resume.
+- All runtime systems use `SIM_STEP_MS` as the only time step; any `dt` field in system code equals `SIM_STEP_MS`, and variable steps are not allowed.
+- Numeric constants (`SIM_HZ`, `SIM_STEP_MS`, `SNAPSHOT_HZ`, `SNAPSHOT_INTERVAL_MS`) live in `src/shared/**` (see [web-stack.md](web-stack.md)) and are reused by both main and worker.
+- Changing `SIM_HZ` or `SNAPSHOT_HZ` is a change to this design decision, not a local edit; such changes require updating this file and bumping `Updated`.
 
 ## Consequences
 
-- HUD, audio и render-системы из будущих историй могут полагаться на стабильные `SIM_STEP_MS` и `SNAPSHOT_INTERVAL_MS` без переоткрытия таймингов.
-- Запрет экстраполяции упрощает рендер и убирает класс артефактов «персонаж дёргается вперёд при потере снапшота».
-- Поведение pause/resume без догона делает сессию воспроизводимой по числу тиков и совместимой с будущим `seed`-контрактом из [session-definition.md](session-definition.md).
-- Магические числа `60`/`30`/`33` в коде систем теперь считаются багом — должны заменяться импортом константы из `src/shared/**`.
-- Любой переход на динамический шаг симуляции потребует пересмотра этого решения и, скорее всего, пересмотра HUD/render-контрактов.
+- Future HUD, audio, and render systems can rely on stable `SIM_STEP_MS` and `SNAPSHOT_INTERVAL_MS` without reopening timing.
+- Forbidding extrapolation simplifies rendering and removes artifacts where a character jumps forward when a snapshot is lost.
+- Pause/resume without catch-up makes the session reproducible by tick count and compatible with the future `seed` contract from [session-definition.md](session-definition.md).
+- Magic numbers such as `60`/`30`/`33` in system code are now bugs; they must be replaced with imported constants from `src/shared/**`.
+- Any move to a dynamic simulation step requires revisiting this decision and likely revisiting HUD/render contracts.
 
 ## Related
 
