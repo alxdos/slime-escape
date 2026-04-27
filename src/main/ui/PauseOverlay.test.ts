@@ -87,9 +87,9 @@ describe('PauseOverlay', () => {
       configurable: true,
       value: new FakeDocument()
     });
-    const parent = new FakeElement();
+    const parent = document.createElement('div');
     const overlay = createPauseOverlay({
-      parent: parent as unknown as HTMLElement,
+      parent,
       onResume() {},
       onExit() {},
       onOpenSettings() {}
@@ -97,10 +97,14 @@ describe('PauseOverlay', () => {
 
     const card = findByRole(parent, 'pause-card');
     const escapePath = findByRole(parent, 'pause-escape-path');
+    const root = findByRole(parent, 'pause-overlay');
     const socialRail = findByRole(parent, 'social-link-rail');
     const socialLinks = findAllByRole(parent, 'social-link');
+    const style = root.children[0];
     expect(findByRole(parent, 'pause-layout').style.cssText).toContain('gap:18px');
     expect(socialRail.dataset['placement']).toBe('pause');
+    expect(style?.textContent).toContain('.pause-social-link-rail');
+    expect(style?.textContent).toContain('max-width: 560px');
     expect(socialLinks.map((link) => link.dataset['socialLinkId'])).toEqual([
       'github',
       'discord'
@@ -149,25 +153,20 @@ function makeEscapePathViewModel(): EscapeProgressPathViewModel {
   };
 }
 
-function findByRole(root: FakeElement, role: string): FakeElement {
-  if (root.dataset['role'] === role) {
-    return root;
+function findByRole(root: HTMLElement, role: string): HTMLElement {
+  const match = findByRoleOptional(root, role);
+  if (match === null) {
+    throw new Error(`role ${role} not found`);
   }
-  for (const child of root.children) {
-    const match = findByRoleOptional(child, role);
-    if (match !== null) {
-      return match;
-    }
-  }
-  throw new Error(`role ${role} not found`);
+  return match;
 }
 
-function findByRoleOptional(root: FakeElement, role: string): FakeElement | null {
+function findByRoleOptional(root: HTMLElement, role: string): HTMLElement | null {
   if (root.dataset['role'] === role) {
     return root;
   }
   for (const child of root.children) {
-    const match = findByRoleOptional(child, role);
+    const match = findByRoleOptional(child as HTMLElement, role);
     if (match !== null) {
       return match;
     }
@@ -175,13 +174,13 @@ function findByRoleOptional(root: FakeElement, role: string): FakeElement | null
   return null;
 }
 
-function findAllByRole(root: FakeElement, role: string): FakeElement[] {
-  const matches: FakeElement[] = [];
+function findAllByRole(root: HTMLElement, role: string): HTMLElement[] {
+  const matches: HTMLElement[] = [];
   if (root.dataset['role'] === role) {
     matches.push(root);
   }
   for (const child of root.children) {
-    matches.push(...findAllByRole(child, role));
+    matches.push(...findAllByRole(child as HTMLElement, role));
   }
   return matches;
 }

@@ -1,23 +1,27 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createSocialLinkRail, SOCIAL_LINKS } from './SocialLinkRail';
+import { createMenuOverlay } from './MenuOverlay';
 
 class FakeStyle {
   cssText = '';
+  display = '';
 }
 
 class FakeElement {
   readonly children: FakeElement[] = [];
   readonly dataset: Record<string, string> = {};
   readonly style = new FakeStyle();
+  readonly listeners = new Map<string, Array<() => void>>();
   readonly attributes = new Map<string, string>();
   parent: FakeElement | null = null;
-  className = '';
   textContent = '';
+  type = '';
+  className = '';
   title = '';
+  src = '';
+  alt = '';
+  draggable = true;
+  offsetWidth = 44;
 
   appendChild(child: FakeElement): FakeElement {
     child.parent?.remove();
@@ -32,6 +36,12 @@ class FakeElement {
     }
     this.parent.children.splice(this.parent.children.indexOf(this), 1);
     this.parent = null;
+  }
+
+  addEventListener(type: string, listener: () => void): void {
+    const bucket = this.listeners.get(type) ?? [];
+    bucket.push(listener);
+    this.listeners.set(type, bucket);
   }
 
   setAttribute(name: string, value: string): void {
@@ -63,46 +73,48 @@ afterEach(() => {
   }
 });
 
-describe('SocialLinkRail', () => {
-  it('renders external GitHub and Discord anchors with local colorable icons', () => {
+describe('MenuOverlay', () => {
+  it('renders the shared social link rail as a secondary side affordance', () => {
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
       value: new FakeDocument()
     });
 
-    const rail = createSocialLinkRail();
+    const parent = document.createElement('div');
+    createMenuOverlay({
+      parent,
+      modes: [],
+      onStart() {},
+      onStartTraining() {},
+      onOpenSettings() {},
+      onToggleFullscreen() {},
+      onTeaser() {},
+      onButtonHover() {},
+      onModeSwitch() {}
+    });
 
-    expect(rail.dataset['role']).toBe('social-link-rail');
-    expect(rail.getAttribute('aria-label')).toBe('Project links');
-    expect(rail.style.cssText).toContain('flex-direction:column');
+    const root = findByRole(parent, 'menu-overlay');
+    const stage = findByRole(root, 'menu-stage');
+    const socialRail = findByRole(stage, 'social-link-rail');
+    const socialLinks = findAllByRole(stage, 'social-link');
+    const style = root.children[0] as HTMLElement | undefined;
 
-    const links = findAllByRole(rail, 'social-link');
-    expect(links).toHaveLength(2);
-    expect(links.map((link) => link.dataset['socialLinkId'])).toEqual(['github', 'discord']);
-
-    for (const [index, expected] of SOCIAL_LINKS.entries()) {
-      const link = links[index];
-      if (link === undefined) {
-        throw new Error(`Missing social link ${expected.id}`);
-      }
-      expect(link.getAttribute('href')).toBe(expected.href);
-      expect(link.getAttribute('target')).toBe('_blank');
-      expect(link.getAttribute('rel')).toBe('noopener noreferrer');
-      expect(link.getAttribute('aria-label')).toBe(expected.label);
-      expect(link.title).toBe(expected.label);
-
-      const icon = findByRole(link, 'social-link-icon');
-      expect(icon.getAttribute('aria-hidden')).toBe('true');
-      expect(icon.style.cssText).toContain(expected.iconSrc);
-      expect(icon.style.cssText).toContain('background:currentColor');
-    }
-  });
-
-  it('uses checked-in SVG assets that can inherit color', () => {
-    for (const link of SOCIAL_LINKS) {
-      const svg = readFileSync(join(process.cwd(), 'public', link.iconSrc), 'utf8');
-      expect(svg).toContain('fill="currentColor"');
-    }
+    expect(socialRail.dataset['placement']).toBe('menu');
+    expect(socialRail.style.cssText).toContain('left:3.4%');
+    expect(socialRail.style.cssText).toContain('top:38%');
+    expect(socialRail.style.cssText).toContain('scale(0.9)');
+    expect(style?.textContent).toContain('.menu-social-link-rail');
+    expect(style?.textContent).toContain('max-width: 560px');
+    expect(socialLinks.map((link) => link.dataset['socialLinkId'])).toEqual([
+      'github',
+      'discord'
+    ]);
+    expect(socialLinks[0]?.getAttribute('href')).toBe(
+      'https://github.com/alxdos/slime-escape'
+    );
+    expect(socialLinks[0]?.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(socialLinks[1]?.getAttribute('href')).toBe('https://discord.gg/rUwc52wc6v');
+    expect(socialLinks[1]?.getAttribute('target')).toBe('_blank');
   });
 });
 

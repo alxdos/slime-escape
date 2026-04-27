@@ -116,7 +116,15 @@ Portal page:
 | T2 | [x] | Add shared social link UI under `src/main/ui/**`: GitHub/Discord link data, rendering for `/images/social/github.svg` and `/images/social/discord.svg`, stable side-rail layout, accessible anchor labels, `target="_blank"`, and `rel="noopener noreferrer"`. | The local SVGs use `currentColor`, so normal/hover/focus colors can be set through CSS; no icon dependency. |
 | T3 | [x] | Integrate the social link rail into `MenuOverlay` and `PauseOverlay`, keeping it visually secondary and clear of existing menu/pause controls on desktop and narrow viewports. | Pause links must not call sim, resume, exit, settings, or change phase. |
 | T4 | [x] | Add loss-only Replay/Restart: `ResultOverlay` renders a primary top action for `loss`, `UiShell` restarts the last started preset/source through the existing session start path, and victory result flow stays unchanged. | Avoid a new public `result -> running` phase; internally reuse existing cleanup/start orchestration. |
-| T5 | [ ] | Add focused tests and verification notes for metadata, social anchors, menu/pause placement, loss replay, and no incoherent overlap. | Per pipeline, ask the user for live browser verification instead of starting the dev server directly. |
+| T5 | [x] | Add focused tests and verification notes for metadata, social anchors, menu/pause placement, loss replay, and no incoherent overlap. | Per pipeline, ask the user for live browser verification instead of starting the dev server directly. |
+
+## Verification Notes
+
+- Automated metadata coverage lives in `src/main/ui/pageMetadata.test.ts` and checks `index.html` plus `portal/index.html` titles, descriptions, Open Graph tags, and PNG icon links.
+- Social link coverage lives in `src/main/ui/SocialLinkRail.test.ts` and checks external anchor attributes, accessible labels, local SVG paths, and `currentColor` SVG fills.
+- Menu and Pause placement coverage lives in `src/main/ui/MenuOverlay.test.ts` and `src/main/ui/PauseOverlay.test.ts`; these tests check the side-rail placement hooks and narrow-viewport CSS rules.
+- Loss replay coverage lives in `src/main/ui/ResultOverlay.test.ts` and `src/main/ui/UiShell.test.ts`; these tests check loss-only Restart rendering and restart through the normal session start path.
+- Live browser verification is still required by the delivery pipeline. The user should run the dev server and check desktop landscape plus a narrow viewport for no incoherent overlap around Play, Training, difficulty, Settings, Fullscreen, Resume, Exit to Menu, and the pause progress summary.
 
 ## Related
 
