@@ -2,31 +2,31 @@
 
 - Status: accepted
 - Created: 2026-04-25
-- Updated: 2026-04-26 (correction: WeaponInstance слаймов живут **не на сущности `enemy`**, а в том же `shooterWeapons: Map<EntityId, ShooterWeapons>` внутри closure `CombatSystem`, что и player loadout. Реальность 017: `ShooterWeapons.ownerKind` уже поддерживает `'enemy'`/`'boss'`, `setPlayerLoadout(playerId, loadout, simTimeMs)` — единственный путь инициализации loadout в CombatSystem, cleanup только через `combat.clear()` на session start/stop. Для слаймов вводятся симметричные `setEnemyLoadout` / `removeShooter` APIs + callback от SpawnSystem для wiring. Прошлая формулировка «поля `weapons`/`selectedWeaponIndex` на runtime-сущности `enemy`, cleanup автоматический через удаление сущности» — неверна.)
+- Updated: 2026-04-26 (correction: slime `WeaponInstance`s live **not on the `enemy` entity**, but in the same `shooterWeapons: Map<EntityId, ShooterWeapons>` inside the `CombatSystem` closure as the player loadout. Reality in 017: `ShooterWeapons.ownerKind` already supports `'enemy'`/`'boss'`; `setPlayerLoadout(playerId, loadout, simTimeMs)` is the only loadout initialization path in `CombatSystem`; cleanup happens only through `combat.clear()` on session start/stop. Slimes add symmetric `setEnemyLoadout` / `removeShooter` APIs plus a callback from `SpawnSystem` for wiring. The previous wording about `weapons`/`selectedWeaponIndex` fields on runtime `enemy` entities and automatic cleanup through entity removal was wrong.)
 
 ## Context
 
-[universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) фиксирует общую модель оружия: `WeaponArchetype` + owner-local `WeaponInstance`, fire patterns, projectile motion, explosions, fragments, weapon modifier drops, `slimeFriendlyFire`. [projectiles-and-combat.md](projectiles-and-combat.md) фиксирует, что `CombatSystem` — единственный owner firing decisions, projectile motion, hit detection, explosion resolution и damage-intent production. На горизонте 017 фактическая firing path задействована только для **игрока**: `RuntimeInputState.firing` + `aimWorld` → выбранный `WeaponInstance` → `fireWeaponProjectiles`.
+[universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) defines the shared weapon model: `WeaponArchetype` plus owner-local `WeaponInstance`, fire patterns, projectile motion, explosions, fragments, weapon modifier drops, and `slimeFriendlyFire`. [projectiles-and-combat.md](projectiles-and-combat.md) defines `CombatSystem` as the single owner of firing decisions, projectile motion, hit detection, explosion resolution, and damage-intent production. At the 017 horizon, the actual firing path is used only by the **player**: `RuntimeInputState.firing` plus `aimWorld` -> selected `WeaponInstance` -> `fireWeaponProjectiles`.
 
-Story 019 ввела поле override `SpawnOverride` для per-spawn характеристик (`guaranteedDrops`/`dropTable`/`retaliation`). Story 020 расширяет этот закрытый набор четвёртым полем `loadout` ([spawn-overrides.md](spawn-overrides.md)) — выдача оружия конкретному спавну слайма. Поле само по себе ничего не делает: чтобы стрелял реальный снаряд, нужна **firing path для не-игрока**, которой сегодня нет.
+Story 019 introduced `SpawnOverride` for per-spawn characteristics (`guaranteedDrops`, `dropTable`, `retaliation`). Story 020 extends that closed set with a fourth field, `loadout` ([spawn-overrides.md](spawn-overrides.md)), which gives a concrete slime spawn a weapon. The field alone does nothing: to fire real projectiles, the game needs a **non-player firing path**, which does not exist today.
 
-Boss-стрельба отдельный случай и не входит в этот контракт: она остаётся за `BossPhaseSystem` ([boss-encounter.md](boss-encounter.md)), у которого собственный набор фаз и аттак-id. Решение здесь касается только `enemy`-сущностей, получивших effective `loadout` через spawn-override.
+Boss firing is a separate case and is not part of this contract. It remains owned by `BossPhaseSystem` ([boss-encounter.md](boss-encounter.md)), with its own phase set and attack ids. This decision applies only to `enemy` entities that receive an effective `loadout` through spawn overrides.
 
-Без явного контракта story 020 неявно зафиксирует, где живёт state стреляющего слайма (на сущности? в side-table? в `CombatSystem` собственный `Map`?), как выбирается aim (умный? наивный?), в какой фазе тика стреляет (та же, что игрок? своя?) и как чистится после смерти. Каждый из этих вопросов — устойчивое архитектурное правило, влияющее на детерминизм, тестируемость и на любые будущие AI-расширения.
+Without an explicit contract, story 020 would implicitly define where shooter state lives for a slime (on the entity, in a side table, or in a `CombatSystem` map), how aim is selected, which tick phase fires, and how cleanup after death works. Each of those is a durable architectural rule that affects determinism, testability, and future AI extensions.
 
 ## Decision
 
-### Зона действия
+### Scope
 
-- Это решение касается firing path **только для `kind: 'enemy'`**, у которых effective `loadout` — не `null` после применения spawn-override.
-- Boss firing (`kind: 'boss'`) — out of scope. Boss остаётся на `BossPhaseSystem`. Если когда-нибудь boss мигрирует на универсальную модель оружия, это будет отдельное решение, ссылающееся на этот файл.
-- Player firing (`kind: 'player'`) — out of scope. Player firing path уже зафиксирована в [projectiles-and-combat.md](projectiles-and-combat.md) и [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md); этот файл её не переоткрывает.
-- AI-таргетинг (line-of-sight, упреждение, кайтинг, выбор цели по приоритету, переключение оружия по фазам) — out of scope. На этом горизонте «стреляющий слайм» — наивный bot: смотрит в текущую позицию игрока, стреляет, когда cooldown готов.
+- This decision covers the firing path **only for `kind: 'enemy'`** entities whose effective `loadout` is not `null` after spawn overrides are applied.
+- Boss firing (`kind: 'boss'`) is out of scope. Boss remains on `BossPhaseSystem`. If a boss ever moves to the universal weapon model, that will be a separate decision that references this file.
+- Player firing (`kind: 'player'`) is out of scope. It is already defined by [projectiles-and-combat.md](projectiles-and-combat.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md); this file does not reopen it.
+- AI targeting, such as line of sight, leading shots, kiting, target priority, and phase-based weapon switching, is out of scope. For this horizon, a shooting slime is a naive bot: it aims at the player's current position and fires when cooldown is ready.
 
-### Где живёт WeaponInstance слайма
+### Where slime WeaponInstances live
 
-- `WeaponInstance` слаймов живёт **в том же `shooterWeapons: Map<EntityId, ShooterWeapons>` внутри closure `CombatSystem`**, что и player loadout. Никаких новых полей на runtime-сущности `enemy` не вводится.
-- `ShooterWeapons` уже зафиксирован в реализации 017 со всеми нужными дискриминаторами:
+- Slime `WeaponInstance`s live **in the same `shooterWeapons: Map<EntityId, ShooterWeapons>` inside the `CombatSystem` closure** as player loadout. No new fields are added to runtime `enemy` entities.
+- `ShooterWeapons` is already established by the 017 implementation with the needed discriminators:
   ```ts
   type ShooterWeapons = {
     ownerKind: 'player' | 'enemy' | 'boss';
@@ -34,29 +34,29 @@ Boss-стрельба отдельный случай и не входит в э
     selectedIndex: number | null;
   };
   ```
-- Это не side-table «на будущее»: player loadout сегодня уже хранится именно здесь, `setPlayerLoadout(playerId, loadout, simTimeMs)` и `clear()` — единственные его мутаторы. Добавление слаймов расширяет использование той же структуры, а не вводит параллельную.
-- Симметрично player API вводятся два новых метода `CombatSystem`:
+- This is not a speculative side table. Player loadout already lives here today, and `setPlayerLoadout(playerId, loadout, simTimeMs)` plus `clear()` are its only mutators. Adding slimes extends the same structure instead of creating a parallel one.
+- Two new `CombatSystem` methods mirror the player API:
   ```ts
   setEnemyLoadout(enemyId: EntityId, loadout: Loadout, simTimeMs: number): void;
   removeShooter(entityId: EntityId): void;
   ```
-  `setEnemyLoadout` повторяет инвариант `setPlayerLoadout` дословно: валидация `selectedIndex` в `[0, weapons.length)` или `null`, резолв `weaponArchetypeId` в `weaponRegistry` (throw на unknown), вызов `createWeaponInstance` для каждого id, запись в `shooterWeapons.set(enemyId, { ownerKind: 'enemy', weapons, selectedIndex })`. Запрет пустого `weapons: []` у player-а переносится и сюда — если effective loadout — `null` (нет оружия), `setEnemyLoadout` просто **не вызывается** (см. ниже «Wiring»).
-  `removeShooter(entityId)` — это `shooterWeapons.delete(entityId)`. Единственный мутатор per-entity cleanup-а для слайм-state-а.
-- Инициализация `WeaponInstance[i]` в `setEnemyLoadout` идёт через тот же `createWeaponInstance(archetypeId, ownerKind, simTimeMs)`, что player: `cooldownStartedAtSimMs = simTimeMs`, `nextFireSimMs = simTimeMs + initialFireDelayMs(archetype.cooldownMs, ownerKind)`, `modifiers: []`, `overdriveStartedAtSimMs/overdriveUntilSimMs/overdriveCooldownMultiplier: null`. Это обеспечивает детерминированный first-shot delay (см. ниже) без дублирования правил инициализации.
-- Слаймы **не получают** weapon modifier drops. `addWeaponModifierToSelectedWeapon`/`applyTemporaryOverdriveToSelectedWeapon` ([drops.md](drops.md), [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)) применяются только к player-owned `WeaponInstance`. Для слаймов нет canonical пути «передать modifier по ownerId», и 020 такого пути не вводит. Если позже понадобятся «бафнутые слаймы», это отдельное решение.
+  `setEnemyLoadout` repeats the `setPlayerLoadout` invariant exactly: validate `selectedIndex` in `[0, weapons.length)` or `null`, resolve `weaponArchetypeId` in `weaponRegistry` and throw on unknown id, call `createWeaponInstance` for each id, then write `shooterWeapons.set(enemyId, { ownerKind: 'enemy', weapons, selectedIndex })`. The player ban on empty `weapons: []` applies here too. If effective loadout is `null`, meaning no weapon, `setEnemyLoadout` is simply **not called** (see "Wiring" below).
+  `removeShooter(entityId)` is `shooterWeapons.delete(entityId)`, the single per-entity cleanup mutator for slime shooter state.
+- Each `WeaponInstance[i]` in `setEnemyLoadout` is initialized through the same `createWeaponInstance(archetypeId, ownerKind, simTimeMs)` helper as the player: `cooldownStartedAtSimMs = simTimeMs`, `nextFireSimMs = simTimeMs + initialFireDelayMs(archetype.cooldownMs, ownerKind)`, and `modifiers`, `overdriveStartedAtSimMs`, `overdriveUntilSimMs`, `overdriveCooldownMultiplier` start empty/null. This gives deterministic first-shot delay (see below) without duplicating initialization rules.
+- Slimes **do not receive** weapon modifier drops. `addWeaponModifierToSelectedWeapon` and `applyTemporaryOverdriveToSelectedWeapon` ([drops.md](drops.md), [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)) apply only to player-owned `WeaponInstance`s. There is no canonical "apply modifier by ownerId" path for slimes, and 020 does not introduce one. Buffed slimes, if needed later, are a separate decision.
 
-### Wiring (SpawnSystem → CombatSystem и death hook)
+### Wiring: SpawnSystem -> CombatSystem and death hook
 
-- `createSpawnSystem` получает опциональный параметр factory-options:
+- `createSpawnSystem` receives an optional factory option:
   ```ts
   type SpawnSystemOptions = {
     onEnemySpawned?: (enemyId: EntityId, loadout: Loadout, simTimeMs: number) => void;
   };
   ```
-  При создании любой сущности `enemy` (в `executeStatic`, `spawnNextWaveEnemy` и любых будущих путях) — если effective `loadout` **не `null`** (resolve: `override.loadout ?? null` по [spawn-overrides.md](spawn-overrides.md)) — SpawnSystem вызывает callback с `(enemyId, loadout, simTimeMs)`. Если effective loadout — `null`, callback не вызывается, и слайм остаётся без записи в `shooterWeapons` (это и есть «у этого спавна оружия нет, он не стреляет»).
-- Для static-спавнов `simTimeMs` в callback приходит из нового аргумента `SpawnSystem.onEncounterStart(encounter, store, arena, simTimeMs)` — точки вызова уже находятся в `SessionFlowSystem.onEncounterStart`, где `simTimeMs` доступен. Для wave-спавнов `simTimeMs` приходит из обычного `onTick(simTimeMs, entities)`. Расширение signature `onEncounterStart` — минимальная правка границы SpawnSystem, не новое правило.
-- В worker (`src/sim/worker.ts`):
-  - при создании SpawnSystem передаётся callback, обёрнутый над `combat`:
+  Whenever an `enemy` entity is created, in `executeStatic`, `spawnNextWaveEnemy`, or any future path, `SpawnSystem` calls the callback with `(enemyId, loadout, simTimeMs)` if effective `loadout` is **not `null`**. Resolution is `override.loadout ?? null` per [spawn-overrides.md](spawn-overrides.md). If effective loadout is `null`, the callback is not called and the slime has no `shooterWeapons` entry; this is how a spawn says "this slime has no weapon and does not shoot".
+- For static spawns, `simTimeMs` comes from a new argument to `SpawnSystem.onEncounterStart(encounter, store, arena, simTimeMs)`. The call sites already sit in `SessionFlowSystem.onEncounterStart`, where `simTimeMs` is available. For wave spawns, `simTimeMs` comes from the normal `onTick(simTimeMs, entities)`. Extending the `onEncounterStart` signature is a small boundary change, not a new rule.
+- In the worker (`src/sim/worker.ts`):
+  - `SpawnSystem` is created with a callback wrapped around `combat`:
     ```ts
     const spawn = createSpawnSystem({
       onEnemySpawned(enemyId, loadout, simTimeMs) {
@@ -64,102 +64,102 @@ Boss-стрельба отдельный случай и не входит в э
       }
     });
     ```
-  - в существующий death hook добавляется одна строка:
+  - the existing death hook gets one additional line:
     ```ts
     healthDeath.registerHook((ctx) => {
-      // ...существующие hooks...
+      // ...existing hooks...
       if (ctx.entityKind === 'enemy') combat.removeShooter(ctx.entityId);
     });
     ```
-    Порядок в death hook не важен для корректности (все hooks синхронные и не мутируют HP), но условно ставится рядом с `drops.onDeathHook(...)` по той же теме «enemy-death consequences».
-- На `sessionStart`/`sessionStop` (и при win/loss) `combat.clear()` продолжает делать ту же работу, что и сегодня — чистит **весь** `shooterWeapons`, включая любые записи слаймов. Никаких дополнительных правок lifecycle.
+    Hook order is not important for correctness because hooks are synchronous and do not mutate HP, but by convention this line sits next to `drops.onDeathHook(...)` as another enemy-death consequence.
+- On `sessionStart`/`sessionStop`, and on win/loss, `combat.clear()` continues to do the same work it does today: it clears **all** `shooterWeapons`, including slime entries. No extra lifecycle hooks are needed.
 
-### Cooldown инициализация и first-shot delay
+### Cooldown initialization and first-shot delay
 
-- `nextFireSimMs = simTimeMsAtSpawn + cooldownMs` для каждого `WeaponInstance` слайма. Значение инициализируется ровно в `createWeaponInstance(archetypeId, simTimeMsAtSpawn)` внутри `setEnemyLoadout` — тот же helper, что использует `setPlayerLoadout`. Слайм заряжает оружие ровно один полный cooldown до первого выстрела.
-- Это даёт игроку детерминированное окно реакции (`cooldownMs` миллисекунд между «слайм появился» и «слайм выстрелил»), и одновременно не вводит новых конфигурационных полей. `cooldownMs` уже несёт `WeaponArchetype` ([content-archetypes.md](content-archetypes.md)).
-- Никаких рандомных jitter-ов в стартовом cooldown. Deterministic regression-тест должен видеть один и тот же `simTime` первого `fire` event-а от слайма для одинакового `seed` и одинакового момента спавна.
-- Если позже понадобится «слайм стреляет сразу» или «удлинённый warmup для турелей», это вводится либо новым полем `WeaponArchetype.firstShotDelayMs`, либо отдельным `loadout.firstShotDelayOverrideMs`. На этом горизонте оба отсутствуют сознательно.
+- `nextFireSimMs = simTimeMsAtSpawn + cooldownMs` for each slime `WeaponInstance`. The value is initialized exactly in `createWeaponInstance(archetypeId, simTimeMsAtSpawn)` inside `setEnemyLoadout`, using the same helper as `setPlayerLoadout`. A slime charges for one full cooldown before its first shot.
+- This gives the player a deterministic reaction window: `cooldownMs` milliseconds between "slime appeared" and "slime fired". It also avoids new configuration fields. `cooldownMs` already belongs to `WeaponArchetype` ([content-archetypes.md](content-archetypes.md)).
+- There is no random jitter in starting cooldown. A deterministic regression test must see the same first `fire` event `simTime` for the same `seed` and same spawn time.
+- If "slime fires immediately" or "turret has a longer warmup" is needed later, it should be introduced as `WeaponArchetype.firstShotDelayMs` or `loadout.firstShotDelayOverrideMs`. Both are intentionally absent at this horizon.
 
 ### Aim picking
 
-- Aim для слайма — наивный, без AI:
+- Slime aim is naive and non-AI:
   ```ts
   const dx = player.position.x - enemy.position.x;
   const dy = player.position.y - enemy.position.y;
   const lengthSq = dx * dx + dy * dy;
-  if (lengthSq === 0) return /* пропустить выстрел этого тика */;
+  if (lengthSq === 0) return /* skip this tick's shot */;
   const length = Math.sqrt(lengthSq);
   aim = { x: dx / length, y: dy / length };
   ```
-- `player === null` (игрок мёртв и удалён) → фаза firing decisions для всех слаймов — no-op. Это уже общий контракт «системы толерантны к `player === null`» из [health-and-death.md](health-and-death.md). Применяется одинаково для всех слаймов: ни один выстрел не уходит на «последнюю известную позицию игрока».
-- Zero-length aim (слайм встал вплотную на игрока, центр-в-центр) → выстрел этого тика пропущен. Это уже фиксировано общим правилом `single`/`multiDirection` из [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md): «requires a valid aim direction; if the aim direction has zero length, no shot is fired».
-- Для `place`-fire-pattern (`bomb-placer`) aim не требуется: бомба ставится в позицию владельца. Слайм-бомбер с `bomb-placer` будет ставить бомбы вокруг себя независимо от позиции игрока. Это намеренно делает «минное поле» из стационарных bomb-placer-слаймов читаемым.
-- Для `multiDirection` (`fireball-staff`) aim используется как «опорное направление» 4-х fireballs. Слайм-обелиск с `fireball-staff` отправляет четыре fireball: один в игрока + три по крестообразным offset-ам. Это уже описано в [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md), здесь — только напомнить, что слайм использует **тот же** механизм, что игрок.
+- `player === null`, meaning the player is dead and removed, makes the firing-decisions phase for all slimes a no-op. This is the shared "systems tolerate `player === null`" contract from [health-and-death.md](health-and-death.md). It applies equally to all slimes: no shot targets the player's last known position.
+- Zero-length aim, where a slime stands center-to-center on the player, skips the shot for that tick. This is already the shared rule for `single`/`multiDirection` in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md): a valid aim direction is required, and zero-length aim fires no shot.
+- For the `place` fire pattern (`bomb-placer`), aim is not needed: the bomb is placed at the owner's position. A slime bomber with `bomb-placer` places bombs around itself independently of the player's position. This intentionally makes a minefield from stationary bomb-placer slimes readable.
+- For `multiDirection` (`fireball-staff`), aim is used as the four-fireball reference direction. A slime obelisk with `fireball-staff` fires one fireball at the player plus three at cross offsets. This is already described in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md); this file only states that the slime uses **the same** mechanism as the player.
 
-### Тик-фаза
+### Tick phase
 
-- Стрельба слайма выполняется в **той же фазе 1** «firing decisions» внутри `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md), раздел «Tick order inside CombatSystem»), что и стрельба игрока.
-- Сегодняшняя приватная функция `runFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit)` в `CombatSystem.ts` разносится на две:
-  - `runPlayerFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit)` — переименование текущего тела, поведение не меняется ни в одном байте; она и так уже читает `input.firing`/`input.aimWorld` и ищет `shooterWeapons.get(player.id)`;
-  - `runEnemyFiringDecisions(store, simTimeMs, shooterWeapons, weaponRegistry, emit)` — новая. Не читает `input`; в реальной runtime-интеграции слаймы не знают про `RuntimeInputState`.
-- Порядок вызова внутри фазы 1 (детерминированный, важен для replay и event-ordering теста):
+- Slime firing runs in **the same phase 1**, "firing decisions", inside `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md), "Tick order inside CombatSystem") as player firing.
+- The current private `CombatSystem.ts` function `runFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit)` is split into two:
+  - `runPlayerFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit)`, a rename of the current body with unchanged behavior. It already reads `input.firing`/`input.aimWorld` and looks up `shooterWeapons.get(player.id)`;
+  - `runEnemyFiringDecisions(store, simTimeMs, shooterWeapons, weaponRegistry, emit)`, new. It does not read `input`; in real runtime integration, slimes know nothing about `RuntimeInputState`.
+- Deterministic call order inside phase 1, important for replay and event-ordering tests:
   1. `runPlayerFiringDecisions(...)`;
   2. `runEnemyFiringDecisions(...)`;
-  3. boss firing уже идёт отдельной фазой через `BossPhaseSystem` и в этот порядок не вклинивается: boss остаётся на своём контракте ([boss-encounter.md](boss-encounter.md)).
-- Порядок итерации внутри `runEnemyFiringDecisions`:
-  - пройти по `store.enemies()` в порядке возрастания `EntityId` (стабильный детерминированный порядок, который даёт `EntityStore`); для каждой живой сущности сделать `shooterWeapons.get(enemy.id)` и обработать запись с `ownerKind === 'enemy'`;
-  - альтернатива «итерировать `shooterWeapons.entries()` с фильтром по ownerKind» допустима, если keys поддерживаются в детерминированном порядке insertion; на горизонте 020 первый путь проще и совпадает с контрактом broadphase/snapshot, который тоже идёт через `store.enemies()`.
-- Per-enemy логика в `runEnemyFiringDecisions` (симметрично player-пути):
-  - если `shooterWeapons.get(enemy.id)` — `undefined`, пропуск (слайм не получал loadout);
-  - если `selectedIndex === null` — пропуск;
-  - если сущность помечена мёртвой на этом тике (см. «Cleanup на смерти») — пропуск;
-  - `weapon = weapons[selectedIndex]`; если `simTimeMs < weapon.nextFireSimMs` — пропуск;
-  - вычислить aim (см. «Aim picking»), skip-правила для zero-length aim и `player === null` уже покрыты;
-  - резолвить `archetype = weaponRegistry[weapon.archetypeId]`; вызвать **тот же** `fireWeaponProjectiles(store, archetype, weapon.modifiers, enemy.id, 'enemy', enemy.position, aim, simTimeMs)`, что использует player-путь;
-  - `weapon.nextFireSimMs = simTimeMs + effectiveCooldownMs(archetype.cooldownMs, weapon, simTimeMs)` — тот же `effectiveCooldownMs`, что для player. `overdriveCooldownMultiplier` для слайма всегда `null`, но helper един;
-  - публиковать `fire` event с `shooterId: enemy.id`, `ownerKind: 'enemy'`, `originX/Y: enemy.position.x/y`, `dirX/Y: result.eventDirection` — форма events уже зафиксирована в [snapshot-shape.md](snapshot-shape.md).
+  3. boss firing is already a separate phase through `BossPhaseSystem` and does not insert itself here. Boss stays on its own contract ([boss-encounter.md](boss-encounter.md)).
+- Iteration order inside `runEnemyFiringDecisions`:
+  - walk `store.enemies()` in ascending `EntityId` order, which is the stable deterministic order provided by `EntityStore`; for each living entity, call `shooterWeapons.get(enemy.id)` and process entries with `ownerKind === 'enemy'`;
+  - iterating `shooterWeapons.entries()` and filtering by `ownerKind` is acceptable only if keys preserve deterministic insertion order. At the 020 horizon, the first path is simpler and matches broadphase/snapshot contracts that also go through `store.enemies()`.
+- Per-enemy logic in `runEnemyFiringDecisions`, symmetric to the player path:
+  - skip if `shooterWeapons.get(enemy.id)` is `undefined`; this slime has no loadout;
+  - skip if `selectedIndex === null`;
+  - skip if the entity is marked dead on this tick (see "Death cleanup");
+  - `weapon = weapons[selectedIndex]`; skip if `simTimeMs < weapon.nextFireSimMs`;
+  - compute aim (see "Aim picking"); zero-length aim and `player === null` skip rules are covered there;
+  - resolve `archetype = weaponRegistry[weapon.archetypeId]`; call the **same** `fireWeaponProjectiles(store, archetype, weapon.modifiers, enemy.id, 'enemy', enemy.position, aim, simTimeMs)` used by the player path;
+  - set `weapon.nextFireSimMs = simTimeMs + effectiveCooldownMs(archetype.cooldownMs, weapon, simTimeMs)`, using the same `effectiveCooldownMs` helper as player. `overdriveCooldownMultiplier` is always `null` for slimes, but the helper is shared;
+  - publish a `fire` event with `shooterId: enemy.id`, `ownerKind: 'enemy'`, `originX/Y: enemy.position.x/y`, and `dirX/Y: result.eventDirection`, using the event shape already defined by [snapshot-shape.md](snapshot-shape.md).
 
-### Cleanup на смерти
+### Death cleanup
 
-- Главный инвариант: **мёртвый слайм не стреляет, в том числе на тике своей смерти.**
-- Два уровня защиты, взаимно согласованные:
-  1. **Per-entity removeShooter из death hook.** Worker регистрирует в death hook строку `if (ctx.entityKind === 'enemy') combat.removeShooter(ctx.entityId);` (см. «Wiring»). Это очищает запись в `shooterWeapons` синхронно в фазе 4 death-hooks ([health-and-death.md](health-and-death.md)). На любом последующем тике `runEnemyFiringDecisions` уже не найдёт этот id в `shooterWeapons.get(...)` и естественным образом пропустит сущность.
-  2. **Same-tick guard в `runEnemyFiringDecisions`.** Фаза 1 «firing decisions» идёт на том же тике **раньше** фазы 5 «impact detection» и фазы `HealthDeathSystem`, которая и делает death hooks. Значит, на тике, когда слайм умирает, его запись в `shooterWeapons` ещё есть во время `runEnemyFiringDecisions`. Но сама сущность на этой точке уже **либо жива и её HP > 0** (death hook ещё не сработал), **либо** её нет в `store.enemies()` — оба случая покрыты тем, что итерация идёт через `store.enemies()`: удалённый enemy там не возвращается. Для добавочной страховки (смерть от же-тика-intent до фазы 1 в будущем) допустимо явно проверять `enemy.hp > 0` в per-enemy loop — это no-op на сегодняшнем порядке, но защита на случай будущих пересадок.
-- Уже летящие снаряды (`Projectile.ownerId === deadEnemy.id`) **не отзываются** при смерти владельца. Они продолжают по своей траектории, наносят урон по обычным правилам, корректно ведут explosion-фазу. `ownerKind === 'enemy'` фильтрация в damage rules продолжает работать. `ownerId`-exclusion корректен даже после удаления владельца: `EntityStore.byId(ownerId)` после удаления возвращает `null`, snaphot не содержит мёртвую сущность, и фактическое пересечение со «своим» broadphase-целевым объектом невозможно.
-- На `sessionStart`/`sessionStop`/win/loss вся очистка идёт через существующий `combat.clear()`, который обнуляет **весь** `shooterWeapons` целиком, включая записи слаймов. Дополнительных session-lifecycle-хуков не нужно.
-- Death event (`kind: 'death'`, [snapshot-shape.md](snapshot-shape.md)) для слайма публикуется **до** runDeathHooks; никаких новых полей в death event для стреляющих слаймов не вводится. Если позже понадобится «знать, что умер именно стрелок», это решается потребителем через resolve `archetypeId` → loadout-наличие на стороне content (но контракт смерти не расширяется).
+- Primary invariant: **a dead slime does not fire, including on the tick when it dies.**
+- Two defenses support the invariant:
+  1. **Per-entity `removeShooter` from death hook.** The worker registers `if (ctx.entityKind === 'enemy') combat.removeShooter(ctx.entityId);` in the death hook (see "Wiring"). This clears the `shooterWeapons` entry synchronously in death-hook phase 4 ([health-and-death.md](health-and-death.md)). On any later tick, `runEnemyFiringDecisions` cannot find the id and naturally skips it.
+  2. **Same-tick guard in `runEnemyFiringDecisions`.** Phase 1, "firing decisions", happens earlier in the same tick than phase 5, "impact detection", and the `HealthDeathSystem` phase that runs death hooks. Therefore, on the tick where a slime dies, its `shooterWeapons` entry still exists during `runEnemyFiringDecisions`. At that point the entity is either still alive with `hp > 0`, because the death hook has not run, or it is absent from `store.enemies()`. Iterating through `store.enemies()` covers both cases. An explicit `enemy.hp > 0` check in the per-enemy loop is also allowed as future-proofing if order changes; it is a no-op for today's order.
+- Already flying projectiles (`Projectile.ownerId === deadEnemy.id`) are **not recalled** when the owner dies. They continue on their trajectories, deal damage by the usual rules, and correctly participate in explosion resolution. `ownerKind === 'enemy'` filtering continues to work. `ownerId` exclusion remains correct after owner removal: `EntityStore.byId(ownerId)` returns `null`, the snapshot does not contain the dead entity, and overlap with the former owner is impossible.
+- On `sessionStart`/`sessionStop`/win/loss, all cleanup goes through existing `combat.clear()`, which clears **all** `shooterWeapons`, including slime entries. No additional session-lifecycle hooks are needed.
+- The slime `death` event (`kind: 'death'`, [snapshot-shape.md](snapshot-shape.md)) is published **before** `runDeathHooks`; no new fields are added for shooting slimes. If consumers later need to know that the dead entity was a shooter, they can resolve `archetypeId` to content/loadout information. The death event contract does not expand for this.
 
-### Friendly-fire фильтр и единый damage-rule helper
+### Friendly-fire filter and shared damage-rule helper
 
-- `slimeFriendlyFire: false` фильтрует enemy-to-enemy урон. Это уже зафиксировано в [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) и [projectiles-and-combat.md](projectiles-and-combat.md), раздел «Damage rules», как «централизованный helper, используемый impact, explosion, proximity-trigger checks и future field effects».
-- Story 020 не вводит новый damage rule. Она только закрепляет уже существующий **инвариант helper-а**: и **impact**-фаза, и **explosion**-фаза `CombatSystem` обязаны использовать **один и тот же** `canDamageTarget(projectile, target, sessionRules)` helper. Дублирующая ad-hoc проверка во второй фазе запрещена. Регрессионный тест: при `slimeFriendlyFire: false` другой слайм, попавший в радиус взрыва соседа-гранатомёта, не получает HP-урон и не публикует `hit`/`death` event-ов.
-- Это явное напоминание ровно потому, что story 020 первой реально нагружает explosion-фазу слайм-снарядами в продакшн-кампании. Любая ад-хок ветка вида «ну для слайм-гранат проверим иначе» — нарушение этого инварианта.
+- `slimeFriendlyFire: false` filters enemy-to-enemy damage. This is already defined in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) and [projectiles-and-combat.md](projectiles-and-combat.md), "Damage rules", as a centralized helper used by impact, explosion, proximity-trigger checks, and future field effects.
+- Story 020 does not introduce a new damage rule. It reinforces the existing **helper invariant**: both the **impact** phase and the **explosion** phase in `CombatSystem` must use the **same** `canDamageTarget(projectile, target, sessionRules)` helper. Duplicated ad hoc checks in the second phase are forbidden. Regression test: with `slimeFriendlyFire: false`, another slime inside the blast radius of a neighbor's grenade takes no HP damage and emits no `hit`/`death` events.
+- This reminder is explicit because story 020 is the first time production campaign content materially exercises the explosion phase with slime projectiles. Any ad hoc branch such as "check slime grenades differently" violates this invariant.
 
 ### Audio
 
-- Звук выстрела слайма идёт через те же `WEAPON_AUDIO_MAPPINGS` ([audio.md](audio.md)), что и для игрока. Связь `weaponArchetypeId → sampleId` едина для всех `ownerKind`. Никакого «второй sampleId для слайм-варианта пистолета» не вводится: тот же `weapons/pistol.mp3` звучит и из игрока, и из слайма.
-- Если позже захочется акустически отличать «враждебный выстрел» (pitch-shift, alternate pool), это будет расширение [audio.md](audio.md), не правка этого файла.
-- Сценарий «звук слайм-выстрелов читается как враждебный» из Acceptance story 020 покрывается визуальной парой «снаряд видим + landing-telegraph для arc + impact-направление от не-игрока», а не отдельным звуком.
+- Slime shot sounds use the same `WEAPON_AUDIO_MAPPINGS` ([audio.md](audio.md)) as player shots. The `weaponArchetypeId -> sampleId` mapping is shared across all `ownerKind` values. There is no second sample id for an enemy version of the pistol; the same `weapons/pistol.mp3` is heard from both player and slime.
+- If hostile shots later need an acoustic distinction, such as pitch shifting or an alternate pool, that will extend [audio.md](audio.md), not this file.
+- The story 020 acceptance scenario "slime shot sounds read as hostile" is covered by the visual pair: visible projectile plus landing telegraph for arcs plus impact direction from a non-player source. It is not covered by a separate sound.
 
-### Что этот файл намеренно не описывает
+### Intentionally not described here
 
-- AI-таргетинг любого вида (LoS, упреждение, кайтинг).
-- Переключение оружия слаймом по ходу боя или по фазам HP.
-- Бафф/дебафф `WeaponInstance` слайма во время игры.
-- Стрельбу босса (живёт в `BossPhaseSystem` / [boss-encounter.md](boss-encounter.md)).
-- Pre-shot preview / muzzle-flash UX для слайм-выстрела на main-thread (если когда-нибудь захочется — это расширение [impact-feedback.md](impact-feedback.md), не этого файла).
-- Per-archetype default loadout (см. запреты в [spawn-overrides.md](spawn-overrides.md)).
+- Any AI targeting: line of sight, leading, kiting.
+- Slime weapon switching during combat or by HP phase.
+- Runtime buffs/debuffs for slime `WeaponInstance`.
+- Boss firing, which lives in `BossPhaseSystem` / [boss-encounter.md](boss-encounter.md).
+- Main-thread pre-shot preview or muzzle-flash UX for slime shots; if needed, that extends [impact-feedback.md](impact-feedback.md), not this file.
+- Per-archetype default loadout; see the explicit ban in [spawn-overrides.md](spawn-overrides.md).
 
 ## Consequences
 
-- `CombatSystem` остаётся единственным owner firing decisions для всех `ownerKind`. Расширение — две новые приватные функции (`runPlayerFiringDecisions` как переименование текущей + `runEnemyFiringDecisions` как новая) и два новых публичных API (`setEnemyLoadout`, `removeShooter`) на том же `ShooterWeapons`-реестре, что и player loadout. Никаких новых системных границ, никаких side-tables, параллельных существующим.
-- `EntityStore` для сущности `enemy` **не получает** новых полей. Это устраняет проектную асимметрию с player-ом, у которого loadout тоже не на сущности.
-- Детерминизм относительно `seed` сохраняется: aim — чистая функция текущих позиций, cooldown — целочисленные ms, порядок `runPlayerFiringDecisions → runEnemyFiringDecisions` внутри фазы 1 закреплён, итерация слаймов идёт по `store.enemies()` в порядке `EntityId`.
-- Friendly-fire фильтр в explosion-фазе становится критичным для UX hard-кампании story 020 (минное поле сета 4): без него слаймы-бомберы зачищают сет сами. Закрепление инварианта «один helper на impact и explosion» (`canDamageTarget` из `src/sim/DamageRules.ts`) защищает от регрессии. В реализации 017 этот helper уже общий — задача ист 020 в этой части сводится к регрессионному тесту, не к рефакторингу.
-- Расширение «слайм с временным overdrive» или «слайм с modifier-ами» на этом горизонте не нужно и не вводится: `addModifierToSelectedWeapon`/`applyTemporaryOverdriveToSelectedWeapon` — player-only, для слаймов не вызывать. Если нужно — новое decision.
-- Тестируемость: unit-тест `CombatSystem.enemyFire` может напрямую вызвать `combat.setEnemyLoadout(enemyId, loadout, simTime)` и тиктать систему; ассерт — на `simTime + cooldownMs` появился `fire` event с `ownerKind: 'enemy'`, на следующем тике после `cooldownMs` — ещё один, после `removeShooter(enemyId)` — ни одного. Никаких worker-фикстур, никаких EntityStore-модификаций.
-- Полная плата за «слаймы стреляют»: одно optional-поле в `SpawnOverride` ([spawn-overrides.md](spawn-overrides.md)), два новых публичных API на `CombatSystem`, одна новая приватная функция + переименование существующей, один новый callback в `createSpawnSystem`-options, одна строка в death hook worker-а, один новый аргумент `simTimeMs` в `SpawnSystem.onEncounterStart`. Ни новых kind в snapshot, ни новых runtime events, ни новых систем, ни новых полей на runtime-сущности `enemy`.
+- `CombatSystem` remains the single owner of firing decisions for all `ownerKind` values. The extension consists of two private functions (`runPlayerFiringDecisions` as a rename and `runEnemyFiringDecisions` as new) and two public APIs (`setEnemyLoadout`, `removeShooter`) on the same `ShooterWeapons` registry as player loadout. There are no new system boundaries, side tables, or parallel structures.
+- Runtime `enemy` entities receive **no** new fields. This removes a design asymmetry with the player, whose loadout is also not stored on the entity.
+- Determinism relative to `seed` is preserved: aim is a pure function of current positions, cooldown uses integer milliseconds, the phase-1 order `runPlayerFiringDecisions -> runEnemyFiringDecisions` is fixed, and slime iteration follows `store.enemies()` by `EntityId`.
+- The friendly-fire filter in explosion resolution becomes critical for the hard-campaign UX in story 020 (minefield set 4): without it, bomber slimes clear the set themselves. Pinning the invariant "one helper for impact and explosion" (`canDamageTarget` from `src/sim/DamageRules.ts`) protects against regression. In the 017 implementation this helper is already shared, so story 020 needs a regression test rather than a refactor for this piece.
+- "Slime with temporary overdrive" or "slime with modifiers" is not needed at this horizon and is not introduced: `addModifierToSelectedWeapon` and `applyTemporaryOverdriveToSelectedWeapon` are player-only and must not be called for slimes. If needed, that is a new decision.
+- Testability: a unit test `CombatSystem.enemyFire` can call `combat.setEnemyLoadout(enemyId, loadout, simTime)` directly and tick the system. Assertions: at `simTime + cooldownMs`, a `fire` event appears with `ownerKind: 'enemy'`; after another cooldown, another event appears; after `removeShooter(enemyId)`, none appear. No worker fixtures and no `EntityStore` shape changes are needed.
+- Full cost of "slimes can shoot": one optional field in `SpawnOverride` ([spawn-overrides.md](spawn-overrides.md)), two public APIs on `CombatSystem`, one new private function plus one rename, one callback in `createSpawnSystem` options, one line in the worker death hook, and one new `simTimeMs` argument to `SpawnSystem.onEncounterStart`. No new snapshot kind, runtime event, system, or runtime `enemy` field.
 
 ## Related
 

@@ -12,7 +12,7 @@ Story 022 replaces that old block HUD with a combat-first HUD:
 
 - all renderer debug panels disappear except the existing FPS overlay;
 - top-left shows run time and compact combat status;
-- bottom-left and bottom-right show lightweight control hints (`WASD`, `ЛКМ: выстрел`);
+- bottom-left and bottom-right show lightweight control hints (`WASD`, `LMB: Fire`);
 - bottom-center shows weapon slots, selected slot, cooldown fill and upgrade badges;
 - temporary overdrive needs a progress fill, and permanent weapon modifiers need stable badge visuals.
 
@@ -38,7 +38,7 @@ The combat HUD has five fixed viewport regions:
 | Top-center | boss HP strip when `bossHud !== null` | `snapshot.bossHud` + boss content for label if needed |
 | Bottom-left | translucent `WASD` keycap cluster | static presentation, from [input-commands.md](input-commands.md) |
 | Bottom-center | weapon slot bar with cooldown and upgrade badges | `snapshot.weaponHud` + visual registries |
-| Bottom-right | mouse icon + `ЛКМ: выстрел` | static presentation, from [input-commands.md](input-commands.md) |
+| Bottom-right | mouse icon + `LMB: Fire` | static presentation, from [input-commands.md](input-commands.md) |
 
 - HUD regions use `position: fixed` viewport placement, not canvas-relative placement. Letterbox/pillarbox areas may sit behind HUD; this follows [main-ui-shell.md](main-ui-shell.md).
 - HUD uses `pointer-events: none`. It must never catch mouse input or affect Pointer Lock recovery.

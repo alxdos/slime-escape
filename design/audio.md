@@ -2,75 +2,75 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-26 (story 024: menu phase fixed music is `music/digital-dawn` from existing `public/sfx/music/digital-dawn.mp3`; terminal `win` runtime event plays `events.victoryFanfare = ui/fanfare` from existing `public/sfx/ui/fanfare.mp3`; `loss` does not play it and `AudioUiEventId` is unchanged. story 023: menu phase получила fixed menu music through the same selector; `AudioUiEventId` расширен на `buttonHover` и `modeSwitch`; `buttonHover` маппится на существующий `ui/open-1`, `modeSwitch` резервирует существующий `ui/switch-2`, а общий `buttonClick`-пул использует оставшиеся `ui/switch-1/3/4`. Оба новых UI-события вызываются через `UiShell`. story 021: music selector больше не хранит `regularPool` внутри `Audio` — выбор обычной музыки переносится на session-level поле `SessionDefinition.musicSampleId` ([session-definition.md](session-definition.md)); boss override по `encounter.type === 'boss'` сохраняется без изменений, pause ducking тоже. `SampleRegistry`-инвариант: любой entry с `category: 'music'` обязан иметь `loop: true`, иначе ошибка модуля на инициализации `Audio`; валидатор музыки теперь явно проверяет category+loop. Для `musicSampleId: null` регулярная музыка молчит весь забег — это legitimate конфигурация. Earlier: 2026-04-23 story 014: авторская поверхность для `WEAPON_AUDIO_MAPPINGS[*].fire` переезжает на inline audio-link-узел под H2 weapon в `content/weapons.md`, для `ENEMY_AUDIO_MAPPINGS[*].hit/death/voice` — на новую партицию `# Sound sets` в `content/enemies.md` с `## Members` (`setId | slimes`) и узкими group-таблицами `## Hit`/`## Death`/`## Voice`, чьи `sampleId`-ячейки тоже допускают inline audio-link-форму (см. разделы «Inline media-узлы как derive-источники» и «Shared resource set partition» в [content-authoring.md](content-authoring.md)); рантайм-формы `EnemyAudioMapping`, `BOSS_AUDIO_MAPPINGS`, `WEAPON_AUDIO_MAPPINGS`, `SampleRegistry`, `createAudioMappings` и валидаторы — не меняются, генератор разворачивает sound-set N→1 в тот же `Record<enemyArchetypeId, EnemyAudioMapping>` байт-в-байт. story 013 расширяет `ENEMY_AUDIO_MAPPINGS` на все 30 slime-архетипов и `BOSS_AUDIO_MAPPINGS` на все 5 boss-архетипов через те же три пула `slimes/hit-*`/`slimes/death-*`/`slimes/voice-*` и существующие boss sample id; формы маппингов и `SampleRegistry` не меняются. story 012 покрывает MD-генерацией weapon/boss audio-маппинги и дозаполнение enemy sound по пулам из `SampleRegistry`; типы и валидации не меняются)
+- Updated: 2026-04-26 (story 024: menu phase fixed music is `music/digital-dawn` from existing `public/sfx/music/digital-dawn.mp3`; terminal `win` runtime event plays `events.victoryFanfare = ui/fanfare` from existing `public/sfx/ui/fanfare.mp3`; `loss` does not play it and `AudioUiEventId` is unchanged. Story 023: menu phase receives fixed menu music through the same selector; `AudioUiEventId` is extended with `buttonHover` and `modeSwitch`; `buttonHover` maps to existing `ui/open-1`, `modeSwitch` reserves existing `ui/switch-2`, and the shared `buttonClick` pool uses the remaining `ui/switch-1/3/4`. Both new UI events are invoked through `UiShell`. Story 021: music selector no longer stores `regularPool` inside `Audio`; regular music selection moves to session-level `SessionDefinition.musicSampleId` ([session-definition.md](session-definition.md)); boss override by `encounter.type === 'boss'` remains unchanged, as does pause ducking. `SampleRegistry` invariant: every entry with `category: 'music'` must have `loop: true`, otherwise `Audio` initialization errors; music validator now explicitly checks category+loop. For `musicSampleId: null`, regular music is silent for the entire run, which is a legitimate configuration. Earlier: 2026-04-23 story 014: authoring surface for `WEAPON_AUDIO_MAPPINGS[*].fire` moves to an inline audio-link node under the weapon H2 in `content/weapons.md`; for `ENEMY_AUDIO_MAPPINGS[*].hit/death/voice`, it moves to a new `# Sound sets` partition in `content/enemies.md` with `## Members` (`setId | slimes`) and narrow group tables `## Hit`/`## Death`/`## Voice`, whose `sampleId` cells also allow inline audio-link form (see "Inline media nodes as derive sources" and "Shared resource set partition" in [content-authoring.md](content-authoring.md)); runtime shapes `EnemyAudioMapping`, `BOSS_AUDIO_MAPPINGS`, `WEAPON_AUDIO_MAPPINGS`, `SampleRegistry`, `createAudioMappings`, and validators are unchanged. The generator expands sound-set N-to-1 into the same `Record<enemyArchetypeId, EnemyAudioMapping>` byte-for-byte. Story 013 extends `ENEMY_AUDIO_MAPPINGS` to all 30 slime archetypes and `BOSS_AUDIO_MAPPINGS` to all 5 boss archetypes through the same three pools `slimes/hit-*` / `slimes/death-*` / `slimes/voice-*` and existing boss sample ids; mapping shapes and `SampleRegistry` do not change. Story 012 covers weapon/boss audio mappings with MD generation and fills enemy sound from `SampleRegistry` pools; types and validation do not change.)
 
 ## Context
 
-[thread-model.md](thread-model.md) фиксирует, что аудио живёт в `main thread`, что HUD и аудио опираются на снапшоты, а runtime events используют как триггеры реакции, и что master gain — будущая точка интеграции с настройками громкости. [snapshot-shape.md](snapshot-shape.md) задаёт per-kind поля сущностей в снапшоте (с обязательным `archetypeId` у `enemy`/`projectile`/`drop`/`boss`) и форму runtime events: `fire`, `hit`, `death`, `dropSpawn`/`dropPickup`/`dropExpire`, `bossPhaseChange`, `pause`/`resume`, `encounterStart`/`encounterEnd`, `win`/`loss`. [main-ui-shell.md](main-ui-shell.md) уже зафиксировал, что 008 «attaches к UI-фазам и runtime events», что HUD не подписывается на runtime events напрямую и что прямой доступ к `SimWorkerHost.onEvent` из компонентов запрещён — фан-аут идёт через `UiShell`. [content-boundaries.md](content-boundaries.md) делит данные на четыре уровня и помещает «громкость» в `client settings`. [content-archetypes.md](content-archetypes.md) фиксирует поле `color` как контентный плейсхолдер визуала, но не вводит аудио-полей в архетипы. [rng.md](rng.md) ограничивает session RNG только симуляцией; main вправе использовать `Math.random` для presentation, не уходящей в snapshot/события. [web-stack.md](web-stack.md) запрещает вводить новые корневые директории под презентацию; всё новое для main лежит внутри `src/main/**`.
+[thread-model.md](thread-model.md) states that audio lives on the `main thread`, HUD and audio rely on snapshots while runtime events trigger reactions, and master gain is the future settings integration point. [snapshot-shape.md](snapshot-shape.md) defines per-kind entity fields in snapshots, including required `archetypeId` on `enemy`/`projectile`/`drop`/`boss`, and runtime events: `fire`, `hit`, `death`, `dropSpawn`/`dropPickup`/`dropExpire`, `bossPhaseChange`, `pause`/`resume`, `encounterStart`/`encounterEnd`, `win`/`loss`. [main-ui-shell.md](main-ui-shell.md) already states that 008 attaches to UI phases and runtime events, that HUD does not subscribe to runtime events directly, and that direct component access to `SimWorkerHost.onEvent` is forbidden; fan-out goes through `UiShell`. [content-boundaries.md](content-boundaries.md) splits data into four levels and places volume in `client settings`. [content-archetypes.md](content-archetypes.md) defines `color` as a content placeholder for visuals, but does not add audio fields to archetypes. [rng.md](rng.md) limits session RNG to simulation; main may use `Math.random` for presentation that does not enter snapshots/events. [web-stack.md](web-stack.md) forbids new root directories for presentation; new main-side code lives under `src/main/**`.
 
-История 008 одновременно вводит:
+Story 008 introduces at the same time:
 
-- Web Audio mixer и unlock на жесте;
-- маппинг `weaponArchetypeId` / `enemyArchetypeId` / `bossArchetypeId` / события → сэмплы;
-- ambient-голоса слаймов, у которых нет соответствующего runtime event в симе;
-- фоновую музыку с переключением на boss-track и на UI-фазы (`menu`/`running`/`paused`/`result`);
-- индивидуальные поправки громкости для исходных файлов (шотган громче, slime ambient тише), и одновременно
-- задел под 009 (settings), который должен крутить master/per-bus volume поверх этих поправок, не перетирая их.
+- Web Audio mixer and unlock on user gesture;
+- mappings from `weaponArchetypeId` / `enemyArchetypeId` / `bossArchetypeId` / events to samples;
+- ambient slime voices with no corresponding sim runtime event;
+- background music with switch to boss track and UI phases (`menu`/`running`/`paused`/`result`);
+- individual loudness adjustments for source files, such as shotgun louder and slime ambient quieter;
+- groundwork for 009 settings, which must control master/per-bus volume on top of those adjustments without overwriting them.
 
-Без явного контракта 008 закрепит «магические» множители в коде систем, поправки громкости и gameplay-громкость смешаются в одной точке, маппинг архетипов утечёт в `src/shared/content/**`, а 009 будет вынуждена переоткрыть тот же контракт. Решение фиксирует общую модель аудио на горизонт MVP.
+Without an explicit contract, 008 would lock magic gain multipliers into system code, mix file loudness correction with gameplay volume in one place, leak archetype mappings into `src/shared/content/**`, and force 009 to reopen the same contract. This decision defines the MVP audio model.
 
 ## Decision
 
-### Размещение
+### Placement
 
-- Весь аудио-стек живёт под `src/main/audio/**`. Новых корневых каталогов проект не получает (см. [web-stack.md](web-stack.md)).
-- Никакой модуль `src/main/audio/**` не имеет права импортировать из `src/sim/**`. Контакт с симуляцией — только через уже зафиксированный API `SimWorkerHost` (`onEvent`/`snapshotPair`/`isPaused`); фан-аут к `Audio` выполняет `UiShell`, как для `Hud` ([main-ui-shell.md](main-ui-shell.md)).
-- Маппинги «архетип → sampleId» и «событие → sampleId» живут в `src/main/audio/**`, **не** в `src/shared/content/**`. Это presentation-данные, не игровой контент: их читает только main, они не входят в `SessionDefinition` и не влияют на исход забега. `EnemyArchetype`/`WeaponArchetype`/`BossArchetype` в [content-archetypes.md](content-archetypes.md) **не** расширяются аудио-полями; связь идёт по строковому `archetypeId`, который уже есть в снапшоте/событиях.
+- The whole audio stack lives under `src/main/audio/**`. The project does not gain new root directories (see [web-stack.md](web-stack.md)).
+- No `src/main/audio/**` module may import from `src/sim/**`. Contact with simulation happens only through the established `SimWorkerHost` API (`onEvent`/`snapshotPair`/`isPaused`); `UiShell` fans out to `Audio`, as it does for `Hud` ([main-ui-shell.md](main-ui-shell.md)).
+- Mappings from archetype/event to `sampleId` live in `src/main/audio/**`, **not** in `src/shared/content/**`. They are presentation data, not gameplay content: only main reads them, they do not enter `SessionDefinition`, and they do not affect run outcome. `EnemyArchetype`/`WeaponArchetype`/`BossArchetype` in [content-archetypes.md](content-archetypes.md) are **not** extended with audio fields; binding uses the string `archetypeId` already present in snapshots/events.
 
-### AudioContext и unlock
+### AudioContext and unlock
 
-- На всё приложение — **один** `AudioContext`, создаётся при старте `UiShell` рядом с `Hud`/`SimWorkerHost` и живёт всю жизнь приложения. `stopSession` не приводит к пересозданию контекста, точно так же, как не приводит к `worker.terminate()` ([thread-model.md](thread-model.md)).
-- До первого user-gesture браузеры держат `AudioContext` в `suspended`. `Audio.unlock()` идемпотентен и:
-  - вызывается `UiShell` из захватывающего one-shot listener-а на `pointerdown`/`keydown`;
-  - переводит `AudioContext` в `running` через `resume()`;
-  - до первого успешного unlock-а любые попытки воспроизведения no-op с warning через единый log-модуль ([logging.md](logging.md)).
-- `Audio.unlock()` не зависит от состояния сессии: он применим и в `menu`-фазе, и в любой другой. Это позволяет сразу проиграть UI-звуки на первом клике/кнопке.
+- The app has **one** `AudioContext`, created on `UiShell` startup beside `Hud`/`SimWorkerHost` and kept for the full app lifetime. `stopSession` does not recreate the context, just as it does not `worker.terminate()` ([thread-model.md](thread-model.md)).
+- Before the first user gesture, browsers keep `AudioContext` in `suspended`. `Audio.unlock()` is idempotent and:
+  - is called by `UiShell` from a capturing one-shot listener on `pointerdown`/`keydown`;
+  - moves `AudioContext` to `running` through `resume()`;
+  - before the first successful unlock, all playback attempts are no-ops with a warning through the shared log module ([logging.md](logging.md)).
+- `Audio.unlock()` is independent of session state: it applies in `menu` and every other phase. This allows UI sounds to play on the first click/button once unlocked.
 
 ### Mixer graph
 
-- Граф соединений источника:
-  ```
+- Source connection graph:
+  ```text
   source -> perSourceTrim -> categoryBus -> master -> destination
   ```
-- Категории (`bus`) на горизонт 008–009: `sfx`, `music`, `ui`. Расширение (например, отдельный `voice`-bus для слайм-ambient или `ambience` для нелокальных шумов) допустимо отдельным расширением **этого** файла; вводить bus «по месту» в коде систем запрещено.
-- На 008 baseline `master` и все `bus` начинаются со значения `1.0`. История 009 (settings) рулит ими через `client settings` ([content-boundaries.md](content-boundaries.md)) и не вводит собственного контракта громкости — она пишет в уже существующие точки этого графа.
-- Граф полностью описывается на стороне `src/main/audio/**`; конкретные `GainNode`/`AudioBufferSourceNode` — деталь реализации.
+- Categories (`bus`) for 008-009: `sfx`, `music`, `ui`. Adding another bus, such as `voice` for slime ambient or `ambience` for non-local sounds, is an explicit extension of **this** file. Systems must not introduce buses locally.
+- In 008 baseline, `master` and all buses start at `1.0`. Story 009 controls them through `client settings` ([content-boundaries.md](content-boundaries.md)) and does not introduce a separate volume contract; it writes into the existing graph points.
+- The graph is entirely described in `src/main/audio/**`; concrete `GainNode`/`AudioBufferSourceNode` wiring is an implementation detail.
 
-### Двухслойная громкость (sample registry)
+### Two-layer volume: sample registry
 
-Источник «магических чисел» в аудио — две **разные** оси:
+Audio "magic numbers" represent two **different** axes:
 
-1. Поправка на громкость исходного файла (меняется, когда файл переписали или заменили).
-2. Gameplay-роль звука (меняется, когда меняется его место в игре: шотган громче пистолета, ambient слаймов специально приглушён).
+1. Source-file loudness correction, changed when the file is rewritten or replaced.
+2. Gameplay role loudness, changed when the sound's place in the game changes: shotgun louder than pistol, slime ambient intentionally subdued.
 
-Эти оси разводятся на уровне реестра сэмплов и комбинируются по фиксированной формуле.
+The sample registry separates those axes and combines them by a fixed formula.
 
-- Каждый сэмпл в реестре несёт минимум:
+- Each sample entry contains at least:
   ```ts
   type SampleCategory = 'sfx' | 'music' | 'ui';
 
   type SampleEntry = Readonly<{
-    id: string;                     // стабильный, уникальный в реестре
-    url: string;                    // путь относительно public/
+    id: string;                     // stable, unique in registry
+    url: string;                    // path relative to public/
     category: SampleCategory;
-    normalizedGain: number;         // (0, 2], коррекция громкости файла
-    defaultGain: number;            // [0, 2], gameplay-уровень громкости
-    loop?: boolean;                 // true — для music/ambience
+    normalizedGain: number;         // (0, 2], source-file loudness correction
+    defaultGain: number;            // [0, 2], gameplay loudness
+    loop?: boolean;                 // true for music/ambience
   }>;
   ```
-- Для `category: 'music'` поле `loop` обязательно равно `true`. Это инвариант модуля: session music по контракту «один трек на всю сессию» ([session-definition.md](session-definition.md), поле `musicSampleId`), и `Audio` не полагается на «сам перезапущу при `onended`». Нарушение — ошибка модуля на инициализации `Audio` (см. «Бюджеты и инварианты»).
-- Эффективный gain источника при воспроизведении:
-  ```
+- For `category: 'music'`, `loop` must be `true`. This is a module invariant: session music is contracted as "one track for the whole session" ([session-definition.md](session-definition.md), `musicSampleId`), and `Audio` must not rely on "restart it myself in `onended`". Violation is an `Audio` initialization error (see "Budgets and invariants").
+- Effective gain for playback:
+  ```text
   effectiveGain =
     sample.normalizedGain
     * sample.defaultGain
@@ -78,103 +78,103 @@
     * busGain[sample.category]
     * masterGain
   ```
-  где `perCallGainMul` — опциональный ситуативный множитель (например, falloff по дистанции в будущих расширениях), а `busGain`/`masterGain` — узлы графа.
-- Формула описывает **итоговый** effective gain в точке `destination`. На уровне `Web Audio`-графа эти множители распределены по узлам так, что каждый множитель появляется ровно один раз:
+  `perCallGainMul` is an optional situational multiplier, such as future distance falloff; `busGain`/`masterGain` are graph nodes.
+- The formula describes final effective gain at `destination`. In the Web Audio graph, these multipliers are distributed so each appears exactly once:
   - `perSourceTrim.gain.value = sample.normalizedGain * sample.defaultGain * (perCallGainMul ?? 1)`;
-  - `busGain[category].gain.value` — owned bus-узлом, меняется только через расширения этого файла (на горизонт 008 — статически `1.0`);
-  - `masterGain.gain.value` — owned master-узлом, единственная точка для 009 (см. ниже «Settings integration»).
-- Запрещено инлайнить значение `busGain`/`masterGain` внутрь `perSourceTrim`: это сломает live-изменение громкости у уже играющих источников и продублирует множитель для новых. Смена `gain.value` на bus/master-узле штатно (по семантике Web Audio) применяется ко всем подключённым источникам, включая уже играющие.
-- Правила содержания полей:
-  - `normalizedGain` подбирается «по уху/измерению» на стороне реестра, **не** в кодах систем-потребителей. Менять только при замене файла.
-  - `defaultGain` отражает дизайн-намерение «как громко эта роль должна звучать в нейтральных условиях». Менять при изменении дизайнерской роли звука (например, «слайм-ambient слишком давит — снизить до 0.2»).
-  - Конкретные явные точки на 008 baseline:
-    - `weapons/shotgun.mp3` — `normalizedGain ≈ 0.35` (исходный файл сильно громче остальных оружий);
-    - `music/*.mp3` из `public/sfx/music/**` — `normalizedGain ≈ 1.6` (исходные файлы тихие, включая menu ticking и session music);
-    - `music/digital-dawn.mp3` — `normalizedGain ≈ 0.55` (используется как menu music и исходный файл громче прежнего menu ticking);
-    - `slimes/slime-*` в роли ambient — `defaultGain ≈ 0.3` (приглушённый фон, не перебивает выстрелы и попадания).
-- Запрещены:
-  - Жёстко зашитые числовые множители громкости в коде систем-потребителей. Если конкретный звук «звучит не так», правка идёт в реестр, не в систему.
-  - Реестр в `src/shared/content/**`. Аудио-данные не часть `content library` — они **не** влияют на симуляцию и не сериализуются как контракт сессии.
+  - `busGain[category].gain.value` belongs to the bus node and changes only through extensions of this file; at the 008 horizon it is static `1.0`;
+  - `masterGain.gain.value` belongs to the master node and is the single point for 009 (see "Settings integration").
+- Inlining `busGain`/`masterGain` into `perSourceTrim` is forbidden: it breaks live volume changes for already playing sources and duplicates multipliers for new ones. Changing `gain.value` on bus/master nodes applies normally, by Web Audio semantics, to all connected sources including already playing ones.
+- Field content rules:
+  - `normalizedGain` is chosen by ear/measurement in the registry, **not** in consumer systems. Change it only when replacing the file.
+  - `defaultGain` expresses design intent for how loud this role should sound in neutral conditions. Change it when the sound's game role changes, such as reducing slime ambient to `0.2`.
+  - Explicit baseline points in 008:
+    - `weapons/shotgun.mp3`: `normalizedGain ~= 0.35`, because the source file is much louder than other weapons;
+    - `music/*.mp3` under `public/sfx/music/**`: `normalizedGain ~= 1.6`, because source files are quiet, including old menu ticking and session music;
+    - `music/digital-dawn.mp3`: `normalizedGain ~= 0.55`, used as menu music and louder than the previous menu ticking source;
+    - `slimes/slime-*` as ambient: `defaultGain ~= 0.3`, a subdued background that does not cover shots and hits.
+- Forbidden:
+  - hard-coded numeric gain multipliers in consumer system code. If a sound is wrong, fix the registry, not the system.
+  - registry in `src/shared/content/**`. Audio data is not part of the `content library`: it **does not** affect simulation and is not serialized as a session contract.
 
-### Маппинг архетип/событие → sampleId
+### Archetype/event to sampleId mapping
 
-Аудио-слой держит явные карты, индексированные строковыми `archetypeId`, которые уже доступны в снапшоте и событиях:
+The audio layer owns explicit maps keyed by string `archetypeId` values already available in snapshots/events:
 
-- `weapons: Record<weaponArchetypeId, { fire: SampleSpec }>` — на 008 ровно один реальный потребитель (`pistol`); записи под `shotgun`/`smg`/`sniper`/`laser` могут существовать заранее, не дожидаясь WeaponArchetype-ов в `content/**`.
-- `enemies: Record<enemyArchetypeId, { hit?: SampleSpec; death?: SampleSpec; voice?: SampleSpec }>` — для архетипов слаймов; стационарные «training-target» допускают пустую запись.
-- `bosses: Record<bossArchetypeId, { fire?: SampleSpec; hit?: SampleSpec; death?: SampleSpec; phaseChange?: SampleSpec }>` — на 008 baseline для `slime-king`: `fire = boss-fireball`, `phaseChange = boss-ahaha`.
-- `events: { dropPickup?: SampleSpec; dropSpawn?: SampleSpec; dropExpire?: SampleSpec; victoryFanfare?: SampleSpec; uiOverlayShow?: SampleSpec; uiButtonClick?: SampleSpec; uiButtonHover?: SampleSpec; uiModeSwitch?: SampleSpec }` — события без естественной привязки к архетипу. На 008 заполняются как минимум `dropPickup`, `uiOverlayShow`, `uiButtonClick`; история 023 добавляет `uiButtonHover` и `uiModeSwitch` как переиспользование существующих UI-сэмплов. История 024 добавляет `victoryFanfare = ui/fanfare`.
-- `SampleSpec` допускает либо одиночный `sampleId`, либо набор `sampleId[]` — в этом случае воспроизводится случайный из набора (presentation RNG, см. ниже). Это нужно для коротких пулов вариаций (`slime-1..4` как варианты hit/voice).
-- Отсутствие маппинга — **не** ошибка, а явный «звук пропускается»: `Audio` логирует один warning на уникальный `archetypeId`/`event` через единый log-модуль ([logging.md](logging.md)) и больше не дёргает на той же сессии. Это намеренно: новые архетипы не должны падать ран только из-за отсутствия аудио-маппинга.
-- Маппинги валидируются на инициализации: каждый `sampleId` обязан резолвиться в `SampleEntry` реестра; неизвестный `sampleId` — ошибка модуля, не runtime-фолбэк (по аналогии с правилом «неизвестный архетипный id — ошибка сборки/старта сессии» из [content-archetypes.md](content-archetypes.md)).
+- `weapons: Record<weaponArchetypeId, { fire: SampleSpec }>`: in 008, one real consumer (`pistol`); entries for `shotgun`/`smg`/`sniper`/`laser` may exist before those `WeaponArchetype`s exist in `content/**`.
+- `enemies: Record<enemyArchetypeId, { hit?: SampleSpec; death?: SampleSpec; voice?: SampleSpec }>` for slime archetypes; stationary training targets may have empty entries.
+- `bosses: Record<bossArchetypeId, { fire?: SampleSpec; hit?: SampleSpec; death?: SampleSpec; phaseChange?: SampleSpec }>`; 008 baseline for `slime-king`: `fire = boss-fireball`, `phaseChange = boss-ahaha`.
+- `events: { dropPickup?: SampleSpec; dropSpawn?: SampleSpec; dropExpire?: SampleSpec; victoryFanfare?: SampleSpec; uiOverlayShow?: SampleSpec; uiButtonClick?: SampleSpec; uiButtonHover?: SampleSpec; uiModeSwitch?: SampleSpec }` for events without a natural archetype. 008 fills at least `dropPickup`, `uiOverlayShow`, and `uiButtonClick`; story 023 adds `uiButtonHover` and `uiModeSwitch` by reusing existing UI samples; story 024 adds `victoryFanfare = ui/fanfare`.
+- `SampleSpec` may be a single `sampleId` or a `sampleId[]`; arrays play one random member (presentation RNG, see below). This supports short variation pools, such as `slime-1..4` for hit/voice.
+- Missing mapping is **not** an error. It explicitly means "skip sound": `Audio` logs one warning per unique `archetypeId`/`event` through the shared log module ([logging.md](logging.md)) and does not warn again in the same session. This is intentional: new archetypes should not break a run only because their audio mapping is not ready.
+- Mappings are validated at initialization: every `sampleId` must resolve to a `SampleEntry`. Unknown `sampleId` is a module error, not a runtime fallback, analogous to "unknown archetype id is a build/session-start error" from [content-archetypes.md](content-archetypes.md).
 
-### Источники триггеров
+### Trigger sources
 
-`Audio` подписан на три канала:
+`Audio` subscribes to three channels:
 
-1. **Runtime events** (фан-аут от `UiShell`):
-   - `fire` → один-шот по `weapons[event.weaponArchetypeId].fire`. Для `event.ownerKind === 'boss'` маппинг идёт через `bosses[bossArchetypeId].fire`; конкретный `bossArchetypeId` берётся из активного `SessionDefinition` (для MVP в encounter босса — единственный босс).
-   - `hit` → `enemies[archetypeId].hit` или `bosses[archetypeId].hit`; `archetypeId` цели находится через текущий снапшот по `event.targetId`.
-   - `death` → `enemies[archetypeId].death` / `bosses[archetypeId].death`. Для `entityKind === 'player'` на 008 маппинга нет — пропускается (нет файла).
-   - `dropPickup` → `events.dropPickup`.
-   - `bossPhaseChange` → `bosses[bossArchetypeId].phaseChange`.
-   - `win` → `events.victoryFanfare`; `loss` intentionally silent except for the result overlay show sound below.
-   - Остальные kinds (`dropSpawn`/`dropExpire`/`encounterStart`/`encounterEnd`/`pause`/`resume`/`loss`/`sessionStart`/`sessionStop`) на 008 не озвучиваются. Их подключение — расширение этого файла.
-2. **Snapshot pair** (вызов из `UiShell.onFrame`):
-   - Music selector принимает решение о текущем треке по `phase` и `snapshot.encounter.type` (см. ниже).
-   - Ambient слайм-голоса проходят по `snapshot.entities[kind === 'enemy']` и реагируют на per-archetype voice-таймеры (см. ниже).
-3. **UI phase** (явный вызов из `UiShell` при изменении фазы):
-   - `menu → running` → no-op (UI-звук уже сыграл на клик кнопки).
-   - `running → paused` → проиграть `events.uiOverlayShow`.
-   - `paused → running` → no-op.
-   - `running → result(*)` → проиграть `events.uiOverlayShow`.
-   - `* → menu` (явный exit) → no-op.
+1. **Runtime events** (fan-out from `UiShell`):
+   - `fire` -> one-shot by `weapons[event.weaponArchetypeId].fire`. For `event.ownerKind === 'boss'`, mapping uses `bosses[bossArchetypeId].fire`; concrete `bossArchetypeId` comes from active `SessionDefinition` (MVP boss encounter has one boss).
+   - `hit` -> `enemies[archetypeId].hit` or `bosses[archetypeId].hit`; target `archetypeId` is found through the current snapshot by `event.targetId`.
+   - `death` -> `enemies[archetypeId].death` / `bosses[archetypeId].death`. For `entityKind === 'player'`, 008 has no mapping and skips it.
+   - `dropPickup` -> `events.dropPickup`.
+   - `bossPhaseChange` -> `bosses[bossArchetypeId].phaseChange`.
+   - `win` -> `events.victoryFanfare`; `loss` intentionally silent except for result overlay show below.
+   - Other kinds (`dropSpawn`/`dropExpire`/`encounterStart`/`encounterEnd`/`pause`/`resume`/`loss`/`sessionStart`/`sessionStop`) are not voiced in 008. Wiring them is an extension of this file.
+2. **Snapshot pair** (called from `UiShell.onFrame`):
+   - Music selector decides the current track from `phase` and `snapshot.encounter.type` (see below).
+   - Ambient slime voices walk `snapshot.entities[kind === 'enemy']` and use per-archetype voice timers (see below).
+3. **UI phase** (explicit call from `UiShell` on phase change):
+   - `menu -> running`: no-op; UI sound already played on button click.
+   - `running -> paused`: play `events.uiOverlayShow`.
+   - `paused -> running`: no-op.
+   - `running -> result(*)`: play `events.uiOverlayShow`.
+   - `* -> menu` explicit exit: no-op.
 
-`Audio` ничего не отправляет в `SimWorkerHost`, не мутирует его и не подписывается на `onEvent` напрямую. Любая интеграция идёт через `UiShell`.
+`Audio` sends nothing to `SimWorkerHost`, never mutates it, and does not subscribe to `onEvent` directly. All integration goes through `UiShell`.
 
-### Ambient слайм-голоса (без runtime event)
+### Ambient slime voices without runtime event
 
-В симе нет события «слайм пошевелился», и вводить его специально под аудио в [snapshot-shape.md](snapshot-shape.md) — нарушение правила «runtime events — edge-факты». Слайм-ambient реализуется на стороне `Audio` без расширения контракта sim:
+Simulation has no "slime moved" event, and adding one just for audio in [snapshot-shape.md](snapshot-shape.md) would violate "runtime events are edge facts". Slime ambient is implemented in `Audio` without expanding the sim contract:
 
-- На каждом `update(snapshotPair, ...)` `Audio` смотрит `snapshot.entities[kind === 'enemy']`.
-- На каждый живой enemy ведётся per-entity таймер `nextVoiceAtMs`. По истечении выбирается случайный `sampleId` из `enemies[archetypeId].voice` (если задан), воспроизводится один-шот, таймер выставляется на `nextVoiceAtMs = now + randomBetween(intervalMinMs, intervalMaxMs)`. Параметры `intervalMinMs`/`intervalMaxMs` живут в `enemies[archetypeId].voice` рядом с sampleId.
-- Удалённые между снапшотами enemies теряют свой таймер. Появившиеся — получают первый `nextVoiceAtMs = now + randomBetween(...)` (без мгновенного «всплеска» при волне).
-- `defaultGain` voice-сэмплов специально занижен (см. выше).
-- Источник случайности — `Math.random()` в main, **не** session RNG: ambient никак не должен влиять на authoritative state и допускает расхождение между двумя одинаковыми по `seed` забегами ([rng.md](rng.md)). Это явный исключённый случай.
+- On each `update(snapshotPair, ...)`, `Audio` examines `snapshot.entities[kind === 'enemy']`.
+- Each living enemy has a per-entity timer `nextVoiceAtMs`. When it expires, a random `sampleId` from `enemies[archetypeId].voice` is chosen, if present, played as a one-shot, and the timer becomes `now + randomBetween(intervalMinMs, intervalMaxMs)`. `intervalMinMs`/`intervalMaxMs` live in `enemies[archetypeId].voice` beside sample ids.
+- Enemies removed between snapshots lose their timer. New enemies get first `nextVoiceAtMs = now + randomBetween(...)`, with no immediate wave burst.
+- `defaultGain` for voice samples is intentionally low (see above).
+- Randomness source is `Math.random()` in main, **not** session RNG: ambient must not affect authoritative state and may differ between two runs with the same `seed` ([rng.md](rng.md)). This is an explicit excluded case.
 
 ### Music selector
 
-- Источник обычного трека — **session-level поле** `SessionDefinition.musicSampleId` ([session-definition.md](session-definition.md)). Отдельного `regularPool`, которым владеет `Audio`, нет: история 021 убрала hard-coded пул в коде — выбор принадлежит геймдизайнеру в `content/sessions/*.md`.
-- `bossTrack: sampleId` остаётся фиксированным — `boss/boss-music.mp3`. Per-boss custom music и per-wave music — out of scope этого решения.
-- Правила выбора (определяют, что **должно** играть в данный момент):
-  - `phase === menu` → играет fixed menu track `music/digital-dawn`.
-  - `phase ∈ { loading, result, error('preload') }` → music silent, независимо от `musicSampleId`.
-  - `phase ∈ { running, paused }` и активный `snapshot.encounter` отсутствует или `encounter.type !== 'boss'` → играет `attachedSession.musicSampleId`. Если `musicSampleId === null`, regular music silent (legitimate конфигурация — sandbox/dev-режимы).
-  - `phase ∈ { running, paused }` и `encounter.type === 'boss'` → играет `bossTrack`. При выходе из boss encounter регулярная музыка возвращается к `attachedSession.musicSampleId`.
-  - В фазе `paused` музыка **ducked**: `musicBus` временно умножается на `0.5`. Music **не** останавливается и track не меняется. Это упрощает Web Audio (не нужен корректный pause/resume `AudioBufferSourceNode`) и даёт мягкий UX в паузе.
-- `musicSampleId` на время активной сессии immutable (как и вся `SessionDefinition`). Новый session → новый `attach(session)` → music selector пересматривает выбор.
-- Сам выбранный track не «ротируется»: один session — один обычный трек. Ротация между треками внутри одного забега была артефактом старого `regularPool` и устранена вместе с ним. Если в будущем потребуется per-encounter music, это расширение этого файла и `session-definition.md`, а не возврат к пулу в `Audio`.
-- Конкретный способ смены track при переходе `running ↔ boss` (резкая смена / crossfade) — деталь реализации, контракт фиксирует только «что играет» и «когда».
+- Regular track source is **session-level** `SessionDefinition.musicSampleId` ([session-definition.md](session-definition.md)). There is no `regularPool` owned by `Audio`: story 021 removed hard-coded code pools, and music choice belongs to game design in `content/sessions/*.md`.
+- `bossTrack: sampleId` remains fixed as `boss/boss-music.mp3`. Per-boss custom music and per-wave music are out of scope.
+- Selection rules, defining what **should** play now:
+  - `phase === menu` -> fixed menu track `music/digital-dawn`.
+  - `phase in { loading, result, error('preload') }` -> music silent, regardless of `musicSampleId`.
+  - `phase in { running, paused }` and no active `snapshot.encounter`, or `encounter.type !== 'boss'` -> play `attachedSession.musicSampleId`. If `musicSampleId === null`, regular music is silent; this is a legitimate sandbox/dev configuration.
+  - `phase in { running, paused }` and `encounter.type === 'boss'` -> play `bossTrack`. Leaving boss encounter returns regular music to `attachedSession.musicSampleId`.
+  - In `paused`, music is **ducked**: `musicBus` is temporarily multiplied by `0.5`. Music is **not** stopped and track does not change. This simplifies Web Audio, avoiding correct pause/resume of `AudioBufferSourceNode`, and gives a softer pause UX.
+- `musicSampleId` is immutable for the active session, like all `SessionDefinition`. New session -> new `attach(session)` -> selector reevaluates.
+- The selected regular track does not rotate: one session means one regular track. In-run rotation was an artifact of old `regularPool` and is removed with it. Future per-encounter music extends this file and [session-definition.md](session-definition.md), not by reintroducing an `Audio` pool.
+- The exact transition method when switching `running <-> boss`, such as hard cut or crossfade, is an implementation detail. The contract defines only what plays and when.
 
-### UI-звуки
+### UI sounds
 
-- `events.uiOverlayShow` (например, `ui/open-1.mp3`) — на показе `PauseOverlay` и `ResultOverlay`. Один-шот при переходе фазы.
-- `events.uiButtonClick` (например, рандомный из `ui/switch-1`, `ui/switch-3`, `ui/switch-4`) — на клик любой кнопки `MenuOverlay`, `PauseOverlay`, `ResultOverlay`, кроме переключения сложности. Привязка идёт через явный вызов `Audio.playUi('buttonClick')` из этих компонентов; компоненты не касаются `AudioContext` напрямую и не знают о `sampleId`.
-- `events.uiButtonHover` (например, `ui/open-1.mp3`) — на hover/focus-like feedback кнопок меню. Привязка идёт через явный вызов `Audio.playUi('buttonHover')` из `UiShell`; `MenuOverlay` только сообщает о hover-событии кнопки и не знает о `sampleId`.
-- `events.uiModeSwitch` (`ui/switch-2.mp3`) — только на фактическое переключение выбранного режима/сложности в `MenuOverlay`; повторный выбор уже активного режима не проигрывает звук.
-- UI-звуки относятся к категории `ui` и проходят через `uiBus`, что позволит 009 регулировать их отдельно от sfx/music.
+- `events.uiOverlayShow`, for example `ui/open-1.mp3`, plays when `PauseOverlay` and `ResultOverlay` appear. One-shot on phase transition.
+- `events.uiButtonClick`, for example random from `ui/switch-1`, `ui/switch-3`, `ui/switch-4`, plays on any `MenuOverlay`, `PauseOverlay`, or `ResultOverlay` button click except difficulty/mode switching. Binding is through explicit `Audio.playUi('buttonClick')` calls from those components; components do not touch `AudioContext` directly and do not know `sampleId`.
+- `events.uiButtonHover`, for example `ui/open-1.mp3`, plays on hover/focus-like feedback for menu buttons. Binding is through explicit `Audio.playUi('buttonHover')` from `UiShell`; `MenuOverlay` only reports button hover events and does not know `sampleId`.
+- `events.uiModeSwitch` (`ui/switch-2.mp3`) plays only when the selected mode/difficulty actually changes in `MenuOverlay`; selecting the already active mode does not play it.
+- UI sounds are category `ui` and pass through `uiBus`, allowing 009 to control them separately from sfx/music later.
 
-### Pause семантика
+### Pause semantics
 
-- Симуляция в `paused` не публикует события (см. [runtime-systems.md](runtime-systems.md), [thread-model.md](thread-model.md)) — новых SFX/boss/drop звуков сами по себе не возникает.
-- Уже играющие one-shot источники доигрываются. Принудительно глушить их `Audio` не должен — это создавало бы рывки звука на коротких паузах.
-- Music — duck (см. выше).
-- Ambient слайм-голоса в `paused` **приостанавливаются**: `Audio` пропускает свою snapshot-driven фазу, пока `phase === 'paused'`, и не продвигает per-entity voice-таймеры. На `paused → running` таймеры продолжаются с прежнего значения; для упрощения допускается смещение базы wall-clock на длительность паузы — конкретика — деталь реализации.
+- Simulation publishes no events in `paused` (see [runtime-systems.md](runtime-systems.md), [thread-model.md](thread-model.md)), so new SFX/boss/drop sounds do not occur by themselves.
+- Already playing one-shot sources finish. `Audio` should not forcibly mute them; that would create audio cuts on short pauses.
+- Music is ducked (see above).
+- Ambient slime voices are **paused**: `Audio` skips its snapshot-driven phase while `phase === 'paused'` and does not advance per-entity voice timers. On `paused -> running`, timers continue from previous values. It is acceptable to shift wall-clock base by pause duration; exact mechanics are implementation detail.
 
-### Жизненный цикл и API
+### Lifecycle and API
 
-- `UiShell` создаёт ровно один экземпляр `Audio` в `createUiShell` (рядом с `Hud`, `SimWorkerHost`).
-- Минимальный API:
+- `UiShell` creates exactly one `Audio` instance in `createUiShell`, next to `Hud` and `SimWorkerHost`.
+- Minimal API:
   ```ts
   type Audio = Readonly<{
     unlock(): void;
@@ -187,68 +187,68 @@
     dispose(): void;
   }>;
   ```
-- `attach(session)` нужен для доступа к immutable данным сессии (например, `bossArchetypeId` активного encounter), без подписки на снапшоты в фазе `menu`.
-- `UiShell` обязан:
-  - вызвать `audio.unlock()` на первом user-gesture (один раз);
-  - фан-аутить `SimWorkerHost.onEvent` в `audio.handleEvent` так же, как сейчас в `handleSimEvent`;
-  - вызывать `audio.update(snapshotPair, phase, encounter)` ровно один раз за кадр в `onFrame`, после `hud.update`;
-  - вызывать `audio.attach(session)` на старте сессии и `audio.detach()` на её завершении/выходе в меню (как сейчас для `hud`);
-  - вызывать `audio.playUi('overlayShow')` на показе pause/result-overlay-ев, пробрасывать `audio.playUi('buttonClick')` в обработчики кликов overlay-ев, `audio.playUi('buttonHover')` в menu hover-feedback и `audio.playUi('modeSwitch')` при фактической смене режима.
-- `Audio` ни при каких условиях не использует `SimWorkerHost.onEvent` напрямую и не разводит собственного listener-а на `pointerdown`/`keydown` — это гарантия инварианта «один owner оркестрации» из [main-ui-shell.md](main-ui-shell.md).
+- `attach(session)` provides immutable session data, such as active encounter `bossArchetypeId`, without subscribing to snapshots in `menu`.
+- `UiShell` must:
+  - call `audio.unlock()` on the first user gesture, once;
+  - fan out `SimWorkerHost.onEvent` to `audio.handleEvent` the same way it does today in `handleSimEvent`;
+  - call `audio.update(snapshotPair, phase, encounter)` exactly once per frame in `onFrame`, after `hud.update`;
+  - call `audio.attach(session)` on session start and `audio.detach()` on session end/return to menu, like `hud`;
+  - call `audio.playUi('overlayShow')` when pause/result overlays appear, forward `audio.playUi('buttonClick')` in overlay click handlers, `audio.playUi('buttonHover')` for menu hover feedback, and `audio.playUi('modeSwitch')` when mode actually changes.
+- `Audio` never uses `SimWorkerHost.onEvent` directly and never creates its own `pointerdown`/`keydown` listener. This preserves the "one orchestration owner" invariant from [main-ui-shell.md](main-ui-shell.md).
 
-### Бюджеты и инварианты
+### Budgets and invariants
 
-- Одновременно активных one-shot источников ≤ **32**. При превышении — drop oldest (остановить самый старый источник). Этого с запасом хватит на ожидаемое число врагов и снарядов MVP, при этом исключает неограниченный рост узлов графа на спавн-всплесках.
-- Реестр сэмплов и маппинги валидируются один раз на инициализации `Audio`:
-  - дублирующиеся `sampleId` в реестре — ошибка модуля;
-  - `sampleId` в маппинге без записи в реестре — ошибка модуля;
-  - `normalizedGain ∈ (0, 2]`, `defaultGain ∈ [0, 2]`, иначе warning через единый log-модуль и значение **clamped** в допустимый диапазон;
-  - любой entry с `category: 'music'` и `loop !== true` — ошибка модуля; это поддерживает контракт «один трек на всю сессию» (см. «Двухслойная громкость»);
-  - URL не валидируется online — отсутствие файла фиксируется как warning в момент первой попытки воспроизведения.
-- `attach(session)` дополнительно валидирует `session.musicSampleId`:
-  - `null` — ок, regular music silent весь забег;
-  - строка, которой нет в `SampleRegistry` — ошибка модуля (не warning): неизвестный id должен быть пойман content-build и builder-ом до старта сессии (см. [content-authoring.md](content-authoring.md), раздел `# Session`);
-  - строка с `SampleRegistry[*].category !== 'music'` — ошибка модуля: session music обязана быть music-категории, чтобы попадать в `musicBus` и получать корректный ducking в паузе.
-- `Audio` не должен иметь скрытого глобального state: все таймеры и решения хранятся в инстансе, создаваемом `UiShell`. Один экземпляр на жизнь приложения; повторная инициализация не предусмотрена в MVP.
+- Simultaneously active one-shot sources <= **32**. Above that, drop oldest by stopping the oldest source. This is enough for expected MVP enemy/projectile counts and prevents unbounded graph-node growth during spawn bursts.
+- Sample registry and mappings are validated once on `Audio` initialization:
+  - duplicate `sampleId` in registry: module error;
+  - `sampleId` in mapping without registry entry: module error;
+  - `normalizedGain in (0, 2]`, `defaultGain in [0, 2]`; otherwise warning through the shared log module and value **clamped** into allowed range;
+  - any entry with `category: 'music'` and `loop !== true`: module error, supporting the "one track for whole session" contract (see "Two-layer volume");
+  - URL is not validated online; missing file is reported as warning on first playback attempt.
+- `attach(session)` additionally validates `session.musicSampleId`:
+  - `null`: ok, regular music silent for the whole run;
+  - string not present in `SampleRegistry`: module error, not warning. Unknown id should be caught by content-build and builder before session start (see [content-authoring.md](content-authoring.md), `# Session`);
+  - string whose `SampleRegistry[*].category !== 'music'`: module error. Session music must be category `music` so it goes through `musicBus` and receives pause ducking.
+- `Audio` must not have hidden global state: all timers and decisions live in the instance created by `UiShell`. One instance for app lifetime; repeated initialization is not in MVP.
 
-### Тесты
+### Tests
 
-- `Audio` тестируется без реального `AudioContext`: вводится узкий `AudioApi` (создание `GainNode`/`AudioBufferSource`, `decodeAudioData`, `currentTime`), который в тестах подменяется fake-реализацией. Это уже устоявшийся паттерн в `src/main/ui/**` (см. `UiShell.test.ts`).
-- Под тестом обязательно:
-  - расчёт effective gain для типового сэмпла (умножение всех слоёв);
-  - валидация реестра (дубль `id`, неизвестный `sampleId` в маппинге, clamp `normalizedGain`/`defaultGain`);
-  - роутинг runtime events в правильный sampleId (в т. ч. fallback «маппинга нет → пропуск + один warning»);
-  - переключение music selector при смене `phase` и `encounter.type` (включая ducking в `paused`);
-  - ambient slime voice не дёргает таймеры в `paused` и переинициализируется на новых entity.
-- Регрессий [snapshot-shape.md](snapshot-shape.md) и [main-ui-shell.md](main-ui-shell.md) тестами не вводится: `Audio` стоит «ниже» этих контрактов.
+- `Audio` is tested without a real `AudioContext`: introduce a narrow `AudioApi` for creating `GainNode`/`AudioBufferSource`, `decodeAudioData`, and `currentTime`, replaced with fake implementation in tests. This follows the established `src/main/ui/**` pattern (see `UiShell.test.ts`).
+- Required tests:
+  - effective gain calculation for a typical sample, multiplying all layers;
+  - registry validation: duplicate `id`, unknown `sampleId` in mapping, clamp `normalizedGain`/`defaultGain`;
+  - runtime event routing to correct `sampleId`, including "no mapping -> skip + one warning" fallback;
+  - music selector switching on `phase` and `encounter.type`, including ducking in `paused`;
+  - ambient slime voice does not advance timers in `paused` and reinitializes for new entities.
+- No tests should introduce regressions to [snapshot-shape.md](snapshot-shape.md) or [main-ui-shell.md](main-ui-shell.md): `Audio` sits below those contracts.
 
 ### Settings integration (009)
 
-- 009 управляет громкостью **только** через master gain. На горизонт 009 это единственная игровая ось громкости; per-bus громкость (отдельно `sfx`/`music`/`ui`) явно out of scope ([../stories/009-settings.md](../stories/009-settings.md)).
+- 009 controls volume **only** through master gain. At the 009 horizon this is the only gameplay volume axis; per-bus volume (`sfx`/`music`/`ui` separately) is explicitly out of scope ([../stories/009-settings.md](../stories/009-settings.md)).
 - `Audio.setMasterGain(value)`:
-  - принимает число; clamp в `[0, 1]` перед применением, значение вне диапазона дополнительно логируется warning через единый log-модуль ([logging.md](logging.md));
-  - присваивает `runtime.masterGain.gain.value` — это единственная legitimate точка изменения master gain снаружи модуля;
-  - идемпотентен: повторный вызов с уже установленным значением выполняет присвоение, но не имеет наблюдаемого эффекта (Web Audio: `gain.value = same` — no-op);
-  - корректен в любом состоянии: до `unlock()`, в `menu`, во время `running`/`paused`/`result`, до и после `attach`/`detach`. Он не зависит ни от активной сессии, ни от состояния `AudioContext`.
-- `setMasterGain` **никогда** не пишет в persistent storage и не подписывается на `ClientSettingsStore`. Поток обратный: `UiShell` подписывает `Audio` на изменение `masterVolume` в [client-settings.md](client-settings.md) и вызывает `audio.setMasterGain(settings.masterVolume)` на каждое изменение и один раз при инициализации.
-- Прямой доступ к `runtime.masterGain` или к `runtime.busGains[*]` извне модуля — запрещён. Любая будущая ось (per-bus volume, ducking из gameplay-эффектов и т. п.) добавляется как отдельный явный API на `Audio`, не как утечка `GainNode`-ов наружу.
+  - accepts a number; clamps to `[0, 1]` before applying, and logs out-of-range values as warning through the shared log module ([logging.md](logging.md));
+  - assigns `runtime.masterGain.gain.value`, the only legitimate external point for changing master gain;
+  - is idempotent: repeated calls with the current value assign again but have no observable effect (Web Audio `gain.value = same` is a no-op);
+  - works in every state: before `unlock()`, in `menu`, during `running`/`paused`/`result`, before and after `attach`/`detach`. It does not depend on active session or `AudioContext` state.
+- `setMasterGain` **never** writes persistent storage and never subscribes to `ClientSettingsStore`. Flow is the opposite: `UiShell` subscribes `Audio` to `masterVolume` changes in [client-settings.md](client-settings.md) and calls `audio.setMasterGain(settings.masterVolume)` on every change and once at initialization.
+- Direct access to `runtime.masterGain` or `runtime.busGains[*]` from outside the module is forbidden. Any future axis, such as per-bus volume or gameplay-effect ducking, must be added as an explicit `Audio` API rather than by leaking `GainNode`s.
 
-### Расширение
+### Extension
 
-- Добавление нового sample → запись в реестр + (при необходимости) запись в один из маппингов. Без правки этого файла.
-- Добавление нового маппингового канала (например, `enemies[archetypeId].spawn` под звук появления) → расширение этого файла отдельным разделом плюс правила воспроизведения. По месту в коде систем — запрещено.
-- Добавление нового bus (например, `voice` или `ambience`) → правка раздела «Mixer graph» этого файла плюс синхронное обновление 009 (settings).
-- Если в будущем потребуется реактивный sample на runtime event, которого ещё нет (`pickup`-эффект, муз. stinger на `bossPhaseChange`), новый event сначала фиксируется в [snapshot-shape.md](snapshot-shape.md), и только потом — маппинг здесь.
+- Adding a new sample means adding a registry entry and, if needed, a mapping entry. No update to this file is required.
+- Adding a new mapping channel, such as `enemies[archetypeId].spawn` for spawn sound, requires extending this file with a section and playback rules. Local system code must not add it silently.
+- Adding a new bus, such as `voice` or `ambience`, requires updating "Mixer graph" here and synchronizing 009 settings.
+- If a future reactive sample needs a runtime event that does not exist yet, such as a pickup effect or musical stinger on `bossPhaseChange`, the new event is defined first in [snapshot-shape.md](snapshot-shape.md), and only then mapped here.
 
 ## Consequences
 
-- 008 и 009 опираются на единый граф микса и единую точку правды для громкости; «магические числа» громкости концентрируются в одном реестре.
-- Поправки громкости файлов и gameplay-громкость становятся независимыми осями: замена файла не размывает игровой баланс, а изменение баланса не требует трогать поправки на файлы.
-- `EnemyArchetype`/`WeaponArchetype`/`BossArchetype` в `src/shared/content/**` остаются «чистыми» от презентационных полей; новые враги/боссы добавляются без правки контрактов content library.
-- Симуляция не получает дополнительных событий ради аудио: ambient слаймов сделан полностью на стороне main по снапшоту.
-- `UiShell` остаётся единственным оркестратором; маршрутизация unlock/события/фазы централизована.
-- Для 009 (settings) появляется готовая площадка: master/per-bus gain — это уже узлы графа, остаётся только слой `client settings`, который их крутит и сохраняет.
-- Цена: маппинг архетип → sample должен поддерживаться при добавлении новых архетипов; решение явно делает это «warning, а не ошибка», чтобы не тормозить gameplay-истории.
+- 008 and 009 share one mix graph and one source of truth for gain; magic gain numbers are concentrated in one registry.
+- File loudness correction and gameplay loudness become independent axes: replacing a file does not blur game balance, and changing balance does not require touching file corrections.
+- `EnemyArchetype`/`WeaponArchetype`/`BossArchetype` in `src/shared/content/**` remain free of presentation fields; new enemies/bosses can be added without changing content library contracts.
+- Simulation does not receive extra events for audio: slime ambient is entirely main-side and snapshot-driven.
+- `UiShell` remains the single orchestrator; unlock/event/phase routing is centralized.
+- 009 settings has ready infrastructure: master/per-bus gain are already graph nodes, so only the `client settings` layer needs to control and persist them.
+- Cost: archetype-to-sample mapping must be maintained when adding archetypes. The decision deliberately makes missing mapping a warning rather than an error so gameplay stories are not blocked.
 
 ## Related
 

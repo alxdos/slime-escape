@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-24
-- Updated: 2026-04-25 (story 019: carrier «гарантированный дроп» и friendly-fire retaliation становятся per-spawn override-полями ([spawn-overrides.md](spawn-overrides.md)), а не полями `EnemyArchetype`. Архетипный default для retaliation остаётся; `EnemyArchetype.carrierDrop` удаляется. Earlier: 2026-04-24 cleanup pass: aim assist owner fixed to `main thread`; drop magnet binding to `DropEffect.kind: 'pickupModifier'` made explicit so the new union member is the single extension surface in this story.)
+- Updated: 2026-04-25 (story 019: carrier guaranteed drops and friendly-fire retaliation become per-spawn override fields ([spawn-overrides.md](spawn-overrides.md)), not `EnemyArchetype` fields. The archetype default for retaliation remains; `EnemyArchetype.carrierDrop` is removed. Earlier: 2026-04-24 cleanup pass: aim assist owner fixed to `main thread`; drop magnet binding to `DropEffect.kind: 'pickupModifier'` made explicit so the new union member is the single extension surface in this story.)
 
 ## Context
 
@@ -82,8 +82,8 @@ The next layer of combat juice should be designed separately so the universal we
 
 - Carrier enemies are represented by content, not a new runtime entity kind:
   - `EnemyArchetype.dropTable` remains the baseline death-drop contract; archetype-level `carrierDrop` is **not** part of the contract anymore (story 019).
-  - «Carrier»-щель — это per-spawn характеристика, а не вид существа: список гарантированных дропов задаётся `SpawnOverride.guaranteedDrops` per `seq` ([spawn-overrides.md](spawn-overrides.md)), а death hook по-прежнему принадлежит `DropSystem` ([drops.md](drops.md), раздел «Spawn on death hook», шаги 3 → 4 → 5).
-  - Renderer показывает carrier-маркер по полю снапшота `carrierDropMarker`, которое derive-ится в `SpawnSystem` из `guaranteedDrops.length > 0` в момент спавна ([snapshot-shape.md](snapshot-shape.md)). Никаких скрытых чтений архетипа или runtime-роллов rendering-стороной нет.
+  - A carrier fissure is a per-spawn characteristic, not a creature type: guaranteed drops are set by `SpawnOverride.guaranteedDrops` per `seq` ([spawn-overrides.md](spawn-overrides.md)), and the death hook still belongs to `DropSystem` ([drops.md](drops.md), "Spawn on death hook", steps 3 -> 4 -> 5).
+  - Renderer shows the carrier marker from the snapshot field `carrierDropMarker`, derived by `SpawnSystem` from `guaranteedDrops.length > 0` at spawn time ([snapshot-shape.md](snapshot-shape.md)). Rendering does not make hidden archetype reads or runtime rolls.
 - Drop magnet is a player-affecting modifier carried by an existing drop. It binds into the system through `DropEffect` by extending the `DropEffect` union with a new member:
   ```ts
   type PickupModifier =

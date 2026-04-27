@@ -205,14 +205,14 @@ Without a new contract, each new weapon would either add special branches to `Co
 - `ProjectileVisualSpec` carries **render-only behavior** of the projectile and is part of the content archetype:
   ```ts
   type ProjectileVisualSpec = Readonly<{
-    spinRadiansPerSec: number;        // 0 — без спина
-    rotateWhileFlying: boolean;       // если true, sprite rotates по направлению движения
-    pulseWhenGrounded: boolean;       // если true, grounded mesh пульсирует render-only
-    explosionRadiusIndicator: boolean;// если true, renderer показывает faint radius для grounded explosive
+    spinRadiansPerSec: number;        // 0 means no spin
+    rotateWhileFlying: boolean;       // if true, sprite rotates toward movement direction
+    pulseWhenGrounded: boolean;       // if true, grounded mesh pulses render-only
+    explosionRadiusIndicator: boolean;// if true, renderer shows a faint radius for grounded explosives
   }>;
   ```
-- Идентичность спрайта (PNG-ассет, `worldSize`, `anchor`) **не входит** в `ProjectileVisualSpec`. Sprite берётся из `projectileVisuals` registry по ключу `weaponArchetypeId` per [sprite-assets.md](sprite-assets.md). Это исключает второй источник правды для пути к ассету.
-- Spin, pulse и radius indicator — render-only. Они не влияют на hit tests, damage и authoritative simulation state.
+- Sprite identity (PNG asset, `worldSize`, `anchor`) **is not part** of `ProjectileVisualSpec`. Sprite comes from the `projectileVisuals` registry keyed by `weaponArchetypeId`, per [sprite-assets.md](sprite-assets.md). This prevents a second source of truth for the asset path.
+- Spin, pulse, and radius indicator are render-only. They do not affect hit tests, damage, or authoritative simulation state.
 - Grounded grenades and bombs that will explode should expose enough snapshot data ([snapshot-shape.md](snapshot-shape.md): `state`, `pulsePhase`, `explosionRadius`, `detonateAtSimMs`) for the renderer to show pulse and a faint radius indicator.
 - Arc weapons should expose a main-thread preview affordance: approximate landing point or short trajectory. Preview is not authoritative gameplay state; it is calculated from weapon archetype, current aim and current modifiers on the main thread or via a read-only helper shared with simulation.
 

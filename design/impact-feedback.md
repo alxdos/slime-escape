@@ -6,46 +6,47 @@
 
 ## Context
 
-В проекте уже есть authoritative projectile hit/death в `simulation worker`
+The project already has authoritative projectile hit/death in the `simulation worker`
 ([projectiles-and-combat.md](projectiles-and-combat.md), [health-and-death.md](health-and-death.md)),
-runtime events `hit`/`death` на main thread ([snapshot-shape.md](snapshot-shape.md)),
-PNG-спрайты слаймов с render-only breathing ([sprite-assets.md](sprite-assets.md)) и contact
-knockback через поля slime/boss архетипов ([enemy-contact.md](enemy-contact.md)).
+main-thread runtime events `hit`/`death` ([snapshot-shape.md](snapshot-shape.md)),
+PNG slime sprites with render-only breathing ([sprite-assets.md](sprite-assets.md)), and contact
+knockback through slime/boss archetype fields ([enemy-contact.md](enemy-contact.md)).
 
-Новый слой polish должен сделать попадания мокрыми и физичными:
+The new polish layer should make hits feel wet and physical:
 
-- при попадании слайм выбрасывает слизь по направлению пули;
-- более сильное оружие даёт более широкий/тяжёлый брызг и больший отскок;
-- при смерти слайм оставляет быстрый fading-ghost и большой burst слизи;
-- капли остаются на полу как небольшие пятна, коротко растекаются, потом позже исчезают;
-- цвет слизи берётся из цвета целевого слайма.
+- on hit, the slime throws slime droplets in the bullet direction;
+- stronger weapons produce wider/heavier splashes and stronger knockback;
+- on death, the slime leaves a quick fading ghost and a large slime burst;
+- droplets stay on the floor as small stains, briefly spread, then disappear later;
+- slime color comes from the target slime color.
 
-Это пересекает два слоя. Визуальная слизь и ghost — presentation-only и не должны становиться
-gameplay state. Projectile knockback меняет позицию enemy/boss, поэтому принадлежит симуляции.
+This crosses two layers. Visual slime and ghosts are presentation-only and must not become gameplay
+state. Projectile knockback changes enemy/boss position, so it belongs to simulation.
 
 ## Decision
 
 ### Ownership split
 
-- Симуляция владеет только authoritative последствиями:
+- Simulation owns only authoritative consequences:
   - projectile hit detection;
-  - damage intents и death;
-  - projectile knockback для живых `enemy` / `boss`;
-  - runtime event payload-ами, описывающими impact.
-- Renderer владеет transient impact presentation:
-  - каплями слизи и пятнами на полу;
+  - damage intents and death;
+  - projectile knockback for living `enemy` / `boss` entities;
+  - runtime event payloads describing impact.
+- Renderer owns transient impact presentation:
+  - slime droplets and floor stains;
   - hit flash / hit squash impulse;
   - death ghost sprite;
   - death slime burst.
-- Визуальная слизь не является `Drop`, не живёт в `EntityStore`, не попадает в snapshots,
-  не имеет collision, не подбирается игроком и не влияет на исход сессии.
-- История не вводит новую simulation system. Projectile knockback — side effect `CombatSystem`
-  на уже существующий target knockback state; render effects — ответственность main-thread renderer.
+- Visual slime is not a `Drop`, does not live in `EntityStore`, does not enter snapshots,
+  has no collision, cannot be picked up by the player, and cannot affect the session result.
+- The story does not introduce a new simulation system. Projectile knockback is a `CombatSystem`
+  side effect on existing target knockback state; render effects are main-thread renderer
+  responsibility.
 
 ### Runtime event payloads
 
-- `hit` остаётся edge-фактом, которым владеет `CombatSystem`, но несёт достаточно данных для
-  renderer-а без реконструкции impact state из соседних snapshot-ов:
+- `hit` remains an edge fact owned by `CombatSystem`, but carries enough data for the renderer to
+  avoid reconstructing impact state from nearby snapshots:
   ```ts
   {
     kind: 'hit';
@@ -53,17 +54,17 @@ gameplay state. Projectile knockback меняет позицию enemy/boss, п�
     projectileId: number;
     targetId: number;
     targetKind: 'enemy' | 'player' | 'boss';
-    targetArchetypeId: string | null; // enemy/boss id; null для player
+    targetArchetypeId: string | null; // enemy/boss id; null for player
     weaponArchetypeId: string;
     damage: number;
-    impactDirX: number; // нормализованное направление движения projectile
+    impactDirX: number; // normalized projectile movement direction
     impactDirY: number;
     x: number;
     y: number;
   }
   ```
-- `death` остаётся edge-фактом, которым владеет `HealthDeathSystem`, но для projectile-caused
-  deaths также несёт оружие и направление финального удара:
+- `death` remains an edge fact owned by `HealthDeathSystem`, but projectile-caused deaths also
+  carry the weapon and final-hit direction:
   ```ts
   {
     kind: 'death';
@@ -78,17 +79,17 @@ gameplay state. Projectile knockback меняет позицию enemy/boss, п�
     y: number;
   }
   ```
-- `impactDirX/Y` — normalized projectile velocity на момент попадания. Если death вызван не
-  projectile-источником, поля `death.impactDirX/Y` равны `null`.
-- `DamageIntent.source.kind === 'projectile'` несёт то же normalized impact direction, чтобы
-  `HealthDeathSystem` мог опубликовать self-contained `death` event без запроса в `CombatSystem`
-  или `EntityStore` после факта.
-- Snapshot не расширяется ради impact effects. Runtime events — правильный канал, потому что
-  попадания и смерти являются edge-фактами, а не долгоживущим authoritative state.
+- `impactDirX/Y` is the normalized projectile velocity at the moment of impact. If death is caused
+  by a non-projectile source, `death.impactDirX/Y` are `null`.
+- `DamageIntent.source.kind === 'projectile'` carries the same normalized impact direction so
+  `HealthDeathSystem` can publish a self-contained `death` event without querying `CombatSystem`
+  or `EntityStore` after the fact.
+- Snapshot is not extended for impact effects. Runtime events are the correct channel because hits
+  and deaths are edge facts, not long-lived authoritative state.
 
 ### Main-thread event fan-out
 
-- `Renderer` получает явный runtime event sink, например:
+- `Renderer` receives an explicit runtime event sink, for example:
   ```ts
   type Renderer = Readonly<{
     render(): void;
@@ -98,21 +99,21 @@ gameplay state. Projectile knockback меняет позицию enemy/boss, п�
     dispose(): void;
   }>;
   ```
-- `UiShell` остаётся owner-ом `SimWorkerHost.onEvent`. Он fan-out-ит simulation events в
-  presentation consumers: audio, затем renderer если он существует, затем shell-level transitions
-  (`win`/`loss`) и logging.
-- `Renderer` фильтрует events внутри себя. В этой истории он реагирует на `hit` и `death` для
-  `targetKind` / `entityKind` из `{ 'enemy', 'boss' }`.
-- Renderer очищает все transient impact effects на `dispose()` и при создании renderer-а следующей
-  сессии. Effects не переживают выход в меню.
+- `UiShell` remains the owner of `SimWorkerHost.onEvent`. It fans simulation events out to
+  presentation consumers: audio, then renderer if it exists, then shell-level transitions
+  (`win`/`loss`) and logging.
+- `Renderer` filters events internally. In this story it reacts to `hit` and `death` for
+  `targetKind` / `entityKind` in `{ 'enemy', 'boss' }`.
+- Renderer clears all transient impact effects on `dispose()` and when the next session renderer is
+  created. Effects do not survive returning to the menu.
 
-### Weapon force и projectile knockback
+### Weapon force and projectile knockback
 
-- Projectile impact spec получает обязательное поле `knockbackImpulse: number` в wu/s через [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
-- `impactDamage` и `knockbackImpulse` намеренно разные поля. Оружие может наносить большой урон с
-  маленьким толчком или малый урон с сильным shove.
-- При projectile hit по `enemy` или `boss` `CombatSystem` применяет target knockback до передачи
-  damage intent в `HealthDeathSystem`:
+- Projectile impact spec receives a required `knockbackImpulse: number` field in wu/s through [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
+- `impactDamage` and `knockbackImpulse` are intentionally separate fields. A weapon can deal high
+  damage with a small shove, or low damage with a strong shove.
+- On projectile hit against an `enemy` or `boss`, `CombatSystem` applies target knockback before
+  passing the damage intent to `HealthDeathSystem`:
   ```ts
   impulseSpeed = projectile.knockbackImpulse * target.knockbackVelocityScale;
   target.knockback = {
@@ -122,96 +123,96 @@ gameplay state. Projectile knockback меняет позицию enemy/boss, п�
     endSimMs: simTime + target.knockbackDurationMs
   };
   ```
-- Переиспользуются существующие поля цели `knockbackVelocityScale` и `knockbackDurationMs`.
-  Цель с `knockbackVelocityScale === 0` не двигается от projectile knockback.
-- Projectile knockback перезаписывает активный knockback на цели, как уже делает contact
-  knockback в [enemy-contact.md](enemy-contact.md). Импульсы не складываются.
-- `CombatSystem` по-прежнему не мутирует HP. Новый side effect ограничен target knockback state;
-  HP и death остаются у `HealthDeathSystem`.
-- Player knockback от enemy/boss projectiles не входит в это решение.
+- Existing target fields `knockbackVelocityScale` and `knockbackDurationMs` are reused. A target with
+  `knockbackVelocityScale === 0` does not move from projectile knockback.
+- Projectile knockback overwrites active knockback on the target, matching contact knockback in
+  [enemy-contact.md](enemy-contact.md). Impulses do not stack.
+- `CombatSystem` still does not mutate HP. The new side effect is limited to target knockback state;
+  HP and death remain owned by `HealthDeathSystem`.
+- Player knockback from enemy/boss projectiles is not part of this decision.
 
 ### Slime droplets and floor stains
 
-- Renderer создаёт капли как generated geometry, а не authored PNG assets. Минимальная финальная
-  форма — irregular 2D blob из небольшого polygon/radial jitter вокруг центра. Круг допустим
-  только как bring-up fallback внутри задачи, не как accepted финальное поведение.
-- Капли от `hit` летят в forward-biased cone вокруг `impactDirX/Y`.
-- Капли от `death` дают больший burst: больше частиц, шире cone/radial component, крупнее пятна,
-  чем у обычного hit.
-- Per-weapon variation derive-ится из `WeaponArchetype.projectile`. Основной force-сигнал —
-  `knockbackImpulse`; `impactDamage`, `hitRadius` and projectile `size` can be secondary visual inputs.
-  Конкретные counts, speeds и spread curves — renderer-owned tuning constants.
-- Цвет капель берётся из `EnemyArchetype.color` или `BossArchetype.color`. Base sprite остаётся
-  PNG-driven; `color` используется здесь как slime material color для impact effects.
-- У капель render-only lifetime:
-  - короткая анимация вылета/падения;
-  - примерно первые две секунды после landing floor stain чуть растёт;
-  - затем stain живёт renderer-owned TTL, стартово около минуты;
-  - ближе к концу TTL stain уходит через opacity и удаляется.
-- Renderer держит bounded effect budget. Если живых капель слишком много, старые/менее заметные
-  можно cull-ить. Это visual degradation, не потеря gameplay state.
+- Renderer creates droplets as generated geometry, not authored PNG assets. The minimum final form
+  is an irregular 2D blob built from a small polygon/radial jitter around the center. A circle is
+  allowed only as a bring-up fallback inside the task, not as accepted final behavior.
+- Droplets from `hit` travel in a forward-biased cone around `impactDirX/Y`.
+- Droplets from `death` create a larger burst: more particles, wider cone/radial component, and
+  larger stains than a normal hit.
+- Per-weapon variation is derived from `WeaponArchetype.projectile`. The primary force signal is
+  `knockbackImpulse`; `impactDamage`, `hitRadius`, and projectile `size` can be secondary visual
+  inputs. Exact counts, speeds, and spread curves are renderer-owned tuning constants.
+- Droplet color comes from `EnemyArchetype.color` or `BossArchetype.color`. Base sprites remain
+  PNG-driven; `color` is used here as slime material color for impact effects.
+- Droplets have a render-only lifetime:
+  - short flight/fall animation;
+  - for roughly the first two seconds after landing, the floor stain grows slightly;
+  - then the stain lives for a renderer-owned TTL, initially about one minute;
+  - near the end of TTL, the stain fades through opacity and is removed.
+- Renderer keeps a bounded effect budget. If too many droplets are alive, older or less visible
+  ones may be culled. That is visual degradation, not loss of gameplay state.
 
 ### Hit flash and hit squash
 
-- На `hit` целевой sprite может получить короткую render-only реакцию:
+- On `hit`, the target sprite may receive a short render-only response:
   - brief bright/white flash;
-  - directional или uniform squash impulse, layered поверх procedural breathing.
-- Hit responses transient и keyed by `targetId`. Они decay-ятся без изменения `SpriteVisualSpec`,
-  `contactBox`, позиции entity или любых simulation fields.
-- Если цель умерла на том же тике, death effects приоритетнее; live hit response можно пропустить
-  или он исчезнет вместе с удалением mesh-а.
+  - directional or uniform squash impulse layered over procedural breathing.
+- Hit responses are transient and keyed by `targetId`. They decay without changing
+  `SpriteVisualSpec`, `contactBox`, entity position, or any simulation fields.
+- If the target died on the same tick, death effects take priority; the live hit response may be
+  skipped or disappear with mesh removal.
 
 ### Death ghost
 
-- На `death` для `enemy` / `boss` renderer создаёт transient ghost sprite из того же visual
-  registry и preloaded texture, что и live sprite.
-- Ghost стартует из event `x/y`, а не через lookup live mesh. Это обязательно, потому что entity
-  удаляется до следующего snapshot-а.
-- Ghost движется быстро:
-  - небольшой компонент вдоль `impactDirX/Y`, если direction доступен;
-  - больший upward component в world/screen `+Y`;
-  - без gameplay collision и arena clamp.
-- Ghost полупрозрачный, desaturated или нейтрально tinted, продолжает fade-иться и исчезает
-  быстро, стартово за одну-две секунды.
-- Death ghost обязан работать даже если текущий snapshot уже не содержит умершую entity, пока
-  `archetypeId` резолвится в visual spec и preloaded texture.
+- On `death` for `enemy` / `boss`, renderer creates a transient ghost sprite from the same visual
+  registry and preloaded texture as the live sprite.
+- Ghost starts from event `x/y`, not from a live mesh lookup. This is required because the entity is
+  removed before the next snapshot.
+- Ghost moves quickly:
+  - a small component along `impactDirX/Y`, if direction is available;
+  - a larger upward component in world/screen `+Y`;
+  - no gameplay collision and no arena clamp.
+- Ghost is translucent, desaturated or neutrally tinted, and fades out quickly, initially over one
+  to two seconds.
+- Death ghost must work even if the current snapshot no longer contains the dead entity, as long as
+  `archetypeId` resolves to a visual spec and preloaded texture.
 
 ### Randomness and determinism
 
-- Projectile knockback — authoritative simulation и не использует random.
-- Render-only effects могут визуально варьироваться, но random живёт только на main/render стороне
-  и никогда не возвращается в `sim`, snapshots, runtime events или content generation.
-- Предпочтителен deterministic local hashing из event fields (`simTime`, ids, archetype ids,
-  droplet index), а не прямой `Math.random()`: один event даёт стабильную геометрию effects для
-  тестов и debug. Это presentation determinism, не session RNG.
+- Projectile knockback is authoritative simulation and does not use randomness.
+- Render-only effects may vary visually, but their randomness lives only on the main/render side and
+  never returns to `sim`, snapshots, runtime events, or content generation.
+- Prefer deterministic local hashing from event fields (`simTime`, ids, archetype ids, droplet
+  index) over direct `Math.random()`: the same event should produce stable effect geometry for tests
+  and debugging. This is presentation determinism, not session RNG.
 
 ### Tests and verification
 
-- Event-shape tests покрывают новые поля `hit` и `death`.
-- Combat tests покрывают projectile knockback direction, weapon impulse scaling, target
-  susceptibility через `knockbackVelocityScale` и отсутствие HP mutation внутри `CombatSystem`.
-- Health/death tests покрывают propagation projectile impact direction и weapon id в `death`.
-- Renderer tests покрывают `handleEvent`, создание effects по `hit`/`death`, фильтр player-hit,
-  cleanup/TTL effects и инвариант, что visual droplets не появляются в snapshots.
-- Content checks покрывают обязательные значения projectile `knockbackImpulse`.
-- Manual visual QA проверяет pistol-like, shotgun-like, laser-like и sniper-like weapons, если они
-  есть в текущем content set; иначе проверяет доступные weapons и фиксирует оставшийся tuning follow-up.
+- Event-shape tests cover the new `hit` and `death` fields.
+- Combat tests cover projectile knockback direction, weapon impulse scaling, target susceptibility
+  through `knockbackVelocityScale`, and the absence of HP mutation inside `CombatSystem`.
+- Health/death tests cover propagation of projectile impact direction and weapon id into `death`.
+- Renderer tests cover `handleEvent`, effect creation from `hit`/`death`, player-hit filtering,
+  effect cleanup/TTL, and the invariant that visual droplets never appear in snapshots.
+- Content checks cover required projectile `knockbackImpulse` values.
+- Manual visual QA checks pistol-like, shotgun-like, laser-like, and sniper-like weapons if they
+  exist in the current content set; otherwise it checks available weapons and records the remaining
+  tuning follow-up.
 
 ## Consequences
 
-- Impact presentation становится juicy без загрязнения `EntityStore` или snapshots визуальным
-  мусором.
-- Runtime events становятся более self-contained для main-thread consumers. Payload чуть растёт,
-  зато renderer не делает fragile lookup-и против snapshot-ов, где цель уже могла исчезнуть.
-- `CombatSystem` получает один новый authoritative side effect на projectile hit: target knockback.
-  Граница HP сохраняется, потому что damage всё ещё проходит через `HealthDeathSystem`.
-- `WeaponArchetype.projectile` теперь отвечает и за impact damage, и за physical force. Existing
-  weapon content должен получить явные projectile `knockbackImpulse` values.
-- `EnemyArchetype.color` и `BossArchetype.color` перестают быть только future-placeholder-ами:
-  теперь их читает render-only slime material effects, но base sprite rendering остаётся
-  asset-driven.
-- Render effect budgets и visual tuning становятся реальной surface сопровождения. Это допустимо:
-  они изолированы в `src/main/render/**` и не влияют на deterministic simulation.
+- Impact presentation becomes juicy without polluting `EntityStore` or snapshots with visual
+  debris.
+- Runtime events become more self-contained for main-thread consumers. Payloads grow slightly, but
+  renderer avoids fragile lookups against snapshots where the target may already be gone.
+- `CombatSystem` gains one new authoritative side effect on projectile hit: target knockback. The
+  HP boundary remains intact because damage still passes through `HealthDeathSystem`.
+- `WeaponArchetype.projectile` now covers both impact damage and physical force. Existing weapon
+  content needs explicit projectile `knockbackImpulse` values.
+- `EnemyArchetype.color` and `BossArchetype.color` are no longer only future placeholders: render-only
+  slime material effects read them, while base sprite rendering remains asset-driven.
+- Render effect budgets and visual tuning become real maintenance surfaces. That is acceptable:
+  they are isolated in `src/main/render/**` and do not affect deterministic simulation.
 
 ## Related
 

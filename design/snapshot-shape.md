@@ -2,30 +2,30 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-26 (story 024: terminal `win`/`loss` runtime events carry `SessionResultSummary`; authoritative result stats are defined in [session-result-summary.md](session-result-summary.md). Earlier story 022: `WeaponHudSnapshot` получает cooldown interval (`cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`), permanent `modifiers` and active `timedEffects` for the weapon-slot HUD; presentation contract lives in [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-25 story 020: `ProjectileSnapshot` получает обязательное поле `arcEnd: { x: number; y: number } | null` — fixed мировая позиция приземления для arc-снаряда в `state: 'flying'`, `null` для grounded и для linear/placed motion. Источник правды — `CombatSystem` в момент создания снаряда; `SnapshotExportSystem` копирует значение, не пересчитывает. Render-контракт landing-telegraph для in-flight arc от не-игрока — [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
+- Updated: 2026-04-27 (projectile snapshots expose effective runtime `size` so render can show projectile-size modifiers without inferring weapon state on the main thread; existing `originX`/`originY` projectile fields are documented here as presentation data copied from runtime `Projectile.origin`). Earlier: 2026-04-26 story 024: terminal `win`/`loss` runtime events carry `SessionResultSummary`; authoritative result stats are defined in [session-result-summary.md](session-result-summary.md). Earlier story 022: `WeaponHudSnapshot` receives a cooldown interval (`cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`), permanent `modifiers`, and active `timedEffects` for the weapon-slot HUD; the presentation contract lives in [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-25 story 020: `ProjectileSnapshot` receives required field `arcEnd: { x: number; y: number } | null`, the fixed world landing position for an in-flight arc projectile; it is `null` for grounded projectiles and for linear/placed motion. Source of truth is `CombatSystem` at projectile creation; `SnapshotExportSystem` copies the value and does not recompute it. The render contract for landing telegraphs on non-player in-flight arcs is [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD, and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
 
 ## Context
 
-[thread-model.md](thread-model.md) фиксирует разделение между периодическим состоянием (`snapshot`) и точечными фактами (`runtime events`), а также правило: каждая сущность в снапшоте несёт стабильный дискриминатор `kind`. Конкретные поля per-kind и поля каждого runtime event там сознательно оставлены open «по мере появления систем».
+[thread-model.md](thread-model.md) defines the split between periodic state (`snapshot`) and point-in-time facts (`runtime events`), and the rule that every entity in a snapshot carries a stable `kind` discriminator. Per-kind fields and each runtime event shape were intentionally left open there to evolve as systems appeared.
 
-В 002 этого хватало (только `kind: 'player'`, минимальные lifecycle events). История 003 одновременно вводит:
+In 002 that was enough: only `kind: 'player'` and minimal lifecycle events existed. Story 003 introduces both:
 
-- два новых типа сущностей в снапшоте — `enemy` и `projectile`;
-- три новых runtime events — `fire`, `hit`, `death`.
+- two new entity kinds in snapshots: `enemy` and `projectile`;
+- three new runtime events: `fire`, `hit`, and `death`.
 
-Без явного контракта эти формы будут зафиксированы по месту в 003, после чего 004 (волны), 005 (дроп), 006 (босс), 007 (HUD), 008 (audio) каждый раз будут расширять/переименовывать поля. Это решение задаёт базовую форму на весь горизонт MVP.
+Without an explicit contract, those shapes would be defined locally in 003, then extended or renamed repeatedly by 004 (waves), 005 (drops), 006 (boss), 007 (HUD), and 008 (audio). This decision defines the base MVP shape.
 
 ## Decision
 
-### Общие правила
+### General rules
 
-- Снапшот несёт только **меняющееся** state. Immutable конфигурация сессии (`arena`, исходные `player`, набор `encounters`) уже у `main` через `SessionDefinition` ([thread-model.md](thread-model.md)).
-- Каждая сущность в `snapshot.entities` обязана иметь стабильный `id` (тот же между снапшотами, пока сущность жива) и `kind` из конечного union-а ниже.
-- Поля сущностей — **только то, что нужно для рендера и HUD текущего поколения**. Поля для будущих систем добавляются вместе с историей, которой они нужны, и фиксируются здесь.
-- Удалённая сущность (после `HealthDeathSystem.removeDead()` или `CombatSystem` despawn) в снапшоте отсутствует. Никаких «надгробий» в `entities`.
-- Runtime events — **edge-факты**: каждое сообщение значимо, не обязано повторяться, и его поля выбираются так, чтобы потребитель (HUD/audio/render-эффект) мог среагировать без обращения к снапшоту того же тика.
+- A snapshot carries only **changing** state. Immutable session configuration (`arena`, initial `player`, encounter list) is already available to `main` through `SessionDefinition` ([thread-model.md](thread-model.md)).
+- Every entity in `snapshot.entities` must have a stable `id`, unchanged while the entity is alive, and a `kind` from the finite union below.
+- Entity fields are **only what the current renderer/HUD generation needs**. Fields for future systems are added together with the story that needs them and are recorded here.
+- Removed entities, after `HealthDeathSystem.removeDead()` or `CombatSystem` despawn, are absent from snapshots. There are no tombstones in `entities`.
+- Runtime events are **edge facts**: every message is meaningful, does not have to repeat, and carries enough fields for a consumer such as HUD/audio/render effects to react without reading the same-tick snapshot.
 
-### Per-kind поля сущности (на горизонт 003–006)
+### Per-kind entity fields for the 003-006 horizon
 
 ```ts
 type EntitySnapshot =
@@ -44,21 +44,21 @@ type EntitySnapshot =
     kind: 'player';
     x: number;
     y: number;
-    hp: number;       // целое >= 0
-    maxHp: number;    // целое > 0; повторяется в каждом снапшоте, как у enemy
+    hp: number;       // integer >= 0
+    maxHp: number;    // integer > 0; repeated in each snapshot, like enemy
   }
   ```
-  Поля `hp`/`maxHp` присутствуют **всегда**, независимо от того, активна ли в текущей сессии `lossCondition: playerDeath`. Это устраняет два разных «нет данных» в HUD и упрощает рендер: для sandbox-сессии без боя `hp = maxHp` всё время.
+  `hp`/`maxHp` are present **always**, regardless of whether the current session has `lossCondition: playerDeath`. This avoids two ways to say "no data" in HUD and simplifies rendering: in a non-combat sandbox session, `hp = maxHp` for the whole run.
 - `EnemySnapshot`:
   ```ts
   {
     id: number;
     kind: 'enemy';
-    archetypeId: string;   // для рендера и аудио по виду врага
+    archetypeId: string;   // render/audio by enemy type
     x: number;
     y: number;
     hp: number;
-    maxHp: number;          // повторяется в каждом снапшоте; стоимость минимальна, упрощает HUD
+    maxHp: number;          // repeated in each snapshot; small cost, simpler HUD
   }
   ```
 - `ProjectileSnapshot`:
@@ -68,8 +68,11 @@ type EntitySnapshot =
     kind: 'projectile';
     weaponArchetypeId: string;
     ownerKind: 'player' | 'enemy' | 'boss';
+    originX: number;
+    originY: number;
     x: number;
     y: number;
+    size: { width: number; height: number };
     state: 'flying' | 'grounded';
     visualState: {
       angleRadians: number;
@@ -81,19 +84,21 @@ type EntitySnapshot =
     arcEnd: { x: number; y: number } | null;
   }
   ```
-- `state`, `visualState`, `explosionRadius` and `detonateAtSimMs` are required by story 017 presentation: sprite orientation/spin, grounded pulse and radius indicators must not be inferred from hidden sim state. `detonateAtSimMs` is presentation timing; gameplay detonation remains owned by `CombatSystem`.
-- `arcEnd` (story 020) — fixed мировая позиция приземления arc-снаряда в `state: 'flying'`, копируется из runtime `Projectile` без пересчёта на каждом снапшоте; `null` для arc в `state: 'grounded'` (приземление уже произошло) и **всегда** `null` для linear/placed motion. Поле обязательное (значение `null` — единственный способ выразить «не применимо», без `undefined`/`?`-маркера). Полный render-контракт landing-telegraph (когда показывать, размер маркера, исключение для player-owned arc) живёт в [landing-telegraph.md](landing-telegraph.md); сам snapshot не несёт «нужен ли telegraph» — это derive renderer-а из `state + arcEnd + ownerKind`.
-- `DropSnapshot` (история 005, см. [drops.md](drops.md)):
+- `originX`/`originY` are the projectile spawn origin copied from runtime `Projectile.origin`. They are presentation data used by renderer rules such as hiding a newly spawned projectile while it overlaps the shooter; gameplay motion and hit tests still use runtime `Projectile.position` inside `CombatSystem`.
+- `size` is the effective runtime visual size copied from runtime `Projectile.size`. It equals the base `WeaponArchetype.projectile.size` for unmodified shots and includes spawn-time `projectileSizeMultiplier` effects for modified shots. `SnapshotExportSystem` copies this value and does not recompute it from `weaponArchetypeId` or from `weaponHud.modifiers`. `size` is not `hitRadius`: projectile collision remains owned by `CombatSystem`, and `hitRadius` stays out of snapshots until a renderer/HUD/debug story needs it explicitly.
+- `state`, `visualState`, `explosionRadius`, and `detonateAtSimMs` are required by story 017 presentation: sprite orientation/spin, grounded pulse, and radius indicators must not be inferred from hidden sim state. `detonateAtSimMs` is presentation timing; gameplay detonation remains owned by `CombatSystem`.
+- `arcEnd` (story 020) is the fixed world landing position for an in-flight arc projectile. It is copied from runtime `Projectile` without recomputation on each snapshot; it is `null` for an arc projectile in `state: 'grounded'`, because landing already happened, and **always** `null` for linear/placed motion. The field is required, and `null` is the only way to say "not applicable"; there is no `undefined`/optional marker. The full render contract for landing telegraphs, including when to show them, marker size, and the player-owned arc exception, lives in [landing-telegraph.md](landing-telegraph.md). Snapshot itself does not carry "telegraph needed"; renderer derives that from `state + arcEnd + ownerKind`.
+- `DropSnapshot` (story 005, see [drops.md](drops.md)):
   ```ts
   {
     id: number;
     kind: 'drop';
-    archetypeId: string;     // DropArchetype.id; рендер выбирает визуал по архетипу
+    archetypeId: string;     // DropArchetype.id; renderer chooses visual by archetype
     x: number;
     y: number;
   }
   ```
-  `radius`, `effect`, `color`, `expireAtSimMs`, оставшееся время жизни в snapshot не уходят: gameplay-форма дропа (overlap-радиус, эффект) живёт только в `sim`, а render берёт визуал по `archetypeId` из `content library`. Если HUD когда-нибудь захочет «осталось N сек до исчезновения», это будет добавлением поля сюда, не вытаскиванием `expireAtSimMs` «по месту».
+  `radius`, `effect`, `color`, `expireAtSimMs`, and remaining lifetime do not enter snapshots. Gameplay shape (overlap radius, effect) stays in `sim`; renderer gets visuals by `archetypeId` from the content library. If HUD later needs "N seconds until disappearance", that will add a field here rather than pulling `expireAtSimMs` locally.
 
 - `BossSnapshot` (006, [boss-encounter.md](boss-encounter.md), [content-archetypes.md](content-archetypes.md)):
   ```ts
@@ -122,11 +127,11 @@ type EntitySnapshot =
     expiresAtSimMs: number;
   }
   ```
-  Field effect snapshots expose presentation state only. Periodic damage/status application remains in `FieldEffectSystem`.
+  Field-effect snapshots expose presentation state only. Periodic damage/status application remains in `FieldEffectSystem`.
 
 ### Top-level snapshot
 
-- Форма верхнего уровня снапшота на горизонт 004:
+- Top-level shape for the 004 horizon:
   ```ts
   type Snapshot = Readonly<{
     simTimeMs: number;
@@ -138,7 +143,7 @@ type EntitySnapshot =
     weaponHud: WeaponHudSnapshot | null;
   }>;
   ```
-- HUD-агрегаты уровня run (HP игрока, прогресс волны, состояние босса) живут как отдельные top-level поля, а не складываются в `entities`. Каждое такое расширение фиксируется здесь.
+- Run-level HUD aggregates, such as player HP, wave progress, and boss state, live as separate top-level fields rather than being folded into `entities`. Each such extension is recorded here.
 - `bossHud`:
   ```ts
   type BossHudSnapshot = Readonly<{
@@ -150,7 +155,7 @@ type EntitySnapshot =
     activeAttackIds: ReadonlyArray<string>;
   }>;
   ```
-  Для encounter, у которых `encounter.type !== 'boss'` или активного босса нет, поле **`null`**. Значения дублируют ключевые поля сущности босса для дешёвого чтения HUD без поиска по `entities`; консистентность с сущностью обеспечивает `SnapshotExportSystem`.
+  For encounters where `encounter.type !== 'boss'`, or when there is no active boss, the field is **`null`**. Values duplicate key boss-entity fields so HUD can read cheaply without searching `entities`; `SnapshotExportSystem` guarantees consistency with the entity.
 - `weaponHud` (017, extended by 022):
   ```ts
   type WeaponTimedEffectHudSnapshot =
@@ -173,18 +178,18 @@ type EntitySnapshot =
     }>>;
   }>;
   ```
-  `null` means the active session has no player loadout. HUD reads selected weapon, cooldown interval, permanent modifiers and active timed weapon effects from this field instead of inspecting runtime weapon instances directly. `cooldownStartedAtSimMs`/`cooldownReadyAtSimMs` define the current or most recent cooldown interval; HUD derives fill from those timestamps and `snapshot.simTimeMs`. `modifiers` contains permanent `WeaponModifier` values copied from the selected owner's weapon instance. `timedEffects` contains only active timed effects at snapshot time (`expiresAtSimMs > snapshot.simTimeMs`); on this horizon the only timed effect is `temporaryOverdrive`. Full render semantics are in [hud-presentation.md](hud-presentation.md).
-- Поля 004:
+  `null` means the active session has no player loadout. HUD reads selected weapon, cooldown interval, permanent modifiers, and active timed weapon effects from this field instead of inspecting runtime weapon instances directly. `cooldownStartedAtSimMs`/`cooldownReadyAtSimMs` define the current or most recent cooldown interval; HUD derives fill from those timestamps and `snapshot.simTimeMs`. `modifiers` contains permanent `WeaponModifier` values copied from the selected owner's weapon instance. `timedEffects` contains only active timed effects at snapshot time (`expiresAtSimMs > snapshot.simTimeMs`); on this horizon the only timed effect is `temporaryOverdrive`. Full render semantics are in [hud-presentation.md](hud-presentation.md).
+- 004 fields:
   - `encounter`:
     ```ts
     type EncounterSnapshot = Readonly<{
       id: string;                                      // EncounterDefinition.id
       type: 'wave' | 'break' | 'boss' | 'survivalTimer' | 'sandbox';
-      index: number;                                   // позиция в SessionDefinition.encounters
-      elapsedMs: number;                               // с момента encounterStart, целое
+      index: number;                                   // position in SessionDefinition.encounters
+      elapsedMs: number;                               // since encounterStart, integer
     }>;
     ```
-    `null` означает «активного encounter нет» — между `sessionStart` и активацией первого encounter (промежуток теоретически нулевой, но форма допускает) и после `sessionStop`/`win`/`loss`. До идеального состояния «снапшот всегда несёт encounter, если есть активная сессия» поле остаётся nullable как страховка от расхождения порядков активации.
+    `null` means there is no active encounter: between `sessionStart` and first encounter activation, which is theoretically zero-length but represented by the type, and after `sessionStop`/`win`/`loss`. Until the ideal invariant "snapshot always carries encounter when a session is active" is fully enforced, the field remains nullable as protection against activation-order mismatches.
   - `zone`:
     ```ts
     type ZoneSnapshot = Readonly<{
@@ -192,30 +197,30 @@ type EntitySnapshot =
       margin: number; // wu, >= 0
     }>;
     ```
-    Форма и семантика — в [zone.md](zone.md). Поле обязательное и не nullable: `disabled` — это всегда валидное значение для отсутствия активной зоны.
+    Shape and semantics are in [zone.md](zone.md). The field is required and non-nullable: `disabled` is the valid value for no active zone.
   - `waveProgress`:
     ```ts
     type WaveProgressSnapshot = Readonly<{
-      dispatched: number;   // спавнов уже выпущено
-      total: number;        // всего по плану
-      alive: number;        // живых сущностей, заспавненных текущей волной
+      dispatched: number;   // spawns already released
+      total: number;        // total planned
+      alive: number;        // living entities spawned by the current wave
     }>;
     ```
-    `null` для encounter, у которого `spawnPlan.kind !== 'wave'` (включая `'static'` из 003). Для `'wave'` поле заполняется на каждом тике и доступно HUD/тестам.
+    `null` for encounters where `spawnPlan.kind !== 'wave'`, including `'static'` from 003. For `'wave'`, the field is filled every tick and is available to HUD/tests.
 
-### Runtime events: контракт kinds
+### Runtime events: kind contract
 
-- К существующим lifecycle kinds из [runtime-systems.md](runtime-systems.md) (`sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`) этой историей добавляются три combat-kind, историей 004 — `win` и `loss`, а историей 005 — три drop-kind (`dropSpawn`, `dropPickup`, `dropExpire`):
+- Three combat kinds are added to the existing lifecycle kinds from [runtime-systems.md](runtime-systems.md) (`sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`). Story 004 adds `win` and `loss`; story 005 adds three drop kinds (`dropSpawn`, `dropPickup`, `dropExpire`):
   ```ts
   type RuntimeEvent =
-    // lifecycle (см. runtime-systems.md)
+    // lifecycle (see runtime-systems.md)
     | { kind: 'sessionStart'; simTime: number }
     | { kind: 'sessionStop'; simTime: number }
     | { kind: 'encounterStart'; simTime: number }
     | { kind: 'encounterEnd'; simTime: number }
     | { kind: 'pause'; simTime: number }
     | { kind: 'resume'; simTime: number }
-    // combat (этот файл)
+    // combat (this file)
     | {
         kind: 'fire';
         simTime: number;
@@ -225,7 +230,7 @@ type EntitySnapshot =
         originX: number;
         originY: number;
         dirX: number;
-        dirY: number;       // нормализованный вектор
+        dirY: number;       // normalized vector
       }
     | {
         kind: 'hit';
@@ -271,10 +276,10 @@ type EntitySnapshot =
         phaseIndex: number;
         phaseId: string;
       }
-    // session lifecycle (этот файл, история 004; summary extension — session-result-summary.md)
+    // session lifecycle (this file, story 004; summary extension: session-result-summary.md)
     | { kind: 'win'; simTime: number; summary: SessionResultSummary }
     | { kind: 'loss'; simTime: number; summary: SessionResultSummary }
-    // drops (этот файл, история 005; см. drops.md)
+    // drops (this file, story 005; see drops.md)
     | {
         kind: 'dropSpawn';
         simTime: number;
@@ -288,7 +293,7 @@ type EntitySnapshot =
         simTime: number;
         entityId: number;       // Drop.id
         archetypeId: string;    // DropArchetype.id
-        pickerId: number;       // на 005 — всегда player.id, поле явное на будущее
+        pickerId: number;       // in 005, always player.id; explicit for future extension
         x: number;
         y: number;
       }
@@ -301,47 +306,34 @@ type EntitySnapshot =
         y: number;
       };
   ```
-- `win`/`loss` несут `simTime` и `summary`. Полная форма `SessionResultSummary`, владелец статистики и правила progress/kills/boss/defeat-cause зафиксированы в [session-result-summary.md](session-result-summary.md). `summary.outcome` должен совпадать с `event.kind`, а `summary.durationMs` должен совпадать с `event.simTime`.
-- `hit.targetArchetypeId` и `death.weaponArchetypeId`/`impactDir*` существуют для main-thread presentation consumers ([impact-feedback.md](impact-feedback.md)): renderer не должен реконструировать цвет цели, направление пули или причину смерти из соседних snapshot-ов, потому что цель может быть удалена до следующего кадра. Для `targetKind: 'player'` target archetype отсутствует и поле равно `null`; для смерти не от projectile weapon/direction поля равны `null`.
-- Owner-системы (см. [runtime-systems.md](runtime-systems.md)):
-  - `fire`, `hit`, `explosion` публикует `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md));
-  - `death` публикует `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) сразу после фиксации смерти и до запуска death hooks;
-  - `win`, `loss` публикует `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md), [session-definition.md](session-definition.md)) ровно один раз за run;
-  - `dropSpawn`, `dropPickup`, `dropExpire` публикует `DropSystem` ([drops.md](drops.md)): `dropSpawn` — внутри death hook, синхронно после `EntityStore.spawnDrop`; `dropPickup` и `dropExpire` — в фазе `DropSystem` тика, по правилам [drops.md](drops.md) (на один дроп — ровно одно из них).
-- Никакая другая система не имеет права публиковать события `fire`/`hit`/`explosion`/`death`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`/`bossPhaseChange`. Исключение: `BossPhaseSystem` публикует только `bossPhaseChange`; `DropSystem` подписан на death hook для дропа и не подменяет `death`. Обе системы не публикуют альтернативное событие смерти или победы.
+- `win`/`loss` carry `simTime` and `summary`. The full `SessionResultSummary` shape, stats owner, and progress/kills/boss/defeat-cause rules are defined in [session-result-summary.md](session-result-summary.md). `summary.outcome` must match `event.kind`, and `summary.durationMs` must match `event.simTime`.
+- `hit.targetArchetypeId` and `death.weaponArchetypeId`/`impactDir*` exist for main-thread presentation consumers ([impact-feedback.md](impact-feedback.md)): renderer must not reconstruct target color, bullet direction, or death cause from nearby snapshots, because the target may be removed before the next frame. For `targetKind: 'player'`, target archetype is absent and the field is `null`; for non-projectile deaths, weapon/direction fields are `null`.
+- Owner systems (see [runtime-systems.md](runtime-systems.md)):
+  - `fire`, `hit`, and `explosion` are published by `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md));
+  - `death` is published by `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) immediately after death is recorded and before death hooks run;
+  - `win` and `loss` are published by `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md), [session-definition.md](session-definition.md)) exactly once per run;
+  - `dropSpawn`, `dropPickup`, and `dropExpire` are published by `DropSystem` ([drops.md](drops.md)): `dropSpawn` inside the death hook synchronously after `EntityStore.spawnDrop`; `dropPickup` and `dropExpire` during the `DropSystem` tick phase, by [drops.md](drops.md) rules, with exactly one of them for each drop.
+- No other system may publish `fire`/`hit`/`explosion`/`death`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`/`bossPhaseChange`. Exception: `BossPhaseSystem` publishes only `bossPhaseChange`; `DropSystem` subscribes to death hooks for drops and does not replace `death`. Neither system publishes an alternate death or victory event.
 
-### Гарантии и приоритеты
+### Guarantees and priorities
 
-- Снапшоты публикуются по расписанию из [simulation-timing.md](simulation-timing.md) (`SNAPSHOT_HZ = 30`).
-- Runtime events публикуются по факту, без агрегации между тиками. Если поток перегружен, [thread-model.md](thread-model.md) уже фиксирует приоритет снапшотов — combat-events деградируют как и любые другие events.
-- HUD/audio не должны восстанавливать authoritative state только из combat-events: между двумя `hit`-ами на одного врага HP читается из снапшота, а не из суммы damage в events.
+- Snapshots are published on the schedule from [simulation-timing.md](simulation-timing.md) (`SNAPSHOT_HZ = 30`).
+- Runtime events are published when they happen, without aggregation between ticks. If the stream is overloaded, [thread-model.md](thread-model.md) already defines snapshot priority; combat events degrade like any other events.
+- HUD/audio must not reconstruct authoritative state only from combat events: between two `hit` events on one enemy, HP is read from the snapshot, not from summing damage in events.
 
-## Related
+### Extension
 
-- [thread-model.md](thread-model.md)
-- [runtime-systems.md](runtime-systems.md)
-- [projectiles-and-combat.md](projectiles-and-combat.md)
-- [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
-- [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
-- [drops.md](drops.md)
-- [boss-encounter.md](boss-encounter.md)
-- [impact-feedback.md](impact-feedback.md)
-- [hud-presentation.md](hud-presentation.md)
-- [session-result-summary.md](session-result-summary.md)
-
-### Расширение
-
-- Новый `kind` сущности (`drop`, `boss`, `pickup`-эффект) добавляется здесь же отдельным разделом и оформляется как **новый член union**, без переоткрытия существующих.
-- Новое поле в существующем `kind` допустимо только дописыванием. Удаление поля = `superseded` этого решения.
-- Новый combat-kind runtime event (например, `parry`, `crit`, `pickup`) добавляется здесь же. Молчаливое расширение в `events.ts` без обновления этого файла — нарушение контракта.
+- A new entity `kind` (`drop`, `boss`, `pickup` effect) is added here as a **new union member**, without reopening existing members.
+- A new field in an existing `kind` may only be appended. Removing a field supersedes this decision.
+- A new combat runtime event kind, for example `parry`, `crit`, or `pickup`, is added here. Silently extending `events.ts` without updating this file violates the contract.
 
 ## Consequences
 
-- HUD, audio и рендер 007/008 получают стабильный набор полей и не вынуждены реверсить snapshot per story.
-- `archetypeId` в снапшотах врагов и снарядов исключает «магические» цвета/спрайты, привязанные к `id` сущности; рендер выбирает визуал по архетипу из `content library`.
-- `maxHp` дублируется в каждом enemy-снапшоте — это намеренный размен ради простоты HUD; стоимость в трафике незначительна на ожидаемом числе сущностей MVP.
-- Новые combat-kinds событий выбраны достаточными для muzzle-flash, hit-spark, hit-sound и death-sound; их форма не потребует пересмотра в 008.
-- Death hooks остаются единственным «межсистемным» способом среагировать на смерть; публикация `death` runtime event — отдельный путь, для main-thread-side потребителей.
+- HUD, audio, and render in 007/008 get a stable field set and do not have to reverse-engineer snapshots story by story.
+- `archetypeId` in enemy and projectile snapshots prevents magic colors/sprites tied to entity `id`; renderer chooses visuals by archetype from the `content library`.
+- `maxHp` is duplicated in every enemy snapshot. This is an intentional trade-off for HUD simplicity; traffic cost is negligible at expected MVP entity counts.
+- New combat event kinds are sufficient for muzzle flash, hit spark, hit sound, and death sound; their shape should not need revision in 008.
+- Death hooks remain the only inter-system way to react to death. Publishing a `death` runtime event is a separate path for main-thread consumers.
 
 ## Related
 
@@ -360,3 +352,4 @@ type EntitySnapshot =
 - [landing-telegraph.md](landing-telegraph.md)
 - [non-player-firing.md](non-player-firing.md)
 - [hud-presentation.md](hud-presentation.md)
+- [session-result-summary.md](session-result-summary.md)

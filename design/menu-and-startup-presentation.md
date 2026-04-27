@@ -6,16 +6,16 @@
 
 ## Context
 
-[main-ui-shell.md](main-ui-shell.md) уже фиксирует фазовую модель `UiShell`: приложение стартует в `loading`, после успешного preload переходит в `menu`, а активная сессия стартует только через явное действие игрока. [sprite-assets.md](sprite-assets.md) фиксирует обязательный preload и decode gameplay-спрайтов до меню, чтобы первый забег не ловил lazy-load мигание.
+[main-ui-shell.md](main-ui-shell.md) already defines the `UiShell` phase model: the app starts in `loading`, moves to `menu` after successful preload, and starts an active session only after an explicit player action. [sprite-assets.md](sprite-assets.md) requires gameplay sprites to be preloaded and decoded before the menu, so the first run does not show lazy-load flicker.
 
-До истории 023 startup UX был техническим: `StartupOverlay` показывал `Loading assets X/Y`, а minimum splash duration жил рядом с preload-логикой. Это визуально стабилизировало старт, но смешивало две разные вещи:
+Before story 023, startup UX was technical: `StartupOverlay` showed `Loading assets X/Y`, and minimum splash duration lived next to preload logic. That visually stabilized startup, but mixed two separate concerns:
 
-- честную готовность обязательных ассетов;
-- намеренную presentation-паузу, которая нужна, чтобы заставка не моргала.
+- real readiness of required assets;
+- an intentional presentation pause that keeps the splash screen from flashing too briefly.
 
-История 023 также заменяет старое card-based меню на hand-drawn scene по [../mockups/001-main.jpg](../mockups/001-main.jpg) и нарезанным ассетам в `public/images/bg/**` / `public/images/menu/**`. Без отдельного решения код меню начнёт хранить архитектурные правила в координатах DOM-элементов, hover-эффектах и timing-константах.
+Story 023 also replaces the old card-based menu with a hand-drawn scene based on [../mockups/001-main.jpg](../mockups/001-main.jpg) and sliced assets in `public/images/bg/**` / `public/images/menu/**`. Without a separate decision, menu code would start carrying architecture rules in DOM coordinates, hover effects, and timing constants.
 
-Это решение фиксирует presentation-контракт startup-заставки, фазовых visual transitions и главного меню. Оно не меняет форму `SessionDefinition`, snapshot, sim runtime или gameplay-контент.
+This decision defines the presentation contract for the startup splash, phase visual transitions, and main menu. It does not change `SessionDefinition`, snapshots, sim runtime, or gameplay content.
 
 ## Decision
 
@@ -36,9 +36,9 @@
 - Asset progress shown while assets are loading must be honest: if the UI displays `loaded/total`, those values are the actual loaded/decoded count from the required asset set. Time-gating must not invent lower loaded counts after an asset has actually completed.
 - After all required assets are ready, `StartupOverlay` switches from asset progress to a themed post-load ritual. This ritual is the only place where startup duration may be intentionally extended for presentation.
 - The post-load ritual is a fixed ordered list of short `StartupPresentationStep` entries owned by `src/main/ui/**`. Initial Russian copy:
-  - `Активируем слизь`
-  - `Спавним слаймов`
-  - `Пробуждаем босса`
+  - `Priming slime`
+  - `Spawning slimes`
+  - `Waking the boss`
 - The ritual advances the visible progress from the completed asset portion to `100%`. It must not continue showing fake asset counts.
 - The ritual uses wall-clock presentation time in `main thread`; it is not seeded and does not affect simulation determinism.
 - A reasonable initial ritual duration is hundreds of milliseconds, not seconds. The implementation may tune exact per-step durations locally, but the whole ritual should stay short enough to feel like an intro beat rather than a second loading screen.

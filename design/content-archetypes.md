@@ -2,76 +2,76 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-25 (story 019: `EnemyArchetype.carrierDrop` removed; per-spawn guaranteed drops, dropTable replace and retaliation replace move to [spawn-overrides.md](spawn-overrides.md). `EnemyArchetype.dropTable` and `EnemyArchetype.retaliation` remain as archetype defaults. Earlier: 2026-04-24 cleanup pass: legacy scalar `WeaponArchetype` and legacy `{ primaryWeaponArchetypeId }` `Loadout` removed; only the current 017 forms remain. `DropEffect` is no longer redefined here; the single source of truth is [drops.md](drops.md). `WeaponArchetype` carries no audio field by [audio.md](audio.md). 017 alignment: `WeaponArchetype` and `Loadout` follow [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: optional field/status/drop-magnet/carrier extensions are owned by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: story 016 impact feedback, story 013 sprite/contact boxes, story 012 MD-generated weapons/drops/bosses.)
+- Updated: 2026-04-25 (story 019: `EnemyArchetype.carrierDrop` removed; per-spawn guaranteed drops, dropTable replacement, and retaliation replacement move to [spawn-overrides.md](spawn-overrides.md). `EnemyArchetype.dropTable` and `EnemyArchetype.retaliation` remain archetype defaults. Earlier: 2026-04-24 cleanup pass: legacy scalar `WeaponArchetype` and legacy `{ primaryWeaponArchetypeId }` `Loadout` removed; only the current 017 forms remain. `DropEffect` is no longer redefined here; the single source of truth is [drops.md](drops.md). `WeaponArchetype` carries no audio field by [audio.md](audio.md). 017 alignment: `WeaponArchetype` and `Loadout` follow [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: optional field/status/drop-magnet/carrier extensions are owned by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: story 016 impact feedback, story 013 sprite/contact boxes, story 012 MD-generated weapons/drops/bosses.)
 
 ## Context
 
-[content-boundaries.md](content-boundaries.md) фиксирует, что архетипы врагов, оружия и босса живут в `content library` (`src/shared/content/**`, см. [web-stack.md](web-stack.md)), но не задаёт их форму. История 003 вводит первое реальное содержимое библиотеки за пределами арены и игрока: один архетип врага и один архетип оружия. Без явного контракта:
+[content-boundaries.md](content-boundaries.md) states that enemy, weapon, and boss archetypes live in the `content library` (`src/shared/content/**`, see [web-stack.md](web-stack.md)), but does not define their shape. Story 003 introduces the first real library content beyond arena and player: one enemy archetype and one weapon archetype. Without an explicit contract:
 
-- история 003 неявно зафиксирует поля архетипов в коде `content/**`;
-- история 004 (волны), 005 (дроп) и 006 (босс) каждый раз будут добавлять/переименовывать поля по месту;
-- `SpawnSystem` ([spawn-plan.md](spawn-plan.md)) и `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md)) начнут «знать» архетипы по полю, а не по контракту.
+- story 003 would implicitly define archetype fields in `content/**`;
+- stories 004 (waves), 005 (drops), and 006 (boss) would each add or rename fields locally;
+- `SpawnSystem` ([spawn-plan.md](spawn-plan.md)) and `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md)) would start "knowing" archetypes by incidental fields instead of by contract.
 
-Дополнительно: `SessionDefinition.loadout` ([session-definition.md](session-definition.md)) сейчас допускается как `null`. Когда в 003 у игрока появляется оружие, нужно зафиксировать минимальную форму loadout, а не вводить её «по месту» в `content/**`.
+Also, `SessionDefinition.loadout` ([session-definition.md](session-definition.md)) is currently allowed to be `null`. Once the player receives a weapon in 003, the minimal loadout shape needs to be defined here rather than introduced locally in `content/**`.
 
 ## Decision
 
-### Общие правила архетипов
+### General archetype rules
 
-- Архетип — это **read-only описание** игрового элемента, не runtime state. Архетипы живут в `src/shared/content/**` и не мутируются во время сессии ([content-boundaries.md](content-boundaries.md)).
-- Каждый архетип имеет стабильный строковый `id`. `id` уникален в пределах своего реестра (`enemies`, `weapons`, `bosses`, …) и не переиспользуется при удалении.
-- Ссылки в `SessionDefinition`, `EncounterDefinition`, `SpawnPlan` и runtime state на архетипы — только по `id`, не по объекту. Резолв `id → archetype` выполняется один раз при старте сессии: builder сессии и/или `SpawnSystem`/`CombatSystem` строят локальные карты `Map<id, archetype>`. Это исключает «потерянные» ссылки на старый объект, если контент в библиотеке поменяется между сборками.
-- Неизвестный `id` при резолве — ошибка сборки/старта сессии, не runtime-фолбэк.
-- Расширение архетипа допускается только **дописыванием** новых полей. Переименование или смена семантики поля = новое design-решение и обновление этого файла.
-- Все размерности — в world units / wu в секунду / миллисекундах симуляции, чтобы не зависеть от рендера ([arena-and-coordinates.md](arena-and-coordinates.md), [simulation-timing.md](simulation-timing.md)).
+- An archetype is a **read-only description** of a game element, not runtime state. Archetypes live in `src/shared/content/**` and are not mutated during a session ([content-boundaries.md](content-boundaries.md)).
+- Every archetype has a stable string `id`. The `id` is unique inside its registry (`enemies`, `weapons`, `bosses`, ...) and is not reused after deletion.
+- References from `SessionDefinition`, `EncounterDefinition`, `SpawnPlan`, and runtime state to archetypes use `id` only, never object references. `id -> archetype` resolution happens once at session start: the session builder and/or `SpawnSystem`/`CombatSystem` build local `Map<id, archetype>` values. This prevents stale object references if content changes between builds.
+- Unknown `id` during resolution is a session-build/start error, not a runtime fallback.
+- Archetypes may be extended only by **appending** fields. Renaming or changing field semantics is a new design decision and requires updating this file.
+- All units are world units, wu/s, and simulation milliseconds, independent of renderer ([arena-and-coordinates.md](arena-and-coordinates.md), [simulation-timing.md](simulation-timing.md)).
 
 ### EnemyArchetype
 
-- Форма на горизонт 019:
+- Shape for the 019 horizon:
   ```ts
   type EnemyBehavior = 'stationary' | 'chase';
 
   type DropTableEntry = Readonly<{
-    archetypeId: string;             // DropArchetype.id из реестра drops в content library
+    archetypeId: string;             // DropArchetype.id from the drops registry in the content library
     chance: number;                  // [0, 1]
   }>;
 
   type RetaliationPolicy = Readonly<{
     enabled: boolean;
-    durationMs: number;              // целое > 0 при enabled === true; иначе 0
+    durationMs: number;              // integer > 0 when enabled === true; otherwise 0
   }>;
 
   type EnemyArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;                  // wu, legacy circle metric для не-мигрированных consumers; body-contact не читает его после body-contact-boxes.md
-    contactBox: Readonly<{ width: number; height: number }>;  // wu, derive из sprite asset; owner body-contact и projectile target overlap для `player` / `enemy` / `boss`
-    maxHp: number;                   // целое > 0
+    radius: number;                  // wu, legacy circle metric for non-migrated consumers; body-contact no longer reads it after body-contact-boxes.md
+    contactBox: Readonly<{ width: number; height: number }>;  // wu, derived from sprite asset; owns body contact and projectile target overlap for `player` / `enemy` / `boss`
+    maxHp: number;                   // integer > 0
     behavior: EnemyBehavior;
-    maxSpeed: number;                // wu/s, >= 0; для 'stationary' обязан быть 0
-    contactDamage: number;           // целое >= 0; 0 = врага можно касаться без урона
-    contactCooldownMs: number;       // целое > 0; интервал между двумя контактными ударами одного и того же врага
-    knockbackBaseImpulse: number;    // wu/s, >= 0; базовая скорость отскока при нулевом сближении
-    knockbackVelocityScale: number;  // безразмерный, >= 0; множитель добавки от approachSpeed
-    knockbackDurationMs: number;     // целое > 0; длительность затухания knockback
+    maxSpeed: number;                // wu/s, >= 0; must be 0 for 'stationary'
+    contactDamage: number;           // integer >= 0; 0 = this enemy can be touched without damage
+    contactCooldownMs: number;       // integer > 0; interval between two contact hits from the same enemy
+    knockbackBaseImpulse: number;    // wu/s, >= 0; base bounce speed with zero approach
+    knockbackVelocityScale: number;  // dimensionless, >= 0; multiplier for approachSpeed contribution
+    knockbackDurationMs: number;     // integer > 0; knockback decay duration
     color: number;                   // 0xRRGGBB, slime material color for impact effects; base sprite remains PNG-driven
-    dropTable: ReadonlyArray<DropTableEntry>;  // **архетипный default**; per-spawn replace — spawn-overrides.md
-    retaliation: RetaliationPolicy;             // **архетипный default**; per-spawn replace — spawn-overrides.md
+    dropTable: ReadonlyArray<DropTableEntry>;  // **archetype default**; per-spawn replacement: spawn-overrides.md
+    retaliation: RetaliationPolicy;             // **archetype default**; per-spawn replacement: spawn-overrides.md
   }>;
   ```
-- `dropTable` и `retaliation` — **архетипные defaults**, действующие, если в `content/sessions/<presetId>.md` для конкретного спавна не задан `SpawnOverride` ([spawn-overrides.md](spawn-overrides.md)). Все runtime-системы читают per-spawn копию этих полей с runtime-сущности `enemy`, а не с архетипа; архетип используется только как источник default-копии в момент спавна.
-- Поля `carrierDrop` / `CarrierDropMetadata` / `marker: 'reward'` в `EnemyArchetype` **отсутствуют**. «Гарантированный дроп carrier-щели» — это per-spawn override (`SpawnOverride.guaranteedDrops` в [spawn-overrides.md](spawn-overrides.md)), а не поле архетипа. Презентационный `carrierDropMarker` в снапшоте ([snapshot-shape.md](snapshot-shape.md)) derive-ится в `SpawnSystem` из `guaranteedDrops.length > 0` в момент спавна и не зависит от архетипа.
-- `behavior: 'stationary'` означает, что `MovementSystem` не двигает врага этого архетипа; `maxSpeed` для `'stationary'` обязан быть 0 — это правило валидируется на стороне content/builder, не runtime.
-- `behavior: 'chase'` означает, что `MovementSystem` двигает врага к текущей позиции игрока с скоростью `maxSpeed`; конкретный alg (прямая линия / steering) — деталь реализации, контракт — «в среднем сокращает расстояние до игрока за тик». Дальнейшие поведения (`'wander'`, `'orbit'`, …) добавляются дописыванием в `EnemyBehavior` union, а не ветвями в `MovementSystem`.
-- `contactBox` — axis-aligned footprint тела врага для body-contact и projectile hit detection по [body-contact-boxes.md](body-contact-boxes.md) и [projectiles-and-combat.md](projectiles-and-combat.md). На горизонте 013 не авторится руками в MD и derive-ится из sprite asset тем же scale pipeline, что и visual `worldSize`.
-- `contactDamage` и `contactCooldownMs` — единственный источник правды для контактного урона; правила обработки — в [enemy-contact.md](enemy-contact.md). Если `contactDamage === 0`, кулдаун всё равно задаётся явно — отсутствие поля запрещено по тому же правилу единственности «нет данных».
-- `knockbackBaseImpulse`, `knockbackVelocityScale`, `knockbackDurationMs` — параметры контактного knockback враг → от игрока; правила обработки — в [enemy-contact.md](enemy-contact.md), раздел `Knockback at contact`. Поля задаются всегда: «knockback'а нет» выражается явными нулями `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0`, а не пропуском полей.
-- `color` — slime material color for render-only impact effects ([impact-feedback.md](impact-feedback.md)): droplets/stains take their hue from the hit `enemy` / `boss`. Base sprite rendering still does not tint player/enemy/boss PNGs; visual identity remains the preloaded sprite from [sprite-assets.md](sprite-assets.md). Non-renderer consumers (debug overlay, мини-карта, tooling) may also use the field.
-- Числовые ограничения, обязательные на стороне content/builder:
-  - `maxSpeed * SIM_STEP_SEC <= min((contactBox.width + player.contactBox.width) / 2, (contactBox.height + player.contactBox.height) / 2)` ([enemy-contact.md](enemy-contact.md): запрет touring через игрока), warning через единый log-модуль ([logging.md](logging.md));
-  - для `'stationary'` обязан быть `maxSpeed === 0`, `contactDamage === 0` и `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0` (стационарная мишень не должна неявно бить и не должна прыгать); валидация на стороне content/builder.
-- `dropTable` обязателен и задаётся всегда, даже если враг ничего не дропает: явное `[]` отличается от «забыли выставить» (см. правило «без двух разных «нет данных»). Дополнительные ограничения (каждый `chance ∈ [0, 1]`, сумма `chance` по таблице `<= 1`, все `archetypeId` резолвятся в реестре `DropArchetype`) — см. [drops.md](drops.md); их нарушение фиксируется warning через единый log-модуль на стороне content/builder и не доходит до runtime-фолбэка.
-- `retaliation` обязателен и задаётся всегда, даже если архетип никогда не мстит: «retaliation отключена по умолчанию» выражается явным `{ enabled: false, durationMs: 0 }`, а не пропуском поля. То же правило валидации (`enabled === true && durationMs <= 0` → warning) живёт в [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) и применяется одинаково к архетипному default и к per-spawn override из [spawn-overrides.md](spawn-overrides.md).
+- `dropTable` and `retaliation` are **archetype defaults**, used only when a concrete spawn in `content/sessions/<presetId>.md` has no `SpawnOverride` ([spawn-overrides.md](spawn-overrides.md)). Runtime systems read per-spawn copies of these fields from the runtime `enemy` entity, not from the archetype. The archetype is only the source of the default copy at spawn time.
+- `carrierDrop` / `CarrierDropMetadata` / `marker: 'reward'` fields are **absent** from `EnemyArchetype`. A guaranteed carrier-fissure drop is a per-spawn override (`SpawnOverride.guaranteedDrops` in [spawn-overrides.md](spawn-overrides.md)), not an archetype field. The presentation `carrierDropMarker` in snapshots ([snapshot-shape.md](snapshot-shape.md)) is derived by `SpawnSystem` from `guaranteedDrops.length > 0` at spawn time and does not depend on the archetype.
+- `behavior: 'stationary'` means `MovementSystem` does not move enemies of this archetype. `maxSpeed` must be 0 for `'stationary'`; content/builders validate this, not runtime.
+- `behavior: 'chase'` means `MovementSystem` moves the enemy toward the current player position at `maxSpeed`. The exact algorithm, such as direct-line movement or steering, is an implementation detail. The contract is "on average, reduces distance to the player each tick". Future behaviors (`'wander'`, `'orbit'`, ...) are added to the `EnemyBehavior` union rather than by local branches in `MovementSystem`.
+- `contactBox` is the axis-aligned body footprint for body contact and projectile hit detection, by [body-contact-boxes.md](body-contact-boxes.md) and [projectiles-and-combat.md](projectiles-and-combat.md). At the 013 horizon it is not manually authored in MD and is derived from the sprite asset through the same scale pipeline as visual `worldSize`.
+- `contactDamage` and `contactCooldownMs` are the single source of truth for contact damage; handling rules live in [enemy-contact.md](enemy-contact.md). If `contactDamage === 0`, cooldown is still explicit. Omitting the field is forbidden by the same "one way to say no data" rule.
+- `knockbackBaseImpulse`, `knockbackVelocityScale`, and `knockbackDurationMs` are parameters for enemy-contact knockback away from the player; handling rules live in [enemy-contact.md](enemy-contact.md), `Knockback at contact`. Fields are always present: "no knockback" is expressed by explicit zeros `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0`, not missing fields.
+- `color` is slime material color for render-only impact effects ([impact-feedback.md](impact-feedback.md)): droplets/stains take their hue from the hit `enemy` / `boss`. Base sprite rendering still does not tint player/enemy/boss PNGs; visual identity remains the preloaded sprite from [sprite-assets.md](sprite-assets.md). Non-renderer consumers, such as debug overlay, minimap, or tooling, may also use the field.
+- Numeric constraints required by content/builders:
+  - `maxSpeed * SIM_STEP_SEC <= min((contactBox.width + player.contactBox.width) / 2, (contactBox.height + player.contactBox.height) / 2)` ([enemy-contact.md](enemy-contact.md): no tunneling through the player), warning through the shared log module ([logging.md](logging.md));
+  - for `'stationary'`, `maxSpeed === 0`, `contactDamage === 0`, and `knockbackBaseImpulse === 0 && knockbackVelocityScale === 0` are required. A stationary target must not implicitly hit or bounce. Content/builders validate this.
+- `dropTable` is required and always present, even when the enemy drops nothing: explicit `[]` differs from "forgot to set it" (see the "one way to say no data" rule). Additional constraints, such as each `chance in [0, 1]`, total `chance <= 1`, and all `archetypeId` values resolving in the `DropArchetype` registry, are defined in [drops.md](drops.md). Violations are warnings through the shared log module on the content/builder side and do not reach runtime fallback.
+- `retaliation` is required and always present, even when the archetype never retaliates: "retaliation disabled by default" is expressed as `{ enabled: false, durationMs: 0 }`, not by omitting the field. The same validation rule (`enabled === true && durationMs <= 0` -> warning) lives in [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) and applies to archetype defaults and per-spawn overrides from [spawn-overrides.md](spawn-overrides.md).
 
 ### WeaponArchetype
 
@@ -85,41 +85,41 @@
     projectile: ProjectileArchetype;
   }>;
   ```
-- Полные определения `FirePattern`, `ProjectileArchetype`, `ExplosionSpec`, `FragmentSpec`, projectile motion и связанных правил (in particular per-projectile `impactDamage`, `knockbackImpulse`, `hitRadius`, `pierceCount`, `groundOnImpact`, `explosion`, `visual`) — в [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Здесь они не дублируются.
-- `cooldownMs` — минимальный интервал между двумя последовательными выстрелами; конкретное использование через owner-local `WeaponInstance` — в [projectiles-and-combat.md](projectiles-and-combat.md) и [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
-- Поле «бесконечный боезапас» из [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md) не выражается в архетипе: отсутствие поля `ammo` и есть его реализация. Когда (если) появится конечный боезапас, он добавится отдельным полем и отдельным design-решением.
-- Builder validation проверяет вложенный `projectile` spec, включая no-tunneling constraints для каждого motion profile из [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
-- `WeaponArchetype` не несёт аудио-поля. Связь оружия со звуком идёт по строковому `archetypeId` через `WEAPON_AUDIO_MAPPINGS` в `src/main/audio/**` ([audio.md](audio.md)); расширение `WeaponArchetype` аудио-полями запрещено.
-- Миграция legacy одного-primary scalar weapon (`projectileSpeed`/`projectileRadius`/`projectileTtlMs`/`damage`/`knockbackImpulse`/`color`) — задача builder-а: scalar поля упаковываются в `firePattern: { kind: 'single', count: 1, spreadRadians: 0 }` и `projectile: { motion: { kind: 'linear', speed }, ... }` по правилам [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Старая форма не остаётся валидной после 017.
+- Full definitions of `FirePattern`, `ProjectileArchetype`, `ExplosionSpec`, `FragmentSpec`, projectile motion, and related rules, including per-projectile `impactDamage`, `knockbackImpulse`, `hitRadius`, `pierceCount`, `groundOnImpact`, `explosion`, and `visual`, live in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). They are not duplicated here.
+- `cooldownMs` is the minimum interval between two consecutive shots. Actual use through owner-local `WeaponInstance` is defined in [projectiles-and-combat.md](projectiles-and-combat.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
+- Infinite ammo from [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md) is not represented by an archetype field: the absence of `ammo` is the implementation. If finite ammo appears later, it will be added by a separate field and design decision.
+- Builder validation checks nested `projectile` specs, including no-tunneling constraints for each motion profile from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md).
+- `WeaponArchetype` carries no audio field. Weapon-to-sound binding uses string `archetypeId` through `WEAPON_AUDIO_MAPPINGS` in `src/main/audio/**` ([audio.md](audio.md)); adding audio fields to `WeaponArchetype` is forbidden.
+- Migration from the legacy single-primary scalar weapon (`projectileSpeed`/`projectileRadius`/`projectileTtlMs`/`damage`/`knockbackImpulse`/`color`) is a builder task: scalar fields are packed into `firePattern: { kind: 'single', count: 1, spreadRadians: 0 }` and `projectile: { motion: { kind: 'linear', speed }, ... }` by [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). The old shape is not valid after 017.
 
 ### DropArchetype
 
-- Минимальная форма:
+- Minimal shape:
   ```ts
   type DropArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;          // wu, > 0; derive из PNG ([drops.md](drops.md), [sprite-assets.md](sprite-assets.md))
-    ttlMs: number;           // целое > 0; время жизни на арене с момента спавна
+    radius: number;          // wu, > 0; derived from PNG ([drops.md](drops.md), [sprite-assets.md](sprite-assets.md))
+    ttlMs: number;           // integer > 0; arena lifetime after spawn
     effect: DropEffect;
-    color: number;           // 0xRRGGBB, плейсхолдер для рендера
+    color: number;           // 0xRRGGBB, renderer placeholder
   }>;
   ```
-- `radius` — runtime-поле архетипа, но в content-pipeline это **derive**-значение из drop's PNG (полные правила — в [drops.md](drops.md)); MD-колонки для `radius` не существует.
-- `DropEffect` (его union, `heal`, weapon-related kinds, pickup-modifier kind) — единственный источник правды [drops.md](drops.md). Здесь форма не дублируется.
-- Полный контракт «как именно дроп спавнится, живёт и подбирается, и как применяется `DropEffect`» — в [drops.md](drops.md); здесь фиксируется только форма самого архетипа и его место в `content library`.
+- `radius` is a runtime archetype field, but in the content pipeline it is **derived** from the drop PNG. Full rules live in [drops.md](drops.md); there is no MD column for `radius`.
+- `DropEffect`, including its union, `heal`, weapon-related kinds, and pickup-modifier kind, has [drops.md](drops.md) as the single source of truth. The shape is not duplicated here.
+- The full contract for how drops spawn, live, are picked up, and apply `DropEffect` lives in [drops.md](drops.md). This section only defines the archetype shape and its place in the `content library`.
 
 ### BossArchetype
 
-- Минимальная форма для 006:
+- Minimal shape for 006:
   ```ts
   type BossArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;                      // wu, legacy circle metric для не-мигрированных consumers
-    contactBox: Readonly<{ width: number; height: number }>;  // wu, derive body footprint / projectile target shape
-    maxHp: number;                       // целое > 0
-    maxSpeed: number;                    // wu/s, >= 0; базовая скорость перемещения, если босс двигается
+    radius: number;                      // wu, legacy circle metric for non-migrated consumers
+    contactBox: Readonly<{ width: number; height: number }>;  // wu, derived body footprint / projectile target shape
+    maxHp: number;                       // integer > 0
+    maxSpeed: number;                    // wu/s, >= 0; base movement speed if boss moves
     color: number;                       // 0xRRGGBB, slime material color for impact effects; base sprite remains PNG-driven
     contactDamage: number;
     contactCooldownMs: number;
@@ -128,42 +128,44 @@
     knockbackDurationMs: number;
     phases: ReadonlyArray<Readonly<{
       id: string;
-      allowedAttackIds: ReadonlyArray<string>;  // не пусто; каждый id есть в `attacks`
-      /** Покинуть фазу и перейти к следующей, когда `hp/maxHp <= exitWhenHpFractionAtOrBelow`. Для **последней** фазы значение не используется (перехода за пределы `phases` нет). Пороги задаёт content/builder (см. [../docs/BOSS.md](../docs/BOSS.md)). */
+      allowedAttackIds: ReadonlyArray<string>;  // non-empty; each id exists in `attacks`
+      /** Leave the phase and move to the next one when `hp/maxHp <= exitWhenHpFractionAtOrBelow`.
+       *  For the **last** phase the value is unused, because there is no transition beyond `phases`.
+       *  Thresholds are provided by content/builders (see [../docs/BOSS.md](../docs/BOSS.md)). */
       exitWhenHpFractionAtOrBelow: number;
     }>>;
     attacks: Readonly<Record<string, Readonly<{ pattern: string; cooldownMs: number; damage: number }>>>;
   }>;
   ```
-- Контакт с игроком и knockback следуют тем же правилам, что и `EnemyArchetype` ([enemy-contact.md](enemy-contact.md)); числа задаются в архетипе босса.
-- `contactBox` для босса следует тому же правилу, что и у `EnemyArchetype`: derive из sprite asset, owner body-contact и projectile target overlap.
-- Минимум **две** записи в `phases` и минимум **два** различимых ключа в `attacks` для acceptance истории 006 ([../stories/006-boss-encounter.md](../stories/006-boss-encounter.md)); конкретный выбор атаки из `allowedAttackIds` и паттерна — `BossPhaseSystem` ([boss-encounter.md](boss-encounter.md)).
-- `color` следует тому же правилу, что и `EnemyArchetype.color`: render-only slime impact effects читают его как цвет материала, base sprite renderer для `boss` его не читает, поле остаётся доступным и для non-renderer сценариев.
+- Contact with the player and knockback follow the same rules as `EnemyArchetype` ([enemy-contact.md](enemy-contact.md)); numbers are specified on the boss archetype.
+- Boss `contactBox` follows the same rule as `EnemyArchetype`: derived from sprite asset, owning body contact and projectile target overlap.
+- At least **two** entries in `phases` and at least **two** distinct keys in `attacks` are required for story 006 acceptance ([../stories/006-boss-encounter.md](../stories/006-boss-encounter.md)). Actual attack selection from `allowedAttackIds` and pattern execution belongs to `BossPhaseSystem` ([boss-encounter.md](boss-encounter.md)).
+- `color` follows the same rule as `EnemyArchetype.color`: render-only slime impact effects read it as material color, the base sprite renderer for `boss` does not read it, and the field remains available to non-renderer scenarios.
 
 ### PlayerArchetype
 
-- Для content-area `players` (история 013) минимальная форма:
+- Minimal shape for content area `players` (story 013):
   ```ts
   type PlayerArchetype = Readonly<{
     id: string;
     displayName: string;
-    radius: number;                                       // wu, derive: max(contactBox.width, contactBox.height) / 2
-    contactBox: Readonly<{ width: number; height: number }>;  // wu, derive body footprint / projectile target shape
+    radius: number;                                       // wu, derived: max(contactBox.width, contactBox.height) / 2
+    contactBox: Readonly<{ width: number; height: number }>;  // wu, derived body footprint / projectile target shape
     maxSpeed: number;                                     // wu/s
-    maxHp: number;                                        // целое > 0
+    maxHp: number;                                        // integer > 0
   }>;
   ```
-- `contactBox` у игрока следует тому же правилу, что и у `EnemyArchetype` / `BossArchetype`: derive из sprite asset по [body-contact-boxes.md](body-contact-boxes.md), используется для body-contact и projectile hit detection, без ручных MD-колонок на горизонте 013.
-- `radius` у игрока больше не авторится в `content/players.md`: producer выводит его из того же sprite `worldSize` как `max(width, height) / 2`. Поле остаётся в runtime-контракте только для не-мигрированных consumers вроде pickup distance.
-- `PlayerSpawn` в `SessionDefinition.player` собирается из `PlayerArchetype`, но остаётся отдельным контрактом уровня сессии, потому что хранит стартовую позицию и session-local форму.
+- Player `contactBox` follows the same rule as `EnemyArchetype` / `BossArchetype`: derived from sprite asset by [body-contact-boxes.md](body-contact-boxes.md), used for body contact and projectile hit detection, with no manual MD columns at the 013 horizon.
+- Player `radius` is no longer authored in `content/players.md`: producer derives it from the same sprite `worldSize` as `max(width, height) / 2`. The field remains in the runtime contract only for non-migrated consumers such as pickup distance.
+- `PlayerSpawn` in `SessionDefinition.player` is assembled from `PlayerArchetype`, but remains a separate session-level contract because it stores start position and session-local shape.
 
 ### PlayerSpawn.maxHp
 
-- `SessionDefinition.player` ([session-definition.md](session-definition.md)) расширяется обязательным полем `maxHp: number` (целое > 0). Это закрепляет источник правды для стартового HP игрока в данных сессии, а не в коде систем.
-- `maxHp` задаётся **всегда**, даже для preset, в которых игрок не damageable (sandbox без боя). Это исключает «два разных нет данных» и упрощает HUD: для sandbox без боя `hp = maxHp` весь run.
-- Конкретные значения (например, `5` для тренировочного preset) — содержимое `content library`. Расширение (`maxArmor`, регенерация и т. п.) — будущие решения.
+- `SessionDefinition.player` ([session-definition.md](session-definition.md)) gains required field `maxHp: number` (integer > 0). This places the source of truth for starting player HP in session data rather than system code.
+- `maxHp` is **always** present, even in presets where the player is not damageable, such as a non-combat sandbox. This avoids two ways to say "no data" and simplifies HUD: in a non-combat sandbox, `hp = maxHp` for the whole run.
+- Exact values, for example `5` for a training preset, are `content library` data. Extensions such as `maxArmor` or regeneration are future decisions.
 
-### Loadout в SessionDefinition
+### Loadout in SessionDefinition
 
 - Current shape:
   ```ts
@@ -172,26 +174,26 @@
     selectedIndex: number | null;
   }>;
   ```
-- Для sandbox-режима без боя `loadout` остаётся `null`; сборщик сессии явно различает «бой не предусмотрен» (`null`) и «есть оружие» (объект `Loadout`).
-- `Loadout.weapons` is immutable session configuration. Runtime selection, cooldowns and upgrades live in owner-local weapon state ([universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)); slot switching does not mutate the session definition.
-- Миграция legacy `{ primaryWeaponArchetypeId: string }` — задача builder-а: значение упаковывается в `{ weapons: [primaryWeaponArchetypeId], selectedIndex: 0 }`. Старая форма не остаётся валидной после 017.
+- For a non-combat sandbox mode, `loadout` remains `null`; the session builder explicitly distinguishes "combat not planned" (`null`) from "has weapons" (`Loadout` object).
+- `Loadout.weapons` is immutable session configuration. Runtime selection, cooldowns, and upgrades live in owner-local weapon state ([universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)); slot switching does not mutate the session definition.
+- Migration from legacy `{ primaryWeaponArchetypeId: string }` is a builder task: the value is packed into `{ weapons: [primaryWeaponArchetypeId], selectedIndex: 0 }`. The old shape is not valid after 017.
 
-### Реестры в content library
+### Registries in the content library
 
-- Структура каталога `src/shared/content/**` дополняется реестрами по типам контента (фактическое имя файла — деталь реализации, не часть контракта):
-  - реестр `EnemyArchetype` (например, `enemies.ts`);
-  - реестр `WeaponArchetype` (например, `weapons.ts`);
-  - реестр `DropArchetype` (например, `drops.ts`);
-  - реестр `BossArchetype` (например, `bosses.ts`);
-  - в `index.ts` реестры реэкспортируются вместе с уже существующими аренами/preset-ами.
-- В реестре допускается одна структура: словарь `Record<string, Archetype>` с ключом, равным `archetype.id`. Это исключает рассинхрон между ключом и `id`.
+- The `src/shared/content/**` directory is extended with registries by content type. Exact filenames are implementation details, not contract:
+  - `EnemyArchetype` registry, for example `enemies.ts`;
+  - `WeaponArchetype` registry, for example `weapons.ts`;
+  - `DropArchetype` registry, for example `drops.ts`;
+  - `BossArchetype` registry, for example `bosses.ts`;
+  - `index.ts` re-exports registries together with existing arenas/presets.
+- A registry has one allowed structure: `Record<string, Archetype>` keyed by `archetype.id`. This prevents drift between the object key and `id`.
 
 ## Consequences
 
-- 003 кладёт первое содержимое реестров (одна мишень, один пистолет) в готовую форму; 004–006 расширяют те же реестры данными; 006 добавляет реестр `bosses` без ломки существующих форм.
-- `SpawnSystem` и `CombatSystem` остаются не зависящими от конкретного контента и работают через резолв по `id`.
-- `Loadout` входит в стабильный контракт `SessionDefinition`; UI выбора оружия (007) сможет собирать его, не переопределяя форму.
-- Возможный плагинный/моддинг-слой архетипов (вне MVP) ляжет на ту же модель «реестр + id», без переписывания историй.
+- 003 puts the first registry content, one target and one pistol, into a shape ready for extension; 004-006 add data to the same registries; 006 adds `bosses` without breaking existing shapes.
+- `SpawnSystem` and `CombatSystem` remain independent of specific content and operate through `id` resolution.
+- `Loadout` becomes a stable `SessionDefinition` contract; weapon-selection UI in 007 can consume it without redefining shape.
+- A possible archetype plugin/modding layer outside the MVP can sit on the same "registry + id" model without rewriting stories.
 
 ## Related
 
