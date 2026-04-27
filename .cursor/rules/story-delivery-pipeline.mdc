@@ -1,67 +1,68 @@
 ---
-description: Пайплайн истории — архитектор (design→stories), согласование кодер↔архитектор, код, ревью, PR
+description: Story delivery pipeline — architect (design → stories), coder/architect alignment, implementation, review, PR
 globs: "{stories,design}/**/*.md"
 alwaysApply: false
 ---
 
-# Пайплайн доставки истории
+# Story delivery pipeline
 
-Роли и границы — скиллы `game-architect` и `game-coder` в `.cursor/skills/`. При смене фазы явно помечай режим (архитектор / кодер).
+Roles and boundaries are defined by the `game-architect` and `game-coder` skills in `.cursor/skills/`. When you switch phases, state the active mode explicitly (architect / coder).
 
-## Архитектор — подготовка истории
+## Architect — preparing a story
 
-1. Неясности — вопросы; при вариантах дай аргументы и свою рекомендацию.
-2. **Сначала** создавай или обновляй решения в `design/` (формат — `design/README.md`, один файл = одно решение).
-3. **В конце** обновляй `stories/`: `Related`, краткий `Technical`, декомпозиция `Tasks`, `Status`, при необходимости таблица в `stories/README.md`. Не дописывай за продукт `Player-facing`, `Acceptance`, `Out of scope`.
-4. Фиксация в git — на **ветке истории** (см. ниже «Git»).
+1. If anything is unclear, ask. When several options exist, list the trade-offs and state your recommendation.
+2. **First**, create or update the relevant decisions under `design/` (see `design/README.md` for the format: one file per decision).
+3. **Only after that**, update `stories/`: `Related`, a short `Technical` section, the `Tasks` breakdown, and `Status`. Update the table in `stories/README.md` if needed. Do not write `Player-facing`, `Acceptance`, or `Out of scope` on behalf of product.
+4. Commit on the **story branch** (see "Git" below).
 
-## Git (ветка и сообщения коммитов)
+## Git (branch and commit messages)
 
-Вся работа по истории — в одной ветке; PR в **`main`** (как в существующих merge в репозитории).
+All work on a story lives on a single branch; the PR targets **`main`** (matching the existing merges in the repository).
 
-**Имя ветки:** `story/<NNN>-<slug>` — то же, что имя файла `stories/<NNN>-<slug>.md` **без** `.md`. Пример: `stories/004-waves-and-zone.md` → ветка `story/004-waves-and-zone`.
+**Branch name:** `story/<NNN>-<slug>` — same as the story filename `stories/<NNN>-<slug>.md` **without** `.md`. Example: `stories/004-waves-and-zone.md` → branch `story/004-waves-and-zone`.
 
-**Префикс сообщения коммита** — `[NNN …]` (номер истории из имени файла):
+**Commit message prefix** — `[NNN …]`, where `NNN` is the story number from the filename:
 
-| Префикс | Когда |
-|--------|--------|
-| `[NNN Tk]` | Задача `Tk` из `Tasks` (например `[004 T7]`). Правка после ревью той же задачи: `[NNN Tk fix]` |
-| `[NNN review]` | Правки по код-ревью без нового номера задачи |
-| `[NNN fix]` | Небольшой фикс на ветке истории вне явной задачи |
-| `[NNN architect]` | Коммиты архитектора (design / история на ветке) |
-| `[NNN prep]` или `[NNN design]` | Подготовка истории, замыкание контрактов, данные под срез (как в истории репо) |
+| Prefix | When to use |
+|--------|-------------|
+| `[NNN Tk]` | A task `Tk` from `Tasks` (e.g. `[004 T7]`). Follow-up after review on the same task: `[NNN Tk fix]` |
+| `[NNN review]` | Changes from code review that do not belong to a specific task |
+| `[NNN fix]` | A small fix on the story branch outside any specific task |
+| `[NNN architect]` | Architect commits (design or story edits on the branch) |
+| `[NNN prep]` or `[NNN design]` | Story preparation, finalising contracts, data needed for the slice |
 
-## Согласование перед кодом (кодер + архитектор)
+## Alignment before coding (coder + architect)
 
-Цель — **одно согласованное видение** истории и контрактов до первой строки реализации.
+Goal: reach **a single shared view** of the story and its contracts before the first line of implementation is written.
 
-1. **Кодер** изучает историю целиком и открывает **каждый** файл из `Related`.
-2. Фиксирует конфликты между текстом истории и `design/`, пробелы в решениях, неоднозначности и вопросы по тому, *как* это будет лечь в код (имена слоёв, границы задач, краевые случаи).
-3. **Коллаборация с архитектором**: вопросы и ответы в чате до устранения противоречий. Архитектор при необходимости дополняет или правит `design/` и затем **в конце** правки в `stories/` (`Related`, `Technical`, `Tasks` — по зонам скилла); кодер не меняет архитектурный слой сам.
-4. Переходить к задачам из `Tasks` только когда список открытых вопросов исчерпан или явно отложен по договорённости.
+1. The **coder** reads the whole story and opens **every** file listed in `Related`.
+2. The coder records conflicts between the story text and `design/`, gaps in decisions, ambiguities, and questions about *how* the story will land in code (layer names, task boundaries, edge cases).
+3. **Collaborate with the architect**: discuss the questions in chat until the contradictions are resolved. The architect updates `design/` if needed and **then** updates `stories/` (`Related`, `Technical`, `Tasks` — within the architect's scope). The coder does not change the architectural layer alone.
+4. Move on to `Tasks` only once the open questions are resolved or explicitly deferred by agreement.
 
-## Кодер — реализация
+## Coder — implementation
 
-1. Опирайся на результат фазы согласования; при новых противоречиях по ходу — снова эскалация архитектору (не «чинить» контракт в коде).
-2. Одна закрытая задача из `Tasks` за проход (как в скилле кодера).
+1. Build on the outcome of the alignment phase. If new contradictions appear during implementation, escalate to the architect again — do not "fix" a contract in code.
+2. One completed task from `Tasks` per pass (as defined by the coder skill).
 
-## На каждую задачу
+## Per task
 
-1. Режим архитектора: внимательное код-ревью, конструктивная критика.
-2. Режим кодера: правки по ревью.
-3. Архитектор подтверждает задачу.
-4. Коммит на ветку `story/<NNN>-<slug>` с префиксом сообщения из таблицы выше.
+1. Architect mode: thorough code review with constructive feedback.
+2. Coder mode: address the review.
+3. Architect confirms the task.
+4. Commit to `story/<NNN>-<slug>` using a prefix from the table above.
 
-## Закрытие истории
+## Closing a story
 
-Все задачи выполнены и приняты → **PR** из `story/<NNN>-<slug>` в **`main`**.
+Once all tasks are completed and accepted → open a **PR** from `story/<NNN>-<slug>` into **`main`**.
 
-## Проверка вживую (dev server / браузер)
+## Live verification (dev server / browser)
 
-Сам **не запускай** dev-сервер и **не открывай** браузер. Если для проверки нужен запущенный сервер или ручной прогон в браузере — **пингани пользователя** с явным запросом и тем, что именно нужно проверить. Жди ответа, прежде чем считать задачу проверенной.
+Do **not** start the dev server or open the browser yourself. When live verification is required (a running server or a manual run in the browser), **ping the user**: state what to check and which outcome you are looking for, then wait for their response before considering the task verified.
 
-## Язык документации, UI и общения
+## Language: documentation, UI, and chat
 
-- Документацию (`design/`, `stories/`, `docs/`, README, комментарии в коде, сообщения коммитов и PR) веди **на английском**.
-- Пользовательский интерфейс (тексты в UI, оверлеи, кнопки, подсказки, сообщения об ошибках, отображаемые игроку) — **на английском**.
-- В чате **отвечай на языке пользователя**.
+- Write documentation in **English**: `design/`, `stories/`, `docs/`, README files, code comments, commit messages, and PR descriptions.
+- Write the player-facing UI in **English**: in-game text, overlays, buttons, tooltips, and error messages shown to the player.
+- In chat, **reply in the user's language.**
+- Use plain, international English. Prefer short sentences and common words; avoid idioms, slang, and culture-specific references that may not translate well for a global audience.
