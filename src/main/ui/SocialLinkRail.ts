@@ -86,11 +86,12 @@ function socialLinkAnchorStyle(): string {
     'border:2px solid rgba(5,5,5,0.72)',
     'border-radius:8px',
     'box-shadow:3px 3px 0 rgba(0,0,0,0.62)',
+    'backdrop-filter:blur(8px)',
     'line-height:0',
     'text-decoration:none',
     'outline:none',
     'touch-action:manipulation',
-    'transition:color 140ms ease, background 140ms ease, filter 140ms ease, transform 140ms ease'
+    'transition:color 140ms ease, background 140ms ease, border-color 140ms ease, filter 140ms ease, transform 140ms ease'
   ].join(';');
 }
 
@@ -109,10 +110,20 @@ function socialLinkRailCss(): string {
   return `
 .social-link-anchor:hover,
 .social-link-anchor:focus-visible {
-  color: #7cf58f;
-  background: rgba(5, 5, 5, 0.72);
+  color: #050505 !important;
+  border-color: rgba(5, 5, 5, 0.72) !important;
   filter: brightness(1.08) saturate(1.08);
   transform: translate(-1px, -1px);
+}
+
+.social-link-anchor[data-social-link-id="github"]:hover,
+.social-link-anchor[data-social-link-id="github"]:focus-visible {
+  background: #7cf58f !important;
+}
+
+.social-link-anchor[data-social-link-id="discord"]:hover,
+.social-link-anchor[data-social-link-id="discord"]:focus-visible {
+  background: #b985ff !important;
 }
 
 .social-link-anchor:focus-visible {

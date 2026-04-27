@@ -75,6 +75,14 @@ describe('SocialLinkRail', () => {
     expect(rail.dataset['role']).toBe('social-link-rail');
     expect(rail.getAttribute('aria-label')).toBe('Project links');
     expect(rail.style.cssText).toContain('flex-direction:column');
+    expect(rail.children[0]?.textContent).toContain(
+      '.social-link-anchor[data-social-link-id="github"]:hover'
+    );
+    expect(rail.children[0]?.textContent).toContain('background: #7cf58f !important');
+    expect(rail.children[0]?.textContent).toContain(
+      '.social-link-anchor[data-social-link-id="discord"]:hover'
+    );
+    expect(rail.children[0]?.textContent).toContain('background: #b985ff !important');
 
     const links = findAllByRole(rail, 'social-link');
     expect(links).toHaveLength(2);
@@ -90,6 +98,7 @@ describe('SocialLinkRail', () => {
       expect(link.getAttribute('rel')).toBe('noopener noreferrer');
       expect(link.getAttribute('aria-label')).toBe(expected.label);
       expect(link.title).toBe(expected.label);
+      expect(link.style.cssText).toContain('backdrop-filter:blur(8px)');
 
       const icon = findByRole(link, 'social-link-icon');
       expect(icon.getAttribute('aria-hidden')).toBe('true');

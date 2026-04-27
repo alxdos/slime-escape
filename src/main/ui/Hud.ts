@@ -1056,6 +1056,7 @@ function weaponSlotStyle(): string {
     'border:2px solid rgba(255,255,255,0.18)',
     'background:rgba(5,8,14,0.56)',
     'box-shadow:0 8px 22px rgba(0,0,0,0.24)',
+    'backdrop-filter:blur(8px)',
     'overflow:hidden'
   ].join(';');
 }

@@ -8,6 +8,7 @@ import type {
   ResultStatViewModel,
   ResultViewModel
 } from './ResultViewModel';
+import { createSocialLinkRail } from './SocialLinkRail';
 
 export type ResultOutcome = 'win' | 'loss';
 
@@ -99,6 +100,17 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   const style = document.createElement('style');
   style.textContent = resultOverlayCss();
   root.appendChild(style);
+
+  const layout = document.createElement('div');
+  layout.className = 'result-layout';
+  layout.dataset['role'] = 'result-layout';
+  layout.style.cssText = resultLayoutStyle();
+
+  const socialLinks = createSocialLinkRail();
+  socialLinks.className = `${socialLinks.className} result-social-link-rail`;
+  socialLinks.dataset['placement'] = 'result';
+  socialLinks.style.cssText = `${socialLinks.style.cssText};${resultSocialLinkRailStyle()}`;
+  layout.appendChild(socialLinks);
 
   const stage = document.createElement('div');
   stage.className = 'result-stage';
@@ -198,7 +210,8 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   card.appendChild(backButton);
 
   stage.appendChild(card);
-  root.appendChild(stage);
+  layout.appendChild(stage);
+  root.appendChild(layout);
   init.parent.appendChild(root);
   root.style.display = 'none';
 
@@ -578,13 +591,31 @@ function effectsLayerStyle(): string {
   ].join(';');
 }
 
+function resultLayoutStyle(): string {
+  return [
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'gap:18px',
+    'box-sizing:border-box',
+    'width:min(920px, calc(100vw - 48px))',
+    'max-height:calc(100vh - 48px)',
+    'min-height:0'
+  ].join(';');
+}
+
+function resultSocialLinkRailStyle(): string {
+  return ['position:relative', 'z-index:3', 'flex:0 0 auto'].join(';');
+}
+
 function stageStyle(): string {
   return [
     'position:relative',
-    'width:min(820px, calc(100vw - 48px))',
+    'width:min(820px, 100%)',
     'max-height:calc(100vh - 48px)',
     'overflow:visible',
-    'flex:0 1 auto'
+    'min-width:0',
+    'flex:1 1 0'
   ].join(';');
 }
 
@@ -1082,6 +1113,17 @@ function resultOverlayCss(): string {
 .result-comic-button:focus-visible {
   filter: brightness(1.08) saturate(1.06);
   transform: translate(-1px, -1px);
+}
+
+@media (max-width: 720px) {
+  .result-layout {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .result-social-link-rail {
+    flex-direction: row !important;
+  }
 }
 
 @keyframes result-card-enter {

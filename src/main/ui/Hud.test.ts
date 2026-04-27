@@ -528,6 +528,15 @@ describe('Hud view model', () => {
         throw new Error('expected projectile image');
       }
       expect(cooldownFill.style.height).toBe('50%');
+      expect(weaponBar.style.cssText).not.toContain('backdrop-filter');
+      expect(frame.style.cssText).toContain('backdrop-filter:blur(8px)');
+      const movementHint = requireElement(findByDataset(parent, 'role', 'hud-movement-hint'));
+      const wKey = requireElement(findByDataset(movementHint, 'key', 'W'));
+      expect(movementHint.style.cssText).not.toContain('backdrop-filter');
+      expect(wKey.style.cssText).not.toContain('backdrop-filter');
+      expect(requireElement(findByDataset(parent, 'role', 'hud-fire-hint')).style.cssText).not.toContain(
+        'backdrop-filter'
+      );
 
       const createCountAfterFirstSnapshot = fakeDocument.createCount;
       const styleWritesAfterFirstSnapshot = totalStyleWrites(parent);

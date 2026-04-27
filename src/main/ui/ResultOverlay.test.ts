@@ -213,6 +213,8 @@ describe('createResultOverlay', () => {
 
     const root = findByRole(parent, 'result-overlay');
     const style = root.children[0];
+    const layout = findByRole(root, 'result-layout');
+    const socialRail = findByRole(root, 'social-link-rail');
     const effectsLayer = findByRole(root, 'result-effects');
     const title = findByRole(root, 'result-title');
     const summary = findByRole(root, 'result-summary');
@@ -231,6 +233,15 @@ describe('createResultOverlay', () => {
     expect(style?.textContent).toContain('prefers-reduced-motion');
     expect(style?.textContent).toContain('.result-effect-particle');
     expect(style?.textContent).toContain('result-victory-confetti');
+    expect(style?.textContent).toContain('.result-social-link-rail');
+    expect(layout.className).toBe('result-layout');
+    expect(socialRail.className).toBe('social-link-rail result-social-link-rail');
+    expect(socialRail.dataset['placement']).toBe('result');
+    expect(socialRail.parent).toBe(layout);
+    expect(findAllByRole(socialRail, 'social-link').map((link) => link.dataset['socialLinkId'])).toEqual([
+      'github',
+      'discord'
+    ]);
     expect(effectsLayer.parent?.className).toBe('result-stage');
     expect(restartButton.textContent).toBe('Restart');
     expect(restartButton.className).toBe('result-comic-button');
