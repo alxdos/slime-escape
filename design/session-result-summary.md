@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-26
+- Updated: 2026-04-27 (story 026 prep: `portal` encounters are non-objective presentation encounters and do not contribute to result progress; the `/portal` flow normally redirects before any win result.)
 
 ## Context
 
@@ -92,7 +92,7 @@ type ResultDefeatCause =
 
 ### Progress calculation
 
-- Result progress is derived from player-facing objective encounters, not from every encounter. Objective encounters are `type === 'wave'` and `type === 'boss'`. `break`, `sandbox` and future non-objective presentation encounters do not add denominator weight.
+- Result progress is derived from player-facing objective encounters, not from every encounter. Objective encounters are `type === 'wave'` and `type === 'boss'`. `break`, `sandbox`, `portal`, and future non-objective presentation encounters do not add denominator weight.
 - If a session has no objective encounters or has `winCondition.kind === 'none'` and `lossCondition.kind === 'none'`, `progress.percent` is `null`. Result UI then shows a mode-appropriate fallback instead of a fake percent.
 - `win` always reports `progress.percent = 100`.
 - `loss` reports `0..99`; even if the active objective is almost complete, a loss cannot show `100`.
@@ -161,3 +161,4 @@ type ResultDefeatCause =
 - [sprite-assets.md](sprite-assets.md)
 - [testing.md](testing.md)
 - [../stories/024-session-end-results.md](../stories/024-session-end-results.md)
+- [vibe-jam-portals.md](vibe-jam-portals.md)

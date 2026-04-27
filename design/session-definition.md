@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-26 (story 021: `SessionDefinition` gets a required `musicSampleId: string | null` field; `EncounterDefinition` gets required presentation fields `introDurationMs`/`name`/`text`; their shape, type-paired constraints, and intro delay contract are defined in [encounter-presentation.md](encounter-presentation.md); `musicSampleId` validation is in [audio.md](audio.md). Earlier: 2026-04-25 story 019: per-`seq` entries in `'static'`/`'wave'` `spawnPlan` carry optional `SpawnOverride`, with shape and semantics in [spawn-overrides.md](spawn-overrides.md); `EncounterDefinition` does not change structurally. Earlier: 2026-04-24 cleanup pass: legacy `{ primaryWeaponArchetypeId }` `loadout` no longer mentioned as a current shape; only the ordered form remains. 017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules, and player maxHp.)
+- Updated: 2026-04-27 (story 026 prep: `EncounterDefinition.type` adds `portal` for the final Vibe Jam exit encounter, and the hidden `portal` preset is recorded as a supported mode whose completion path is external redirect rather than a normal `win`; full contract in [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: 2026-04-26 story 021: `SessionDefinition` gets a required `musicSampleId: string | null` field; `EncounterDefinition` gets required presentation fields `introDurationMs`/`name`/`text`; their shape, type-paired constraints, and intro delay contract are defined in [encounter-presentation.md](encounter-presentation.md); `musicSampleId` validation is in [audio.md](audio.md). Earlier: 2026-04-25 story 019: per-`seq` entries in `'static'`/`'wave'` `spawnPlan` carry optional `SpawnOverride`, with shape and semantics in [spawn-overrides.md](spawn-overrides.md); `EncounterDefinition` does not change structurally. Earlier: 2026-04-24 cleanup pass: legacy `{ primaryWeaponArchetypeId }` `loadout` no longer mentioned as a current shape; only the ordered form remains. 017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules, and player maxHp.)
 
 ## Context
 
@@ -64,7 +64,7 @@ The game runtime must run an externally defined session, not one hardcoded scena
 ```js
 {
   id,
-  type,          // wave | break | boss | survivalTimer | sandbox
+  type,          // wave | break | boss | survivalTimer | sandbox | portal
   backgroundId,
   spawnPlan,
   zoneBehavior,
@@ -78,9 +78,10 @@ The game runtime must run an externally defined session, not one hardcoded scena
 }
 ```
 
-- Presentation fields `introDurationMs: number`, `name: string | null`, and `text: string | null` are flat and required; type-paired constraints and the intro delay contract for sim/UI are defined in [encounter-presentation.md](encounter-presentation.md). This file only records that these fields are stable names in `EncounterDefinition` and are present on every encounter, including sandbox/bring-up.
+- Presentation fields `introDurationMs: number`, `name: string | null`, and `text: string | null` are flat and required; type-paired constraints and the intro delay contract for sim/UI are defined in [encounter-presentation.md](encounter-presentation.md). This file only records that these fields are stable names in `EncounterDefinition` and are present on every encounter, including sandbox/bring-up and the Vibe Jam `portal` encounter.
 
 - `spawnPlan` describes data for `SpawnSystem`, not concrete spawn code. `spawnPlan` shape (discriminated union, set of `kind`, extension rules, `'empty'`/`'static'`/`'wave'`/`'boss'`, optional per-`seq` `SpawnOverride` for `'static'`/`'wave'`) is defined by separate decisions: [spawn-plan.md](spawn-plan.md) and [spawn-overrides.md](spawn-overrides.md). Future `kind` categories and new `SpawnOverride` fields are added there, without changing this file.
+- A `portal` encounter is a non-combat terminal presentation encounter for Vibe Jam. It uses `spawnPlan.kind: 'empty'`, `zoneBehavior.kind: 'disabled'`, and `transitionRules.kind: 'never'`; browser redirect and portal overlap are main-thread behavior defined in [vibe-jam-portals.md](vibe-jam-portals.md), not `SessionFlowSystem`.
 - `backgroundId` is an explicit reference to one of `SessionDefinition.backgrounds[].id` or `null` if the encounter does not define a background. For player-facing `wave`/`break`/`boss` encounters, a background is required at the content-authoring level; sandbox/bring-up encounters may use `null` or a test background. Simulation does not read this field; it belongs to presentation/runtime config that main already received with immutable `SessionDefinition`.
 - `zoneBehavior` is a discriminated union by `kind`. Concrete semantics and `ZoneSystem` behavior are defined in [zone.md](zone.md); this file records only the field shape and set of `kind` values:
   - `{ kind: 'disabled' }` — the zone is retracted and does not move, `margin = 0` for the whole encounter;
@@ -111,6 +112,7 @@ The game runtime must run an externally defined session, not one hardcoded scena
   - `pistolOnly` — starting loadout is limited to the pistol;
   - `sandbox` — one `sandbox` encounter without win/loss conditions and without built-in weapon (`loadout: null`), used for bring-up stories that do not require the combat stack;
   - `sandbox-with-combat` — sandbox variant with an ordered `Loadout` and `spawnPlan: { kind: 'static' }` for bring-up combat entities (for example, the training target from [../stories/003-combat-foundation.md](../stories/003-combat-foundation.md)). It follows all sandbox-encounter rules below: `winCondition: none`, `lossCondition: none`, the only exit path is external `stopSession`.
+  - `portal` — hidden Vibe Jam entrypoint preset started by `/portal` through `UiShell.autoStartPresetId`; it runs authored waves and `boss-gargoyle`, then enters a terminal `portal` encounter. Its normal completion path is browser redirect through [vibe-jam-portals.md](vibe-jam-portals.md), so it uses `winCondition: none` and `lossCondition: playerDeath`.
 - The "Minimal preset modes" list grows as stories appear; new preset modes are recorded in this file and not introduced locally in `src/shared/content/**`. Removing an existing preset id is handled through `superseded`/updating this file.
 - A `sandbox` encounter has the following minimal shape:
   - `spawnPlan` — `{ kind: 'empty' }` or `{ kind: 'static' }` (see [spawn-plan.md](spawn-plan.md)); other `kind` values (`'wave'`, `'boss'`, ...) are forbidden in sandbox encounters because they imply automatic transitions and completion, which sandbox semantics exclude.
@@ -153,3 +155,4 @@ The game runtime must run an externally defined session, not one hardcoded scena
 - [spawn-overrides.md](spawn-overrides.md)
 - [encounter-presentation.md](encounter-presentation.md)
 - [audio.md](audio.md)
+- [vibe-jam-portals.md](vibe-jam-portals.md)

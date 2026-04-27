@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-27 (story 026 prep: Vibe Jam portal placement uses the existing arena bounds and clamps/shifts main-thread portal descriptors inside the arena; see [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: 2026-04-19.)
 
 ## Context
 
@@ -79,3 +79,4 @@ Gameplay is built around a single arena ([../docs/GDD_CORE.md](../docs/GDD_CORE.
 - [runtime-systems.md](runtime-systems.md)
 - [input-commands.md](input-commands.md)
 - [web-stack.md](web-stack.md)
+- [vibe-jam-portals.md](vibe-jam-portals.md)

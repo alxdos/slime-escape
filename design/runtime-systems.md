@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-26 (story 024: `RunSummaryTracker` observes deaths/drop pickups/progress and provides `SessionResultSummary` for terminal `win`/`loss` events; see [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-24 017 alignment: `CombatSystem` owns universal weapon/projectile lifecycle from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `FieldEffectSystem` and `StatusEffectSystem` are added after health/death and before drops; see [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: boss encounter, bossPhaseChange, drops.)
+- Updated: 2026-04-27 (story 026 prep: Vibe Jam portals are main-thread interactables and do not add simulation systems, runtime events, or snapshot entities; see [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: 2026-04-26 story 024: `RunSummaryTracker` observes deaths/drop pickups/progress and provides `SessionResultSummary` for terminal `win`/`loss` events; see [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-24 017 alignment: `CombatSystem` owns universal weapon/projectile lifecycle from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `FieldEffectSystem` and `StatusEffectSystem` are added after health/death and before drops; see [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: boss encounter, bossPhaseChange, drops.)
 
 ## Context
 
@@ -127,3 +127,4 @@ The MVP needs a compact `core runtime` that supports campaign, training, and cha
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
 - [session-result-summary.md](session-result-summary.md)
+- [vibe-jam-portals.md](vibe-jam-portals.md)

@@ -1,6 +1,6 @@
 # Vibe Jam Portals
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-27
 - Updated: 2026-04-27
 
@@ -104,15 +104,15 @@ Other Vibe Jam character parameters may be forwarded or derived later, but the p
 
 ## Technical
 
-To be prepared by the architect after this product story is accepted.
+Architecture is prepared in [vibe-jam-portals.md](../design/vibe-jam-portals.md).
 
-Likely design areas:
+Key implementation contracts:
 
-- inbound Vibe Jam portal context and query handling;
-- portal entity / interactable presentation;
-- return portal lifetime across sessions and menu transitions;
-- final portal encounter type after a boss;
-- redirect contracts for return and exit portals.
+- `/portal` continues to use the existing `SLIME_ESCAPE_AUTO_START = "portal"` entrypoint path; [main-ui-shell.md](../design/main-ui-shell.md) and [menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md) now record this as the sanctioned `loading -> running` exception for configured entrypoints.
+- `EncounterDefinition.type` gains `portal`; shared session, snapshot, content authoring, encounter presentation, and result-progress rules are updated through the related design files.
+- Portals are main-thread browser/world interactables, not simulation entities. No `EntitySnapshot` kind or runtime event is added for portals in this story.
+- A main-thread portal controller owns inbound query parsing, tab-scoped return context, portal placement, overlap checks, one-shot redirects, and renderer portal descriptors.
+- The `/portal` session should end its authored combat chain with a terminal `portal` encounter after `boss-gargoyle`; normal victory is not the completion path for that route.
 
 ## Out of scope
 
@@ -142,16 +142,28 @@ Likely design areas:
 
 ## Tasks
 
-Product story only. The task breakdown should be created in architect mode after the relevant design decisions are written.
-
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Architectural preparation for Vibe Jam portal contracts and encounter flow. | No production code until design is accepted. |
+| T1 | [x] | Architectural preparation: add [vibe-jam-portals.md](../design/vibe-jam-portals.md), update adjacent design files, story `Technical`/`Tasks`/`Related`, and story indexes. | No production code. |
+| T2 | [ ] | Session/content contract: add `portal` encounter type to shared session/snapshot types, content parser/generator validation, generated sessions, and tests. | Add final `portal` encounter after `portal-boss`; change the portal preset to external-redirect completion per design. |
+| T3 | [ ] | Inbound portal context: add main-thread parsing/storage helpers for `portal=true`, usable `ref`, optional query forwarding, return URL building, and exit URL building. | Pure tests for malformed refs, missing optional params, `sessionStorage`/tab lifetime, `ref=https://slimeescape.com/portal`, and preserving optional params. |
+| T4 | [ ] | Portal controller lifecycle: wire a main-thread controller through `UiShell` so return portals appear across sessions before boss lock-in, collapse on boss start, and never appear after context is consumed. | No sim imports; derive from `SessionDefinition`, `SnapshotPair.curr`, phase, and browser context. |
+| T5 | [ ] | Renderer portal presentation: draw main-owned world-space portal descriptors as black vertical ovals with thick purple-lime shimmer, sized from the player contact box. | Must not add portal snapshot entities; include reduced-motion and visibility tests where practical. |
+| T6 | [ ] | Portal interaction and redirects: detect player overlap with return/exit portals, trigger exactly one browser redirect, and ensure exit portal appears only in the `portal` encounter. | Return portal uses stored return URL; exit portal targets `https://vibej.am/portal/2026` with Slime Escape as `ref`. |
+| T7 | [ ] | Verification pass: focused unit/integration tests plus manual live-check instructions for the user. | Per pipeline, do not start the dev server or browser; ask the user to verify `/portal?portal=true&ref=<test-url>`, boss lock-in, and final exit portal. |
 
 ## Related
 
+- [vibe-jam-portals.md](../design/vibe-jam-portals.md)
 - [session-definition.md](../design/session-definition.md)
 - [main-ui-shell.md](../design/main-ui-shell.md)
+- [menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md)
+- [snapshot-shape.md](../design/snapshot-shape.md)
+- [content-authoring.md](../design/content-authoring.md)
 - [encounter-presentation.md](../design/encounter-presentation.md)
 - [boss-encounter.md](../design/boss-encounter.md)
+- [runtime-systems.md](../design/runtime-systems.md)
+- [arena-and-coordinates.md](../design/arena-and-coordinates.md)
+- [body-contact-boxes.md](../design/body-contact-boxes.md)
+- [session-result-summary.md](../design/session-result-summary.md)
 - [025-escape-progress-path.md](025-escape-progress-path.md)

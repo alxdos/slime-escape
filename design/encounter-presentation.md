@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-26
+- Updated: 2026-04-27 (story 026 prep: `portal` encounters follow the no-title/no-text constraints used by non-combat terminal presentation encounters; portal visuals are main-thread world presentation in [vibe-jam-portals.md](vibe-jam-portals.md).)
 
 ## Context
 
@@ -48,6 +48,7 @@ Type-paired constraints (violations are hard errors in content-build and the ses
 | `boss` | exactly `0` | `null` | `null` |
 | `survivalTimer` | exactly `0` | `null` | `null` |
 | `sandbox` | exactly `0` | `null` | `null` |
+| `portal` | exactly `0` | `null` | `null` |
 
 - `name` and `text` must be non-empty strings when not `null`: empty strings are forbidden, otherwise the overlay would draw an empty second line. Validated by content-build and the builder.
 - "intro is not shown when `introDurationMs: 0`" is an overlay contract, not simulation: with zero, the UI show condition is immediately false, and `SpawnSystem`/`ZoneSystem` do not wait (see "Intro delay" below).
@@ -89,6 +90,7 @@ Wave/break title overlay is a separate UI layer in `src/main/ui/**`, independent
   - second line: `encounter.name` if `name !== null`; otherwise no second line is drawn.
 - **Break overlay show condition**: active encounter `type === 'break'` and `text !== null`. Visible for the full encounter duration, with no separate intro window.
 - **Break overlay content**: one line, `encounter.text`.
+- `portal` encounters do not show the title overlay. Their world-space portal visual is owned by [vibe-jam-portals.md](vibe-jam-portals.md), not by the title overlay.
 - **Z-order** (adds to the table in `main-ui-shell.md`): Startup error > Startup overlay > Result UI > Pause overlay > Menu overlay > Settings overlay > **Title overlay** > HUD > canvas. Title overlay sits below any modal overlay and above HUD so modal dialogs do not compete with the title.
 - Styles (font, stroke, shadow, fade) are implementation details and belong to the product layer (`## Player-facing` / `## Visual style` in the story); this decision does not fix them.
 - Overlay does not subscribe to runtime events and does not touch `SimWorkerHost`: data sources are `SessionDefinition` (immutable during the session) and `snapshot.encounter` (`id`/`type`/`elapsedMs`), passed through `UiShell` by the same path as `Hud.update` ([main-ui-shell.md](main-ui-shell.md)).
@@ -122,3 +124,4 @@ The MD source shape for `name`/`introDurationMs`/`text` is defined in [content-a
 - [runtime-systems.md](runtime-systems.md)
 - [simulation-timing.md](simulation-timing.md)
 - [../stories/021-wave-titles-and-session-music.md](../stories/021-wave-titles-and-session-music.md)
+- [vibe-jam-portals.md](vibe-jam-portals.md)
