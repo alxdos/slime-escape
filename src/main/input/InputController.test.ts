@@ -120,6 +120,89 @@ describe('InputController cursor visibility', () => {
   });
 });
 
+describe('InputController pointer lock compatibility', () => {
+  it('keeps the desktop first click dedicated to requesting Pointer Lock', () => {
+    const windowTarget = new FakeEventTarget();
+    const documentTarget = Object.assign(new FakeEventTarget(), {
+      pointerLockElement: null as Element | null,
+      exitPointerLock: () => {
+        documentTarget.pointerLockElement = null;
+      }
+    });
+    installInputGlobals(windowTarget, documentTarget);
+
+    const commands: InputCommand[] = [];
+    let requestLockCalls = 0;
+    const canvasTarget = Object.assign(new FakeEventTarget(), {
+      style: { cursor: '' },
+      requestPointerLock: () => {
+        requestLockCalls += 1;
+      }
+    });
+    const canvas = canvasTarget as unknown as HTMLCanvasElement;
+    const controller = createInputController({
+      canvas,
+      arena: { width: 32, height: 18 },
+      pixelsPerWorldUnit: () => 10,
+      initialAim: { x: 0, y: 0 },
+      onCommand: (command) => commands.push(command)
+    });
+
+    controller.start();
+    expect(requestLockCalls).toBe(1);
+
+    canvasTarget.dispatch('mousedown', mouseEvent(0));
+    windowTarget.dispatch('mouseup', mouseEvent(0));
+
+    expect(requestLockCalls).toBe(2);
+    expect(commands).toEqual([]);
+
+    documentTarget.pointerLockElement = canvas;
+    documentTarget.dispatch('pointerlockchange', new Event('pointerlockchange'));
+    canvasTarget.dispatch('mousedown', mouseEvent(0));
+    windowTarget.dispatch('mouseup', mouseEvent(0));
+
+    expect(commands).toEqual([
+      { kind: 'fire', phase: 'start' },
+      { kind: 'fire', phase: 'stop' }
+    ]);
+  });
+
+  it('starts without Pointer Lock support and falls back to click fire commands', () => {
+    const windowTarget = new FakeEventTarget();
+    const documentTarget = Object.assign(new FakeEventTarget(), {
+      pointerLockElement: null as Element | null
+    });
+    installInputGlobals(windowTarget, documentTarget);
+
+    const commands: InputCommand[] = [];
+    const canvasTarget = Object.assign(new FakeEventTarget(), {
+      style: { cursor: '' }
+    });
+    const canvas = canvasTarget as unknown as HTMLCanvasElement;
+    const controller = createInputController({
+      canvas,
+      arena: { width: 32, height: 18 },
+      pixelsPerWorldUnit: () => 10,
+      initialAim: { x: 0, y: 0 },
+      onCommand: (command) => commands.push(command)
+    });
+
+    expect(() => controller.start()).not.toThrow();
+    expect(() => controller.requestLock()).not.toThrow();
+
+    canvasTarget.dispatch('mousedown', mouseEvent(0));
+    windowTarget.dispatch('mouseup', mouseEvent(0));
+
+    expect(commands).toEqual([
+      { kind: 'fire', phase: 'start' },
+      { kind: 'fire', phase: 'stop' }
+    ]);
+    expect(canvas.style.cursor).toBe('');
+    expect(() => controller.stop()).not.toThrow();
+  });
+});
+
 function keyboardEvent(code: string, repeat = false): FakeKeyboardEvent {
   let defaultPrevented = false;
   const event = new Event('keydown');
@@ -136,9 +219,15 @@ function keyboardEvent(code: string, repeat = false): FakeKeyboardEvent {
   return event as FakeKeyboardEvent;
 }
 
+function mouseEvent(button: number): MouseEvent {
+  const event = new Event('mouse');
+  Object.defineProperty(event, 'button', { value: button });
+  return event as MouseEvent;
+}
+
 function installInputGlobals(
   windowTarget: FakeEventTarget,
-  documentTarget: FakeEventTarget & { pointerLockElement: Element | null; exitPointerLock(): void }
+  documentTarget: FakeEventTarget & { pointerLockElement: Element | null; exitPointerLock?: () => void }
 ): void {
   Object.defineProperty(globalThis, 'window', {
     value: windowTarget,

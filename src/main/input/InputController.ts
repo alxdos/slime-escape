@@ -52,6 +52,7 @@ export function createInputController(init: InputControllerInit): InputControlle
   let lastSentMove: MoveVector = { dx: 0, dy: 0 };
   let pendingAim = false;
   let aimRaf = 0;
+  let fireActive = false;
 
   function setKey(code: MovementCode, down: boolean): void {
     switch (code) {
@@ -98,6 +99,23 @@ export function createInputController(init: InputControllerInit): InputControlle
     return document.pointerLockElement === canvas;
   }
 
+  function requestPointerLockIfAvailable(): boolean {
+    if (isLocked()) return true;
+    const requestPointerLock = canvas.requestPointerLock;
+    if (typeof requestPointerLock !== 'function') return false;
+
+    try {
+      void Promise.resolve(requestPointerLock.call(canvas)).catch((error: unknown) => {
+        log.warn('pointer lock request failed', { error });
+        syncCursorVisibility();
+      });
+      return true;
+    } catch (error) {
+      log.warn('pointer lock request failed', { error });
+      return false;
+    }
+  }
+
   function syncCursorVisibility(): void {
     const style = (canvas as Partial<Pick<HTMLCanvasElement, 'style'>>).style;
     if (style === undefined) return;
@@ -135,15 +153,17 @@ export function createInputController(init: InputControllerInit): InputControlle
   function onMouseDown(event: MouseEvent): void {
     if (event.button !== 0) return;
     if (!isLocked()) {
-      void canvas.requestPointerLock();
-      return;
+      if (requestPointerLockIfAvailable()) return;
     }
+    if (fireActive) return;
+    fireActive = true;
     onCommand({ kind: 'fire', phase: 'start' });
   }
 
   function onMouseUp(event: MouseEvent): void {
     if (event.button !== 0) return;
-    if (!isLocked()) return;
+    if (!fireActive) return;
+    fireActive = false;
     onCommand({ kind: 'fire', phase: 'stop' });
   }
 
@@ -176,7 +196,7 @@ export function createInputController(init: InputControllerInit): InputControlle
     }
     pendingAim = false;
     if (document.pointerLockElement === canvas) {
-      document.exitPointerLock();
+      document.exitPointerLock?.();
     }
     syncCursorVisibility();
   }
@@ -188,6 +208,7 @@ export function createInputController(init: InputControllerInit): InputControlle
     keys.right = false;
     lastSentMove = { dx: 0, dy: 0 };
     aim = init.initialAim;
+    fireActive = false;
   }
 
   return {
@@ -196,7 +217,7 @@ export function createInputController(init: InputControllerInit): InputControlle
       active = true;
       resetState();
       attach();
-      void canvas.requestPointerLock();
+      requestPointerLockIfAvailable();
     },
     stop(): void {
       if (!active) return;
@@ -210,8 +231,7 @@ export function createInputController(init: InputControllerInit): InputControlle
       return { x: aim.x, y: aim.y };
     },
     requestLock(): void {
-      if (isLocked()) return;
-      void canvas.requestPointerLock();
+      requestPointerLockIfAvailable();
     }
   };
 }
