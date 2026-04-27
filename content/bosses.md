@@ -51,11 +51,11 @@
 
 | id | radius | maxHp |
 |---|---:|---:|
-| boss-gargoyle | 1.15 | 35 |
-| boss-saw-cyclops | 1.25 | 45 |
-| boss-scrap-king | 1.35 | 40 |
-| boss-tower-sentinel | 1.30 | 50 |
-| boss-bubble-hog | 1.20 | 42 |
+| boss-gargoyle | 1.15 | 90 |
+| boss-saw-cyclops | 1.25 | 110 |
+| boss-scrap-king | 1.35 | 105 |
+| boss-tower-sentinel | 1.30 | 130 |
+| boss-bubble-hog | 1.20 | 105 |
 
 ## Movement
 
@@ -81,11 +81,11 @@
 
 | id | baseImpulse | velocityScale | durationMs |
 |---|---:|---:|---:|
-| boss-gargoyle | 5 | 0.4 | 220 |
-| boss-saw-cyclops | 5 | 0.4 | 220 |
-| boss-scrap-king | 5 | 0.4 | 220 |
-| boss-tower-sentinel | 5 | 0.4 | 220 |
-| boss-bubble-hog | 5 | 0.4 | 220 |
+| boss-gargoyle | 2.5 | 0.1 | 120 |
+| boss-saw-cyclops | 2.5 | 0.1 | 120 |
+| boss-scrap-king | 2.5 | 0.1 | 120 |
+| boss-tower-sentinel | 2.5 | 0.1 | 120 |
+| boss-bubble-hog | 2.5 | 0.1 | 120 |
 
 ## Phases
 

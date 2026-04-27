@@ -284,14 +284,15 @@ describe('boss encounter integration', () => {
     world.killPlayerByBoss(world.clock.simTimeMs());
 
     const loss = terminalEvent(world.events, 'loss');
-    expect(loss.summary.progress.percent).toBe(73);
+    const expectedBossHpPercent = Math.round((boss.hp / boss.maxHp) * 100);
+    expect(loss.summary.progress.percent).toBe(Math.round((1 - boss.hp / boss.maxHp) * 100));
     expect(loss.summary.boss).toEqual({
       archetypeId: BOSS_SCRAP_KING.id,
       encountered: true,
       defeated: false,
       hp: boss.hp,
       maxHp: boss.maxHp,
-      hpPercent: 28
+      hpPercent: expectedBossHpPercent
     });
     expect(loss.summary.defeat).toEqual({
       cause: {

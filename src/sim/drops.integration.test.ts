@@ -174,6 +174,8 @@ function setupWorld() {
   return { entities, sessionFlow, clock, events, tick, killAllEnemies };
 }
 
+const TRAINING_RUN_SAFETY_TICKS = 12_000;
+
 describe('drops integration (training preset)', () => {
   it('produces an identical drop event sequence for the same seed', () => {
     function dropEventsForSeed(seed: number): Array<Pick<RuntimeEvent, 'kind'> & {
@@ -186,7 +188,7 @@ describe('drops integration (training preset)', () => {
       world.sessionFlow.start(session);
 
       let safety = 0;
-      while (world.clock.isRunning() && safety < 5_000) {
+      while (world.clock.isRunning() && safety < TRAINING_RUN_SAFETY_TICKS) {
         safety += 1;
         world.tick();
         world.killAllEnemies(world.clock.simTimeMs());
@@ -222,7 +224,7 @@ describe('drops integration (training preset)', () => {
     player.hp = 1;
 
     let safety = 0;
-    while (world.clock.isRunning() && safety < 5_000) {
+    while (world.clock.isRunning() && safety < TRAINING_RUN_SAFETY_TICKS) {
       safety += 1;
       world.tick();
       // Teleport the player onto the first live drop so pickup fires. This
@@ -255,7 +257,7 @@ describe('drops integration (training preset)', () => {
     world.sessionFlow.start(session);
 
     let safety = 0;
-    while (world.clock.isRunning() && safety < 5_000) {
+    while (world.clock.isRunning() && safety < TRAINING_RUN_SAFETY_TICKS) {
       safety += 1;
       world.tick();
       world.killAllEnemies(world.clock.simTimeMs());

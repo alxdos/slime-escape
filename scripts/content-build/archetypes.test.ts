@@ -109,7 +109,7 @@ describe('content-build archetype areas', () => {
       sourcePath: 'content/bosses.md',
       targetName: 'bosses.generated.ts',
       mutate: (source) =>
-        replaceExact(source, '| boss-gargoyle | 1.15 | 35 |', '| boss-gargoyle | | 35 |'),
+        replaceExact(source, '| boss-gargoyle | 1.15 | 90 |', '| boss-gargoyle | | 90 |'),
       parse: parseBossesArea,
       render: renderBossContent,
       pattern: /column "radius"/
@@ -138,8 +138,8 @@ describe('content-build archetype areas', () => {
       mutate: (source) =>
         replaceExact(
           source,
-          '| boss-gargoyle | 1.15 | 35 |',
-          '| boss-gargoyle | 1.15 | 35 |\n| slime-queen | 1 | 20 |'
+          '| boss-gargoyle | 1.15 | 90 |',
+          '| boss-gargoyle | 1.15 | 90 |\n| slime-queen | 1 | 20 |'
         ),
       parse: parseBossesArea,
       pattern: /unknown boss id "slime-queen"/
