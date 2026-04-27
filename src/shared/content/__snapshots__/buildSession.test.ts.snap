@@ -25,7 +25,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-1",
       "introDurationMs": 2500,
-      "name": "Один глаз в темноте",
+      "name": "One Eye in the Dark",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -66,7 +66,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-2",
       "introDurationMs": 2500,
-      "name": "Рога и искры",
+      "name": "Horns and Sparks",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -119,7 +119,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-1",
       "introDurationMs": 2500,
-      "name": "Эхо в противогазах",
+      "name": "Gas-Mask Echoes",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -163,7 +163,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-2",
       "introDurationMs": 2500,
-      "name": "Качки и дроны",
+      "name": "Bruisers and Drones",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -227,7 +227,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-1",
       "introDurationMs": 2500,
-      "name": "Дискеты и двигатели",
+      "name": "Floppy Disks and Engines",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -279,7 +279,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-2",
       "introDurationMs": 2500,
-      "name": "Магниты и ниндзя",
+      "name": "Magnets and Ninjas",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -425,7 +425,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-1",
       "introDurationMs": 2500,
-      "name": "Один глаз в темноте",
+      "name": "One Eye in the Dark",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -466,7 +466,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-2",
       "introDurationMs": 2500,
-      "name": "Рога и искры",
+      "name": "Horns and Sparks",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -519,7 +519,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-1",
       "introDurationMs": 2500,
-      "name": "Эхо в противогазах",
+      "name": "Gas-Mask Echoes",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -563,7 +563,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-2",
       "introDurationMs": 2500,
-      "name": "Качки и дроны",
+      "name": "Bruisers and Drones",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -627,7 +627,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-1",
       "introDurationMs": 2500,
-      "name": "Дискеты и двигатели",
+      "name": "Floppy Disks and Engines",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -679,7 +679,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-2",
       "introDurationMs": 2500,
-      "name": "Магниты и ниндзя",
+      "name": "Magnets and Ninjas",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -825,7 +825,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-1",
       "introDurationMs": 2500,
-      "name": "Один глаз в темноте",
+      "name": "One Eye in the Dark",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -866,7 +866,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-easy-set-1-wave-2",
       "introDurationMs": 2500,
-      "name": "Рога и искры",
+      "name": "Horns and Sparks",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -919,7 +919,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-1",
       "introDurationMs": 2500,
-      "name": "Эхо в противогазах",
+      "name": "Gas-Mask Echoes",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -963,7 +963,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-easy-set-3-wave-2",
       "introDurationMs": 2500,
-      "name": "Качки и дроны",
+      "name": "Bruisers and Drones",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1027,7 +1027,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-1",
       "introDurationMs": 2500,
-      "name": "Дискеты и двигатели",
+      "name": "Floppy Disks and Engines",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1079,7 +1079,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-easy-set-5-wave-2",
       "introDurationMs": 2500,
-      "name": "Магниты и ниндзя",
+      "name": "Magnets and Ninjas",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1233,7 +1233,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
       "introDurationMs": 2500,
-      "name": "Один глаз в темноте",
+      "name": "One Eye in the Dark",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1304,7 +1304,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
       "introDurationMs": 2500,
-      "name": "Рога и искры",
+      "name": "Horns and Sparks",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1393,7 +1393,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
       "introDurationMs": 2500,
-      "name": "Каменные взгляды",
+      "name": "Stone-Cold Stares",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1563,7 +1563,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Хламные призраки",
+      "text": "Next: Scrapyard Wraiths",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -1579,7 +1579,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
       "introDurationMs": 2500,
-      "name": "Панцири и призраки",
+      "name": "Shells and Wraiths",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1650,7 +1650,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
       "introDurationMs": 2500,
-      "name": "Хламная куча",
+      "name": "Scrap Heap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1739,7 +1739,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
       "introDurationMs": 2500,
-      "name": "Огненный скрап",
+      "name": "Burning Scrap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -1909,7 +1909,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Индустриальные мутанты",
+      "text": "Next: Industrial Mutants",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -1925,7 +1925,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "introDurationMs": 2500,
-      "name": "Эхо в противогазах",
+      "name": "Gas-Mask Echoes",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2014,7 +2014,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
       "introDurationMs": 2500,
-      "name": "Качки и дроны",
+      "name": "Bruisers and Drones",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2127,7 +2127,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
       "introDurationMs": 2500,
-      "name": "Бензопильный цех",
+      "name": "Sawblade Workshop",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2321,7 +2321,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Королевство на войне",
+      "text": "Next: Kingdom at War",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -2337,7 +2337,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "introDurationMs": 2500,
-      "name": "Бомбы у ворот",
+      "name": "Bombs at the Gate",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2411,7 +2411,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
       "introDurationMs": 2500,
-      "name": "Принцы и сюрикены",
+      "name": "Princes and Shuriken",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2529,7 +2529,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
       "introDurationMs": 2500,
-      "name": "Корона мёртвых",
+      "name": "Crown of the Dead",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2716,7 +2716,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Техно-финал",
+      "text": "Next: Techno Finale",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -2732,7 +2732,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
       "introDurationMs": 2500,
-      "name": "Дискеты и двигатели",
+      "name": "Floppy Disks and Engines",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2803,7 +2803,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
       "introDurationMs": 2500,
-      "name": "Магниты и ниндзя",
+      "name": "Magnets and Ninjas",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -2904,7 +2904,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
       "introDurationMs": 2500,
-      "name": "Идолы последнего сектора",
+      "name": "Idols of the Last Sector",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3165,7 +3165,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
       "introDurationMs": 2500,
-      "name": "Один глаз в темноте",
+      "name": "One Eye in the Dark",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3236,7 +3236,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
       "introDurationMs": 2500,
-      "name": "Рога и искры",
+      "name": "Horns and Sparks",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3325,7 +3325,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
       "introDurationMs": 2500,
-      "name": "Каменные взгляды",
+      "name": "Stone-Cold Stares",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3495,7 +3495,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Хламные призраки",
+      "text": "Next: Scrapyard Wraiths",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -3511,7 +3511,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
       "introDurationMs": 2500,
-      "name": "Панцири и призраки",
+      "name": "Shells and Wraiths",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3582,7 +3582,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
       "introDurationMs": 2500,
-      "name": "Хламная куча",
+      "name": "Scrap Heap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3671,7 +3671,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
       "introDurationMs": 2500,
-      "name": "Огненный скрап",
+      "name": "Burning Scrap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3841,7 +3841,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Индустриальные мутанты",
+      "text": "Next: Industrial Mutants",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -3857,7 +3857,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "introDurationMs": 2500,
-      "name": "Эхо в противогазах",
+      "name": "Gas-Mask Echoes",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -3946,7 +3946,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
       "introDurationMs": 2500,
-      "name": "Качки и дроны",
+      "name": "Bruisers and Drones",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4059,7 +4059,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
       "introDurationMs": 2500,
-      "name": "Бензопильный цех",
+      "name": "Sawblade Workshop",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4253,7 +4253,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Королевство на войне",
+      "text": "Next: Kingdom at War",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -4269,7 +4269,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "introDurationMs": 2500,
-      "name": "Бомбы у ворот",
+      "name": "Bombs at the Gate",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4343,7 +4343,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
       "introDurationMs": 2500,
-      "name": "Принцы и сюрикены",
+      "name": "Princes and Shuriken",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4461,7 +4461,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
       "introDurationMs": 2500,
-      "name": "Корона мёртвых",
+      "name": "Crown of the Dead",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4648,7 +4648,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Техно-финал",
+      "text": "Next: Techno Finale",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -4664,7 +4664,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
       "introDurationMs": 2500,
-      "name": "Дискеты и двигатели",
+      "name": "Floppy Disks and Engines",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4735,7 +4735,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
       "introDurationMs": 2500,
-      "name": "Магниты и ниндзя",
+      "name": "Magnets and Ninjas",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -4836,7 +4836,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
       "introDurationMs": 2500,
-      "name": "Идолы последнего сектора",
+      "name": "Idols of the Last Sector",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5097,7 +5097,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
       "introDurationMs": 2500,
-      "name": "Один глаз в темноте",
+      "name": "One Eye in the Dark",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5168,7 +5168,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
       "introDurationMs": 2500,
-      "name": "Рога и искры",
+      "name": "Horns and Sparks",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5257,7 +5257,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
       "introDurationMs": 2500,
-      "name": "Каменные взгляды",
+      "name": "Stone-Cold Stares",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5427,7 +5427,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Хламные призраки",
+      "text": "Next: Scrapyard Wraiths",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -5443,7 +5443,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
       "introDurationMs": 2500,
-      "name": "Панцири и призраки",
+      "name": "Shells and Wraiths",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5514,7 +5514,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
       "introDurationMs": 2500,
-      "name": "Хламная куча",
+      "name": "Scrap Heap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5603,7 +5603,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
       "introDurationMs": 2500,
-      "name": "Огненный скрап",
+      "name": "Burning Scrap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5773,7 +5773,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Индустриальные мутанты",
+      "text": "Next: Industrial Mutants",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -5789,7 +5789,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "introDurationMs": 2500,
-      "name": "Эхо в противогазах",
+      "name": "Gas-Mask Echoes",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5878,7 +5878,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
       "introDurationMs": 2500,
-      "name": "Качки и дроны",
+      "name": "Bruisers and Drones",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -5991,7 +5991,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
       "introDurationMs": 2500,
-      "name": "Бензопильный цех",
+      "name": "Sawblade Workshop",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6185,7 +6185,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Королевство на войне",
+      "text": "Next: Kingdom at War",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -6201,7 +6201,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "introDurationMs": 2500,
-      "name": "Бомбы у ворот",
+      "name": "Bombs at the Gate",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6275,7 +6275,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
       "introDurationMs": 2500,
-      "name": "Принцы и сюрикены",
+      "name": "Princes and Shuriken",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6393,7 +6393,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
       "introDurationMs": 2500,
-      "name": "Корона мёртвых",
+      "name": "Crown of the Dead",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6580,7 +6580,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Техно-финал",
+      "text": "Next: Techno Finale",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -6596,7 +6596,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
       "introDurationMs": 2500,
-      "name": "Дискеты и двигатели",
+      "name": "Floppy Disks and Engines",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6667,7 +6667,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
       "introDurationMs": 2500,
-      "name": "Магниты и ниндзя",
+      "name": "Magnets and Ninjas",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -6768,7 +6768,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
       "introDurationMs": 2500,
-      "name": "Идолы последнего сектора",
+      "name": "Idols of the Last Sector",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7029,7 +7029,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
       "introDurationMs": 2500,
-      "name": "Один глаз в темноте",
+      "name": "One Eye in the Dark",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7076,7 +7076,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
       "introDurationMs": 2500,
-      "name": "Рога и искры",
+      "name": "Horns and Sparks",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7138,7 +7138,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
       "introDurationMs": 2500,
-      "name": "Каменные взгляды",
+      "name": "Stone-Cold Stares",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7276,7 +7276,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Хламные призраки",
+      "text": "Next: Scrapyard Wraiths",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -7292,7 +7292,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
       "introDurationMs": 2500,
-      "name": "Панцири и призраки",
+      "name": "Shells and Wraiths",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7358,7 +7358,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
       "introDurationMs": 2500,
-      "name": "Хламная куча",
+      "name": "Scrap Heap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7447,7 +7447,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
       "introDurationMs": 2500,
-      "name": "Огненный скрап",
+      "name": "Burning Scrap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7628,7 +7628,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Индустриальные мутанты",
+      "text": "Next: Industrial Mutants",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -7644,7 +7644,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "introDurationMs": 2500,
-      "name": "Эхо в противогазах",
+      "name": "Gas-Mask Echoes",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7697,7 +7697,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
       "introDurationMs": 2500,
-      "name": "Качки и дроны",
+      "name": "Bruisers and Drones",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7789,7 +7789,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
       "introDurationMs": 2500,
-      "name": "Бензопильный цех",
+      "name": "Sawblade Workshop",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -7941,7 +7941,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Королевство на войне",
+      "text": "Next: Kingdom at War",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -7957,7 +7957,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "introDurationMs": 2500,
-      "name": "Бомбы у ворот",
+      "name": "Bombs at the Gate",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8034,7 +8034,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
       "introDurationMs": 2500,
-      "name": "Принцы и сюрикены",
+      "name": "Princes and Shuriken",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8113,7 +8113,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
       "introDurationMs": 2500,
-      "name": "Корона мёртвых",
+      "name": "Crown of the Dead",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8260,7 +8260,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Техно-финал",
+      "text": "Next: Techno Finale",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -8276,7 +8276,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
       "introDurationMs": 2500,
-      "name": "Дискеты и двигатели",
+      "name": "Floppy Disks and Engines",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8364,7 +8364,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
       "introDurationMs": 2500,
-      "name": "Магниты и ниндзя",
+      "name": "Magnets and Ninjas",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8470,7 +8470,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
       "introDurationMs": 2500,
-      "name": "Идолы последнего сектора",
+      "name": "Idols of the Last Sector",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8717,7 +8717,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
       "introDurationMs": 2500,
-      "name": "Один глаз в темноте",
+      "name": "One Eye in the Dark",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8764,7 +8764,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
       "introDurationMs": 2500,
-      "name": "Рога и искры",
+      "name": "Horns and Sparks",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8826,7 +8826,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
       "introDurationMs": 2500,
-      "name": "Каменные взгляды",
+      "name": "Stone-Cold Stares",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -8964,7 +8964,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Хламные призраки",
+      "text": "Next: Scrapyard Wraiths",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -8980,7 +8980,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
       "introDurationMs": 2500,
-      "name": "Панцири и призраки",
+      "name": "Shells and Wraiths",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9046,7 +9046,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
       "introDurationMs": 2500,
-      "name": "Хламная куча",
+      "name": "Scrap Heap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9135,7 +9135,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
       "introDurationMs": 2500,
-      "name": "Огненный скрап",
+      "name": "Burning Scrap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9316,7 +9316,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Индустриальные мутанты",
+      "text": "Next: Industrial Mutants",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -9332,7 +9332,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "introDurationMs": 2500,
-      "name": "Эхо в противогазах",
+      "name": "Gas-Mask Echoes",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9385,7 +9385,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
       "introDurationMs": 2500,
-      "name": "Качки и дроны",
+      "name": "Bruisers and Drones",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9477,7 +9477,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
       "introDurationMs": 2500,
-      "name": "Бензопильный цех",
+      "name": "Sawblade Workshop",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9629,7 +9629,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Королевство на войне",
+      "text": "Next: Kingdom at War",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -9645,7 +9645,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "introDurationMs": 2500,
-      "name": "Бомбы у ворот",
+      "name": "Bombs at the Gate",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9722,7 +9722,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
       "introDurationMs": 2500,
-      "name": "Принцы и сюрикены",
+      "name": "Princes and Shuriken",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9801,7 +9801,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
       "introDurationMs": 2500,
-      "name": "Корона мёртвых",
+      "name": "Crown of the Dead",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -9948,7 +9948,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Техно-финал",
+      "text": "Next: Techno Finale",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -9964,7 +9964,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
       "introDurationMs": 2500,
-      "name": "Дискеты и двигатели",
+      "name": "Floppy Disks and Engines",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10052,7 +10052,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
       "introDurationMs": 2500,
-      "name": "Магниты и ниндзя",
+      "name": "Magnets and Ninjas",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10158,7 +10158,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
       "introDurationMs": 2500,
-      "name": "Идолы последнего сектора",
+      "name": "Idols of the Last Sector",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10405,7 +10405,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-1",
       "introDurationMs": 2500,
-      "name": "Один глаз в темноте",
+      "name": "One Eye in the Dark",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10452,7 +10452,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-2",
       "introDurationMs": 2500,
-      "name": "Рога и искры",
+      "name": "Horns and Sparks",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10514,7 +10514,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-1",
       "id": "campaign-set-1-wave-3",
       "introDurationMs": 2500,
-      "name": "Каменные взгляды",
+      "name": "Stone-Cold Stares",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10652,7 +10652,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Хламные призраки",
+      "text": "Next: Scrapyard Wraiths",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -10668,7 +10668,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-1",
       "introDurationMs": 2500,
-      "name": "Панцири и призраки",
+      "name": "Shells and Wraiths",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10734,7 +10734,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-2",
       "introDurationMs": 2500,
-      "name": "Хламная куча",
+      "name": "Scrap Heap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -10823,7 +10823,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-2",
       "id": "campaign-set-2-wave-3",
       "introDurationMs": 2500,
-      "name": "Огненный скрап",
+      "name": "Burning Scrap",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11004,7 +11004,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Индустриальные мутанты",
+      "text": "Next: Industrial Mutants",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -11020,7 +11020,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "introDurationMs": 2500,
-      "name": "Эхо в противогазах",
+      "name": "Gas-Mask Echoes",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11073,7 +11073,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-2",
       "introDurationMs": 2500,
-      "name": "Качки и дроны",
+      "name": "Bruisers and Drones",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11165,7 +11165,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-3",
       "introDurationMs": 2500,
-      "name": "Бензопильный цех",
+      "name": "Sawblade Workshop",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11317,7 +11317,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Королевство на войне",
+      "text": "Next: Kingdom at War",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -11333,7 +11333,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "introDurationMs": 2500,
-      "name": "Бомбы у ворот",
+      "name": "Bombs at the Gate",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11410,7 +11410,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-2",
       "introDurationMs": 2500,
-      "name": "Принцы и сюрикены",
+      "name": "Princes and Shuriken",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11489,7 +11489,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-3",
       "introDurationMs": 2500,
-      "name": "Корона мёртвых",
+      "name": "Crown of the Dead",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11636,7 +11636,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": "Дальше: Техно-финал",
+      "text": "Next: Techno Finale",
       "transitionRules": {
         "durationMs": 2500,
         "kind": "timer",
@@ -11652,7 +11652,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-1",
       "introDurationMs": 2500,
-      "name": "Дискеты и двигатели",
+      "name": "Floppy Disks and Engines",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11740,7 +11740,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-2",
       "introDurationMs": 2500,
-      "name": "Магниты и ниндзя",
+      "name": "Magnets and Ninjas",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -11846,7 +11846,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "backgroundId": "set-5",
       "id": "campaign-set-5-wave-3",
       "introDurationMs": 2500,
-      "name": "Идолы последнего сектора",
+      "name": "Idols of the Last Sector",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {

@@ -11,8 +11,8 @@ import { BOMB_PLACER, DEMO_HAZARD_GRENADE, DEMO_PROXIMITY_MINE, FIREBALL_STAFF, 
 export const SESSION_PRESET_TEMPLATES = {
   'campaign-easy': {
     presetId: 'campaign-easy',
-    displayName: 'Кампания — easy',
-    description: 'Короткий мягкий забег: friendly fire слаймов, щедрый aim assist, лужи и понятные волны.',
+    displayName: 'Campaign - Easy',
+    description: 'A short, gentle run with slime friendly fire, generous aim assist, hazard puddles, and easy-to-read waves.',
     visibleInMenu: true,
     order: 0,
     arena: SANDBOX_ARENA,
@@ -42,7 +42,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-1',
         introDurationMs: 2500,
-        name: 'Один глаз в темноте',
+        name: 'One Eye in the Dark',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -67,7 +67,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-1',
         introDurationMs: 2500,
-        name: 'Рога и искры',
+        name: 'Horns and Sparks',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -97,7 +97,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-3',
         introDurationMs: 2500,
-        name: 'Эхо в противогазах',
+        name: 'Gas-Mask Echoes',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -123,7 +123,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-3',
         introDurationMs: 2500,
-        name: 'Качки и дроны',
+        name: 'Bruisers and Drones',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -157,7 +157,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-5',
         introDurationMs: 2500,
-        name: 'Дискеты и двигатели',
+        name: 'Floppy Disks and Engines',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -186,7 +186,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-5',
         introDurationMs: 2500,
-        name: 'Магниты и ниндзя',
+        name: 'Magnets and Ninjas',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -222,8 +222,8 @@ export const SESSION_PRESET_TEMPLATES = {
   },
   'campaign-hard': {
     presetId: 'campaign-hard',
-    displayName: 'Кампания — hard',
-    description: 'Плотный забег со стреляющими слаймами, скупыми дропами и короткими окнами реакции.',
+    displayName: 'Campaign - Hard',
+    description: 'A dense run with armed slimes, scarce drops, and very small reaction windows.',
     visibleInMenu: true,
     order: 2,
     arena: SANDBOX_ARENA,
@@ -261,7 +261,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-1',
         introDurationMs: 2500,
-        name: 'Один глаз в темноте',
+        name: 'One Eye in the Dark',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -306,7 +306,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-1',
         introDurationMs: 2500,
-        name: 'Рога и искры',
+        name: 'Horns and Sparks',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -363,7 +363,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-1',
         introDurationMs: 2500,
-        name: 'Каменные взгляды',
+        name: 'Stone-Cold Stares',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -466,7 +466,7 @@ export const SESSION_PRESET_TEMPLATES = {
         backgroundId: 'set-1',
         introDurationMs: 0,
         name: null,
-        text: 'Дальше: Хламные призраки',
+        text: 'Next: Scrapyard Wraiths',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -479,7 +479,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-2',
         introDurationMs: 2500,
-        name: 'Панцири и призраки',
+        name: 'Shells and Wraiths',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -522,7 +522,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-2',
         introDurationMs: 2500,
-        name: 'Хламная куча',
+        name: 'Scrap Heap',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -577,7 +577,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-2',
         introDurationMs: 2500,
-        name: 'Огненный скрап',
+        name: 'Burning Scrap',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -678,7 +678,7 @@ export const SESSION_PRESET_TEMPLATES = {
         backgroundId: 'set-2',
         introDurationMs: 0,
         name: null,
-        text: 'Дальше: Индустриальные мутанты',
+        text: 'Next: Industrial Mutants',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -691,7 +691,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-3',
         introDurationMs: 2500,
-        name: 'Эхо в противогазах',
+        name: 'Gas-Mask Echoes',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -744,7 +744,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-3',
         introDurationMs: 2500,
-        name: 'Качки и дроны',
+        name: 'Bruisers and Drones',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -809,7 +809,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-3',
         introDurationMs: 2500,
-        name: 'Бензопильный цех',
+        name: 'Sawblade Workshop',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -920,7 +920,7 @@ export const SESSION_PRESET_TEMPLATES = {
         backgroundId: 'set-3',
         introDurationMs: 0,
         name: null,
-        text: 'Дальше: Королевство на войне',
+        text: 'Next: Kingdom at War',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -933,7 +933,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-4',
         introDurationMs: 2500,
-        name: 'Бомбы у ворот',
+        name: 'Bombs at the Gate',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -977,7 +977,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-4',
         introDurationMs: 2500,
-        name: 'Принцы и сюрикены',
+        name: 'Princes and Shuriken',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1043,7 +1043,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-4',
         introDurationMs: 2500,
-        name: 'Корона мёртвых',
+        name: 'Crown of the Dead',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1149,7 +1149,7 @@ export const SESSION_PRESET_TEMPLATES = {
         backgroundId: 'set-4',
         introDurationMs: 0,
         name: null,
-        text: 'Дальше: Техно-финал',
+        text: 'Next: Techno Finale',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -1162,7 +1162,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-5',
         introDurationMs: 2500,
-        name: 'Дискеты и двигатели',
+        name: 'Floppy Disks and Engines',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1207,7 +1207,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-5',
         introDurationMs: 2500,
-        name: 'Магниты и ниндзя',
+        name: 'Magnets and Ninjas',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1274,7 +1274,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-5',
         introDurationMs: 2500,
-        name: 'Идолы последнего сектора',
+        name: 'Idols of the Last Sector',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1388,8 +1388,8 @@ export const SESSION_PRESET_TEMPLATES = {
   },
   'campaign-normal': {
     presetId: 'campaign-normal',
-    displayName: 'Кампания — normal',
-    description: 'Основной забег: пять тематических сетов с камнями, минами и опасными лужами.',
+    displayName: 'Campaign - Normal',
+    description: 'The main run: five themed sets with rocks, mines, and dangerous puddles.',
     visibleInMenu: true,
     order: 1,
     arena: SANDBOX_ARENA,
@@ -1427,7 +1427,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-1',
         introDurationMs: 2500,
-        name: 'Один глаз в темноте',
+        name: 'One Eye in the Dark',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1454,7 +1454,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-1',
         introDurationMs: 2500,
-        name: 'Рога и искры',
+        name: 'Horns and Sparks',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1487,7 +1487,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-1',
         introDurationMs: 2500,
-        name: 'Каменные взгляды',
+        name: 'Stone-Cold Stares',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1560,7 +1560,7 @@ export const SESSION_PRESET_TEMPLATES = {
         backgroundId: 'set-1',
         introDurationMs: 0,
         name: null,
-        text: 'Дальше: Хламные призраки',
+        text: 'Next: Scrapyard Wraiths',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -1573,7 +1573,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-2',
         introDurationMs: 2500,
-        name: 'Панцири и призраки',
+        name: 'Shells and Wraiths',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1607,7 +1607,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-2',
         introDurationMs: 2500,
-        name: 'Хламная куча',
+        name: 'Scrap Heap',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1650,7 +1650,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-2',
         introDurationMs: 2500,
-        name: 'Огненный скрап',
+        name: 'Burning Scrap',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1739,7 +1739,7 @@ export const SESSION_PRESET_TEMPLATES = {
         backgroundId: 'set-2',
         introDurationMs: 0,
         name: null,
-        text: 'Дальше: Индустриальные мутанты',
+        text: 'Next: Industrial Mutants',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -1752,7 +1752,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-3',
         introDurationMs: 2500,
-        name: 'Эхо в противогазах',
+        name: 'Gas-Mask Echoes',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1781,7 +1781,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-3',
         introDurationMs: 2500,
-        name: 'Качки и дроны',
+        name: 'Bruisers and Drones',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1825,7 +1825,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-3',
         introDurationMs: 2500,
-        name: 'Бензопильный цех',
+        name: 'Sawblade Workshop',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1903,7 +1903,7 @@ export const SESSION_PRESET_TEMPLATES = {
         backgroundId: 'set-3',
         introDurationMs: 0,
         name: null,
-        text: 'Дальше: Королевство на войне',
+        text: 'Next: Kingdom at War',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -1916,7 +1916,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-4',
         introDurationMs: 2500,
-        name: 'Бомбы у ворот',
+        name: 'Bombs at the Gate',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1954,7 +1954,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-4',
         introDurationMs: 2500,
-        name: 'Принцы и сюрикены',
+        name: 'Princes and Shuriken',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -1993,7 +1993,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-4',
         introDurationMs: 2500,
-        name: 'Корона мёртвых',
+        name: 'Crown of the Dead',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -2069,7 +2069,7 @@ export const SESSION_PRESET_TEMPLATES = {
         backgroundId: 'set-4',
         introDurationMs: 0,
         name: null,
-        text: 'Дальше: Техно-финал',
+        text: 'Next: Techno Finale',
         spawnPlan: { kind: 'empty' },
         zoneBehavior: { kind: 'disabled' },
         objectives: [],
@@ -2082,7 +2082,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-5',
         introDurationMs: 2500,
-        name: 'Дискеты и двигатели',
+        name: 'Floppy Disks and Engines',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -2124,7 +2124,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-5',
         introDurationMs: 2500,
-        name: 'Магниты и ниндзя',
+        name: 'Magnets and Ninjas',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -2173,7 +2173,7 @@ export const SESSION_PRESET_TEMPLATES = {
         type: 'wave',
         backgroundId: 'set-5',
         introDurationMs: 2500,
-        name: 'Идолы последнего сектора',
+        name: 'Idols of the Last Sector',
         text: null,
         spawnPlan: {
           kind: 'wave',
@@ -2258,7 +2258,7 @@ export const SESSION_PRESET_TEMPLATES = {
   'combat-modifiers-demo': {
     presetId: 'combat-modifiers-demo',
     displayName: 'Combat Modifiers Demo',
-    description: 'Проверочная арена для puddles, statuses, proximity mines, carrier drops, magnet pickup, retaliation and aim assist.',
+    description: 'A test arena for puddles, status effects, proximity mines, carrier drops, magnet pickup, retaliation, and aim assist.',
     visibleInMenu: false,
     order: 1,
     arena: SANDBOX_ARENA,
@@ -2317,7 +2317,7 @@ export const SESSION_PRESET_TEMPLATES = {
   portal: {
     presetId: 'portal',
     displayName: 'Portal Run',
-    description: 'Специальный вход для Vibe Jam: десять нарастающих волн, вооруженные слаймы и финальный gargoyle boss.',
+    description: 'Vibe Jam entry point: ten escalating waves, armed slimes, and a final gargoyle boss.',
     visibleInMenu: false,
     order: 90,
     arena: SANDBOX_ARENA,
@@ -2822,8 +2822,8 @@ export const SESSION_PRESET_TEMPLATES = {
   },
   sandbox: {
     presetId: 'sandbox',
-    displayName: 'Песочница',
-    description: 'Свободная пустая арена для проверки перемещения и камеры.',
+    displayName: 'Sandbox',
+    description: 'An empty free-play arena for testing movement and the camera.',
     visibleInMenu: false,
     order: 0,
     arena: SANDBOX_ARENA,
@@ -2858,8 +2858,8 @@ export const SESSION_PRESET_TEMPLATES = {
   },
   'sandbox-with-combat': {
     presetId: 'sandbox-with-combat',
-    displayName: 'Песочница с боем',
-    description: 'Свободная арена с оружием и одним статическим тестовым противником.',
+    displayName: 'Combat Sandbox',
+    description: 'A free-play arena with weapons and one static test enemy.',
     visibleInMenu: false,
     order: 0,
     arena: SANDBOX_ARENA,
@@ -2902,8 +2902,8 @@ export const SESSION_PRESET_TEMPLATES = {
   },
   training: {
     presetId: 'training',
-    displayName: 'Тренировка',
-    description: 'Короткая сессия без босса, чтобы размяться и проверить сборку.',
+    displayName: 'Training',
+    description: 'A short boss-free session for warming up and checking the build.',
     visibleInMenu: false,
     order: 1,
     arena: SANDBOX_ARENA,
