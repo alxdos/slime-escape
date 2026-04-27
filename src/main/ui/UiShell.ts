@@ -520,6 +520,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         session,
         spriteTextures,
         getSnapshotPair: sim.snapshotPair,
+        getPortalDescriptors: portalController.portals,
         getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
       });
       const activeRenderer = nextRenderer;
