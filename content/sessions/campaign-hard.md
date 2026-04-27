@@ -437,7 +437,7 @@
 | 1 | none | empty | none | none | none | none |
 | 2 | none | empty | none | none | none | none |
 | 3 | none | empty | none | none | none | none |
-| 4 | none | empty | none | none | laser | 0 |
+| 4 | none | empty | none | none | smg | 0 |
 | 5 | none | empty | none | none | none | none |
 | 6 | none | empty | none | none | none | none |
 | 7 | none | empty | none | none | none | none |
@@ -482,14 +482,14 @@
 | 1 | none | empty | none | none | none | none |
 | 2 | none | empty | none | none | none | none |
 | 3 | none | empty | none | none | none | none |
-| 4 | none | empty | none | none | laser | 0 |
+| 4 | none | empty | none | none | smg | 0 |
 | 5 | none | empty | none | none | none | none |
 | 6 | none | empty | none | none | none | none |
 | 7 | none | empty | none | none | sniper | 0 |
 | 8 | none | empty | none | none | none | none |
 | 9 | none | empty | none | none | none | none |
 | 10 | none | empty | none | none | none | none |
-| 11 | none | empty | none | none | laser | 0 |
+| 11 | none | empty | none | none | smg | 0 |
 
 
 ## campaign-set-3-wave-3
@@ -534,7 +534,7 @@
 | 1 | none | empty | none | none | none | none |
 | 2 | none | empty | none | none | none | none |
 | 3 | none | empty | none | none | none | none |
-| 4 | none | empty | none | none | laser | 0 |
+| 4 | none | empty | none | none | smg | 0 |
 | 5 | none | empty | none | none | none | none |
 | 6 | none | empty | none | none | none | none |
 | 7 | none | empty | none | none | none | none |
@@ -542,7 +542,7 @@
 | 9 | none | empty | none | none | none | none |
 | 10 | none | empty | none | none | none | none |
 | 11 | none | empty | none | none | none | none |
-| 12 | none | empty | none | none | laser | 0 |
+| 12 | none | empty | none | none | smg | 0 |
 | 13 | none | empty | none | none | none | none |
 | 14 | none | empty | none | none | sniper | 0 |
 

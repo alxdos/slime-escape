@@ -35,11 +35,8 @@ import {
 } from './sessions';
 import {
   BOMB_PLACER,
-  DEMO_HAZARD_GRENADE,
-  DEMO_PROXIMITY_MINE,
   FIREBALL_STAFF,
   GRENADE_LAUNCHER,
-  LASER,
   PISTOL,
   ROCK_THROWER,
   SHOTGUN,
@@ -361,7 +358,7 @@ describe('buildSessionDefinition (campaign)', () => {
 });
 
 describe('buildSessionDefinition shooting slime difficulty pillars', () => {
-  it('campaign-easy keeps enemy loadouts to late hazard fields and guarantees heal carriers', () => {
+  it('campaign-easy keeps enemy loadouts to late readable shooters and guarantees heal carriers', () => {
     const session = buildSessionDefinition(resolveModePreset('campaign-easy'), { seed: 2 });
     const entries = spawnEntries(session);
     const waveCount = session.encounters.filter((encounter) => encounter.spawnPlan.kind === 'wave')
@@ -370,7 +367,7 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
       entry.override?.guaranteedDrops?.includes(HEAL_ORB.id)
     ).length;
     const hazardEntries = entries.filter((entry) => entry.override?.loadout !== undefined);
-    const allowedEasyHazards = new Set([DEMO_HAZARD_GRENADE.id, DEMO_PROXIMITY_MINE.id]);
+    const allowedEasyHazards = new Set([ROCK_THROWER.id, SMG.id]);
 
     expect(session.rules.damage.slimeFriendlyFire).toBe(true);
     expect(session.rules.aimAssist.enabled).toBe(true);
@@ -381,7 +378,6 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
       SHOTGUN.id,
       SMG.id,
       SNIPER.id,
-      LASER.id,
       ROCK_THROWER.id,
       GRENADE_LAUNCHER.id,
       BOMB_PLACER.id,
@@ -403,21 +399,19 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
       )
     ).toBe(true);
     expect(
-      hazardEntries.some((entry) => hasWeapon(entry.override!.loadout!, DEMO_HAZARD_GRENADE.id))
+      hazardEntries.some((entry) => hasWeapon(entry.override!.loadout!, ROCK_THROWER.id))
     ).toBe(true);
-    expect(
-      hazardEntries.some((entry) => hasWeapon(entry.override!.loadout!, DEMO_PROXIMITY_MINE.id))
-    ).toBe(true);
+    expect(hazardEntries.some((entry) => hasWeapon(entry.override!.loadout!, SMG.id))).toBe(true);
     expect(healCarrierCount).toBeGreaterThanOrEqual(Math.floor(waveCount / 2));
   });
 
-  it('campaign-normal uses spatial enemy hazards without gun shooters', () => {
+  it('campaign-normal uses shared explosive enemy hazards without demo weapons', () => {
     const session = buildSessionDefinition(resolveModePreset('campaign-normal'), { seed: 2 });
     const entries = spawnEntries(session);
     const normalEnemyHazards = new Set([
       ROCK_THROWER.id,
-      DEMO_HAZARD_GRENADE.id,
-      DEMO_PROXIMITY_MINE.id
+      GRENADE_LAUNCHER.id,
+      BOMB_PLACER.id
     ]);
     const enemyLoadouts = entries.flatMap((entry) =>
       entry.override?.loadout === undefined ? [] : [entry.override.loadout]
@@ -431,8 +425,8 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
         SHOTGUN.id,
         SMG.id,
         SNIPER.id,
-        DEMO_HAZARD_GRENADE.id,
-        DEMO_PROXIMITY_MINE.id
+        GRENADE_LAUNCHER.id,
+        BOMB_PLACER.id
       ],
       selectedIndex: 0
     });
@@ -445,12 +439,12 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
     expect(hasSpawnWeapon(entries, SLIME_SHELL.id, ROCK_THROWER.id)).toBe(true);
     expect(hasSpawnWeapon(entries, SLIME_LIFTER.id, ROCK_THROWER.id)).toBe(true);
     expect(hasSpawnWeapon(entries, SLIME_FORTRESS.id, ROCK_THROWER.id)).toBe(true);
-    expect(hasSpawnWeapon(entries, SLIME_FLAME.id, DEMO_HAZARD_GRENADE.id)).toBe(true);
-    expect(hasSpawnWeapon(entries, SLIME_CANDLE.id, DEMO_HAZARD_GRENADE.id)).toBe(true);
-    expect(hasSpawnWeapon(entries, SLIME_OBELISK.id, DEMO_HAZARD_GRENADE.id)).toBe(true);
-    expect(hasSpawnWeapon(entries, SLIME_MECH_CRAB.id, DEMO_PROXIMITY_MINE.id)).toBe(true);
-    expect(hasSpawnWeapon(entries, SLIME_MECH.id, DEMO_PROXIMITY_MINE.id)).toBe(true);
-    expect(hasSpawnWeapon(entries, SLIME_CLAMPER.id, DEMO_PROXIMITY_MINE.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_FLAME.id, GRENADE_LAUNCHER.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_CANDLE.id, GRENADE_LAUNCHER.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_OBELISK.id, GRENADE_LAUNCHER.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_MECH_CRAB.id, BOMB_PLACER.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_MECH.id, BOMB_PLACER.id)).toBe(true);
+    expect(hasSpawnWeapon(entries, SLIME_CLAMPER.id, BOMB_PLACER.id)).toBe(true);
   });
 
   it('campaign-hard encodes the per-set shooter progression structurally', () => {
@@ -471,7 +465,7 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
         hasWeapon(loadout, ROCK_THROWER.id, GRENADE_LAUNCHER.id)
       )
     ).toBe(true);
-    expect(loadoutsForSet(entries, 3).some((loadout) => hasWeapon(loadout, LASER.id, SNIPER.id))).toBe(
+    expect(loadoutsForSet(entries, 3).some((loadout) => hasWeapon(loadout, SMG.id, SNIPER.id))).toBe(
       true
     );
     expect(loadoutsForSet(entries, 4).some((loadout) => hasWeapon(loadout, BOMB_PLACER.id))).toBe(

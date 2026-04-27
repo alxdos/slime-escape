@@ -3,13 +3,13 @@
 | field | value |
 |---|---|
 | displayName | Campaign - Normal |
-| description | The main run: five themed sets with rocks, mines, and dangerous puddles. |
+| description | The main run: five themed sets with rocks, bombs, mines, and dangerous crossfire. |
 | musicSampleId | music/005-forest |
 | visibleInMenu | true |
 | order | 1 |
 | arenaId | sandbox |
 | playerId | hero-training |
-| loadoutWeaponIds | pistol, shotgun, smg, sniper, demo-hazard-grenade, demo-proximity-mine |
+| loadoutWeaponIds | pistol, shotgun, smg, sniper, grenade-launcher, bomb-placer |
 | selectedWeaponIndex | 0 |
 | slimeFriendlyFire | true |
 | aimAssistEnabled | false |
@@ -257,7 +257,7 @@
 | 3 | none | none | none | none | rock-thrower | 0 |
 | 5 | multi-shot | empty | none | none | none | none |
 | 6 | none | none | none | none | rock-thrower | 0 |
-| 9 | none | none | none | none | demo-proximity-mine | 0 |
+| 9 | none | none | none | none | bomb-placer | 0 |
 
 ## campaign-set-2-wave-3
 
@@ -298,12 +298,12 @@
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
 | 3 | none | none | none | none | rock-thrower | 0 |
-| 5 | none | none | none | none | demo-proximity-mine | 0 |
+| 5 | none | none | none | none | bomb-placer | 0 |
 | 6 | none | none | none | none | rock-thrower | 0 |
-| 8 | none | none | none | none | demo-proximity-mine | 0 |
-| 9 | none | none | none | none | demo-hazard-grenade | 0 |
-| 12 | none | none | none | none | demo-proximity-mine | 0 |
-| 13 | none | none | none | none | demo-hazard-grenade | 0 |
+| 8 | none | none | none | none | bomb-placer | 0 |
+| 9 | none | none | none | none | grenade-launcher | 0 |
+| 12 | none | none | none | none | bomb-placer | 0 |
+| 13 | none | none | none | none | grenade-launcher | 0 |
 
 ## campaign-set-2-pre-boss-break
 
@@ -724,10 +724,10 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
-| 2 | none | none | none | none | demo-hazard-grenade | 0 |
-| 4 | none | none | none | none | demo-proximity-mine | 0 |
-| 7 | none | none | none | none | demo-proximity-mine | 0 |
-| 8 | none | none | none | none | demo-hazard-grenade | 0 |
+| 2 | none | none | none | none | grenade-launcher | 0 |
+| 4 | none | none | none | none | bomb-placer | 0 |
+| 7 | none | none | none | none | bomb-placer | 0 |
+| 8 | none | none | none | none | grenade-launcher | 0 |
 
 ## campaign-set-5-wave-2
 
@@ -767,11 +767,11 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
-| 3 | none | none | none | none | demo-proximity-mine | 0 |
-| 4 | none | none | none | none | demo-proximity-mine | 0 |
+| 3 | none | none | none | none | bomb-placer | 0 |
+| 4 | none | none | none | none | bomb-placer | 0 |
 | 5 | overdrive | empty | none | none | none | none |
-| 10 | none | none | none | none | demo-proximity-mine | 0 |
-| 13 | none | none | none | none | demo-hazard-grenade | 0 |
+| 10 | none | none | none | none | bomb-placer | 0 |
+| 13 | none | none | none | none | grenade-launcher | 0 |
 
 ## campaign-set-5-wave-3
 
@@ -814,11 +814,11 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
-| 3 | none | none | none | none | demo-proximity-mine | 0 |
-| 4 | none | none | none | none | demo-proximity-mine | 0 |
-| 9 | none | none | none | none | demo-hazard-grenade | 0 |
-| 10 | none | none | none | none | demo-hazard-grenade | 0 |
-| 14 | none | none | none | none | demo-hazard-grenade | 0 |
+| 3 | none | none | none | none | bomb-placer | 0 |
+| 4 | none | none | none | none | bomb-placer | 0 |
+| 9 | none | none | none | none | grenade-launcher | 0 |
+| 10 | none | none | none | none | grenade-launcher | 0 |
+| 14 | none | none | none | none | grenade-launcher | 0 |
 
 ## campaign-set-5-pre-boss-break
 

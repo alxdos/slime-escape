@@ -3,13 +3,13 @@
 | field | value |
 |---|---|
 | displayName | Campaign - Easy |
-| description | A short, gentle run with slime friendly fire, generous aim assist, hazard puddles, and easy-to-read waves. |
+| description | A short, gentle run with slime friendly fire, generous aim assist, and readable armed slimes. |
 | musicSampleId | music/007-nature |
 | visibleInMenu | true |
 | order | 0 |
 | arenaId | sandbox |
 | playerId | hero-training |
-| loadoutWeaponIds | pistol, shotgun, smg, sniper, laser, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |
+| loadoutWeaponIds | pistol, shotgun, smg, sniper, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |
 | selectedWeaponIndex | 1 |
 | slimeFriendlyFire | true |
 | aimAssistEnabled | true |
@@ -147,7 +147,7 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
-| 3 | none | none | none | none | demo-proximity-mine | 0 |
+| 3 | none | none | none | none | rock-thrower | 0 |
 | 4 | heal-orb | empty | none | none | none | none |
 
 ## campaign-easy-set-5-wave-1
@@ -180,7 +180,7 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
-| 2 | none | none | none | none | demo-hazard-grenade | 0 |
+| 2 | none | none | none | none | smg | 0 |
 
 ## campaign-easy-set-5-wave-2
 
@@ -214,6 +214,6 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
-| 3 | none | none | none | none | demo-hazard-grenade | 0 |
+| 3 | none | none | none | none | rock-thrower | 0 |
 | 4 | heal-orb | empty | none | none | none | none |
-| 6 | none | none | none | none | demo-hazard-grenade | 0 |
+| 6 | none | none | none | none | smg | 0 |
