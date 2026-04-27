@@ -6,25 +6,25 @@
 
 ## Player-facing
 
-- Sees: что новое появляется на экране.
-- Can do: что игрок может сделать после завершения истории.
+- Sees: what new content appears on screen.
+- Can do: what the player can do once the story ships.
 
 ## Technical
 
-- Какие системы / протоколы / файлы реализуются.
-- Ключевые design-решения, которые ложатся в код этой историей.
+- Which systems / protocols / files are implemented.
+- Key design decisions this story brings into the code.
 
 ## Out of scope
 
-- Что осознанно не входит, чтобы не размывать слайс.
+- What is intentionally left out so the slice stays focused.
 
 ## Acceptance
 
-- Проверяемые признаки готовности (включая demo-сценарий, который покажет фичу игроку).
+- Verifiable signs of readiness (including a demo scenario that shows the feature to a player).
 
 ## Tasks
 
-Стартовая таблица — 1–3 очевидные задачи. Полное дробление делается, когда историю берут в работу.
+A starting table with 1–3 obvious tasks. The full breakdown is done when the story is picked up for work.
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
@@ -32,5 +32,5 @@
 
 ## Related
 
-- [Связанное решение](../design/...)
-- [Связанный документ](../docs/...)
+- [Related decision](../design/...)
+- [Related document](../docs/...)

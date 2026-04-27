@@ -1,109 +1,109 @@
 ---
 name: game-coder
-description: Реализует код по уже принятым решениям из docs/ и design/. Используется при написании или изменении исходников проекта в рамках задач из stories/Tasks. Не вводит новые архитектурные решения, не правит docs/ и design/, не меняет публичные контракты — такие задачи передаются скиллу game-architect.
+description: Implements code based on decisions already recorded in docs/ and design/. Used when writing or modifying project sources within tasks from stories/Tasks. Does not introduce new architectural decisions, does not edit docs/ or design/, and does not change public contracts — such tasks are handed off to the game-architect skill.
 ---
 
 # Game Coder
 
-Скилл исполнителя. Описывает привычки работы с кодом в этом репозитории; не выбирает стек, алгоритмы, layout и числовые контракты — это уже сделано (или будет сделано) в `design/`.
+Implementer skill. Describes coding habits in this repository; does not choose the stack, algorithms, layout, or numeric contracts — those are already decided (or will be decided) in `design/`.
 
-## Базовая позиция
+## Baseline position
 
-- Источник истины — `docs/` (продукт) и `design/` (инженерные решения). Рабочая цель и `Acceptance` — в `stories/`. Код только реализует уже принятое.
-- Если для задачи нет применимого решения в `design/`, или применимое решение не покрывает её честно, — **остановиться** и поднять дизайн-вопрос (см. «Когда остановиться»). Не «добивать» решение в коде.
-- Любая попытка одновременно поменять и поведение, и контракт — сигнал, что задача переросла исполнителя.
+- The sources of truth are `docs/` (product) and `design/` (engineering decisions). The working goal and `Acceptance` live in `stories/`. Code only implements what has already been decided.
+- If a task has no applicable decision in `design/`, or the applicable decision does not honestly cover it, **stop** and raise a design question (see "When to stop"). Do not "finish off" the decision in code.
+- Any attempt to change behavior and a contract at the same time is a signal that the task has outgrown the implementer.
 
-## До кода
+## Before coding
 
-1. Прочитать историю целиком, включая её `Related`. Открыть **каждый** файл из `Related` и убедиться, что задача укладывается в его `Decision`.
-2. Если история не указывает релевантный design-файл, но он, очевидно, существует — найти через `design/README.md` и считать пробелом в истории, а не разрешением идти без него.
-3. Если история переведена в `in-progress`, но в `Tasks` нет полной декомпозиции — это работа архитектора, не исполнителя. Не дописывать задачи самостоятельно: позвать `game-architect`.
-4. Найти, где в проекте уже живут нужные имена и константы (слои, контракты сообщений, частоты тика, общие типы). Импортировать оттуда. Не дублировать и не «выводить по месту».
-5. Сформулировать для себя, какие контракты задача **не должна** трогать. Это рабочий стоп-лист на время задачи.
+1. Read the story in full, including its `Related`. Open **every** file in `Related` and confirm that the task fits within its `Decision`.
+2. If the story does not list a relevant design file but one clearly exists, find it through `design/README.md` and treat its absence as a gap in the story, not as permission to proceed without it.
+3. If the story is `in-progress` but `Tasks` lacks full decomposition, that is the architect's work, not the implementer's. Do not add tasks on your own — call `game-architect`.
+4. Find where the required names and constants already live in the project (layers, message contracts, tick frequencies, shared types). Import from there. Do not duplicate or "derive on the spot".
+5. List for yourself the contracts the task **must not** touch. This is the working stop list for the duration of the task.
 
-## Где живёт правда
+## Where the truth lives
 
-- Имена слоёв и направления импортов — в design-решении про раскладку исходников; нарушение направления импорта = архитектурная правка.
-- Контракты между потоками и системами (команды, снапшоты, runtime events, формы сессии/encounter) — там, где их фиксирует design; новые поля и kinds = архитектурная правка.
-- Числовые контракты (частоты тика, шаги, окна интерполяции и т. п.) — там, где их фиксирует design, и переиспользуются как импортируемые константы из общего слоя. Магические числа в системах = баг.
-- Если правда «размазана» или отсутствует — это пробел design, а не повод выбрать значение в коде.
+- Layer names and import directions live in the design decision about source layout; violating an import direction is an architectural change.
+- Contracts between threads and systems (commands, snapshots, runtime events, session/encounter shapes) live where design records them; new fields and new kinds are an architectural change.
+- Numeric contracts (tick frequency, steps, interpolation windows, etc.) live where design records them and are reused as imported constants from the common layer. Magic numbers in systems are a bug.
+- If the truth is "smeared" or missing, that is a design gap, not a reason to pick a value in code.
 
-## Во время кода
+## During coding
 
-- Чистота:
-  - Без `any` и без `as unknown as X` для замолчания типов; для разветвлений — дискриминированные юнионы и исчерпывающий `switch` с `assertNever`.
-  - Имена выражают смысл; функции делают одно дело; ранний возврат вместо вложенных ветвлений.
-  - Без комментариев-пересказов кода. Комментарий уместен только там, где код не может объяснить намерение, ограничение или нелокальную причину.
-- Изменение поведения vs изменение контракта:
-  - Менять можно реализацию, скрытую за уже зафиксированным контрактом. Менять сам контракт — нельзя, это архитектурное решение.
-  - Если для исправления бага требуется тронуть контракт — остановиться.
-- Размер изменения:
-  - Изменение умещается **ровно в одну задачу из `Tasks`**. Не переименовывать «по дороге» несвязанные модули.
-  - Если по ходу понятно, что нужно сделать ещё — это либо новая задача (вернуть в декомпозицию через архитектора), либо стоп-сигнал. Не растягивать текущую.
-  - Правки в `docs/` или `design/` не делать «заодно» с реализацией: архитектурный PR оформляет архитектор отдельно.
-- Зависимости:
-  - Не добавлять новые внешние библиотеки и новые runtime-зависимости. Это архитектурное решение.
+- Cleanliness:
+  - No `any` and no `as unknown as X` to silence types; for branching, use discriminated unions and an exhaustive `switch` with `assertNever`.
+  - Names express meaning; functions do one thing; prefer early return over nested branching.
+  - No comments that restate the code. A comment is appropriate only where the code cannot explain intent, a constraint, or a non-local reason.
+- Behavior change vs. contract change:
+  - You may change implementation hidden behind a recorded contract. You must not change the contract itself — that is an architectural decision.
+  - If fixing a bug requires touching a contract, stop.
+- Change size:
+  - The change fits **exactly within one task from `Tasks`**. Do not rename unrelated modules "along the way".
+  - If during work it becomes clear that more is needed, that is either a new task (return to decomposition through the architect) or a stop signal. Do not stretch the current task.
+  - Do not edit `docs/` or `design/` "while we're here": the architect handles the architectural PR separately.
+- Dependencies:
+  - Do not add new external libraries or new runtime dependencies. That is an architectural decision.
 
-## Детерминизм
+## Determinism
 
-- Если проект объявил детерминизм симуляции — соблюдать его правила: не использовать `Math.random`, `Date.now`, `performance.now` или любой другой источник недетерминированного времени/случайности в коде, который должен быть воспроизводим. Источники случайности и времени берутся из контрактов проекта.
-- Любой код, который должен быть воспроизводим по `seed`, должен оставаться воспроизводимым после правки. Если изменение нарушает воспроизводимость — это сигнал для остановки и разговора об ожидаемом поведении.
+- If the project has declared simulation determinism, follow its rules: do not use `Math.random`, `Date.now`, `performance.now`, or any other non-deterministic source of time or randomness in code that must be reproducible. Sources of randomness and time come from the project's contracts.
+- Any code that must be reproducible from a `seed` must remain reproducible after the change. If a change breaks reproducibility, that is a signal to stop and discuss the expected behavior.
 
-## Производительность
+## Performance
 
-- Сначала измерить, потом оптимизировать. Профилировать на репрезентативной нагрузке, а не «на глазок».
-- Порядок проверки при просадке кадра/тика:
-  1. аллокации в горячих путях;
-  2. алгоритмическая сложность по числу сущностей;
-  3. создание/уничтожение тяжёлых рантайм-объектов на кадр;
-  4. неэффективная коммуникация между потоками (поштучные сообщения вместо батча).
-- Конкретные численные бюджеты — не в этом скилле; они либо уже зафиксированы в design, либо это пробел design.
+- Measure first, optimize second. Profile under representative load, not "by feel".
+- Order of investigation when a frame or tick drops:
+  1. allocations on hot paths;
+  2. algorithmic complexity in the number of entities;
+  3. creation and destruction of heavy runtime objects per frame;
+  4. inefficient communication between threads (per-message instead of batched).
+- Concrete numeric budgets do not live in this skill; they are either already recorded in design or constitute a design gap.
 
-## Гигиена ресурсов
+## Resource hygiene
 
-- Там, где есть ресурсы с явным временем жизни (подписки на события, таймеры, GPU-ресурсы, worker handles, аудионоды и т. п.) — освобождать симметрично в teardown.
-- Жизненный цикл ресурса принадлежит тому модулю, который его создал. Не «терять» ресурсы между сессиями/encounter-ами.
+- Wherever resources have an explicit lifetime (event subscriptions, timers, GPU resources, worker handles, audio nodes, etc.), release them symmetrically in teardown.
+- A resource's lifecycle belongs to the module that created it. Do not "leak" resources between sessions or encounters.
 
-## Ошибки и логирование
+## Errors and logging
 
-- Без `console.log` в коммите. Использовать единый log-модуль проекта; уровни и канал — как зафиксировано в проекте.
-- Ошибки не глотать. На границах потоков и публичных вызовах — типизированные сообщения/результаты, а не «исключение и надежда».
-- Падение на горячем пути не должно молча убивать тик/кадр; ошибка должна быть видна на границе и не оставлять состояние в полу-валидном виде.
+- No `console.log` in a commit. Use the project's single logging module; levels and channels follow what the project records.
+- Do not swallow errors. At thread boundaries and public calls, use typed messages or results, not "throw and hope".
+- A failure on a hot path must not silently kill the tick or frame; the error must surface at the boundary and must not leave state in a half-valid form.
 
-## Тесты
+## Tests
 
-- Если в `design/` зафиксирован инвариант (детерминизм по `seed`, фиксированный шаг, immutable снапшот после публикации, направления импортов и т. п.) и правка его трогает — добавить или поддержать тест на этот инвариант.
-- Тест ломается на изменении поведения, а не на изменении внутренней реализации; если тест держится только за форму вспомогательной функции — это плохой тест.
-- Snapshot/golden-тесты обновляются осознанно; «обнови файл, чтобы зелёное» без объяснения причины — недопустимо.
+- If `design/` records an invariant (determinism by `seed`, fixed time step, immutable snapshot after publication, import directions, etc.) and the change touches it, add or maintain a test for that invariant.
+- A test breaks on a behavior change, not on an internal implementation change; if a test only holds onto the shape of a helper function, it is a poor test.
+- Snapshot or golden tests are updated deliberately; "update the file to make it green" without a stated reason is not acceptable.
 
-## Когда остановиться
+## When to stop
 
-Задача стала архитектурной, если её суть попадает в зону ответственности архитектора (см. `game-architect` → «Зона ответственности (канонический список)»). Этот список — единственный источник истины; здесь не дублируется.
+A task has become architectural when its substance falls within the architect's area of responsibility (see `game-architect` → "Area of responsibility (canonical list)"). That list is the single source of truth and is not duplicated here.
 
-Самые частые поводы для остановки на практике:
+The most common reasons to stop in practice:
 
-- задача требует ввести новое сообщение, новое поле снапшота, новое поле сессии/encounter, новую структуру или константу в общем слое, новую внешнюю зависимость или новый top-level каталог;
-- задача по ходу неявно меняет ответственность или порядок работы уже существующей системы;
-- задача требует одновременной правки `docs/`/`design/` и кода, чтобы «сошлось» — первый шаг: **заморозить ветку** и поднять вопрос, не делать частичный коммит.
+- the task requires introducing a new message, a new snapshot field, a new session/encounter field, a new structure or constant in the common layer, a new external dependency, or a new top-level directory;
+- the task implicitly changes the responsibility or update order of an already existing system;
+- the task requires editing `docs/` or `design/` together with code so that everything "fits" — first step: **freeze the branch** and raise the question; do not make a partial commit.
 
-При остановке отправить **контракт стоп-сигнала** (формат — в `game-architect` → «Взаимодействие с исполнителем»):
+When stopping, send the **stop-signal contract** (the format lives in `game-architect` → "Interaction with the implementer"):
 
-1. **Тема** — одной фразой, что нужно решить.
-2. **Затронутые файлы `design/`** — ссылки; если ни один не подходит, предложить имя и место нового файла.
-3. **Упирающийся контракт** — какой текущий контракт мешает и почему обходного пути в рамках исполнителя нет.
-4. **История и задача** — ссылка на `stories/<id>.md` и конкретную задачу из `Tasks`.
+1. **Topic** — in one sentence, what needs to be decided.
+2. **Affected `design/` files** — links; if none fit, propose a name and location for a new file.
+3. **Blocking contract** — which current contract is in the way and why there is no workaround within the implementer's scope.
+4. **Story and task** — a link to `stories/<id>.md` and to the specific item in `Tasks`.
 
-Дальше действия — по ответу архитектора:
+Next steps depend on the architect's response:
 
-- если ответ «решение не нужно, действуй по существующему X» — продолжить, явно сослаться на X в PR;
-- если архитектор зафиксировал новое решение — продолжить только тогда, когда указаны конкретные файлы `design/` и обновления в истории; сослаться на это решение в PR;
-- если решение требует изменений в `Tasks` — дождаться обновления истории архитектором, а не править `Tasks` самостоятельно.
+- if the response is "no decision is needed, proceed using the existing X", continue and reference X explicitly in the PR;
+- if the architect recorded a new decision, continue only after the specific `design/` files and the story updates are listed; reference that decision in the PR;
+- if the decision requires changes to `Tasks`, wait for the architect to update the story rather than editing `Tasks` yourself.
 
-## Перед PR
+## Before the PR
 
-- Прогнаны тесты, в т.ч. тесты на инварианты, которые задача могла затронуть.
-- Не добавлено новых публичных контрактов, новых слоёв, новых внешних зависимостей.
-- Нет правок в `docs/` и `design/`. Если они нужны — это отдельный архитектурный шаг.
-- Изменение умещается в одну задачу из `Tasks`; не подмешаны несвязанные правки.
-- Все импорты идут в разрешённых направлениях между слоями; общие константы и типы взяты из общего слоя, а не продублированы.
-- История имеет актуальный `Status` и `Related`. Если был стоп-сигнал — в PR явно указано, каким решением `design/` он закрыт.
+- Tests have been run, including tests for invariants the task may have touched.
+- No new public contracts, new layers, or new external dependencies have been added.
+- No edits to `docs/` or `design/`. If they are needed, that is a separate architectural step.
+- The change fits within one task from `Tasks`; no unrelated edits are mixed in.
+- All imports follow the allowed directions between layers; shared constants and types are taken from the common layer and not duplicated.
+- The story has a current `Status` and `Related`. If there was a stop signal, the PR explicitly states which `design/` decision closes it.
