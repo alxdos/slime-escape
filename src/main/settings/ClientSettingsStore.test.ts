@@ -53,6 +53,10 @@ describe('createClientSettingsStore', () => {
     const storage = new FakeStorage();
     const store = createClientSettingsStore({ storage, log: createLogHarness() });
 
+    expect(DEFAULT_CLIENT_SETTINGS).toEqual({
+      masterVolume: 0.3,
+      renderScalePreset: 'high'
+    });
     expect(store.get()).toEqual(DEFAULT_CLIENT_SETTINGS);
     expect(storage.setItemCalls).toHaveLength(0);
   });
@@ -73,8 +77,8 @@ describe('createClientSettingsStore', () => {
     );
     expect(readStoredSnapshot(storage)).toEqual({
       schemaVersion: 1,
-      masterVolume: 1,
-      renderScalePreset: 'medium'
+      masterVolume: 0.3,
+      renderScalePreset: 'high'
     });
   });
 
@@ -101,8 +105,8 @@ describe('createClientSettingsStore', () => {
     );
     expect(readStoredSnapshot(storage)).toEqual({
       schemaVersion: 1,
-      masterVolume: 1,
-      renderScalePreset: 'medium'
+      masterVolume: 0.3,
+      renderScalePreset: 'high'
     });
   });
 
@@ -150,12 +154,12 @@ describe('createClientSettingsStore', () => {
     expect(listener).toHaveBeenCalledTimes(1);
     expect(listener).toHaveBeenCalledWith({
       masterVolume: 0.5,
-      renderScalePreset: 'medium'
+      renderScalePreset: 'high'
     });
     expect(readStoredSnapshot(storage)).toEqual({
       schemaVersion: 1,
       masterVolume: 0.5,
-      renderScalePreset: 'medium'
+      renderScalePreset: 'high'
     });
     expect(storage.setItemCalls).toHaveLength(1);
   });
@@ -170,7 +174,7 @@ describe('createClientSettingsStore', () => {
 
     expect(store.get()).toEqual({
       masterVolume: 1,
-      renderScalePreset: 'medium'
+      renderScalePreset: 'high'
     });
     expect(log.warn).toHaveBeenCalledWith('client settings masterVolume clamped to [0, 1]', {
       value: 2,
@@ -179,7 +183,7 @@ describe('createClientSettingsStore', () => {
     expect(readStoredSnapshot(storage)).toEqual({
       schemaVersion: 1,
       masterVolume: 1,
-      renderScalePreset: 'medium'
+      renderScalePreset: 'high'
     });
   });
 
@@ -218,8 +222,8 @@ describe('createClientSettingsStore', () => {
     store.setMasterVolume(0.25);
 
     expect(order).toEqual([
-      { masterVolume: 0.25, renderScalePreset: 'medium' },
-      { masterVolume: 0.25, renderScalePreset: 'medium' }
+      { masterVolume: 0.25, renderScalePreset: 'high' },
+      { masterVolume: 0.25, renderScalePreset: 'high' }
     ]);
   });
 
@@ -253,11 +257,11 @@ describe('createClientSettingsStore', () => {
 
     expect(store.get()).toEqual({
       masterVolume: 0.75,
-      renderScalePreset: 'medium'
+      renderScalePreset: 'high'
     });
     expect(listener).toHaveBeenCalledWith({
       masterVolume: 0.75,
-      renderScalePreset: 'medium'
+      renderScalePreset: 'high'
     });
     expect(log.warn).toHaveBeenCalledWith('client settings persistence write failed', {
       error: 'setItem failed'

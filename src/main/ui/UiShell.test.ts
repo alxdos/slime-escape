@@ -1375,7 +1375,7 @@ describe('UiShell', () => {
 
     expect(buildSession).toHaveBeenCalledTimes(1);
     expect(builtPresetId).toBe('training');
-    expect(renderer.lastInit()?.renderScalePreset).toBe('medium');
+    expect(renderer.lastInit()?.renderScalePreset).toBe('high');
     expect(sim.startSessions).toHaveLength(1);
     expect(audio.attachedSessions).toHaveLength(1);
     expect(audio.uiEvents).toContain('buttonClick');

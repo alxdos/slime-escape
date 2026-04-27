@@ -39,8 +39,8 @@ const MIN_MASTER_VOLUME = 0;
 const MAX_MASTER_VOLUME = 1;
 
 export const DEFAULT_CLIENT_SETTINGS: ClientSettings = Object.freeze({
-  masterVolume: 1,
-  renderScalePreset: 'medium'
+  masterVolume: 0.3,
+  renderScalePreset: 'high'
 });
 
 export function createClientSettingsStore(

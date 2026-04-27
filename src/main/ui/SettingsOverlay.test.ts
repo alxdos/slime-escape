@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type {
-  ClientSettings,
-  ClientSettingsStore,
-  RenderScalePreset
+import {
+  DEFAULT_CLIENT_SETTINGS,
+  type ClientSettings,
+  type ClientSettingsStore,
+  type RenderScalePreset
 } from '../settings/ClientSettingsStore';
 
 import { createSettingsOverlay } from './SettingsOverlay';
@@ -64,8 +65,7 @@ class FakeDocument {
 
 function createClientSettingsStoreHarness(initial: Partial<ClientSettings> = {}) {
   let settings: ClientSettings = {
-    masterVolume: 1,
-    renderScalePreset: 'medium',
+    ...DEFAULT_CLIENT_SETTINGS,
     ...initial
   };
   let listeners: Array<(settings: ClientSettings) => void> = [];
