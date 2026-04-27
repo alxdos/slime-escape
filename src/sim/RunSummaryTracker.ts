@@ -237,6 +237,7 @@ function activeEncounterPartial(
     case 'break':
     case 'survivalTimer':
     case 'sandbox':
+    case 'portal':
       return 0;
     default:
       return assertNever(activeEncounter.encounter.type);

@@ -12,6 +12,7 @@ const SESSION_SOURCE_FILES = [
   'campaign-easy.md',
   'campaign-hard.md',
   'campaign-normal.md',
+  'portal.md',
   'sandbox.md',
   'sandbox-with-combat.md',
   'training.md'
@@ -72,6 +73,27 @@ describe('content-build sessions area', () => {
     });
   });
 
+  it('parses the portal preset as an external-redirect session ending in a portal encounter', async () => {
+    const fixture = await copySessionsFixture();
+    const area = await parseSessionsArea(fixture.sourceDirectory);
+    const portal = area.presets.find((preset) => preset.presetId === 'portal');
+    const finalEncounter = portal?.encounters.at(-1);
+
+    expect(portal?.winCondition).toEqual({ kind: 'none' });
+    expect(portal?.lossCondition).toEqual({ kind: 'playerDeath' });
+    expect(finalEncounter).toMatchObject({
+      id: 'portal-exit',
+      type: 'portal',
+      backgroundId: 'portal',
+      introDurationMs: 0,
+      name: null,
+      text: null,
+      spawnPlan: { kind: 'empty' },
+      zoneBehavior: { kind: 'disabled' },
+      transitionRules: { kind: 'never', next: 'sequential' }
+    });
+  });
+
   for (const testCase of [
     {
       name: 'spawnKind',
@@ -103,6 +125,41 @@ describe('content-build sessions area', () => {
       await expectParseRejects({
         [testCase.file]: testCase.mutate
       }, testCase.pattern);
+    });
+  }
+
+  for (const testCase of [
+    {
+      name: 'spawnKind',
+      mutate: (source: string) =>
+        replaceInSection(source, 'portal-exit', '| spawnKind | empty |', '| spawnKind | static |'),
+      pattern: /spawnKind.*expected empty for encounter type "portal"/
+    },
+    {
+      name: 'zoneKind',
+      mutate: (source: string) =>
+        replaceInSection(
+          source,
+          'portal-exit',
+          '| zoneKind | disabled |',
+          '| zoneKind | shrinkLinear |'
+        ),
+      pattern: /zoneKind.*expected disabled for encounter type "portal"/
+    },
+    {
+      name: 'transitionKind',
+      mutate: (source: string) =>
+        replaceInSection(
+          source,
+          'portal-exit',
+          '| transitionKind | never |',
+          '| transitionKind | allEnemiesCleared |'
+        ),
+      pattern: /transitionKind.*expected never for encounter type "portal"/
+    }
+  ]) {
+    it(`rejects invalid portal encounter ${testCase.name}`, async () => {
+      await expectParseRejects({ 'portal.md': testCase.mutate }, testCase.pattern);
     });
   }
 

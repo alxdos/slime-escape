@@ -20,7 +20,7 @@ export type PlayerSpawn = Readonly<{
   maxHp: number;
 }>;
 
-export type EncounterType = 'wave' | 'break' | 'boss' | 'survivalTimer' | 'sandbox';
+export type EncounterType = 'wave' | 'break' | 'boss' | 'survivalTimer' | 'sandbox' | 'portal';
 
 export type EmptySpawnPlan = Readonly<{ kind: 'empty' }>;
 
