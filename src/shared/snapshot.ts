@@ -32,6 +32,7 @@ export type ProjectileSnapshot = Readonly<{
   originY: number;
   x: number;
   y: number;
+  size: Readonly<{ width: number; height: number }>;
   state: 'flying' | 'grounded';
   visualState: Readonly<{
     angleRadians: number;

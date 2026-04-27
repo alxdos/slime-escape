@@ -78,6 +78,7 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           originY: projectile.origin.y,
           x: projectile.position.x,
           y: projectile.position.y,
+          size: { width: projectile.size.width, height: projectile.size.height },
           state: projectile.state,
           visualState: projectileVisualState(projectile, simTimeMs),
           explosionRadius: projectile.explosion?.radius ?? null,

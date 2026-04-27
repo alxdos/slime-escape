@@ -827,7 +827,14 @@ function applyProjectilePresentation(
         PROJECTILE_GROUNDED_PULSE_AMPLITUDE *
           Math.sin(snap.visualState.pulsePhase * Math.PI * 2)
       : 1;
-  mesh.scale.set(pulse, pulse, 1);
+  const baseVisual = requireVisualSpec(PROJECTILE_VISUALS, snap.weaponArchetypeId, 'projectile');
+  const sizeScaleX = snap.size.width / baseVisual.worldSize.width;
+  const sizeScaleY = snap.size.height / baseVisual.worldSize.height;
+  mesh.scale.set(
+    sizeScaleX * pulse,
+    sizeScaleY * pulse,
+    1
+  );
 
   const material = mesh.material;
   if (!Array.isArray(material) && material instanceof THREE.MeshBasicMaterial) {
@@ -848,7 +855,11 @@ function applyProjectilePresentation(
     visual?.explosionRadiusIndicator === true;
   radiusIndicator.visible = showRadius;
   if (!showRadius || snap.explosionRadius === null) return shouldShow;
-  radiusIndicator.scale.set(snap.explosionRadius, snap.explosionRadius, 1);
+  radiusIndicator.scale.set(
+    snap.explosionRadius / sizeScaleX,
+    snap.explosionRadius / sizeScaleY,
+    1
+  );
   const radiusMaterial = radiusIndicator.material;
   if (!Array.isArray(radiusMaterial) && radiusMaterial instanceof THREE.MeshBasicMaterial) {
     const phase = 0.5 + 0.5 * Math.sin(snap.visualState.pulsePhase * Math.PI * 2);

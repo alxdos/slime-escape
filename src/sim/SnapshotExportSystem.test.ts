@@ -123,7 +123,11 @@ describe('SnapshotExportSystem', () => {
       knockbackDurationMs: STATIONARY_TEST_ENEMY.knockbackDurationMs,
       color: STATIONARY_TEST_ENEMY.color
     });
-    store.spawnProjectile({
+    const runtimeProjectileSize = {
+      width: PISTOL.projectile.size.width * 1.75,
+      height: PISTOL.projectile.size.height * 1.75
+    };
+    const runtimeProjectile = store.spawnProjectile({
       weaponArchetypeId: PISTOL.id,
       ownerId: 1 as EntityId,
       ownerKind: 'player',
@@ -131,7 +135,7 @@ describe('SnapshotExportSystem', () => {
       origin: { x: 0, y: 0 },
       position: { x: 1, y: 0 },
       velocity: { vx: 24, vy: 0 },
-      size: PISTOL.projectile.size,
+      size: runtimeProjectileSize,
       hitRadius: PISTOL.projectile.hitRadius,
       impactDamage: PISTOL.projectile.impactDamage,
       knockbackImpulse: PISTOL.projectile.knockbackImpulse,
@@ -162,6 +166,8 @@ describe('SnapshotExportSystem', () => {
     expect(projectile.originX).toBe(0);
     expect(projectile.originY).toBe(0);
     expect(projectile.state).toBe('flying');
+    expect(projectile.size).toEqual(runtimeProjectileSize);
+    expect(projectile.size).not.toBe(runtimeProjectile.size);
     expect(projectile.visualState.angleRadians).toBeCloseTo(0);
     expect(projectile.visualState.spinRadians).toBe(0);
     expect(projectile.visualState.pulsePhase).toBe(0);

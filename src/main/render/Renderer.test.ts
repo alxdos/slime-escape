@@ -648,6 +648,10 @@ describe('createRenderer', () => {
             originY: 1,
             x: 2,
             y: 1,
+            size: {
+              width: BOMB_PLACER.projectile.size.width * 2,
+              height: BOMB_PLACER.projectile.size.height * 3
+            },
             state: 'grounded',
             visualState: {
               angleRadians: 0.25,
@@ -685,9 +689,11 @@ describe('createRenderer', () => {
       expect(projectileMesh.material.map).toBe(projectileTexture);
     }
     expect(projectileMesh?.rotation.z).toBeCloseTo(0.5);
-    expect(projectileMesh?.scale.x).toBeCloseTo(1.1);
+    expect(projectileMesh?.scale.x).toBeCloseTo(2.2);
+    expect(projectileMesh?.scale.y).toBeCloseTo(3.3);
     expect(radiusIndicator?.visible).toBe(true);
-    expect(radiusIndicator?.scale.x).toBeCloseTo(BOMB_PLACER.projectile.explosion!.radius);
+    expect(radiusIndicator?.scale.x).toBeCloseTo(BOMB_PLACER.projectile.explosion!.radius / 2);
+    expect(radiusIndicator?.scale.y).toBeCloseTo(BOMB_PLACER.projectile.explosion!.radius / 3);
     const outline = radiusIndicator?.children.find(
       (child): child is THREE.Mesh => child instanceof THREE.Mesh && child.name === 'projectile-radius-outline'
     );
@@ -698,6 +704,77 @@ describe('createRenderer', () => {
     expect((outline?.material as THREE.MeshBasicMaterial | undefined)?.opacity).toBe(
       PROJECTILE_RADIUS_OUTLINE_OPACITY
     );
+  });
+
+  it('uses ProjectileSnapshot.size instead of weapon HUD modifiers for projectile scale', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => ({
+        prev: null,
+        curr: {
+          ...createSnapshot([
+            { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+            {
+              id: 20,
+              kind: 'projectile',
+              weaponArchetypeId: PISTOL.id,
+              ownerKind: 'player',
+              originX: 0,
+              originY: 0,
+              x: 2,
+              y: 0,
+              size: PISTOL.projectile.size,
+              state: 'flying',
+              visualState: {
+                angleRadians: 0,
+                spinRadians: 0,
+                pulsePhase: 0
+              },
+              explosionRadius: null,
+              detonateAtSimMs: null,
+              arcEnd: null
+            }
+          ]),
+          weaponHud: {
+            selectedIndex: 0,
+            weapons: [
+              {
+                index: 0,
+                weaponArchetypeId: PISTOL.id,
+                cooldownStartedAtSimMs: 0,
+                cooldownReadyAtSimMs: 0,
+                modifiers: [{ kind: 'projectileSizeMultiplier', multiplier: 4 }],
+                timedEffects: []
+              }
+            ]
+          }
+        },
+        currReceivedAtMs: 0,
+        nowMs: 0
+      }),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const projectileMesh = findProjectileMesh(backend.lastScene());
+    expect(projectileMesh?.scale.x).toBeCloseTo(1);
+    expect(projectileMesh?.scale.y).toBeCloseTo(1);
   });
 
   it('hides newly fired projectiles until they travel the player radius from the fire origin', () => {
@@ -714,6 +791,7 @@ describe('createRenderer', () => {
         originY: 0,
         x: 0.5,
         y: 0,
+        size: PISTOL.projectile.size,
         state: 'flying',
         visualState: {
           angleRadians: 0,
@@ -761,6 +839,7 @@ describe('createRenderer', () => {
         originY: 0,
         x: DEFAULT_PLAYER_VISUAL.worldSize.height / 2 + 0.05,
         y: 0,
+        size: PISTOL.projectile.size,
         state: 'flying',
         visualState: {
           angleRadians: 0,
@@ -792,6 +871,7 @@ describe('createRenderer', () => {
         originY: 0,
         x: 1,
         y: 0,
+        size: GRENADE_LAUNCHER.projectile.size,
         state: 'flying',
         visualState: {
           angleRadians: 0,
@@ -841,6 +921,7 @@ describe('createRenderer', () => {
         originY: 0,
         x: 3,
         y: -2,
+        size: GRENADE_LAUNCHER.projectile.size,
         state: 'grounded',
         visualState: {
           angleRadians: 0,

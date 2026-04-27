@@ -170,6 +170,7 @@ function projectile(overrides: Partial<ProjectileSnapshot> = {}): ProjectileSnap
     originY: 0,
     x: 0,
     y: 0,
+    size: ROCK_THROWER.projectile.size,
     state: 'flying',
     visualState: { angleRadians: 0, spinRadians: 0, pulsePhase: 0 },
     explosionRadius: null,
