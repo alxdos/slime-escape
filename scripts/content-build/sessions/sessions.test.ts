@@ -147,7 +147,7 @@ describe('content-build sessions area', () => {
       file: 'training.md' as const,
       mutate: (source: string) =>
         replaceExact(source, '| 1 | slime-one-eye |', '| 1 | slime-ghost |'),
-      pattern: /section "## training-wave-1": unknown archetypeId "slime-ghost"/
+      pattern: /section "## training-footwork": unknown archetypeId "slime-ghost"/
     }
   ]) {
     it(`rejects an unknown cross-area ${testCase.name}`, async () => {
@@ -181,7 +181,7 @@ describe('content-build sessions area', () => {
       name: 'negative introDurationMs',
       file: 'training.md' as const,
       mutate: (source: string) =>
-        replaceInSection(source, 'training-wave-1', '| introDurationMs | none |', '| introDurationMs | -1 |'),
+        replaceInSection(source, 'training-footwork', '| introDurationMs | 1800 |', '| introDurationMs | -1 |'),
       pattern: /introDurationMs.*expected integer >= 0 or none/
     },
     {
@@ -233,7 +233,12 @@ describe('content-build sessions area', () => {
       name: 'timer introDurationMs longer than transitionDurationMs',
       file: 'training.md' as const,
       mutate: (source: string) =>
-        replaceInSection(source, 'training-break', '| introDurationMs | none |', '| introDurationMs | 4000 |'),
+        replaceInSection(
+          source,
+          'training-footwork',
+          '| transitionKind | allEnemiesCleared |',
+          '| transitionKind | timer |\n| transitionDurationMs | 1000 |'
+        ),
       pattern: /introDurationMs.*expected <= transitionDurationMs/
     }
   ]) {
@@ -383,11 +388,11 @@ describe('content-build sessions area', () => {
 
     const area = await parseSessionsArea(fixture.sourceDirectory);
     const trainingPreset = area.presets.find((preset) => preset.presetId === 'training');
-    const encounter = trainingPreset?.encounters.find(({ id }) => id === 'training-wave-1');
+    const encounter = trainingPreset?.encounters.find(({ id }) => id === 'training-footwork');
 
     expect(encounter?.spawnPlan.kind).toBe('wave');
     if (encounter?.spawnPlan.kind !== 'wave') {
-      throw new Error('training-wave-1 fixture must stay a wave encounter');
+      throw new Error('training-footwork fixture must stay a wave encounter');
     }
     expect(encounter.spawnPlan.spawns[0]?.override).toEqual({ dropTable: [] });
     expect(encounter.spawnPlan.spawns[1]?.override).toEqual({
@@ -433,11 +438,11 @@ describe('content-build sessions area', () => {
 
     const area = await parseSessionsArea(fixture.sourceDirectory);
     const trainingPreset = area.presets.find((preset) => preset.presetId === 'training');
-    const encounter = trainingPreset?.encounters.find(({ id }) => id === 'training-wave-1');
+    const encounter = trainingPreset?.encounters.find(({ id }) => id === 'training-footwork');
 
     expect(encounter?.spawnPlan.kind).toBe('wave');
     if (encounter?.spawnPlan.kind !== 'wave') {
-      throw new Error('training-wave-1 fixture must stay a wave encounter');
+      throw new Error('training-footwork fixture must stay a wave encounter');
     }
     expect(encounter.spawnPlan.spawns[0]?.override).toEqual({
       loadout: {
@@ -694,10 +699,9 @@ const TRAINING_WAVE_1_SPAWNS = `| seq | archetypeId |
 |---:|---|
 | 1 | slime-one-eye |
 | 2 | slime-one-eye |
-| 3 | slime-shell |
+| 3 | slime-sleeper |
 | 4 | slime-one-eye |
-| 5 | slime-one-eye |
-| 6 | slime-shell |
+| 5 | slime-hornling |
 `;
 
 const SANDBOX_STATIC_SPAWNS = `| seq | archetypeId | x | y |

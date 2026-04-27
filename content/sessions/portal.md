@@ -3,7 +3,7 @@
 | field | value |
 |---|---|
 | displayName | Portal Run |
-| description | Vibe Jam entry point: ten escalating waves, armed slimes, and a final gargoyle boss. |
+| description | Vibe Jam entry point: ten escalating waves, short portal breaths, armed slimes, and a final gargoyle boss. |
 | musicSampleId | music/005-forest |
 | visibleInMenu | false |
 | order | 90 |
@@ -31,8 +31,8 @@
 |---|---|
 | type | wave |
 | backgroundId | portal |
-| introDurationMs | none |
-| name | none |
+| introDurationMs | 1600 |
+| name | Gate Static |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1350 |
@@ -53,21 +53,39 @@
 | 4 | slime-one-eye |
 | 5 | slime-hornling |
 
+## portal-break-1
+
+| field | value |
+|---|---|
+| type | break |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | The portal opens in pulses. Breathe when it does, then move. |
+| spawnKind | empty |
+| zoneKind | expandLinear |
+| zoneFromMargin | 1.2 |
+| zoneToMargin | 0 |
+| zoneDurationMs | 2400 |
+| transitionKind | timer |
+| transitionDurationMs | 6500 |
+| next | sequential |
+
 ## portal-wave-2
 
 | field | value |
 |---|---|
 | type | wave |
 | backgroundId | portal |
-| introDurationMs | none |
-| name | none |
+| introDurationMs | 1600 |
+| name | Horns in the Signal |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1250 |
 | maxAlive | 5 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 1.2 |
+| zoneFromMargin | 0 |
 | zoneToMargin | 1.7 |
 | zoneDurationMs | 15000 |
 | transitionKind | allEnemiesCleared |
@@ -83,21 +101,39 @@
 | 6 | slime-hornling |
 | 7 | slime-spark |
 
+## portal-break-2
+
+| field | value |
+|---|---|
+| type | break |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | Sparks mark the fast ones. Clear them before the circle tightens. |
+| spawnKind | empty |
+| zoneKind | expandLinear |
+| zoneFromMargin | 1.7 |
+| zoneToMargin | 0 |
+| zoneDurationMs | 2400 |
+| transitionKind | timer |
+| transitionDurationMs | 7000 |
+| next | sequential |
+
 ## portal-wave-3
 
 | field | value |
 |---|---|
 | type | wave |
 | backgroundId | portal |
-| introDurationMs | none |
-| name | none |
+| introDurationMs | 1600 |
+| name | Stone on the Line |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1150 |
 | maxAlive | 6 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 1.7 |
+| zoneFromMargin | 0 |
 | zoneToMargin | 2.2 |
 | zoneDurationMs | 16500 |
 | transitionKind | allEnemiesCleared |
@@ -120,21 +156,39 @@
 | 6 | none | none | none | none | rock-thrower | 0 |
 | 9 | none | none | none | none | rock-thrower | 0 |
 
+## portal-break-3
+
+| field | value |
+|---|---|
+| type | break |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | Heavy slimes carry strange tools. Take what falls and keep running. |
+| spawnKind | empty |
+| zoneKind | expandLinear |
+| zoneFromMargin | 2.2 |
+| zoneToMargin | 0 |
+| zoneDurationMs | 2500 |
+| transitionKind | timer |
+| transitionDurationMs | 7000 |
+| next | sequential |
+
 ## portal-wave-4
 
 | field | value |
 |---|---|
 | type | wave |
 | backgroundId | portal |
-| introDurationMs | none |
-| name | none |
+| introDurationMs | 1600 |
+| name | Shells at the Rim |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1080 |
 | maxAlive | 6 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 2.2 |
+| zoneFromMargin | 0 |
 | zoneToMargin | 2.6 |
 | zoneDurationMs | 17500 |
 | transitionKind | allEnemiesCleared |
@@ -159,21 +213,39 @@
 | 6 | none | none | none | none | rock-thrower | 0 |
 | 10 | none | none | none | none | rock-thrower | 0 |
 
+## portal-break-4
+
+| field | value |
+|---|---|
+| type | break |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | The gate is learning your route. Change lanes before the next pull. |
+| spawnKind | empty |
+| zoneKind | expandLinear |
+| zoneFromMargin | 2.6 |
+| zoneToMargin | 0 |
+| zoneDurationMs | 2500 |
+| transitionKind | timer |
+| transitionDurationMs | 7000 |
+| next | sequential |
+
 ## portal-wave-5
 
 | field | value |
 |---|---|
 | type | wave |
 | backgroundId | portal |
-| introDurationMs | none |
-| name | none |
+| introDurationMs | 1600 |
+| name | Wraith Current |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1000 |
 | maxAlive | 7 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 2.6 |
+| zoneFromMargin | 0 |
 | zoneToMargin | 3 |
 | zoneDurationMs | 19000 |
 | transitionKind | allEnemiesCleared |
@@ -201,21 +273,39 @@
 | 9 | none | none | none | none | pistol | 0 |
 | 12 | none | none | none | none | rock-thrower | 0 |
 
+## portal-break-5
+
+| field | value |
+|---|---|
+| type | break |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | Do not save every pickup. Spend power while the crowd is still thin. |
+| spawnKind | empty |
+| zoneKind | expandLinear |
+| zoneFromMargin | 3 |
+| zoneToMargin | 0 |
+| zoneDurationMs | 2600 |
+| transitionKind | timer |
+| transitionDurationMs | 7000 |
+| next | sequential |
+
 ## portal-wave-6
 
 | field | value |
 |---|---|
 | type | wave |
 | backgroundId | portal |
-| introDurationMs | none |
-| name | none |
+| introDurationMs | 1600 |
+| name | Fire in the Aperture |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 930 |
 | maxAlive | 8 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 3 |
+| zoneFromMargin | 0 |
 | zoneToMargin | 3.4 |
 | zoneDurationMs | 20500 |
 | transitionKind | allEnemiesCleared |
@@ -246,21 +336,39 @@
 | 12 | none | none | none | none | rock-thrower | 0 |
 | 14 | none | none | none | none | pistol | 0 |
 
+## portal-break-6
+
+| field | value |
+|---|---|
+| type | break |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | Flame slimes make panic expensive. Keep the center in sight. |
+| spawnKind | empty |
+| zoneKind | expandLinear |
+| zoneFromMargin | 3.4 |
+| zoneToMargin | 0 |
+| zoneDurationMs | 2600 |
+| transitionKind | timer |
+| transitionDurationMs | 6500 |
+| next | sequential |
+
 ## portal-wave-7
 
 | field | value |
 |---|---|
 | type | wave |
 | backgroundId | portal |
-| introDurationMs | none |
-| name | none |
+| introDurationMs | 1600 |
+| name | Lifters in the Wake |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 860 |
 | maxAlive | 8 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 3.4 |
+| zoneFromMargin | 0 |
 | zoneToMargin | 3.8 |
 | zoneDurationMs | 22000 |
 | transitionKind | allEnemiesCleared |
@@ -294,21 +402,39 @@
 | 14 | none | none | none | none | shotgun | 0 |
 | 16 | none | none | none | none | pistol | 0 |
 
+## portal-break-7
+
+| field | value |
+|---|---|
+| type | break |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | The portal is throwing work crews now. Break the lifters first. |
+| spawnKind | empty |
+| zoneKind | expandLinear |
+| zoneFromMargin | 3.8 |
+| zoneToMargin | 0 |
+| zoneDurationMs | 2700 |
+| transitionKind | timer |
+| transitionDurationMs | 7000 |
+| next | sequential |
+
 ## portal-wave-8
 
 | field | value |
 |---|---|
 | type | wave |
 | backgroundId | portal |
-| introDurationMs | none |
-| name | none |
+| introDurationMs | 1600 |
+| name | Sawtooth Drift |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 800 |
 | maxAlive | 9 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 3.8 |
+| zoneFromMargin | 0 |
 | zoneToMargin | 4.2 |
 | zoneDurationMs | 23500 |
 | transitionKind | allEnemiesCleared |
@@ -345,21 +471,39 @@
 | 16 | none | none | none | none | pistol | 0 |
 | 18 | none | none | none | none | shotgun | 0 |
 
+## portal-break-8
+
+| field | value |
+|---|---|
+| type | break |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | Saw slime means no lazy circles. Cut across the arena when it commits. |
+| spawnKind | empty |
+| zoneKind | expandLinear |
+| zoneFromMargin | 4.2 |
+| zoneToMargin | 0 |
+| zoneDurationMs | 2700 |
+| transitionKind | timer |
+| transitionDurationMs | 7500 |
+| next | sequential |
+
 ## portal-wave-9
 
 | field | value |
 |---|---|
 | type | wave |
 | backgroundId | portal |
-| introDurationMs | none |
-| name | none |
+| introDurationMs | 1600 |
+| name | Drone Weather |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 740 |
 | maxAlive | 10 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 4.2 |
+| zoneFromMargin | 0 |
 | zoneToMargin | 4.6 |
 | zoneDurationMs | 25000 |
 | transitionKind | allEnemiesCleared |
@@ -399,21 +543,39 @@
 | 18 | none | none | none | none | shotgun | 0 |
 | 20 | none | none | none | none | rock-thrower | 0 |
 
+## portal-break-9
+
+| field | value |
+|---|---|
+| type | break |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | One more wave. Save a clean lane and a ready weapon. |
+| spawnKind | empty |
+| zoneKind | expandLinear |
+| zoneFromMargin | 4.6 |
+| zoneToMargin | 0 |
+| zoneDurationMs | 2800 |
+| transitionKind | timer |
+| transitionDurationMs | 6500 |
+| next | sequential |
+
 ## portal-wave-10
 
 | field | value |
 |---|---|
 | type | wave |
 | backgroundId | portal |
-| introDurationMs | none |
-| name | none |
+| introDurationMs | 1600 |
+| name | Last Light Before Teeth |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 680 |
 | maxAlive | 11 |
 | edgeMargin | 0.5 |
 | zoneKind | shrinkLinear |
-| zoneFromMargin | 4.6 |
+| zoneFromMargin | 0 |
 | zoneToMargin | 5 |
 | zoneDurationMs | 27000 |
 | transitionKind | allEnemiesCleared |
@@ -457,6 +619,24 @@
 | 20 | none | none | none | none | rock-thrower | 0 |
 | 22 | none | none | none | none | grenade-launcher | 0 |
 | 24 | none | none | none | none | grenade-launcher | 0 |
+
+## portal-pre-boss-break
+
+| field | value |
+|---|---|
+| type | break |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | The darkness lets go. Something on the other side is laughing. |
+| spawnKind | empty |
+| zoneKind | expandLinear |
+| zoneFromMargin | 5 |
+| zoneToMargin | 0 |
+| zoneDurationMs | 3600 |
+| transitionKind | timer |
+| transitionDurationMs | 8000 |
+| next | sequential |
 
 ## portal-boss
 

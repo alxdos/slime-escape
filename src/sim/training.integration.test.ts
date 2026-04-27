@@ -174,13 +174,13 @@ function setupWorld() {
 }
 
 describe('training run integration', () => {
-  it('emits sessionStart, two encounter cycles and a single win on full clear', () => {
+  it('emits sessionStart, all lesson encounter cycles and a single win on full clear', () => {
     const session = buildSessionDefinition(TRAINING_PRESET, { seed: 42 });
     const world = setupWorld();
     world.sessionFlow.start(session);
 
     let safety = 0;
-    while (world.clock.isRunning() && safety < 5_000) {
+    while (world.clock.isRunning() && safety < 12_000) {
       safety += 1;
       world.tick();
       world.killAllEnemies(world.clock.simTimeMs());
@@ -190,12 +190,12 @@ describe('training run integration', () => {
     const kinds = world.events.map((e) => e.kind);
     expect(kinds.filter((k) => k === 'win')).toHaveLength(1);
     expect(kinds.filter((k) => k === 'loss')).toHaveLength(0);
-    expect(kinds.filter((k) => k === 'encounterStart')).toHaveLength(3);
-    expect(kinds.filter((k) => k === 'encounterEnd')).toHaveLength(3);
+    expect(kinds.filter((k) => k === 'encounterStart')).toHaveLength(session.encounters.length);
+    expect(kinds.filter((k) => k === 'encounterEnd')).toHaveLength(session.encounters.length);
     const win = terminalEvent(world.events, 'win');
     expect(win.summary.progress.percent).toBe(100);
-    expect(win.summary.progress.completedWaves).toBe(2);
-    expect(win.summary.progress.totalWaves).toBe(2);
+    expect(win.summary.progress.completedWaves).toBe(5);
+    expect(win.summary.progress.totalWaves).toBe(5);
     expect(win.summary.kills.total).toBeGreaterThan(0);
   });
 

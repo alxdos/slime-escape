@@ -170,18 +170,37 @@ describe('buildSessionDefinition (training)', () => {
     expect(session.lossCondition.kind).toBe('playerDeath');
   });
 
-  it('produces a wave1 -> break -> wave2 encounter sequence', () => {
+  it('produces staged lessons separated by narrated breaks', () => {
     const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
 
-    expect(session.encounters).toHaveLength(3);
-    expect(session.encounters[0]?.type).toBe('wave');
-    expect(session.encounters[1]?.type).toBe('break');
-    expect(session.encounters[2]?.type).toBe('wave');
+    expect(session.encounters.map((encounter) => encounter.type)).toEqual([
+      'break',
+      'wave',
+      'break',
+      'wave',
+      'break',
+      'wave',
+      'break',
+      'wave',
+      'break',
+      'wave',
+      'break'
+    ]);
+    expect(session.encounters.filter((encounter) => encounter.type === 'wave').map((encounter) => encounter.name)).toEqual([
+      'Footwork',
+      'Pickups',
+      'Darkness Clock',
+      'Weapon Rhythm',
+      'Return Fire'
+    ]);
+    expect(session.encounters.filter((encounter) => encounter.type === 'break').every((encounter) => encounter.text !== null)).toBe(true);
   });
 
   it('every wave is a wave-spawn-plan composed only of known archetypes', () => {
     const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
-    const knownIds = new Set([SLIME_ONE_EYE.id, SLIME_SHELL.id]);
+    const knownIds = new Set(Object.keys(ENEMY_ARCHETYPES));
+    let guaranteedDropOverrideCount = 0;
+    let loadoutOverrideCount = 0;
 
     for (const encounter of session.encounters) {
       if (encounter.type !== 'wave') continue;
@@ -191,45 +210,77 @@ describe('buildSessionDefinition (training)', () => {
       expect(plan.maxAlive).toBeGreaterThan(0);
       for (const spawn of plan.spawns) {
         expect(knownIds.has(spawn.archetypeId)).toBe(true);
+        if ((spawn.override?.guaranteedDrops?.length ?? 0) > 0) {
+          guaranteedDropOverrideCount += 1;
+        }
+        if (spawn.override?.loadout !== undefined) {
+          loadoutOverrideCount += 1;
+        }
       }
     }
+
+    expect(guaranteedDropOverrideCount).toBeGreaterThan(0);
+    expect(loadoutOverrideCount).toBeGreaterThan(0);
   });
 
-  it('waves shrink the zone, break expands it, and stitches without margin jumps', () => {
+  it('starts without darkness, then teaches shrink and reset rhythm', () => {
     const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
-    const [wave1, breakEnc, wave2] = session.encounters;
-    if (
-      wave1?.zoneBehavior.kind !== 'shrinkLinear' ||
-      breakEnc?.zoneBehavior.kind !== 'expandLinear' ||
-      wave2?.zoneBehavior.kind !== 'shrinkLinear'
-    ) {
-      throw new Error('expected shrink/expand/shrink zone behaviors');
+    const waves = session.encounters.filter((encounter) => encounter.type === 'wave');
+    const breaks = session.encounters.filter((encounter) => encounter.type === 'break');
+
+    expect(waves[0]?.zoneBehavior).toEqual({ kind: 'disabled' });
+    const shrinkingWaves = waves.slice(1);
+    expect(shrinkingWaves.map((encounter) => encounter.zoneBehavior.kind)).toEqual([
+      'shrinkLinear',
+      'shrinkLinear',
+      'shrinkLinear',
+      'shrinkLinear'
+    ]);
+
+    for (const encounter of shrinkingWaves) {
+      if (encounter.zoneBehavior.kind !== 'shrinkLinear') {
+        throw new Error('expected shrinkLinear zone behavior');
+      }
+      expect(encounter.zoneBehavior.fromMargin).toBe(0);
+      expect(encounter.zoneBehavior.toMargin).toBeGreaterThan(0);
     }
-    expect(breakEnc.zoneBehavior.fromMargin).toBe(wave1.zoneBehavior.toMargin);
-    expect(wave2.zoneBehavior.fromMargin).toBe(breakEnc.zoneBehavior.toMargin);
+
+    const expandingBreaks = breaks.filter((encounter) => encounter.zoneBehavior.kind === 'expandLinear');
+    expect(expandingBreaks).toHaveLength(4);
+    expect(expandingBreaks.map((encounter) => encounter.zoneBehavior)).toEqual([
+      { kind: 'expandLinear', fromMargin: 1.4, toMargin: 0, durationMs: 2600 },
+      { kind: 'expandLinear', fromMargin: 2.6, toMargin: 0, durationMs: 2800 },
+      { kind: 'expandLinear', fromMargin: 2.8, toMargin: 0, durationMs: 3000 },
+      { kind: 'expandLinear', fromMargin: 3.2, toMargin: 0, durationMs: 3200 }
+    ]);
   });
 
-  it('wave shrink finishes within the minimum dispatch budget so margin reaches toMargin', () => {
+  it('ramps darkness pressure across later lessons', () => {
     const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
+    const shrinkMargins = session.encounters
+      .filter((encounter) => encounter.type === 'wave' && encounter.zoneBehavior.kind === 'shrinkLinear')
+      .map((encounter) => {
+        if (encounter.zoneBehavior.kind !== 'shrinkLinear') {
+          throw new Error('expected shrinkLinear zone behavior');
+        }
+        return encounter.zoneBehavior.toMargin;
+      });
+
+    expect(shrinkMargins).toEqual([1.4, 2.6, 2.8, 3.2]);
+  });
+
+  it('breaks use timer transition rules', () => {
+    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
+
     for (const encounter of session.encounters) {
-      if (encounter.type !== 'wave') continue;
-      if (encounter.spawnPlan.kind !== 'wave') continue;
-      if (encounter.zoneBehavior.kind !== 'shrinkLinear') continue;
-      const minDispatchMs =
-        encounter.spawnPlan.spawns.length * encounter.spawnPlan.spawnIntervalMs;
-      expect(encounter.zoneBehavior.durationMs).toBeLessThanOrEqual(minDispatchMs);
+      if (encounter.type !== 'break') continue;
+      expect(encounter.transitionRules.kind).toBe('timer');
+      if (encounter.transitionRules.kind !== 'timer') {
+        throw new Error('expected timer transition rule');
+      }
+      expect(encounter.transitionRules.durationMs).toBeGreaterThan(0);
+      expect(encounter.transitionRules.next).toBe('sequential');
     }
-  });
-
-  it('break uses a timer transition rule', () => {
-    const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
-    const breakEnc = session.encounters[1];
-
-    if (breakEnc?.transitionRules.kind !== 'timer') {
-      throw new Error('expected timer transition rule');
-    }
-    expect(breakEnc.transitionRules.durationMs).toBeGreaterThan(0);
-    expect(breakEnc.transitionRules.next).toBe('sequential');
   });
 
   it('waves use allEnemiesCleared as transition rule', () => {
@@ -245,6 +296,8 @@ describe('buildSessionDefinition (training)', () => {
     const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
 
     expect(session.loadout).toEqual({ weapons: [PISTOL.id, SHOTGUN.id, SMG.id], selectedIndex: 0 });
+    expect(session.rules.damage.slimeFriendlyFire).toBe(true);
+    expect(session.rules.aimAssist.enabled).toBe(true);
     expect(session.player.maxHp).toBeGreaterThan(0);
   });
 });

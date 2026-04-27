@@ -12502,8 +12502,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     {
       "backgroundId": "portal",
       "id": "portal-wave-1",
-      "introDurationMs": 0,
-      "name": null,
+      "introDurationMs": 1600,
+      "name": "Gate Static",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12545,9 +12545,34 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-2",
+      "id": "portal-break-1",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The portal opens in pulses. Breathe when it does, then move.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2400,
+        "fromMargin": 1.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-2",
+      "introDurationMs": 1600,
+      "name": "Horns in the Signal",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12588,16 +12613,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 15000,
-        "fromMargin": 1.2,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 1.7,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-3",
+      "id": "portal-break-2",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Sparks mark the fast ones. Clear them before the circle tightens.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2400,
+        "fromMargin": 1.7,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-3",
+      "introDurationMs": 1600,
+      "name": "Stone on the Line",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12660,16 +12710,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 16500,
-        "fromMargin": 1.7,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 2.2,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-4",
+      "id": "portal-break-3",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Heavy slimes carry strange tools. Take what falls and keep running.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 2.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-4",
+      "introDurationMs": 1600,
+      "name": "Shells at the Rim",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12738,16 +12813,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 17500,
-        "fromMargin": 2.2,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 2.6,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-5",
+      "id": "portal-break-4",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The gate is learning your route. Change lanes before the next pull.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 2.6,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-5",
+      "introDurationMs": 1600,
+      "name": "Wraith Current",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12830,16 +12930,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 19000,
-        "fromMargin": 2.6,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 3,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-6",
+      "id": "portal-break-5",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Do not save every pickup. Spend power while the crowd is still thin.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 3,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-6",
+      "introDurationMs": 1600,
+      "name": "Fire in the Aperture",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -12936,16 +13061,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 20500,
-        "fromMargin": 3,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 3.4,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-7",
+      "id": "portal-break-6",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Flame slimes make panic expensive. Keep the center in sight.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 3.4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-7",
+      "introDurationMs": 1600,
+      "name": "Lifters in the Wake",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -13056,16 +13206,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 22000,
-        "fromMargin": 3.4,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 3.8,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-8",
+      "id": "portal-break-7",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The portal is throwing work crews now. Break the lifters first.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2700,
+        "fromMargin": 3.8,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-8",
+      "introDurationMs": 1600,
+      "name": "Sawtooth Drift",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -13190,16 +13365,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 23500,
-        "fromMargin": 3.8,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 4.2,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-9",
+      "id": "portal-break-8",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Saw slime means no lazy circles. Cut across the arena when it commits.",
+      "transitionRules": {
+        "durationMs": 7500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2700,
+        "fromMargin": 4.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-9",
+      "introDurationMs": 1600,
+      "name": "Drone Weather",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -13338,16 +13538,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 25000,
-        "fromMargin": 4.2,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 4.6,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-10",
+      "id": "portal-break-9",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "One more wave. Save a clean lane and a ready weapon.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2800,
+        "fromMargin": 4.6,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-10",
+      "introDurationMs": 1600,
+      "name": "Last Light Before Teeth",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -13511,9 +13736,34 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 27000,
-        "fromMargin": 4.6,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 5,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The darkness lets go. Something on the other side is laughing.",
+      "transitionRules": {
+        "durationMs": 8000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3600,
+        "fromMargin": 5,
+        "kind": "expandLinear",
+        "toMargin": 0,
       },
     },
     {
@@ -13607,8 +13857,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     {
       "backgroundId": "portal",
       "id": "portal-wave-1",
-      "introDurationMs": 0,
-      "name": null,
+      "introDurationMs": 1600,
+      "name": "Gate Static",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -13650,9 +13900,34 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-2",
+      "id": "portal-break-1",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The portal opens in pulses. Breathe when it does, then move.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2400,
+        "fromMargin": 1.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-2",
+      "introDurationMs": 1600,
+      "name": "Horns in the Signal",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -13693,16 +13968,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 15000,
-        "fromMargin": 1.2,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 1.7,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-3",
+      "id": "portal-break-2",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Sparks mark the fast ones. Clear them before the circle tightens.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2400,
+        "fromMargin": 1.7,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-3",
+      "introDurationMs": 1600,
+      "name": "Stone on the Line",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -13765,16 +14065,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 16500,
-        "fromMargin": 1.7,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 2.2,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-4",
+      "id": "portal-break-3",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Heavy slimes carry strange tools. Take what falls and keep running.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 2.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-4",
+      "introDurationMs": 1600,
+      "name": "Shells at the Rim",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -13843,16 +14168,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 17500,
-        "fromMargin": 2.2,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 2.6,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-5",
+      "id": "portal-break-4",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The gate is learning your route. Change lanes before the next pull.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 2.6,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-5",
+      "introDurationMs": 1600,
+      "name": "Wraith Current",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -13935,16 +14285,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 19000,
-        "fromMargin": 2.6,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 3,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-6",
+      "id": "portal-break-5",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Do not save every pickup. Spend power while the crowd is still thin.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 3,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-6",
+      "introDurationMs": 1600,
+      "name": "Fire in the Aperture",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -14041,16 +14416,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 20500,
-        "fromMargin": 3,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 3.4,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-7",
+      "id": "portal-break-6",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Flame slimes make panic expensive. Keep the center in sight.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 3.4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-7",
+      "introDurationMs": 1600,
+      "name": "Lifters in the Wake",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -14161,16 +14561,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 22000,
-        "fromMargin": 3.4,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 3.8,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-8",
+      "id": "portal-break-7",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The portal is throwing work crews now. Break the lifters first.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2700,
+        "fromMargin": 3.8,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-8",
+      "introDurationMs": 1600,
+      "name": "Sawtooth Drift",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -14295,16 +14720,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 23500,
-        "fromMargin": 3.8,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 4.2,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-9",
+      "id": "portal-break-8",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Saw slime means no lazy circles. Cut across the arena when it commits.",
+      "transitionRules": {
+        "durationMs": 7500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2700,
+        "fromMargin": 4.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-9",
+      "introDurationMs": 1600,
+      "name": "Drone Weather",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -14443,16 +14893,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 25000,
-        "fromMargin": 4.2,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 4.6,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-10",
+      "id": "portal-break-9",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "One more wave. Save a clean lane and a ready weapon.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2800,
+        "fromMargin": 4.6,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-10",
+      "introDurationMs": 1600,
+      "name": "Last Light Before Teeth",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -14616,9 +15091,34 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 27000,
-        "fromMargin": 4.6,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 5,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The darkness lets go. Something on the other side is laughing.",
+      "transitionRules": {
+        "durationMs": 8000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3600,
+        "fromMargin": 5,
+        "kind": "expandLinear",
+        "toMargin": 0,
       },
     },
     {
@@ -14712,8 +15212,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     {
       "backgroundId": "portal",
       "id": "portal-wave-1",
-      "introDurationMs": 0,
-      "name": null,
+      "introDurationMs": 1600,
+      "name": "Gate Static",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -14755,9 +15255,34 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-2",
+      "id": "portal-break-1",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The portal opens in pulses. Breathe when it does, then move.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2400,
+        "fromMargin": 1.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-2",
+      "introDurationMs": 1600,
+      "name": "Horns in the Signal",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -14798,16 +15323,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 15000,
-        "fromMargin": 1.2,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 1.7,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-3",
+      "id": "portal-break-2",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Sparks mark the fast ones. Clear them before the circle tightens.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2400,
+        "fromMargin": 1.7,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-3",
+      "introDurationMs": 1600,
+      "name": "Stone on the Line",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -14870,16 +15420,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 16500,
-        "fromMargin": 1.7,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 2.2,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-4",
+      "id": "portal-break-3",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Heavy slimes carry strange tools. Take what falls and keep running.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 2.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-4",
+      "introDurationMs": 1600,
+      "name": "Shells at the Rim",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -14948,16 +15523,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 17500,
-        "fromMargin": 2.2,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 2.6,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-5",
+      "id": "portal-break-4",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The gate is learning your route. Change lanes before the next pull.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 2.6,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-5",
+      "introDurationMs": 1600,
+      "name": "Wraith Current",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -15040,16 +15640,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 19000,
-        "fromMargin": 2.6,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 3,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-6",
+      "id": "portal-break-5",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Do not save every pickup. Spend power while the crowd is still thin.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 3,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-6",
+      "introDurationMs": 1600,
+      "name": "Fire in the Aperture",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -15146,16 +15771,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 20500,
-        "fromMargin": 3,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 3.4,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-7",
+      "id": "portal-break-6",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Flame slimes make panic expensive. Keep the center in sight.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 3.4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-7",
+      "introDurationMs": 1600,
+      "name": "Lifters in the Wake",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -15266,16 +15916,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 22000,
-        "fromMargin": 3.4,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 3.8,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-8",
+      "id": "portal-break-7",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The portal is throwing work crews now. Break the lifters first.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2700,
+        "fromMargin": 3.8,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-8",
+      "introDurationMs": 1600,
+      "name": "Sawtooth Drift",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -15400,16 +16075,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 23500,
-        "fromMargin": 3.8,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 4.2,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-9",
+      "id": "portal-break-8",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Saw slime means no lazy circles. Cut across the arena when it commits.",
+      "transitionRules": {
+        "durationMs": 7500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2700,
+        "fromMargin": 4.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-9",
+      "introDurationMs": 1600,
+      "name": "Drone Weather",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -15548,16 +16248,41 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 25000,
-        "fromMargin": 4.2,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 4.6,
       },
     },
     {
       "backgroundId": "portal",
-      "id": "portal-wave-10",
+      "id": "portal-break-9",
       "introDurationMs": 0,
       "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "One more wave. Save a clean lane and a ready weapon.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2800,
+        "fromMargin": 4.6,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-wave-10",
+      "introDurationMs": 1600,
+      "name": "Last Light Before Teeth",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
@@ -15721,9 +16446,34 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 27000,
-        "fromMargin": 4.6,
+        "fromMargin": 0,
         "kind": "shrinkLinear",
         "toMargin": 5,
+      },
+    },
+    {
+      "backgroundId": "portal",
+      "id": "portal-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The darkness lets go. Something on the other side is laughing.",
+      "transitionRules": {
+        "durationMs": 8000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3600,
+        "fromMargin": 5,
+        "kind": "expandLinear",
+        "toMargin": 0,
       },
     },
     {
@@ -16307,61 +17057,22 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   },
   "backgrounds": [
     {
-      "id": "training",
+      "id": "range",
+      "imageUrl": "/images/bg/bg-02.jpg",
+    },
+    {
+      "id": "field",
       "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "pressure",
+      "imageUrl": "/images/bg/bg-03.jpg",
     },
   ],
   "encounters": [
     {
-      "backgroundId": "training",
-      "id": "training-wave-1",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "edgeMargin": 0.5,
-        "kind": "wave",
-        "maxAlive": 4,
-        "spawnIntervalMs": 1500,
-        "spawns": [
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-        ],
-      },
-      "text": null,
-      "transitionRules": {
-        "kind": "allEnemiesCleared",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "wave",
-      "zoneBehavior": {
-        "durationMs": 8000,
-        "fromMargin": 0,
-        "kind": "shrinkLinear",
-        "toMargin": 4,
-      },
-    },
-    {
-      "backgroundId": "training",
-      "id": "training-break",
+      "backgroundId": "range",
+      "id": "training-intro",
       "introDurationMs": 0,
       "name": null,
       "objectives": [],
@@ -16369,33 +17080,30 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": null,
+      "text": "Lesson one: move while you shoot. Standing still is how slime wins.",
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 6500,
         "kind": "timer",
         "next": "sequential",
       },
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 4,
-        "kind": "expandLinear",
-        "toMargin": 0,
+        "kind": "disabled",
       },
     },
     {
-      "backgroundId": "training",
-      "id": "training-wave-2",
-      "introDurationMs": 0,
-      "name": null,
+      "backgroundId": "range",
+      "id": "training-footwork",
+      "introDurationMs": 1800,
+      "name": "Footwork",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "edgeMargin": 0.5,
         "kind": "wave",
-        "maxAlive": 5,
-        "spawnIntervalMs": 1200,
+        "maxAlive": 3,
+        "spawnIntervalMs": 1400,
         "spawns": [
           {
             "archetypeId": "slime-one-eye",
@@ -16404,28 +17112,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
             "archetypeId": "slime-one-eye",
           },
           {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
+            "archetypeId": "slime-sleeper",
           },
           {
             "archetypeId": "slime-one-eye",
           },
           {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-          {
-            "archetypeId": "slime-one-eye",
+            "archetypeId": "slime-hornling",
           },
         ],
       },
@@ -16437,10 +17130,410 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10000,
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-pickup-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Good. The glow is worth a risk, but only when you have a path out.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-pickups",
+      "introDurationMs": 1800,
+      "name": "Pickups",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1300,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-spark",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "speed-up",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "size-up",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-hornling",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 5,
+        "toMargin": 1.4,
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-darkness-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The dark edge is a timer. Finish the wave before it steals your warning.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 1.4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-darkness-clock",
+      "introDurationMs": 1800,
+      "name": "Darkness Clock",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1150,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-shell",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "multi-shot",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.6,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-weapon-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Switch weapons on purpose: pistol for control, shotgun for clumps, SMG for panic.",
+      "transitionRules": {
+        "durationMs": 8000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2800,
+        "fromMargin": 2.6,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-weapon-rhythm",
+      "introDurationMs": 1800,
+      "name": "Weapon Rhythm",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1050,
+        "spawns": [
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "pierce",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "overdrive",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 21000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-return-fire-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "One slime has a weapon. Strafe across its aim and let friendly fire work.",
+      "transitionRules": {
+        "durationMs": 8000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3000,
+        "fromMargin": 2.8,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-return-fire",
+      "introDurationMs": 1800,
+      "name": "Return Fire",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1100,
+        "spawns": [
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-saw",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "pistol",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-saw",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "overdrive",
+              ],
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 23000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 3.2,
+      },
+    },
+    {
+      "backgroundId": "range",
+      "id": "training-complete",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Training complete. The portal run will not be polite, but it will be readable.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3200,
+        "fromMargin": 3.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
       },
     },
   ],
@@ -16473,13 +17566,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   },
   "rules": {
     "aimAssist": {
-      "enabled": false,
-      "maxAngleRadians": 0,
-      "maxDistance": 0,
-      "strength": 0,
+      "enabled": true,
+      "maxAngleRadians": 0.35,
+      "maxDistance": 8,
+      "strength": 0.55,
     },
     "damage": {
-      "slimeFriendlyFire": false,
+      "slimeFriendlyFire": true,
     },
   },
   "seed": 0,
@@ -16498,61 +17591,22 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   },
   "backgrounds": [
     {
-      "id": "training",
+      "id": "range",
+      "imageUrl": "/images/bg/bg-02.jpg",
+    },
+    {
+      "id": "field",
       "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "pressure",
+      "imageUrl": "/images/bg/bg-03.jpg",
     },
   ],
   "encounters": [
     {
-      "backgroundId": "training",
-      "id": "training-wave-1",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "edgeMargin": 0.5,
-        "kind": "wave",
-        "maxAlive": 4,
-        "spawnIntervalMs": 1500,
-        "spawns": [
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-        ],
-      },
-      "text": null,
-      "transitionRules": {
-        "kind": "allEnemiesCleared",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "wave",
-      "zoneBehavior": {
-        "durationMs": 8000,
-        "fromMargin": 0,
-        "kind": "shrinkLinear",
-        "toMargin": 4,
-      },
-    },
-    {
-      "backgroundId": "training",
-      "id": "training-break",
+      "backgroundId": "range",
+      "id": "training-intro",
       "introDurationMs": 0,
       "name": null,
       "objectives": [],
@@ -16560,33 +17614,30 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": null,
+      "text": "Lesson one: move while you shoot. Standing still is how slime wins.",
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 6500,
         "kind": "timer",
         "next": "sequential",
       },
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 4,
-        "kind": "expandLinear",
-        "toMargin": 0,
+        "kind": "disabled",
       },
     },
     {
-      "backgroundId": "training",
-      "id": "training-wave-2",
-      "introDurationMs": 0,
-      "name": null,
+      "backgroundId": "range",
+      "id": "training-footwork",
+      "introDurationMs": 1800,
+      "name": "Footwork",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "edgeMargin": 0.5,
         "kind": "wave",
-        "maxAlive": 5,
-        "spawnIntervalMs": 1200,
+        "maxAlive": 3,
+        "spawnIntervalMs": 1400,
         "spawns": [
           {
             "archetypeId": "slime-one-eye",
@@ -16595,28 +17646,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
             "archetypeId": "slime-one-eye",
           },
           {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
+            "archetypeId": "slime-sleeper",
           },
           {
             "archetypeId": "slime-one-eye",
           },
           {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-          {
-            "archetypeId": "slime-one-eye",
+            "archetypeId": "slime-hornling",
           },
         ],
       },
@@ -16628,10 +17664,410 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10000,
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-pickup-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Good. The glow is worth a risk, but only when you have a path out.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-pickups",
+      "introDurationMs": 1800,
+      "name": "Pickups",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1300,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-spark",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "speed-up",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "size-up",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-hornling",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 5,
+        "toMargin": 1.4,
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-darkness-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The dark edge is a timer. Finish the wave before it steals your warning.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 1.4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-darkness-clock",
+      "introDurationMs": 1800,
+      "name": "Darkness Clock",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1150,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-shell",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "multi-shot",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.6,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-weapon-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Switch weapons on purpose: pistol for control, shotgun for clumps, SMG for panic.",
+      "transitionRules": {
+        "durationMs": 8000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2800,
+        "fromMargin": 2.6,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-weapon-rhythm",
+      "introDurationMs": 1800,
+      "name": "Weapon Rhythm",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1050,
+        "spawns": [
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "pierce",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "overdrive",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 21000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-return-fire-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "One slime has a weapon. Strafe across its aim and let friendly fire work.",
+      "transitionRules": {
+        "durationMs": 8000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3000,
+        "fromMargin": 2.8,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-return-fire",
+      "introDurationMs": 1800,
+      "name": "Return Fire",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1100,
+        "spawns": [
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-saw",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "pistol",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-saw",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "overdrive",
+              ],
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 23000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 3.2,
+      },
+    },
+    {
+      "backgroundId": "range",
+      "id": "training-complete",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Training complete. The portal run will not be polite, but it will be readable.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3200,
+        "fromMargin": 3.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
       },
     },
   ],
@@ -16664,13 +18100,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   },
   "rules": {
     "aimAssist": {
-      "enabled": false,
-      "maxAngleRadians": 0,
-      "maxDistance": 0,
-      "strength": 0,
+      "enabled": true,
+      "maxAngleRadians": 0.35,
+      "maxDistance": 8,
+      "strength": 0.55,
     },
     "damage": {
-      "slimeFriendlyFire": false,
+      "slimeFriendlyFire": true,
     },
   },
   "seed": 1,
@@ -16689,61 +18125,22 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   },
   "backgrounds": [
     {
-      "id": "training",
+      "id": "range",
+      "imageUrl": "/images/bg/bg-02.jpg",
+    },
+    {
+      "id": "field",
       "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "pressure",
+      "imageUrl": "/images/bg/bg-03.jpg",
     },
   ],
   "encounters": [
     {
-      "backgroundId": "training",
-      "id": "training-wave-1",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "edgeMargin": 0.5,
-        "kind": "wave",
-        "maxAlive": 4,
-        "spawnIntervalMs": 1500,
-        "spawns": [
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-        ],
-      },
-      "text": null,
-      "transitionRules": {
-        "kind": "allEnemiesCleared",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "wave",
-      "zoneBehavior": {
-        "durationMs": 8000,
-        "fromMargin": 0,
-        "kind": "shrinkLinear",
-        "toMargin": 4,
-      },
-    },
-    {
-      "backgroundId": "training",
-      "id": "training-break",
+      "backgroundId": "range",
+      "id": "training-intro",
       "introDurationMs": 0,
       "name": null,
       "objectives": [],
@@ -16751,33 +18148,30 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "spawnPlan": {
         "kind": "empty",
       },
-      "text": null,
+      "text": "Lesson one: move while you shoot. Standing still is how slime wins.",
       "transitionRules": {
-        "durationMs": 3000,
+        "durationMs": 6500,
         "kind": "timer",
         "next": "sequential",
       },
       "tuning": null,
       "type": "break",
       "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 4,
-        "kind": "expandLinear",
-        "toMargin": 0,
+        "kind": "disabled",
       },
     },
     {
-      "backgroundId": "training",
-      "id": "training-wave-2",
-      "introDurationMs": 0,
-      "name": null,
+      "backgroundId": "range",
+      "id": "training-footwork",
+      "introDurationMs": 1800,
+      "name": "Footwork",
       "objectives": [],
       "rewardRules": null,
       "spawnPlan": {
         "edgeMargin": 0.5,
         "kind": "wave",
-        "maxAlive": 5,
-        "spawnIntervalMs": 1200,
+        "maxAlive": 3,
+        "spawnIntervalMs": 1400,
         "spawns": [
           {
             "archetypeId": "slime-one-eye",
@@ -16786,28 +18180,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
             "archetypeId": "slime-one-eye",
           },
           {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
+            "archetypeId": "slime-sleeper",
           },
           {
             "archetypeId": "slime-one-eye",
           },
           {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-          {
-            "archetypeId": "slime-one-eye",
-          },
-          {
-            "archetypeId": "slime-shell",
-          },
-          {
-            "archetypeId": "slime-one-eye",
+            "archetypeId": "slime-hornling",
           },
         ],
       },
@@ -16819,10 +18198,410 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "tuning": null,
       "type": "wave",
       "zoneBehavior": {
-        "durationMs": 10000,
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-pickup-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Good. The glow is worth a risk, but only when you have a path out.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-pickups",
+      "introDurationMs": 1800,
+      "name": "Pickups",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 4,
+        "spawnIntervalMs": 1300,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-spark",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "speed-up",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "size-up",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-hornling",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
         "fromMargin": 0,
         "kind": "shrinkLinear",
-        "toMargin": 5,
+        "toMargin": 1.4,
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-darkness-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The dark edge is a timer. Finish the wave before it steals your warning.",
+      "transitionRules": {
+        "durationMs": 7000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 1.4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "field",
+      "id": "training-darkness-clock",
+      "introDurationMs": 1800,
+      "name": "Darkness Clock",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1150,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-shell",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "multi-shot",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.6,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-weapon-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Switch weapons on purpose: pistol for control, shotgun for clumps, SMG for panic.",
+      "transitionRules": {
+        "durationMs": 8000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2800,
+        "fromMargin": 2.6,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-weapon-rhythm",
+      "introDurationMs": 1800,
+      "name": "Weapon Rhythm",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1050,
+        "spawns": [
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "pierce",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "overdrive",
+              ],
+            },
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 21000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-return-fire-brief",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "One slime has a weapon. Strafe across its aim and let friendly fire work.",
+      "transitionRules": {
+        "durationMs": 8000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3000,
+        "fromMargin": 2.8,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "pressure",
+      "id": "training-return-fire",
+      "introDurationMs": 1800,
+      "name": "Return Fire",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1100,
+        "spawns": [
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-saw",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "heal-orb",
+              ],
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "pistol",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-drone",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-saw",
+            "override": {
+              "dropTable": [],
+              "guaranteedDrops": [
+                "overdrive",
+              ],
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 23000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 3.2,
+      },
+    },
+    {
+      "backgroundId": "range",
+      "id": "training-complete",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Training complete. The portal run will not be polite, but it will be readable.",
+      "transitionRules": {
+        "durationMs": 6500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3200,
+        "fromMargin": 3.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
       },
     },
   ],
@@ -16855,13 +18634,13 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   },
   "rules": {
     "aimAssist": {
-      "enabled": false,
-      "maxAngleRadians": 0,
-      "maxDistance": 0,
-      "strength": 0,
+      "enabled": true,
+      "maxAngleRadians": 0.35,
+      "maxDistance": 8,
+      "strength": 0.55,
     },
     "damage": {
-      "slimeFriendlyFire": false,
+      "slimeFriendlyFire": true,
     },
   },
   "seed": 42,
