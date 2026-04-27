@@ -16,6 +16,7 @@ import {
   resolveMenuControlAction,
   type TeaserControlId
 } from './MenuOverlayState';
+import { createSocialLinkRail } from './SocialLinkRail';
 
 const TEASER_FEEDBACK_VISIBLE_MS = 7_000;
 const TEASER_FEEDBACK_FADE_MS = 900;
@@ -73,6 +74,12 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     stage.appendChild(button);
   }
   stage.appendChild(teaserFeedback);
+
+  const socialLinks = createSocialLinkRail();
+  socialLinks.className = `${socialLinks.className} menu-social-link-rail`;
+  socialLinks.dataset['placement'] = 'menu';
+  socialLinks.style.cssText = `${socialLinks.style.cssText};${menuSocialLinkRailStyle()}`;
+  stage.appendChild(socialLinks);
 
   root.appendChild(stage);
   init.parent.appendChild(root);
@@ -307,6 +314,17 @@ function teaserFeedbackStyle(): string {
   ].join(';');
 }
 
+function menuSocialLinkRailStyle(): string {
+  return [
+    'position:absolute',
+    'left:3.4%',
+    'top:38%',
+    'z-index:35',
+    'transform:translateY(-50%) scale(0.9)',
+    'transform-origin:left center'
+  ].join(';');
+}
+
 function menuOverlayCss(): string {
   return `
 @keyframes menu-control-appear {
@@ -420,6 +438,12 @@ function menuOverlayCss(): string {
 .menu-image-button[data-soon="true"]:hover img,
 .menu-image-button[data-soon="true"]:focus-visible img {
   filter: saturate(1) brightness(1.06) drop-shadow(5px 5px 0 #000000);
+}
+
+@media (max-width: 560px) {
+  .menu-social-link-rail {
+    transform: translateY(-50%) scale(0.78) !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

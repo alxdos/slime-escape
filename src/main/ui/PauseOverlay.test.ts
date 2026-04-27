@@ -95,9 +95,17 @@ describe('PauseOverlay', () => {
       onOpenSettings() {}
     });
 
-    const escapePath = findByRole(parent, 'pause-escape-path');
     const card = findByRole(parent, 'pause-card');
-    expect(card.style.cssText).toContain('width:min(640px, calc(100vw - 48px))');
+    const escapePath = findByRole(parent, 'pause-escape-path');
+    const socialRail = findByRole(parent, 'social-link-rail');
+    const socialLinks = findAllByRole(parent, 'social-link');
+    expect(findByRole(parent, 'pause-layout').style.cssText).toContain('gap:18px');
+    expect(socialRail.dataset['placement']).toBe('pause');
+    expect(socialLinks.map((link) => link.dataset['socialLinkId'])).toEqual([
+      'github',
+      'discord'
+    ]);
+    expect(card.style.cssText).toContain('width:min(640px, calc(100vw - 120px))');
     expect(card.style.cssText).toContain('max-height:calc(100vh - 48px)');
     expect(escapePath.style.display).toBe('none');
 
