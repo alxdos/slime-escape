@@ -1,24 +1,26 @@
 # Slime Escape
 
-Выберись из слизистого кошмара: переживи волны, пока тьма подступает всё ближе, используй короткие передышки, когда она отступает, и одолей того, кто запер тебя в этом мире.
+Escape the slime nightmare: survive the waves while the darkness closes in, use the short breaks when it pulls back, and defeat the one who trapped you in this world.
 
-![Заставка Slime Escape](public/images/slime-escape.jpg)
+![Slime Escape splash](public/images/slime-escape.jpg)
 
-## Документация
+## Documentation
 
-- [docs](docs) — геймдизайн и продуктовые документы
-- [design](design) — инженерные решения
-- [stories](stories) — истории и вертикальные срезы
+- [docs](docs) — game design and product documents
+- [design](design) — engineering decisions
+- [stories](stories) — stories and vertical slices
+- [content](content) — content data: enemies, bosses, weapons, drops, players, sessions
+- [mockups](mockups) — UI mockups and visual references
 
-## Запуск
+## Running
 
-Требуется Node.js 22+ и npm 11+.
+Requires Node.js 22+ and npm 11+.
 
 ```bash
 npm install
-npm run dev      # dev-сервер Vite на http://127.0.0.1:5173
-npm run build    # production-сборка в dist/
-npm run preview  # локальный preview-сервер для собранного билда
+npm run dev      # Vite dev server at http://127.0.0.1:5173
+npm run build    # production build into dist/
+npm run preview  # local preview server for the built bundle
 npm run typecheck
 ```
 
