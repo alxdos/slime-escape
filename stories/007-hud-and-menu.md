@@ -6,44 +6,44 @@
 
 ## Player-facing
 
-- Sees: полноценный экран выбора режима со списком пресетов; во время боя — HUD с HP, таймером, номером волны и состоянием босса; экран паузы.
-- Can do: выбрать режим из меню и запустить сессию, на лету ставить паузу, видеть прогресс боя в HUD, вернуться в меню после конца сессии.
+- Sees: a full mode-selection screen with a list of presets; during combat — a HUD with HP, timer, wave number, and boss status; a pause screen.
+- Can do: pick a mode from the menu and start a session, pause on the fly, see combat progress in the HUD, return to the menu after the session ends.
 
 ## Technical
 
-- Презентация на `main thread` оркеструется единым `UiShell` с явными фазами `menu` / `running` / `paused` / `result(win|loss)`; видимости overlay-ев и HUD заданы по фазам — см. [../design/main-ui-shell.md](../design/main-ui-shell.md).
-- HUD — пассивный потребитель: читает `SessionDefinition` один раз и `SnapshotPair` в общем main rAF-цикле; не подписывается на runtime events ради authoritative state и не отправляет команд в `sim`. Контракт полей — [../design/snapshot-shape.md](../design/snapshot-shape.md), [../design/main-ui-shell.md](../design/main-ui-shell.md).
-- Меню — data-driven: список playable preset'ов лежит в `src/shared/content/**` отдельным реестром (display-данные не висят на authoritative `ModePreset`); резолв в builder сессии — [../design/main-ui-shell.md](../design/main-ui-shell.md), [../design/session-definition.md](../design/session-definition.md), [../design/content-boundaries.md](../design/content-boundaries.md).
-- Pause UX: единственный owner вызовов `SimWorkerHost.pause/resume` — `UiShell`; маршрутизация Esc и dev-хоткея Space, поведение Pointer Lock — [../design/input-commands.md](../design/input-commands.md), [../design/main-ui-shell.md](../design/main-ui-shell.md).
-- Result UX: переход в `result` инициируется только `win`/`loss` от sim; единственное действие — «В меню»; `stopSession` повторно не вызывается (sim уже выполнила teardown по [../design/session-definition.md](../design/session-definition.md)).
-- Номер волны / «всего волн» / таймер encounter HUD выводит из `SessionDefinition.encounters` + `snapshot.encounter`/`snapshot.waveProgress`; новых полей в snapshot эта история не вводит ([../design/snapshot-shape.md](../design/snapshot-shape.md)).
+- Presentation on `main thread` is orchestrated by a single `UiShell` with explicit phases `menu` / `running` / `paused` / `result(win|loss)`; overlay and HUD visibility is driven by phase — see [../design/main-ui-shell.md](../design/main-ui-shell.md).
+- The HUD is a passive consumer: it reads `SessionDefinition` once and `SnapshotPair` from the shared main rAF loop; it does not subscribe to runtime events for authoritative state and does not send commands to `sim`. Field contracts — [../design/snapshot-shape.md](../design/snapshot-shape.md), [../design/main-ui-shell.md](../design/main-ui-shell.md).
+- The menu is data-driven: the list of playable presets lives in `src/shared/content/**` as a separate registry (display data does not hang off the authoritative `ModePreset`); resolution happens in the session builder — [../design/main-ui-shell.md](../design/main-ui-shell.md), [../design/session-definition.md](../design/session-definition.md), [../design/content-boundaries.md](../design/content-boundaries.md).
+- Pause UX: `UiShell` is the only owner of `SimWorkerHost.pause/resume` calls; routing of Esc and the dev hotkey Space and Pointer Lock behaviour — [../design/input-commands.md](../design/input-commands.md), [../design/main-ui-shell.md](../design/main-ui-shell.md).
+- Result UX: the move into `result` is only triggered by `win`/`loss` from sim; the only action is "Back to menu"; `stopSession` is not called again (sim has already torn down per [../design/session-definition.md](../design/session-definition.md)).
+- Wave number / "total waves" / encounter timer are derived by the HUD from `SessionDefinition.encounters` + `snapshot.encounter`/`snapshot.waveProgress`; this story does not introduce new snapshot fields ([../design/snapshot-shape.md](../design/snapshot-shape.md)).
 
 ## Out of scope
 
-- Настройки громкости и разрешения — `009`.
-- Аудио — `008`.
-- Сложная кастомизация modifiers и подбор loadout.
+- Volume and resolution settings — `009`.
+- Audio — `008`.
+- Complex modifier customisation and loadout selection.
 
 ## Acceptance
 
-- Старт игры открывает меню, не сессию.
-- Выбор режима запускает соответствующую сессию.
-- HUD корректно показывает HP, активный encounter, прогресс волны и состояние босса.
-- Пауза замораживает симуляцию и доступна и снимается из UI и хоткеем.
-- Завершение сессии возвращает в меню без перезагрузки страницы.
+- Game start opens the menu, not a session.
+- Picking a mode starts the matching session.
+- The HUD correctly shows HP, the active encounter, wave progress, and boss status.
+- Pause freezes the simulation and can be toggled both from the UI and via the hotkey.
+- Ending the session returns to the menu without reloading the page.
 
 ## Tasks
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [x] | `playableModes.ts` в `src/shared/content/**`: реестр `PLAYABLE_MODE_CATALOG` с записями `campaign` и `training`, валидация резолва каждого `presetId` через `buildSessionDefinition` при загрузке модуля. | data-only; sandbox-id'ы в каталог не входят |
-| T2 | [x] | `src/main/ui/UiShell.ts`: оркестратор фаз `menu`/`running`/`paused`/`result`, единственный owner вызовов `SimWorkerHost.startSession/stopSession/pause/resume`, единая таблица видимости overlay-ев и HUD. Перенос текущей оркестрации из `src/main/index.ts`, поведение сессии не меняется. | контракт переходов и видимости — `design/main-ui-shell.md` |
-| T3 | [x] | `MenuOverlay`: рендер списка режимов из `PLAYABLE_MODE_CATALOG` (одна карточка на запись с `displayName`/`description`); клик по «Старт» вызывает переход `menu → running` через `UiShell`; стартовая кнопка по умолчанию убрана. | без поля «seed»: seed генерирует `UiShell` |
-| T4 | [x] | `Hud.ts` (`src/main/ui/**`): блок HP игрока (из `PlayerSnapshot.hp`/`maxHp`), блок encounter (id/тип/таймер `elapsedMs`), блок волны (`waveProgress` + «волна N из M», N/M из `SessionDefinition.encounters`); обновление через `update(snapshotPair)` из main rAF. | HUD не подписан на runtime events |
-| T5 | [x] | Расширение `Hud`: блок босса (HP-бар, индекс/идентификатор фазы) поверх `snapshot.bossHud`; блок виден ровно при `bossHud !== null`; имя/визуал фазы резолвится через `BossArchetype` из `content library`. | контракт поля — `snapshot-shape.md`, `boss-encounter.md` |
-| T6 | [x] | Pause UX интеграция: `UiShell` — единственный вызывающий `SimWorkerHost.pause/resume`; обработчики Esc / `pointerlockchange` / Space переехали в `UiShell`; в `paused` HUD заморожен (нет вызова `Hud.update`), pause overlay над HUD; в фазах `menu`/`result` хоткеи паузы игнорируются. | соответствие `input-commands.md` (обновлено под 007) |
-| T7 | [x] | Result UX: новый компонент `ResultOverlay` в `src/main/ui/**` (или эквивалент), `UiShell` входит в `result(win|loss)` только по событиям `win`/`loss` и **не** вызывает `stopSession` (sim уже сбросилась); единственное действие — «В меню» (`result → menu`); HUD скрыт. | разделение с `MenuOverlay`: меню перестаёт держать `setResult` |
-| T8 | [x] | Юнит/поведенческие тесты: валидация `PLAYABLE_MODE_CATALOG`, переходы `UiShell` (включая `running → result` без `stopSession` и `paused → menu` через exit), HUD деривации (`«волна N из M»`, видимость boss-блока, отсутствие `waveProgress` в не-wave encounter), Esc/Space-маршрутизация в `UiShell`. | jsdom + ручные `SnapshotPair`/`SessionDefinition`-фикстуры |
+| T1 | [x] | `playableModes.ts` in `src/shared/content/**`: a `PLAYABLE_MODE_CATALOG` registry with `campaign` and `training` entries, validating resolution of every `presetId` via `buildSessionDefinition` at module load. | data only; sandbox ids do not belong in the catalog |
+| T2 | [x] | `src/main/ui/UiShell.ts`: the phase orchestrator for `menu`/`running`/`paused`/`result`, the single owner of `SimWorkerHost.startSession/stopSession/pause/resume` calls, the single overlay/HUD visibility table. Move the current orchestration out of `src/main/index.ts`; session behaviour stays the same. | transition and visibility contract — `design/main-ui-shell.md` |
+| T3 | [x] | `MenuOverlay`: render the list of modes from `PLAYABLE_MODE_CATALOG` (one card per entry with `displayName`/`description`); a click on "Start" triggers the `menu → running` transition through `UiShell`; the default Start button is removed. | no "seed" field: seed is generated by `UiShell` |
+| T4 | [x] | `Hud.ts` (`src/main/ui/**`): player HP block (from `PlayerSnapshot.hp`/`maxHp`), encounter block (id/type/`elapsedMs` timer), wave block (`waveProgress` + "wave N of M", N/M from `SessionDefinition.encounters`); updated via `update(snapshotPair)` from main rAF. | HUD does not subscribe to runtime events |
+| T5 | [x] | Extend `Hud`: a boss block (HP bar, phase index/identifier) on top of `snapshot.bossHud`; the block is visible exactly when `bossHud !== null`; phase name/visual is resolved via `BossArchetype` from the content library. | field contract — `snapshot-shape.md`, `boss-encounter.md` |
+| T6 | [x] | Pause UX integration: `UiShell` is the only caller of `SimWorkerHost.pause/resume`; Esc / `pointerlockchange` / Space handlers move into `UiShell`; in `paused` the HUD is frozen (no `Hud.update` calls), the pause overlay sits above the HUD; in `menu`/`result` phases pause hotkeys are ignored. | matches `input-commands.md` (updated for 007) |
+| T7 | [x] | Result UX: a new `ResultOverlay` component in `src/main/ui/**` (or equivalent); `UiShell` enters `result(win|loss)` only via `win`/`loss` events and does **not** call `stopSession` (sim has already reset); the only action is "Back to menu" (`result → menu`); HUD is hidden. | separation from `MenuOverlay`: the menu no longer holds `setResult` |
+| T8 | [x] | Unit/behavioural tests: validate `PLAYABLE_MODE_CATALOG`, `UiShell` transitions (including `running → result` without `stopSession` and `paused → menu` on exit), HUD derivations ("wave N of M", boss block visibility, no `waveProgress` on non-wave encounters), Esc/Space routing in `UiShell`. | jsdom + hand-made `SnapshotPair`/`SessionDefinition` fixtures |
 
 ## Related
 

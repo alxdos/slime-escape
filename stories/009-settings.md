@@ -6,54 +6,54 @@
 
 ## Player-facing
 
-- Sees: экран настроек, доступный из меню и из паузы. Слайдер громкости и выбор разрешения арены: `low` / `medium` / `high`.
-- Can do: менять громкость и разрешение на лету, видеть результат сразу; настройки сохраняются между запусками.
+- Sees: a settings screen reachable from the menu and from pause. A volume slider and an arena resolution selector: `low` / `medium` / `high`.
+- Can do: change volume and resolution on the fly with an immediate visible effect; settings persist across launches.
 
-Семантика разрешения:
+Resolution semantics:
 
 | Preset | Render scale |
 |--------|--------------|
-| low    | арена рендерится примерно в 1/4 пикселей по горизонтали и масштабируется на ширину экрана без сглаживания (`image-rendering: pixelated`); самый дешёвый режим |
-| medium | один пиксель canvas = один пиксель браузера; `devicePixelRatio` игнорируется |
-| high   | рендер 1:1 с учётом `devicePixelRatio` (retina-friendly) |
+| low    | the arena is rendered at roughly 1/4 of the horizontal pixel count and scaled to the screen width without smoothing (`image-rendering: pixelated`); the cheapest mode |
+| medium | one canvas pixel = one browser pixel; `devicePixelRatio` is ignored |
+| high   | render 1:1 honouring `devicePixelRatio` (retina-friendly) |
 
 ## Technical
 
-- `ClientSettingsStore` под `src/main/settings/**`: поля `masterVolume` и `renderScalePreset`, `localStorage` со `schemaVersion`, валидация/clamp/миграции, subscriber-модель — контракт в [../design/client-settings.md](../design/client-settings.md).
-- Громкость кнопит master gain аудио-графа через явный `Audio.setMasterGain` — расширение API в [../design/audio.md](../design/audio.md) (раздел «Settings integration (009)»). Per-bus громкость `sfx`/`music`/`ui` в 009 явно out of scope.
-- Render scale policy в `src/main/render/**`: чистая `resolveRenderScale(preset, cssSize, dpr)` и `Renderer.applyScalePolicy(preset)` для переинициализации render target без перезапуска сессии — контракт в [../design/render-scale.md](../design/render-scale.md). Инвариант «без преимущества от железа» из [../design/arena-and-coordinates.md](../design/arena-and-coordinates.md) сохранён: пресет влияет только на пиксельную плотность.
-- Settings overlay как sub-modal `UiShell`, доступный из `MenuOverlay` и из `PauseOverlay`, не меняет фазу `UiShell` — раздел «Settings overlay» в [../design/main-ui-shell.md](../design/main-ui-shell.md). Подписка `Audio` и `Renderer` на store оформляется на стороне `UiShell`, единственного оркестратора.
-- `client settings` не утекает в `SessionDefinition`/snapshot/runtime events — это прямое следствие [../design/content-boundaries.md](../design/content-boundaries.md) и зафиксировано в [../design/client-settings.md](../design/client-settings.md).
+- `ClientSettingsStore` under `src/main/settings/**`: fields `masterVolume` and `renderScalePreset`, `localStorage` with `schemaVersion`, validation/clamping/migrations, subscriber model — contract in [../design/client-settings.md](../design/client-settings.md).
+- Volume drives the audio graph master gain through an explicit `Audio.setMasterGain` — API extension in [../design/audio.md](../design/audio.md) (section "Settings integration (009)"). Per-bus volume for `sfx`/`music`/`ui` is explicitly out of scope in 009.
+- Render scale policy in `src/main/render/**`: a pure `resolveRenderScale(preset, cssSize, dpr)` and `Renderer.applyScalePolicy(preset)` to reinitialise the render target without restarting the session — contract in [../design/render-scale.md](../design/render-scale.md). The "no hardware advantage" invariant from [../design/arena-and-coordinates.md](../design/arena-and-coordinates.md) is preserved: the preset only affects pixel density.
+- The settings overlay is a `UiShell` sub-modal accessible from `MenuOverlay` and `PauseOverlay` and does not change the `UiShell` phase — section "Settings overlay" in [../design/main-ui-shell.md](../design/main-ui-shell.md). `Audio` and `Renderer` subscribe to the store on the `UiShell` side, the only orchestrator.
+- `client settings` does not leak into `SessionDefinition`/snapshot/runtime events — a direct consequence of [../design/content-boundaries.md](../design/content-boundaries.md), pinned in [../design/client-settings.md](../design/client-settings.md).
 
 ## Out of scope
 
-- Управление и rebinding клавиш.
-- Языки и локализация.
-- Отдельные шины sfx/music/ambient — пока хватает master gain.
-- Межвкладочная синхронизация настроек (`window 'storage'`-event).
+- Controls and key rebinding.
+- Languages and localisation.
+- Separate sfx/music/ambient buses — master gain is enough for now.
+- Cross-tab settings sync (`window 'storage'` event).
 
 ## Acceptance
 
-- Настройки доступны из меню и из паузы, изменения применяются сразу.
-- Громкость влияет на все игровые звуки.
-- Каждый из трёх пресетов разрешения визуально и по нагрузке отличается ожидаемо: `low` — заметно пикселизованнее и быстрее, `medium` — нативные пиксели, `high` — резкая картинка на retina.
-- Выбранные значения сохраняются между перезагрузками страницы.
-- Дефолтный пресет разрешения подбирается разумно (например `medium`).
+- Settings are reachable from the menu and from pause; changes apply immediately.
+- Volume affects all in-game sounds.
+- Each of the three resolution presets differs visually and in load as expected: `low` — noticeably more pixelated and faster, `medium` — native pixels, `high` — sharp picture on retina.
+- Selected values persist across page reloads.
+- The default resolution preset is a sensible choice (for example `medium`).
 
 ## Tasks
 
-Полная декомпозиция (история в `in-progress`). Порядок задач отражает зависимости: опорные изменения в `Audio`/`Renderer` — раньше, store — следом, проводка в `UiShell` — затем, UI-overlay и точки входа — последними. Все опорные правки в `design/` уже сделаны на этапе подготовки, поэтому среди задач они не повторяются.
+Full breakdown (story is `in-progress`). Task order reflects dependencies: foundational changes in `Audio`/`Renderer` first, the store next, wiring in `UiShell` after that, the UI overlay and entry points last. All foundational `design/` updates were made during preparation, so they are not repeated as tasks.
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [x] | В `src/main/audio/Audio.ts` декомпозировать `effectiveGain` по узлам графа: `perSourceTrim.gain.value = sample.normalizedGain * sample.defaultGain * (perCallGainMul ?? 1)`; bus и master остаются полноценными узлами в графе. Обновить тесты `Audio.test.ts` (`calculateEffectiveGain` и трейсинг назначений по узлам) | Прерывает существующее двойное применение `bus*master`. По [../design/audio.md](../design/audio.md), разделы «Mixer graph» и «Двухслойная громкость». Не меняет аудио на baseline (`bus`/`master` стартуют с `1.0`). |
-| T2 | [x] | Добавить `Audio.setMasterGain(value: number): void` в `src/main/audio/Audio.ts` и в публичный тип `Audio`: clamp `[0, 1]`, warning через `log` на out-of-range, no-op при равном значении, корректен в любом состоянии (до `unlock`, в `menu`/`paused`/`result`, до и после `attach`/`detach`). Тесты в `Audio.test.ts` | По [../design/audio.md](../design/audio.md), раздел «Settings integration (009)». Зависит от T1. |
-| T3 | [x] | Чистая функция `resolveRenderScale` в `src/main/render/**` со всей таблицей пресетов из дизайна и тестами на каждый пресет (включая вырожденные `cssWidthPx ≤ 0`) | По [../design/render-scale.md](../design/render-scale.md), раздел «Семантика пресетов». Без правок `Renderer` — pure-функция. |
-| T4 | [x] | Перевести `Renderer` с `pixelRatio: number` в `RendererInit` на `renderScalePreset: RenderScalePreset`; добавить `applyScalePolicy(preset)` (вызывает `setPixelRatio`/`setSize(_, _, false)` и обновляет `canvas.style.imageRendering`); `fitToWindow` повторно применяет текущий пресет. Обновить `src/main/index.ts` (передаёт начальный пресет вместо `Math.min(window.devicePixelRatio, 2)`) и `UiShell` (передаёт пресет при создании `Renderer`). Тесты в `Renderer`-suite через узкий API `WebGLRenderer`-подобной обёртки | По [../design/render-scale.md](../design/render-scale.md), раздел «Жизненный цикл и API `Renderer`». Зависит от T3. |
-| T5 | [x] | Создать `src/main/settings/**` с `ClientSettingsStore`: типы `ClientSettings`/`RenderScalePreset`, `DEFAULT_CLIENT_SETTINGS` (`masterVolume = 1`, `renderScalePreset = 'medium'`), узкий `StorageApi` (`getItem`/`setItem`/`removeItem`) с browser-обёрткой и тест-fake; чтение/валидация/clamp/перезапись битого снимка по правилам дизайна; `setMasterVolume`/`setRenderScalePreset` (clamp + no-op при равном + синхронная запись + синхронные подписчики в порядке регистрации); `subscribe`/`dispose`. Тесты на все сценарии из раздела «Тесты» дизайна | По [../design/client-settings.md](../design/client-settings.md). Не зависит от T1–T4 (можно параллельно). |
-| T6 | [x] | В `UiShell` создать `ClientSettingsStore` ровно один раз (рядом с `Audio`/`SimWorkerHost`/`Hud`); применить начальный `masterVolume` к `Audio` через `setMasterGain` и подписать `Audio` на изменения; в момент создания `Renderer` (`menu → running`) пробросить актуальный `renderScalePreset` в `RendererInit` и подписать `Renderer.applyScalePolicy` на изменения, отписать в `tearDownClientSession`; вызвать `store.dispose()` в `UiShell.dispose()`. Тесты в `UiShell.test.ts` | По [../design/client-settings.md](../design/client-settings.md), раздел «Применение настроек», и [../design/main-ui-shell.md](../design/main-ui-shell.md). Зависит от T2, T4, T5. |
-| T7 | [x] | Реализовать `SettingsOverlay` в `src/main/ui/**`: слайдер `masterVolume → store.setMasterVolume`, селектор из трёх кнопок `low`/`medium`/`high → store.setRenderScalePreset`, кнопка «Закрыть». Overlay читает текущий снимок через `store.get()` и подписывается на изменения для синхронизации UI-состояния. Никаких прямых вызовов `Audio`/`Renderer`/`SimWorkerHost` из overlay-я. Тесты на разводку контролов, отписку при `dispose` | По [../design/main-ui-shell.md](../design/main-ui-shell.md), раздел «Settings overlay». Зависит от T5. |
-| T8 | [x] | Точки входа и оркестрация: добавить кнопку «Настройки» в `MenuOverlay` и в `PauseOverlay`; в `UiShell` завести `openSettings()`/`closeSettings()`, которые показывают/прячут `SettingsOverlay` поверх текущей фазы (`menu` или `paused`), не меняют `UiShellPhase`, не трогают Pointer Lock и не дёргают `SimWorkerHost`; недоступно в `running`/`result`. На каждое нажатие («Настройки», «Закрыть» и кнопки внутри overlay-я) — `audio.playUi('buttonClick')`. Тесты в `UiShell.test.ts` (видимость по фазам, отсутствие фазового перехода, корректность z-order через DOM-проверку) | По [../design/main-ui-shell.md](../design/main-ui-shell.md), раздел «Settings overlay». Зависит от T7. |
+| T1 | [x] | In `src/main/audio/Audio.ts` decompose `effectiveGain` across graph nodes: `perSourceTrim.gain.value = sample.normalizedGain * sample.defaultGain * (perCallGainMul ?? 1)`; the `bus` and `master` stay full nodes in the graph. Update `Audio.test.ts` (`calculateEffectiveGain` and per-node assignment tracing). | Cuts the existing double application of `bus*master`. Per [../design/audio.md](../design/audio.md), "Mixer graph" and "Two-layer volume" sections. Audio at baseline is unchanged (`bus`/`master` start at `1.0`). |
+| T2 | [x] | Add `Audio.setMasterGain(value: number): void` to `src/main/audio/Audio.ts` and to the public `Audio` type: clamp to `[0, 1]`, warning via `log` for out-of-range, no-op on equal value, valid in any state (before `unlock`, in `menu`/`paused`/`result`, before and after `attach`/`detach`). Tests in `Audio.test.ts`. | Per [../design/audio.md](../design/audio.md), "Settings integration (009)". Depends on T1. |
+| T3 | [x] | A pure `resolveRenderScale` function in `src/main/render/**` with the full preset table from the design and tests for every preset (including the degenerate `cssWidthPx ≤ 0`). | Per [../design/render-scale.md](../design/render-scale.md), "Preset semantics". No `Renderer` changes — pure function. |
+| T4 | [x] | Move `Renderer` from `pixelRatio: number` in `RendererInit` to `renderScalePreset: RenderScalePreset`; add `applyScalePolicy(preset)` (calls `setPixelRatio`/`setSize(_, _, false)` and updates `canvas.style.imageRendering`); `fitToWindow` reapplies the current preset. Update `src/main/index.ts` (passes the initial preset instead of `Math.min(window.devicePixelRatio, 2)`) and `UiShell` (passes the preset when creating `Renderer`). Tests in the `Renderer` suite via a narrow `WebGLRenderer`-like wrapper. | Per [../design/render-scale.md](../design/render-scale.md), "Renderer lifecycle and API". Depends on T3. |
+| T5 | [x] | Create `src/main/settings/**` with `ClientSettingsStore`: the `ClientSettings`/`RenderScalePreset` types, `DEFAULT_CLIENT_SETTINGS` (`masterVolume = 1`, `renderScalePreset = 'medium'`), a narrow `StorageApi` (`getItem`/`setItem`/`removeItem`) with a browser wrapper and a test fake; read/validate/clamp/overwrite a corrupted snapshot per the design rules; `setMasterVolume`/`setRenderScalePreset` (clamp + no-op on equal value + synchronous write + synchronous subscribers in registration order); `subscribe`/`dispose`. Tests for every scenario in the design's "Tests" section. | Per [../design/client-settings.md](../design/client-settings.md). Independent of T1–T4 (can run in parallel). |
+| T6 | [x] | In `UiShell` create `ClientSettingsStore` exactly once (next to `Audio`/`SimWorkerHost`/`Hud`); apply the initial `masterVolume` to `Audio` via `setMasterGain` and subscribe `Audio` to changes; when creating `Renderer` (`menu → running`) pass the current `renderScalePreset` into `RendererInit` and subscribe `Renderer.applyScalePolicy` to changes, unsubscribing in `tearDownClientSession`; call `store.dispose()` in `UiShell.dispose()`. Tests in `UiShell.test.ts`. | Per [../design/client-settings.md](../design/client-settings.md), "Applying settings", and [../design/main-ui-shell.md](../design/main-ui-shell.md). Depends on T2, T4, T5. |
+| T7 | [x] | Implement `SettingsOverlay` in `src/main/ui/**`: a slider `masterVolume → store.setMasterVolume`, a three-button selector `low`/`medium`/`high → store.setRenderScalePreset`, a Close button. The overlay reads the current snapshot via `store.get()` and subscribes to changes to keep its UI state in sync. No direct `Audio`/`Renderer`/`SimWorkerHost` calls from the overlay. Tests for the control wiring and unsubscribe on `dispose`. | Per [../design/main-ui-shell.md](../design/main-ui-shell.md), "Settings overlay". Depends on T5. |
+| T8 | [x] | Entry points and orchestration: add a "Settings" button to `MenuOverlay` and to `PauseOverlay`; add `openSettings()`/`closeSettings()` to `UiShell` to show/hide `SettingsOverlay` over the current phase (`menu` or `paused`), not changing `UiShellPhase`, not touching Pointer Lock and not poking `SimWorkerHost`; unavailable in `running`/`result`. Each click ("Settings", "Close", and overlay buttons) plays `audio.playUi('buttonClick')`. Tests in `UiShell.test.ts` (visibility per phase, no phase transition, correct z-order via DOM check). | Per [../design/main-ui-shell.md](../design/main-ui-shell.md), "Settings overlay". Depends on T7. |
 
 ## Related
 

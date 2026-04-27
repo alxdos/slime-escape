@@ -1,4 +1,4 @@
-# Путь Побега
+# Escape Path
 
 - Status: done
 - Created: 2026-04-26
@@ -6,137 +6,137 @@
 
 ## Product Intent
 
-Прогресс сессии должен быть не сухой строкой `Волна 7 / 15`, а видимым маршрутом к выходу.
+Session progress should not be a dry line `Wave 7 / 15`, but a visible route to the exit.
 
-Игрок должен в любой момент понимать:
+At any moment the player should understand:
 
-- где он находится в забеге;
-- сколько волн уже позади;
-- сколько ещё осталось до победы;
-- что флаг в конце достижим, если продержаться ещё немного.
+- where they are in the run;
+- how many waves are behind;
+- how many are still ahead until the win;
+- that the flag at the end is reachable if they hold on a little longer.
 
-Главная продуктовая идея: незаполненный путь хочется заполнить. Даже поражение должно оставлять ощущение `я дошёл вот сюда`, а не просто `я проиграл`.
+The core product idea: an unfilled path begs to be filled. Even a defeat should leave the feeling `I made it this far`, not just `I lost`.
 
 ## Player-facing
 
-- Sees: во время боя сверху справа появляется компактная дорожка волн: пройденные точки светятся, текущая волна выделена, будущие точки приглушены, в конце стоит флаг `🏁`.
-- Sees: между волнами и на break-экранах эта же дорожка раскрывается крупнее как `Карта Побега`: только что пройденная волна загорается, следующая точка мягко зовёт дальше, флаг остаётся видимым финалом маршрута.
-- Sees: на экране результата карта показывает, где закончился забег. При поражении текущая точка отмечает место остановки; при победе весь путь загорается до флага.
-- Can do: быстро считывать прогресс без паузы и без изучения цифр; после поражения увидеть, насколько далеко он добрался; после победы почувствовать завершение пути.
+- Sees: during combat, in the top-right, a compact wave track appears: passed dots glow, the current wave is highlighted, future dots are dim, and a `🏁` flag stands at the end.
+- Sees: between waves and on break screens the same track expands as the larger `Escape Map`: the wave that just ended lights up, the next dot calls forward gently, the flag stays the visible finish of the route.
+- Sees: on the result screen the map shows where the run ended. On a defeat the current dot marks the stopping point; on a victory the whole path lights up to the flag.
+- Can do: read progress at a glance without pausing and without studying numbers; after a defeat see how far they got; after a victory feel the path is complete.
 
 ## Experience
 
-### Во Время Боя
+### During combat
 
-Прогресс живёт в правом верхнем углу, чтобы не спорить с boss HUD сверху по центру.
+The progress lives in the top-right so it does not compete with the boss HUD at the top centre.
 
-Компактный вид:
+Compact view:
 
-`Волна 7/15   ● ● ● ● ● ● ◉ ○ ○ ○ ○ ○ ○ ○ ○ 🏁`
+`Wave 7/15   ● ● ● ● ● ● ◉ ○ ○ ○ ○ ○ ○ ○ ○ 🏁`
 
-- `Волна 7/15` даёт точную ориентацию.
-- Пройденные волны светятся.
-- Текущая волна пульсирует или выделена кольцом.
-- Будущие волны видны, но не кричат.
-- Флаг в конце превращает список волн в цель.
+- `Wave 7/15` gives precise orientation.
+- Passed waves glow.
+- The current wave pulses or is highlighted with a ring.
+- Future waves are visible but quiet.
+- The flag at the end turns the wave list into a goal.
 
-В этом компактном HUD не показываются боссы. Дорожка отвечает только на вопрос `сколько волн до выхода`, а boss HUD остаётся отдельным боевым сигналом.
+Bosses are not shown in this compact HUD. The track only answers the question "how many waves to the exit", and the boss HUD stays a separate combat signal.
 
-### Между Волнами
+### Between waves
 
-В break-периоды дорожка становится крупнее и эмоциональнее.
+In break periods the track grows larger and more emotional.
 
-После завершения волны игрок видит короткий момент подтверждения:
+After a wave ends the player gets a short moment of acknowledgement:
 
-- последняя точка вспыхивает;
-- путь визуально продвигается к флагу;
-- следующая точка слегка подсвечена;
-- текст может быть коротким: `Волна 7 пройдена` или `До выхода: 8 волн`.
+- the last dot flashes;
+- the path visually advances toward the flag;
+- the next dot is faintly highlighted;
+- a brief text may appear: `Wave 7 cleared` or `Waves to the exit: 8`.
 
-Это должно ощущаться как маленькая награда за выживание и как приглашение не выходить из забега.
+It should feel like a small reward for surviving and an invitation to stay in the run.
 
-### На Поражении
+### On a defeat
 
-Карта Побега становится главным удерживающим элементом результата.
+The Escape Map becomes the central anchor of the result.
 
-Пример:
+Example:
 
 `● ● ● ● ● ● ✕ ○ ○ ○ ○ ○ ○ ○ ○ 🏁`
 
-Текст результата:
+Result text:
 
-- `Ты добрался до волны 7 из 15`
-- `До выхода оставалось 8 волн`
-- если игрок был близко к концу: `Флаг был уже рядом`
+- `You reached wave 7 of 15`
+- `Waves left to the exit: 8`
+- if the player was close to the end: `The flag was nearly there`
 
-Поражение не должно говорить только `не получилось`. Оно должно говорить: `смотри, сколько пути ты уже забрал`.
+A defeat should not say only `you didn't make it`. It should say: `look how much of the road you took`.
 
-### На Победе
+### On a victory
 
-На победе вся дорожка заполнена, а флаг оживает.
+On a win the whole track is filled and the flag comes alive.
 
-Пример:
+Example:
 
 `● ● ● ● ● ● ● ● ● ● ● ● ● ● ● 🏁`
 
-Это визуальная точка закрытия: игрок не просто увидел `100%`, он дошёл до выхода.
+This is the visual point of closure: the player did not just see `100%`, they reached the exit.
 
 ## Visual Direction
 
-- Компактный HUD лёгкий и читаемый: без карточки, без тяжёлой панели, без конкуренции с боем.
-- Расширенная карта на break/result может быть более выразительной: крупнее точки, больше свечения, мягкая анимация заполнения.
-- Стиль остаётся comic / hand-drawn: толстый контур, яркие светящиеся точки, немного слизи/искр при заполнении.
-- Флаг в конце должен быть заметным, но не огромным. Это обещание выхода, а не отдельный UI-баннер.
-- На маленьких экранах дорожка может сжиматься: часть будущих точек группируется, но текущая волна, общее число и флаг остаются читаемыми.
+- The compact HUD is light and readable: no card, no heavy panel, no competition with combat.
+- The expanded map on break/result can be more expressive: bigger dots, more glow, soft fill animation.
+- The style stays comic / hand-drawn: thick outlines, bright glowing dots, a touch of slime/sparks while filling.
+- The flag at the end should be noticeable but not huge. It is a promise of the exit, not a separate UI banner.
+- On small screens the track may compress: some future dots group together, but the current wave, the total count, and the flag stay readable.
 
 ## Product Notes
 
-- Один и тот же прогресс должен жить в трёх формах:
-  - compact HUD для ориентации;
-  - expanded break map для мотивации продолжить;
-  - result map для желания повторить или чувства завершения.
-- Нумерация волн глобальная по всей сессии, чтобы совпадать с титрами волн и окном результатов.
-- Боссов в дорожке не отмечаем. Это оставляет маршрут чистым и не создаёт второй конкурирующий boss-индикатор.
-- Лучший эффект удержания возникает не от процента, а от незавершённой картинки: игрок видит пустые точки до флага и хочет заполнить их.
+- The same progress lives in three forms:
+  - a compact HUD for orientation;
+  - an expanded break map for motivation to continue;
+  - a result map for the desire to retry or the feeling of completion.
+- Wave numbering is global across the whole session so it matches the wave titles and the result screen.
+- Bosses are not marked on the track. This keeps the route clean and avoids a second competing boss indicator.
+- The strongest retention effect comes not from a percent, but from an unfinished picture: the player sees empty dots before the flag and wants to fill them in.
 
 ## Technical
 
-- Архитектурная опора — [escape-progress-path.md](../design/escape-progress-path.md): `Путь Побега` является main-thread presentation layer, не расширяет `Snapshot`, runtime events, session content или sim-системы.
-- Live/break вариант строится из `SessionDefinition + SnapshotPair.curr`; result-вариант строится из `SessionDefinition + SessionResultSummary`.
-- `UiShell` владеет live-компонентом так же, как HUD/Title overlay: attach/update/freeze/detach по фазам. Result UI рендерит отдельную static-карту внутри result overlay.
-- Единая pure view-model derivation должна обслуживать compact HUD, expanded break map и result map, чтобы глобальная нумерация волн не расходилась между слоями.
+- The architectural foundation — [escape-progress-path.md](../design/escape-progress-path.md): `Escape Path` is a main-thread presentation layer, it does not extend `Snapshot`, runtime events, session content, or sim systems.
+- The live/break variant is derived from `SessionDefinition + SnapshotPair.curr`; the result variant is derived from `SessionDefinition + SessionResultSummary`.
+- `UiShell` owns the live component the same way it owns HUD/Title overlay: attach/update/freeze/detach by phase. Result UI renders a separate static map inside the result overlay.
+- A single pure view-model derivation must serve the compact HUD, the expanded break map, and the result map, so global wave numbering does not drift between layers.
 
 ## Out of scope
 
-- Отдельные маркеры боссов на дорожке.
-- Персональные рекорды, best run, сохранённая история попыток.
-- Награды, unlock-и, достижения или мета-прогресс.
-- Новая кнопка `Повторить` на result screen.
-- Изменение состава волн, баланса или длительности сессии ради красивой дорожки.
-- Полноценная карта мира с отдельными биомами и иллюстрациями сетов.
+- Separate boss markers on the track.
+- Personal records, best runs, a saved history of attempts.
+- Rewards, unlocks, achievements, or meta-progress.
+- A new Retry button on the result screen.
+- Changes to wave composition, balance, or session length for the sake of a prettier path.
+- A full world map with separate biomes and set illustrations.
 
 ## Acceptance
 
-- Во время активной wave игрок видит справа сверху компактный `Путь Побега` с текущей глобальной волной, общим числом волн и флагом в конце.
-- Compact HUD не перекрывает boss HUD и не мешает считывать бой.
-- Дорожка показывает только волны: без boss-маркеров и без encounter-id.
-- После завершения волны / на break игрок видит расширенную `Карту Побега`, где только что завершённая волна визуально загорается.
-- На defeat result игрок видит карту с местом остановки и текст вида `Ты добрался до волны N из M`.
-- На victory result игрок видит полностью заполненный путь до флага.
-- Нумерация совпадает с глобальными номерами волн из title overlay и result summary.
-- Demo: запустить кампанию, увидеть compact path на первой волне; пройти волну и увидеть expanded break map; проиграть на середине сессии и увидеть, где путь оборвался; победить и увидеть заполненный путь до флага.
+- During an active wave the player sees the compact `Escape Path` in the top-right with the current global wave, the total number of waves, and the flag at the end.
+- The compact HUD does not cover the boss HUD and does not interfere with reading combat.
+- The track shows only waves: no boss markers and no encounter ids.
+- After a wave / on break the player sees the expanded `Escape Map` where the wave just cleared visually lights up.
+- On a defeat result the player sees the map with the stopping point and a text along the lines of `You reached wave N of M`.
+- On a victory result the player sees the path fully filled to the flag.
+- Numbering matches the global wave numbers from the title overlay and the result summary.
+- Demo: start a campaign, see the compact path on the first wave; clear a wave and see the expanded break map; lose mid-session and see where the path stopped; win and see the path filled to the flag.
 
 ## Tasks
 
-Архитектурная подготовка закрыта этим проходом; дальше задачи рассчитаны на кодера.
+The architecture preparation is closed in this pass; the remaining tasks target a coder.
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [x] | Архитектурная подготовка: новый [escape-progress-path.md](../design/escape-progress-path.md), обновление [main-ui-shell.md](../design/main-ui-shell.md), индекса [../design/README.md](../design/README.md), `Technical`/`Tasks`/`Related` истории. | Без production-кода. |
-| T2 | [x] | Pure progress view model: добавить main-side helper для live/result derivation пути по `SessionDefinition`, `Snapshot` и `SessionResultSummary`. | Покрыть active wave, break after wave, boss/non-wave, win, loss during wave, loss after all waves before flag, zero-wave session. |
-| T3 | [x] | Live component + UiShell wiring: создать `EscapeProgressPath` UI-компонент с lifecycle `attach/update/detach/dispose`, compact mode для running и expanded break mode для active break, подключить к `UiShell`. | Компонент пассивный: без `src/sim/**`, без runtime events, freeze в `paused`, hidden в result/menu/loading/error. |
-| T4 | [x] | Result integration: расширить `ResultViewModel` и `ResultOverlay`, чтобы victory/defeat result показывали static `Карту Побега` из terminal summary. | Result UI не читает snapshot после teardown; final-boss loss показывает stop marker before flag, а не reached flag. |
-| T5 | [x] | Presentation polish and verification: responsive layout, reduced-motion fallback, z-order sanity with boss HUD/title/pause/result, unit tests and demo checks. | Проверить desktop/mobile-ish widths; full `typecheck`/tests по затронутым UI-модулям. |
+| T1 | [x] | Architectural preparation: new [escape-progress-path.md](../design/escape-progress-path.md), update [main-ui-shell.md](../design/main-ui-shell.md), the index [../design/README.md](../design/README.md), the `Technical`/`Tasks`/`Related` of the story. | No production code. |
+| T2 | [x] | Pure progress view model: add a main-side helper for live/result path derivation from `SessionDefinition`, `Snapshot`, and `SessionResultSummary`. | Cover active wave, break after wave, boss/non-wave, win, loss during a wave, loss after every wave before the flag, zero-wave session. |
+| T3 | [x] | Live component + UiShell wiring: create the `EscapeProgressPath` UI component with the lifecycle `attach/update/detach/dispose`, compact mode for running and expanded break mode for active break, wired into `UiShell`. | The component is passive: no `src/sim/**`, no runtime events, freeze in `paused`, hidden in result/menu/loading/error. |
+| T4 | [x] | Result integration: extend `ResultViewModel` and `ResultOverlay` so victory/defeat results show a static `Escape Map` from the terminal summary. | Result UI does not read the snapshot after teardown; a final-boss loss shows the stop marker before the flag, not "reached the flag". |
+| T5 | [x] | Presentation polish and verification: responsive layout, reduced-motion fallback, z-order sanity with the boss HUD/title/pause/result, unit tests and demo checks. | Verify on desktop/mobile-ish widths; full `typecheck`/tests on the affected UI modules. |
 
 ## Related
 

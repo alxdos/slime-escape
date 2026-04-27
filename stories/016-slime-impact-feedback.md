@@ -2,56 +2,56 @@
 
 - Status: done
 - Created: 2026-04-24
-- Updated: 2026-04-24 (closed: PR #15 готов к merge. Architect pass завёл `design/impact-feedback.md` и расширения `snapshot-shape.md`, `health-and-death.md`, `projectiles-and-combat.md`, `enemy-contact.md`, `content-archetypes.md`, `sprite-assets.md`, `main-ui-shell.md`, `rng.md`, `runtime-systems.md`, `testing.md`. Code-review подтвердил, что новые контракты `hit`/`death` payload-ов, `WeaponArchetype.knockbackImpulse`, projectile knockback в `CombatSystem`, `Renderer.handleEvent` и render-only droplets/stains/ghost реализованы без drift, без расширения snapshot и без загрязнения `EntityStore`. Manual visual QA прошёл по доступным weapons.)
+- Updated: 2026-04-24 (closed: PR #15 ready to merge. The architect pass introduced `design/impact-feedback.md` and the extensions of `snapshot-shape.md`, `health-and-death.md`, `projectiles-and-combat.md`, `enemy-contact.md`, `content-archetypes.md`, `sprite-assets.md`, `main-ui-shell.md`, `rng.md`, `runtime-systems.md`, `testing.md`. The code review confirmed that the new contracts for the `hit`/`death` payloads, `WeaponArchetype.knockbackImpulse`, projectile knockback in `CombatSystem`, `Renderer.handleEvent`, and the render-only droplets/stains/ghost are implemented without drift, without extending the snapshot, and without polluting `EntityStore`. Manual visual QA passed across the available weapons.)
 
 ## Player-facing
 
-- Sees: при попадании projectile в слайма из него вылетает мокрая слизь по направлению пули. Более сильное оружие даёт более широкий и тяжёлый брызг. Попавший слайм коротко реагирует flash/squash-ом, а уничтоженный слайм оставляет быстрый fading-ghost, который улетает в основном вверх, пока крупный burst слизи падает на пол.
-- Can do: считывать силу оружия, направление попадания и подтверждение убийства через движение, мокрые следы и реакцию тела, а не только через HP и звук.
+- Sees: when a projectile hits a slime, wet slime sprays out in the projectile's direction. A heavier weapon produces a wider and heavier splash. The hit slime briefly reacts with a flash/squash, and a destroyed slime leaves a quick fading ghost flying mostly upward, while a larger slime burst falls to the floor.
+- Can do: read the weapon's force, the hit direction, and the kill confirmation through motion, wet trails, and body reaction — not only through HP and sound.
 
 ## Technical
 
-- Новый owner-контракт — [impact-feedback.md](../design/impact-feedback.md): authoritative projectile knockback живёт в `sim`, а капли/пятна/ghost/hit squash живут только в `main/render`.
-- `hit`/`death` runtime events получают target archetype и impact direction, чтобы renderer реагировал без реконструкции уже удалённых entity из snapshots.
-- `WeaponArchetype.knockbackImpulse` становится projectile force, отдельным от `damage`, и применяется к `enemy`/`boss` через существующий target knockback state.
-- `UiShell` пробрасывает runtime events в `Renderer.handleEvent(RuntimeEvent)`, оставаясь единственным owner-ом `SimWorkerHost.onEvent`.
-- `EnemyArchetype.color` / `BossArchetype.color` используются как цвет материала render-only slime effects; base sprite rendering остаётся PNG-driven.
+- A new owner contract — [impact-feedback.md](../design/impact-feedback.md): authoritative projectile knockback lives in `sim`, while droplets/stains/ghosts/hit squash live only in `main/render`.
+- The `hit`/`death` runtime events gain target archetype and impact direction, so the renderer can react without reconstructing already-removed entities from snapshots.
+- `WeaponArchetype.knockbackImpulse` becomes a projectile force, separate from `damage`, applied to `enemy`/`boss` through the existing target knockback state.
+- `UiShell` forwards runtime events into `Renderer.handleEvent(RuntimeEvent)` while remaining the sole owner of `SimWorkerHost.onEvent`.
+- `EnemyArchetype.color` / `BossArchetype.color` are used as the material colour of render-only slime effects; base sprite rendering stays PNG-driven.
 
 ## Out of scope
 
-- Gameplay puddles: пятна слизи не замедляют, не дамажат, не блокируют, не лечат, не подбираются и не влияют на pathing.
-- Player knockback от enemy/boss projectiles.
-- Визуальная/звуковая реакция на contact damage.
-- Authored particle atlases, sprite sheets, skeleton animation или shader-only deformation.
-- Persistent slime decals между сессиями, сохранениями или выходом в меню.
-- Новые виды оружия, новые враги или balance redesign, кроме добавления force values текущему weapon content.
+- Gameplay puddles: slime stains do not slow, damage, block, heal, get picked up, or affect pathing.
+- Player knockback from enemy/boss projectiles.
+- Visual/audio reaction to contact damage.
+- Authored particle atlases, sprite sheets, skeleton animation, or shader-only deformation.
+- Persistent slime decals across sessions, saves, or returning to the menu.
+- New weapons, new enemies, or a balance redesign, beyond adding force values to current weapon content.
 
 ## Acceptance
 
-- Projectile hits по `enemy`/`boss` создают капли слизи, смещённые по направлению движения projectile; hits по player не создают slime spray.
-- Weapon force влияет на ощущение брызга: большее `knockbackImpulse` заметно даёт более тяжёлый/широкий impact feedback, чем низкое значение.
-- Попавшие слаймы коротко flash-ятся и/или squash-атся без изменения simulation geometry, `SpriteVisualSpec`, `contactBox` или snapshot shape.
-- Projectile hits применяют simulation knockback к живым `enemy`/`boss` в направлении projectile, масштабируя его через `WeaponArchetype.knockbackImpulse` и susceptibility цели; HP по-прежнему применяет только `HealthDeathSystem`.
-- При смерти слайма renderer создаёт transient ghost sprite из visual умершего слайма, двигает его в основном вверх с меньшим компонентом по направлению удара, fade-out-ит примерно за 1-2 секунды и создаёт slime burst крупнее обычного hit.
-- Капли слизи — irregular blob shapes, не финальные круги. После landing они слегка растут примерно две секунды, остаются floor stains на renderer-owned TTL, затем исчезают через opacity.
-- Цвет капель/пятен берётся из цвета target slime archetype.
-- Slime droplets, floor stains и death ghosts — render-only state: они не появляются в `Snapshot.entities`, не входят в `EntityStore` и исчезают на renderer dispose / выходе из run.
-- Automated tests покрывают event payload shape, projectile knockback, renderer event handling/effect cleanup и обязательный weapon force content. Manual visual QA проверяет доступные weapons в live run.
+- Projectile hits on `enemy`/`boss` produce slime droplets offset along the projectile direction; hits on the player do not produce slime spray.
+- Weapon force changes the feel of the splash: a higher `knockbackImpulse` produces a noticeably heavier/wider impact feedback than a low value.
+- Hit slimes briefly flash and/or squash without changing simulation geometry, `SpriteVisualSpec`, `contactBox`, or the snapshot shape.
+- Projectile hits apply simulation knockback to live `enemy`/`boss` in the projectile's direction, scaled by `WeaponArchetype.knockbackImpulse` and the target's susceptibility; HP is still mutated only by `HealthDeathSystem`.
+- On a slime's death the renderer creates a transient ghost sprite from the dead slime's visual, moves it mostly upward with a smaller component along the impact direction, fades it out over roughly 1–2 seconds, and produces a slime burst larger than a regular hit.
+- Slime droplets are irregular blob shapes, not crisp circles. After landing they grow slightly for about two seconds, remain as floor stains for a renderer-owned TTL, then fade out via opacity.
+- Droplet/stain colour is taken from the colour of the target slime archetype.
+- Slime droplets, floor stains, and death ghosts are render-only state: they do not appear in `Snapshot.entities`, do not enter `EntityStore`, and disappear on renderer dispose / leaving a run.
+- Automated tests cover event payload shape, projectile knockback, renderer event handling/effect cleanup, and the mandatory weapon force content. Manual visual QA verifies the available weapons in a live run.
 
 ## Tasks
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [x] | Зафиксировать архитектуру impact feedback | Добавлены `design/impact-feedback.md` и обновления связанных design-контрактов до кодовой работы. |
-| T2 | [x] | Расширить runtime event и damage intent payloads | Обновить `RuntimeEvent.hit`, `RuntimeEvent.death`, projectile `DamageIntent.source` и тесты под archetype/direction data. |
-| T3 | [x] | Добавить weapon force в content | Добавить обязательный `WeaponArchetype.knockbackImpulse`, обновить MD parsing/rendering/generated content и выставить начальные значения существующим weapons. |
-| T4 | [x] | Применить projectile knockback в симуляции | Переиспользовать enemy/boss knockback state на projectile hits, учесть susceptibility/duration цели и оставить HP mutation внутри `HealthDeathSystem`. |
-| T5 | [x] | Пробросить runtime events в renderer | Добавить `Renderer.handleEvent`, route events из `UiShell`, очистку renderer effects на dispose/session transitions. |
-| T6 | [x] | Собрать render-only impact effect store | Отслеживать transient hit impulses, droplets/stains и death ghosts с bounded budgets, TTL и per-frame updates. |
-| T7 | [x] | Нарисовать slime droplets и floor stains | Генерировать irregular blob geometry, spawn-ить hit/death bursts из event data, коротко settle/grow stains, затем fade/remove. |
-| T8 | [x] | Добавить live hit response | Наложить короткий flash и/или squash impulse на enemy/boss sprites без влияния на breathing, position interpolation или player rendering. |
-| T9 | [x] | Добавить death ghost feedback | Spawn transient sprite copy из death event archetype/texture, двигать вверх плюс impact direction, быстро fade-out-ить и безопасно работать без live mesh. |
-| T10 | [x] | Проверить и настроить общее ощущение | Прогнаны `npm run test` (399/399) и `npm run build`. Manual browser QA по доступным weapons подтвердил direction, force difference, color, cleanup и отсутствие leftovers после выхода из run. |
+| T1 | [x] | Pin the impact feedback architecture | Added `design/impact-feedback.md` and updates to the related design contracts before code work. |
+| T2 | [x] | Extend the runtime event and damage intent payloads | Update `RuntimeEvent.hit`, `RuntimeEvent.death`, the projectile `DamageIntent.source`, and the tests for archetype/direction data. |
+| T3 | [x] | Add weapon force to content | Add the mandatory `WeaponArchetype.knockbackImpulse`, update MD parsing/rendering/generated content, and set initial values on existing weapons. |
+| T4 | [x] | Apply projectile knockback in simulation | Reuse the enemy/boss knockback state on projectile hits, account for the target's susceptibility/duration, and keep HP mutation inside `HealthDeathSystem`. |
+| T5 | [x] | Forward runtime events into the renderer | Add `Renderer.handleEvent`, route events from `UiShell`, clean up renderer effects on dispose/session transitions. |
+| T6 | [x] | Build a render-only impact effect store | Track transient hit impulses, droplets/stains, and death ghosts with bounded budgets, TTL, and per-frame updates. |
+| T7 | [x] | Draw slime droplets and floor stains | Generate irregular blob geometry, spawn hit/death bursts from event data, briefly settle/grow stains, then fade/remove. |
+| T8 | [x] | Add a live hit response | Apply a short flash and/or squash impulse to enemy/boss sprites without affecting breathing, position interpolation, or player rendering. |
+| T9 | [x] | Add death ghost feedback | Spawn a transient sprite copy from the death event archetype/texture, move it upward plus along the impact direction, fade it out quickly, and work safely without a live mesh. |
+| T10 | [x] | Verify and tune the overall feel | `npm run test` (399/399) and `npm run build` were run. Manual browser QA across the available weapons confirmed direction, force difference, colour, cleanup, and no leftovers after leaving a run. |
 
 ## Related
 

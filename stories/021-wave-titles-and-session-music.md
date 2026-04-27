@@ -1,133 +1,133 @@
-# Титры волн и музыка сессии
+# Wave Titles and Session Music
 
 - Status: in-progress
 - Created: 2026-04-26
-- Updated: 2026-04-26 (архитектурная подготовка: контракты вынесены в design/)
+- Updated: 2026-04-26 (architecture preparation: contracts moved into design/)
 
 ## Player-facing
 
-- Видит: перед каждой волной на несколько секунд появляется большой титр поверх арены. Первая строка сообщает глобальный номер волны в сессии (`Волна 1`, `Волна 2`, `Волна 3`, ...), вторая строка, если задана в контенте, даёт художественное название волны (`Каменные взгляды`). Слаймы начинают выходить только после титра.
-- Видит: в коротких break-окнах после босса может появляться переходный текст, например `Дальше: Индустриальные мутанты`. Это не меню и не карточка, а такая же яркая надпись поверх арены.
-- Слышит: обычная музыка больше не выбирается случайно из захардкоженного пула. У каждой session есть свой трек, который играет во всех обычных волнах и break-ах. На boss encounter музыка временно переключается на текущий boss-track; после босса возвращается трек сессии.
-- Чувствует: кампания становится читаемой как глава за главой: сет объявляется коротким break-текстом, волна объявляется номером и названием, а музыка сессии удерживает общий тон забега.
+- Sees: before every wave a large title appears over the arena for a few seconds. The first line states the wave's global number in the session (`Wave 1`, `Wave 2`, `Wave 3`, ...); the second line, if set in content, gives an artistic wave name (`Stone Stares`). Slimes only start coming out after the title.
+- Sees: in short break windows after a boss a transitional text may appear, for example `Up next: Industrial mutants`. It is not a menu or a card — the same bright title text over the arena.
+- Hears: regular music is no longer picked at random from a hardcoded pool. Each session has its own track that plays through every regular wave and break. On a boss encounter the music temporarily switches to the current boss track; after the boss the session track returns.
+- Feels: the campaign reads like one chapter at a time: a set is announced by a short break text, a wave is announced by its number and name, and the session music holds the overall tone of the run.
 
 ## Technical
 
-История добавляет presentation-поля encounter (`introDurationMs`/`name`/`text`), session-level обычную музыку (`musicSampleId`) и отдельный UI-слой title overlay поверх существующей MD-системы из 015. Архитектурные контракты — в design/:
+The story adds presentation fields on encounters (`introDurationMs`/`name`/`text`), a session-level regular music (`musicSampleId`), and a separate UI title-overlay layer on top of the existing MD system from 015. The architectural contracts are in design/:
 
-- Форма полей encounter, парные ограничения по `type`, intro delay для `SpawnSystem`/`ZoneSystem`/`SessionFlowSystem`, глобальная нумерация wave encounter-ов, render-контракт wave/break overlay — [encounter-presentation.md](../design/encounter-presentation.md).
-- `SessionDefinition.musicSampleId: string | null` и ссылка на audio-валидацию — [session-definition.md](../design/session-definition.md).
-- Source обычной музыки = `attachedSession.musicSampleId`, boss override сохраняется, `category: 'music'` ⇒ `loop: true`, `musicSampleId` обязан быть music-категории — [audio.md](../design/audio.md).
-- Authoring: `# Session` получает поле `musicSampleId` (`none` → `null`), encounter field|value получает `introDurationMs`/`name`/`text` с hard-error на нарушение парных ограничений — [content-authoring.md](../design/content-authoring.md).
+- The encounter field shape, paired constraints by `type`, intro delay for `SpawnSystem`/`ZoneSystem`/`SessionFlowSystem`, global numbering of wave encounters, the wave/break overlay render contract — [encounter-presentation.md](../design/encounter-presentation.md).
+- `SessionDefinition.musicSampleId: string | null` and the link to audio validation — [session-definition.md](../design/session-definition.md).
+- The source of regular music = `attachedSession.musicSampleId`, the boss override is preserved, `category: 'music'` ⇒ `loop: true`, `musicSampleId` must reference a music-category sample — [audio.md](../design/audio.md).
+- Authoring: `# Session` gains the field `musicSampleId` (`none` → `null`); the encounter field|value gains `introDurationMs`/`name`/`text` with hard errors on paired-constraint violations — [content-authoring.md](../design/content-authoring.md).
 
-HUD-нумерация волн, overlay и итоговое окно используют глобальный порядок wave encounter-ов (по [main-ui-shell.md](../design/main-ui-shell.md) и [encounter-presentation.md](../design/encounter-presentation.md)). Снапшот не расширяется: intro-активность derive-ится из `snapshot.encounter.elapsedMs` и `SessionDefinition.encounters[i].introDurationMs`.
+The HUD wave numbering, the overlay, and the result screen use the global order of wave encounters (per [main-ui-shell.md](../design/main-ui-shell.md) and [encounter-presentation.md](../design/encounter-presentation.md)). The snapshot is not extended: intro activity is derived from `snapshot.encounter.elapsedMs` and `SessionDefinition.encounters[i].introDurationMs`.
 
 ### Visual style
 
-- Overlay не является карточкой и не блокирует вид арены декоративной панелью.
-- Текст расположен по центру viewport/арены, поверх gameplay canvas/HUD.
-- Буквы светлые и яркие, с чёрной обводкой и контрастной тенью. Ориентир:
-  - первая строка (`Волна 3`) меньше, uppercase или small-caps допустимы;
-  - вторая строка (`Каменные взгляды`) крупнее и выразительнее;
-  - `-webkit-text-stroke`/эквивалентная обводка 2-3 px чёрным;
-  - несколько слоёв `text-shadow` для читаемости на светлых фонах set-1/set-2/set-4/set-5;
-  - fade in / hold / fade out без скачков layout.
-- Текст должен помещаться на mobile и desktop. Длинные названия переносятся максимум на две строки subtitle, без отрицательного letter-spacing и без font-size от viewport width.
+- The overlay is not a card and does not block the arena view with a decorative panel.
+- The text is centred over the viewport/arena, on top of the gameplay canvas/HUD.
+- Letters are bright and light, with a black outline and a contrasting shadow. Reference:
+  - the first line (`Wave 3`) is smaller, uppercase or small-caps allowed;
+  - the second line (`Stone Stares`) is larger and more expressive;
+  - `-webkit-text-stroke`/equivalent stroke 2-3 px in black;
+  - several layered `text-shadow` for readability over the bright set-1/set-2/set-4/set-5 backgrounds;
+  - fade in / hold / fade out without layout jumps.
+- The text must fit on mobile and desktop. Long names wrap to at most two subtitle lines, without negative letter-spacing and without viewport-width-driven font-size.
 
 ### Content naming
 
-Прототипные комментарии не копируются дословно. Названия должны соответствовать текущим архетипам и PNG-спрайтам.
+The prototype comments are not copied verbatim. Names should match the current archetypes and PNG sprites.
 
-Текущая карта сетов:
+Current set map:
 
-| set | тема | текущие основные слаймы | boss |
+| set | theme | current main slimes | boss |
 |---|---|---|---|
-| set-1 | Первые слаймы | One-Eye, Sleeper, Hornling, Spark, Many-Eye, Stonehead | Gargoyle Slime |
-| set-2 | Хламные призраки | Trickster, Wraith, Shell, Stack, Mech Crab, Flame | Saw Cyclops |
-| set-3 | Индустриальные мутанты | Echo, Bug, Star, Lifter, Drone, Saw, Idol на hard | Scrap King |
-| set-4 | Королевство на войне | Tadpole, Fortress, Splitter, Prince, Dasher, Kingling, Idol/Mech Crab на hard | Tower Sentinel |
-| set-5 | Техно-финал | Door, Candle, Mech, Clamper, Obelisk, Ninja, Idol на hard | Bubble Hog |
+| set-1 | First slimes | One-Eye, Sleeper, Hornling, Spark, Many-Eye, Stonehead | Gargoyle Slime |
+| set-2 | Junk ghosts | Trickster, Wraith, Shell, Stack, Mech Crab, Flame | Saw Cyclops |
+| set-3 | Industrial mutants | Echo, Bug, Star, Lifter, Drone, Saw, Idol on hard | Scrap King |
+| set-4 | Kingdom at war | Tadpole, Fortress, Splitter, Prince, Dasher, Kingling, Idol/Mech Crab on hard | Tower Sentinel |
+| set-5 | Techno-final | Door, Candle, Mech, Clamper, Obelisk, Ninja, Idol on hard | Bubble Hog |
 
-Предлагаемые названия волн для normal/hard:
+Suggested wave names for normal/hard:
 
 | encounter pattern | name |
 |---|---|
-| campaign-set-1-wave-1 | Один глаз в темноте |
-| campaign-set-1-wave-2 | Рога и искры |
-| campaign-set-1-wave-3 | Каменные взгляды |
-| campaign-set-2-wave-1 | Панцири и призраки |
-| campaign-set-2-wave-2 | Хламная куча |
-| campaign-set-2-wave-3 | Огненный скрап |
-| campaign-set-3-wave-1 | Эхо в противогазах |
-| campaign-set-3-wave-2 | Качки и дроны |
-| campaign-set-3-wave-3 | Бензопильный цех |
-| campaign-set-4-wave-1 | Бомбы у ворот |
-| campaign-set-4-wave-2 | Принцы и сюрикены |
-| campaign-set-4-wave-3 | Корона мёртвых |
-| campaign-set-5-wave-1 | Дискеты и двигатели |
-| campaign-set-5-wave-2 | Магниты и ниндзя |
-| campaign-set-5-wave-3 | Идолы последнего сектора |
+| campaign-set-1-wave-1 | One Eye in the Dark |
+| campaign-set-1-wave-2 | Horns and Sparks |
+| campaign-set-1-wave-3 | Stone Stares |
+| campaign-set-2-wave-1 | Shells and Ghosts |
+| campaign-set-2-wave-2 | Heap of Junk |
+| campaign-set-2-wave-3 | Burning Scrap |
+| campaign-set-3-wave-1 | Echoes in Gas Masks |
+| campaign-set-3-wave-2 | Lifters and Drones |
+| campaign-set-3-wave-3 | The Sawmill Shop |
+| campaign-set-4-wave-1 | Bombs at the Gate |
+| campaign-set-4-wave-2 | Princes and Shuriken |
+| campaign-set-4-wave-3 | Crown of the Dead |
+| campaign-set-5-wave-1 | Discs and Engines |
+| campaign-set-5-wave-2 | Magnets and Ninjas |
+| campaign-set-5-wave-3 | Idols of the Last Sector |
 
-Easy использует только set-1 / set-3 / set-5 по две волны. Для easy можно использовать те же названия первых двух волн соответствующих сетов.
+Easy uses set-1 / set-3 / set-5 only, two waves each. For easy you can reuse the names of the first two waves of the matching sets.
 
-Предлагаемые after-boss break тексты:
+Suggested after-boss break texts:
 
 | break | text |
 |---|---|
-| campaign-set-1-after-boss-break | Дальше: Хламные призраки |
-| campaign-set-2-after-boss-break | Дальше: Индустриальные мутанты |
-| campaign-set-3-after-boss-break | Дальше: Королевство на войне |
-| campaign-set-4-after-boss-break | Дальше: Техно-финал |
+| campaign-set-1-after-boss-break | Up next: Junk Ghosts |
+| campaign-set-2-after-boss-break | Up next: Industrial Mutants |
+| campaign-set-3-after-boss-break | Up next: Kingdom at War |
+| campaign-set-4-after-boss-break | Up next: Techno-Final |
 
-Для финального boss после set-5 after-boss break сейчас нет, потому что кампания заканчивается на boss encounter. Финальный outro/result overlay не входит в эту историю.
+There is no after-boss break for the final boss after set-5, since the campaign ends on the boss encounter. The final outro/result overlay is not part of this story.
 
 ## Out of scope
 
-- Per-wave music, per-set music и crossfade между сетами. В этой истории обычный трек один на всю session.
-- Per-boss custom music в content. Все boss encounter-ы используют текущий `boss/boss-music`.
-- Новая музыка, новые mp3-файлы, нормализация/мастеринг треков. Можно только подключить уже лежащие файлы из `public/sfx/music/` в registry.
-- Переименование enemy `displayName` / `id` ради художественных названий волн. Story добавляет player-facing тексты encounter-ов, не меняет архетипы.
-- Локализация на несколько языков. Все новые campaign-тексты пишутся по-русски, как текущие `displayName` кампаний.
-- Landing page, отдельные cutscene-экраны, иллюстрации сетов, портреты слаймов в титре.
-- Сохранение/пропуск intro по кнопке. Игрок ждёт короткий фиксированный intro.
-- Изменение HUD wave progress. Существующий HUD может продолжать показывать свою строку прогресса; overlay — отдельный слой.
-- Изменение boss music поведения, кроме возврата к session track после boss.
+- Per-wave music, per-set music, and crossfades between sets. In this story the regular track is one for the whole session.
+- Per-boss custom music in content. All boss encounters use the current `boss/boss-music`.
+- New music, new mp3 files, normalisation/mastering of tracks. We can only wire already-present files from `public/sfx/music/` into the registry.
+- Renaming enemy `displayName` / `id` for the sake of artistic wave names. The story adds player-facing encounter texts; it does not change archetypes.
+- Localisation into multiple languages. All new campaign texts are written in the same language as today's campaign `displayName`s.
+- Landing pages, separate cutscene screens, set illustrations, slime portraits in the title.
+- Saving/skipping the intro by a button. The player waits a short fixed intro.
+- Changes to the HUD wave progress. The existing HUD may keep its progress line; the overlay is a separate layer.
+- Changing boss music behaviour beyond returning to the session track after a boss.
 
 ## Acceptance
 
-- В начале каждой wave с `introDurationMs > 0` появляется overlay. Во время overlay `waveProgress.dispatched` остаётся `0`, enemy count не увеличивается, зона остаётся на стартовом margin.
-- После окончания intro первая волна начинает спавнить слаймов по существующим `spawnIntervalMs`, а зона начинает сжиматься с нулевой точки своего wave-таймера.
-- Overlay показывает глобальный номер: `campaign-set-2-wave-1` отображается как `Волна 4`, не `Волна 1`.
-- Overlay не показывает "Wave 1" из markdown: номер вычисляется из `session.encounters`.
-- Если `name` задан, видны две строки; если `name` отсутствует, видна только строка номера.
-- Break с `text` показывает этот текст в течение break encounter и исчезает при переходе к следующему encounter.
-- Текст overlay читаем на всех текущих фонах (`bg-01`..`bg-05`): светлые яркие буквы, чёрная обводка, контрастная тень, без карточки.
-- Все campaign session-файлы проходят `npm run content:check`: `name`, `introDurationMs`, `text`, `musicSampleId` парсятся и попадают в generated content.
-- `content:check` падает, если `musicSampleId` неизвестен или указывает на sample не из категории `music`.
-- Для session с `musicSampleId: none` обычная музыка не стартует.
-- Для session с `musicSampleId: music/005-forest` обычные wave/break encounter-ы играют именно этот трек, без random pool.
-- При входе в boss encounter включается `boss/boss-music`; при выходе из boss encounter возвращается `musicSampleId` текущей session.
-- В `menu` / `result` / `loading` / `error` музыка останавливается, как до истории.
-- Pause не меняет track, только duck-ит music gain, как до истории.
-- `npm run content:check && tsc -p tsconfig.scripts.json && npm run typecheck && npm test` проходят.
-- Визуальная проверка через dev server: старт normal campaign показывает `Волна 1 / Один глаз в темноте`, слаймы появляются только после титра; после первого босса появляется `Дальше: Хламные призраки`; boss music включается на боссе и возвращается к session music после него.
+- At the start of every wave with `introDurationMs > 0` an overlay appears. While the overlay is up `waveProgress.dispatched` stays `0`, enemy count does not grow, and the zone stays at the starting margin.
+- After the intro ends the first wave starts spawning slimes per the existing `spawnIntervalMs`, and the zone starts shrinking from the zero point of its wave timer.
+- The overlay shows the global number: `campaign-set-2-wave-1` is shown as `Wave 4`, not `Wave 1`.
+- The overlay does not show "Wave 1" from markdown: the number is computed from `session.encounters`.
+- If `name` is set, two lines are visible; if `name` is missing, only the number line is visible.
+- A break with `text` shows that text during the break encounter and disappears on the transition to the next encounter.
+- The overlay text is readable across every current background (`bg-01`..`bg-05`): bright light letters, black outline, contrasting shadow, no card.
+- All campaign session files pass `npm run content:check`: `name`, `introDurationMs`, `text`, `musicSampleId` are parsed and land in the generated content.
+- `content:check` fails if `musicSampleId` is unknown or refers to a sample whose `category` is not `music`.
+- For a session with `musicSampleId: none` the regular music does not start.
+- For a session with `musicSampleId: music/005-forest` regular wave/break encounters play exactly that track, no random pool.
+- On entering a boss encounter `boss/boss-music` starts; on leaving the boss encounter the current session's `musicSampleId` resumes.
+- In `menu` / `result` / `loading` / `error` music stops as before this story.
+- Pause does not change the track, only ducks the music gain, as before.
+- `npm run content:check && tsc -p tsconfig.scripts.json && npm run typecheck && npm test` pass.
+- Visual check via the dev server: starting the normal campaign shows `Wave 1 / One Eye in the Dark`, slimes appear only after the title; after the first boss `Up next: Junk Ghosts` appears; boss music turns on for the boss and goes back to the session music after.
 
 ## Tasks
 
-Архитектурная часть уже закрыта одним PR (`[021 architect]`) — все контракты в `design/` приняты. Кодовые задачи идут последовательно, каждая — отдельным коммитом на той же ветке.
+The architecture pass is already closed in one PR (`[021 architect]`) — every contract in `design/` is accepted. Code tasks proceed sequentially, each as a separate commit on the same branch.
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [x] | Архитектурная подготовка: новый [encounter-presentation.md](../design/encounter-presentation.md); обновления [session-definition.md](../design/session-definition.md), [audio.md](../design/audio.md), [content-authoring.md](../design/content-authoring.md), [spawn-plan.md](../design/spawn-plan.md), [zone.md](../design/zone.md), [main-ui-shell.md](../design/main-ui-shell.md), `design/README.md`; актуализация `Related`/`Technical`/`Tasks` истории. | Ветка архитектора, без правок `src/**` и `content/**`. |
-| T2 | [x] | Расширить shared-типы в `src/shared/session.ts` и смежных: `SessionDefinition.musicSampleId: string \| null`; `EncounterDefinition` получает **обязательные** `introDurationMs: number`, `name: string \| null`, `text: string \| null` (плоская форма, без `?`). | Инвариант — пустой `name`/`text` запрещён, значение либо `null`, либо непустая строка. TS-fixtures в тестах дозаполняются явно, без backward-compat shim. |
-| T3 | [x] | `scripts/content-build/sessions/**`: парсинг `musicSampleId` в первой `# Session` таблице (`none` → `null`, plain → cross-check через `SampleRegistry` + `category: 'music'`); парсинг `introDurationMs`/`name`/`text` в encounter field\|value (`none` → `null`/`0`); hard-error на нарушение парных ограничений из [encounter-presentation.md](../design/encounter-presentation.md). | Сообщения об ошибках с `file:line`; unit-тесты — в T8. |
-| T4 | [x] | Обновить все `content/sessions/*.md` (все три кампании + `training`/`sandbox`/`sandbox-with-combat`/`combat-modifiers-demo`): добавить `musicSampleId` (`none` для sandbox-ов, явный трек для кампаний); campaign wave-ам добавить `introDurationMs: 2500` и `name` из раздела Content naming; after-boss break-ам добавить `text` и при необходимости поднять `transitionDurationMs`. | Контент, не код. Регенерация `sessions.generated.ts` через `content:build`. |
-| T5 | [x] | `Audio`: убрать `REGULAR_MUSIC_POOL` и `lastRegularMusicSampleId`, источник regular music = `attachedSession.musicSampleId`; boss override и pause ducking не трогать; в `SampleRegistry` прописать `loop: true` для всех entries с `category: 'music'`; в `createAudio`/`attach` добавить валидации из [audio.md](../design/audio.md). | Дозаполнить `SampleRegistry` всеми уже лежащими `/sfx/music/*.mp3`, если они нужны контенту. |
-| T6 | [x] | Реализовать intro delay в sim: `SpawnSystem`, `ZoneSystem` и `SessionFlowSystem` уважают `encounter.elapsedMs < encounter.introDurationMs` по правилам [encounter-presentation.md](../design/encounter-presentation.md); `'allEnemiesCleared'` подавляется во время intro. | `encounter.elapsedMs` уже в snapshot — дополнительные поля не нужны. |
-| T7 | [x] | Реализовать wave/break title overlay в `src/main/ui/**`: отдельный компонент, подключённый `UiShell` параллельно `Hud`; данные — `SessionDefinition` + `snapshot.encounter`; глобальная нумерация по всем wave encounter-ам; condition показа и z-order — по [encounter-presentation.md](../design/encounter-presentation.md). | Не делать карточку. Стили (обводка, тень, fade) — раздел Visual style этой истории. |
-| T8 | [x] | Тесты content-build: валидный `musicSampleId`, `none`, неизвестный sample, sample не music-category; `introDurationMs`/`name`/`text` с валидными комбинациями и hard-error на нарушение парных ограничений. | Поверх `scripts/content-build/sessions/**` unit-тесты. |
-| T9 | [x] | Тесты sim/UI/audio: глобальный wave number поверх break/boss границ; delayed spawn и zone при intro; `allEnemiesCleared` не срабатывает во время intro, включая `spawnPlan: { kind: 'empty' }` wave; overlay lifecycle; session music → boss music → session music; `musicSampleId: null` = silent; `category: 'music'` && `!loop` = ошибка модуля. | `Hud.test.ts`, `Audio.test.ts`, `SessionFlowSystem` tests, новый overlay test. |
-| T10 | [ ] | Финальная верификация: `npm run content:check && tsc -p tsconfig.scripts.json && npm run typecheck && npm test`; dev-server visual/audio sanity. | Проверить набор: set-1 wave-1 (intro + название + первый slime), set-1 pre-boss break, set-1 boss (musicSampleId → boss music), set-1 after-boss break (text), set-2 wave-1 (глобальная «Волна 4», не «Волна 1»). |
+| T1 | [x] | Architectural preparation: new [encounter-presentation.md](../design/encounter-presentation.md); updates to [session-definition.md](../design/session-definition.md), [audio.md](../design/audio.md), [content-authoring.md](../design/content-authoring.md), [spawn-plan.md](../design/spawn-plan.md), [zone.md](../design/zone.md), [main-ui-shell.md](../design/main-ui-shell.md), `design/README.md`; updating the story's `Related`/`Technical`/`Tasks`. | Architect branch, no edits in `src/**` or `content/**`. |
+| T2 | [x] | Extend shared types in `src/shared/session.ts` and adjacent: `SessionDefinition.musicSampleId: string \| null`; `EncounterDefinition` gains **mandatory** `introDurationMs: number`, `name: string \| null`, `text: string \| null` (a flat shape, without `?`). | Invariant — an empty `name`/`text` is forbidden, the value is either `null` or a non-empty string. TS fixtures in tests are filled in explicitly, without a backward-compat shim. |
+| T3 | [x] | `scripts/content-build/sessions/**`: parse `musicSampleId` in the first `# Session` table (`none` → `null`, plain → cross-check via `SampleRegistry` + `category: 'music'`); parse `introDurationMs`/`name`/`text` in encounter field\|value (`none` → `null`/`0`); hard error on paired-constraint violations from [encounter-presentation.md](../design/encounter-presentation.md). | Error messages with `file:line`; unit tests in T8. |
+| T4 | [x] | Update all `content/sessions/*.md` (the three campaigns + `training`/`sandbox`/`sandbox-with-combat`/`combat-modifiers-demo`): add `musicSampleId` (`none` for sandboxes, an explicit track for the campaigns); add `introDurationMs: 2500` and `name` from the Content naming section to campaign waves; add `text` to after-boss breaks and bump `transitionDurationMs` if needed. | Content, not code. Regenerate `sessions.generated.ts` via `content:build`. |
+| T5 | [x] | `Audio`: remove `REGULAR_MUSIC_POOL` and `lastRegularMusicSampleId`, the source of regular music = `attachedSession.musicSampleId`; do not touch the boss override or pause ducking; in `SampleRegistry` set `loop: true` for every entry with `category: 'music'`; in `createAudio`/`attach` add the validations from [audio.md](../design/audio.md). | Fill in `SampleRegistry` with every already-present `/sfx/music/*.mp3` if the content needs them. |
+| T6 | [x] | Implement intro delay in sim: `SpawnSystem`, `ZoneSystem`, and `SessionFlowSystem` honour `encounter.elapsedMs < encounter.introDurationMs` per the rules in [encounter-presentation.md](../design/encounter-presentation.md); `'allEnemiesCleared'` is suppressed during intro. | `encounter.elapsedMs` is already in the snapshot — no extra fields needed. |
+| T7 | [x] | Implement the wave/break title overlay in `src/main/ui/**`: a separate component, wired by `UiShell` next to `Hud`; data — `SessionDefinition` + `snapshot.encounter`; global numbering across every wave encounter; show condition and z-order — per [encounter-presentation.md](../design/encounter-presentation.md). | Do not make a card. Styles (outline, shadow, fade) — the Visual style section of this story. |
+| T8 | [x] | content-build tests: a valid `musicSampleId`, `none`, an unknown sample, a non-music-category sample; `introDurationMs`/`name`/`text` with valid combinations and hard errors on paired-constraint violations. | Unit tests on top of `scripts/content-build/sessions/**`. |
+| T9 | [x] | sim/UI/audio tests: global wave numbering across break/boss boundaries; delayed spawn and zone during intro; `allEnemiesCleared` does not trigger during intro, including a `spawnPlan: { kind: 'empty' }` wave; overlay lifecycle; session music → boss music → session music; `musicSampleId: null` = silent; `category: 'music'` && `!loop` = a module error. | `Hud.test.ts`, `Audio.test.ts`, `SessionFlowSystem` tests, a new overlay test. |
+| T10 | [ ] | Final verification: `npm run content:check && tsc -p tsconfig.scripts.json && npm run typecheck && npm test`; dev-server visual/audio sanity. | Check the path: set-1 wave-1 (intro + name + first slime), set-1 pre-boss break, set-1 boss (musicSampleId → boss music), set-1 after-boss break (text), set-2 wave-1 (the global "Wave 4", not "Wave 1"). |
 
 ## Related
 

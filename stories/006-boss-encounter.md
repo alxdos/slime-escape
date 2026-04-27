@@ -6,39 +6,39 @@
 
 ## Player-facing
 
-- Sees: после прохождения волн запускается финальный бой с боссом на полной арене без тёмной зоны; видны фазы поведения босса.
-- Can do: сражаться с боссом, переживать смену фаз, побеждать (финальный win) или умирать.
+- Sees: after the waves are cleared, the final boss fight starts on the full arena with no dark zone; the boss's behaviour phases are visible.
+- Can do: fight the boss, weather phase changes, win (the final win) or die.
 
 ## Technical
 
-- Опоры: [boss-encounter.md](../design/boss-encounter.md), [spawn-plan.md](../design/spawn-plan.md) (`kind: 'boss'`), [content-archetypes.md](../design/content-archetypes.md) (`BossArchetype`, реестр `bosses`), [session-definition.md](../design/session-definition.md) (`EncounterDefinition.type: 'boss'`, `zoneBehavior: disabled`, `winCondition: bossDefeated`), [runtime-systems.md](../design/runtime-systems.md) (`BossPhaseSystem`), [snapshot-shape.md](../design/snapshot-shape.md), [health-and-death.md](../design/health-and-death.md), [enemy-contact.md](../design/enemy-contact.md), [projectiles-and-combat.md](../design/projectiles-and-combat.md), [zone.md](../design/zone.md). Продуктовые ожидания — [../docs/BOSS.md](../docs/BOSS.md).
+- Foundations: [boss-encounter.md](../design/boss-encounter.md), [spawn-plan.md](../design/spawn-plan.md) (`kind: 'boss'`), [content-archetypes.md](../design/content-archetypes.md) (`BossArchetype`, `bosses` registry), [session-definition.md](../design/session-definition.md) (`EncounterDefinition.type: 'boss'`, `zoneBehavior: disabled`, `winCondition: bossDefeated`), [runtime-systems.md](../design/runtime-systems.md) (`BossPhaseSystem`), [snapshot-shape.md](../design/snapshot-shape.md), [health-and-death.md](../design/health-and-death.md), [enemy-contact.md](../design/enemy-contact.md), [projectiles-and-combat.md](../design/projectiles-and-combat.md), [zone.md](../design/zone.md). Product expectations — [../docs/BOSS.md](../docs/BOSS.md).
 
 ## Out of scope
 
-- Несколько боссов и арены под них.
-- Кат-сцены, диалоги, анимированные intro.
-- Реворк систем — `BossPhaseSystem` строится поверх существующих.
+- Multiple bosses and dedicated arenas for them.
+- Cutscenes, dialogue, animated intros.
+- Reworking systems — `BossPhaseSystem` is built on top of the existing ones.
 
 ## Acceptance
 
-- После последнего волнового encounter сразу начинается бой с боссом.
-- Тёмная зона отключена на этом encounter.
-- Босс проходит как минимум 2 фазы и меняет поведение между ними.
-- Смерть босса завершает сессию победой; смерть игрока — поражением.
+- After the last wave encounter the boss fight starts immediately.
+- The dark zone is disabled on this encounter.
+- The boss goes through at least 2 phases and changes behaviour between them.
+- The boss's death ends the session in victory; the player's death ends it in defeat.
 
 ## Tasks
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [x] | Расширить публичные контракты в `src/shared/**`: `SpawnPlan` (`kind: 'boss'`), типы босса и сущности `kind: 'boss'` в протоколах снапшота/событий (`bossHud`, `bossPhaseChange`, расширения `fire`/`hit`/`death`), `DamageIntent.source`, `Projectile.ownerKind`, `DeathContext.entityKind` — строго по обновлённым `design/*` без реализации симуляции в этой задаче. | опоры: `spawn-plan.md`, `snapshot-shape.md`, `health-and-death.md`, `projectiles-and-combat.md`, `boss-encounter.md` |
-| T2 | [x] | Контент: реестр `BossArchetype` (`bosses.ts`), один профиль босса с ≥2 фазами и ≥2 атаками; расширение кампании / builder: цепочка после волновых encounter — boss-encounter с `spawnPlan: { kind: 'boss', … }`, `zoneBehavior: { kind: 'disabled' }`, `winCondition: { kind: 'bossDefeated' }` (не смешивать с `allEncountersComplete`). | `content-archetypes.md`, `session-definition.md`, `boss-encounter.md`, `BOSS.md` |
-| T3 | [x] | `SpawnSystem`: исполнение `'boss'` (один спавн при `encounterStart`, учёт `aliveFromThisPlan`, сброс на `encounterEnd`). | `spawn-plan.md`, `boss-encounter.md` |
-| T4 | [x] | `EntityStore` и движение: сущность `kind: 'boss'`, `HasHealth`, интеграция в `SpatialIndex`/коллизии; contact intents с боссом по [enemy-contact.md](../design/enemy-contact.md). | `health-and-death.md`, `enemy-contact.md`, `arena-and-coordinates.md` |
-| T5 | [x] | `CombatSystem`: попадание снарядов игрока по `boss`; при необходимости снаряды с `ownerKind: 'boss'`; без дублирования урона вне `HealthDeathSystem`. | `projectiles-and-combat.md`, `boss-encounter.md` |
-| T6 | [x] | `BossPhaseSystem`: пороги фаз по `BossArchetype.phases`, выбор/кулдауны атак, `DamageIntent` с `source.kind: 'boss'`; публикация `bossPhaseChange`. | `boss-encounter.md`, `runtime-systems.md`, `snapshot-shape.md` |
-| T7 | [x] | `SessionFlowSystem`: session-level death hook для `bossDefeated`; гарантия одного `win`; согласование с `transitionRules` boss-encounter без двойной победы. | `session-definition.md`, `boss-encounter.md`, `health-and-death.md` |
-| T8 | [x] | `SnapshotExportSystem` + минимальный рендер босса (отладочный/плейсхолдер): `BossSnapshot`, `bossHud`, сущность в списке entities. | `snapshot-shape.md`, `thread-model.md` |
-| T9 | [x] | Тесты: спавн босса, две фазы (переход по порогу HP), победа по смерти босса при `bossDefeated`, зона `disabled` на boss-encounter; закрытие истории по чек-листу `stories/README.md`. | `testing.md`, архитектор для мета-задачи закрытия |
+| T1 | [x] | Extend the public contracts in `src/shared/**`: `SpawnPlan` (`kind: 'boss'`), boss types and `kind: 'boss'` entity in the snapshot/event protocols (`bossHud`, `bossPhaseChange`, extensions of `fire`/`hit`/`death`), `DamageIntent.source`, `Projectile.ownerKind`, `DeathContext.entityKind` — strictly per the updated `design/*` without simulation implementation in this task. | basis: `spawn-plan.md`, `snapshot-shape.md`, `health-and-death.md`, `projectiles-and-combat.md`, `boss-encounter.md` |
+| T2 | [x] | Content: a `BossArchetype` registry (`bosses.ts`), one boss profile with ≥2 phases and ≥2 attacks; campaign/builder extension: a chain after the wave encounters with a boss encounter using `spawnPlan: { kind: 'boss', … }`, `zoneBehavior: { kind: 'disabled' }`, `winCondition: { kind: 'bossDefeated' }` (not mixed with `allEncountersComplete`). | `content-archetypes.md`, `session-definition.md`, `boss-encounter.md`, `BOSS.md` |
+| T3 | [x] | `SpawnSystem`: execute `'boss'` (one spawn at `encounterStart`, account for `aliveFromThisPlan`, reset on `encounterEnd`). | `spawn-plan.md`, `boss-encounter.md` |
+| T4 | [x] | `EntityStore` and motion: a `kind: 'boss'` entity, `HasHealth`, integration with `SpatialIndex`/collisions; contact intents with the boss per [enemy-contact.md](../design/enemy-contact.md). | `health-and-death.md`, `enemy-contact.md`, `arena-and-coordinates.md` |
+| T5 | [x] | `CombatSystem`: player projectiles hit `boss`; if needed, projectiles with `ownerKind: 'boss'`; no damage duplication outside `HealthDeathSystem`. | `projectiles-and-combat.md`, `boss-encounter.md` |
+| T6 | [x] | `BossPhaseSystem`: phase thresholds from `BossArchetype.phases`, attack selection/cooldowns, `DamageIntent` with `source.kind: 'boss'`; publish `bossPhaseChange`. | `boss-encounter.md`, `runtime-systems.md`, `snapshot-shape.md` |
+| T7 | [x] | `SessionFlowSystem`: a session-level death hook for `bossDefeated`; guarantee a single `win`; reconcile with the boss encounter's `transitionRules` to avoid a double victory. | `session-definition.md`, `boss-encounter.md`, `health-and-death.md` |
+| T8 | [x] | `SnapshotExportSystem` + minimal boss rendering (debug/placeholder): `BossSnapshot`, `bossHud`, the entity in the entities list. | `snapshot-shape.md`, `thread-model.md` |
+| T9 | [x] | Tests: boss spawn, two phases (transition by HP threshold), victory on boss death with `bossDefeated`, the zone is `disabled` on the boss encounter; close the story per the `stories/README.md` checklist. | `testing.md`, architect owns the meta closing task |
 
 ## Related
 

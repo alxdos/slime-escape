@@ -6,50 +6,50 @@
 
 ## Player-facing
 
-- Sees: ничего нового визуально (опционально мелкий индикатор «звук активен» при первом взаимодействии).
-- Can do: слышать выстрелы, попадания и смерти врагов; фоновую музыку во время боя; ambient «голоса» слаймов; UI-щелчки в меню/паузе/итоге; во время боя с боссом музыка сменяется на боссовую тему.
+- Sees: nothing new visually (optionally a small "audio active" indicator on the first interaction).
+- Can do: hear shots, hits, and enemy deaths; background music during combat; ambient slime "voices"; UI clicks in the menu/pause/result; during the boss fight the music switches to the boss theme.
 
 ## Technical
 
-- Аудио-стек живёт в `src/main/audio/**`, не импортирует `src/sim/**`. Контакт с симуляцией — через `SimWorkerHost.onEvent`/`snapshotPair` с фан-аутом из `UiShell`.
-- Опорное решение — [../design/audio.md](../design/audio.md): один `AudioContext` с unlock на жесте, mixer `master + sfx/music/ui buses`, двухслойная громкость в реестре сэмплов (`normalizedGain` для коррекции файла, `defaultGain` для gameplay-роли), маппинги «архетип → sampleId» и «событие → sampleId» рядом с реестром (не в `src/shared/content/**`), music selector с переключением на boss-track по `encounter.type`, ambient слайм-голоса по снапшоту с presentation RNG.
-- Триггеры на 008: `fire`, `hit`, `death`, `dropPickup`, `bossPhaseChange`, плюс UI-overlay show и menu-button click. Игрок-`hit`/`death` и win/loss звуки осознанно пропускаются (нет файлов).
-- Music regularPool на 008: `100-waves`, `101-clock-ticking`, `001-calm`, `005-forest`, `007-nature`, `009-windy-forest`. Boss-track: `boss/boss-music`. Ducking music на pause × 0.5.
-- Явные поправки громкости в реестре: `weapons/shotgun.mp3` → `normalizedGain ≈ 0.35`; voice-сэмплы слаймов → `defaultGain ≈ 0.3`.
+- The audio stack lives in `src/main/audio/**` and does not import `src/sim/**`. Contact with simulation goes through `SimWorkerHost.onEvent`/`snapshotPair` with fan-out from `UiShell`.
+- The reference decision is [../design/audio.md](../design/audio.md): a single `AudioContext` with gesture-based unlock, a mixer of `master + sfx/music/ui buses`, two-layer volume in the sample registry (`normalizedGain` for file correction, `defaultGain` for the gameplay role), "archetype → sampleId" and "event → sampleId" mappings next to the registry (not in `src/shared/content/**`), a music selector that switches to the boss track based on `encounter.type`, ambient slime voices driven by the snapshot using a presentation RNG.
+- Triggers in 008: `fire`, `hit`, `death`, `dropPickup`, `bossPhaseChange`, plus UI overlay-show and menu button click. Player `hit`/`death` and win/loss sounds are intentionally skipped (no files yet).
+- Music regularPool in 008: `100-waves`, `101-clock-ticking`, `001-calm`, `005-forest`, `007-nature`, `009-windy-forest`. Boss track: `boss/boss-music`. Music ducks to × 0.5 on pause.
+- Explicit registry tweaks: `weapons/shotgun.mp3` → `normalizedGain ≈ 0.35`; slime voice samples → `defaultGain ≈ 0.3`.
 
 ## Out of scope
 
-- Музыкальные слои и динамическая аранжировка (одна одновременная music-track + опциональный ambient-loop в будущем).
-- 3D / spatial audio, falloff по дистанции (`perCallGainMul` оставлен как точка расширения, но в 008 не используется).
-- UI настроек громкости и сохранение preferences — это задача [009-settings.md](009-settings.md); 008 готовит точки в графе (`master`/`sfx`/`music`/`ui`), но не делает UI и не сохраняет значения.
-- Озвучка `dropSpawn`/`dropExpire`, `encounterStart`/`encounterEnd`, `win`/`loss`, спавна слайма — расширения [../design/audio.md](../design/audio.md), не часть 008.
-- Расширение [../design/snapshot-shape.md](../design/snapshot-shape.md) ради аудио (новые runtime events под slime movement и т. п.) запрещено: ambient покрывается snapshot-driven слоем на стороне main.
+- Music layers and dynamic arrangement (one music track at a time + an optional ambient loop in the future).
+- 3D / spatial audio, distance falloff (`perCallGainMul` is left as an extension point but is not used in 008).
+- A volume settings UI and persisted preferences — that is [009-settings.md](009-settings.md); 008 only provides the graph nodes (`master`/`sfx`/`music`/`ui`) without UI or persistence.
+- Sounds for `dropSpawn`/`dropExpire`, `encounterStart`/`encounterEnd`, `win`/`loss`, slime spawn — extensions of [../design/audio.md](../design/audio.md), not part of 008.
+- Extending [../design/snapshot-shape.md](../design/snapshot-shape.md) for audio (new runtime events for slime movement and so on) is forbidden: ambient is covered by a snapshot-driven layer on the main side.
 
 ## Acceptance
 
-- При первом клике/жесте `AudioContext` переходит в `running` без ошибок; до анлока попытки воспроизведения no-op с одним warning.
-- Выстрел игрока (любым WeaponArchetype с маппингом — на 008 как минимум `pistol`) проигрывает соответствующий fire-сэмпл.
-- Попадание и смерть врага-слайма проигрывают соответствующие hit/death-сэмплы; `training-target` без маппинга — без звука и без падения.
-- Подбор дропа проигрывает универсальный pickup-сэмпл.
-- Смена фазы босса проигрывает `boss-ahaha`; в encounter босса в качестве музыки играет `boss/boss-music`, в остальных running/paused — случайный трек из regularPool.
-- В меню и на экране результата музыка молчит. В паузе music ducked, ambient слаймов не дёргает таймеры, уже играющие one-shot доигрываются.
-- Показ pause/result-overlay сопровождается UI-звуком `open-*`, клик любой кнопки меню/паузы/итога — `switch-*` (рандом из набора).
-- При повторных стартах и завершениях сессии (`startSession`/`stopSession`/`win`/`loss`) аудио-граф не накапливает узлы и таймеры; `Audio` остаётся одним инстансом на жизнь приложения.
-- Тесты `Audio` проходят без реального `AudioContext` через инжектируемый `AudioApi` mock и покрывают расчёт effective gain, валидацию реестра, роутинг событий, переключение music selector и поведение ambient в `paused`.
+- On the first click/gesture the `AudioContext` moves to `running` without errors; before the unlock, playback attempts are no-ops with a single warning.
+- A player shot (any `WeaponArchetype` with a mapping — at minimum `pistol` in 008) plays the matching fire sample.
+- A hit and a death of a slime enemy play the matching hit/death samples; `training-target` has no mapping — silent and stable.
+- Picking up a drop plays a universal pickup sample.
+- A boss phase change plays `boss-ahaha`; the boss encounter plays `boss/boss-music`; in other running/paused phases the music is a random track from the regularPool.
+- In the menu and on the result screen the music is silent. In pause music is ducked, the slime ambient does not advance timers, and one-shots already playing finish naturally.
+- Showing a pause/result overlay plays the UI sound `open-*`; clicking any menu/pause/result button plays `switch-*` (random from a set).
+- Across repeated session starts and ends (`startSession`/`stopSession`/`win`/`loss`) the audio graph does not accumulate nodes or timers; `Audio` stays a single instance for the lifetime of the app.
+- `Audio` tests pass without a real `AudioContext` through an injectable `AudioApi` mock and cover effective gain calculation, registry validation, event routing, music selector switching, and ambient behaviour in `paused`.
 
 ## Tasks
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [x] | Зафиксировать решение [../design/audio.md](../design/audio.md), обновить `Index` в [../design/README.md](../design/README.md) | архитектурная задача |
-| T2 | [x] | `src/main/audio/**`: `AudioContext` owner, mixer graph (`master` + `sfx`/`music`/`ui` buses), идемпотентный `unlock()` | базовый каркас |
-| T3 | [x] | Sample registry с двухслойным gain (`normalizedGain`/`defaultGain`), валидация на init (дубль `id`, clamp диапазонов), lazy-decode mp3 через инжектируемый `AudioApi` | реестр и валидация |
-| T4 | [x] | Маппинги `weapons` / `enemies` / `bosses` / `events`, поддержка `SampleSpec` как `id` или `id[]` (рандомный выбор), warning «маппинга нет → пропуск» один раз на уникальный ключ | отдельный модуль внутри `src/main/audio/**` |
-| T5 | [x] | `Audio.handleEvent`: роутинг `fire`/`hit`/`death`/`dropPickup`/`bossPhaseChange` в sampleId через маппинги; для `hit`/`death` — резолв `archetypeId` цели по текущему снапшоту | one-shot SFX |
-| T6 | [x] | Music selector: regularPool ([6 треков](../design/audio.md#music-selector)), boss-track, переключение по `phase` и `encounter.type`, ducking на `paused` | snapshot/phase-driven |
-| T7 | [x] | Ambient слайм-голоса: per-entity таймеры по `snapshot.entities[kind === 'enemy']`, presentation RNG (`Math.random`), пауза таймеров в `paused` | snapshot-driven |
-| T8 | [x] | Wire в `UiShell`: создание `Audio` рядом с `Hud`, фан-аут `onEvent` в `audio.handleEvent`, `audio.update` в `onFrame` после `hud.update`, `attach`/`detach` на старте/завершении сессии, `audio.unlock()` на первом user-gesture, `audio.playUi('overlayShow')` на показе pause/result, `audio.playUi('buttonClick')` в кнопках overlay-ев | оркестрация |
-| T9 | [x] | Тесты `Audio` без реального `AudioContext` через `AudioApi` mock: effective gain, валидация реестра, роутинг событий и `targetKind`-ветки, переключение music selector по фазам/encounter, отсутствие тиков ambient в `paused`, drop-oldest при > 32 одновременных one-shot | testing |
+| T1 | [x] | Lock down the [../design/audio.md](../design/audio.md) decision; update `Index` in [../design/README.md](../design/README.md) | architecture task |
+| T2 | [x] | `src/main/audio/**`: `AudioContext` owner, mixer graph (`master` + `sfx`/`music`/`ui` buses), idempotent `unlock()` | base scaffold |
+| T3 | [x] | Sample registry with two-layer gain (`normalizedGain`/`defaultGain`), validation on init (duplicate `id`, range clamping), lazy mp3 decode via an injectable `AudioApi` | registry and validation |
+| T4 | [x] | Mappings for `weapons` / `enemies` / `bosses` / `events`, support `SampleSpec` as `id` or `id[]` (random pick), warn "no mapping → skip" once per unique key | a separate module inside `src/main/audio/**` |
+| T5 | [x] | `Audio.handleEvent`: route `fire`/`hit`/`death`/`dropPickup`/`bossPhaseChange` to sampleId through the mappings; for `hit`/`death` resolve the target's `archetypeId` from the current snapshot | one-shot SFX |
+| T6 | [x] | Music selector: regularPool ([6 tracks](../design/audio.md#music-selector)), boss track, switching by `phase` and `encounter.type`, ducking on `paused` | snapshot/phase-driven |
+| T7 | [x] | Ambient slime voices: per-entity timers from `snapshot.entities[kind === 'enemy']`, presentation RNG (`Math.random`), pause timers in `paused` | snapshot-driven |
+| T8 | [x] | Wire into `UiShell`: create `Audio` next to `Hud`, fan out `onEvent` into `audio.handleEvent`, call `audio.update` in `onFrame` after `hud.update`, `attach`/`detach` on session start/end, `audio.unlock()` on the first user gesture, `audio.playUi('overlayShow')` when pause/result is shown, `audio.playUi('buttonClick')` in overlay buttons | orchestration |
+| T9 | [x] | `Audio` tests without a real `AudioContext` through an `AudioApi` mock: effective gain, registry validation, event routing and `targetKind` branches, music selector switching by phase/encounter, no ambient ticks in `paused`, drop-oldest when > 32 simultaneous one-shots | testing |
 
 ## Related
 

@@ -6,46 +6,46 @@
 
 ## Player-facing
 
-- Sees: открытая в браузере страница с тестовым объектом, который плавно двигается по сцене; FPS-индикатор в углу.
-- Can do: поставить паузу и продолжить, увидеть, что движение действительно остановилось и возобновилось.
+- Sees: a page open in the browser with a test object moving smoothly across the scene; an FPS indicator in the corner.
+- Can do: pause and resume, and see that motion actually stops and starts again.
 
 ## Technical
 
-- Web-сборка и HTML точка входа; стек и раскладка исходников зафиксированы в [../design/web-stack.md](../design/web-stack.md).
-- `three.js` рендер пустой сцены в `main thread`.
-- `simulation worker` с фиксированным `SimulationClock`, тиком и pause/resume; конкретные частоты и правила интерполяции — в [../design/simulation-timing.md](../design/simulation-timing.md).
-- Протокол сообщений `main ↔ simulation worker`: команды и снапшоты.
-- Минимальный `SnapshotExportSystem`: позиция тестового объекта в снапшоте.
-- Интерполяция между двумя последними снапшотами на стороне рендера.
-- Feature detection (для будущего offscreen-пути в `010`).
+- Web build and the HTML entry point; the stack and source layout are fixed in [../design/web-stack.md](../design/web-stack.md).
+- `three.js` renders an empty scene on the `main thread`.
+- A `simulation worker` with a fixed `SimulationClock`, tick, and pause/resume; the exact rates and interpolation rules live in [../design/simulation-timing.md](../design/simulation-timing.md).
+- A message protocol between `main ↔ simulation worker`: commands and snapshots.
+- A minimal `SnapshotExportSystem`: the test object's position in the snapshot.
+- Interpolation between the two latest snapshots on the renderer side.
+- Feature detection (for the future offscreen path in `010`).
 
 ## Out of scope
 
-- Игрок, ввод, бой, враги, сессии, меню, аудио.
-- `OffscreenCanvas` render worker — отдельная история `010`.
-- Любая физика и коллизии.
+- Player, input, combat, enemies, sessions, menu, audio.
+- `OffscreenCanvas` render worker — a separate story `010`.
+- Any physics or collisions.
 
 ## Acceptance
 
-- Страница открывается без ошибок в консоли.
-- На сцене видно один тестовый объект, который двигается равномерно.
-- На разных FPS экрана движение остаётся плавным (визуально без рывков).
-- Pause останавливает движение, resume — продолжает с того же места.
-- В углу виден текущий FPS.
+- The page opens without console errors.
+- One test object is visible on the scene, moving at a steady speed.
+- Motion stays smooth across screens with different FPS (visually no stutter).
+- Pause stops motion, resume continues from the same spot.
+- The current FPS is visible in the corner.
 
 ## Tasks
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [x] | Зафиксировать `design/web-stack.md` (Vite + TS + npm, layout `src/main`/`src/sim`/`src/shared`, правила импортов) | plan: `design-web-stack` |
-| T2 | [x] | Зафиксировать `design/simulation-timing.md` (`SIM_HZ=60`, `SNAPSHOT_HZ=30`, правила интерполяции и pause/resume) | plan: `design-sim-timing` |
-| T3 | [x] | Обновить `design/README.md` Index и `Related` истории под новые решения | plan: `design-index` |
-| T4 | [x] | Скелет проекта (Vite + TS + npm, `index.html`, пустая `three.js` сцена в `main`, `featureDetection`, `src/shared/timing.ts` с константами) | plan: `scaffold` |
-| T5 | [x] | `simulation worker`: `SimulationClock` 60 Hz, world c testEntity, pause/resume, протокол в `src/shared` | plan: `sim-worker` |
-| T6 | [x] | `SnapshotExportSystem` 30 Hz и публикация снапшотов в main | plan: `snapshot-export` |
-| T7 | [x] | `Renderer`: буфер из 2 снапшотов, интерполяция позиции с задержкой `SNAPSHOT_INTERVAL_MS` | plan: `render-interp` |
-| T8 | [x] | `FpsOverlay` + hotkey `Space` для pause/resume + проверка acceptance | plan: `fps-pause` |
-| T9 | [x] | Перевести историю в `done`, обновить `stories/README.md`, добавить в корневой README секцию How to run | plan: `story-status` |
+| T1 | [x] | Lock down `design/web-stack.md` (Vite + TS + npm, `src/main`/`src/sim`/`src/shared` layout, import rules) | plan: `design-web-stack` |
+| T2 | [x] | Lock down `design/simulation-timing.md` (`SIM_HZ=60`, `SNAPSHOT_HZ=30`, interpolation and pause/resume rules) | plan: `design-sim-timing` |
+| T3 | [x] | Update `design/README.md` Index and the story `Related` list to match the new decisions | plan: `design-index` |
+| T4 | [x] | Project skeleton (Vite + TS + npm, `index.html`, an empty `three.js` scene in `main`, `featureDetection`, `src/shared/timing.ts` with constants) | plan: `scaffold` |
+| T5 | [x] | `simulation worker`: `SimulationClock` 60 Hz, world with `testEntity`, pause/resume, protocol in `src/shared` | plan: `sim-worker` |
+| T6 | [x] | `SnapshotExportSystem` 30 Hz and snapshot publishing to main | plan: `snapshot-export` |
+| T7 | [x] | `Renderer`: 2-snapshot buffer, position interpolation with a `SNAPSHOT_INTERVAL_MS` delay | plan: `render-interp` |
+| T8 | [x] | `FpsOverlay` + hotkey `Space` for pause/resume + acceptance check | plan: `fps-pause` |
+| T9 | [x] | Move the story to `done`, update `stories/README.md`, add a How to run section to the root README | plan: `story-status` |
 
 ## Related
 
