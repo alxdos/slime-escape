@@ -2,8 +2,8 @@
 
 | field | value |
 |---|---|
-| displayName | Кампания — hard |
-| description | Плотный забег со стреляющими слаймами, скупыми дропами и короткими окнами реакции. |
+| displayName | Campaign - Hard |
+| description | A dense run with armed slimes, scarce drops, and very small reaction windows. |
 | musicSampleId | music/100-waves |
 | visibleInMenu | true |
 | order | 2 |
@@ -36,7 +36,7 @@
 | type | wave |
 | backgroundId | set-1 |
 | introDurationMs | 2500 |
-| name | Один глаз в темноте |
+| name | One Eye in the Dark |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1125 |
@@ -74,7 +74,7 @@
 | type | wave |
 | backgroundId | set-1 |
 | introDurationMs | 2500 |
-| name | Рога и искры |
+| name | Horns and Sparks |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 938 |
@@ -119,7 +119,7 @@
 | type | wave |
 | backgroundId | set-1 |
 | introDurationMs | 2500 |
-| name | Каменные взгляды |
+| name | Stone-Cold Stares |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 825 |
@@ -205,7 +205,7 @@
 | backgroundId | set-1 |
 | introDurationMs | none |
 | name | none |
-| text | Дальше: Хламные призраки |
+| text | Next: Scrapyard Wraiths |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -219,7 +219,7 @@
 | type | wave |
 | backgroundId | set-2 |
 | introDurationMs | 2500 |
-| name | Панцири и призраки |
+| name | Shells and Wraiths |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1050 |
@@ -259,7 +259,7 @@
 | type | wave |
 | backgroundId | set-2 |
 | introDurationMs | 2500 |
-| name | Хламная куча |
+| name | Scrap Heap |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 863 |
@@ -306,7 +306,7 @@
 | type | wave |
 | backgroundId | set-2 |
 | introDurationMs | 2500 |
-| name | Огненный скрап |
+| name | Burning Scrap |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 750 |
@@ -394,7 +394,7 @@
 | backgroundId | set-2 |
 | introDurationMs | none |
 | name | none |
-| text | Дальше: Индустриальные мутанты |
+| text | Next: Industrial Mutants |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -408,7 +408,7 @@
 | type | wave |
 | backgroundId | set-3 |
 | introDurationMs | 2500 |
-| name | Эхо в противогазах |
+| name | Gas-Mask Echoes |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 975 |
@@ -450,7 +450,7 @@
 | type | wave |
 | backgroundId | set-3 |
 | introDurationMs | 2500 |
-| name | Качки и дроны |
+| name | Bruisers and Drones |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 788 |
@@ -499,7 +499,7 @@
 | type | wave |
 | backgroundId | set-3 |
 | introDurationMs | 2500 |
-| name | Бензопильный цех |
+| name | Sawblade Workshop |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 675 |
@@ -589,7 +589,7 @@
 | backgroundId | set-3 |
 | introDurationMs | none |
 | name | none |
-| text | Дальше: Королевство на войне |
+| text | Next: Kingdom at War |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -603,7 +603,7 @@
 | type | wave |
 | backgroundId | set-4 |
 | introDurationMs | 2500 |
-| name | Бомбы у ворот |
+| name | Bombs at the Gate |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 900 |
@@ -645,7 +645,7 @@
 | type | wave |
 | backgroundId | set-4 |
 | introDurationMs | 2500 |
-| name | Принцы и сюрикены |
+| name | Princes and Shuriken |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 713 |
@@ -696,7 +696,7 @@
 | type | wave |
 | backgroundId | set-4 |
 | introDurationMs | 2500 |
-| name | Корона мёртвых |
+| name | Crown of the Dead |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 600 |
@@ -788,7 +788,7 @@
 | backgroundId | set-4 |
 | introDurationMs | none |
 | name | none |
-| text | Дальше: Техно-финал |
+| text | Next: Techno Finale |
 | spawnKind | empty |
 | zoneKind | disabled |
 | transitionKind | timer |
@@ -802,7 +802,7 @@
 | type | wave |
 | backgroundId | set-5 |
 | introDurationMs | 2500 |
-| name | Дискеты и двигатели |
+| name | Floppy Disks and Engines |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 825 |
@@ -846,7 +846,7 @@
 | type | wave |
 | backgroundId | set-5 |
 | introDurationMs | 2500 |
-| name | Магниты и ниндзя |
+| name | Magnets and Ninjas |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 638 |
@@ -899,7 +899,7 @@
 | type | wave |
 | backgroundId | set-5 |
 | introDurationMs | 2500 |
-| name | Идолы последнего сектора |
+| name | Idols of the Last Sector |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 525 |

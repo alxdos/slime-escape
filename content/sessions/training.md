@@ -2,8 +2,8 @@
 
 | field | value |
 |---|---|
-| displayName | Тренировка |
-| description | Короткая сессия без босса, чтобы размяться и проверить сборку. |
+| displayName | Training |
+| description | A short boss-free session for warming up and checking the build. |
 | musicSampleId | music/001-calm |
 | visibleInMenu | false |
 | order | 1 |

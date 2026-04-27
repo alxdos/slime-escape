@@ -2,8 +2,8 @@
 
 | field | value |
 |---|---|
-| displayName | Песочница |
-| description | Свободная пустая арена для проверки перемещения и камеры. |
+| displayName | Sandbox |
+| description | An empty free-play arena for testing movement and the camera. |
 | musicSampleId | none |
 | visibleInMenu | false |
 | order | 0 |

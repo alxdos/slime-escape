@@ -3,7 +3,7 @@
 | field | value |
 |---|---|
 | displayName | Combat Modifiers Demo |
-| description | Проверочная арена для puddles, statuses, proximity mines, carrier drops, magnet pickup, retaliation and aim assist. |
+| description | A test arena for puddles, status effects, proximity mines, carrier drops, magnet pickup, retaliation, and aim assist. |
 | musicSampleId | none |
 | visibleInMenu | false |
 | order | 1 |

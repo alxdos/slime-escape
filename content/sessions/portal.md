@@ -3,7 +3,7 @@
 | field | value |
 |---|---|
 | displayName | Portal Run |
-| description | Специальный вход для Vibe Jam: десять нарастающих волн, вооруженные слаймы и финальный gargoyle boss. |
+| description | Vibe Jam entry point: ten escalating waves, armed slimes, and a final gargoyle boss. |
 | musicSampleId | music/005-forest |
 | visibleInMenu | false |
 | order | 90 |

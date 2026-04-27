@@ -2,8 +2,8 @@
 
 | field | value |
 |---|---|
-| displayName | Кампания — easy |
-| description | Короткий мягкий забег: friendly fire слаймов, щедрый aim assist, лужи и понятные волны. |
+| displayName | Campaign - Easy |
+| description | A short, gentle run with slime friendly fire, generous aim assist, hazard puddles, and easy-to-read waves. |
 | musicSampleId | music/007-nature |
 | visibleInMenu | true |
 | order | 0 |
@@ -34,7 +34,7 @@
 | type | wave |
 | backgroundId | set-1 |
 | introDurationMs | 2500 |
-| name | Один глаз в темноте |
+| name | One Eye in the Dark |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 2100 |
@@ -61,7 +61,7 @@
 | type | wave |
 | backgroundId | set-1 |
 | introDurationMs | 2500 |
-| name | Рога и искры |
+| name | Horns and Sparks |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1750 |
@@ -94,7 +94,7 @@
 | type | wave |
 | backgroundId | set-3 |
 | introDurationMs | 2500 |
-| name | Эхо в противогазах |
+| name | Gas-Mask Echoes |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1900 |
@@ -122,7 +122,7 @@
 | type | wave |
 | backgroundId | set-3 |
 | introDurationMs | 2500 |
-| name | Качки и дроны |
+| name | Bruisers and Drones |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1600 |
@@ -157,7 +157,7 @@
 | type | wave |
 | backgroundId | set-5 |
 | introDurationMs | 2500 |
-| name | Дискеты и двигатели |
+| name | Floppy Disks and Engines |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1700 |
@@ -189,7 +189,7 @@
 | type | wave |
 | backgroundId | set-5 |
 | introDurationMs | 2500 |
-| name | Магниты и ниндзя |
+| name | Magnets and Ninjas |
 | text | none |
 | spawnKind | wave |
 | spawnIntervalMs | 1450 |

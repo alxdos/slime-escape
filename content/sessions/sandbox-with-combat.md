@@ -2,8 +2,8 @@
 
 | field | value |
 |---|---|
-| displayName | Песочница с боем |
-| description | Свободная арена с оружием и одним статическим тестовым противником. |
+| displayName | Combat Sandbox |
+| description | A free-play arena with weapons and one static test enemy. |
 | musicSampleId | none |
 | visibleInMenu | false |
 | order | 0 |
