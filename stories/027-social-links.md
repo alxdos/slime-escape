@@ -112,7 +112,7 @@ Portal page:
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Add static metadata to `index.html` and `portal/index.html`: SEO title/description, Open Graph title/description/image/url, and PNG favicon/touch icon links. | Use the copy and asset paths from `Metadata Copy` / `Product Notes`; no runtime code needed. |
+| T1 | [x] | Add static metadata to `index.html` and `portal/index.html`: SEO title/description, Open Graph title/description/image/url, and PNG favicon/touch icon links. | Use the copy and asset paths from `Metadata Copy` / `Product Notes`; no runtime code needed. |
 | T2 | [ ] | Add shared social link UI under `src/main/ui/**`: GitHub/Discord link data, rendering for `/images/social/github.svg` and `/images/social/discord.svg`, stable side-rail layout, accessible anchor labels, `target="_blank"`, and `rel="noopener noreferrer"`. | The local SVGs use `currentColor`, so normal/hover/focus colors can be set through CSS; no icon dependency. |
 | T3 | [ ] | Integrate the social link rail into `MenuOverlay` and `PauseOverlay`, keeping it visually secondary and clear of existing menu/pause controls on desktop and narrow viewports. | Pause links must not call sim, resume, exit, settings, or change phase. |
 | T4 | [ ] | Add loss-only Replay/Restart: `ResultOverlay` renders a primary top action for `loss`, `UiShell` restarts the last started preset/source through the existing session start path, and victory result flow stays unchanged. | Avoid a new public `result -> running` phase; internally reuse existing cleanup/start orchestration. |
