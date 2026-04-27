@@ -1,5 +1,7 @@
 # Slime Escape
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/alxdos/slime-escape)
+
 A game by Wertakull.
 
 Escape the slime nightmare: survive the waves while the darkness closes in, use the short breaks when it pulls back, and defeat the one who trapped you in this world.
