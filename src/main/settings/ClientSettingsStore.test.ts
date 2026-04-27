@@ -54,7 +54,7 @@ describe('createClientSettingsStore', () => {
     const store = createClientSettingsStore({ storage, log: createLogHarness() });
 
     expect(DEFAULT_CLIENT_SETTINGS).toEqual({
-      masterVolume: 0.3,
+      masterVolume: 0.2,
       renderScalePreset: 'high'
     });
     expect(store.get()).toEqual(DEFAULT_CLIENT_SETTINGS);
@@ -77,7 +77,7 @@ describe('createClientSettingsStore', () => {
     );
     expect(readStoredSnapshot(storage)).toEqual({
       schemaVersion: 1,
-      masterVolume: 0.3,
+      masterVolume: 0.2,
       renderScalePreset: 'high'
     });
   });
@@ -105,7 +105,7 @@ describe('createClientSettingsStore', () => {
     );
     expect(readStoredSnapshot(storage)).toEqual({
       schemaVersion: 1,
-      masterVolume: 0.3,
+      masterVolume: 0.2,
       renderScalePreset: 'high'
     });
   });
