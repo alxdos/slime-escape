@@ -5,6 +5,7 @@ import type {
   EscapeProgressPathViewModel
 } from './EscapeProgressPathViewModel';
 import { comicTextStyle } from './comicTextStyle';
+import { createSocialLinkRail } from './SocialLinkRail';
 
 export type PauseOverlayInit = Readonly<{
   parent: HTMLElement;
@@ -31,6 +32,17 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   const style = document.createElement('style');
   style.textContent = pauseOverlayCss();
   root.appendChild(style);
+
+  const layout = document.createElement('div');
+  layout.className = 'pause-layout';
+  layout.dataset['role'] = 'pause-layout';
+  layout.style.cssText = pauseLayoutStyle();
+
+  const socialLinks = createSocialLinkRail();
+  socialLinks.className = `${socialLinks.className} pause-social-link-rail`;
+  socialLinks.dataset['placement'] = 'pause';
+  socialLinks.style.cssText = `${socialLinks.style.cssText};${pauseSocialLinkRailStyle()}`;
+  layout.appendChild(socialLinks);
 
   const card = document.createElement('div');
   card.dataset['role'] = 'pause-card';
@@ -71,7 +83,8 @@ export function createPauseOverlay(init: PauseOverlayInit): PauseOverlay {
   exitButton.addEventListener('click', () => init.onExit());
   card.appendChild(exitButton);
 
-  root.appendChild(card);
+  layout.appendChild(card);
+  root.appendChild(layout);
   init.parent.appendChild(root);
   root.style.display = 'none';
 
@@ -247,6 +260,23 @@ function baseOverlayStyle(): string {
   ].join(';');
 }
 
+function pauseLayoutStyle(): string {
+  return [
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'gap:18px',
+    'box-sizing:border-box',
+    'max-width:100%',
+    'max-height:100%',
+    'min-height:0'
+  ].join(';');
+}
+
+function pauseSocialLinkRailStyle(): string {
+  return ['position:relative', 'z-index:1', 'flex:0 0 auto'].join(';');
+}
+
 function cardStyle(): string {
   return [
     'display:flex',
@@ -255,7 +285,7 @@ function cardStyle(): string {
     'gap:16px',
     'box-sizing:border-box',
     'padding:26px 30px 30px',
-    'width:min(640px, calc(100vw - 48px))',
+    'width:min(640px, calc(100vw - 120px))',
     'max-height:calc(100vh - 48px)',
     'overflow:auto',
     'background:#fffdf4',
@@ -418,6 +448,10 @@ function secondaryButtonStyle(): string {
 
 function pauseOverlayCss(): string {
   return `
+.pause-layout {
+  flex-direction: row;
+}
+
 .pause-comic-button {
   transition: filter 120ms ease, transform 120ms ease;
 }
@@ -426,6 +460,22 @@ function pauseOverlayCss(): string {
 .pause-comic-button:focus-visible {
   filter: brightness(1.08) saturate(1.06);
   transform: translate(-1px, -1px);
+}
+
+@media (max-width: 560px) {
+  .pause-layout {
+    flex-direction: column-reverse;
+    gap: 14px;
+  }
+
+  .pause-social-link-rail {
+    flex-direction: row !important;
+  }
+
+  .pause-layout [data-role="pause-card"] {
+    width: min(640px, calc(100vw - 48px)) !important;
+    max-height: calc(100vh - 122px) !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

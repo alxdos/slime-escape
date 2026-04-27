@@ -203,14 +203,18 @@ describe('createResultOverlay', () => {
 
     const parent = new FakeElement();
     const onBackToMenu = vi.fn();
+    const onRestart = vi.fn();
 
     const overlay = createResultOverlay({
       parent: parent as unknown as HTMLElement,
-      onBackToMenu
+      onBackToMenu,
+      onRestart
     });
 
     const root = findByRole(parent, 'result-overlay');
     const style = root.children[0];
+    const layout = findByRole(root, 'result-layout');
+    const socialRail = findByRole(root, 'social-link-rail');
     const effectsLayer = findByRole(root, 'result-effects');
     const title = findByRole(root, 'result-title');
     const summary = findByRole(root, 'result-summary');
@@ -221,6 +225,7 @@ describe('createResultOverlay', () => {
     const defeatCause = findByRole(root, 'result-defeat-cause');
     const killSection = findByRole(root, 'result-kills-section');
     const killList = findByRole(root, 'result-kill-list');
+    const restartButton = findByRole(root, 'result-restart');
     const backButton = findByRole(root, 'result-back-to-menu');
 
     expect(root.style.display).toBe('none');
@@ -228,7 +233,19 @@ describe('createResultOverlay', () => {
     expect(style?.textContent).toContain('prefers-reduced-motion');
     expect(style?.textContent).toContain('.result-effect-particle');
     expect(style?.textContent).toContain('result-victory-confetti');
+    expect(style?.textContent).toContain('.result-social-link-rail');
+    expect(layout.className).toBe('result-layout');
+    expect(socialRail.className).toBe('social-link-rail result-social-link-rail');
+    expect(socialRail.dataset['placement']).toBe('result');
+    expect(socialRail.parent).toBe(layout);
+    expect(findAllByRole(socialRail, 'social-link').map((link) => link.dataset['socialLinkId'])).toEqual([
+      'github',
+      'discord'
+    ]);
     expect(effectsLayer.parent?.className).toBe('result-stage');
+    expect(restartButton.textContent).toBe('Restart');
+    expect(restartButton.className).toBe('result-comic-button');
+    expect(restartButton.style.display).toBe('none');
     expect(backButton.textContent).toBe('Back to Menu');
     expect(backButton.className).toBe('result-comic-button');
 
@@ -253,6 +270,7 @@ describe('createResultOverlay', () => {
     expect(findByRole(winEscapePathTrack, 'result-escape-path-flag').dataset['state']).toBe(
       'reached'
     );
+    expect(restartButton.style.display).toBe('none');
     expect(backButton.style.cssText).toContain('background:#7cf58f');
     expect(effectsLayer.dataset['outcome']).toBe('win');
     const victoryParticles = findAllByRole(effectsLayer, 'result-effect-particle');
@@ -298,6 +316,9 @@ describe('createResultOverlay', () => {
     expect(findByRole(lossEscapePathTrack, 'result-escape-path-flag').dataset['state']).toBe(
       'pending'
     );
+    expect(restartButton.style.display).toBe('block');
+    expect(restartButton.style.cssText).toContain('background:#ff9fcf');
+    expect(backButton.style.cssText).toContain('background:#b8f1ff');
 
     overlay.show(
       makeViewModel('loss', {
@@ -330,7 +351,6 @@ describe('createResultOverlay', () => {
       'pending'
     );
 
-    expect(backButton.style.cssText).toContain('background:#ff9fcf');
     expect(effectsLayer.dataset['outcome']).toBe('loss');
     const defeatParticles = findAllByRole(effectsLayer, 'result-effect-particle');
     expect(defeatParticles).toHaveLength(8);
@@ -350,6 +370,9 @@ describe('createResultOverlay', () => {
     expect(killSection.style.display).toBe('none');
     expect(findAllByRole(killList, 'result-kill-row')).toHaveLength(0);
 
+    restartButton.dispatch('click');
+    expect(onRestart).toHaveBeenCalledTimes(1);
+
     backButton.dispatch('click');
     expect(onBackToMenu).toHaveBeenCalledTimes(1);
 
@@ -360,6 +383,7 @@ describe('createResultOverlay', () => {
     expect(title.textContent).toBe('');
     expect(summary.textContent).toBe('');
     expect(effectsLayer.dataset['outcome']).toBeUndefined();
+    expect(restartButton.style.display).toBe('none');
     expect(findAllByRole(effectsLayer, 'result-effect-particle')).toHaveLength(0);
     expect(escapePath.style.display).toBe('none');
     expect(escapePath.children).toHaveLength(0);
@@ -379,7 +403,8 @@ describe('createResultOverlay', () => {
     const parent = new FakeElement();
     const overlay = createResultOverlay({
       parent: parent as unknown as HTMLElement,
-      onBackToMenu(): void {}
+      onBackToMenu(): void {},
+      onRestart(): void {}
     });
 
     overlay.dispose();

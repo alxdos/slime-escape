@@ -8,12 +8,14 @@ import type {
   ResultStatViewModel,
   ResultViewModel
 } from './ResultViewModel';
+import { createSocialLinkRail } from './SocialLinkRail';
 
 export type ResultOutcome = 'win' | 'loss';
 
 export type ResultOverlayInit = Readonly<{
   parent: HTMLElement;
   onBackToMenu(): void;
+  onRestart(): void;
 }>;
 
 export type ResultOverlay = Readonly<{
@@ -36,6 +38,7 @@ type ResultOverlayParts = Readonly<{
   defeatCause: HTMLElement;
   killsSection: HTMLElement;
   killList: HTMLElement;
+  restartButton: HTMLElement;
   backButton: HTMLElement;
 }>;
 
@@ -98,6 +101,17 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   style.textContent = resultOverlayCss();
   root.appendChild(style);
 
+  const layout = document.createElement('div');
+  layout.className = 'result-layout';
+  layout.dataset['role'] = 'result-layout';
+  layout.style.cssText = resultLayoutStyle();
+
+  const socialLinks = createSocialLinkRail();
+  socialLinks.className = `${socialLinks.className} result-social-link-rail`;
+  socialLinks.dataset['placement'] = 'result';
+  socialLinks.style.cssText = `${socialLinks.style.cssText};${resultSocialLinkRailStyle()}`;
+  layout.appendChild(socialLinks);
+
   const stage = document.createElement('div');
   stage.className = 'result-stage';
   stage.style.cssText = stageStyle();
@@ -111,6 +125,16 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   const card = document.createElement('div');
   card.className = 'result-card';
   card.style.cssText = cardStyle();
+
+  const restartButton = document.createElement('button');
+  restartButton.dataset['role'] = 'result-restart';
+  restartButton.className = 'result-comic-button';
+  restartButton.type = 'button';
+  restartButton.textContent = 'Restart';
+  restartButton.style.cssText = primaryButtonStyle('#ff9fcf');
+  restartButton.style.display = 'none';
+  restartButton.addEventListener('click', () => init.onRestart());
+  card.appendChild(restartButton);
 
   const title = document.createElement('h2');
   title.className = 'result-title';
@@ -186,7 +210,8 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   card.appendChild(backButton);
 
   stage.appendChild(card);
-  root.appendChild(stage);
+  layout.appendChild(stage);
+  root.appendChild(layout);
   init.parent.appendChild(root);
   root.style.display = 'none';
 
@@ -204,6 +229,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
     defeatCause,
     killsSection,
     killList,
+    restartButton,
     backButton
   };
 
@@ -221,6 +247,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
       summary.textContent = '';
       effectsLayer.replaceChildren();
       delete effectsLayer.dataset['outcome'];
+      restartButton.style.display = 'none';
       hideEscapePath(escapePath);
       statGrid.replaceChildren();
       killList.replaceChildren();
@@ -243,23 +270,39 @@ function applyViewModel(viewModel: ResultViewModel, parts: ResultOverlayParts): 
   renderEffects(parts.effectsLayer, outcome);
 
   if (outcome === 'win') {
+    applyActionButtons(outcome, parts.restartButton, parts.backButton);
     parts.title.textContent = viewModel.title;
     parts.title.style.cssText = titleStyle('#fff38b');
     parts.summary.textContent = viewModel.subtitle;
     parts.summary.style.cssText = summaryStyle('#e9fbff');
-    parts.backButton.style.cssText = primaryButtonStyle('#7cf58f');
     parts.bossPanel.style.cssText = bossPanelStyle('#e9fbff');
     renderDynamicSections(viewModel, parts);
     return;
   }
 
+  applyActionButtons(outcome, parts.restartButton, parts.backButton);
   parts.title.textContent = viewModel.title;
   parts.title.style.cssText = titleStyle('#ff9fcf');
   parts.summary.textContent = viewModel.subtitle;
   parts.summary.style.cssText = summaryStyle('#ffe7f3');
-  parts.backButton.style.cssText = primaryButtonStyle('#ff9fcf');
   parts.bossPanel.style.cssText = bossPanelStyle('#ffe7f3');
   renderDynamicSections(viewModel, parts);
+}
+
+function applyActionButtons(
+  outcome: ResultOutcome,
+  restartButton: HTMLElement,
+  backButton: HTMLElement
+): void {
+  if (outcome === 'loss') {
+    restartButton.style.cssText = primaryButtonStyle('#ff9fcf');
+    restartButton.style.display = 'block';
+    backButton.style.cssText = secondaryButtonStyle('#b8f1ff');
+    return;
+  }
+
+  restartButton.style.display = 'none';
+  backButton.style.cssText = primaryButtonStyle('#7cf58f');
 }
 
 function renderDynamicSections(viewModel: ResultViewModel, parts: ResultOverlayParts): void {
@@ -548,13 +591,31 @@ function effectsLayerStyle(): string {
   ].join(';');
 }
 
+function resultLayoutStyle(): string {
+  return [
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'gap:18px',
+    'box-sizing:border-box',
+    'width:min(920px, calc(100vw - 48px))',
+    'max-height:calc(100vh - 48px)',
+    'min-height:0'
+  ].join(';');
+}
+
+function resultSocialLinkRailStyle(): string {
+  return ['position:relative', 'z-index:3', 'flex:0 0 auto'].join(';');
+}
+
 function stageStyle(): string {
   return [
     'position:relative',
-    'width:min(820px, calc(100vw - 48px))',
+    'width:min(820px, 100%)',
     'max-height:calc(100vh - 48px)',
     'overflow:visible',
-    'flex:0 1 auto'
+    'min-width:0',
+    'flex:1 1 0'
   ].join(';');
 }
 
@@ -979,6 +1040,25 @@ function primaryButtonStyle(background = '#7cf58f'): string {
   ].join(';');
 }
 
+function secondaryButtonStyle(background = '#b8f1ff'): string {
+  return [
+    'appearance:none',
+    'border:3px solid #050505',
+    'padding:11px 24px 12px',
+    ...comicTextStyle({
+      fontSize: '18px',
+      color: '#ffffff',
+      lineHeight: '1'
+    }),
+    `background:${background}`,
+    'border-radius:7px',
+    'box-shadow:3px 3px 0 #000000',
+    'cursor:pointer',
+    'width:100%',
+    'min-height:46px'
+  ].join(';');
+}
+
 function statBackground(outcome: ResultOutcome, index: number): string {
   const palette =
     outcome === 'win'
@@ -1033,6 +1113,17 @@ function resultOverlayCss(): string {
 .result-comic-button:focus-visible {
   filter: brightness(1.08) saturate(1.06);
   transform: translate(-1px, -1px);
+}
+
+@media (max-width: 720px) {
+  .result-layout {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .result-social-link-rail {
+    flex-direction: row !important;
+  }
 }
 
 @keyframes result-card-enter {

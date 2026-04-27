@@ -222,6 +222,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let phase: UiShellPhase = LOADING_PHASE;
   let disposed = false;
   let transitionActive = false;
+  let lastStartedPreset: ModePreset | null = null;
   const hud = hudFactory({ parent: init.parent });
   const escapeProgressPath = escapeProgressPathFactory({ parent: init.parent });
   const titleOverlay = titleOverlayFactory({ parent: init.parent });
@@ -327,6 +328,10 @@ export function createUiShell(init: UiShellInit): UiShell {
     onBackToMenu() {
       audio.playUi('buttonClick');
       exitToMenu();
+    },
+    onRestart() {
+      audio.playUi('buttonClick');
+      restartLastSession();
     }
   });
 
@@ -604,6 +609,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     activeSession = session;
     unsubscribeRendererSettings?.();
     unsubscribeRendererSettings = nextUnsubscribeRendererSettings;
+    lastStartedPreset = preset;
 
     setPhase(RUNNING_PHASE);
   }
@@ -647,6 +653,19 @@ export function createUiShell(init: UiShellInit): UiShell {
     }
 
     setPhase(MENU_PHASE);
+  }
+
+  function restartLastSession(): void {
+    if (phase.kind !== 'result' || phase.outcome !== 'loss') {
+      return;
+    }
+    if (lastStartedPreset === null || isTransitionActive()) {
+      return;
+    }
+
+    const preset = lastStartedPreset;
+    setPhase(MENU_PHASE);
+    void startPresetWithTransition(preset);
   }
 
   function handleRunEnd(event: Extract<RuntimeEvent, { kind: 'win' | 'loss' }>): void {
