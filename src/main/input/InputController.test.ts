@@ -79,6 +79,47 @@ describe('InputController weapon hotkeys', () => {
   });
 });
 
+describe('InputController cursor visibility', () => {
+  it('hides the canvas cursor only while pointer lock is actually active', () => {
+    const windowTarget = new FakeEventTarget();
+    const documentTarget = Object.assign(new FakeEventTarget(), {
+      pointerLockElement: null as Element | null,
+      exitPointerLock: () => {
+        documentTarget.pointerLockElement = null;
+      }
+    });
+    installInputGlobals(windowTarget, documentTarget);
+
+    const canvas = Object.assign(new FakeEventTarget(), {
+      style: { cursor: '' },
+      requestPointerLock: () => {}
+    }) as unknown as HTMLCanvasElement;
+    const controller = createInputController({
+      canvas,
+      arena: { width: 32, height: 18 },
+      pixelsPerWorldUnit: () => 10,
+      initialAim: { x: 0, y: 0 },
+      onCommand: () => {}
+    });
+
+    controller.start();
+    expect(canvas.style.cursor).toBe('');
+
+    documentTarget.pointerLockElement = canvas;
+    documentTarget.dispatch('pointerlockchange', new Event('pointerlockchange'));
+    expect(canvas.style.cursor).toBe('none');
+
+    documentTarget.pointerLockElement = null;
+    documentTarget.dispatch('pointerlockchange', new Event('pointerlockchange'));
+    expect(canvas.style.cursor).toBe('');
+
+    documentTarget.pointerLockElement = canvas;
+    documentTarget.dispatch('pointerlockchange', new Event('pointerlockchange'));
+    controller.stop();
+    expect(canvas.style.cursor).toBe('');
+  });
+});
+
 function keyboardEvent(code: string, repeat = false): FakeKeyboardEvent {
   let defaultPrevented = false;
   const event = new Event('keydown');

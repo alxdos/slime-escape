@@ -114,6 +114,8 @@ type ReloadPageFn = () => void;
 export type UiShellInit = Readonly<{
   parent: HTMLElement;
   canvas: HTMLCanvasElement;
+  autoStartPresetId?: ModePresetId;
+  startupImageSrc?: string;
   buildSessionDefinition?: BuildSessionDefinitionFn;
   createSimWorkerHost?: CreateSimWorkerHostFn;
   createMenuOverlay?: CreateMenuOverlayFn;
@@ -182,6 +184,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const reloadPage = init.reloadPage ?? defaultReloadPage;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
+  const autoStartPresetId = init.autoStartPresetId ?? null;
 
   let activeSession: SessionDefinition | null = null;
   let preloadedTextures: TextureMap | null = null;
@@ -211,7 +214,8 @@ export function createUiShell(init: UiShellInit): UiShell {
     });
 
   const startupOverlay = startupOverlayFactory({
-    parent: init.parent
+    parent: init.parent,
+    imageSrc: init.startupImageSrc
   });
   const startupErrorOverlay = startupErrorOverlayFactory({
     parent: init.parent,
@@ -238,7 +242,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         return;
       }
       audio.playUi('buttonClick');
-      startPresetId('training');
+      startPresetId(autoStartPresetId ?? 'training');
     },
     onOpenSettings() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
@@ -759,6 +763,9 @@ export function createUiShell(init: UiShellInit): UiShell {
         preloadedTextures = textures;
         texturesOwnedByShell = true;
         setPhase(MENU_PHASE);
+        if (autoStartPresetId !== null) {
+          startPreset(resolveModePreset(autoStartPresetId));
+        }
       });
       if (disposed) {
         if (!texturesOwnedByShell) {

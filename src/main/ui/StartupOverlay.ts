@@ -7,6 +7,7 @@ import { comicTextStyle } from './comicTextStyle';
 
 export type StartupOverlayInit = Readonly<{
   parent: HTMLElement;
+  imageSrc?: string;
 }>;
 
 export type StartupOverlay = Readonly<{
@@ -25,7 +26,7 @@ export function createStartupOverlay(init: StartupOverlayInit): StartupOverlay {
 
   const image = document.createElement('img');
   image.alt = 'Slime Escape';
-  image.src = '/images/slime-escape.jpg';
+  image.src = init.imageSrc ?? '/images/slime-escape.jpg';
   image.style.cssText = imageStyle();
   root.appendChild(image);
 

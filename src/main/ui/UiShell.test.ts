@@ -557,6 +557,7 @@ function createStartupOverlayHarness(
   let progress = { loaded: 0, total: 0 };
   let ritualCalls = 0;
   let root: FakeDomElement | null = null;
+  let lastInit: StartupOverlayInit | null = null;
 
   const overlay: StartupOverlay = {
     show(): void {
@@ -589,6 +590,7 @@ function createStartupOverlayHarness(
 
   return {
     factory(init: StartupOverlayInit): StartupOverlay {
+      lastInit = init;
       root = new FakeDomElement();
       root.dataset['role'] = 'startup-overlay';
       root.style.zIndex = '120';
@@ -604,6 +606,9 @@ function createStartupOverlayHarness(
     },
     ritualCalls(): number {
       return ritualCalls;
+    },
+    lastInit(): StartupOverlayInit | null {
+      return lastInit;
     },
     root(): FakeDomElement | null {
       return root;
@@ -1101,6 +1106,68 @@ describe('UiShell', () => {
     expect(audio.calls.unlock).toBe(1);
   });
 
+  it('auto-starts the requested preset after startup preload', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const startupOverlay = createStartupOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const escapeProgressPath = createEscapeProgressPathHarness();
+    const titleOverlay = createTitleOverlayHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    let builtPresetId: ModePresetId | null = null;
+    const buildSession = vi.fn((preset, _options) => {
+      builtPresetId = preset.id;
+      return makeSession('autostart-session');
+    });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      autoStartPresetId: 'portal',
+      startupImageSrc: '/images/slime-escape-portal.jpg',
+      buildSessionDefinition: buildSession,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createStartupOverlay: startupOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createEscapeProgressPath: escapeProgressPath.factory,
+      createTitleOverlay: titleOverlay.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(buildSession).toHaveBeenCalledTimes(1);
+    expect(builtPresetId).toBe('portal');
+    expect(startupOverlay.lastInit()?.imageSrc).toBe('/images/slime-escape-portal.jpg');
+    expect(sim.startSessions).toHaveLength(1);
+    expect(renderer.calls.create).toBe(1);
+    expect(input.calls.create).toBe(1);
+    expect(input.calls.start).toBe(1);
+    expect(hud.calls.attach).toBe(1);
+    expect(escapeProgressPath.calls.attach).toBe(1);
+    expect(titleOverlay.calls.attach).toBe(1);
+    expect(menu.isVisible()).toBe(false);
+    expect(pause.isVisible()).toBe(false);
+    expect(result.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'running' });
+  });
+
   it('keeps the startup overlay visible while the post-load ritual runs', async () => {
     const parent = new FakeDomElement();
     const menu = createMenuHarness();
@@ -1501,6 +1568,56 @@ describe('UiShell', () => {
       'buttonClick',
       'buttonClick'
     ]);
+    expect(shell.phase()).toEqual({ kind: 'running' });
+  });
+
+  it('routes the training button to the auto-start preset when one is configured', async () => {
+    const menu = createMenuHarness();
+    const result = createResultHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    const builtPresetIds: ModePresetId[] = [];
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      autoStartPresetId: 'portal',
+      buildSessionDefinition: (preset) => {
+        builtPresetIds.push(preset.id);
+        return makeSession(`${preset.id}-session`);
+      },
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: createHudHarness().factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(builtPresetIds).toEqual(['portal']);
+    expect(shell.phase()).toEqual({ kind: 'running' });
+
+    sim.emit(makeTerminalEvent('win', 123));
+    result.backToMenu();
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+
+    menu.startTraining();
+    await flushUiShellStartup();
+
+    expect(builtPresetIds).toEqual(['portal', 'portal']);
+    expect(sim.startSessions).toHaveLength(2);
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
 

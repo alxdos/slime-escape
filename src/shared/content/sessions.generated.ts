@@ -2314,6 +2314,512 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ]
   },
+  portal: {
+    presetId: 'portal',
+    displayName: 'Portal Run',
+    description: 'Специальный вход для Vibe Jam: десять нарастающих волн, вооруженные слаймы и финальный gargoyle boss.',
+    visibleInMenu: false,
+    order: 90,
+    arena: SANDBOX_ARENA,
+    player: TRAINING_PLAYER,
+    loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, GRENADE_LAUNCHER.id], selectedIndex: 0 },
+    backgrounds: [
+      {
+        id: 'portal',
+        imageUrl: '/images/bg/bg-01.jpg'
+      }
+    ],
+    musicSampleId: 'music/005-forest',
+    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    winCondition: { kind: 'allEncountersComplete' },
+    lossCondition: { kind: 'playerDeath' },
+    encounters: [
+      {
+        id: 'portal-wave-1',
+        type: 'wave',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: SLIME_SLEEPER.id },
+            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: SLIME_HORNLING.id }
+          ],
+          spawnIntervalMs: 1350,
+          maxAlive: 4,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 1.2, durationMs: 14000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'portal-wave-2',
+        type: 'wave',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: SLIME_SLEEPER.id },
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_SPARK.id }
+          ],
+          spawnIntervalMs: 1250,
+          maxAlive: 5,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 1.2, toMargin: 1.7, durationMs: 15000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'portal-wave-3',
+        type: 'wave',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: SLIME_SLEEPER.id },
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_MANY_EYE.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_SPARK.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            }
+          ],
+          spawnIntervalMs: 1150,
+          maxAlive: 6,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 1.7, toMargin: 2.2, durationMs: 16500 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'portal-wave-4',
+        type: 'wave',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_MANY_EYE.id },
+            { archetypeId: SLIME_SHELL.id },
+            { archetypeId: SLIME_SPARK.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_MANY_EYE.id },
+            { archetypeId: SLIME_SHELL.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_SPARK.id }
+          ],
+          spawnIntervalMs: 1080,
+          maxAlive: 6,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 2.2, toMargin: 2.6, durationMs: 17500 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'portal-wave-5',
+        type: 'wave',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_MANY_EYE.id },
+            { archetypeId: SLIME_SHELL.id },
+            { archetypeId: SLIME_TRICKSTER.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_WRAITH.id },
+            { archetypeId: SLIME_SHELL.id },
+            {
+              archetypeId: SLIME_SPARK.id,
+              override: { loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_MANY_EYE.id },
+            { archetypeId: SLIME_TRICKSTER.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_ONE_EYE.id }
+          ],
+          spawnIntervalMs: 1000,
+          maxAlive: 7,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 2.6, toMargin: 3, durationMs: 19000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'portal-wave-6',
+        type: 'wave',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_SHELL.id },
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_WRAITH.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_FLAME.id },
+            { archetypeId: SLIME_SHELL.id },
+            { archetypeId: SLIME_SPARK.id },
+            {
+              archetypeId: SLIME_MANY_EYE.id,
+              override: { loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_TRICKSTER.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_WRAITH.id },
+            {
+              archetypeId: SLIME_FLAME.id,
+              override: { loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_ONE_EYE.id }
+          ],
+          spawnIntervalMs: 930,
+          maxAlive: 8,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 3, toMargin: 3.4, durationMs: 20500 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'portal-wave-7',
+        type: 'wave',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_SHELL.id },
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_WRAITH.id },
+            { archetypeId: SLIME_FLAME.id },
+            { archetypeId: SLIME_BUG.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_LIFTER.id },
+            { archetypeId: SLIME_SPARK.id },
+            {
+              archetypeId: SLIME_MANY_EYE.id,
+              override: { loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_WRAITH.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_FLAME.id },
+            {
+              archetypeId: SLIME_SHELL.id,
+              override: { loadout: { weapons: [SHOTGUN.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_BUG.id },
+            {
+              archetypeId: SLIME_SPARK.id,
+              override: { loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_LIFTER.id }
+          ],
+          spawnIntervalMs: 860,
+          maxAlive: 8,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 3.4, toMargin: 3.8, durationMs: 22000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'portal-wave-8',
+        type: 'wave',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_WRAITH.id },
+            { archetypeId: SLIME_FLAME.id },
+            { archetypeId: SLIME_BUG.id },
+            { archetypeId: SLIME_LIFTER.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_SAW.id },
+            { archetypeId: SLIME_SHELL.id },
+            {
+              archetypeId: SLIME_MANY_EYE.id,
+              override: { loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_TRICKSTER.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_WRAITH.id },
+            {
+              archetypeId: SLIME_FLAME.id,
+              override: { loadout: { weapons: [SHOTGUN.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_BUG.id },
+            {
+              archetypeId: SLIME_SHELL.id,
+              override: { loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_LIFTER.id },
+            {
+              archetypeId: SLIME_SAW.id,
+              override: { loadout: { weapons: [SHOTGUN.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_MANY_EYE.id }
+          ],
+          spawnIntervalMs: 800,
+          maxAlive: 9,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 3.8, toMargin: 4.2, durationMs: 23500 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'portal-wave-9',
+        type: 'wave',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_WRAITH.id },
+            { archetypeId: SLIME_FLAME.id },
+            { archetypeId: SLIME_BUG.id },
+            { archetypeId: SLIME_LIFTER.id },
+            { archetypeId: SLIME_SAW.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_DRONE.id },
+            { archetypeId: SLIME_SHELL.id },
+            {
+              archetypeId: SLIME_MANY_EYE.id,
+              override: { loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_WRAITH.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_FLAME.id },
+            {
+              archetypeId: SLIME_BUG.id,
+              override: { loadout: { weapons: [SHOTGUN.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_LIFTER.id },
+            {
+              archetypeId: SLIME_SPARK.id,
+              override: { loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_SAW.id },
+            {
+              archetypeId: SLIME_SHELL.id,
+              override: { loadout: { weapons: [SHOTGUN.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_DRONE.id },
+            {
+              archetypeId: SLIME_MANY_EYE.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_TRICKSTER.id }
+          ],
+          spawnIntervalMs: 740,
+          maxAlive: 10,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 4.2, toMargin: 4.6, durationMs: 25000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'portal-wave-10',
+        type: 'wave',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_FLAME.id },
+            { archetypeId: SLIME_BUG.id },
+            { archetypeId: SLIME_LIFTER.id },
+            { archetypeId: SLIME_SAW.id },
+            { archetypeId: SLIME_DRONE.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_STAR.id },
+            { archetypeId: SLIME_SHELL.id },
+            {
+              archetypeId: SLIME_MANY_EYE.id,
+              override: { loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_WRAITH.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_FLAME.id },
+            {
+              archetypeId: SLIME_BUG.id,
+              override: { loadout: { weapons: [SHOTGUN.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_LIFTER.id },
+            {
+              archetypeId: SLIME_SPARK.id,
+              override: { loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_SAW.id },
+            {
+              archetypeId: SLIME_SHELL.id,
+              override: { loadout: { weapons: [SHOTGUN.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_DRONE.id },
+            {
+              archetypeId: SLIME_MANY_EYE.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_TRICKSTER.id },
+            {
+              archetypeId: SLIME_STAR.id,
+              override: { loadout: { weapons: [GRENADE_LAUNCHER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_WRAITH.id },
+            {
+              archetypeId: SLIME_FLAME.id,
+              override: { loadout: { weapons: [GRENADE_LAUNCHER.id], selectedIndex: 0 } }
+            }
+          ],
+          spawnIntervalMs: 680,
+          maxAlive: 11,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 4.6, toMargin: 5, durationMs: 27000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'portal-boss',
+        type: 'boss',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'boss',
+          bossArchetypeId: BOSS_GARGOYLE.id,
+          position: 'top-center',
+          bossEdgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'disabled' },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      }
+    ]
+  },
   sandbox: {
     presetId: 'sandbox',
     displayName: 'Песочница',

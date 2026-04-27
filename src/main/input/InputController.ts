@@ -98,6 +98,12 @@ export function createInputController(init: InputControllerInit): InputControlle
     return document.pointerLockElement === canvas;
   }
 
+  function syncCursorVisibility(): void {
+    const style = (canvas as Partial<Pick<HTMLCanvasElement, 'style'>>).style;
+    if (style === undefined) return;
+    style.cursor = isLocked() ? 'none' : '';
+  }
+
   function onKeyDown(event: KeyboardEvent): void {
     const weaponCommand = weaponHotkeyCommandFromCode(event.code);
     if (weaponCommand !== null) {
@@ -151,7 +157,9 @@ export function createInputController(init: InputControllerInit): InputControlle
     canvas.addEventListener('mousedown', onMouseDown);
     window.addEventListener('mouseup', onMouseUp);
     window.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('pointerlockchange', syncCursorVisibility);
     document.addEventListener('pointerlockerror', onPointerLockError);
+    syncCursorVisibility();
   }
 
   function detach(): void {
@@ -160,6 +168,7 @@ export function createInputController(init: InputControllerInit): InputControlle
     canvas.removeEventListener('mousedown', onMouseDown);
     window.removeEventListener('mouseup', onMouseUp);
     window.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('pointerlockchange', syncCursorVisibility);
     document.removeEventListener('pointerlockerror', onPointerLockError);
     if (aimRaf !== 0) {
       cancelAnimationFrame(aimRaf);
@@ -169,6 +178,7 @@ export function createInputController(init: InputControllerInit): InputControlle
     if (document.pointerLockElement === canvas) {
       document.exitPointerLock();
     }
+    syncCursorVisibility();
   }
 
   function resetState(): void {
