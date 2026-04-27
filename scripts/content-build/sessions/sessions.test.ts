@@ -31,7 +31,7 @@ describe('content-build sessions area', () => {
 
   it('rejects a missing required session cell before modifying targets', async () => {
     const fixture = await copySessionsFixture({
-      'training.md': (source) => removeExact(source, '| displayName | Тренировка |\n')
+      'training.md': (source) => removeExact(source, '| displayName | Training |\n')
     });
     const targetPath = join(fixture.directory, 'sessions.generated.ts');
     await writeFile(targetPath, 'old target', 'utf8');
@@ -62,13 +62,13 @@ describe('content-build sessions area', () => {
     expect(sandbox?.musicSampleId).toBeNull();
     expect(firstWave).toMatchObject({
       introDurationMs: 2500,
-      name: 'Один глаз в темноте',
+      name: 'One Eye in the Dark',
       text: null
     });
     expect(afterBossBreak).toMatchObject({
       introDurationMs: 0,
       name: null,
-      text: 'Дальше: Хламные призраки'
+      text: 'Next: Scrapyard Wraiths'
     });
   });
 
@@ -188,7 +188,7 @@ describe('content-build sessions area', () => {
       name: 'empty wave name',
       file: 'campaign-normal.md' as const,
       mutate: (source: string) =>
-        replaceInSection(source, 'campaign-set-1-wave-1', '| name | Один глаз в темноте |', '| name |  |'),
+        replaceInSection(source, 'campaign-set-1-wave-1', '| name | One Eye in the Dark |', '| name |  |'),
       pattern: /name.*expected non-empty value/
     },
     {
