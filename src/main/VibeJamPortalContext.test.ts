@@ -7,6 +7,7 @@ import {
   buildVibeJamExitUrl,
   buildVibeJamReturnUrl,
   clearStoredVibeJamPortalContext,
+  createBrowserVibeJamPortalStorage,
   parseVibeJamPortalContextFromUrl,
   readStoredVibeJamPortalContext,
   resolveInitialVibeJamPortalContext,
@@ -173,6 +174,26 @@ describe('Vibe Jam portal context storage', () => {
     clearStoredVibeJamPortalContext(storage);
 
     expect(readStoredVibeJamPortalContext(storage)).toBeNull();
+  });
+
+  it('returns null when browser storage access is denied', () => {
+    const previousDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage');
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      configurable: true,
+      get() {
+        throw new Error('sessionStorage denied');
+      }
+    });
+
+    try {
+      expect(createBrowserVibeJamPortalStorage()).toBeNull();
+    } finally {
+      if (previousDescriptor === undefined) {
+        Reflect.deleteProperty(globalThis, 'sessionStorage');
+      } else {
+        Object.defineProperty(globalThis, 'sessionStorage', previousDescriptor);
+      }
+    }
   });
 });
 

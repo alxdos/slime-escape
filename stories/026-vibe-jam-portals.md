@@ -1,6 +1,6 @@
 # Vibe Jam Portals
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-27
 - Updated: 2026-04-27
 
@@ -145,12 +145,12 @@ Key implementation contracts:
 | ID | Status | Task | Note |
 |----|--------|------|------|
 | T1 | [x] | Architectural preparation: add [vibe-jam-portals.md](../design/vibe-jam-portals.md), update adjacent design files, story `Technical`/`Tasks`/`Related`, and story indexes. | No production code. |
-| T2 | [ ] | Session/content contract: add `portal` encounter type to shared session/snapshot types, content parser/generator validation, generated sessions, and tests. | Add final `portal` encounter after `portal-boss`; change the portal preset to external-redirect completion per design. |
-| T3 | [ ] | Inbound portal context: add main-thread parsing/storage helpers for `portal=true`, usable `ref`, optional query forwarding, return URL building, and exit URL building. | Pure tests for malformed refs, missing optional params, `sessionStorage`/tab lifetime, `ref=https://slimeescape.com/portal`, and preserving optional params. |
-| T4 | [ ] | Portal controller lifecycle: wire a main-thread controller through `UiShell` so return portals appear across sessions before boss lock-in, collapse on boss start, and never appear after context is consumed. | No sim imports; derive from `SessionDefinition`, `SnapshotPair.curr`, phase, and browser context. |
-| T5 | [ ] | Renderer portal presentation: draw main-owned world-space portal descriptors as black vertical ovals with thick purple-lime shimmer, sized from the player contact box. | Must not add portal snapshot entities; include reduced-motion and visibility tests where practical. |
-| T6 | [ ] | Portal interaction and redirects: detect player overlap with return/exit portals, trigger exactly one browser redirect, and ensure exit portal appears only in the `portal` encounter. | Return portal uses stored return URL; exit portal targets `https://vibej.am/portal/2026` with Slime Escape as `ref`. |
-| T7 | [ ] | Verification pass: focused unit/integration tests plus manual live-check instructions for the user. | Per pipeline, do not start the dev server or browser; ask the user to verify `/portal?portal=true&ref=<test-url>`, boss lock-in, and final exit portal. |
+| T2 | [x] | Session/content contract: add `portal` encounter type to shared session/snapshot types, content parser/generator validation, generated sessions, and tests. | Add final `portal` encounter after `portal-boss`; change the portal preset to external-redirect completion per design. |
+| T3 | [x] | Inbound portal context: add main-thread parsing/storage helpers for `portal=true`, usable `ref`, optional query forwarding, return URL building, and exit URL building. | Pure tests for malformed refs, missing optional params, `sessionStorage`/tab lifetime, `ref=https://slimeescape.com/portal`, and preserving optional params. |
+| T4 | [x] | Portal controller lifecycle: wire a main-thread controller through `UiShell` so return portals appear across sessions before boss lock-in, collapse on boss start, and never appear after context is consumed. | No sim imports; derive from `SessionDefinition`, `SnapshotPair.curr`, phase, and browser context. |
+| T5 | [x] | Renderer portal presentation: draw main-owned world-space portal descriptors as black vertical ovals with thick purple-lime shimmer, sized from the player contact box. | Must not add portal snapshot entities; include reduced-motion and visibility tests where practical. |
+| T6 | [x] | Portal interaction and redirects: detect player overlap with return/exit portals, trigger exactly one browser redirect, and ensure exit portal appears only in the `portal` encounter. | Return portal uses stored return URL; exit portal targets `https://vibej.am/portal/2026` with Slime Escape as `ref`. |
+| T7 | [x] | Verification pass: focused unit/integration tests plus manual live-check instructions for the user. | Per pipeline, do not start the dev server or browser; ask the user to verify `/portal?portal=true&ref=<test-url>`, boss lock-in, and final exit portal. |
 
 ## Related
 

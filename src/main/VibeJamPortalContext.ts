@@ -116,7 +116,11 @@ export function createBrowserVibeJamPortalStorage(): VibeJamPortalStorage | null
   if (typeof globalThis === 'undefined' || !('sessionStorage' in globalThis)) {
     return null;
   }
-  return globalThis.sessionStorage;
+  try {
+    return globalThis.sessionStorage;
+  } catch {
+    return null;
+  }
 }
 
 export function buildVibeJamReturnUrl(context: VibeJamPortalContext): string {
