@@ -122,6 +122,7 @@ type RunStartupPreloadFn = (
   onProgress: (loaded: number, total: number) => void
 ) => Promise<TextureMap>;
 type ReloadPageFn = () => void;
+type AssignLocationFn = (url: string) => void;
 
 export type UiShellInit = Readonly<{
   parent: HTMLElement;
@@ -147,6 +148,7 @@ export type UiShellInit = Readonly<{
   createClientSettingsStore?: CreateClientSettingsStoreFn;
   runStartupPreload?: RunStartupPreloadFn;
   reloadPage?: ReloadPageFn;
+  assignLocation?: AssignLocationFn;
   makeSeed?: () => number;
   portalHref?: string;
   portalStorage?: VibeJamPortalStorage | null;
@@ -199,6 +201,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     init.createClientSettingsStore ?? createClientSettingsStore;
   const runStartupPreload = init.runStartupPreload ?? defaultRunStartupPreload;
   const reloadPage = init.reloadPage ?? defaultReloadPage;
+  const assignLocation = init.assignLocation ?? defaultAssignLocation;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
   const autoStartPresetId = init.autoStartPresetId ?? null;
@@ -206,7 +209,8 @@ export function createUiShell(init: UiShellInit): UiShell {
     init.portalStorage === undefined ? createBrowserVibeJamPortalStorage() : init.portalStorage;
   const portalController = portalControllerFactory({
     href: init.portalHref ?? defaultPortalHref(),
-    storage: portalStorage
+    storage: portalStorage,
+    redirect: assignLocation
   });
 
   let activeSession: SessionDefinition | null = null;
@@ -875,6 +879,10 @@ async function defaultRunStartupPreload(
 
 function defaultReloadPage(): void {
   location.reload();
+}
+
+function defaultAssignLocation(url: string): void {
+  location.assign(url);
 }
 
 function defaultPortalHref(): string {
