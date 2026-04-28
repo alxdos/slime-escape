@@ -72,7 +72,14 @@ No new design decision file is needed. The contract is recorded by extending exi
 | T4 | [x] | Extend run summary: track fully cleared Dungeon waves, expose `summary.dungeon.wavesCleared`, keep finite progress percent `null` for Dungeon, and cover death-during-active-wave cases in `RunSummaryTracker` tests. | Dying in wave 12 after clearing 11 reports `11`. |
 | T5 | [x] | Wire Dungeon main UI: turn `dungeon-play` from teaser into start action, add localStorage best-wave store, render only the numeric best in the existing `Max wave` area, and update menu/UiShell tests. | No auth, leaderboard, network save, or anti-cheat. Invalid storage values fall back to `0`. |
 | T6 | [x] | Update presentation: TitleOverlay uses Dungeon `waveOrdinal`, ResultViewModel/ResultOverlay foreground waves cleared/local best/new-best state, and Escape Path stays hidden for Dungeon live/result states. | Reuse the existing result style; no new result art direction. |
-| T7 | [ ] | Run focused verification and record manual checks. | `npm run content:check`, typecheck/tests touched by the implementation, and per pipeline ask the user to live-check Dungeon screen number, Play, death result, new best, reload persistence, and no incoherent overlap. |
+| T7 | [x] | Run focused verification and record manual checks. | `npm run content:check`, typecheck/tests touched by the implementation, and per pipeline ask the user to live-check Dungeon screen number, Play, death result, new best, reload persistence, and no incoherent overlap. |
+
+## Verification
+
+- 2026-04-28 automated: `npm run content:check`
+- 2026-04-28 automated: `npm run typecheck`
+- 2026-04-28 automated: `npm run test -- scripts/content-build/sessions/sessions.test.ts src/shared/content/sessions.test.ts src/shared/content/buildSession.test.ts src/sim/SessionFlowSystem.test.ts src/sim/SnapshotExportSystem.test.ts src/sim/RunSummaryTracker.test.ts src/main/audio/Audio.test.ts src/main/render/Renderer.test.ts src/main/ui/EscapeProgressPathViewModel.test.ts src/main/ui/EscapeProgressPath.test.ts src/main/ui/ResultViewModel.test.ts src/main/ui/ResultOverlay.test.ts src/main/ui/MenuOverlay.test.ts src/main/ui/MenuOverlayLayout.test.ts src/main/ui/UiShell.test.ts src/main/ui/Hud.test.ts src/main/ui/TitleOverlay.test.ts src/main/VibeJamPortalController.test.ts`
+- Manual live checks pending by user, because this delivery explicitly avoids starting a server or opening a browser from the agent: Dungeon screen best number, Dungeon Play, death result, New Best state, reload persistence, and no incoherent overlap.
 
 ## Related
 
