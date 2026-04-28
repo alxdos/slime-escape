@@ -77,13 +77,14 @@ const DEATH_DROPLET_BASE_COUNT = 18;
 const DROPLET_FLIGHT_MIN_MS = 120;
 const DROPLET_FLIGHT_MAX_MS = 360;
 const STAIN_GROW_MS = 2000;
-const STAIN_TTL_MS = 60_000;
+const STAIN_TTL_MS = 45_000;
 const STAIN_FADE_MS = 8000;
+const BUDGET_FADE_MS = STAIN_FADE_MS;
 const DEATH_GHOST_TTL_MS = 2000;
 const DEATH_GHOST_START_OPACITY = 0.42;
 const DEATH_GHOST_END_SCALE = 1.38;
 const MAX_HIT_IMPULSES = 128;
-const MAX_DROPLETS = 420;
+const MAX_DROPLETS = 1420;
 const MAX_DEATH_GHOSTS = 32;
 
 export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffectStore {
@@ -228,7 +229,27 @@ export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffe
       });
       nextDropletId += 1;
     }
-    cullArrayToBudget(droplets, MAX_DROPLETS);
+    fadeDropletsOverBudget(initDroplets.nowMs);
+  }
+
+  function fadeDropletsOverBudget(nowMs: number): void {
+    let activeCount = 0;
+    for (const droplet of droplets) {
+      if (!isDropletFadingForBudget(droplet, nowMs)) {
+        activeCount += 1;
+      }
+    }
+
+    let fadeCount = activeCount - MAX_DROPLETS;
+    if (fadeCount <= 0) return;
+
+    droplets = droplets.map((droplet) => {
+      if (fadeCount <= 0 || isDropletFadingForBudget(droplet, nowMs)) {
+        return droplet;
+      }
+      fadeCount -= 1;
+      return forceDropletFade(droplet, nowMs);
+    });
   }
 
   function update(nowMs: number): void {
@@ -296,6 +317,26 @@ function updateDroplet(droplet: SlimeDropletEffect, nowMs: number): SlimeDroplet
     opacity,
     stainScale: landed ? 1 + 0.45 * growT : 1,
     landed
+  };
+}
+
+function isDropletFadingForBudget(
+  droplet: SlimeDropletEffect,
+  nowMs: number
+): boolean {
+  return droplet.expiresAtMs <= nowMs + BUDGET_FADE_MS;
+}
+
+function forceDropletFade(
+  droplet: SlimeDropletEffect,
+  nowMs: number
+): SlimeDropletEffect {
+  const expiresAtMs = nowMs + BUDGET_FADE_MS;
+  if (droplet.expiresAtMs <= expiresAtMs) return droplet;
+  return {
+    ...droplet,
+    stainGrowUntilMs: Math.min(droplet.stainGrowUntilMs, expiresAtMs),
+    expiresAtMs
   };
 }
 

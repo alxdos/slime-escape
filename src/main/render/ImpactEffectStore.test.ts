@@ -256,7 +256,7 @@ describe('ImpactEffectStore', () => {
     expect(fading?.opacity).toBeLessThan(1);
   });
 
-  it('keeps effect counts bounded when many impacts arrive before cleanup', () => {
+  it('fades over-budget droplets instead of removing them immediately', () => {
     const store = createStore();
 
     for (let i = 0; i < 100; i += 1) {
@@ -279,6 +279,23 @@ describe('ImpactEffectStore', () => {
 
     const snapshot = store.snapshot();
     expect(snapshot.deathGhosts.length).toBeLessThanOrEqual(32);
-    expect(snapshot.droplets.length).toBeLessThanOrEqual(420);
+
+    const forcedExpiresAtMs = Math.min(...snapshot.droplets.map((droplet) => droplet.expiresAtMs));
+    const fadingSoon = snapshot.droplets.filter(
+      (droplet) => droplet.expiresAtMs === forcedExpiresAtMs
+    );
+    const longLived = snapshot.droplets.filter(
+      (droplet) => droplet.expiresAtMs > forcedExpiresAtMs
+    );
+    expect(fadingSoon.length).toBeGreaterThan(0);
+    expect(longLived.length).toBeGreaterThan(0);
+    expect(snapshot.droplets.length).toBeGreaterThan(longLived.length);
+
+    store.update(forcedExpiresAtMs / 2);
+    const fadingMidway = store
+      .snapshot()
+      .droplets.filter((droplet) => droplet.expiresAtMs === forcedExpiresAtMs);
+    expect(fadingMidway.length).toBeGreaterThan(0);
+    expect(fadingMidway.every((droplet) => droplet.opacity > 0 && droplet.opacity < 1)).toBe(true);
   });
 });
