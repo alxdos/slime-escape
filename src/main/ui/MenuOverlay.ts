@@ -894,7 +894,6 @@ function petsSelectedAreaStyle(): string {
     'padding:2.2%',
     'border:3px solid #050505',
     'border-radius:8px',
-    'background:rgba(255,255,255,0.9)',
     'box-shadow:5px 5px 0 #000000',
     'cursor:pointer',
     'pointer-events:auto',
@@ -918,7 +917,6 @@ function petsInventoryZoneStyle(quality: PetQuality): string {
     'padding:3.5%',
     'border:3px solid #050505',
     'border-radius:8px',
-    `background:${quality === 'green' ? 'rgba(215,247,162,0.78)' : 'rgba(234,215,255,0.78)'}`,
     'box-shadow:5px 5px 0 #000000',
     'pointer-events:auto'
   ].join(';');
