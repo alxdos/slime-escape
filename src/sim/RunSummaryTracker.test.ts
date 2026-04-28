@@ -32,7 +32,8 @@ describe('RunSummaryTracker', () => {
       activeEncounter: {
         encounter: encounter('w1', 'wave'),
         index: 0,
-        startSimMs: 0
+        startSimMs: 0,
+        waveOrdinal: 1
       },
       waveProgress: { dispatched: 1, total: 1, alive: 0 },
       store
@@ -72,7 +73,8 @@ describe('RunSummaryTracker', () => {
       activeEncounter: {
         encounter: encounters[2]!,
         index: 2,
-        startSimMs: 100
+        startSimMs: 100,
+        waveOrdinal: 2
       },
       waveProgress: { dispatched: 5, total: 10, alive: 2 },
       store
@@ -103,7 +105,8 @@ describe('RunSummaryTracker', () => {
       activeEncounter: {
         encounter: encounters[1]!,
         index: 1,
-        startSimMs: 400
+        startSimMs: 400,
+        waveOrdinal: null
       },
       waveProgress: { dispatched: 1, total: 1, alive: 1 },
       store
@@ -138,7 +141,8 @@ describe('RunSummaryTracker', () => {
       activeEncounter: {
         encounter: sandbox,
         index: 0,
-        startSimMs: 0
+        startSimMs: 0,
+        waveOrdinal: null
       },
       waveProgress: null,
       store
@@ -147,6 +151,67 @@ describe('RunSummaryTracker', () => {
     expect(summary.progress.percent).toBeNull();
     expect(summary.progress.totalObjectiveEncounters).toBe(0);
     expect(summary.kills.total).toBe(0);
+  });
+
+  it('tracks fully completed dungeon waves separately from finite progress', () => {
+    const tracker = createRunSummaryTracker();
+    const store = createEntityStore();
+    const encounters = [
+      encounter('dungeon-wave-1', 'wave'),
+      encounter('dungeon-break', 'break'),
+      encounter('dungeon-wave-2', 'wave')
+    ];
+    const session = makeSession(encounters, {
+      win: { kind: 'dungeon' },
+      loss: { kind: 'playerDeath' }
+    });
+
+    tracker.onEncounterComplete(session, encounters[0]!);
+    tracker.onEncounterComplete(session, encounters[1]!);
+
+    const summary = tracker.buildSummary('loss', 900, {
+      session,
+      activeEncounter: {
+        encounter: encounters[2]!,
+        index: 2,
+        startSimMs: 700,
+        waveOrdinal: 2
+      },
+      waveProgress: { dispatched: 3, total: 8, alive: 2 },
+      store
+    });
+
+    expect(summary.dungeon).toEqual({ wavesCleared: 1 });
+    expect(summary.progress.percent).toBeNull();
+    expect(summary.progress.activeEncounterId).toBe('dungeon-wave-2');
+  });
+
+  it('does not count a dungeon wave when the player dies during that active wave', () => {
+    const tracker = createRunSummaryTracker();
+    const store = createEntityStore();
+    const encounters = [encounter('dungeon-wave-1', 'wave'), encounter('dungeon-wave-2', 'wave')];
+    const session = makeSession(encounters, {
+      win: { kind: 'dungeon' },
+      loss: { kind: 'playerDeath' }
+    });
+
+    tracker.onEncounterComplete(session, encounters[0]!);
+    tracker.onDeath(playerDeath({ kind: 'enemyContact', enemyId: 99 as EntityId }), store);
+
+    const summary = tracker.buildSummary('loss', 1200, {
+      session,
+      activeEncounter: {
+        encounter: encounters[1]!,
+        index: 1,
+        startSimMs: 800,
+        waveOrdinal: 2
+      },
+      waveProgress: { dispatched: 8, total: 8, alive: 1 },
+      store
+    });
+
+    expect(summary.dungeon).toEqual({ wavesCleared: 1 });
+    expect(summary.defeat?.cause.kind).toBe('enemyContact');
   });
 });
 

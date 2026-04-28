@@ -278,7 +278,8 @@ describe('SnapshotExportSystem top-level fields', () => {
         tuning: null
       },
       index: 2,
-      startSimMs: 1000
+      startSimMs: 1000,
+      waveOrdinal: 3
     };
     exporter.reset();
     const snap = exporter.onTick(1500, store, {
@@ -291,7 +292,8 @@ describe('SnapshotExportSystem top-level fields', () => {
       id: 'wave-1',
       type: 'wave',
       index: 2,
-      elapsedMs: 500
+      elapsedMs: 500,
+      waveOrdinal: 3
     });
   });
 

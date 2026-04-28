@@ -101,6 +101,19 @@ describe('deriveLiveEscapeProgressPathViewModel', () => {
       )
     ).toEqual({ kind: 'hidden' });
   });
+
+  it('hides for Dungeon sessions because endless loops have no flag path', () => {
+    const session = makeSession([wave('dungeon-wave-1'), wave('dungeon-wave-2')], {
+      winCondition: { kind: 'dungeon' }
+    });
+
+    expect(
+      deriveLiveEscapeProgressPathViewModel(
+        session,
+        snapshot({ id: 'dungeon-wave-1', type: 'wave', index: 0, elapsedMs: 0 })
+      )
+    ).toEqual({ kind: 'hidden' });
+  });
 });
 
 describe('deriveResultEscapeProgressPathViewModel', () => {
@@ -200,6 +213,27 @@ describe('deriveResultEscapeProgressPathViewModel', () => {
       }))
     ).toEqual({ kind: 'hidden' });
   });
+
+  it('hides for Dungeon result summaries even when waves were cleared', () => {
+    const session = makeSession([wave('dungeon-wave-1'), wave('dungeon-wave-2')], {
+      winCondition: { kind: 'dungeon' }
+    });
+
+    expect(
+      deriveResultEscapeProgressPathViewModel(
+        session,
+        {
+          ...makeSummary('loss', {
+            completedWaves: 0,
+            totalWaves: 0,
+            activeEncounterId: 'dungeon-wave-1',
+            activeEncounterIndex: 0
+          }),
+          dungeon: { wavesCleared: 12 }
+        }
+      )
+    ).toEqual({ kind: 'hidden' });
+  });
 });
 
 function pointStates(
@@ -211,7 +245,10 @@ function pointStates(
   return view.points.map((point) => point.state);
 }
 
-function makeSession(encounters: ReadonlyArray<EncounterDefinition>): SessionDefinition {
+function makeSession(
+  encounters: ReadonlyArray<EncounterDefinition>,
+  overrides: Partial<SessionDefinition> = {}
+): SessionDefinition {
   return {
     id: 'escape-progress-test',
     seed: 1,
@@ -234,7 +271,8 @@ function makeSession(encounters: ReadonlyArray<EncounterDefinition>): SessionDef
     encounters,
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
-    uiMeta: null
+    uiMeta: null,
+    ...overrides
   };
 }
 
@@ -289,11 +327,18 @@ function bossEncounter(id: string): EncounterDefinition {
   };
 }
 
-function snapshot(encounter: NonNullable<Snapshot['encounter']>): Snapshot {
+type TestEncounterSnapshot =
+  Omit<NonNullable<Snapshot['encounter']>, 'waveOrdinal'> &
+    Partial<Pick<NonNullable<Snapshot['encounter']>, 'waveOrdinal'>>;
+
+function snapshot(encounter: TestEncounterSnapshot): Snapshot {
   return {
     simTimeMs: 0,
     entities: [],
-    encounter,
+    encounter: {
+      waveOrdinal: encounter.type === 'wave' ? encounter.index + 1 : null,
+      ...encounter
+    },
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null,
@@ -320,6 +365,7 @@ function makeSummary(
     kills: { total: 0, byArchetype: [] },
     drops: { pickedUpTotal: 0 },
     boss: null,
-    defeat: null
+    defeat: null,
+    dungeon: null
   };
 }

@@ -68,6 +68,7 @@ export const SANDBOX_PRESET = resolveModePreset('sandbox');
 export const SANDBOX_WITH_COMBAT_PRESET = resolveModePreset('sandbox-with-combat');
 export const TRAINING_PRESET = resolveModePreset('training');
 export const CAMPAIGN_PRESET = resolveModePreset('campaign-normal');
+export const DUNGEON_PRESET = resolveModePreset('dungeon');
 
 export type PlayableModeEntry = Readonly<{
   presetId: ModePresetId;

@@ -249,7 +249,7 @@ function snapshot(
         maxHp: 5
       }
     ],
-    encounter: { id, type, index, elapsedMs: 0 },
+    encounter: { id, type, index, elapsedMs: 0, waveOrdinal: type === 'wave' ? index + 1 : null },
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null,

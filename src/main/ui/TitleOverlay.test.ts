@@ -6,7 +6,10 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 import { createTitleOverlay, deriveTitleOverlayViewModel } from './TitleOverlay';
 
-function makeSession(encounters: ReadonlyArray<EncounterDefinition>): SessionDefinition {
+function makeSession(
+  encounters: ReadonlyArray<EncounterDefinition>,
+  overrides: Partial<SessionDefinition> = {}
+): SessionDefinition {
   return {
     id: 'title-overlay-session',
     seed: 1,
@@ -29,7 +32,8 @@ function makeSession(encounters: ReadonlyArray<EncounterDefinition>): SessionDef
     encounters,
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
-    uiMeta: null
+    uiMeta: null,
+    ...overrides
   };
 }
 
@@ -84,13 +88,23 @@ function bossEncounter(id: string): EncounterDefinition {
   };
 }
 
+type TestEncounterSnapshot =
+  Omit<NonNullable<Snapshot['encounter']>, 'waveOrdinal'> &
+    Partial<Pick<NonNullable<Snapshot['encounter']>, 'waveOrdinal'>>;
+
 function snapshot(
-  encounter: NonNullable<Snapshot['encounter']> | null
+  encounter: TestEncounterSnapshot | null
 ): Snapshot {
   return {
     simTimeMs: 0,
     entities: [],
-    encounter,
+    encounter:
+      encounter === null
+        ? null
+        : {
+            waveOrdinal: encounter.type === 'wave' ? encounter.index + 1 : null,
+            ...encounter
+          },
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null,
@@ -172,6 +186,30 @@ describe('TitleOverlay view model', () => {
       kind: 'wave',
       titleText: 'Wave 3',
       nameText: 'Third'
+    });
+  });
+
+  it('uses the Dungeon snapshot wave ordinal when authored waves loop', () => {
+    const session = makeSession(
+      [wave('dungeon-wave-1', 'First'), wave('dungeon-wave-2', 'Second')],
+      { winCondition: { kind: 'dungeon' } }
+    );
+
+    const view = deriveTitleOverlayViewModel(
+      session,
+      snapshot({
+        id: 'dungeon-wave-1',
+        type: 'wave',
+        index: 0,
+        elapsedMs: 1000,
+        waveOrdinal: 12
+      })
+    );
+
+    expect(view).toMatchObject({
+      kind: 'wave',
+      titleText: 'Wave 12',
+      nameText: 'First'
     });
   });
 

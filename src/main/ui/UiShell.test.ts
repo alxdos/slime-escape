@@ -17,6 +17,10 @@ import {
   type ClientSettingsStore,
   type RenderScalePreset
 } from '../settings/ClientSettingsStore';
+import type {
+  DungeonBestWaveRecordResult,
+  DungeonBestWaveStore
+} from '../settings/DungeonBestWaveStore';
 import type { SimWorkerHost, SimWorkerHostOptions, SnapshotPair } from '../sim/SimWorkerHost';
 import type {
   VibeJamPortalController,
@@ -25,10 +29,11 @@ import type {
 
 import type { EscapeProgressPath, EscapeProgressPathInit } from './EscapeProgressPath';
 import type { EscapeProgressPathViewModel } from './EscapeProgressPathViewModel';
+import type { DungeonWaveCounter, DungeonWaveCounterInit } from './DungeonWaveCounter';
 import type { Hud, HudInit } from './Hud';
 import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
-import type { MenuScreenId, MenuSubscreenId, MenuTeaserControlId } from './MenuOverlayLayout';
+import type { MenuScreenId, MenuSubscreenId } from './MenuOverlayLayout';
 import type { TeaserControlId } from './MenuOverlayState';
 import type {
   PhaseTransitionCurtain,
@@ -96,7 +101,10 @@ function findHarnessRoot(parent: FakeDomElement, role: string): FakeDomElement |
   return null;
 }
 
-function makeSession(id = 'test-session'): SessionDefinition {
+function makeSession(
+  id = 'test-session',
+  overrides: Partial<SessionDefinition> = {}
+): SessionDefinition {
   return {
     id,
     seed: 7,
@@ -119,7 +127,8 @@ function makeSession(id = 'test-session'): SessionDefinition {
     encounters: [],
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
-    uiMeta: null
+    uiMeta: null,
+    ...overrides
   };
 }
 
@@ -147,7 +156,8 @@ function makeResultSummary(
       pickedUpTotal: 0
     },
     boss: null,
-    defeat: null
+    defeat: null,
+    dungeon: null
   };
 }
 
@@ -205,10 +215,12 @@ function createDeferredVoid() {
 function createUiShellForTest(init: UiShellInit) {
   const titleOverlay = createTitleOverlayHarness();
   const escapeProgressPath = createEscapeProgressPathHarness();
+  const dungeonWaveCounter = createDungeonWaveCounterHarness();
   const phaseTransitionCurtain = createPhaseTransitionCurtainHarness();
   return createUiShell({
     runStartupPreload: () => Promise.resolve(EMPTY_TEXTURE_MAP),
     createEscapeProgressPath: escapeProgressPath.factory,
+    createDungeonWaveCounter: dungeonWaveCounter.factory,
     createTitleOverlay: titleOverlay.factory,
     createPhaseTransitionCurtain: phaseTransitionCurtain.factory,
     ...init
@@ -224,11 +236,12 @@ function createMenuHarness() {
   let onOpenScreen: ((screenId: MenuSubscreenId) => void) | null = null;
   let onBackToMainMenu: (() => void) | null = null;
   let onTeaser: ((controlId: TeaserControlId) => void) | null = null;
-  let onSubscreenTeaser: ((controlId: MenuTeaserControlId) => void) | null = null;
+  let onStartDungeon: (() => void) | null = null;
   let onButtonHover: (() => void) | null = null;
   let onModeSwitch: (() => void) | null = null;
   let modes: ReadonlyArray<{ presetId: ModePresetId }> = [];
   let activeScreen: MenuScreenId = 'main';
+  let dungeonBestWave = 0;
   let root: FakeDomElement | null = null;
 
   const overlay: MenuOverlay = {
@@ -250,6 +263,9 @@ function createMenuHarness() {
     screen(): MenuScreenId {
       return activeScreen;
     },
+    setDungeonBestWave(bestWave: number): void {
+      dungeonBestWave = bestWave;
+    },
     isVisible(): boolean {
       return visible;
     },
@@ -266,9 +282,10 @@ function createMenuHarness() {
       onOpenScreen = init.onOpenScreen;
       onBackToMainMenu = init.onBackToMainMenu;
       onTeaser = init.onTeaser;
-      onSubscreenTeaser = init.onSubscreenTeaser;
+      onStartDungeon = init.onStartDungeon;
       onButtonHover = init.onButtonHover;
       onModeSwitch = init.onModeSwitch;
+      dungeonBestWave = init.dungeonBestWave;
       root = new FakeDomElement();
       root.dataset['role'] = 'menu-overlay';
       root.style.zIndex = '100';
@@ -306,6 +323,12 @@ function createMenuHarness() {
       }
       onTeaser?.(controlId);
     },
+    startDungeon(): void {
+      if (!visible) {
+        return;
+      }
+      onStartDungeon?.();
+    },
     openScreen(screenId: MenuSubscreenId): void {
       if (!visible) {
         return;
@@ -318,14 +341,11 @@ function createMenuHarness() {
       }
       onBackToMainMenu?.();
     },
-    subscreenTeaser(controlId: MenuTeaserControlId): void {
-      if (!visible) {
-        return;
-      }
-      onSubscreenTeaser?.(controlId);
-    },
     screen(): MenuScreenId {
       return activeScreen;
+    },
+    dungeonBestWave(): number {
+      return dungeonBestWave;
     },
     hoverButton(): void {
       if (!visible) {
@@ -917,6 +937,35 @@ function createEscapeProgressPathHarness() {
   };
 }
 
+function createDungeonWaveCounterHarness() {
+  const calls = {
+    attach: 0,
+    update: 0,
+    detach: 0,
+    dispose: 0
+  };
+
+  return {
+    factory(_init: DungeonWaveCounterInit): DungeonWaveCounter {
+      return {
+        attach(): void {
+          calls.attach += 1;
+        },
+        update(): void {
+          calls.update += 1;
+        },
+        detach(): void {
+          calls.detach += 1;
+        },
+        dispose(): void {
+          calls.dispose += 1;
+        }
+      };
+    },
+    calls
+  };
+}
+
 function createTitleOverlayHarness() {
   const calls = {
     attach: 0,
@@ -1107,6 +1156,47 @@ function createClientSettingsStoreHarness(
   };
 }
 
+function createDungeonBestWaveStoreHarness(initialBestWave = 0) {
+  let bestWave = initialBestWave;
+  const recordResults: DungeonBestWaveRecordResult[] = [];
+  const calls = {
+    record: 0
+  };
+
+  return {
+    factory(): DungeonBestWaveStore {
+      return {
+        get(): number {
+          return bestWave;
+        },
+        record(wavesCleared: number): DungeonBestWaveRecordResult {
+          calls.record += 1;
+          const previousBestWave = bestWave;
+          const normalizedWavesCleared = Math.max(0, Math.floor(wavesCleared));
+          const isNewBest = normalizedWavesCleared > previousBestWave;
+          if (isNewBest) {
+            bestWave = normalizedWavesCleared;
+          }
+          const result = {
+            previousBestWave,
+            bestWave,
+            isNewBest
+          };
+          recordResults.push(result);
+          return result;
+        }
+      };
+    },
+    get(): number {
+      return bestWave;
+    },
+    recordResults(): ReadonlyArray<DungeonBestWaveRecordResult> {
+      return recordResults;
+    },
+    calls
+  };
+}
+
 describe('UiShell', () => {
   it('preloads projectile and drop sprite registries before showing the menu', () => {
     const preloadIds = new Set(STARTUP_SPRITE_SPECS.map((spec) => spec.archetypeId));
@@ -1200,6 +1290,7 @@ describe('UiShell', () => {
     const sim = createSimHarness();
     const hud = createHudHarness();
     const escapeProgressPath = createEscapeProgressPathHarness();
+    const dungeonWaveCounter = createDungeonWaveCounterHarness();
     const titleOverlay = createTitleOverlayHarness();
     const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
@@ -1227,6 +1318,7 @@ describe('UiShell', () => {
       createInputController: input.factory,
       createHud: hud.factory,
       createEscapeProgressPath: escapeProgressPath.factory,
+      createDungeonWaveCounter: dungeonWaveCounter.factory,
       createTitleOverlay: titleOverlay.factory,
       createAudio: audio.factory,
       windowTarget,
@@ -1244,6 +1336,7 @@ describe('UiShell', () => {
     expect(input.calls.start).toBe(1);
     expect(hud.calls.attach).toBe(1);
     expect(escapeProgressPath.calls.attach).toBe(1);
+    expect(dungeonWaveCounter.calls.attach).toBe(1);
     expect(titleOverlay.calls.attach).toBe(1);
     expect(menu.isVisible()).toBe(false);
     expect(pause.isVisible()).toBe(false);
@@ -1411,6 +1504,7 @@ describe('UiShell', () => {
     const sim = createSimHarness();
     const hud = createHudHarness();
     const escapeProgressPath = createEscapeProgressPathHarness();
+    const dungeonWaveCounter = createDungeonWaveCounterHarness();
     const titleOverlay = createTitleOverlayHarness();
     const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
@@ -1436,6 +1530,7 @@ describe('UiShell', () => {
       createInputController: input.factory,
       createHud: hud.factory,
       createEscapeProgressPath: escapeProgressPath.factory,
+      createDungeonWaveCounter: dungeonWaveCounter.factory,
       createTitleOverlay: titleOverlay.factory,
       createAudio: audio.factory,
       windowTarget,
@@ -1467,6 +1562,7 @@ describe('UiShell', () => {
     expect(input.calls.start).toBe(1);
     expect(hud.calls.attach).toBe(1);
     expect(escapeProgressPath.calls.attach).toBe(1);
+    expect(dungeonWaveCounter.calls.attach).toBe(1);
     expect(titleOverlay.calls.attach).toBe(1);
     expect(menu.isVisible()).toBe(false);
     expect(pause.isVisible()).toBe(false);
@@ -1476,6 +1572,7 @@ describe('UiShell', () => {
     shell.onFrame();
     expect(hud.calls.update).toBe(1);
     expect(escapeProgressPath.calls.update).toBe(1);
+    expect(dungeonWaveCounter.calls.update).toBe(1);
     expect(titleOverlay.calls.update).toBe(1);
     expect(audio.calls.update).toBe(1);
   });
@@ -1718,6 +1815,138 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
 
+  it('starts the Dungeon preset from the Dungeon subscreen action', async () => {
+    const menu = createMenuHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const dungeonBestWave = createDungeonBestWaveStoreHarness(9);
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    let builtPresetId: ModePresetId | null = null;
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: (preset) => {
+        builtPresetId = preset.id;
+        return makeSession('dungeon-session');
+      },
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: createHudHarness().factory,
+      createAudio: audio.factory,
+      createDungeonBestWaveStore: dungeonBestWave.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(menu.dungeonBestWave()).toBe(9);
+
+    menu.startDungeon();
+    await flushUiShellStartup();
+
+    expect(builtPresetId).toBe('dungeon');
+    expect(sim.startSessions).toHaveLength(1);
+    expect(renderer.calls.create).toBe(1);
+    expect(input.calls.start).toBe(1);
+    expect(audio.uiEvents).toEqual(['buttonClick']);
+    expect(shell.phase()).toEqual({ kind: 'running' });
+  });
+
+  it('records Dungeon waves cleared and refreshes the menu best number after a run', async () => {
+    const menu = createMenuHarness();
+    const result = createResultHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const dungeonBestWave = createDungeonBestWaveStoreHarness(5);
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () =>
+        makeSession('dungeon-session', {
+          winCondition: { kind: 'dungeon' }
+        }),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: createHudHarness().factory,
+      createAudio: audio.factory,
+      createDungeonBestWaveStore: dungeonBestWave.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    menu.startDungeon();
+    await flushUiShellStartup();
+    sim.emit({
+      ...makeTerminalEvent('loss', 123),
+      summary: {
+        ...makeResultSummary('loss', 123),
+        dungeon: { wavesCleared: 8 }
+      }
+    });
+
+    expect(dungeonBestWave.calls.record).toBe(1);
+    expect(dungeonBestWave.recordResults()).toEqual([
+      {
+        previousBestWave: 5,
+        bestWave: 8,
+        isNewBest: true
+      }
+    ]);
+    expect(menu.dungeonBestWave()).toBe(8);
+    expect(result.isVisible()).toBe(true);
+    expect(result.viewModel()?.dungeon).toEqual({
+      wavesCleared: 8,
+      previousBestWave: 5,
+      bestWave: 8,
+      isNewBest: true
+    });
+    expect(result.viewModel()?.escapePath).toBeNull();
+    expect(shell.phase()).toMatchObject({ kind: 'result', outcome: 'loss' });
+
+    result.backToMenu();
+
+    expect(menu.isVisible()).toBe(true);
+    expect(menu.dungeonBestWave()).toBe(8);
+
+    menu.startDungeon();
+    await flushUiShellStartup();
+    sim.emit({
+      ...makeTerminalEvent('loss', 456),
+      summary: {
+        ...makeResultSummary('loss', 456),
+        dungeon: { wavesCleared: 7 }
+      }
+    });
+
+    expect(dungeonBestWave.get()).toBe(8);
+    expect(menu.dungeonBestWave()).toBe(8);
+    expect(dungeonBestWave.calls.record).toBe(2);
+  });
+
   it('routes the training button to the auto-start preset when one is configured', async () => {
     const menu = createMenuHarness();
     const result = createResultHarness();
@@ -1778,6 +2007,7 @@ describe('UiShell', () => {
     const sim = createSimHarness();
     const hud = createHudHarness();
     const escapeProgressPath = createEscapeProgressPathHarness();
+    const dungeonWaveCounter = createDungeonWaveCounterHarness();
     const titleOverlay = createTitleOverlayHarness();
     const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
@@ -1798,6 +2028,7 @@ describe('UiShell', () => {
       createInputController: input.factory,
       createHud: hud.factory,
       createEscapeProgressPath: escapeProgressPath.factory,
+      createDungeonWaveCounter: dungeonWaveCounter.factory,
       createTitleOverlay: titleOverlay.factory,
       createAudio: audio.factory,
       windowTarget,
@@ -1827,6 +2058,7 @@ describe('UiShell', () => {
     expect(input.calls.stop).toBe(1);
     expect(renderer.calls.dispose).toBe(1);
     expect(titleOverlay.calls.detach).toBe(1);
+    expect(dungeonWaveCounter.calls.detach).toBe(1);
     expect(escapeProgressPath.calls.detach).toBe(1);
     expect(hud.calls.detach).toBe(1);
     expect(audio.calls.detach).toBe(1);
@@ -2384,6 +2616,7 @@ describe('UiShell', () => {
     const sim = createSimHarness();
     const hud = createHudHarness();
     const escapeProgressPath = createEscapeProgressPathHarness();
+    const dungeonWaveCounter = createDungeonWaveCounterHarness();
     const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
@@ -2403,6 +2636,7 @@ describe('UiShell', () => {
       createInputController: input.factory,
       createHud: hud.factory,
       createEscapeProgressPath: escapeProgressPath.factory,
+      createDungeonWaveCounter: dungeonWaveCounter.factory,
       createAudio: audio.factory,
       windowTarget,
       documentTarget
@@ -2414,6 +2648,7 @@ describe('UiShell', () => {
     shell.onFrame();
     expect(hud.calls.update).toBe(1);
     expect(escapeProgressPath.calls.update).toBe(1);
+    expect(dungeonWaveCounter.calls.update).toBe(1);
     expect(renderer.calls.render).toBe(1);
     expect(audio.calls.update).toBe(1);
 
@@ -2429,6 +2664,7 @@ describe('UiShell', () => {
     shell.onFrame();
     expect(hud.calls.update).toBe(1);
     expect(escapeProgressPath.calls.update).toBe(2);
+    expect(dungeonWaveCounter.calls.update).toBe(2);
     expect(renderer.calls.render).toBe(2);
     expect(audio.calls.update).toBe(2);
     expect(pause.isVisible()).toBe(true);

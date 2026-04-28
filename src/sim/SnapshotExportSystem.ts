@@ -226,6 +226,7 @@ function makeEncounterSnapshot(
     id: context.encounter.id,
     type: context.encounter.type,
     index: context.index,
-    elapsedMs: Math.max(0, Math.round(simTimeMs - context.startSimMs))
+    elapsedMs: Math.max(0, Math.round(simTimeMs - context.startSimMs)),
+    waveOrdinal: context.waveOrdinal
   };
 }

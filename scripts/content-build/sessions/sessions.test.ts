@@ -12,6 +12,7 @@ const SESSION_SOURCE_FILES = [
   'campaign-easy.md',
   'campaign-hard.md',
   'campaign-normal.md',
+  'dungeon.md',
   'portal.md',
   'sandbox.md',
   'sandbox-with-combat.md',
@@ -92,6 +93,35 @@ describe('content-build sessions area', () => {
       zoneBehavior: { kind: 'disabled' },
       transitionRules: { kind: 'never', next: 'sequential' }
     });
+  });
+
+  it('parses the dungeon preset as an endless authored wave loop', async () => {
+    const fixture = await copySessionsFixture();
+    const area = await parseSessionsArea(fixture.sourceDirectory);
+    const dungeon = area.presets.find((preset) => preset.presetId === 'dungeon');
+
+    expect(dungeon?.winCondition).toEqual({ kind: 'dungeon' });
+    expect(dungeon?.lossCondition).toEqual({ kind: 'playerDeath' });
+    expect(dungeon?.visibleInMenu).toBe(false);
+    expect(dungeon?.encounters.some((encounter) => encounter.type === 'wave')).toBe(true);
+  });
+
+  it('rejects dungeon sessions without player-death loss', async () => {
+    await expectParseRejects({
+      'dungeon.md': (source) =>
+        replaceExact(source, '| lossCondition | playerDeath |', '| lossCondition | none |')
+    }, /winCondition "dungeon" requires lossCondition "playerDeath"/);
+  });
+
+  it('rejects dungeon sessions without a wave encounter', async () => {
+    await expectParseRejects({
+      'sandbox.md': (source) =>
+        replaceExact(
+          replaceExact(source, '| winCondition | none |', '| winCondition | dungeon |'),
+          '| lossCondition | none |',
+          '| lossCondition | playerDeath |'
+        )
+    }, /winCondition "dungeon" requires at least one wave encounter/);
   });
 
   for (const testCase of [

@@ -26,6 +26,7 @@ import { HEAL_ORB } from './drops';
 import type { SessionDefinition, SpawnOverride } from '../session';
 import {
   CAMPAIGN_PRESET,
+  DUNGEON_PRESET,
   resolveModePreset,
   SESSION_PRESET_TEMPLATES,
   SANDBOX_PRESET,
@@ -354,6 +355,29 @@ describe('buildSessionDefinition (campaign)', () => {
     }
 
     expect(preBossBreaks).toBe(5);
+  });
+});
+
+describe('buildSessionDefinition (dungeon)', () => {
+  it('uses dungeon win condition and player-death loss condition', () => {
+    const session = buildSessionDefinition(DUNGEON_PRESET, { seed: 28 });
+
+    expect(session.winCondition).toEqual({ kind: 'dungeon' });
+    expect(session.lossCondition).toEqual({ kind: 'playerDeath' });
+  });
+
+  it('builds an authored encounter loop with waves and reset breaks', () => {
+    const session = buildSessionDefinition(DUNGEON_PRESET, { seed: 28 });
+
+    expect(session.encounters.length).toBeGreaterThan(0);
+    expect(session.encounters.filter((encounter) => encounter.type === 'wave')).toHaveLength(3);
+    expect(session.encounters.at(-1)?.type).toBe('break');
+
+    for (const encounter of session.encounters) {
+      if (encounter.type !== 'wave') continue;
+      expect(encounter.spawnPlan.kind).toBe('wave');
+      expect(encounter.transitionRules.kind).toBe('allEnemiesCleared');
+    }
   });
 });
 

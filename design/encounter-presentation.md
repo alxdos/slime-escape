@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-27 (story 026 prep: `portal` encounters follow the no-title/no-text constraints used by non-combat terminal presentation encounters; portal visuals are main-thread world presentation in [vibe-jam-portals.md](vibe-jam-portals.md).)
+- Updated: 2026-04-28 (story 028 prep: Dungeon wave title numbering uses `EncounterSnapshot.waveOrdinal` so repeated authored waves continue as Wave 4, Wave 5, etc. Earlier: 2026-04-27 story 026 prep: `portal` encounters follow the no-title/no-text constraints used by non-combat terminal presentation encounters; portal visuals are main-thread world presentation in [vibe-jam-portals.md](vibe-jam-portals.md).)
 
 ## Context
 
@@ -79,6 +79,8 @@ The algorithm is stable, deterministic from `session.encounters`, and independen
 
 HUD wave numbering (`main-ui-shell.md`, "HUD data derivation") and the result screen use the same global numbering meaning. The overlay does not introduce a separate local formula, so the player sees the same wave order across all UI layers.
 
+Dungeon is the exception where the authored encounter list is intentionally reused. For sessions with `winCondition.kind === 'dungeon'`, the overlay must use `snapshot.encounter.waveOrdinal` from [snapshot-shape.md](snapshot-shape.md) for the first line. It must not recompute from `SessionDefinition.encounters`, because the active authored encounter index can return to zero while the player-facing wave number continues increasing.
+
 ### Render contract (main UI)
 
 Wave/break title overlay is a separate UI layer in `src/main/ui/**`, independent from `Hud`. It follows the shared `UiShell` rules ([main-ui-shell.md](main-ui-shell.md)).
@@ -86,14 +88,14 @@ Wave/break title overlay is a separate UI layer in `src/main/ui/**`, independent
 - **Phase visibility**: visible in `running` and `paused` (in `paused`, frozen at current state); hidden in `menu`, `loading`, `result`, `error('preload')`. `paused` behavior mirrors HUD: the overlay remains, and its conditions are not recomputed from new snapshots.
 - **Wave overlay show condition**: active encounter `type === 'wave'`, `introDurationMs > 0`, and `encounter.elapsedMs < introDurationMs`. In all other cases, the wave overlay is hidden.
 - **Wave overlay content**:
-  - first line: `Wave {waveIndex}` (see "Global Wave Numbering");
+  - first line: `Wave {waveIndex}` (see "Global Wave Numbering"; for Dungeon this is `snapshot.encounter.waveOrdinal`);
   - second line: `encounter.name` if `name !== null`; otherwise no second line is drawn.
 - **Break overlay show condition**: active encounter `type === 'break'` and `text !== null`. Visible for the full encounter duration, with no separate intro window.
 - **Break overlay content**: one line, `encounter.text`.
 - `portal` encounters do not show the title overlay. Their world-space portal visual is owned by [vibe-jam-portals.md](vibe-jam-portals.md), not by the title overlay.
 - **Z-order** (adds to the table in `main-ui-shell.md`): Startup error > Startup overlay > Result UI > Pause overlay > Menu overlay > Settings overlay > **Title overlay** > HUD > canvas. Title overlay sits below any modal overlay and above HUD so modal dialogs do not compete with the title.
 - Styles (font, stroke, shadow, fade) are implementation details and belong to the product layer (`## Player-facing` / `## Visual style` in the story); this decision does not fix them.
-- Overlay does not subscribe to runtime events and does not touch `SimWorkerHost`: data sources are `SessionDefinition` (immutable during the session) and `snapshot.encounter` (`id`/`type`/`elapsedMs`), passed through `UiShell` by the same path as `Hud.update` ([main-ui-shell.md](main-ui-shell.md)).
+- Overlay does not subscribe to runtime events and does not touch `SimWorkerHost`: data sources are `SessionDefinition` (immutable during the session) and `snapshot.encounter` (`id`/`type`/`elapsedMs`/`waveOrdinal`), passed through `UiShell` by the same path as `Hud.update` ([main-ui-shell.md](main-ui-shell.md)).
 
 ### Runtime events
 
@@ -125,3 +127,4 @@ The MD source shape for `name`/`introDurationMs`/`text` is defined in [content-a
 - [simulation-timing.md](simulation-timing.md)
 - [../stories/021-wave-titles-and-session-music.md](../stories/021-wave-titles-and-session-music.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
+- [../stories/028-dungeon-mode.md](../stories/028-dungeon-mode.md)

@@ -11,8 +11,7 @@ import {
   type MenuControlLayout,
   type MenuScreenId,
   type MenuSubscreenControlLayout,
-  type MenuSubscreenId,
-  type MenuTeaserControlId
+  type MenuSubscreenId
 } from './MenuOverlayLayout';
 import {
   CAMPAIGN_MODE_BY_CONTROL,
@@ -36,9 +35,10 @@ export type MenuOverlayInit = Readonly<{
   onOpenScreen(screenId: MenuSubscreenId): void;
   onBackToMainMenu(): void;
   onTeaser(controlId: TeaserControlId): void;
-  onSubscreenTeaser(controlId: MenuTeaserControlId): void;
+  onStartDungeon(): void;
   onButtonHover(): void;
   onModeSwitch(): void;
+  dungeonBestWave: number;
 }>;
 
 export type MenuOverlay = Readonly<{
@@ -46,6 +46,7 @@ export type MenuOverlay = Readonly<{
   hide(): void;
   showScreen(screenId: MenuScreenId): void;
   screen(): MenuScreenId;
+  setDungeonBestWave(bestWave: number): void;
   isVisible(): boolean;
   dispose(): void;
 }>;
@@ -72,6 +73,8 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   const subscreenStages = new Map<MenuSubscreenId, HTMLDivElement>();
   let selectedMode: ModePresetId = DEFAULT_SELECTED_CAMPAIGN_MODE;
   let activeScreen: MenuScreenId = 'main';
+  let dungeonBestWave = formatDungeonBestWave(init.dungeonBestWave);
+  let dungeonBestWaveElement: HTMLDivElement | null = null;
   let feedbackTimeout: number | null = null;
 
   const teaserFeedback = document.createElement('div');
@@ -121,6 +124,10 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     },
     screen(): MenuScreenId {
       return activeScreen;
+    },
+    setDungeonBestWave(bestWave): void {
+      dungeonBestWave = formatDungeonBestWave(bestWave);
+      syncDungeonBestWave();
     },
     isVisible(): boolean {
       return visible;
@@ -176,10 +183,9 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
         return;
       case 'mode':
         return;
-      case 'teaser':
-        showTeaserFeedback();
+      case 'start':
         if (control.id === 'dungeon-play') {
-          init.onSubscreenTeaser(control.id);
+          init.onStartDungeon();
         }
         return;
     }
@@ -204,6 +210,13 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
       teaserFeedback.style.opacity = '0';
       feedbackTimeout = null;
     }, TEASER_FEEDBACK_VISIBLE_MS);
+  }
+
+  function syncDungeonBestWave(): void {
+    if (dungeonBestWaveElement === null) {
+      return;
+    }
+    dungeonBestWaveElement.textContent = dungeonBestWave;
   }
 
   function activeStage(): HTMLDivElement {
@@ -271,12 +284,32 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
       buttons.push(button);
       stage.appendChild(button);
     }
+    if (screenId === 'dungeon') {
+      dungeonBestWaveElement = createDungeonBestWaveElement();
+      syncDungeonBestWave();
+      stage.appendChild(dungeonBestWaveElement);
+    }
 
     subscreenButtons.set(screenId, buttons);
     subscreenStages.set(screenId, stage);
     root.appendChild(stage);
     return stage;
   }
+}
+
+function createDungeonBestWaveElement(): HTMLDivElement {
+  const element = document.createElement('div');
+  element.dataset['role'] = 'menu-dungeon-best-wave';
+  element.setAttribute('aria-label', 'Max wave');
+  element.style.cssText = dungeonBestWaveStyle();
+  return element;
+}
+
+function formatDungeonBestWave(bestWave: number): string {
+  if (!Number.isFinite(bestWave) || bestWave <= 0) {
+    return '0';
+  }
+  return String(Math.floor(bestWave));
 }
 
 function createStageImage(layout: MenuImageLayout): HTMLImageElement {
@@ -338,9 +371,6 @@ function createSubscreenControlButton(
   button.dataset['role'] = 'menu-subscreen-button';
   button.dataset['controlId'] = control.id;
   button.dataset['controlKind'] = control.kind;
-  if (control.kind === 'teaser') {
-    button.dataset['soon'] = 'true';
-  }
   if (control.selected === true) {
     button.dataset['selected'] = 'true';
     button.setAttribute('aria-pressed', 'true');
@@ -362,6 +392,31 @@ function createSubscreenControlButton(
   button.addEventListener('pointerenter', onHover);
 
   return button;
+}
+
+function dungeonBestWaveStyle(): string {
+  return [
+    'position:absolute',
+    'left:31.6%',
+    'top:48.2%',
+    'width:33.8%',
+    'height:27.8%',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'z-index:20',
+    'overflow:hidden',
+    ...comicTextStyle({
+      fontSize: '48px',
+      color: '#2a1711',
+      textAlign: 'center'
+    }),
+    'font-size:min(6.2cqw, 8.8cqh, 58px)',
+    '-webkit-text-stroke:0',
+    'text-shadow:none',
+    'pointer-events:none',
+    'user-select:none'
+  ].join(';');
 }
 
 function stageImageStyle(layout: MenuImageLayout): string {
@@ -404,6 +459,7 @@ function stageStyle(background: string): string {
     'background-size:100% 100%',
     'background-position:center',
     'background-repeat:no-repeat',
+    'container-type:size',
     'overflow:hidden',
     'flex:0 0 auto'
   ].join(';');

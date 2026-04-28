@@ -130,6 +130,53 @@ describe('buildResultViewModel', () => {
     expect(viewModel.escapePath).toBeNull();
   });
 
+  it('foregrounds Dungeon waves, local best, and new-best state without escape progress', () => {
+    const viewModel = buildResultViewModel(
+      makeSession({
+        winCondition: { kind: 'dungeon' }
+      }),
+      {
+        ...makeSummary('loss'),
+        progress: {
+          percent: null,
+          completedObjectiveEncounters: 0,
+          totalObjectiveEncounters: 3,
+          completedWaves: 0,
+          totalWaves: 3,
+          activeEncounterId: 'dungeon-wave-1',
+          activeEncounterIndex: 0
+        },
+        dungeon: { wavesCleared: 12 }
+      },
+      {
+        dungeonBest: {
+          previousBestWave: 9,
+          bestWave: 12,
+          isNewBest: true
+        },
+        enemies: { slime: makeEnemy('slime', 'Basic Slime') },
+        bosses: { boss: makeBoss('boss', 'Slime King') },
+        enemyVisuals: { slime: makeVisual('slime', '/slime.png') },
+        bossVisuals: { boss: makeVisual('boss', '/boss.png') }
+      }
+    );
+
+    expect(viewModel.title).toBe('Dungeon Run Over');
+    expect(viewModel.subtitle).toBe('New Best!');
+    expect(viewModel.dungeon).toEqual({
+      wavesCleared: 12,
+      previousBestWave: 9,
+      bestWave: 12,
+      isNewBest: true
+    });
+    expect(viewModel.escapePath).toBeNull();
+    expect(viewModel.primaryStats.map((stat) => stat.id)).toEqual([
+      'duration',
+      'total-kills',
+      'drops'
+    ]);
+  });
+
   it('describes defeat path at the stopping wave', () => {
     const viewModel = buildResultViewModel(
       makeSession({
@@ -246,7 +293,8 @@ function makeSummary(outcome: 'win' | 'loss' = 'win'): SessionResultSummary {
       maxHp: 100,
       hpPercent: outcome === 'win' ? 0 : 28
     },
-    defeat: null
+    defeat: null,
+    dungeon: null
   };
 }
 

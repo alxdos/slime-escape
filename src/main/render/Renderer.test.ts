@@ -1578,7 +1578,8 @@ describe('createRenderer', () => {
           id: 'wave-1',
           type: 'wave',
           index: 0,
-          elapsedMs: 0
+          elapsedMs: 0,
+          waveOrdinal: 1
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
@@ -1635,7 +1636,8 @@ describe('createRenderer', () => {
           id: 'boss-1',
           type: 'boss',
           index: 1,
-          elapsedMs: 0
+          elapsedMs: 0,
+          waveOrdinal: null
         }
       }
     };

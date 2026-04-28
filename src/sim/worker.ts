@@ -170,6 +170,9 @@ const sessionFlow = createSessionFlowSystem({
   onEncounterEnd(encounter) {
     spawn.onEncounterEnd(encounter);
     zone.onEncounterEnd(encounter);
+  },
+  onEncounterComplete(encounter) {
+    runSummary.onEncounterComplete(sessionFlow.activeSession(), encounter);
   }
 });
 

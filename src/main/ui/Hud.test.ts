@@ -224,7 +224,22 @@ function makeSession(): SessionDefinition {
   };
 }
 
-function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
+type TestEncounterSnapshot =
+  Omit<NonNullable<Snapshot['encounter']>, 'waveOrdinal'> &
+    Partial<Pick<NonNullable<Snapshot['encounter']>, 'waveOrdinal'>>;
+
+type TestSnapshotOverrides =
+  Partial<Omit<Snapshot, 'encounter'>> &
+    Readonly<{ encounter?: TestEncounterSnapshot | null }>;
+
+function makeSnapshot(overrides: TestSnapshotOverrides = {}): Snapshot {
+  const { encounter: encounterOverride, ...otherOverrides } = overrides;
+  const encounter = overrides.encounter ?? {
+    id: 'wave-2',
+    type: 'wave' as const,
+    index: 2,
+    elapsedMs: 65000
+  };
   return {
     simTimeMs: 0,
     entities: [
@@ -237,17 +252,22 @@ function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
         maxHp: 5
       }
     ],
-    encounter: {
-      id: 'wave-2',
-      type: 'wave',
-      index: 2,
-      elapsedMs: 65000
-    },
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: { dispatched: 3, total: 7, alive: 2 },
     bossHud: null,
     weaponHud: null,
-    ...overrides
+    ...otherOverrides,
+    encounter: normalizeEncounterSnapshot(encounterOverride === undefined ? encounter : encounterOverride)
+  };
+}
+
+function normalizeEncounterSnapshot(
+  encounter: TestEncounterSnapshot | null
+): Snapshot['encounter'] {
+  if (encounter === null) return null;
+  return {
+    waveOrdinal: encounter.type === 'wave' ? encounter.index + 1 : null,
+    ...encounter
   };
 }
 

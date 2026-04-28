@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-27 (story 027 prep: loss-only Restart is an orchestration/UI action and does not change the `SessionResultSummary` payload. Earlier: story 026 prep: `portal` encounters are non-objective presentation encounters and do not contribute to result progress; the `/portal` flow normally redirects before any win result.)
+- Updated: 2026-04-28 (story 028 prep: `SessionResultSummary` gains an optional Dungeon block with fully cleared waves; endless Dungeon uses `progress.percent = null` and does not drive campaign Escape Path. Earlier: 2026-04-27 story 027 prep: loss-only Restart is an orchestration/UI action and does not change the `SessionResultSummary` payload. Earlier: story 026 prep: `portal` encounters are non-objective presentation encounters and do not contribute to result progress; the `/portal` flow normally redirects before any win result.)
 
 ## Context
 
@@ -37,6 +37,7 @@ type SessionResultSummary = Readonly<{
   drops: ResultDropSummary;
   boss: ResultBossSummary | null;
   defeat: ResultDefeatSummary | null;
+  dungeon: ResultDungeonSummary | null;
 }>;
 
 type ResultProgressSummary = Readonly<{
@@ -75,6 +76,10 @@ type ResultDefeatSummary = Readonly<{
   cause: ResultDefeatCause;
 }>;
 
+type ResultDungeonSummary = Readonly<{
+  wavesCleared: number;              // fully cleared Dungeon waves in this run
+}>;
+
 type ResultDefeatCause =
   | Readonly<{ kind: 'projectile'; ownerKind: 'player' | 'enemy' | 'boss'; weaponArchetypeId: string }>
   | Readonly<{ kind: 'explosion'; ownerKind: 'player' | 'enemy' | 'boss'; weaponArchetypeId: string }>
@@ -93,6 +98,7 @@ type ResultDefeatCause =
 ### Progress calculation
 
 - Result progress is derived from player-facing objective encounters, not from every encounter. Objective encounters are `type === 'wave'` and `type === 'boss'`. `break`, `sandbox`, `portal`, and future non-objective presentation encounters do not add denominator weight.
+- Dungeon is endless, so finite objective progress is not meaningful for it. For `winCondition.kind === 'dungeon'`, `progress.percent` is `null`, `dungeon` is non-null, and Dungeon result presentation must use `dungeon.wavesCleared` instead of `progress.completedWaves`/`totalWaves`.
 - If a session has no objective encounters or has `winCondition.kind === 'none'` and `lossCondition.kind === 'none'`, `progress.percent` is `null`. Result UI then shows a mode-appropriate fallback instead of a fake percent.
 - `win` always reports `progress.percent = 100`.
 - `loss` reports `0..99`; even if the active objective is almost complete, a loss cannot show `100`.
@@ -113,6 +119,7 @@ type ResultDefeatCause =
   - current session/encounter context from `SessionFlowSystem`;
   - current wave progress from `SpawnSystem`;
   - current or remembered boss state from `EntityStore`/boss death context.
+- For Dungeon sessions, it observes completed `type === 'wave'` encounters and increments `dungeon.wavesCleared` only after that wave's `encounterEnd`. The active wave never counts on player death; dying during wave 12 after clearing 11 waves reports `wavesCleared = 11`.
 - Death tracking must happen before any death hook that can publish terminal `win`/`loss`. In the current architecture this means the worker-level death hook calls `RunSummaryTracker.onDeath(ctx, store)` before `SessionFlowSystem.onBossDeath(...)` or `SessionFlowSystem.onPlayerDeath(...)`.
 - `RunSummaryTracker` does not publish runtime events by itself. `SessionFlowSystem` asks it to build a `SessionResultSummary` immediately before emitting `win` or `loss`, and attaches that summary to the terminal event.
 - `RunSummaryTracker` must not depend on main-thread UI registries. It records IDs and counts only. Main-side presentation resolves `displayName` and sprite/icon URLs from content/visual registries.
@@ -131,6 +138,7 @@ type ResultDefeatCause =
 - A main-side pure mapper may convert `SessionDefinition + SessionResultSummary + content registries + visual registries` into a `ResultViewModel`. `ResultOverlay` should render that view model and should not import from `src/sim/**`.
 - Enemy/boss labels come from `EnemyArchetype.displayName` / `BossArchetype.displayName`. Icons use existing sprite visual registries (`enemyVisuals`, `bossVisuals`) and the preloaded/public image paths from [sprite-assets.md](sprite-assets.md). Missing visual/content mappings are hard errors under the existing sprite/content contracts, not silent fallback rows.
 - Result rows with zero counts are omitted.
+- Dungeon result presentation is a main-thread view-model choice. For `summary.dungeon !== null`, the view model should foreground waves cleared, local best, and new-best state supplied by `UiShell`; it should not use the campaign progress copy as the main message.
 
 ### Result effects
 
@@ -163,3 +171,4 @@ type ResultDefeatCause =
 - [../stories/024-session-end-results.md](../stories/024-session-end-results.md)
 - [../stories/027-social-links.md](../stories/027-social-links.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
+- [../stories/028-dungeon-mode.md](../stories/028-dungeon-mode.md)

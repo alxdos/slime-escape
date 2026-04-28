@@ -1,6 +1,7 @@
 import { buildSessionDefinition } from '../../shared/content/buildSession';
 import {
   getPlayableModeCatalog,
+  DUNGEON_PRESET,
   resolveModePreset,
   type ModePreset,
   type ModePresetId
@@ -19,6 +20,10 @@ import {
   createClientSettingsStore,
   type ClientSettingsStore
 } from '../settings/ClientSettingsStore';
+import {
+  createDungeonBestWaveStore,
+  type DungeonBestWaveStore
+} from '../settings/DungeonBestWaveStore';
 import {
   createSimWorkerHost,
   type SimWorkerHost,
@@ -41,6 +46,11 @@ import {
 } from './EscapeProgressPath';
 import { deriveLiveEscapeProgressPathViewModel } from './EscapeProgressPathViewModel';
 import {
+  createDungeonWaveCounter,
+  type DungeonWaveCounter,
+  type DungeonWaveCounterInit
+} from './DungeonWaveCounter';
+import {
   createMenuOverlay,
   type MenuOverlay,
   type MenuOverlayInit
@@ -59,6 +69,7 @@ import {
   type ResultOverlayInit
 } from './ResultOverlay';
 import { buildResultViewModel } from './ResultViewModel';
+import type { ResultDungeonBestState } from './ResultViewModel';
 import {
   createSettingsOverlay,
   type SettingsOverlay,
@@ -113,12 +124,14 @@ type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
 type CreateEscapeProgressPathFn = (init: EscapeProgressPathInit) => EscapeProgressPath;
+type CreateDungeonWaveCounterFn = (init: DungeonWaveCounterInit) => DungeonWaveCounter;
 type CreateTitleOverlayFn = (init: TitleOverlayInit) => TitleOverlay;
 type CreateVibeJamPortalControllerFn = (
   init: VibeJamPortalControllerInit
 ) => VibeJamPortalController;
 type CreateAudioFn = () => Audio;
 type CreateClientSettingsStoreFn = () => ClientSettingsStore;
+type CreateDungeonBestWaveStoreFn = () => DungeonBestWaveStore;
 type RunStartupPreloadFn = (
   onProgress: (loaded: number, total: number) => void
 ) => Promise<TextureMap>;
@@ -143,10 +156,12 @@ export type UiShellInit = Readonly<{
   createInputController?: CreateInputControllerFn;
   createHud?: CreateHudFn;
   createEscapeProgressPath?: CreateEscapeProgressPathFn;
+  createDungeonWaveCounter?: CreateDungeonWaveCounterFn;
   createTitleOverlay?: CreateTitleOverlayFn;
   createVibeJamPortalController?: CreateVibeJamPortalControllerFn;
   createAudio?: CreateAudioFn;
   createClientSettingsStore?: CreateClientSettingsStoreFn;
+  createDungeonBestWaveStore?: CreateDungeonBestWaveStoreFn;
   runStartupPreload?: RunStartupPreloadFn;
   reloadPage?: ReloadPageFn;
   assignLocation?: AssignLocationFn;
@@ -194,12 +209,16 @@ export function createUiShell(init: UiShellInit): UiShell {
   const hudFactory = init.createHud ?? createHud;
   const escapeProgressPathFactory =
     init.createEscapeProgressPath ?? createEscapeProgressPath;
+  const dungeonWaveCounterFactory =
+    init.createDungeonWaveCounter ?? createDungeonWaveCounter;
   const titleOverlayFactory = init.createTitleOverlay ?? createTitleOverlay;
   const portalControllerFactory =
     init.createVibeJamPortalController ?? createVibeJamPortalController;
   const audioFactory = init.createAudio ?? createAudio;
   const clientSettingsStoreFactory =
     init.createClientSettingsStore ?? createClientSettingsStore;
+  const dungeonBestWaveStoreFactory =
+    init.createDungeonBestWaveStore ?? createDungeonBestWaveStore;
   const runStartupPreload = init.runStartupPreload ?? defaultRunStartupPreload;
   const reloadPage = init.reloadPage ?? defaultReloadPage;
   const assignLocation = init.assignLocation ?? defaultAssignLocation;
@@ -226,8 +245,10 @@ export function createUiShell(init: UiShellInit): UiShell {
   let lastStartedPreset: ModePreset | null = null;
   const hud = hudFactory({ parent: init.parent });
   const escapeProgressPath = escapeProgressPathFactory({ parent: init.parent });
+  const dungeonWaveCounter = dungeonWaveCounterFactory({ parent: init.parent });
   const titleOverlay = titleOverlayFactory({ parent: init.parent });
   const clientSettingsStore = clientSettingsStoreFactory();
+  const dungeonBestWaveStore = dungeonBestWaveStoreFactory();
   const audio = audioFactory();
   audio.setMasterGain(clientSettingsStore.get().masterVolume);
   const unsubscribeAudioSettings = clientSettingsStore.subscribe((settings) => {
@@ -308,12 +329,12 @@ export function createUiShell(init: UiShellInit): UiShell {
       audio.playUi('buttonClick');
       log.info('menu teaser selected', { controlId });
     },
-    onSubscreenTeaser(controlId) {
+    onStartDungeon() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
       }
       audio.playUi('buttonClick');
-      log.info('menu subscreen teaser selected', { controlId });
+      startPresetId(DUNGEON_PRESET.id);
     },
     onButtonHover() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
@@ -326,7 +347,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         return;
       }
       audio.playUi('modeSwitch');
-    }
+    },
+    dungeonBestWave: dungeonBestWaveStore.get()
   });
 
   const pause = pauseFactory({
@@ -613,6 +635,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     let sessionStarted = false;
     let hudAttached = false;
     let escapeProgressPathAttached = false;
+    let dungeonWaveCounterAttached = false;
     let titleOverlayAttached = false;
     let portalControllerAttached = false;
     try {
@@ -627,6 +650,8 @@ export function createUiShell(init: UiShellInit): UiShell {
       hudAttached = true;
       escapeProgressPath.attach(session);
       escapeProgressPathAttached = true;
+      dungeonWaveCounter.attach(session);
+      dungeonWaveCounterAttached = true;
       titleOverlay.attach(session);
       titleOverlayAttached = true;
       portalController.attachSession(session);
@@ -637,6 +662,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
       if (titleOverlayAttached) {
         titleOverlay.detach();
+      }
+      if (dungeonWaveCounterAttached) {
+        dungeonWaveCounter.detach();
       }
       if (escapeProgressPathAttached) {
         escapeProgressPath.detach();
@@ -685,6 +713,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (hadClientSession) {
       portalController.detachSession();
       titleOverlay.detach();
+      dungeonWaveCounter.detach();
       escapeProgressPath.detach();
       hud.detach();
       audio.detach();
@@ -726,7 +755,13 @@ export function createUiShell(init: UiShellInit): UiShell {
     const kind = event.kind;
     const simTimeMs = event.simTime;
     log.info(`run ended: ${kind}`, { simTimeMs });
-    const viewModel = buildResultViewModel(session, event.summary);
+    let dungeonBest: ResultDungeonBestState | null = null;
+    if (event.summary.dungeon !== null) {
+      const record = dungeonBestWaveStore.record(event.summary.dungeon.wavesCleared);
+      menu.setDungeonBestWave(record.bestWave);
+      dungeonBest = record;
+    }
+    const viewModel = buildResultViewModel(session, event.summary, { dungeonBest });
     tearDownClientSession();
     setPhase({ kind: 'result', outcome: kind, summary: event.summary, viewModel });
   }
@@ -906,6 +941,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
       if (activeSession !== null) {
         escapeProgressPath.update(snapshotPair, phase);
+        dungeonWaveCounter.update(snapshotPair, phase);
         titleOverlay.update(snapshotPair, phase);
         if (phase.kind === 'paused') {
           pause.setEscapePath(
@@ -932,6 +968,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       result.dispose();
       settingsOverlay.dispose();
       titleOverlay.dispose();
+      dungeonWaveCounter.dispose();
       escapeProgressPath.dispose();
       hud.dispose();
       unsubscribeAudioSettings();

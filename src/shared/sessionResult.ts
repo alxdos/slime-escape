@@ -8,6 +8,7 @@ export type SessionResultSummary = Readonly<{
   drops: ResultDropSummary;
   boss: ResultBossSummary | null;
   defeat: ResultDefeatSummary | null;
+  dungeon: ResultDungeonSummary | null;
 }>;
 
 export type ResultProgressSummary = Readonly<{
@@ -46,6 +47,10 @@ export type ResultBossSummary = Readonly<{
 
 export type ResultDefeatSummary = Readonly<{
   cause: ResultDefeatCause;
+}>;
+
+export type ResultDungeonSummary = Readonly<{
+  wavesCleared: number;
 }>;
 
 export type ResultDefeatCause =

@@ -372,7 +372,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -771,7 +771,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -1170,7 +1170,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -3014,7 +3014,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -4858,7 +4858,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -6702,7 +6702,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -8390,7 +8390,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -10078,7 +10078,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -11766,7 +11766,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -12215,6 +12215,1071 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
   "uiMeta": null,
   "winCondition": {
     "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "cellar",
+      "imageUrl": "/images/bg/bg-06.jpg",
+    },
+    {
+      "id": "tunnels",
+      "imageUrl": "/images/bg/bg-06.jpg",
+    },
+    {
+      "id": "vault",
+      "imageUrl": "/images/bg/bg-06.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "cellar",
+      "id": "dungeon-wave-1",
+      "introDurationMs": 1800,
+      "name": "Cellar Rush",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1150,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 17000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.2,
+      },
+    },
+    {
+      "backgroundId": "cellar",
+      "id": "dungeon-reset-1",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Deeper.",
+      "transitionRules": {
+        "durationMs": 2400,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2400,
+        "fromMargin": 2.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "tunnels",
+      "id": "dungeon-wave-2",
+      "introDurationMs": 1800,
+      "name": "Tunnel Teeth",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "tunnels",
+      "id": "dungeon-reset-2",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Keep moving.",
+      "transitionRules": {
+        "durationMs": 2600,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 2.8,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "vault",
+      "id": "dungeon-wave-3",
+      "introDurationMs": 1800,
+      "name": "Vault Crush",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 900,
+        "spawns": [
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 21000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 3.4,
+      },
+    },
+    {
+      "backgroundId": "vault",
+      "id": "dungeon-reset-3",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The dungeon loops. You do not.",
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3000,
+        "fromMargin": 3.4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+  ],
+  "id": "dungeon-session",
+  "loadout": {
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "shotgun",
+      "smg",
+      "sniper",
+      "grenade-launcher",
+      "bomb-placer",
+    ],
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "musicSampleId": "music/100-waves",
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 20,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 1.1458333333333333,
+  },
+  "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
+    "damage": {
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "dungeon",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "cellar",
+      "imageUrl": "/images/bg/bg-06.jpg",
+    },
+    {
+      "id": "tunnels",
+      "imageUrl": "/images/bg/bg-06.jpg",
+    },
+    {
+      "id": "vault",
+      "imageUrl": "/images/bg/bg-06.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "cellar",
+      "id": "dungeon-wave-1",
+      "introDurationMs": 1800,
+      "name": "Cellar Rush",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1150,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 17000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.2,
+      },
+    },
+    {
+      "backgroundId": "cellar",
+      "id": "dungeon-reset-1",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Deeper.",
+      "transitionRules": {
+        "durationMs": 2400,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2400,
+        "fromMargin": 2.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "tunnels",
+      "id": "dungeon-wave-2",
+      "introDurationMs": 1800,
+      "name": "Tunnel Teeth",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "tunnels",
+      "id": "dungeon-reset-2",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Keep moving.",
+      "transitionRules": {
+        "durationMs": 2600,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 2.8,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "vault",
+      "id": "dungeon-wave-3",
+      "introDurationMs": 1800,
+      "name": "Vault Crush",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 900,
+        "spawns": [
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 21000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 3.4,
+      },
+    },
+    {
+      "backgroundId": "vault",
+      "id": "dungeon-reset-3",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The dungeon loops. You do not.",
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3000,
+        "fromMargin": 3.4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+  ],
+  "id": "dungeon-session",
+  "loadout": {
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "shotgun",
+      "smg",
+      "sniper",
+      "grenade-launcher",
+      "bomb-placer",
+    ],
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "musicSampleId": "music/100-waves",
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 20,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 1.1458333333333333,
+  },
+  "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
+    "damage": {
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "dungeon",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "cellar",
+      "imageUrl": "/images/bg/bg-06.jpg",
+    },
+    {
+      "id": "tunnels",
+      "imageUrl": "/images/bg/bg-06.jpg",
+    },
+    {
+      "id": "vault",
+      "imageUrl": "/images/bg/bg-06.jpg",
+    },
+  ],
+  "encounters": [
+    {
+      "backgroundId": "cellar",
+      "id": "dungeon-wave-1",
+      "introDurationMs": 1800,
+      "name": "Cellar Rush",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 5,
+        "spawnIntervalMs": 1150,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 17000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.2,
+      },
+    },
+    {
+      "backgroundId": "cellar",
+      "id": "dungeon-reset-1",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Deeper.",
+      "transitionRules": {
+        "durationMs": 2400,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2400,
+        "fromMargin": 2.2,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "tunnels",
+      "id": "dungeon-wave-2",
+      "introDurationMs": 1800,
+      "name": "Tunnel Teeth",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 6,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 19000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2.8,
+      },
+    },
+    {
+      "backgroundId": "tunnels",
+      "id": "dungeon-reset-2",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Keep moving.",
+      "transitionRules": {
+        "durationMs": 2600,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2600,
+        "fromMargin": 2.8,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "vault",
+      "id": "dungeon-wave-3",
+      "introDurationMs": 1800,
+      "name": "Vault Crush",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 900,
+        "spawns": [
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-flame",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-mech-crab",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 21000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 3.4,
+      },
+    },
+    {
+      "backgroundId": "vault",
+      "id": "dungeon-reset-3",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "The dungeon loops. You do not.",
+      "transitionRules": {
+        "durationMs": 3000,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 3000,
+        "fromMargin": 3.4,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+  ],
+  "id": "dungeon-session",
+  "loadout": {
+    "selectedIndex": 0,
+    "weapons": [
+      "pistol",
+      "shotgun",
+      "smg",
+      "sniper",
+      "grenade-launcher",
+      "bomb-placer",
+    ],
+  },
+  "lossCondition": {
+    "kind": "playerDeath",
+  },
+  "modifiers": [],
+  "musicSampleId": "music/100-waves",
+  "player": {
+    "contactBox": {
+      "height": 2.2916666666666665,
+      "width": 1.225,
+    },
+    "maxHp": 20,
+    "maxSpeed": 6,
+    "position": {
+      "x": 0,
+      "y": 0,
+    },
+    "radius": 1.1458333333333333,
+  },
+  "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
+    "damage": {
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "dungeon",
   },
 }
 `;
@@ -13343,7 +14408,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -14494,7 +15559,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -15645,7 +16710,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -16677,7 +17742,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -17211,7 +18276,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,
@@ -17745,7 +18810,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "height": 2.2916666666666665,
       "width": 1.225,
     },
-    "maxHp": 5,
+    "maxHp": 20,
     "maxSpeed": 6,
     "position": {
       "x": 0,

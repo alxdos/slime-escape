@@ -37,6 +37,10 @@ export function deriveLiveEscapeProgressPathViewModel(
   session: SessionDefinition,
   snapshot: Snapshot | null
 ): EscapeProgressPathViewModel {
+  if (session.winCondition.kind === 'dungeon') {
+    return HIDDEN_ESCAPE_PROGRESS_PATH_VIEW_MODEL;
+  }
+
   const totalWaves = countWaves(session);
   if (totalWaves === 0) {
     return HIDDEN_ESCAPE_PROGRESS_PATH_VIEW_MODEL;
@@ -69,6 +73,10 @@ export function deriveResultEscapeProgressPathViewModel(
   session: SessionDefinition,
   summary: SessionResultSummary
 ): EscapeProgressPathViewModel {
+  if (session.winCondition.kind === 'dungeon' || summary.dungeon !== null) {
+    return HIDDEN_ESCAPE_PROGRESS_PATH_VIEW_MODEL;
+  }
+
   const totalWaves = summary.progress.totalWaves;
   if (totalWaves === 0) {
     return HIDDEN_ESCAPE_PROGRESS_PATH_VIEW_MODEL;

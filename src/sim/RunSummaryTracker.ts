@@ -27,6 +27,7 @@ export type RunSummaryTracker = Readonly<{
   reset(): void;
   onDeath(ctx: DeathContext, store: EntityStore): void;
   onDropPickup(fact: DropPickupFact): void;
+  onEncounterComplete(session: SessionDefinition | null, encounter: EncounterDefinition): void;
   buildSummary(
     outcome: SessionResultOutcome,
     simTimeMs: number,
@@ -41,12 +42,14 @@ export function createRunSummaryTracker(): RunSummaryTracker {
   let pickedUpTotal = 0;
   let rememberedBoss: ResultBossSummary | null = null;
   let defeat: ResultDefeatSummary | null = null;
+  let dungeonWavesCleared = 0;
 
   function reset(): void {
     killsByKey.clear();
     pickedUpTotal = 0;
     rememberedBoss = null;
     defeat = null;
+    dungeonWavesCleared = 0;
   }
 
   function onDeath(ctx: DeathContext, store: EntityStore): void {
@@ -63,6 +66,15 @@ export function createRunSummaryTracker(): RunSummaryTracker {
 
   function onDropPickup(_fact: DropPickupFact): void {
     pickedUpTotal += 1;
+  }
+
+  function onEncounterComplete(
+    session: SessionDefinition | null,
+    encounter: EncounterDefinition
+  ): void {
+    if (session?.winCondition.kind !== 'dungeon') return;
+    if (encounter.type !== 'wave') return;
+    dungeonWavesCleared += 1;
   }
 
   function buildSummary(
@@ -82,7 +94,11 @@ export function createRunSummaryTracker(): RunSummaryTracker {
         pickedUpTotal
       },
       boss: currentBossSummary(context.store) ?? rememberedBoss,
-      defeat: outcome === 'loss' ? defeat : null
+      defeat: outcome === 'loss' ? defeat : null,
+      dungeon:
+        context.session?.winCondition.kind === 'dungeon'
+          ? { wavesCleared: dungeonWavesCleared }
+          : null
     };
   }
 
@@ -121,6 +137,7 @@ export function createRunSummaryTracker(): RunSummaryTracker {
     reset,
     onDeath,
     onDropPickup,
+    onEncounterComplete,
     buildSummary
   };
 }
@@ -139,14 +156,17 @@ function buildProgressSummary(
   const totalObjectiveEncounters = objectives.length;
   const totalWaves = session.encounters.filter((encounter) => encounter.type === 'wave').length;
   const activeIndex = activeEncounter?.index ?? null;
-  const completedWaves =
-    outcome === 'win'
+  const isDungeon = session.winCondition.kind === 'dungeon';
+  const completedWaves = isDungeon
+    ? 0
+    : outcome === 'win'
       ? totalWaves
       : session.encounters.filter((encounter, index) => {
           return encounter.type === 'wave' && activeIndex !== null && index < activeIndex;
         }).length;
 
   if (
+    isDungeon ||
     totalObjectiveEncounters === 0 ||
     (session.winCondition.kind === 'none' && session.lossCondition.kind === 'none')
   ) {
