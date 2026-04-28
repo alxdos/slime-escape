@@ -5,7 +5,9 @@ import {
   MAIN_MENU_LOGO,
   MAIN_MENU_STAGE,
   MAIN_MENU_STAGE_WIDTH_VH,
-  MENU_SUBSCREENS
+  MENU_SUBSCREENS,
+  type MenuControlLayout,
+  type MenuSubscreenControlLayout
 } from './MenuOverlayLayout';
 
 describe('MenuOverlayLayout', () => {
@@ -65,36 +67,30 @@ describe('MenuOverlayLayout', () => {
 
   it('keeps controls inside stable stage bounds', () => {
     for (const control of MAIN_MENU_CONTROLS) {
-      expect(control.leftPercent).toBeGreaterThanOrEqual(0);
-      expect(control.topPercent ?? control.bottomPercent).toBeGreaterThanOrEqual(0);
-      expect(control.widthPercent).toBeGreaterThan(0);
-      expect(control.leftPercent + control.widthPercent).toBeLessThanOrEqual(100);
-      expect(control.aspectRatio).toBeGreaterThan(0);
-      const heightPercent =
-        (control.widthPercent / control.aspectRatio) *
-        (MAIN_MENU_STAGE.width / MAIN_MENU_STAGE.height);
-      if (control.bottomPercent === undefined) {
-        expect((control.topPercent ?? 0) + heightPercent).toBeLessThanOrEqual(100);
-      } else {
-        expect(control.bottomPercent + heightPercent).toBeLessThanOrEqual(100);
-      }
+      expectControlInsideStage(control);
     }
     for (const screen of Object.values(MENU_SUBSCREENS)) {
       for (const control of screen.controls) {
-        expect(control.leftPercent).toBeGreaterThanOrEqual(0);
-        expect(control.topPercent ?? control.bottomPercent).toBeGreaterThanOrEqual(0);
-        expect(control.widthPercent).toBeGreaterThan(0);
-        expect(control.leftPercent + control.widthPercent).toBeLessThanOrEqual(100);
-        expect(control.aspectRatio).toBeGreaterThan(0);
-        const heightPercent =
-          (control.widthPercent / control.aspectRatio) *
-          (MAIN_MENU_STAGE.width / MAIN_MENU_STAGE.height);
-        if (control.bottomPercent === undefined) {
-          expect((control.topPercent ?? 0) + heightPercent).toBeLessThanOrEqual(100);
-        } else {
-          expect(control.bottomPercent + heightPercent).toBeLessThanOrEqual(100);
-        }
+        expectControlInsideStage(control);
       }
     }
   });
 });
+
+function expectControlInsideStage(
+  control: MenuControlLayout | MenuSubscreenControlLayout
+): void {
+  expect(control.leftPercent).toBeGreaterThanOrEqual(0);
+  expect(control.topPercent ?? control.bottomPercent).toBeGreaterThanOrEqual(0);
+  expect(control.widthPercent).toBeGreaterThan(0);
+  expect(control.leftPercent + control.widthPercent).toBeLessThanOrEqual(100);
+  expect(control.aspectRatio).toBeGreaterThan(0);
+  const heightPercent =
+    (control.widthPercent / control.aspectRatio) *
+    (MAIN_MENU_STAGE.width / MAIN_MENU_STAGE.height);
+  if (control.bottomPercent === undefined) {
+    expect((control.topPercent ?? 0) + heightPercent).toBeLessThanOrEqual(100);
+  } else {
+    expect(control.bottomPercent + heightPercent).toBeLessThanOrEqual(100);
+  }
+}
