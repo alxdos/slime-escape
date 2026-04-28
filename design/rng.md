@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19 (for story 005, `DropSystem` is recorded as the second consumer of session RNG: one `nextFloat` for the dropTable roll when an enemy dies)
+- Updated: 2026-04-28 (story 029 prep: pet purchase randomness is main-thread progression randomness, not session RNG; it must use an injectable non-`Math.random` source such as browser crypto. Earlier: 2026-04-19 for story 005, `DropSystem` is recorded as the second consumer of session RNG: one `nextFloat` for the dropTable roll when an enemy dies.)
 
 ## Context
 
@@ -15,6 +15,8 @@ At the same time, the project has no RNG source yet:
 - without an explicit contract, each system will reopen which PRNG to use, how to seed it, and where its state lives.
 
 This decision defines one shared session RNG model so all systems use the same randomness channel.
+
+Story 029 introduces a different kind of randomness: choosing an unowned pet in the Lab. That roll affects persistent browser progression, not simulation replay. It still needs an explicit source so review and tests do not depend on ambient `Math.random`.
 
 ## Decision
 
@@ -62,6 +64,9 @@ This decision defines one shared session RNG model so all systems use the same r
   - any source that cannot be reduced to `SessionDefinition.seed`.
 - This rule is already implied by `session-definition.md`; here it becomes a concise review check: `Math.random` appearing in `src/sim/**` or `src/shared/**` (outside `src/shared/rng.ts`) violates this decision.
 - In `src/main/**`, `Math.random` is allowed only for purely visual effects that **do not** affect authoritative state and do not enter snapshots/events (for example, decorative particle drift). This does not apply to gameplay.
+- In `src/main/**`, `Math.random` is also forbidden for persistent or player-visible committed state, including XP/progression, pet purchase rolls, owned collection state, selected pet state, local records, and result rewards.
+- Main-thread progression rolls, such as Lab pet purchase in story 029, use an injected `randomInt(maxExclusive)` or equivalent. Production implementation should be backed by browser crypto (`crypto.getRandomValues`) with unbiased bounded integer selection; tests pass deterministic fakes.
+- Main-thread progression randomness must not use `createRng(SessionDefinition.seed)`. It is not part of session replay, and it must not make pet rolls predictable from a run seed.
 - Tests use `createRng(seed)` directly and do not mock it, so the invariant "same `seed` -> same gameplay event sequence" is tested for real rather than simulated.
 
 ### Extension
@@ -73,7 +78,7 @@ This decision defines one shared session RNG model so all systems use the same r
 
 - Randomness gets one source of truth, and the invariant "same `seed` -> same course of events" becomes testable.
 - `SpawnSystem` (004), `DropSystem` (005), and any future system using randomness receive `Rng` as an explicit dependency; their determinism is visible from the constructor, not hidden in an import.
-- The ban on `Math.random` in `src/sim/**` gets one concrete exception location (`src/shared/rng.ts`), which simplifies review.
+- The ban on `Math.random` in `src/sim/**` gets one concrete exception location (`src/shared/rng.ts`), which simplifies review. Main-thread committed progression state gets a parallel explicit random-source rule without weakening session determinism.
 - Cost is minimal: one file, one function, no runtime dependencies. Replacing the RNG backend later affects only this file and tests that rely on exact values.
 
 ## Related
@@ -85,3 +90,5 @@ This decision defines one shared session RNG model so all systems use the same r
 - [web-stack.md](web-stack.md)
 - [testing.md](testing.md)
 - [impact-feedback.md](impact-feedback.md)
+- [main-ui-shell.md](main-ui-shell.md)
+- [../stories/029-xp-and-pet-companions.md](../stories/029-xp-and-pet-companions.md)

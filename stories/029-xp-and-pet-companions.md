@@ -1,6 +1,6 @@
 # XP And Pet Companions
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-28
 - Updated: 2026-04-28
 
@@ -50,7 +50,9 @@ In this first version pets do not attack, heal, block, buff, or change balance. 
 
 ## Technical
 
-Architectural preparation is intentionally pending. The architect pass should decide how XP and owned pets are persisted, how pet content is authored, how result XP is derived from run summaries, how Lab/Pets screens attach to the existing menu flow, and how the selected pet is represented during a run.
+Architecture extends existing decisions instead of adding a new one.
+
+XP, owned pets, and selected pet are local browser `client progression` owned by `UiShell`/main-thread persistence, not client settings and not simulation state. Pet archetypes and economy tuning are authored content. Pet sprites use the existing sprite visual pipeline with a pet visual registry. Result XP is derived on main from `SessionResultSummary.kills.total * PetEconomy.xpPerDestroyedSlime` only for eligible campaign win/loss results. Lab and Pets are nested menu sub-screens. The selected companion is renderer-only presentation passed from `UiShell` to `Renderer`; it is not part of `SessionDefinition`, snapshots, runtime events, combat, or result stats.
 
 ## Out of scope
 
@@ -91,12 +93,31 @@ Architectural preparation is intentionally pending. The architect pass should de
 
 ## Tasks
 
-Architect task breakdown pending after product story approval.
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [x] | Align existing architecture decisions and decompose the story. | Updated existing `design/` files for content/progression/menu/result/RNG/sprite boundaries; no new design decision file. |
+| T2 | [ ] | Add pet content authoring: create `content/pets.md`, define 5 green and 5 purple pets plus `PetEconomy`, generate `pets.generated.ts` and `petVisuals.generated.ts`, and add generator/validator coverage. | Use the committed pet PNGs under `public/assets/pets/`; no duplicated image constants in UI. |
+| T3 | [ ] | Implement `ClientProgressionStore` in main: versioned localStorage snapshot, normalization, XP award, purchase, select, clear, in-memory fallback, subscriptions, and deterministic tests with injected `randomInt`. | Store only XP and pet ids; corrupt data must not block startup. |
+| T4 | [ ] | Wire result XP: decide campaign eligibility from last started source, award XP on completed campaign `win`/`loss`, pass `xpEarned` and new `totalXp` to Result UI, and hide XP reward block for training/manual exit/non-campaign flows. | XP comes from `summary.kills.total`; sim/result summary shape stays unchanged. |
+| T5 | [ ] | Implement Lab sub-screen: green/purple stand states, price/affordability, random unowned purchase, immediate ownership, flip reveal, click-to-dismiss zoom, `Complete` state, and focused UI/store tests. | Purchase must never spend XP on a duplicate or completed quality. |
+| T6 | [ ] | Implement Pets sub-screen: green/purple owned inventory zones, white selected-companion area, select owned pet, clear selected pet, persistence, and focused UI/store tests. | Selecting/clearing writes through progression before the next run starts. |
+| T7 | [ ] | Implement selected companion renderer presentation: preload pet textures, pass selected pet id from `UiShell`, spawn two player radii to the right, follow only beyond four radii, breathe like enemies, and stay out of sim/snapshots/combat. | Missing selected pet content/visual/texture is a hard error. |
+| T8 | [ ] | Run focused verification and record manual checks. | `npm run content:check`, typecheck/tests touched by the implementation, plus live checks for Result XP, persistence reload, Lab purchase/Complete, Pets select/clear, and companion movement/breathing. |
 
 ## Related
 
 - [../docs/VISION.md](../docs/VISION.md)
 - [../docs/GDD_CORE.md](../docs/GDD_CORE.md)
 - [../docs/SCOPE.md](../docs/SCOPE.md)
+- [../design/content-boundaries.md](../design/content-boundaries.md)
+- [../design/content-archetypes.md](../design/content-archetypes.md)
+- [../design/content-authoring.md](../design/content-authoring.md)
+- [../design/sprite-assets.md](../design/sprite-assets.md)
+- [../design/main-ui-shell.md](../design/main-ui-shell.md)
+- [../design/menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md)
+- [../design/session-result-summary.md](../design/session-result-summary.md)
+- [../design/rng.md](../design/rng.md)
+- [../design/thread-model.md](../design/thread-model.md)
+- [../design/testing.md](../design/testing.md)
 - [024-session-end-results.md](024-session-end-results.md)
 - [023-main-menu-and-startup-ux.md](023-main-menu-and-startup-ux.md)

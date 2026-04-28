@@ -59,7 +59,7 @@ Main principle:
 | [session-definition.md](session-definition.md) | accepted | Shape of `SessionDefinition`, `EncounterDefinition`, and `ModePreset` |
 | [thread-model.md](thread-model.md) | accepted | Boundary between the `main thread`, `simulation worker`, and rendering |
 | [runtime-systems.md](runtime-systems.md) | accepted | Minimal `core runtime` systems and the simulation lifecycle |
-| [content-boundaries.md](content-boundaries.md) | accepted | Separation between the `content library`, session configuration, and runtime state |
+| [content-boundaries.md](content-boundaries.md) | accepted | Separation between the `content library`, session configuration, runtime state, client progression, and client settings |
 | [arena-and-coordinates.md](arena-and-coordinates.md) | accepted | World coordinate system, arena shape, and fit-to-viewport rule |
 | [input-commands.md](input-commands.md) | accepted | `InputCommand` shape, WASD, Pointer Lock, aiming, left mouse button, and Esc pause |
 | [web-stack.md](web-stack.md) | accepted | Bundler, language, package manager, and the `src/main`, `src/sim`, `src/shared` layout |
@@ -67,7 +67,7 @@ Main principle:
 | [logging.md](logging.md) | accepted | Shared `src/shared/log.ts` module, log levels, and the ban on direct `console.*` calls |
 | [testing.md](testing.md) | accepted | Test runner (`vitest`), commands, and required invariants under test |
 | [spawn-plan.md](spawn-plan.md) | accepted | `SpawnPlan` shape (`empty`/`static` plus extensions) and `SpawnSystem` ownership |
-| [content-archetypes.md](content-archetypes.md) | accepted | Minimal `EnemyArchetype`, `WeaponArchetype`, `Loadout`, and archetype lookup by `id` |
+| [content-archetypes.md](content-archetypes.md) | accepted | Minimal content archetypes (`EnemyArchetype`, `WeaponArchetype`, `DropArchetype`, `PetArchetype`, `Loadout`) and lookup by `id` |
 | [projectiles-and-combat.md](projectiles-and-combat.md) | accepted | `CombatSystem` ownership for universal weapon/projectile lifecycle, hit tests, damage rules, explosions and damage intents |
 | [health-and-death.md](health-and-death.md) | accepted | HP on entities, damage intents, death hooks, and entity removal |
 | [snapshot-shape.md](snapshot-shape.md) | accepted | Per-kind entity fields in snapshots, top-level `encounter`/`zone`/`waveProgress`, combat shape, and lifecycle runtime events |
@@ -75,15 +75,15 @@ Main principle:
 | [enemy-contact.md](enemy-contact.md) | accepted | Enemy contact damage: new `CombatSystem` phase, `DamageIntent.source: 'enemyContact'`, and per-enemy cooldown |
 | [boss-encounter.md](boss-encounter.md) | accepted | `kind: 'boss'` entity, `'boss'` `SpawnPlan`, `BossArchetype`, `BossPhaseSystem`, `winCondition: bossDefeated`, and boss snapshot/HUD |
 | [drops.md](drops.md) | accepted | `DropArchetype`, `Drop` as an entity, `DropSystem` (spawn-on-death hook plus ttl/pickup), `dropTable` on `EnemyArchetype`, and heal effect |
-| [rng.md](rng.md) | accepted | Session RNG (`mulberry32` from `seed`) as the only source of randomness in `sim` |
-| [main-ui-shell.md](main-ui-shell.md) | accepted | `UiShell` (`menu`/`running`/`paused`/`result` phases), HUD as a passive snapshot consumer, and playable preset catalog |
-| [menu-and-startup-presentation.md](menu-and-startup-presentation.md) | accepted | Startup ritual, phase transition curtain and hand-drawn main menu presentation |
+| [rng.md](rng.md) | accepted | Session RNG (`mulberry32` from `seed`) as the only source of randomness in `sim`, plus explicit random-source boundaries for committed main-thread state |
+| [main-ui-shell.md](main-ui-shell.md) | accepted | `UiShell` phases, HUD as a passive snapshot consumer, playable preset catalog, local progression, Result rewards, and menu sub-screens |
+| [menu-and-startup-presentation.md](menu-and-startup-presentation.md) | accepted | Startup ritual, phase transition curtain, hand-drawn main menu presentation, and Pets/Lab sub-screens |
 | [audio.md](audio.md) | accepted | Audio stack in `src/main/audio/**`: one `AudioContext`, mixer (`master` plus `sfx`/`music`/`ui` buses), two-layer sample registry volume, archetype/event to sampleId mappings, music selector, slime ambient, and `setMasterGain` for 009 |
 | [client-settings.md](client-settings.md) | accepted | `ClientSettingsStore` in `src/main/settings/**`: 009 fields (`masterVolume`, `renderScalePreset`), `localStorage` with `schemaVersion`, validation/clamping, subscriber model, and `UiShell` ownership |
 | [render-scale.md](render-scale.md) | accepted | Render scale policy in `src/main/render/**`: three presets `low`/`medium`/`high`, pure `resolveRenderScale`, `Renderer.applyScalePolicy`, and "no hardware advantage" invariants |
 | [decision-log-format.md](decision-log-format.md) | accepted | Short companion summary of the decision format; this `README` defines the layer rules |
-| [content-authoring.md](content-authoring.md) | accepted | Markdown content authoring surface: `content/<area>.md` as the source of truth, `scripts/content-build/` generator, `<area>.ts` and `<area>.generated.ts` pairs in consuming layers, atomic writes, and CI drift check |
-| [sprite-assets.md](sprite-assets.md) | accepted | Sprite visuals for `player`/`enemy`/`boss`: `SpriteVisualSpec`, three separate visual registries near the renderer, `PX_PER_WU = 240`, asset-only renderer with no circle fallback, render-only breathing for `enemy`/`boss`, hard-error policy, and pre-menu preload |
+| [content-authoring.md](content-authoring.md) | accepted | Markdown content authoring surface: `content/<area>.md` as the source of truth, `scripts/content-build/` generator, generated pairs in consuming layers, atomic writes, and CI drift check |
+| [sprite-assets.md](sprite-assets.md) | accepted | Sprite visuals for `player`/`enemy`/`boss`/`projectile`/`drop`/`pet`: `SpriteVisualSpec`, `PX_PER_WU = 240`, asset-only renderer, render-only breathing, hard-error policy, and pre-menu preload |
 | [body-contact-boxes.md](body-contact-boxes.md) | accepted | `contactBox` as the derived shape for `player`/`enemy`/`boss` body contact: box-vs-box overlap, broadphase through derived bounds radius, and player clamp by box |
 | [impact-feedback.md](impact-feedback.md) | accepted | Juicy projectile feedback: self-contained `hit`/`death` event payloads, projectile knockback from weapon force, renderer-owned slime droplets/stains, hit squash/flash and death ghost |
 | [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) | accepted | Universal weapon instances, ordered loadouts, fire patterns, projectile motion, explosions, fragments, session friendly-fire rules and weapon modifier drops |
@@ -93,7 +93,7 @@ Main principle:
 | [landing-telegraph.md](landing-telegraph.md) | accepted | Render-only landing marker for in-flight arc projectiles from non-player shooters: `ProjectileSnapshot.arcEnd` snapshot extension, render contract (when to show it, size, exception for player-owned arc projectiles), and presentation vs gameplay |
 | [encounter-presentation.md](encounter-presentation.md) | accepted | Presentation fields on `EncounterDefinition` (`introDurationMs`/`name`/`text`), intro delay contract for `SpawnSystem`/`ZoneSystem`/`SessionFlowSystem`, global wave numbering, and render contract for wave/break title overlays |
 | [hud-presentation.md](hud-presentation.md) | accepted | Player-facing combat HUD: viewport regions, run timer, compact HP/boss state, control hints, weapon slots, cooldown interval, modifier badges and timed overdrive progress |
-| [session-result-summary.md](session-result-summary.md) | accepted | Terminal run summary for `win`/`loss`: progress, duration, kills, drops, boss state, defeat cause and Result UI ownership |
+| [session-result-summary.md](session-result-summary.md) | accepted | Terminal run summary for `win`/`loss`: progress, duration, kills, drops, boss state, defeat cause, Dungeon summary, and Result UI ownership |
 | [escape-progress-path.md](escape-progress-path.md) | accepted | Main-thread Escape Path: wave-only progress path for compact HUD, break map, and Result UI, derived from `SessionDefinition`, snapshots, and result summary without sim contract changes |
 | [vibe-jam-portals.md](vibe-jam-portals.md) | accepted | Vibe Jam portal entrypoint, inbound return context, main-thread portal interactables, final portal encounter, and redirect contracts |
 | [_template.md](_template.md) | template | Minimal template for a new decision |

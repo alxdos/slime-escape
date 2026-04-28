@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (for story 011, added a back-reference to `content-authoring.md`: for areas governed by MD sources, `content library` literals are generated under the same layer-separation rules, without changing this document)
+- Updated: 2026-04-28 (story 029 prep: add `client progression` as a separate persistent browser data level for XP, owned pets, and selected companion; it is not `client settings` and does not enter simulation in the first pet story. Earlier: 2026-04-23 for story 011, added a back-reference to `content-authoring.md`: for areas governed by MD sources, `content library` literals are generated under the same layer-separation rules, without changing this document)
 
 ## Context
 
@@ -10,19 +10,21 @@ Runtime code must be separated from game content so new modes, enemy sets, and l
 
 ## Decision
 
-- Separate four data levels:
+- Separate five data levels:
   - `content library` — long-lived descriptions of game elements;
   - `session configuration` — description of a specific run;
   - `runtime state` — current mutable state in simulation;
+  - `client progression` — persistent local player progress and collection state stored by the browser;
   - `client settings` — persistent user preferences for the client.
 - Store in the `content library`:
   - enemy archetypes;
   - weapon archetypes;
   - drop archetypes;
   - boss profiles;
+  - pet archetypes and pet economy tuning;
   - arena parameters;
   - standard `ModePreset` values.
-- Archetype shape (the fields of `EnemyArchetype`, `WeaponArchetype`, `DropArchetype`, minimal `Loadout`, and lookup rules by stable `id`) is defined in [content-archetypes.md](content-archetypes.md). References in `SessionDefinition`, `EncounterDefinition`, `SpawnPlan`, and runtime state use only `id`; `id → archetype` resolution happens once during session build/start.
+- Archetype shape (the fields of `EnemyArchetype`, `WeaponArchetype`, `DropArchetype`, `PetArchetype`, minimal `Loadout`, and lookup rules by stable `id`) is defined in [content-archetypes.md](content-archetypes.md). References in `SessionDefinition`, `EncounterDefinition`, `SpawnPlan`, persistent progression, and runtime state use only `id`; `id → archetype` resolution happens at the layer boundary that needs the data, such as session start or main-thread presentation.
 - "Drop tables" are not a separate entity with their own `id`: one table is the `dropTable: ReadonlyArray<DropTableEntry>` field on `EnemyArchetype` (see [content-archetypes.md](content-archetypes.md)). Drop selection and lifecycle rules live in [drops.md](drops.md). If future work needs shared tables between enemies, that will be a separate decision (`dropTableId` on top of the existing field), not an in-place addition.
 - Store in `session configuration`:
   - selected preset;
@@ -36,6 +38,15 @@ Runtime code must be separated from game content so new modes, enemy sets, and l
   - wave progress;
   - active drop objects;
   - internal RNG states and runtime flags.
+- Store in `client progression`:
+  - total XP earned from completed eligible runs;
+  - owned pet ids;
+  - selected pet id, or explicit `null` for no companion;
+  - local records such as Dungeon best wave when a story defines them as local browser progress.
+- `client progression` lives on the main thread. It may be persisted through versioned browser storage and may be read by UI, result presentation, and renderer presentation setup.
+- `client progression` is not `client settings`: it records player progress, not preferences like volume or render scale.
+- In story 029, selected pet progression is presentation-only. It may be passed from `UiShell` to `Renderer` to show a companion, but it must not be passed to `SimWorkerHost.startSession`, `SessionDefinition`, snapshots, runtime events, or combat systems.
+- If a future pet story makes companions affect combat, that will require an explicit `SessionDefinition`/runtime decision so the selected pet becomes authoritative session configuration instead of hidden main-thread state.
 - Store in `client settings`:
   - volume;
   - quality/render-scale policy;
@@ -45,6 +56,8 @@ Runtime code must be separated from game content so new modes, enemy sets, and l
 - `SessionDefinition` is also immutable after session start.
 - Any changes during gameplay apply only to `runtime state`.
 - Builder functions may read the `content library` and user options, but their output must always be a new `SessionDefinition`.
+- `client progression` is not part of `SessionDefinition` in story 029.
+- `client progression` can affect main-thread presentation for the next run only while it has no gameplay effect.
 - `client settings` are not part of `SessionDefinition`.
 - `client settings` do not affect authoritative simulation state and must not change the outcome of a run with the same `seed`.
 - `client settings` may affect audio mix, render backend policy, render scale, and other client-side presentation choices.
@@ -56,6 +69,7 @@ Runtime code must be separated from game content so new modes, enemy sets, and l
 - There is a clean boundary between the mode we start and the state already unfolding inside the run.
 - Debug-state serialization and run reproducibility through `seed` become simpler.
 - Settings stories must not embed persistent preferences into the game session model.
+- Progression stories get a separate local persistence lane without reclassifying XP, collections, or records as settings.
 
 ## Related
 
@@ -65,3 +79,5 @@ Runtime code must be separated from game content so new modes, enemy sets, and l
 - [spawn-plan.md](spawn-plan.md)
 - [drops.md](drops.md)
 - [content-authoring.md](content-authoring.md)
+- [main-ui-shell.md](main-ui-shell.md)
+- [../stories/029-xp-and-pet-companions.md](../stories/029-xp-and-pet-companions.md)

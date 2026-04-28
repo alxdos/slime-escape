@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-27 (story 026 prep: the existing entrypoint `autoStartPresetId` path is recorded for `/portal`; after preload it may transition directly into the configured session, and the Training button routes to that configured preset when present.)
+- Updated: 2026-04-28 (story 029 prep: Pets and Lab stop being teaser blocks and open hand-drawn menu sub-screens for collection, selection, and XP purchases. Earlier: 2026-04-27 story 026 prep: the existing entrypoint `autoStartPresetId` path is recorded for `/portal`; after preload it may transition directly into the configured session, and the Training button routes to that configured preset when present.)
 
 ## Context
 
@@ -75,7 +75,10 @@ This decision defines the presentation contract for the startup splash, phase vi
   - difficulty: `/images/menu/menu-main-mode-easy.png`, `/images/menu/menu-main-mode-normal.png`, `/images/menu/menu-main-mode-hard.png`;
   - launch: `/images/menu/menu-main-play.png`, `/images/menu/menu-main-training.png`;
   - lower scene: `/images/menu/menu-main-pets.png`, `/images/menu/menu-main-dungeon.png`, `/images/menu/menu-main-lab.png`.
-- The top-left XP/progression sketch from the mockup is presentation-reserved. Until a progression story exists, it is either absent or a static placeholder; it must not imply saved progression.
+- Story 029 sub-screen assets:
+  - Pets screen: `/images/bg/bg-pets.jpg`, `/images/menu/menu-pets-back.png`;
+  - Lab screen: `/images/bg/bg-lab.jpg`, `/images/menu/menu-lab-back.png`.
+- The top-left XP/progression sketch from the mockup becomes live progression presentation when a story supplies XP data through `UiShell`. Menu presentation still does not own persistence.
 
 ### Menu behavior
 
@@ -90,7 +93,18 @@ This decision defines the presentation contract for the startup splash, phase vi
 - If the current page entrypoint configured `autoStartPresetId`, the Training action starts that configured preset instead. This keeps special entrypoints such as `/portal` inside their dedicated session even after the player returns to the menu from a result screen.
 - Settings opens the existing settings overlay through `UiShell`.
 - Fullscreen requests browser fullscreen through `UiShell`. Rejection or unsupported fullscreen is handled as a no-op with optional warning/log; it must not break menu state.
-- Soon, Pets, Dungeon and Lab do not start sessions in this story. If they are interactive, they only provide a lightweight "not yet" feedback through existing UI feedback paths.
+- Soon remains non-launching feedback.
+- Dungeon follows the existing Dungeon story contract and starts the Dungeon screen/preset through `UiShell`.
+- Pets and Lab open menu sub-screens in story 029. They do not become `UiShellPhase` values, do not start sessions, and do not call persistence directly.
+
+### Pets and Lab sub-screens
+
+- Pets and Lab extend the same hand-drawn stage metaphor as the main menu. They use their own background art and a real back button image; they must not be rebuilt as generic card dashboards.
+- A sub-screen is nested inside menu presentation state owned by `MenuOverlay`/`UiShell`. Pressing Back returns to the main menu stage without touching the selected campaign mode, settings, fullscreen state, worker, renderer, or active session state.
+- Lab receives XP total, pet economy, pet content, owned pet ids, and purchase callbacks from `UiShell`. The Lab view may own local reveal animation state for the most recently purchased pet, but it does not decide ownership or write storage.
+- Lab stand presentation has three mutually exclusive visual states per quality: purchasable price, revealed pet, and `Complete`. Affordability feedback is local presentation; purchase success/failure comes from the progression store callback.
+- Pets receives pet content, pet visuals, owned pet ids, selected pet id, and select/clear callbacks from `UiShell`. It presents green and purple inventory zones plus one selected-companion area; it does not read `localStorage`.
+- Pet sprites shown in menu sub-screens use pet visual registry image paths from [sprite-assets.md](sprite-assets.md), not duplicate image constants in UI.
 
 ### Motion and interaction states
 
@@ -114,9 +128,10 @@ This decision defines the presentation contract for the startup splash, phase vi
 ### Tests and verification
 
 - Unit-level tests should cover pure view-model/state pieces where possible: selected mode, Play/Training routing, disabled/teaser behavior, reduced-motion state derivation and startup step progression.
+- Unit-level tests should cover Pets/Lab menu state derivation where possible: Back routing, owned/selected partitioning, stand price/reveal/complete states, and disabled purchase affordance.
 - `UiShell` tests should cover transition guarding: repeated Play/Training while transitioning cannot start more than one session.
 - Preload tests should distinguish actual asset progress from post-load ritual progress.
-- Browser/dev-server visual verification is required for desktop landscape and narrow viewport. It must check that the page is nonblank, menu assets render, buttons are clickable, selected mode is visible, and no incoherent overlap appears.
+- Browser/dev-server visual verification is required for desktop landscape and narrow viewport. It must check that the page is nonblank, menu assets render, buttons are clickable, selected mode is visible, Pets/Lab sub-screens are reachable/backable, and no incoherent overlap appears.
 
 ## Consequences
 
@@ -124,7 +139,7 @@ This decision defines the presentation contract for the startup splash, phase vi
 - The first menu becomes asset-driven and closer to the game's hand-drawn identity, but it now depends on a fixed set of UI images being present and decoded before `menu`.
 - `UiShell` gains a small presentation transition layer. This keeps fade sequencing centralized instead of scattering `setTimeout`/CSS transition decisions across overlays.
 - Training gets an explicit menu affordance without changing the generic playable catalog contract.
-- The menu layout becomes less flexible than a card grid by design. Future screens for Pets, Dungeon and Lab should extend this stage metaphor rather than converting the main menu back into generic panels.
+- The menu layout becomes less flexible than a card grid by design. Pets, Dungeon and Lab extend this stage metaphor rather than converting the main menu back into generic panels.
 - Remote font loading cannot be treated as critical game readiness. The visual style must survive fallback fonts.
 
 ## Related
@@ -140,3 +155,4 @@ This decision defines the presentation contract for the startup splash, phase vi
 - [vibe-jam-portals.md](vibe-jam-portals.md)
 - [../mockups/001-main.jpg](../mockups/001-main.jpg)
 - [../stories/023-main-menu-and-startup-ux.md](../stories/023-main-menu-and-startup-ux.md)
+- [../stories/029-xp-and-pet-companions.md](../stories/029-xp-and-pet-companions.md)
