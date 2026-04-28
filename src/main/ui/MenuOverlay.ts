@@ -635,7 +635,8 @@ function createPetImage(
   image.src = pet.image;
   image.alt = pet.displayName;
   image.draggable = false;
-  image.style.cssText = petsPetImageStyle();
+  image.style.cssText =
+    role === 'menu-pets-selected-image' ? petsSelectedPetImageStyle() : petsPetImageStyle();
   return image;
 }
 
@@ -951,15 +952,31 @@ function petsOwnedPetButtonStyle(): string {
 
 function petsPetImageStyle(): string {
   return [
-    'display:block',
+    ...petsPetImageBaseStyle(),
     'width:100%',
-    'height:100%',
+    'height:100%'
+  ].join(';');
+}
+
+function petsSelectedPetImageStyle(): string {
+  return [
+    ...petsPetImageBaseStyle(),
+    'width:42%',
+    'height:62%',
+    'max-width:180px',
+    'max-height:180px'
+  ].join(';');
+}
+
+function petsPetImageBaseStyle(): ReadonlyArray<string> {
+  return [
+    'display:block',
     'object-fit:contain',
     'image-rendering:auto',
     'filter:drop-shadow(3px 4px 0 rgba(0,0,0,0.64))',
     'pointer-events:none',
     'user-select:none'
-  ].join(';');
+  ];
 }
 
 function petsSelectedEmptyStyle(): string {
