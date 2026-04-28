@@ -132,6 +132,7 @@ export type WinCondition =
   | { kind: 'none' }
   | { kind: 'allEncountersComplete' }
   | { kind: 'bossDefeated' }
+  | { kind: 'dungeon' }
   | { kind: 'scenarioCondition' };
 
 export type LossCondition =

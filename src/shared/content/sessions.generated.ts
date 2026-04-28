@@ -2258,6 +2258,171 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ]
   },
+  dungeon: {
+    presetId: 'dungeon',
+    displayName: 'Dungeon',
+    description: 'Endless authored wave loop for quick repeatable survival runs.',
+    visibleInMenu: false,
+    order: 1,
+    arena: SANDBOX_ARENA,
+    player: TRAINING_PLAYER,
+    loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id], selectedIndex: 0 },
+    backgrounds: [
+      {
+        id: 'cellar',
+        imageUrl: '/images/bg/bg-02.jpg'
+      },
+      {
+        id: 'tunnels',
+        imageUrl: '/images/bg/bg-04.jpg'
+      },
+      {
+        id: 'vault',
+        imageUrl: '/images/bg/bg-05.jpg'
+      }
+    ],
+    musicSampleId: 'music/100-waves',
+    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    winCondition: { kind: 'dungeon' },
+    lossCondition: { kind: 'playerDeath' },
+    encounters: [
+      {
+        id: 'dungeon-wave-1',
+        type: 'wave',
+        backgroundId: 'cellar',
+        introDurationMs: 1800,
+        name: 'Cellar Rush',
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: SLIME_SHELL.id },
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_MANY_EYE.id }
+          ],
+          spawnIntervalMs: 1150,
+          maxAlive: 5,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 2.2, durationMs: 17000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'dungeon-reset-1',
+        type: 'break',
+        backgroundId: 'cellar',
+        introDurationMs: 0,
+        name: null,
+        text: 'Deeper.',
+        spawnPlan: { kind: 'empty' },
+        zoneBehavior: { kind: 'expandLinear', fromMargin: 2.2, toMargin: 0, durationMs: 2400 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'timer', durationMs: 2400, next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'dungeon-wave-2',
+        type: 'wave',
+        backgroundId: 'tunnels',
+        introDurationMs: 1800,
+        name: 'Tunnel Teeth',
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_WRAITH.id },
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_SHELL.id },
+            { archetypeId: SLIME_WRAITH.id },
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_MECH_CRAB.id },
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_MANY_EYE.id },
+            { archetypeId: SLIME_SHELL.id },
+            { archetypeId: SLIME_MECH_CRAB.id }
+          ],
+          spawnIntervalMs: 1000,
+          maxAlive: 6,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 2.8, durationMs: 19000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'dungeon-reset-2',
+        type: 'break',
+        backgroundId: 'tunnels',
+        introDurationMs: 0,
+        name: null,
+        text: 'Keep moving.',
+        spawnPlan: { kind: 'empty' },
+        zoneBehavior: { kind: 'expandLinear', fromMargin: 2.8, toMargin: 0, durationMs: 2600 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'timer', durationMs: 2600, next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'dungeon-wave-3',
+        type: 'wave',
+        backgroundId: 'vault',
+        introDurationMs: 1800,
+        name: 'Vault Crush',
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_STONEHEAD.id },
+            { archetypeId: SLIME_FLAME.id },
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_WRAITH.id },
+            { archetypeId: SLIME_SHELL.id },
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_MANY_EYE.id },
+            { archetypeId: SLIME_MECH_CRAB.id },
+            { archetypeId: SLIME_STONEHEAD.id },
+            { archetypeId: SLIME_FLAME.id },
+            { archetypeId: SLIME_WRAITH.id },
+            { archetypeId: SLIME_MECH_CRAB.id }
+          ],
+          spawnIntervalMs: 900,
+          maxAlive: 7,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 3.4, durationMs: 21000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'dungeon-reset-3',
+        type: 'break',
+        backgroundId: 'vault',
+        introDurationMs: 0,
+        name: null,
+        text: 'The dungeon loops. You do not.',
+        spawnPlan: { kind: 'empty' },
+        zoneBehavior: { kind: 'expandLinear', fromMargin: 3.4, toMargin: 0, durationMs: 3000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'timer', durationMs: 3000, next: 'sequential' },
+        tuning: null
+      }
+    ]
+  },
   portal: {
     presetId: 'portal',
     displayName: 'Portal Run',

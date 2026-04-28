@@ -225,7 +225,7 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
   const backgrounds = parseSessionBackgrounds(sessionSection, sessionTables.backgrounds);
   const backgroundIds = new Set(backgrounds.map((background) => background.id));
 
-  return {
+  const preset = {
     sourcePath: document.filePath,
     presetId,
     displayName: sessionFields.read('displayName'),
@@ -244,6 +244,22 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
       parseEncounterSection(section, backgroundIds)
     )
   };
+  validateSessionPreset(preset);
+  return preset;
+}
+
+function validateSessionPreset(preset: ParsedSessionPreset): void {
+  if (preset.winCondition.kind !== 'dungeon') return;
+  if (preset.lossCondition.kind !== 'playerDeath') {
+    throw new ContentBuildError(
+      `${preset.sourcePath}: winCondition "dungeon" requires lossCondition "playerDeath"`
+    );
+  }
+  if (!preset.encounters.some((encounter) => encounter.type === 'wave')) {
+    throw new ContentBuildError(
+      `${preset.sourcePath}: winCondition "dungeon" requires at least one wave encounter`
+    );
+  }
 }
 
 function parseEncounterSection(
@@ -953,6 +969,7 @@ function parseWinCondition(field: FieldReader, fieldName: string): ParsedWinCond
     'none',
     'allEncountersComplete',
     'bossDefeated',
+    'dungeon',
     'scenarioCondition'
   ]);
   return { kind };
