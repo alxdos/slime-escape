@@ -18,7 +18,7 @@ export const HERO_TRAINING: PlayerArchetype = {
   radius: 1.1458333333333333,
   contactBox: { width: 1.225, height: 2.2916666666666665 },
   maxSpeed: 6,
-  maxHp: 5
+  maxHp: 20
 };
 
 export const PLAYER_ARCHETYPE_SPECS = [HERO_SANDBOX, HERO_TRAINING] as const satisfies ReadonlyArray<PlayerArchetype>;

@@ -30,4 +30,4 @@
 | id | maxHp |
 |---|---:|
 | hero-sandbox | 1 |
-| hero-training | 5 |
+| hero-training | 20 |
