@@ -63,6 +63,11 @@ describe('MenuOverlayLayout', () => {
       '/images/menu/menu-dn-play.png',
       '/images/menu/menu-dn-back.png'
     ]);
+    expect(MENU_SUBSCREENS.dungeon.controls.map((control) => control.kind)).toEqual([
+      'mode',
+      'start',
+      'back'
+    ]);
   });
 
   it('keeps controls inside stable stage bounds', () => {

@@ -7,10 +7,16 @@ class FakeStyle {
   display = '';
 }
 
+class FakeClassList {
+  add(): void {}
+  remove(): void {}
+}
+
 class FakeElement {
   readonly children: FakeElement[] = [];
   readonly dataset: Record<string, string> = {};
   readonly style = new FakeStyle();
+  readonly classList = new FakeClassList();
   readonly listeners = new Map<string, Array<() => void>>();
   readonly attributes = new Map<string, string>();
   parent: FakeElement | null = null;
@@ -91,9 +97,10 @@ describe('MenuOverlay', () => {
       onOpenScreen() {},
       onBackToMainMenu() {},
       onTeaser() {},
-      onSubscreenTeaser() {},
+      onStartDungeon() {},
       onButtonHover() {},
-      onModeSwitch() {}
+      onModeSwitch() {},
+      dungeonBestWave: 0
     });
 
     const root = findByRole(parent, 'menu-overlay');
@@ -118,6 +125,53 @@ describe('MenuOverlay', () => {
     expect(socialLinks[0]?.getAttribute('rel')).toBe('noopener noreferrer');
     expect(socialLinks[1]?.getAttribute('href')).toBe('https://discord.gg/rUwc52wc6v');
     expect(socialLinks[1]?.getAttribute('target')).toBe('_blank');
+  });
+
+  it('starts Dungeon from the subscreen and renders the saved best number only', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: new FakeDocument()
+    });
+
+    const onStartDungeon = vi.fn();
+    const parent = document.createElement('div');
+    const overlay = createMenuOverlay({
+      parent,
+      modes: [],
+      onStart() {},
+      onStartTraining() {},
+      onOpenSettings() {},
+      onToggleFullscreen() {},
+      onOpenScreen() {},
+      onBackToMainMenu() {},
+      onTeaser() {},
+      onStartDungeon,
+      onButtonHover() {},
+      onModeSwitch() {},
+      dungeonBestWave: 12
+    });
+
+    overlay.showScreen('dungeon');
+
+    const root = findByRole(parent, 'menu-overlay');
+    const bestWave = findByRole(root, 'menu-dungeon-best-wave');
+    const buttons = findAllByRole(root, 'menu-subscreen-button');
+    const dungeonPlay = buttons.find(
+      (button) => button.dataset['controlId'] === 'dungeon-play'
+    );
+
+    expect(bestWave.textContent).toBe('12');
+    expect(dungeonPlay?.dataset['controlKind']).toBe('start');
+    expect(dungeonPlay?.dataset['soon']).toBeUndefined();
+
+    (dungeonPlay as unknown as FakeElement).listeners.get('click')?.forEach((listener) => {
+      listener();
+    });
+
+    expect(onStartDungeon).toHaveBeenCalledTimes(1);
+
+    overlay.setDungeonBestWave(Number.NaN);
+    expect(bestWave.textContent).toBe('0');
   });
 });
 

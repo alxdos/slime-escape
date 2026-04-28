@@ -20,8 +20,7 @@ export type MenuSubscreenControlId =
   | 'dungeon-mode'
   | 'dungeon-play'
   | 'dungeon-back';
-export type MenuSubscreenControlKind = 'back' | 'mode' | 'teaser';
-export type MenuTeaserControlId = 'dungeon-play';
+export type MenuSubscreenControlKind = 'back' | 'mode' | 'start';
 
 export type MenuControlLayout = Readonly<{
   id: MenuControlId;
@@ -247,7 +246,7 @@ export const MENU_SUBSCREENS = Object.freeze({
       },
       {
         id: 'dungeon-play',
-        kind: 'teaser',
+        kind: 'start',
         src: '/images/menu/menu-dn-play.png',
         label: 'Dungeon play',
         leftPercent: 27.4,

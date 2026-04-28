@@ -1,6 +1,7 @@
 import { buildSessionDefinition } from '../../shared/content/buildSession';
 import {
   getPlayableModeCatalog,
+  DUNGEON_PRESET,
   resolveModePreset,
   type ModePreset,
   type ModePresetId
@@ -19,6 +20,10 @@ import {
   createClientSettingsStore,
   type ClientSettingsStore
 } from '../settings/ClientSettingsStore';
+import {
+  createDungeonBestWaveStore,
+  type DungeonBestWaveStore
+} from '../settings/DungeonBestWaveStore';
 import {
   createSimWorkerHost,
   type SimWorkerHost,
@@ -119,6 +124,7 @@ type CreateVibeJamPortalControllerFn = (
 ) => VibeJamPortalController;
 type CreateAudioFn = () => Audio;
 type CreateClientSettingsStoreFn = () => ClientSettingsStore;
+type CreateDungeonBestWaveStoreFn = () => DungeonBestWaveStore;
 type RunStartupPreloadFn = (
   onProgress: (loaded: number, total: number) => void
 ) => Promise<TextureMap>;
@@ -147,6 +153,7 @@ export type UiShellInit = Readonly<{
   createVibeJamPortalController?: CreateVibeJamPortalControllerFn;
   createAudio?: CreateAudioFn;
   createClientSettingsStore?: CreateClientSettingsStoreFn;
+  createDungeonBestWaveStore?: CreateDungeonBestWaveStoreFn;
   runStartupPreload?: RunStartupPreloadFn;
   reloadPage?: ReloadPageFn;
   assignLocation?: AssignLocationFn;
@@ -200,6 +207,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   const audioFactory = init.createAudio ?? createAudio;
   const clientSettingsStoreFactory =
     init.createClientSettingsStore ?? createClientSettingsStore;
+  const dungeonBestWaveStoreFactory =
+    init.createDungeonBestWaveStore ?? createDungeonBestWaveStore;
   const runStartupPreload = init.runStartupPreload ?? defaultRunStartupPreload;
   const reloadPage = init.reloadPage ?? defaultReloadPage;
   const assignLocation = init.assignLocation ?? defaultAssignLocation;
@@ -228,6 +237,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const escapeProgressPath = escapeProgressPathFactory({ parent: init.parent });
   const titleOverlay = titleOverlayFactory({ parent: init.parent });
   const clientSettingsStore = clientSettingsStoreFactory();
+  const dungeonBestWaveStore = dungeonBestWaveStoreFactory();
   const audio = audioFactory();
   audio.setMasterGain(clientSettingsStore.get().masterVolume);
   const unsubscribeAudioSettings = clientSettingsStore.subscribe((settings) => {
@@ -308,12 +318,12 @@ export function createUiShell(init: UiShellInit): UiShell {
       audio.playUi('buttonClick');
       log.info('menu teaser selected', { controlId });
     },
-    onSubscreenTeaser(controlId) {
+    onStartDungeon() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
       }
       audio.playUi('buttonClick');
-      log.info('menu subscreen teaser selected', { controlId });
+      startPresetId(DUNGEON_PRESET.id);
     },
     onButtonHover() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
@@ -326,7 +336,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         return;
       }
       audio.playUi('modeSwitch');
-    }
+    },
+    dungeonBestWave: dungeonBestWaveStore.get()
   });
 
   const pause = pauseFactory({
@@ -726,6 +737,10 @@ export function createUiShell(init: UiShellInit): UiShell {
     const kind = event.kind;
     const simTimeMs = event.simTime;
     log.info(`run ended: ${kind}`, { simTimeMs });
+    if (event.summary.dungeon !== null) {
+      const record = dungeonBestWaveStore.record(event.summary.dungeon.wavesCleared);
+      menu.setDungeonBestWave(record.bestWave);
+    }
     const viewModel = buildResultViewModel(session, event.summary);
     tearDownClientSession();
     setPhase({ kind: 'result', outcome: kind, summary: event.summary, viewModel });
