@@ -51,6 +51,7 @@ export type SessionFlowDeps = Readonly<{
   onSessionStop?(): void;
   onEncounterStart?(encounter: EncounterDefinition): void;
   onEncounterEnd?(encounter: EncounterDefinition): void;
+  onEncounterComplete?(encounter: EncounterDefinition): void;
   buildResultSummary(outcome: SessionResultOutcome, simTimeMs: number): SessionResultSummary;
 }>;
 
@@ -187,6 +188,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
 
     deps.onEncounterEnd?.(encounter);
     emitEvent({ kind: 'encounterEnd', simTime: simTimeMs });
+    deps.onEncounterComplete?.(encounter);
 
     const nextIndex = resolveNextIndex(
       active.def.encounters,

@@ -147,7 +147,8 @@ function makeResultSummary(
       pickedUpTotal: 0
     },
     boss: null,
-    defeat: null
+    defeat: null,
+    dungeon: null
   };
 }
 

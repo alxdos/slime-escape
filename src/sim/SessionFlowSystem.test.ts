@@ -686,6 +686,26 @@ describe('SessionFlowSystem dungeon transitions', () => {
     flow.checkTransitions(100);
     expect(flow.activeEncounter()?.waveOrdinal).toBe(2);
   });
+
+  it('notifies completion only when a transition rule completes an encounter', () => {
+    const clock = createFakeClock();
+    const completed: string[] = [];
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: () => {},
+      waveProgress: () => ({ dispatched: 1, total: 1, alive: 0 }),
+      onEncounterComplete: (encounter) => completed.push(encounter.id)
+    });
+    const session = makeSession([
+      waveEncounter('completed-wave', { kind: 'allEnemiesCleared', next: 'sequential' }),
+      breakEncounter('idle-break', { kind: 'never', next: 'sequential' })
+    ]);
+
+    flow.start(session);
+    flow.checkTransitions(0);
+
+    expect(completed).toEqual(['completed-wave']);
+  });
 });
 
 describe('SessionFlowSystem bossDefeated', () => {
@@ -789,6 +809,22 @@ describe('SessionFlowSystem player death', () => {
     events.length = 0;
     flow.onPlayerDeath();
     expect(events).toHaveLength(0);
+  });
+
+  it('does not mark the active encounter complete when player death ends the run', () => {
+    const clock = createFakeClock();
+    const completed: string[] = [];
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: () => {},
+      onEncounterComplete: (encounter) => completed.push(encounter.id)
+    });
+    const session = makeSession([waveEncounter('active-wave', { kind: 'never', next: 'sequential' })]);
+
+    flow.start(session);
+    flow.onPlayerDeath();
+
+    expect(completed).toEqual([]);
   });
 
   it("after win, input/pause/resume are warned and ignored", () => {

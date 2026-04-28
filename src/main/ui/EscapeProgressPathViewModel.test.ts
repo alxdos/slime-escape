@@ -327,6 +327,7 @@ function makeSummary(
     kills: { total: 0, byArchetype: [] },
     drops: { pickedUpTotal: 0 },
     boss: null,
-    defeat: null
+    defeat: null,
+    dungeon: null
   };
 }

@@ -246,7 +246,8 @@ function makeSummary(outcome: 'win' | 'loss' = 'win'): SessionResultSummary {
       maxHp: 100,
       hpPercent: outcome === 'win' ? 0 : 28
     },
-    defeat: null
+    defeat: null,
+    dungeon: null
   };
 }
 
