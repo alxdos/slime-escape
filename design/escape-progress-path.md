@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-26
+- Updated: 2026-04-28 (story 028 prep: Escape Path is hidden for Dungeon because an endless authored loop has no finite flag path; Dungeon result stats are rendered by Result UI instead.)
 
 ## Context
 
@@ -25,7 +25,7 @@ Therefore the story must not extend the simulation worker, `Snapshot`, runtime e
 - Authoritative sources:
   - live/break: immutable `SessionDefinition` + current `SnapshotPair.curr`;
   - result: immutable `SessionDefinition` + terminal `SessionResultSummary`.
-- No new fields are introduced in `Snapshot`, `RuntimeEvent`, `SessionDefinition`, `EncounterDefinition`, or `SessionResultSummary`.
+- Escape Path itself introduces no fields in `Snapshot`, `RuntimeEvent`, `SessionDefinition`, `EncounterDefinition`, or `SessionResultSummary`. Later stories may extend those contracts for other reasons; Escape Path remains a pure consumer and simply hides itself for modes such as Dungeon where a finite path is not meaningful.
 - Progress calculation is pure main-side derivation. Keep it in a separate helper/view-model module near the UI so compact, break, and result use one formula.
 
 ### Wave Path Model
@@ -36,7 +36,7 @@ The path is built only from wave encounters:
 - global wave encounter number = number of wave encounters from session start through the current encounter, inclusive;
 - boss, break, survivalTimer, and sandbox encounters do not get their own path points.
 
-If `totalWaves === 0`, Escape Path is hidden: sandbox/modes without waves have no meaningful path.
+If `totalWaves === 0`, Escape Path is hidden: sandbox/modes without waves have no meaningful path. If `session.winCondition.kind === 'dungeon'`, Escape Path is also hidden even though the session has wave encounters, because an endless loop has no finite path to a flag.
 
 Recommended internal view model:
 
@@ -87,6 +87,7 @@ Result state uses `SessionDefinition + SessionResultSummary`:
 - `totalWaves` comes from `summary.progress.totalWaves`;
 - `completedWaves` comes from `summary.progress.completedWaves`;
 - `progress.percent` is not used to fill points, because percent includes boss/objective partial progress while the path shows only the wave path.
+- For Dungeon results (`summary.dungeon !== null` or `session.winCondition.kind === 'dungeon'`), no Escape Path view model is produced. Result UI shows Dungeon-specific stats from [session-result-summary.md](session-result-summary.md) instead.
 
 Outcome rules:
 
@@ -176,3 +177,4 @@ Implementation must cover:
 - [thread-model.md](thread-model.md)
 - [testing.md](testing.md)
 - [../stories/025-escape-progress-path.md](../stories/025-escape-progress-path.md)
+- [../stories/028-dungeon-mode.md](../stories/028-dungeon-mode.md)

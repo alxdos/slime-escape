@@ -1,6 +1,6 @@
 # Dungeon Mode
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-28
 - Updated: 2026-04-28
 
@@ -21,7 +21,17 @@ A cleared wave means the whole wave was defeated. If the player dies during wave
 
 ## Technical
 
-To be prepared by the architect.
+Use the existing Dungeon subscreen as the entry point and add the smallest runtime contract needed for endless play:
+
+- `SessionDefinition.winCondition` gains `{ kind: 'dungeon' }`; when the authored encounter chain reaches the end, `SessionFlowSystem` loops back to the first authored encounter instead of emitting `win`.
+- Dungeon ends through `lossCondition: { kind: 'playerDeath' }`.
+- The simulation owns the run score: fully cleared Dungeon waves. It increments only after a `type === 'wave'` encounter ends.
+- `EncounterSnapshot.waveOrdinal` carries the player-facing wave number so the title can continue as `Wave 12` even when the authored wave list loops.
+- `SessionResultSummary.dungeon.wavesCleared` carries the terminal Dungeon score to main.
+- Main thread owns local best persistence in `localStorage`, defaults it to `0`, updates it only when `wavesCleared` is greater than the saved value, and passes best/new-best state into Result UI.
+- Escape Path is hidden for Dungeon because the mode has no finite flag path.
+
+No new design decision file is needed. The contract is recorded by extending existing decisions in `design/`.
 
 ## Out of scope
 
@@ -54,8 +64,29 @@ To be prepared by the architect.
 
 ## Tasks
 
-To be prepared by the architect.
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [x] | Align existing architecture decisions for Dungeon mode. | Updated `session-definition`, `content-authoring`, `snapshot-shape`, `encounter-presentation`, `session-result-summary`, `main-ui-shell`, and `escape-progress-path`; no new design file. |
+| T2 | [ ] | Extend shared/content contracts: add `WinCondition.kind = 'dungeon'`, parse/render `winCondition | dungeon`, add the `dungeon` session preset in `content/sessions/`, regenerate content, and update build-session/content tests. | The preset is an authored loop with at least one wave and `lossCondition: playerDeath`; the Dungeon screen starts this preset directly. |
+| T3 | [ ] | Implement Dungeon runtime flow in sim: loop from the last authored encounter back to the first, keep `encounterStart`/`encounterEnd` ordering, avoid automatic `win`, increment `waveOrdinal` on every Dungeon wave start, and add focused `SessionFlowSystem` tests. | Existing finite `allEncountersComplete`, `bossDefeated`, `none`, and `/portal` behavior must stay unchanged. |
+| T4 | [ ] | Extend run summary: track fully cleared Dungeon waves, expose `summary.dungeon.wavesCleared`, keep finite progress percent `null` for Dungeon, and cover death-during-active-wave cases in `RunSummaryTracker` tests. | Dying in wave 12 after clearing 11 reports `11`. |
+| T5 | [ ] | Wire Dungeon main UI: turn `dungeon-play` from teaser into start action, add localStorage best-wave store, render only the numeric best in the existing `Max wave` area, and update menu/UiShell tests. | No auth, leaderboard, network save, or anti-cheat. Invalid storage values fall back to `0`. |
+| T6 | [ ] | Update presentation: TitleOverlay uses Dungeon `waveOrdinal`, ResultViewModel/ResultOverlay foreground waves cleared/local best/new-best state, and Escape Path stays hidden for Dungeon live/result states. | Reuse the existing result style; no new result art direction. |
+| T7 | [ ] | Run focused verification and record manual checks. | `npm run content:check`, typecheck/tests touched by the implementation, and per pipeline ask the user to live-check Dungeon screen number, Play, death result, new best, reload persistence, and no incoherent overlap. |
 
 ## Related
 
-To be prepared by the architect.
+- [session-definition.md](../design/session-definition.md)
+- [content-authoring.md](../design/content-authoring.md)
+- [snapshot-shape.md](../design/snapshot-shape.md)
+- [encounter-presentation.md](../design/encounter-presentation.md)
+- [session-result-summary.md](../design/session-result-summary.md)
+- [main-ui-shell.md](../design/main-ui-shell.md)
+- [escape-progress-path.md](../design/escape-progress-path.md)
+- [runtime-systems.md](../design/runtime-systems.md)
+- [spawn-plan.md](../design/spawn-plan.md)
+- [zone.md](../design/zone.md)
+- [thread-model.md](../design/thread-model.md)
+- [content-boundaries.md](../design/content-boundaries.md)
+- [menu-and-startup-presentation.md](../design/menu-and-startup-presentation.md)
+- [testing.md](../design/testing.md)
