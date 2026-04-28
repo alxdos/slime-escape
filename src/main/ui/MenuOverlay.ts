@@ -892,9 +892,13 @@ function petsSelectedAreaStyle(): string {
     'justify-content:center',
     'box-sizing:border-box',
     'padding:2.2%',
-    'border:3px solid #050505',
     'border-radius:8px',
-    'box-shadow:5px 5px 0 #000000',
+    // 'border:3px solid #050505',
+    // 'background:rgba(255,255,255,0.9)',
+    // 'box-shadow:5px 5px 0 #000000',
+    'border:0',
+    'background:transparent',
+    'box-shadow:none',
     'cursor:pointer',
     'pointer-events:auto',
     'touch-action:manipulation'
@@ -915,9 +919,13 @@ function petsInventoryZoneStyle(quality: PetQuality): string {
     'gap:7%',
     'box-sizing:border-box',
     'padding:3.5%',
-    'border:3px solid #050505',
     'border-radius:8px',
-    'box-shadow:5px 5px 0 #000000',
+    // 'border:3px solid #050505',
+    // `background:${quality === 'green' ? 'rgba(215,247,162,0.78)' : 'rgba(234,215,255,0.78)'}`,
+    // 'box-shadow:5px 5px 0 #000000',
+    'border:0',
+    'background:transparent',
+    'box-shadow:none',
     'pointer-events:auto'
   ].join(';');
 }
