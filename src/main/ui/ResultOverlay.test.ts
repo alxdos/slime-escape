@@ -117,6 +117,7 @@ function makeViewModel(
     title: outcome === 'win' ? 'Victory!' : 'Run Over',
     subtitle:
       outcome === 'win' ? 'You escaped the slime world' : 'The slimes caught you',
+    dungeon: null,
     primaryStats: [
       { id: 'progress', label: 'Progress', value: outcome === 'win' ? '100%' : '73%' },
       { id: 'duration', label: 'Time', value: outcome === 'win' ? '04:18' : '03:12' },
@@ -218,6 +219,7 @@ describe('createResultOverlay', () => {
     const effectsLayer = findByRole(root, 'result-effects');
     const title = findByRole(root, 'result-title');
     const summary = findByRole(root, 'result-summary');
+    const dungeonPanel = findByRole(root, 'result-dungeon');
     const escapePath = findByRole(root, 'result-escape-path');
     const statGrid = findByRole(root, 'result-stat-grid');
     const bossPanel = findByRole(root, 'result-boss');
@@ -270,6 +272,7 @@ describe('createResultOverlay', () => {
     expect(findByRole(winEscapePathTrack, 'result-escape-path-flag').dataset['state']).toBe(
       'reached'
     );
+    expect(dungeonPanel.style.display).toBe('none');
     expect(restartButton.style.display).toBe('none');
     expect(backButton.style.cssText).toContain('background:#7cf58f');
     expect(effectsLayer.dataset['outcome']).toBe('win');
@@ -370,6 +373,44 @@ describe('createResultOverlay', () => {
     expect(killSection.style.display).toBe('none');
     expect(findAllByRole(killList, 'result-kill-row')).toHaveLength(0);
 
+    overlay.show(
+      makeViewModel('loss', {
+        title: 'Dungeon Run Over',
+        subtitle: 'New Best!',
+        dungeon: {
+          wavesCleared: 12,
+          previousBestWave: 8,
+          bestWave: 12,
+          isNewBest: true
+        },
+        escapePath: null,
+        primaryStats: [
+          { id: 'duration', label: 'Time', value: '03:12' },
+          { id: 'total-kills', label: 'Slimes defeated', value: '96' }
+        ],
+        killRows: []
+      })
+    );
+
+    expect(title.textContent).toBe('Dungeon Run Over');
+    expect(summary.textContent).toBe('New Best!');
+    expect(dungeonPanel.style.display).toBe('grid');
+    expect(findByRole(dungeonPanel, 'result-dungeon-label').textContent).toBe(
+      'Waves cleared'
+    );
+    expect(findByRole(dungeonPanel, 'result-dungeon-waves').textContent).toBe('12');
+    expect(findByRole(dungeonPanel, 'result-dungeon-best').textContent).toBe(
+      'Local best: 12'
+    );
+    expect(findByRole(dungeonPanel, 'result-dungeon-new-best').textContent).toBe(
+      'New Best!'
+    );
+    expect(escapePath.style.display).toBe('none');
+    expect(findAllByRole(statGrid, 'result-stat').map((stat) => stat.dataset['statId'])).toEqual([
+      'duration',
+      'total-kills'
+    ]);
+
     restartButton.dispatch('click');
     expect(onRestart).toHaveBeenCalledTimes(1);
 
@@ -386,6 +427,8 @@ describe('createResultOverlay', () => {
     expect(restartButton.style.display).toBe('none');
     expect(findAllByRole(effectsLayer, 'result-effect-particle')).toHaveLength(0);
     expect(escapePath.style.display).toBe('none');
+    expect(dungeonPanel.style.display).toBe('none');
+    expect(dungeonPanel.children).toHaveLength(0);
     expect(escapePath.children).toHaveLength(0);
     expect(findAllByRole(statGrid, 'result-stat')).toHaveLength(0);
     expect(killSection.style.display).toBe('none');

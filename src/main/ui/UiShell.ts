@@ -64,6 +64,7 @@ import {
   type ResultOverlayInit
 } from './ResultOverlay';
 import { buildResultViewModel } from './ResultViewModel';
+import type { ResultDungeonBestState } from './ResultViewModel';
 import {
   createSettingsOverlay,
   type SettingsOverlay,
@@ -737,11 +738,13 @@ export function createUiShell(init: UiShellInit): UiShell {
     const kind = event.kind;
     const simTimeMs = event.simTime;
     log.info(`run ended: ${kind}`, { simTimeMs });
+    let dungeonBest: ResultDungeonBestState | null = null;
     if (event.summary.dungeon !== null) {
       const record = dungeonBestWaveStore.record(event.summary.dungeon.wavesCleared);
       menu.setDungeonBestWave(record.bestWave);
+      dungeonBest = record;
     }
-    const viewModel = buildResultViewModel(session, event.summary);
+    const viewModel = buildResultViewModel(session, event.summary, { dungeonBest });
     tearDownClientSession();
     setPhase({ kind: 'result', outcome: kind, summary: event.summary, viewModel });
   }

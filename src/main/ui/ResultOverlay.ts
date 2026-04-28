@@ -3,6 +3,7 @@ import { assertNever } from '../../shared/protocol';
 import { comicTextStyle } from './comicTextStyle';
 import type {
   ResultBossViewModel,
+  ResultDungeonViewModel,
   ResultEscapePathViewModel,
   ResultKillRowViewModel,
   ResultStatViewModel,
@@ -30,6 +31,7 @@ type ResultOverlayParts = Readonly<{
   effectsLayer: HTMLElement;
   title: HTMLElement;
   summary: HTMLElement;
+  dungeonPanel: HTMLElement;
   escapePath: HTMLElement;
   statGrid: HTMLElement;
   bossPanel: HTMLElement;
@@ -148,6 +150,12 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   summary.style.cssText = summaryStyle();
   card.appendChild(summary);
 
+  const dungeonPanel = document.createElement('section');
+  dungeonPanel.className = 'result-dungeon-panel';
+  dungeonPanel.dataset['role'] = 'result-dungeon';
+  dungeonPanel.style.cssText = dungeonPanelStyle();
+  card.appendChild(dungeonPanel);
+
   const escapePath = document.createElement('section');
   escapePath.className = 'result-escape-path';
   escapePath.dataset['role'] = 'result-escape-path';
@@ -221,6 +229,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
     effectsLayer,
     title,
     summary,
+    dungeonPanel,
     escapePath,
     statGrid,
     bossPanel,
@@ -249,6 +258,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
       delete effectsLayer.dataset['outcome'];
       restartButton.style.display = 'none';
       hideEscapePath(escapePath);
+      hideDungeon(dungeonPanel);
       statGrid.replaceChildren();
       killList.replaceChildren();
       hideBoss(bossPanel, bossIcon, bossText);
@@ -306,6 +316,7 @@ function applyActionButtons(
 }
 
 function renderDynamicSections(viewModel: ResultViewModel, parts: ResultOverlayParts): void {
+  renderDungeon(parts.dungeonPanel, viewModel.dungeon, viewModel.outcome);
   renderEscapePath(parts.escapePath, viewModel.escapePath, viewModel.outcome);
   parts.statGrid.replaceChildren(
     ...viewModel.primaryStats.map((stat, index) =>
@@ -315,6 +326,50 @@ function renderDynamicSections(viewModel: ResultViewModel, parts: ResultOverlayP
   renderBoss(parts.bossPanel, parts.bossIcon, parts.bossText, viewModel.boss);
   renderDefeatCause(parts.defeatCause, viewModel.defeatCause);
   renderKillRows(parts.killsSection, parts.killList, viewModel.killRows, viewModel.outcome);
+}
+
+function renderDungeon(
+  container: HTMLElement,
+  dungeon: ResultDungeonViewModel | null,
+  outcome: ResultOutcome
+): void {
+  if (dungeon === null) {
+    hideDungeon(container);
+    return;
+  }
+
+  container.style.cssText = dungeonPanelStyle(outcome, dungeon.isNewBest);
+  container.style.display = 'grid';
+  const label = document.createElement('span');
+  label.dataset['role'] = 'result-dungeon-label';
+  label.textContent = 'Waves cleared';
+  label.style.cssText = dungeonLabelStyle();
+
+  const waves = document.createElement('strong');
+  waves.dataset['role'] = 'result-dungeon-waves';
+  waves.textContent = String(dungeon.wavesCleared);
+  waves.style.cssText = dungeonWavesStyle();
+
+  const best = document.createElement('span');
+  best.dataset['role'] = 'result-dungeon-best';
+  best.textContent = `Local best: ${dungeon.bestWave}`;
+  best.style.cssText = dungeonBestStyle();
+
+  const children = [label, waves, best];
+  if (dungeon.isNewBest) {
+    const badge = document.createElement('span');
+    badge.dataset['role'] = 'result-dungeon-new-best';
+    badge.textContent = 'New Best!';
+    badge.style.cssText = dungeonBadgeStyle();
+    children.push(badge);
+  }
+
+  container.replaceChildren(...children);
+}
+
+function hideDungeon(container: HTMLElement): void {
+  container.style.display = 'none';
+  container.replaceChildren();
 }
 
 function renderEscapePath(
@@ -714,6 +769,83 @@ function summaryStyle(background = '#e9fbff'): string {
       color: '#ffffff',
       lineHeight: '1.25',
       textAlign: 'center'
+    }),
+    'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function dungeonPanelStyle(outcome: ResultOutcome = 'loss', isNewBest = false): string {
+  const background = isNewBest ? '#fff38b' : outcome === 'win' ? '#d7f7a2' : '#ffe7f3';
+  return [
+    'display:none',
+    'box-sizing:border-box',
+    'width:100%',
+    'grid-template-columns:1fr auto',
+    'align-items:center',
+    'gap:6px 14px',
+    'padding:14px 16px 16px',
+    `background:${background}`,
+    'border:3px solid #050505',
+    'border-radius:8px',
+    'box-shadow:4px 4px 0 #000000'
+  ].join(';');
+}
+
+function dungeonLabelStyle(): string {
+  return [
+    'grid-column:1',
+    ...comicTextStyle({
+      fontSize: '16px',
+      color: '#ffffff',
+      lineHeight: '1.05'
+    }),
+    'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function dungeonWavesStyle(): string {
+  return [
+    'grid-column:2',
+    'grid-row:1 / span 2',
+    'justify-self:end',
+    ...comicTextStyle({
+      fontSize: '54px',
+      color: '#ffffff',
+      lineHeight: '0.9',
+      textAlign: 'right',
+      shadow: 'strong'
+    }),
+    'font-variant-numeric:tabular-nums',
+    'font-feature-settings:"tnum"',
+    'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function dungeonBestStyle(): string {
+  return [
+    'grid-column:1',
+    ...comicTextStyle({
+      fontSize: '18px',
+      color: '#ffffff',
+      lineHeight: '1.05'
+    }),
+    'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function dungeonBadgeStyle(): string {
+  return [
+    'grid-column:1 / -1',
+    'justify-self:start',
+    'padding:4px 10px 6px',
+    'background:#7cf58f',
+    'border:3px solid #050505',
+    'border-radius:7px',
+    'box-shadow:3px 3px 0 #000000',
+    ...comicTextStyle({
+      fontSize: '18px',
+      color: '#ffffff',
+      lineHeight: '1'
     }),
     'overflow-wrap:anywhere'
   ].join(';');
@@ -1203,6 +1335,17 @@ function resultOverlayCss(): string {
   .result-stat-grid,
   .result-kill-list {
     grid-template-columns: 1fr !important;
+  }
+
+  .result-dungeon-panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  .result-dungeon-panel [data-role="result-dungeon-waves"],
+  .result-dungeon-panel [data-role="result-dungeon-new-best"] {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+    justify-self: start !important;
   }
 }
 

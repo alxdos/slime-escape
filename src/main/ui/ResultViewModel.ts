@@ -50,10 +50,24 @@ export type ResultEscapePathViewModel = Readonly<{
   detailText: string | null;
 }>;
 
+export type ResultDungeonBestState = Readonly<{
+  previousBestWave: number;
+  bestWave: number;
+  isNewBest: boolean;
+}>;
+
+export type ResultDungeonViewModel = Readonly<{
+  wavesCleared: number;
+  previousBestWave: number;
+  bestWave: number;
+  isNewBest: boolean;
+}>;
+
 export type ResultViewModel = Readonly<{
   outcome: SessionResultOutcome;
   title: string;
   subtitle: string;
+  dungeon: ResultDungeonViewModel | null;
   primaryStats: ReadonlyArray<ResultStatViewModel>;
   killRows: ReadonlyArray<ResultKillRowViewModel>;
   escapePath: ResultEscapePathViewModel | null;
@@ -66,6 +80,7 @@ export type ResultViewModelRegistries = Readonly<{
   bosses?: Readonly<Record<string, BossArchetype>>;
   enemyVisuals?: Readonly<Record<string, SpriteVisualSpec>>;
   bossVisuals?: Readonly<Record<string, SpriteVisualSpec>>;
+  dungeonBest?: ResultDungeonBestState | null;
 }>;
 
 export function buildResultViewModel(
@@ -81,15 +96,21 @@ export function buildResultViewModel(
   const killRows = summary.kills.byArchetype
     .filter((entry) => entry.count > 0)
     .map((entry) => buildKillRow(entry, enemies, bosses, enemyVisuals, bossVisuals));
+  const dungeon = buildDungeonViewModel(summary, registries.dungeonBest ?? null);
 
   return {
     outcome,
-    title: outcome === 'win' ? 'Victory!' : 'Run Over',
+    title: dungeon === null ? (outcome === 'win' ? 'Victory!' : 'Run Over') : 'Dungeon Run Over',
     subtitle:
-      outcome === 'win'
-        ? 'You escaped the slime world'
-        : defeatSubtitle(summary.progress.percent),
-    primaryStats: buildPrimaryStats(session, summary),
+      dungeon === null
+        ? outcome === 'win'
+          ? 'You escaped the slime world'
+          : defeatSubtitle(summary.progress.percent)
+        : dungeon.isNewBest
+          ? 'New Best!'
+          : 'Keep pushing deeper',
+    dungeon,
+    primaryStats: buildPrimaryStats(session, summary, dungeon),
     killRows,
     escapePath: buildEscapePathViewModel(session, summary),
     boss: buildBossViewModel(summary, bosses, bossVisuals),
@@ -104,6 +125,10 @@ function buildEscapePathViewModel(
   session: SessionDefinition,
   summary: SessionResultSummary
 ): ResultEscapePathViewModel | null {
+  if (summary.dungeon !== null) {
+    return null;
+  }
+
   const path = deriveResultEscapeProgressPathViewModel(session, summary);
   if (path.kind === 'hidden') {
     return null;
@@ -133,17 +158,23 @@ function buildEscapePathViewModel(
 
 function buildPrimaryStats(
   session: SessionDefinition,
-  summary: SessionResultSummary
+  summary: SessionResultSummary,
+  dungeon: ResultDungeonViewModel | null
 ): ReadonlyArray<ResultStatViewModel> {
-  const stats: ResultStatViewModel[] = [
-    {
+  const stats: ResultStatViewModel[] = [];
+
+  if (dungeon === null) {
+    stats.push({
       id: 'progress',
       label: 'Progress',
       value:
         summary.progress.percent === null
           ? progressFallback(session)
           : `${summary.progress.percent}%`
-    },
+    });
+  }
+
+  stats.push(
     {
       id: 'duration',
       label: 'Time',
@@ -154,9 +185,9 @@ function buildPrimaryStats(
       label: 'Slimes defeated',
       value: String(summary.kills.total)
     }
-  ];
+  );
 
-  if (summary.progress.totalWaves > 0) {
+  if (dungeon === null && summary.progress.totalWaves > 0) {
     stats.push({
       id: 'waves',
       label: 'Wave',
@@ -173,6 +204,36 @@ function buildPrimaryStats(
   }
 
   return stats;
+}
+
+function buildDungeonViewModel(
+  summary: SessionResultSummary,
+  bestState: ResultDungeonBestState | null
+): ResultDungeonViewModel | null {
+  if (summary.dungeon === null) {
+    return null;
+  }
+
+  const wavesCleared = Math.max(0, Math.floor(summary.dungeon.wavesCleared));
+  const suppliedBestWave = normalizeNonNegativeInteger(bestState?.bestWave, wavesCleared);
+  const bestWave = Math.max(wavesCleared, suppliedBestWave);
+  const previousBestWave = normalizeNonNegativeInteger(
+    bestState?.previousBestWave,
+    Math.min(bestWave, wavesCleared)
+  );
+  return {
+    wavesCleared,
+    previousBestWave,
+    bestWave,
+    isNewBest: bestState?.isNewBest === true
+  };
+}
+
+function normalizeNonNegativeInteger(value: number | undefined, fallback: number): number {
+  if (value === undefined || !Number.isFinite(value) || value < 0) {
+    return Math.max(0, Math.floor(fallback));
+  }
+  return Math.floor(value);
 }
 
 function buildKillRow(

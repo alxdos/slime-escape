@@ -1879,6 +1879,13 @@ describe('UiShell', () => {
     ]);
     expect(menu.dungeonBestWave()).toBe(8);
     expect(result.isVisible()).toBe(true);
+    expect(result.viewModel()?.dungeon).toEqual({
+      wavesCleared: 8,
+      previousBestWave: 5,
+      bestWave: 8,
+      isNewBest: true
+    });
+    expect(result.viewModel()?.escapePath).toBeNull();
     expect(shell.phase()).toMatchObject({ kind: 'result', outcome: 'loss' });
 
     result.backToMenu();

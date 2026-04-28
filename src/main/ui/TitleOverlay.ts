@@ -104,7 +104,7 @@ export function deriveTitleOverlayViewModel(
       return HIDDEN_VIEW_MODEL;
     }
 
-    const wavePosition = resolveWavePosition(session, index);
+    const wavePosition = resolveWavePosition(session, index, encounter);
     if (wavePosition === null) {
       return HIDDEN_VIEW_MODEL;
     }
@@ -173,10 +173,18 @@ function resolveEncounterDefinition(
 
 function resolveWavePosition(
   session: SessionDefinition,
-  encounterIndex: number
+  encounterIndex: number,
+  encounter: EncounterSnapshot
 ): Readonly<{ index: number; total: number }> | null {
   if (session.encounters[encounterIndex]?.type !== 'wave') {
     return null;
+  }
+
+  if (session.winCondition.kind === 'dungeon' && encounter.waveOrdinal !== null) {
+    return {
+      index: encounter.waveOrdinal,
+      total: encounter.waveOrdinal
+    };
   }
 
   const wavesBeforeOrAtEncounter = session.encounters
