@@ -60,6 +60,7 @@ import {
   type MenuOverlay,
   type MenuOverlayInit
 } from './MenuOverlay';
+import { buildMenuLabViewModel } from './MenuLabViewModel';
 import type { MenuSubscreenId } from './MenuOverlayLayout';
 import {
   createPhaseTransitionCurtain,
@@ -267,6 +268,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const clientSettingsStore = clientSettingsStoreFactory();
   const dungeonBestWaveStore = dungeonBestWaveStoreFactory();
   const clientProgressionStore = clientProgressionStoreFactory();
+  let unsubscribeClientProgression: (() => void) | null = null;
   const audio = audioFactory();
   audio.setMasterGain(clientSettingsStore.get().masterVolume);
   const unsubscribeAudioSettings = clientSettingsStore.subscribe((settings) => {
@@ -298,6 +300,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const menu = menuFactory({
     parent: init.parent,
     modes: getPlayableModeCatalog(),
+    lab: buildMenuLabViewModel(clientProgressionStore.get()),
     onStart(presetId) {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
@@ -354,6 +357,11 @@ export function createUiShell(init: UiShellInit): UiShell {
       audio.playUi('buttonClick');
       startPresetId(DUNGEON_PRESET.id, 'nonCampaign');
     },
+    onPurchasePet(quality) {
+      const result = clientProgressionStore.purchasePet(quality);
+      syncMenuLabViewModel();
+      return result;
+    },
     onButtonHover() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
@@ -367,6 +375,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       audio.playUi('modeSwitch');
     },
     dungeonBestWave: dungeonBestWaveStore.get()
+  });
+  unsubscribeClientProgression = clientProgressionStore.subscribe(() => {
+    syncMenuLabViewModel();
   });
 
   const pause = pauseFactory({
@@ -503,6 +514,10 @@ export function createUiShell(init: UiShellInit): UiShell {
   function closeSettings(): void {
     settingsVisible = false;
     syncSettingsVisibility();
+  }
+
+  function syncMenuLabViewModel(): void {
+    menu.setLabViewModel(buildMenuLabViewModel(clientProgressionStore.get()));
   }
 
   async function toggleFullscreen(): Promise<void> {
@@ -1022,6 +1037,8 @@ export function createUiShell(init: UiShellInit): UiShell {
       escapeProgressPath.dispose();
       hud.dispose();
       unsubscribeAudioSettings();
+      unsubscribeClientProgression?.();
+      unsubscribeClientProgression = null;
       clientSettingsStore.dispose();
       clientProgressionStore.dispose();
       audio.dispose();

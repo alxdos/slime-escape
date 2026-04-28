@@ -11,6 +11,7 @@ import type {
   ClientProgression,
   ClientProgressionStore
 } from '../progression/ClientProgressionStore';
+import { createClientProgressionStore } from '../progression/ClientProgressionStore';
 import { DROP_VISUALS } from '../render/dropVisuals';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 import type { Renderer, RendererInit } from '../render/Renderer';
@@ -37,6 +38,7 @@ import type { DungeonWaveCounter, DungeonWaveCounterInit } from './DungeonWaveCo
 import type { Hud, HudInit } from './Hud';
 import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
+import type { MenuLabViewModel } from './MenuLabViewModel';
 import type { MenuScreenId, MenuSubscreenId } from './MenuOverlayLayout';
 import type { TeaserControlId } from './MenuOverlayState';
 import type {
@@ -241,9 +243,11 @@ function createMenuHarness() {
   let onBackToMainMenu: (() => void) | null = null;
   let onTeaser: ((controlId: TeaserControlId) => void) | null = null;
   let onStartDungeon: (() => void) | null = null;
+  let onPurchasePet: MenuOverlayInit['onPurchasePet'] | null = null;
   let onButtonHover: (() => void) | null = null;
   let onModeSwitch: (() => void) | null = null;
   let modes: ReadonlyArray<{ presetId: ModePresetId }> = [];
+  const labViewModels: MenuLabViewModel[] = [];
   let activeScreen: MenuScreenId = 'main';
   let dungeonBestWave = 0;
   let root: FakeDomElement | null = null;
@@ -270,6 +274,9 @@ function createMenuHarness() {
     setDungeonBestWave(bestWave: number): void {
       dungeonBestWave = bestWave;
     },
+    setLabViewModel(viewModel): void {
+      labViewModels.push(viewModel);
+    },
     isVisible(): boolean {
       return visible;
     },
@@ -287,9 +294,11 @@ function createMenuHarness() {
       onBackToMainMenu = init.onBackToMainMenu;
       onTeaser = init.onTeaser;
       onStartDungeon = init.onStartDungeon;
+      onPurchasePet = init.onPurchasePet;
       onButtonHover = init.onButtonHover;
       onModeSwitch = init.onModeSwitch;
       dungeonBestWave = init.dungeonBestWave;
+      labViewModels.push(init.lab);
       root = new FakeDomElement();
       root.dataset['role'] = 'menu-overlay';
       root.style.zIndex = '100';
@@ -333,6 +342,9 @@ function createMenuHarness() {
       }
       onStartDungeon?.();
     },
+    purchasePet(quality: 'green' | 'purple') {
+      return onPurchasePet?.(quality) ?? null;
+    },
     openScreen(screenId: MenuSubscreenId): void {
       if (!visible) {
         return;
@@ -350,6 +362,12 @@ function createMenuHarness() {
     },
     dungeonBestWave(): number {
       return dungeonBestWave;
+    },
+    labViewModels(): ReadonlyArray<MenuLabViewModel> {
+      return labViewModels;
+    },
+    latestLabViewModel(): MenuLabViewModel | null {
+      return labViewModels.at(-1) ?? null;
     },
     hoverButton(): void {
       if (!visible) {
@@ -1914,6 +1932,74 @@ describe('UiShell', () => {
       'buttonClick'
     ]);
     expect(shell.phase()).toEqual({ kind: 'running' });
+  });
+
+  it('wires Lab pet purchases through client progression and refreshes menu state', async () => {
+    const menu = createMenuHarness();
+    const store = createClientProgressionStore({
+      storage: null,
+      randomInt: () => 0
+    });
+    store.awardXp(125);
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession('lab-session'),
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: () => store,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(menu.latestLabViewModel()?.totalXp).toBe(125);
+    expect(menu.latestLabViewModel()?.stands.green).toMatchObject({
+      price: 25,
+      affordable: true,
+      complete: false
+    });
+    expect(menu.latestLabViewModel()?.stands.purple.price).toBe(75);
+
+    const purchasedPetIds: string[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      const result = menu.purchasePet('green');
+      if (result === null || !result.ok) {
+        throw new Error('expected green pet purchase to succeed');
+      }
+      purchasedPetIds.push(result.petId);
+    }
+
+    expect(purchasedPetIds).toEqual(['pet-01', 'pet-02', 'pet-03', 'pet-04', 'pet-05']);
+    expect(store.get().ownedPetIds).toEqual(purchasedPetIds);
+    expect(store.get().totalXp).toBe(0);
+    expect(menu.latestLabViewModel()?.stands.green).toMatchObject({
+      affordable: false,
+      complete: true,
+      ownedCount: 5,
+      totalCount: 5
+    });
+
+    const completeResult = menu.purchasePet('green');
+
+    expect(completeResult).toMatchObject({
+      ok: false,
+      reason: 'complete',
+      totalXp: 0
+    });
+    expect(store.get().ownedPetIds).toEqual(purchasedPetIds);
   });
 
   it('starts the Dungeon preset from the Dungeon subscreen action', async () => {
