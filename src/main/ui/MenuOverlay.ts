@@ -19,6 +19,10 @@ import type {
   MenuLabPurchaseResult,
   MenuLabViewModel
 } from './MenuLabViewModel';
+import type {
+  MenuPetsSelectionResult,
+  MenuPetsViewModel
+} from './MenuPetsViewModel';
 import {
   CAMPAIGN_MODE_BY_CONTROL,
   DEFAULT_SELECTED_CAMPAIGN_MODE,
@@ -36,6 +40,7 @@ export type MenuOverlayInit = Readonly<{
   parent: HTMLElement;
   modes: ReadonlyArray<PlayableModeEntry>;
   lab: MenuLabViewModel;
+  pets: MenuPetsViewModel;
   onStart(presetId: ModePresetId): void;
   onStartTraining(): void;
   onOpenSettings(): void;
@@ -45,6 +50,8 @@ export type MenuOverlayInit = Readonly<{
   onTeaser(controlId: TeaserControlId): void;
   onStartDungeon(): void;
   onPurchasePet(quality: PetQuality): MenuLabPurchaseResult;
+  onSelectPet(petId: string): MenuPetsSelectionResult;
+  onClearSelectedPet(): void;
   onButtonHover(): void;
   onModeSwitch(): void;
   dungeonBestWave: number;
@@ -57,6 +64,7 @@ export type MenuOverlay = Readonly<{
   screen(): MenuScreenId;
   setDungeonBestWave(bestWave: number): void;
   setLabViewModel(viewModel: MenuLabViewModel): void;
+  setPetsViewModel(viewModel: MenuPetsViewModel): void;
   isVisible(): boolean;
   dispose(): void;
 }>;
@@ -65,6 +73,12 @@ type MenuLabElements = Readonly<{
   root: HTMLDivElement;
   xpTotal: HTMLDivElement;
   stands: Readonly<Record<PetQuality, HTMLButtonElement>>;
+}>;
+
+type MenuPetsElements = Readonly<{
+  root: HTMLDivElement;
+  selectedArea: HTMLButtonElement;
+  zones: Readonly<Record<PetQuality, HTMLDivElement>>;
 }>;
 
 export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
@@ -96,6 +110,8 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   let dungeonBestWaveElement: HTMLDivElement | null = null;
   let labViewModel = init.lab;
   let labElements: MenuLabElements | null = null;
+  let petsViewModel = init.pets;
+  let petsElements: MenuPetsElements | null = null;
   let feedbackTimeout: number | null = null;
 
   const teaserFeedback = document.createElement('div');
@@ -153,6 +169,10 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     setLabViewModel(viewModel): void {
       labViewModel = viewModel;
       renderLab();
+    },
+    setPetsViewModel(viewModel): void {
+      petsViewModel = viewModel;
+      renderPets();
     },
     isVisible(): boolean {
       return visible;
@@ -273,6 +293,23 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     labDismissTimeouts.set(quality, timeoutId);
   }
 
+  function handleOwnedPetClick(petId: string): void {
+    const result = init.onSelectPet(petId);
+    if (!result.ok) {
+      renderPets();
+      return;
+    }
+    renderPets();
+  }
+
+  function handleSelectedPetClick(): void {
+    if (petsViewModel.selectedPet === null) {
+      return;
+    }
+    init.onClearSelectedPet();
+    renderPets();
+  }
+
   function applyModeSelection(): void {
     for (const [presetId, button] of modeButtons.entries()) {
       const selected = presetId === selectedMode;
@@ -343,6 +380,45 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     price.textContent = stand.complete ? 'Complete' : `${stand.price} XP`;
     price.style.cssText = labStandPriceStyle(stand);
     button.replaceChildren(price);
+  }
+
+  function renderPets(): void {
+    if (petsElements === null) {
+      return;
+    }
+
+    renderSelectedPet(petsElements.selectedArea);
+    for (const quality of PET_QUALITIES) {
+      const zone = petsElements.zones[quality];
+      zone.replaceChildren(
+        ...petsViewModel.inventory[quality].map((pet) =>
+          createOwnedPetButton(pet, handleOwnedPetClick)
+        )
+      );
+      zone.dataset['empty'] = petsViewModel.inventory[quality].length === 0 ? 'true' : 'false';
+    }
+  }
+
+  function renderSelectedPet(button: HTMLButtonElement): void {
+    const pet = petsViewModel.selectedPet;
+    button.dataset['empty'] = pet === null ? 'true' : 'false';
+    if (pet === null) {
+      delete button.dataset['petId'];
+      delete button.dataset['quality'];
+      button.setAttribute('aria-label', 'No companion selected');
+      const emptyLabel = document.createElement('span');
+      emptyLabel.dataset['role'] = 'menu-pets-selected-empty';
+      emptyLabel.textContent = 'No Companion';
+      emptyLabel.style.cssText = petsSelectedEmptyStyle();
+      button.replaceChildren(emptyLabel);
+      return;
+    }
+
+    const image = createPetImage(pet, 'menu-pets-selected-image');
+    button.dataset['petId'] = pet.petId;
+    button.dataset['quality'] = pet.quality;
+    button.setAttribute('aria-label', `${pet.displayName} selected`);
+    button.replaceChildren(image);
   }
 
   function activeStage(): HTMLDivElement {
@@ -420,6 +496,11 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
       stage.appendChild(labElements.root);
       renderLab();
     }
+    if (screenId === 'pets') {
+      petsElements = createPetsElements(handleSelectedPetClick);
+      stage.appendChild(petsElements.root);
+      renderPets();
+    }
 
     subscreenButtons.set(screenId, buttons);
     subscreenStages.set(screenId, stage);
@@ -484,6 +565,78 @@ function createLabStandButton(
   button.style.cssText = labStandButtonStyle(quality);
   button.addEventListener('click', () => onStandClick(quality));
   return button;
+}
+
+function createPetsElements(onSelectedPetClick: () => void): MenuPetsElements {
+  const root = document.createElement('div');
+  root.dataset['role'] = 'menu-pets';
+  root.style.cssText = petsRootStyle();
+
+  const selectedArea = document.createElement('button');
+  selectedArea.type = 'button';
+  selectedArea.dataset['role'] = 'menu-pets-selected-area';
+  selectedArea.className = 'menu-pets-selected-area';
+  selectedArea.style.cssText = petsSelectedAreaStyle();
+  selectedArea.addEventListener('click', onSelectedPetClick);
+  root.appendChild(selectedArea);
+
+  const zones = {
+    green: createPetsInventoryZone('green'),
+    purple: createPetsInventoryZone('purple')
+  } satisfies Record<PetQuality, HTMLDivElement>;
+
+  for (const quality of PET_QUALITIES) {
+    root.appendChild(zones[quality]);
+  }
+
+  return {
+    root,
+    selectedArea,
+    zones
+  };
+}
+
+function createPetsInventoryZone(quality: PetQuality): HTMLDivElement {
+  const zone = document.createElement('div');
+  zone.dataset['role'] = 'menu-pets-inventory-zone';
+  zone.dataset['quality'] = quality;
+  zone.style.cssText = petsInventoryZoneStyle(quality);
+  return zone;
+}
+
+function createOwnedPetButton(
+  pet: Readonly<{
+    petId: string;
+    displayName: string;
+    quality: PetQuality;
+    image: string;
+  }>,
+  onOwnedPetClick: (petId: string) => void
+): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset['role'] = 'menu-pets-owned-pet';
+  button.dataset['petId'] = pet.petId;
+  button.dataset['quality'] = pet.quality;
+  button.className = 'menu-pets-owned-pet';
+  button.setAttribute('aria-label', pet.displayName);
+  button.style.cssText = petsOwnedPetButtonStyle();
+  button.appendChild(createPetImage(pet, 'menu-pets-pet-image'));
+  button.addEventListener('click', () => onOwnedPetClick(pet.petId));
+  return button;
+}
+
+function createPetImage(
+  pet: Readonly<{ displayName: string; image: string }>,
+  role: string
+): HTMLImageElement {
+  const image = document.createElement('img');
+  image.dataset['role'] = role;
+  image.src = pet.image;
+  image.alt = pet.displayName;
+  image.draggable = false;
+  image.style.cssText = petsPetImageStyle();
+  return image;
 }
 
 function formatDungeonBestWave(bestWave: number): string {
@@ -713,6 +866,104 @@ function labPetImageStyle(): string {
     'filter:drop-shadow(5px 7px 0 rgba(0,0,0,0.72))',
     'pointer-events:none',
     'user-select:none'
+  ].join(';');
+}
+
+function petsRootStyle(): string {
+  return [
+    'position:absolute',
+    'inset:0',
+    'z-index:22',
+    'pointer-events:none'
+  ].join(';');
+}
+
+function petsSelectedAreaStyle(): string {
+  return [
+    'appearance:none',
+    'position:absolute',
+    'left:36.2%',
+    'top:17.4%',
+    'width:27.6%',
+    'height:31.4%',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'box-sizing:border-box',
+    'padding:2.2%',
+    'border:3px solid #050505',
+    'border-radius:8px',
+    'background:rgba(255,255,255,0.9)',
+    'box-shadow:5px 5px 0 #000000',
+    'cursor:pointer',
+    'pointer-events:auto',
+    'touch-action:manipulation'
+  ].join(';');
+}
+
+function petsInventoryZoneStyle(quality: PetQuality): string {
+  const leftPercent = quality === 'green' ? 8.8 : 66.4;
+  return [
+    'position:absolute',
+    `left:${leftPercent}%`,
+    'top:52.6%',
+    'width:24.8%',
+    'height:35.2%',
+    'display:grid',
+    'grid-template-columns:repeat(2, minmax(0, 1fr))',
+    'align-content:start',
+    'gap:7%',
+    'box-sizing:border-box',
+    'padding:3.5%',
+    'border:3px solid #050505',
+    'border-radius:8px',
+    `background:${quality === 'green' ? 'rgba(215,247,162,0.78)' : 'rgba(234,215,255,0.78)'}`,
+    'box-shadow:5px 5px 0 #000000',
+    'pointer-events:auto'
+  ].join(';');
+}
+
+function petsOwnedPetButtonStyle(): string {
+  return [
+    'appearance:none',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'box-sizing:border-box',
+    'min-width:0',
+    'aspect-ratio:1',
+    'padding:8%',
+    'border:3px solid #050505',
+    'border-radius:8px',
+    'background:#fffdf4',
+    'box-shadow:3px 3px 0 #000000',
+    'cursor:pointer',
+    'touch-action:manipulation'
+  ].join(';');
+}
+
+function petsPetImageStyle(): string {
+  return [
+    'display:block',
+    'width:100%',
+    'height:100%',
+    'object-fit:contain',
+    'image-rendering:auto',
+    'filter:drop-shadow(3px 4px 0 rgba(0,0,0,0.64))',
+    'pointer-events:none',
+    'user-select:none'
+  ].join(';');
+}
+
+function petsSelectedEmptyStyle(): string {
+  return [
+    ...comicTextStyle({
+      fontSize: '18px',
+      color: '#ffffff',
+      lineHeight: '1.05',
+      textAlign: 'center'
+    }),
+    'overflow-wrap:anywhere'
   ].join(';');
 }
 
@@ -970,6 +1221,24 @@ function menuOverlayCss(): string {
   transform: translateY(-2px) scale(1.04);
 }
 
+.menu-pets-owned-pet,
+.menu-pets-selected-area {
+  outline: none;
+}
+
+.menu-pets-owned-pet,
+.menu-pets-selected-area {
+  transition: filter 140ms ease, transform 140ms ease;
+}
+
+.menu-pets-owned-pet:hover,
+.menu-pets-owned-pet:focus-visible,
+.menu-pets-selected-area[data-empty="false"]:hover,
+.menu-pets-selected-area[data-empty="false"]:focus-visible {
+  filter: brightness(1.08) saturate(1.04);
+  transform: translate(-1px, -1px);
+}
+
 .menu-image-button[data-control-id="play"]:hover,
 .menu-image-button[data-control-id="play"]:focus-visible {
   filter: drop-shadow(6px 6px 0 #000000);
@@ -1088,6 +1357,11 @@ function menuOverlayCss(): string {
   .menu-lab-revealed-pet,
   .menu-lab-pet-dismiss {
     animation: none !important;
+  }
+
+  .menu-pets-owned-pet,
+  .menu-pets-selected-area {
+    transition: none;
   }
 
   .menu-stage-logo:hover {

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { createMenuOverlay } from './MenuOverlay';
 import type { MenuLabViewModel } from './MenuLabViewModel';
+import type { MenuPetsViewModel } from './MenuPetsViewModel';
 
 class FakeStyle {
   cssText = '';
@@ -103,6 +104,7 @@ describe('MenuOverlay', () => {
       parent,
       modes: [],
       lab: makeLabViewModel(),
+      pets: makePetsViewModel(),
       onStart() {},
       onStartTraining() {},
       onOpenSettings() {},
@@ -114,6 +116,10 @@ describe('MenuOverlay', () => {
       onPurchasePet() {
         return { ok: false, reason: 'insufficientXp', quality: 'green', price: 25, totalXp: 0 };
       },
+      onSelectPet(petId) {
+        return { ok: false, reason: 'notOwned', selectedPetId: petId };
+      },
+      onClearSelectedPet() {},
       onButtonHover() {},
       onModeSwitch() {},
       dungeonBestWave: 0
@@ -155,6 +161,7 @@ describe('MenuOverlay', () => {
       parent,
       modes: [],
       lab: makeLabViewModel(),
+      pets: makePetsViewModel(),
       onStart() {},
       onStartTraining() {},
       onOpenSettings() {},
@@ -166,6 +173,10 @@ describe('MenuOverlay', () => {
       onPurchasePet() {
         return { ok: false, reason: 'insufficientXp', quality: 'green', price: 25, totalXp: 0 };
       },
+      onSelectPet(petId) {
+        return { ok: false, reason: 'notOwned', selectedPetId: petId };
+      },
+      onClearSelectedPet() {},
       onButtonHover() {},
       onModeSwitch() {},
       dungeonBestWave: 12
@@ -226,6 +237,7 @@ describe('MenuOverlay', () => {
       parent,
       modes: [],
       lab: makeLabViewModel({ totalXp: 30 }),
+      pets: makePetsViewModel(),
       onStart() {},
       onStartTraining() {},
       onOpenSettings() {},
@@ -235,6 +247,10 @@ describe('MenuOverlay', () => {
       onTeaser() {},
       onStartDungeon() {},
       onPurchasePet,
+      onSelectPet(petId) {
+        return { ok: false, reason: 'notOwned', selectedPetId: petId };
+      },
+      onClearSelectedPet() {},
       onButtonHover() {},
       onModeSwitch() {},
       dungeonBestWave: 0
@@ -288,6 +304,93 @@ describe('MenuOverlay', () => {
     click(greenStand);
     expect(onPurchasePet).toHaveBeenCalledTimes(callsBeforeCompleteClick);
   });
+
+  it('renders Pets inventory zones and routes select and clear callbacks', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: new FakeDocument()
+    });
+
+    const onSelectPet = vi.fn((petId: string) => ({ ok: true, selectedPetId: petId }) as const);
+    const onClearSelectedPet = vi.fn();
+    const parent = document.createElement('div');
+    const overlay = createMenuOverlay({
+      parent,
+      modes: [],
+      lab: makeLabViewModel(),
+      pets: makePetsViewModel({
+        greenPetIds: ['green-a'],
+        purplePetIds: ['purple-a'],
+        selectedPetId: null
+      }),
+      onStart() {},
+      onStartTraining() {},
+      onOpenSettings() {},
+      onToggleFullscreen() {},
+      onOpenScreen() {},
+      onBackToMainMenu() {},
+      onTeaser() {},
+      onStartDungeon() {},
+      onPurchasePet() {
+        return { ok: false, reason: 'insufficientXp', quality: 'green', price: 25, totalXp: 0 };
+      },
+      onSelectPet,
+      onClearSelectedPet,
+      onButtonHover() {},
+      onModeSwitch() {},
+      dungeonBestWave: 0
+    });
+
+    overlay.showScreen('pets');
+
+    const root = findByRole(parent, 'menu-overlay');
+    const selectedArea = findByRole(root, 'menu-pets-selected-area');
+    const greenZone = findPetsZone(root, 'green');
+    const purpleZone = findPetsZone(root, 'purple');
+
+    expect(selectedArea.dataset['empty']).toBe('true');
+    expect(findByRole(selectedArea, 'menu-pets-selected-empty').textContent).toBe(
+      'No Companion'
+    );
+    expect(findAllByRole(greenZone, 'menu-pets-owned-pet').map((pet) => pet.dataset['petId'])).toEqual([
+      'green-a'
+    ]);
+    expect(findAllByRole(purpleZone, 'menu-pets-owned-pet').map((pet) => pet.dataset['petId'])).toEqual([
+      'purple-a'
+    ]);
+
+    click(findAllByRole(greenZone, 'menu-pets-owned-pet')[0]!);
+
+    expect(onSelectPet).toHaveBeenCalledWith('green-a');
+
+    overlay.setPetsViewModel(
+      makePetsViewModel({
+        greenPetIds: [],
+        purplePetIds: ['purple-a'],
+        selectedPetId: 'green-a'
+      })
+    );
+
+    expect(selectedArea.dataset['empty']).toBe('false');
+    expect(selectedArea.dataset['petId']).toBe('green-a');
+    expect(findByRole(selectedArea, 'menu-pets-selected-image').dataset['role']).toBe(
+      'menu-pets-selected-image'
+    );
+    expect(findAllByRole(greenZone, 'menu-pets-owned-pet')).toHaveLength(0);
+
+    click(selectedArea);
+
+    expect(onClearSelectedPet).toHaveBeenCalledTimes(1);
+    overlay.setPetsViewModel(
+      makePetsViewModel({
+        greenPetIds: ['green-a'],
+        purplePetIds: ['purple-a'],
+        selectedPetId: null
+      })
+    );
+    expect(selectedArea.dataset['empty']).toBe('true');
+    expect(selectedArea.dataset['petId']).toBeUndefined();
+  });
 });
 
 function findByRole(root: HTMLElement, role: string): HTMLElement {
@@ -330,6 +433,16 @@ function findStand(root: HTMLElement, quality: 'green' | 'purple'): HTMLElement 
     throw new Error(`Lab stand ${quality} not found`);
   }
   return stand;
+}
+
+function findPetsZone(root: HTMLElement, quality: 'green' | 'purple'): HTMLElement {
+  const zone = findAllByRole(root, 'menu-pets-inventory-zone').find(
+    (element) => element.dataset['quality'] === quality
+  );
+  if (zone === undefined) {
+    throw new Error(`Pets zone ${quality} not found`);
+  }
+  return zone;
 }
 
 function click(element: HTMLElement): void {
@@ -388,6 +501,44 @@ function makeLabViewModel(
         quality: 'purple',
         image: '/purple-a.png'
       }
+    }
+  };
+}
+
+function makePetsViewModel(
+  options: Readonly<{
+    greenPetIds?: ReadonlyArray<'green-a' | 'green-b'>;
+    purplePetIds?: ReadonlyArray<'purple-a'>;
+    selectedPetId?: 'green-a' | 'green-b' | 'purple-a' | null;
+  }> = {}
+): MenuPetsViewModel {
+  const allPets = {
+    'green-a': {
+      petId: 'green-a',
+      displayName: 'Green A',
+      quality: 'green',
+      image: '/green-a.png'
+    },
+    'green-b': {
+      petId: 'green-b',
+      displayName: 'Green B',
+      quality: 'green',
+      image: '/green-b.png'
+    },
+    'purple-a': {
+      petId: 'purple-a',
+      displayName: 'Purple A',
+      quality: 'purple',
+      image: '/purple-a.png'
+    }
+  } satisfies Record<string, MenuPetsViewModel['inventory']['green'][number]>;
+  const selectedPetId = options.selectedPetId ?? null;
+
+  return {
+    selectedPet: selectedPetId === null ? null : allPets[selectedPetId],
+    inventory: {
+      green: (options.greenPetIds ?? []).map((petId) => allPets[petId]),
+      purple: (options.purplePetIds ?? []).map((petId) => allPets[petId])
     }
   };
 }

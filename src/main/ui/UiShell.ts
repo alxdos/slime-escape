@@ -61,6 +61,7 @@ import {
   type MenuOverlayInit
 } from './MenuOverlay';
 import { buildMenuLabViewModel } from './MenuLabViewModel';
+import { buildMenuPetsViewModel } from './MenuPetsViewModel';
 import type { MenuSubscreenId } from './MenuOverlayLayout';
 import {
   createPhaseTransitionCurtain,
@@ -301,6 +302,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     parent: init.parent,
     modes: getPlayableModeCatalog(),
     lab: buildMenuLabViewModel(clientProgressionStore.get()),
+    pets: buildMenuPetsViewModel(clientProgressionStore.get()),
     onStart(presetId) {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
@@ -362,6 +364,15 @@ export function createUiShell(init: UiShellInit): UiShell {
       syncMenuLabViewModel();
       return result;
     },
+    onSelectPet(petId) {
+      const result = clientProgressionStore.selectPet(petId);
+      syncMenuPetsViewModel();
+      return result;
+    },
+    onClearSelectedPet() {
+      clientProgressionStore.clearSelectedPet();
+      syncMenuPetsViewModel();
+    },
     onButtonHover() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
@@ -378,6 +389,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   });
   unsubscribeClientProgression = clientProgressionStore.subscribe(() => {
     syncMenuLabViewModel();
+    syncMenuPetsViewModel();
   });
 
   const pause = pauseFactory({
@@ -518,6 +530,10 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function syncMenuLabViewModel(): void {
     menu.setLabViewModel(buildMenuLabViewModel(clientProgressionStore.get()));
+  }
+
+  function syncMenuPetsViewModel(): void {
+    menu.setPetsViewModel(buildMenuPetsViewModel(clientProgressionStore.get()));
   }
 
   async function toggleFullscreen(): Promise<void> {

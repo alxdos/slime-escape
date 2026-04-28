@@ -39,6 +39,7 @@ import type { Hud, HudInit } from './Hud';
 import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
 import type { MenuLabViewModel } from './MenuLabViewModel';
+import type { MenuPetsViewModel } from './MenuPetsViewModel';
 import type { MenuScreenId, MenuSubscreenId } from './MenuOverlayLayout';
 import type { TeaserControlId } from './MenuOverlayState';
 import type {
@@ -244,10 +245,13 @@ function createMenuHarness() {
   let onTeaser: ((controlId: TeaserControlId) => void) | null = null;
   let onStartDungeon: (() => void) | null = null;
   let onPurchasePet: MenuOverlayInit['onPurchasePet'] | null = null;
+  let onSelectPet: MenuOverlayInit['onSelectPet'] | null = null;
+  let onClearSelectedPet: MenuOverlayInit['onClearSelectedPet'] | null = null;
   let onButtonHover: (() => void) | null = null;
   let onModeSwitch: (() => void) | null = null;
   let modes: ReadonlyArray<{ presetId: ModePresetId }> = [];
   const labViewModels: MenuLabViewModel[] = [];
+  const petsViewModels: MenuPetsViewModel[] = [];
   let activeScreen: MenuScreenId = 'main';
   let dungeonBestWave = 0;
   let root: FakeDomElement | null = null;
@@ -277,6 +281,9 @@ function createMenuHarness() {
     setLabViewModel(viewModel): void {
       labViewModels.push(viewModel);
     },
+    setPetsViewModel(viewModel): void {
+      petsViewModels.push(viewModel);
+    },
     isVisible(): boolean {
       return visible;
     },
@@ -295,10 +302,13 @@ function createMenuHarness() {
       onTeaser = init.onTeaser;
       onStartDungeon = init.onStartDungeon;
       onPurchasePet = init.onPurchasePet;
+      onSelectPet = init.onSelectPet;
+      onClearSelectedPet = init.onClearSelectedPet;
       onButtonHover = init.onButtonHover;
       onModeSwitch = init.onModeSwitch;
       dungeonBestWave = init.dungeonBestWave;
       labViewModels.push(init.lab);
+      petsViewModels.push(init.pets);
       root = new FakeDomElement();
       root.dataset['role'] = 'menu-overlay';
       root.style.zIndex = '100';
@@ -345,6 +355,12 @@ function createMenuHarness() {
     purchasePet(quality: 'green' | 'purple') {
       return onPurchasePet?.(quality) ?? null;
     },
+    selectPet(petId: string) {
+      return onSelectPet?.(petId) ?? null;
+    },
+    clearSelectedPet(): void {
+      onClearSelectedPet?.();
+    },
     openScreen(screenId: MenuSubscreenId): void {
       if (!visible) {
         return;
@@ -368,6 +384,12 @@ function createMenuHarness() {
     },
     latestLabViewModel(): MenuLabViewModel | null {
       return labViewModels.at(-1) ?? null;
+    },
+    petsViewModels(): ReadonlyArray<MenuPetsViewModel> {
+      return petsViewModels;
+    },
+    latestPetsViewModel(): MenuPetsViewModel | null {
+      return petsViewModels.at(-1) ?? null;
     },
     hoverButton(): void {
       if (!visible) {
@@ -2000,6 +2022,70 @@ describe('UiShell', () => {
       totalXp: 0
     });
     expect(store.get().ownedPetIds).toEqual(purchasedPetIds);
+  });
+
+  it('wires Pets selection and clearing through client progression', async () => {
+    const menu = createMenuHarness();
+    const store = createClientProgressionStore({
+      storage: null,
+      randomInt: () => 0
+    });
+    store.awardXp(100);
+    store.purchasePet('green');
+    store.purchasePet('purple');
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession('pets-session'),
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: () => store,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(menu.latestPetsViewModel()?.selectedPet).toBeNull();
+    expect(menu.latestPetsViewModel()?.inventory.green.map((pet) => pet.petId)).toEqual([
+      'pet-01'
+    ]);
+    expect(menu.latestPetsViewModel()?.inventory.purple.map((pet) => pet.petId)).toEqual([
+      'pet-11'
+    ]);
+
+    const selectResult = menu.selectPet('pet-01');
+
+    expect(selectResult).toEqual({ ok: true, selectedPetId: 'pet-01' });
+    expect(store.get().selectedPetId).toBe('pet-01');
+    expect(menu.latestPetsViewModel()?.selectedPet?.petId).toBe('pet-01');
+    expect(menu.latestPetsViewModel()?.inventory.green).toEqual([]);
+
+    menu.clearSelectedPet();
+
+    expect(store.get().selectedPetId).toBeNull();
+    expect(menu.latestPetsViewModel()?.selectedPet).toBeNull();
+    expect(menu.latestPetsViewModel()?.inventory.green.map((pet) => pet.petId)).toEqual([
+      'pet-01'
+    ]);
+
+    expect(menu.selectPet('pet-05')).toEqual({
+      ok: false,
+      reason: 'notOwned',
+      selectedPetId: 'pet-05'
+    });
+    expect(store.get().selectedPetId).toBeNull();
   });
 
   it('starts the Dungeon preset from the Dungeon subscreen action', async () => {
