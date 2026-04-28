@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { BOSSES_AREA } from './bosses';
 import { DROPS_AREA } from './drops';
 import { ENEMIES_AREA } from './enemies';
+import { PETS_AREA } from './pets';
 import { PLAYERS_AREA } from './players';
 import { SESSIONS_AREA } from './sessions';
 import { WEAPONS_AREA } from './weapons';
@@ -24,6 +25,7 @@ const AREAS: ReadonlyArray<ContentArea> = [
   DROPS_AREA,
   BOSSES_AREA,
   PLAYERS_AREA,
+  PETS_AREA,
   SESSIONS_AREA
 ];
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
