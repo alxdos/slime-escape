@@ -68,6 +68,32 @@ describe('buildResultViewModel', () => {
       }
     ]);
     expect(viewModel.boss?.text).toBe('Boss defeated');
+    expect(viewModel.xpReward).toBeNull();
+  });
+
+  it('includes normalized XP reward values when supplied', () => {
+    const viewModel = buildResultViewModel(
+      makeSession(),
+      {
+        ...makeSummary(),
+        kills: {
+          total: 0,
+          byArchetype: []
+        },
+        boss: null
+      },
+      {
+        xpReward: {
+          xpEarned: 7.8,
+          totalXp: 42.2
+        }
+      }
+    );
+
+    expect(viewModel.xpReward).toEqual({
+      xpEarned: 7,
+      totalXp: 42
+    });
   });
 
   it('describes defeat causes from content registries', () => {

@@ -7,7 +7,8 @@ import type {
   ResultEscapePathViewModel,
   ResultKillRowViewModel,
   ResultStatViewModel,
-  ResultViewModel
+  ResultViewModel,
+  ResultXpRewardViewModel
 } from './ResultViewModel';
 import { createSocialLinkRail } from './SocialLinkRail';
 
@@ -32,6 +33,7 @@ type ResultOverlayParts = Readonly<{
   title: HTMLElement;
   summary: HTMLElement;
   dungeonPanel: HTMLElement;
+  xpPanel: HTMLElement;
   escapePath: HTMLElement;
   statGrid: HTMLElement;
   bossPanel: HTMLElement;
@@ -156,6 +158,12 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
   dungeonPanel.style.cssText = dungeonPanelStyle();
   card.appendChild(dungeonPanel);
 
+  const xpPanel = document.createElement('section');
+  xpPanel.className = 'result-xp-panel';
+  xpPanel.dataset['role'] = 'result-xp';
+  xpPanel.style.cssText = xpPanelStyle();
+  card.appendChild(xpPanel);
+
   const escapePath = document.createElement('section');
   escapePath.className = 'result-escape-path';
   escapePath.dataset['role'] = 'result-escape-path';
@@ -230,6 +238,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
     title,
     summary,
     dungeonPanel,
+    xpPanel,
     escapePath,
     statGrid,
     bossPanel,
@@ -259,6 +268,7 @@ export function createResultOverlay(init: ResultOverlayInit): ResultOverlay {
       restartButton.style.display = 'none';
       hideEscapePath(escapePath);
       hideDungeon(dungeonPanel);
+      hideXpReward(xpPanel);
       statGrid.replaceChildren();
       killList.replaceChildren();
       hideBoss(bossPanel, bossIcon, bossText);
@@ -317,6 +327,7 @@ function applyActionButtons(
 
 function renderDynamicSections(viewModel: ResultViewModel, parts: ResultOverlayParts): void {
   renderDungeon(parts.dungeonPanel, viewModel.dungeon, viewModel.outcome);
+  renderXpReward(parts.xpPanel, viewModel.xpReward, viewModel.outcome);
   renderEscapePath(parts.escapePath, viewModel.escapePath, viewModel.outcome);
   parts.statGrid.replaceChildren(
     ...viewModel.primaryStats.map((stat, index) =>
@@ -368,6 +379,42 @@ function renderDungeon(
 }
 
 function hideDungeon(container: HTMLElement): void {
+  container.style.display = 'none';
+  container.replaceChildren();
+}
+
+function renderXpReward(
+  container: HTMLElement,
+  reward: ResultXpRewardViewModel | null,
+  outcome: ResultOutcome
+): void {
+  if (reward === null) {
+    hideXpReward(container);
+    return;
+  }
+
+  container.style.cssText = xpPanelStyle(outcome);
+  container.style.display = 'grid';
+
+  const label = document.createElement('span');
+  label.dataset['role'] = 'result-xp-label';
+  label.textContent = 'XP earned';
+  label.style.cssText = xpLabelStyle();
+
+  const earned = document.createElement('strong');
+  earned.dataset['role'] = 'result-xp-earned';
+  earned.textContent = `+${reward.xpEarned}`;
+  earned.style.cssText = xpEarnedStyle();
+
+  const total = document.createElement('span');
+  total.dataset['role'] = 'result-xp-total';
+  total.textContent = `Total XP: ${reward.totalXp}`;
+  total.style.cssText = xpTotalStyle();
+
+  container.replaceChildren(label, earned, total);
+}
+
+function hideXpReward(container: HTMLElement): void {
   container.style.display = 'none';
   container.replaceChildren();
 }
@@ -848,6 +895,49 @@ function dungeonBadgeStyle(): string {
       lineHeight: '1'
     }),
     'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function xpPanelStyle(outcome: ResultOutcome = 'win'): string {
+  return [
+    'display:none',
+    'box-sizing:border-box',
+    'width:min(520px, 100%)',
+    'grid-template-columns:auto auto auto',
+    'align-items:center',
+    'gap:10px',
+    'padding:10px 14px',
+    `background:${outcome === 'win' ? '#e9fbff' : '#fff4d0'}`,
+    'border:3px solid #050505',
+    'border-radius:8px',
+    'box-shadow:4px 4px 0 #000000'
+  ].join(';');
+}
+
+function xpLabelStyle(): string {
+  return [
+    'font:900 13px "M PLUS Rounded 1c", system-ui, sans-serif',
+    'text-transform:uppercase',
+    'color:#050505'
+  ].join(';');
+}
+
+function xpEarnedStyle(): string {
+  return [
+    ...comicTextStyle({
+      fontSize: '24px',
+      color: '#7cf58f',
+      lineHeight: '1'
+    }),
+    'white-space:nowrap'
+  ].join(';');
+}
+
+function xpTotalStyle(): string {
+  return [
+    'font:900 14px "M PLUS Rounded 1c", system-ui, sans-serif',
+    'color:#050505',
+    'white-space:nowrap'
   ].join(';');
 }
 
@@ -1346,6 +1436,11 @@ function resultOverlayCss(): string {
     grid-column: 1 !important;
     grid-row: auto !important;
     justify-self: start !important;
+  }
+
+  .result-xp-panel {
+    grid-template-columns: 1fr !important;
+    justify-items: start !important;
   }
 }
 

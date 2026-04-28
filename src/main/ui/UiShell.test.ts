@@ -7,6 +7,10 @@ import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
+import type {
+  ClientProgression,
+  ClientProgressionStore
+} from '../progression/ClientProgressionStore';
 import { DROP_VISUALS } from '../render/dropVisuals';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 import type { Renderer, RendererInit } from '../render/Renderer';
@@ -1192,6 +1196,103 @@ function createDungeonBestWaveStoreHarness(initialBestWave = 0) {
     },
     recordResults(): ReadonlyArray<DungeonBestWaveRecordResult> {
       return recordResults;
+    },
+    calls
+  };
+}
+
+function createClientProgressionStoreHarness(
+  initial: Partial<ClientProgression> = {}
+) {
+  let progression: ClientProgression = {
+    schemaVersion: 1,
+    totalXp: initial.totalXp ?? 0,
+    ownedPetIds: initial.ownedPetIds ?? [],
+    selectedPetId: initial.selectedPetId ?? null
+  };
+  let listeners: Array<(progression: ClientProgression) => void> = [];
+  const awards: number[] = [];
+  const calls = {
+    awardXp: 0,
+    dispose: 0
+  };
+
+  function notify(): void {
+    for (const listener of listeners) {
+      listener(progression);
+    }
+  }
+
+  return {
+    factory(): ClientProgressionStore {
+      return {
+        get(): ClientProgression {
+          return progression;
+        },
+        awardXp(amount: number): ClientProgression {
+          calls.awardXp += 1;
+          const xpAwarded = Math.max(0, Math.floor(amount));
+          awards.push(xpAwarded);
+          if (xpAwarded > 0) {
+            progression = {
+              ...progression,
+              totalXp: progression.totalXp + xpAwarded
+            };
+            notify();
+          }
+          return progression;
+        },
+        purchasePet(quality) {
+          return {
+            ok: false,
+            reason: 'complete',
+            quality,
+            price: 0,
+            totalXp: progression.totalXp
+          };
+        },
+        selectPet(petId) {
+          if (!progression.ownedPetIds.includes(petId)) {
+            return {
+              ok: false,
+              reason: 'notOwned',
+              selectedPetId: petId
+            };
+          }
+          progression = {
+            ...progression,
+            selectedPetId: petId
+          };
+          notify();
+          return {
+            ok: true,
+            selectedPetId: petId
+          };
+        },
+        clearSelectedPet(): void {
+          progression = {
+            ...progression,
+            selectedPetId: null
+          };
+          notify();
+        },
+        subscribe(listener): () => void {
+          listeners.push(listener);
+          return () => {
+            listeners = listeners.filter((entry) => entry !== listener);
+          };
+        },
+        dispose(): void {
+          calls.dispose += 1;
+          listeners = [];
+        }
+      };
+    },
+    get(): ClientProgression {
+      return progression;
+    },
+    awards(): ReadonlyArray<number> {
+      return awards;
     },
     calls
   };
@@ -2927,6 +3028,182 @@ describe('UiShell', () => {
     }
     expect(phase.summary).toBe(event.summary);
     expect(phase.viewModel).toBe(result.viewModel());
+  });
+
+  it.each([
+    ['win', 'win'],
+    ['loss', 'loss']
+  ] as const)('awards result XP for player-started campaign %s', async (kind, outcome) => {
+    const menu = createMenuHarness();
+    const result = createResultHarness();
+    const sim = createSimHarness();
+    const progression = createClientProgressionStoreHarness({ totalXp: 10 });
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession('campaign-session'),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: progression.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    menu.start('campaign-normal');
+    sim.emit({
+      ...makeTerminalEvent(kind, 123),
+      summary: {
+        ...makeResultSummary(outcome, 123),
+        kills: {
+          total: 6,
+          byArchetype: []
+        }
+      }
+    });
+
+    expect(progression.awards()).toEqual([6]);
+    expect(progression.get().totalXp).toBe(16);
+    expect(result.viewModel()?.xpReward).toEqual({
+      xpEarned: 6,
+      totalXp: 16
+    });
+  });
+
+  it('shows a zero XP block for campaign results with no kills', async () => {
+    const menu = createMenuHarness();
+    const result = createResultHarness();
+    const sim = createSimHarness();
+    const progression = createClientProgressionStoreHarness({ totalXp: 12 });
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession('no-kill-campaign-session'),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: progression.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    menu.start('campaign-normal');
+    sim.emit(makeTerminalEvent('loss', 123));
+
+    expect(progression.awards()).toEqual([0]);
+    expect(result.viewModel()?.xpReward).toEqual({
+      xpEarned: 0,
+      totalXp: 12
+    });
+  });
+
+  it('omits result XP for training, Dungeon, and auto-start sessions', async () => {
+    const scenarios: ReadonlyArray<{
+      name: string;
+      autoStartPresetId?: ModePresetId;
+      start(menu: ReturnType<typeof createMenuHarness>): void;
+      summary: SessionResultSummary;
+    }> = [
+      {
+        name: 'training',
+        start(menu): void {
+          menu.startTraining();
+        },
+        summary: {
+          ...makeResultSummary('loss', 123),
+          kills: { total: 5, byArchetype: [] }
+        }
+      },
+      {
+        name: 'Dungeon',
+        start(menu): void {
+          menu.startDungeon();
+        },
+        summary: {
+          ...makeResultSummary('loss', 123),
+          kills: { total: 5, byArchetype: [] },
+          dungeon: { wavesCleared: 3 }
+        }
+      },
+      {
+        name: 'auto-start campaign',
+        autoStartPresetId: 'campaign-normal',
+        start(): void {},
+        summary: {
+          ...makeResultSummary('win', 123),
+          kills: { total: 5, byArchetype: [] }
+        }
+      }
+    ];
+
+    for (const scenario of scenarios) {
+      const menu = createMenuHarness();
+      const result = createResultHarness();
+      const sim = createSimHarness();
+      const progression = createClientProgressionStoreHarness({ totalXp: 10 });
+      const windowTarget = new FakeEventTarget();
+      const documentEvents = new FakeEventTarget();
+      const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+      createUiShellForTest({
+        parent: {} as HTMLElement,
+        canvas: { clientHeight: 900 } as HTMLCanvasElement,
+        autoStartPresetId: scenario.autoStartPresetId,
+        makeSeed: () => 1,
+        buildSessionDefinition: () => makeSession(`${scenario.name}-session`),
+        createSimWorkerHost: sim.factory,
+        createMenuOverlay: menu.factory,
+        createPauseOverlay: createPauseHarness().factory,
+        createResultOverlay: result.factory,
+        createSettingsOverlay: createSettingsOverlayHarness().factory,
+        createRenderer: createRendererHarness().factory,
+        createInputController: createInputHarness().factory,
+        createHud: createHudHarness().factory,
+        createAudio: createAudioHarness().factory,
+        createClientProgressionStore: progression.factory,
+        windowTarget,
+        documentTarget
+      });
+
+      await flushUiShellStartup();
+
+      scenario.start(menu);
+      await flushUiShellStartup();
+      sim.emit({
+        kind: scenario.summary.outcome,
+        simTime: 123,
+        summary: scenario.summary
+      });
+
+      expect(progression.awards(), scenario.name).toEqual([]);
+      expect(result.viewModel()?.xpReward, scenario.name).toBeNull();
+    }
   });
 
   it('fans runtime events out to audio and renderer while running', async () => {
