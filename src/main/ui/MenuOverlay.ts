@@ -839,6 +839,7 @@ function labStandPriceStyle(
     'box-sizing:border-box',
     'min-width:68%',
     'max-width:100%',
+    'margin-top:7%',
     'padding:5px 10px 7px',
     `background:${stand.complete ? '#e9fbff' : stand.quality === 'green' ? '#d7f7a2' : '#ead7ff'}`,
     'border:3px solid #050505',
@@ -882,8 +883,8 @@ function petsSelectedAreaStyle(): string {
   return [
     'appearance:none',
     'position:absolute',
-    'left:36.2%',
-    'top:17.4%',
+    'left:8.8%',
+    'top:5.2%',
     'width:27.6%',
     'height:31.4%',
     'display:flex',
@@ -902,11 +903,11 @@ function petsSelectedAreaStyle(): string {
 }
 
 function petsInventoryZoneStyle(quality: PetQuality): string {
-  const leftPercent = quality === 'green' ? 8.8 : 66.4;
+  const topPercent = quality === 'green' ? 17.8 : 55.6;
   return [
     'position:absolute',
-    `left:${leftPercent}%`,
-    'top:52.6%',
+    'left:66.4%',
+    `top:${topPercent}%`,
     'width:24.8%',
     'height:35.2%',
     'display:grid',
