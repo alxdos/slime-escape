@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-28 (story 028 prep: `SessionResultSummary` gains an optional Dungeon block with fully cleared waves; endless Dungeon uses `progress.percent = null` and does not drive campaign Escape Path. Earlier: 2026-04-27 story 027 prep: loss-only Restart is an orchestration/UI action and does not change the `SessionResultSummary` payload. Earlier: story 026 prep: `portal` encounters are non-objective presentation encounters and do not contribute to result progress; the `/portal` flow normally redirects before any win result.)
+- Updated: 2026-04-28 (story 029 prep: XP result rewards are derived on the main thread from `summary.kills.total`; `SessionResultSummary` shape does not gain XP fields. Earlier: story 028 prep: `SessionResultSummary` gains an optional Dungeon block with fully cleared waves; endless Dungeon uses `progress.percent = null` and does not drive campaign Escape Path. Earlier: 2026-04-27 story 027 prep: loss-only Restart is an orchestration/UI action and does not change the `SessionResultSummary` payload. Earlier: story 026 prep: `portal` encounters are non-objective presentation encounters and do not contribute to result progress; the `/portal` flow normally redirects before any win result.)
 
 ## Context
 
@@ -139,6 +139,7 @@ type ResultDefeatCause =
 - Enemy/boss labels come from `EnemyArchetype.displayName` / `BossArchetype.displayName`. Icons use existing sprite visual registries (`enemyVisuals`, `bossVisuals`) and the preloaded/public image paths from [sprite-assets.md](sprite-assets.md). Missing visual/content mappings are hard errors under the existing sprite/content contracts, not silent fallback rows.
 - Result rows with zero counts are omitted.
 - Dungeon result presentation is a main-thread view-model choice. For `summary.dungeon !== null`, the view model should foreground waves cleared, local best, and new-best state supplied by `UiShell`; it should not use the campaign progress copy as the main message.
+- XP result presentation is also a main-thread view-model choice. Story 029 uses `summary.kills.total` as the destroyed-slime count and lets `UiShell` combine it with `PetEconomy.xpPerDestroyedSlime` plus progression eligibility. The simulation worker does not calculate XP, and `SessionResultSummary` does not store earned XP or total XP.
 
 ### Result effects
 
@@ -172,3 +173,4 @@ type ResultDefeatCause =
 - [../stories/027-social-links.md](../stories/027-social-links.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
 - [../stories/028-dungeon-mode.md](../stories/028-dungeon-mode.md)
+- [../stories/029-xp-and-pet-companions.md](../stories/029-xp-and-pet-companions.md)

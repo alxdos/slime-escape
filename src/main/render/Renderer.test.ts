@@ -6,6 +6,8 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 import { BOSS_GARGOYLE } from '../../shared/content/bosses';
 import { HEAL_ORB } from '../../shared/content/drops';
 import { SLIME_BUG } from '../../shared/content/enemies';
+import { PET_01 } from '../../shared/content/pets';
+import { TRAINING_PLAYER } from '../../shared/content/players';
 import { BOMB_PLACER, GRENADE_LAUNCHER, PISTOL, ROCK_THROWER } from '../../shared/content/weapons';
 import type { SessionDefinition } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
@@ -126,11 +128,12 @@ function createTextureEntries(
 }
 
 function createRenderSession(
-  overrides: Partial<Pick<SessionDefinition, 'backgrounds' | 'encounters'>> = {}
-): Pick<SessionDefinition, 'backgrounds' | 'encounters'> {
+  overrides: Partial<Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player'>> = {}
+): Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player'> {
   return {
     backgrounds: [],
     encounters: [],
+    player: TRAINING_PLAYER,
     ...overrides
   };
 }
@@ -558,6 +561,152 @@ describe('createRenderer', () => {
     renderer.render();
 
     expect(backend.ops).toEqual([{ kind: 'render' }]);
+  });
+
+  it('renders a selected companion at two player radii and keeps it still while close', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const petTexture = new THREE.Texture();
+    const player = {
+      ...TRAINING_PLAYER,
+      radius: 2,
+      maxSpeed: 4
+    };
+    let pair: SnapshotPair = {
+      prev: null,
+      curr: createSnapshot([{ id: 1, kind: 'player', x: 3, y: -1, hp: 5, maxHp: 5 }]),
+      currReceivedAtMs: 0,
+      nowMs: 1000 / (0.85 * 4)
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession({ player }),
+      spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
+      selectedPetId: PET_01.id,
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const companionMesh = findMeshWithMaterialMap(backend.lastScene(), petTexture);
+    expect(companionMesh).not.toBeNull();
+    expect(companionMesh?.position.x).toBeCloseTo(7);
+    expect(companionMesh?.position.y).toBeCloseTo(-1);
+    expect(companionMesh?.scale.x).toBeCloseTo(1.07);
+    expect(companionMesh?.scale.y).toBeCloseTo(0.9426);
+
+    pair = {
+      prev: null,
+      curr: createSnapshot([{ id: 1, kind: 'player', x: 14, y: -1, hp: 5, maxHp: 5 }]),
+      currReceivedAtMs: 0,
+      nowMs: pair.nowMs + 1000
+    };
+    renderer.render();
+
+    expect(companionMesh?.position.x).toBeCloseTo(7);
+    expect(companionMesh?.position.y).toBeCloseTo(-1);
+  });
+
+  it('moves the selected companion toward the player only beyond four player radii', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const petTexture = new THREE.Texture();
+    const player = {
+      ...TRAINING_PLAYER,
+      radius: 2,
+      maxSpeed: 4
+    };
+    let pair: SnapshotPair = {
+      prev: null,
+      curr: createSnapshot([{ id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 }]),
+      currReceivedAtMs: 0,
+      nowMs: 0
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession({ player }),
+      spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
+      selectedPetId: PET_01.id,
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+    const companionMesh = findMeshWithMaterialMap(backend.lastScene(), petTexture);
+    expect(companionMesh?.position.x).toBeCloseTo(4);
+
+    pair = {
+      prev: null,
+      curr: createSnapshot([{ id: 1, kind: 'player', x: 11, y: 0, hp: 5, maxHp: 5 }]),
+      currReceivedAtMs: 0,
+      nowMs: 1000
+    };
+    renderer.render();
+    expect(companionMesh?.position.x).toBeCloseTo(4);
+
+    pair = {
+      prev: null,
+      curr: createSnapshot([{ id: 1, kind: 'player', x: 14, y: 0, hp: 5, maxHp: 5 }]),
+      currReceivedAtMs: 0,
+      nowMs: 2000
+    };
+    renderer.render();
+    expect(companionMesh?.position.x).toBeCloseTo(6);
+  });
+
+  it('does not create a companion mesh when no pet is selected', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const petTexture = new THREE.Texture();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
+      selectedPetId: null,
+      getSnapshotPair: () =>
+        createSnapshotPairWithEntities([
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 }
+        ]),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    expect(findMeshWithMaterialMap(backend.lastScene(), petTexture)).toBeNull();
   });
 
   it('shows a reward marker on carrier enemies', () => {
@@ -1677,6 +1826,60 @@ describe('createRenderer', () => {
         })
       })
     ).toThrow(`player texture missing for archetype "${DEFAULT_PLAYER_VISUAL.archetypeId}"`);
+  });
+
+  it('throws when the selected companion id is missing pet content', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+
+    expect(() =>
+      createRenderer({
+        canvas,
+        renderScalePreset: 'medium',
+        arena: { width: 16, height: 9 },
+        session: createRenderSession(),
+        spriteTextures: createSpriteTextures({ 'pet-missing': new THREE.Texture() }),
+        selectedPetId: 'pet-missing',
+        getSnapshotPair: createEmptySnapshotPair,
+        windowTarget: {
+          innerWidth: 800,
+          innerHeight: 600,
+          devicePixelRatio: 2
+        },
+        createRendererBackend: backend.factory,
+        createDebugHud: () => ({
+          update(): void {},
+          dispose(): void {}
+        })
+      })
+    ).toThrow('pet archetype missing for id "pet-missing"');
+  });
+
+  it('throws when the selected companion texture was not preloaded', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+
+    expect(() =>
+      createRenderer({
+        canvas,
+        renderScalePreset: 'medium',
+        arena: { width: 16, height: 9 },
+        session: createRenderSession(),
+        spriteTextures: createSpriteTextures(),
+        selectedPetId: PET_01.id,
+        getSnapshotPair: createEmptySnapshotPair,
+        windowTarget: {
+          innerWidth: 800,
+          innerHeight: 600,
+          devicePixelRatio: 2
+        },
+        createRendererBackend: backend.factory,
+        createDebugHud: () => ({
+          update(): void {},
+          dispose(): void {}
+        })
+      })
+    ).toThrow(`pet texture missing for archetype "${PET_01.id}"`);
   });
 
   it('throws when an entity snapshot references an unknown visual spec', () => {

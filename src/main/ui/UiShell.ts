@@ -6,14 +6,19 @@ import {
   type ModePreset,
   type ModePresetId
 } from '../../shared/content/sessions';
+import { PET_ECONOMY } from '../../shared/content/pets';
 import type { RuntimeEvent } from '../../shared/events';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type { SessionDefinition } from '../../shared/session';
-import type { SessionResultOutcome } from '../../shared/sessionResult';
+import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import { createAudio, type Audio } from '../audio/Audio';
 import { applyAimAssist } from '../input/AimAssist';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
+import {
+  createClientProgressionStore,
+  type ClientProgressionStore
+} from '../progression/ClientProgressionStore';
 import { createRenderer, type Renderer, type RendererInit } from '../render/Renderer';
 import type { TextureMap } from '../render/spritePreload';
 import {
@@ -55,6 +60,8 @@ import {
   type MenuOverlay,
   type MenuOverlayInit
 } from './MenuOverlay';
+import { buildMenuLabViewModel } from './MenuLabViewModel';
+import { buildMenuPetsViewModel } from './MenuPetsViewModel';
 import type { MenuSubscreenId } from './MenuOverlayLayout';
 import {
   createPhaseTransitionCurtain,
@@ -69,7 +76,7 @@ import {
   type ResultOverlayInit
 } from './ResultOverlay';
 import { buildResultViewModel } from './ResultViewModel';
-import type { ResultDungeonBestState } from './ResultViewModel';
+import type { ResultDungeonBestState, ResultXpRewardState } from './ResultViewModel';
 import {
   createSettingsOverlay,
   type SettingsOverlay,
@@ -132,6 +139,7 @@ type CreateVibeJamPortalControllerFn = (
 type CreateAudioFn = () => Audio;
 type CreateClientSettingsStoreFn = () => ClientSettingsStore;
 type CreateDungeonBestWaveStoreFn = () => DungeonBestWaveStore;
+type CreateClientProgressionStoreFn = () => ClientProgressionStore;
 type RunStartupPreloadFn = (
   onProgress: (loaded: number, total: number) => void
 ) => Promise<TextureMap>;
@@ -162,6 +170,7 @@ export type UiShellInit = Readonly<{
   createAudio?: CreateAudioFn;
   createClientSettingsStore?: CreateClientSettingsStoreFn;
   createDungeonBestWaveStore?: CreateDungeonBestWaveStoreFn;
+  createClientProgressionStore?: CreateClientProgressionStoreFn;
   runStartupPreload?: RunStartupPreloadFn;
   reloadPage?: ReloadPageFn;
   assignLocation?: AssignLocationFn;
@@ -185,6 +194,13 @@ const PAUSED_PHASE: UiShellPhase = { kind: 'paused' };
 const ESCAPE_KEY_CODE = 'Escape';
 const SPACE_KEY_CODE = 'Space';
 const DEV_PAUSE_KEY_CODE = 'KeyP';
+const CAMPAIGN_PRESET_IDS = new Set<ModePresetId>([
+  'campaign-easy',
+  'campaign-normal',
+  'campaign-hard'
+]);
+
+type SessionStartSource = 'campaign' | 'nonCampaign' | 'autoStart';
 
 export function createUiShell(init: UiShellInit): UiShell {
   const builder = init.buildSessionDefinition ?? buildSessionDefinition;
@@ -219,6 +235,8 @@ export function createUiShell(init: UiShellInit): UiShell {
     init.createClientSettingsStore ?? createClientSettingsStore;
   const dungeonBestWaveStoreFactory =
     init.createDungeonBestWaveStore ?? createDungeonBestWaveStore;
+  const clientProgressionStoreFactory =
+    init.createClientProgressionStore ?? createClientProgressionStore;
   const runStartupPreload = init.runStartupPreload ?? defaultRunStartupPreload;
   const reloadPage = init.reloadPage ?? defaultReloadPage;
   const assignLocation = init.assignLocation ?? defaultAssignLocation;
@@ -243,12 +261,15 @@ export function createUiShell(init: UiShellInit): UiShell {
   let disposed = false;
   let transitionActive = false;
   let lastStartedPreset: ModePreset | null = null;
+  let lastStartedSource: SessionStartSource | null = null;
   const hud = hudFactory({ parent: init.parent });
   const escapeProgressPath = escapeProgressPathFactory({ parent: init.parent });
   const dungeonWaveCounter = dungeonWaveCounterFactory({ parent: init.parent });
   const titleOverlay = titleOverlayFactory({ parent: init.parent });
   const clientSettingsStore = clientSettingsStoreFactory();
   const dungeonBestWaveStore = dungeonBestWaveStoreFactory();
+  const clientProgressionStore = clientProgressionStoreFactory();
+  let unsubscribeClientProgression: (() => void) | null = null;
   const audio = audioFactory();
   audio.setMasterGain(clientSettingsStore.get().masterVolume);
   const unsubscribeAudioSettings = clientSettingsStore.subscribe((settings) => {
@@ -280,19 +301,21 @@ export function createUiShell(init: UiShellInit): UiShell {
   const menu = menuFactory({
     parent: init.parent,
     modes: getPlayableModeCatalog(),
+    lab: buildMenuLabViewModel(clientProgressionStore.get()),
+    pets: buildMenuPetsViewModel(clientProgressionStore.get()),
     onStart(presetId) {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
       }
       audio.playUi('buttonClick');
-      startPresetId(presetId);
+      startPresetId(presetId, classifyPlayerStartSource(presetId));
     },
     onStartTraining() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
       }
       audio.playUi('buttonClick');
-      startPresetId(autoStartPresetId ?? 'training');
+      startPresetId(autoStartPresetId ?? 'training', 'nonCampaign');
     },
     onOpenSettings() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
@@ -334,7 +357,21 @@ export function createUiShell(init: UiShellInit): UiShell {
         return;
       }
       audio.playUi('buttonClick');
-      startPresetId(DUNGEON_PRESET.id);
+      startPresetId(DUNGEON_PRESET.id, 'nonCampaign');
+    },
+    onPurchasePet(quality) {
+      const result = clientProgressionStore.purchasePet(quality);
+      syncMenuLabViewModel();
+      return result;
+    },
+    onSelectPet(petId) {
+      const result = clientProgressionStore.selectPet(petId);
+      syncMenuPetsViewModel();
+      return result;
+    },
+    onClearSelectedPet() {
+      clientProgressionStore.clearSelectedPet();
+      syncMenuPetsViewModel();
     },
     onButtonHover() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
@@ -349,6 +386,10 @@ export function createUiShell(init: UiShellInit): UiShell {
       audio.playUi('modeSwitch');
     },
     dungeonBestWave: dungeonBestWaveStore.get()
+  });
+  unsubscribeClientProgression = clientProgressionStore.subscribe(() => {
+    syncMenuLabViewModel();
+    syncMenuPetsViewModel();
   });
 
   const pause = pauseFactory({
@@ -487,6 +528,14 @@ export function createUiShell(init: UiShellInit): UiShell {
     syncSettingsVisibility();
   }
 
+  function syncMenuLabViewModel(): void {
+    menu.setLabViewModel(buildMenuLabViewModel(clientProgressionStore.get()));
+  }
+
+  function syncMenuPetsViewModel(): void {
+    menu.setPetsViewModel(buildMenuPetsViewModel(clientProgressionStore.get()));
+  }
+
   async function toggleFullscreen(): Promise<void> {
     try {
       if (documentTarget.fullscreenElement != null) {
@@ -550,13 +599,16 @@ export function createUiShell(init: UiShellInit): UiShell {
       });
   }
 
-  function startPresetId(presetId: ModePresetId): void {
+  function startPresetId(presetId: ModePresetId, source: SessionStartSource): void {
     if (phase.kind !== 'menu' || isTransitionActive()) return;
     const preset = resolveModePreset(presetId);
-    void startPresetWithTransition(preset);
+    void startPresetWithTransition(preset, source);
   }
 
-  async function startPresetWithTransition(preset: ModePreset): Promise<void> {
+  async function startPresetWithTransition(
+    preset: ModePreset,
+    source: SessionStartSource
+  ): Promise<void> {
     if (phase.kind !== 'menu' || activeSession !== null || isTransitionActive()) {
       return;
     }
@@ -565,7 +617,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     try {
       await phaseTransitionCurtain.run(
         () => {
-          startPreset(preset, { startInput: false });
+          startPreset(preset, { startInput: false, source });
         },
         () => {
           if (phase.kind === 'running') {
@@ -580,7 +632,10 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function startPreset(
     preset: ModePreset,
-    options: Readonly<{ startInput: boolean }> = { startInput: true }
+    options: Readonly<{ startInput: boolean; source: SessionStartSource }> = {
+      startInput: true,
+      source: 'nonCampaign'
+    }
   ): void {
     if (phase.kind !== 'menu') return;
     if (activeSession !== null) return;
@@ -602,6 +657,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         arena: session.arena,
         session,
         spriteTextures,
+        selectedPetId:
+          options.source === 'campaign' ? clientProgressionStore.get().selectedPetId : null,
         getSnapshotPair: sim.snapshotPair,
         getPortalDescriptors: portalController.portals,
         getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
@@ -690,6 +747,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     unsubscribeRendererSettings?.();
     unsubscribeRendererSettings = nextUnsubscribeRendererSettings;
     lastStartedPreset = preset;
+    lastStartedSource = options.source;
 
     setPhase(RUNNING_PHASE);
   }
@@ -745,8 +803,9 @@ export function createUiShell(init: UiShellInit): UiShell {
     }
 
     const preset = lastStartedPreset;
+    const source = lastStartedSource ?? 'nonCampaign';
     setPhase(MENU_PHASE);
-    void startPresetWithTransition(preset);
+    void startPresetWithTransition(preset, source);
   }
 
   function handleRunEnd(event: Extract<RuntimeEvent, { kind: 'win' | 'loss' }>): void {
@@ -761,9 +820,30 @@ export function createUiShell(init: UiShellInit): UiShell {
       menu.setDungeonBestWave(record.bestWave);
       dungeonBest = record;
     }
-    const viewModel = buildResultViewModel(session, event.summary, { dungeonBest });
+    const xpReward = awardResultXp(event.summary);
+    const viewModel = buildResultViewModel(session, event.summary, { dungeonBest, xpReward });
     tearDownClientSession();
     setPhase({ kind: 'result', outcome: kind, summary: event.summary, viewModel });
+  }
+
+  function awardResultXp(summary: SessionResultSummary): ResultXpRewardState | null {
+    if (lastStartedSource !== 'campaign') {
+      return null;
+    }
+
+    const xpEarned = Math.max(
+      0,
+      Math.floor(summary.kills.total * PET_ECONOMY.xpPerDestroyedSlime)
+    );
+    const progression = clientProgressionStore.awardXp(xpEarned);
+    return {
+      xpEarned,
+      totalXp: progression.totalXp
+    };
+  }
+
+  function classifyPlayerStartSource(presetId: ModePresetId): SessionStartSource {
+    return CAMPAIGN_PRESET_IDS.has(presetId) ? 'campaign' : 'nonCampaign';
   }
 
   function isRunningSessionActive(): boolean {
@@ -905,7 +985,10 @@ export function createUiShell(init: UiShellInit): UiShell {
         texturesOwnedByShell = true;
         setPhase(MENU_PHASE);
         if (autoStartPresetId !== null) {
-          startPreset(resolveModePreset(autoStartPresetId));
+          startPreset(resolveModePreset(autoStartPresetId), {
+            startInput: true,
+            source: 'autoStart'
+          });
         }
       });
       if (disposed) {
@@ -972,7 +1055,10 @@ export function createUiShell(init: UiShellInit): UiShell {
       escapeProgressPath.dispose();
       hud.dispose();
       unsubscribeAudioSettings();
+      unsubscribeClientProgression?.();
+      unsubscribeClientProgression = null;
       clientSettingsStore.dispose();
+      clientProgressionStore.dispose();
       audio.dispose();
       sim.dispose();
     }

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { PET_01 } from '../../shared/content/pets';
 import { getPlayableModeCatalog, type ModePresetId } from '../../shared/content/sessions';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
@@ -7,7 +8,13 @@ import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
+import type {
+  ClientProgression,
+  ClientProgressionStore
+} from '../progression/ClientProgressionStore';
+import { createClientProgressionStore } from '../progression/ClientProgressionStore';
 import { DROP_VISUALS } from '../render/dropVisuals';
+import { PET_VISUALS } from '../render/petVisuals';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 import type { Renderer, RendererInit } from '../render/Renderer';
 import type { TextureMap } from '../render/spritePreload';
@@ -33,6 +40,8 @@ import type { DungeonWaveCounter, DungeonWaveCounterInit } from './DungeonWaveCo
 import type { Hud, HudInit } from './Hud';
 import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
+import type { MenuLabViewModel } from './MenuLabViewModel';
+import type { MenuPetsViewModel } from './MenuPetsViewModel';
 import type { MenuScreenId, MenuSubscreenId } from './MenuOverlayLayout';
 import type { TeaserControlId } from './MenuOverlayState';
 import type {
@@ -237,9 +246,14 @@ function createMenuHarness() {
   let onBackToMainMenu: (() => void) | null = null;
   let onTeaser: ((controlId: TeaserControlId) => void) | null = null;
   let onStartDungeon: (() => void) | null = null;
+  let onPurchasePet: MenuOverlayInit['onPurchasePet'] | null = null;
+  let onSelectPet: MenuOverlayInit['onSelectPet'] | null = null;
+  let onClearSelectedPet: MenuOverlayInit['onClearSelectedPet'] | null = null;
   let onButtonHover: (() => void) | null = null;
   let onModeSwitch: (() => void) | null = null;
   let modes: ReadonlyArray<{ presetId: ModePresetId }> = [];
+  const labViewModels: MenuLabViewModel[] = [];
+  const petsViewModels: MenuPetsViewModel[] = [];
   let activeScreen: MenuScreenId = 'main';
   let dungeonBestWave = 0;
   let root: FakeDomElement | null = null;
@@ -266,6 +280,12 @@ function createMenuHarness() {
     setDungeonBestWave(bestWave: number): void {
       dungeonBestWave = bestWave;
     },
+    setLabViewModel(viewModel): void {
+      labViewModels.push(viewModel);
+    },
+    setPetsViewModel(viewModel): void {
+      petsViewModels.push(viewModel);
+    },
     isVisible(): boolean {
       return visible;
     },
@@ -283,9 +303,14 @@ function createMenuHarness() {
       onBackToMainMenu = init.onBackToMainMenu;
       onTeaser = init.onTeaser;
       onStartDungeon = init.onStartDungeon;
+      onPurchasePet = init.onPurchasePet;
+      onSelectPet = init.onSelectPet;
+      onClearSelectedPet = init.onClearSelectedPet;
       onButtonHover = init.onButtonHover;
       onModeSwitch = init.onModeSwitch;
       dungeonBestWave = init.dungeonBestWave;
+      labViewModels.push(init.lab);
+      petsViewModels.push(init.pets);
       root = new FakeDomElement();
       root.dataset['role'] = 'menu-overlay';
       root.style.zIndex = '100';
@@ -329,6 +354,15 @@ function createMenuHarness() {
       }
       onStartDungeon?.();
     },
+    purchasePet(quality: 'green' | 'purple') {
+      return onPurchasePet?.(quality) ?? null;
+    },
+    selectPet(petId: string) {
+      return onSelectPet?.(petId) ?? null;
+    },
+    clearSelectedPet(): void {
+      onClearSelectedPet?.();
+    },
     openScreen(screenId: MenuSubscreenId): void {
       if (!visible) {
         return;
@@ -346,6 +380,18 @@ function createMenuHarness() {
     },
     dungeonBestWave(): number {
       return dungeonBestWave;
+    },
+    labViewModels(): ReadonlyArray<MenuLabViewModel> {
+      return labViewModels;
+    },
+    latestLabViewModel(): MenuLabViewModel | null {
+      return labViewModels.at(-1) ?? null;
+    },
+    petsViewModels(): ReadonlyArray<MenuPetsViewModel> {
+      return petsViewModels;
+    },
+    latestPetsViewModel(): MenuPetsViewModel | null {
+      return petsViewModels.at(-1) ?? null;
     },
     hoverButton(): void {
       if (!visible) {
@@ -1197,14 +1243,114 @@ function createDungeonBestWaveStoreHarness(initialBestWave = 0) {
   };
 }
 
+function createClientProgressionStoreHarness(
+  initial: Partial<ClientProgression> = {}
+) {
+  let progression: ClientProgression = {
+    schemaVersion: 1,
+    totalXp: initial.totalXp ?? 0,
+    ownedPetIds: initial.ownedPetIds ?? [],
+    selectedPetId: initial.selectedPetId ?? null
+  };
+  let listeners: Array<(progression: ClientProgression) => void> = [];
+  const awards: number[] = [];
+  const calls = {
+    awardXp: 0,
+    dispose: 0
+  };
+
+  function notify(): void {
+    for (const listener of listeners) {
+      listener(progression);
+    }
+  }
+
+  return {
+    factory(): ClientProgressionStore {
+      return {
+        get(): ClientProgression {
+          return progression;
+        },
+        awardXp(amount: number): ClientProgression {
+          calls.awardXp += 1;
+          const xpAwarded = Math.max(0, Math.floor(amount));
+          awards.push(xpAwarded);
+          if (xpAwarded > 0) {
+            progression = {
+              ...progression,
+              totalXp: progression.totalXp + xpAwarded
+            };
+            notify();
+          }
+          return progression;
+        },
+        purchasePet(quality) {
+          return {
+            ok: false,
+            reason: 'complete',
+            quality,
+            price: 0,
+            totalXp: progression.totalXp
+          };
+        },
+        selectPet(petId) {
+          if (!progression.ownedPetIds.includes(petId)) {
+            return {
+              ok: false,
+              reason: 'notOwned',
+              selectedPetId: petId
+            };
+          }
+          progression = {
+            ...progression,
+            selectedPetId: petId
+          };
+          notify();
+          return {
+            ok: true,
+            selectedPetId: petId
+          };
+        },
+        clearSelectedPet(): void {
+          progression = {
+            ...progression,
+            selectedPetId: null
+          };
+          notify();
+        },
+        subscribe(listener): () => void {
+          listeners.push(listener);
+          return () => {
+            listeners = listeners.filter((entry) => entry !== listener);
+          };
+        },
+        dispose(): void {
+          calls.dispose += 1;
+          listeners = [];
+        }
+      };
+    },
+    get(): ClientProgression {
+      return progression;
+    },
+    awards(): ReadonlyArray<number> {
+      return awards;
+    },
+    calls
+  };
+}
+
 describe('UiShell', () => {
-  it('preloads projectile and drop sprite registries before showing the menu', () => {
+  it('preloads projectile, drop, and pet sprite registries before showing the menu', () => {
     const preloadIds = new Set(STARTUP_SPRITE_SPECS.map((spec) => spec.archetypeId));
 
     for (const archetypeId of Object.keys(PROJECTILE_VISUALS)) {
       expect(preloadIds.has(archetypeId)).toBe(true);
     }
     for (const archetypeId of Object.keys(DROP_VISUALS)) {
+      expect(preloadIds.has(archetypeId)).toBe(true);
+    }
+    for (const archetypeId of Object.keys(PET_VISUALS)) {
       expect(preloadIds.has(archetypeId)).toBe(true);
     }
   });
@@ -1813,6 +1959,216 @@ describe('UiShell', () => {
       'buttonClick'
     ]);
     expect(shell.phase()).toEqual({ kind: 'running' });
+  });
+
+  it('wires Lab pet purchases through client progression and refreshes menu state', async () => {
+    const menu = createMenuHarness();
+    const store = createClientProgressionStore({
+      storage: null,
+      randomInt: () => 0
+    });
+    store.awardXp(125);
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession('lab-session'),
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: () => store,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(menu.latestLabViewModel()?.totalXp).toBe(125);
+    expect(menu.latestLabViewModel()?.stands.green).toMatchObject({
+      price: 25,
+      affordable: true,
+      complete: false
+    });
+    expect(menu.latestLabViewModel()?.stands.purple.price).toBe(75);
+
+    const purchasedPetIds: string[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      const result = menu.purchasePet('green');
+      if (result === null || !result.ok) {
+        throw new Error('expected green pet purchase to succeed');
+      }
+      purchasedPetIds.push(result.petId);
+    }
+
+    expect(purchasedPetIds).toEqual(['pet-01', 'pet-02', 'pet-03', 'pet-04', 'pet-05']);
+    expect(store.get().ownedPetIds).toEqual(purchasedPetIds);
+    expect(store.get().totalXp).toBe(0);
+    expect(menu.latestLabViewModel()?.stands.green).toMatchObject({
+      affordable: false,
+      complete: true,
+      ownedCount: 5,
+      totalCount: 5
+    });
+
+    const completeResult = menu.purchasePet('green');
+
+    expect(completeResult).toMatchObject({
+      ok: false,
+      reason: 'complete',
+      totalXp: 0
+    });
+    expect(store.get().ownedPetIds).toEqual(purchasedPetIds);
+  });
+
+  it('wires Pets selection and clearing through client progression', async () => {
+    const menu = createMenuHarness();
+    const store = createClientProgressionStore({
+      storage: null,
+      randomInt: () => 0
+    });
+    store.awardXp(100);
+    store.purchasePet('green');
+    store.purchasePet('purple');
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession('pets-session'),
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: () => store,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(menu.latestPetsViewModel()?.selectedPet).toBeNull();
+    expect(menu.latestPetsViewModel()?.inventory.green.map((pet) => pet.petId)).toEqual([
+      'pet-01'
+    ]);
+    expect(menu.latestPetsViewModel()?.inventory.purple.map((pet) => pet.petId)).toEqual([
+      'pet-11'
+    ]);
+
+    const selectResult = menu.selectPet('pet-01');
+
+    expect(selectResult).toEqual({ ok: true, selectedPetId: 'pet-01' });
+    expect(store.get().selectedPetId).toBe('pet-01');
+    expect(menu.latestPetsViewModel()?.selectedPet?.petId).toBe('pet-01');
+    expect(menu.latestPetsViewModel()?.inventory.green).toEqual([]);
+
+    menu.clearSelectedPet();
+
+    expect(store.get().selectedPetId).toBeNull();
+    expect(menu.latestPetsViewModel()?.selectedPet).toBeNull();
+    expect(menu.latestPetsViewModel()?.inventory.green.map((pet) => pet.petId)).toEqual([
+      'pet-01'
+    ]);
+
+    expect(menu.selectPet('pet-05')).toEqual({
+      ok: false,
+      reason: 'notOwned',
+      selectedPetId: 'pet-05'
+    });
+    expect(store.get().selectedPetId).toBeNull();
+  });
+
+  it('passes the selected pet id into campaign renderer creation', async () => {
+    const menu = createMenuHarness();
+    const renderer = createRendererHarness();
+    const store = createClientProgressionStore({
+      storage: null,
+      randomInt: () => 0
+    });
+    store.awardXp(25);
+    store.purchasePet('green');
+    store.selectPet(PET_01.id);
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession('campaign-pet-session'),
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: () => store,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.start('campaign-normal');
+    await flushUiShellStartup();
+
+    expect(renderer.lastInit()?.selectedPetId).toBe(PET_01.id);
+  });
+
+  it('does not pass selected pets into non-campaign renderer creation', async () => {
+    const menu = createMenuHarness();
+    const renderer = createRendererHarness();
+    const store = createClientProgressionStore({
+      storage: null,
+      randomInt: () => 0
+    });
+    store.awardXp(25);
+    store.purchasePet('green');
+    store.selectPet(PET_01.id);
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession('training-pet-session'),
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: () => store,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.startTraining();
+    await flushUiShellStartup();
+
+    expect(renderer.lastInit()?.selectedPetId).toBeNull();
   });
 
   it('starts the Dungeon preset from the Dungeon subscreen action', async () => {
@@ -2927,6 +3283,182 @@ describe('UiShell', () => {
     }
     expect(phase.summary).toBe(event.summary);
     expect(phase.viewModel).toBe(result.viewModel());
+  });
+
+  it.each([
+    ['win', 'win'],
+    ['loss', 'loss']
+  ] as const)('awards result XP for player-started campaign %s', async (kind, outcome) => {
+    const menu = createMenuHarness();
+    const result = createResultHarness();
+    const sim = createSimHarness();
+    const progression = createClientProgressionStoreHarness({ totalXp: 10 });
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession('campaign-session'),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: progression.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    menu.start('campaign-normal');
+    sim.emit({
+      ...makeTerminalEvent(kind, 123),
+      summary: {
+        ...makeResultSummary(outcome, 123),
+        kills: {
+          total: 6,
+          byArchetype: []
+        }
+      }
+    });
+
+    expect(progression.awards()).toEqual([6]);
+    expect(progression.get().totalXp).toBe(16);
+    expect(result.viewModel()?.xpReward).toEqual({
+      xpEarned: 6,
+      totalXp: 16
+    });
+  });
+
+  it('shows a zero XP block for campaign results with no kills', async () => {
+    const menu = createMenuHarness();
+    const result = createResultHarness();
+    const sim = createSimHarness();
+    const progression = createClientProgressionStoreHarness({ totalXp: 12 });
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      makeSeed: () => 1,
+      buildSessionDefinition: () => makeSession('no-kill-campaign-session'),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: progression.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    menu.start('campaign-normal');
+    sim.emit(makeTerminalEvent('loss', 123));
+
+    expect(progression.awards()).toEqual([0]);
+    expect(result.viewModel()?.xpReward).toEqual({
+      xpEarned: 0,
+      totalXp: 12
+    });
+  });
+
+  it('omits result XP for training, Dungeon, and auto-start sessions', async () => {
+    const scenarios: ReadonlyArray<{
+      name: string;
+      autoStartPresetId?: ModePresetId;
+      start(menu: ReturnType<typeof createMenuHarness>): void;
+      summary: SessionResultSummary;
+    }> = [
+      {
+        name: 'training',
+        start(menu): void {
+          menu.startTraining();
+        },
+        summary: {
+          ...makeResultSummary('loss', 123),
+          kills: { total: 5, byArchetype: [] }
+        }
+      },
+      {
+        name: 'Dungeon',
+        start(menu): void {
+          menu.startDungeon();
+        },
+        summary: {
+          ...makeResultSummary('loss', 123),
+          kills: { total: 5, byArchetype: [] },
+          dungeon: { wavesCleared: 3 }
+        }
+      },
+      {
+        name: 'auto-start campaign',
+        autoStartPresetId: 'campaign-normal',
+        start(): void {},
+        summary: {
+          ...makeResultSummary('win', 123),
+          kills: { total: 5, byArchetype: [] }
+        }
+      }
+    ];
+
+    for (const scenario of scenarios) {
+      const menu = createMenuHarness();
+      const result = createResultHarness();
+      const sim = createSimHarness();
+      const progression = createClientProgressionStoreHarness({ totalXp: 10 });
+      const windowTarget = new FakeEventTarget();
+      const documentEvents = new FakeEventTarget();
+      const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+      createUiShellForTest({
+        parent: {} as HTMLElement,
+        canvas: { clientHeight: 900 } as HTMLCanvasElement,
+        autoStartPresetId: scenario.autoStartPresetId,
+        makeSeed: () => 1,
+        buildSessionDefinition: () => makeSession(`${scenario.name}-session`),
+        createSimWorkerHost: sim.factory,
+        createMenuOverlay: menu.factory,
+        createPauseOverlay: createPauseHarness().factory,
+        createResultOverlay: result.factory,
+        createSettingsOverlay: createSettingsOverlayHarness().factory,
+        createRenderer: createRendererHarness().factory,
+        createInputController: createInputHarness().factory,
+        createHud: createHudHarness().factory,
+        createAudio: createAudioHarness().factory,
+        createClientProgressionStore: progression.factory,
+        windowTarget,
+        documentTarget
+      });
+
+      await flushUiShellStartup();
+
+      scenario.start(menu);
+      await flushUiShellStartup();
+      sim.emit({
+        kind: scenario.summary.outcome,
+        simTime: 123,
+        summary: scenario.summary
+      });
+
+      expect(progression.awards(), scenario.name).toEqual([]);
+      expect(result.viewModel()?.xpReward, scenario.name).toBeNull();
+    }
   });
 
   it('fans runtime events out to audio and renderer while running', async () => {

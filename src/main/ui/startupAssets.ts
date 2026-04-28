@@ -1,6 +1,7 @@
 import { BOSS_VISUALS } from '../render/bossVisuals';
 import { DROP_VISUALS } from '../render/dropVisuals';
 import { ENEMY_VISUALS } from '../render/enemyVisuals';
+import { PET_VISUALS } from '../render/petVisuals';
 import { PLAYER_VISUALS } from '../render/playerVisuals';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 
@@ -9,7 +10,8 @@ export const STARTUP_SPRITE_SPECS = Object.freeze([
   ...Object.values(ENEMY_VISUALS),
   ...Object.values(BOSS_VISUALS),
   ...Object.values(PROJECTILE_VISUALS),
-  ...Object.values(DROP_VISUALS)
+  ...Object.values(DROP_VISUALS),
+  ...Object.values(PET_VISUALS)
 ]);
 
 export const STARTUP_UI_IMAGE_URLS = Object.freeze([

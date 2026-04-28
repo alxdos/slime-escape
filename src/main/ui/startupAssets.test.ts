@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { STARTUP_UI_IMAGE_URLS } from './startupAssets';
+import { PET_VISUALS } from '../render/petVisuals';
+
+import { STARTUP_SPRITE_SPECS, STARTUP_UI_IMAGE_URLS } from './startupAssets';
 
 describe('startup assets', () => {
   it('declares every required first-screen UI image', () => {
@@ -20,5 +22,9 @@ describe('startup assets', () => {
       '/images/menu/menu-main-dungeon.png',
       '/images/menu/menu-main-lab.png'
     ]);
+  });
+
+  it('preloads pet sprites with the other gameplay textures', () => {
+    expect(STARTUP_SPRITE_SPECS).toEqual(expect.arrayContaining(Object.values(PET_VISUALS)));
   });
 });

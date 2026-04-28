@@ -63,11 +63,22 @@ export type ResultDungeonViewModel = Readonly<{
   isNewBest: boolean;
 }>;
 
+export type ResultXpRewardState = Readonly<{
+  xpEarned: number;
+  totalXp: number;
+}>;
+
+export type ResultXpRewardViewModel = Readonly<{
+  xpEarned: number;
+  totalXp: number;
+}>;
+
 export type ResultViewModel = Readonly<{
   outcome: SessionResultOutcome;
   title: string;
   subtitle: string;
   dungeon: ResultDungeonViewModel | null;
+  xpReward: ResultXpRewardViewModel | null;
   primaryStats: ReadonlyArray<ResultStatViewModel>;
   killRows: ReadonlyArray<ResultKillRowViewModel>;
   escapePath: ResultEscapePathViewModel | null;
@@ -81,6 +92,7 @@ export type ResultViewModelRegistries = Readonly<{
   enemyVisuals?: Readonly<Record<string, SpriteVisualSpec>>;
   bossVisuals?: Readonly<Record<string, SpriteVisualSpec>>;
   dungeonBest?: ResultDungeonBestState | null;
+  xpReward?: ResultXpRewardState | null;
 }>;
 
 export function buildResultViewModel(
@@ -97,6 +109,7 @@ export function buildResultViewModel(
     .filter((entry) => entry.count > 0)
     .map((entry) => buildKillRow(entry, enemies, bosses, enemyVisuals, bossVisuals));
   const dungeon = buildDungeonViewModel(summary, registries.dungeonBest ?? null);
+  const xpReward = buildXpRewardViewModel(registries.xpReward ?? null);
 
   return {
     outcome,
@@ -110,6 +123,7 @@ export function buildResultViewModel(
           ? 'New Best!'
           : 'Keep pushing deeper',
     dungeon,
+    xpReward,
     primaryStats: buildPrimaryStats(session, summary, dungeon),
     killRows,
     escapePath: buildEscapePathViewModel(session, summary),
@@ -118,6 +132,19 @@ export function buildResultViewModel(
       outcome === 'loss' && summary.defeat !== null
         ? describeDefeatCause(summary.defeat.cause, enemies, bosses)
         : null
+  };
+}
+
+function buildXpRewardViewModel(
+  reward: ResultXpRewardState | null
+): ResultXpRewardViewModel | null {
+  if (reward === null) {
+    return null;
+  }
+
+  return {
+    xpEarned: normalizeNonNegativeInteger(reward.xpEarned, 0),
+    totalXp: normalizeNonNegativeInteger(reward.totalXp, 0)
   };
 }
 

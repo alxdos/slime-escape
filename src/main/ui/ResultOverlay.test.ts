@@ -118,6 +118,7 @@ function makeViewModel(
     subtitle:
       outcome === 'win' ? 'You escaped the slime world' : 'The slimes caught you',
     dungeon: null,
+    xpReward: null,
     primaryStats: [
       { id: 'progress', label: 'Progress', value: outcome === 'win' ? '100%' : '73%' },
       { id: 'duration', label: 'Time', value: outcome === 'win' ? '04:18' : '03:12' },
@@ -220,6 +221,7 @@ describe('createResultOverlay', () => {
     const title = findByRole(root, 'result-title');
     const summary = findByRole(root, 'result-summary');
     const dungeonPanel = findByRole(root, 'result-dungeon');
+    const xpPanel = findByRole(root, 'result-xp');
     const escapePath = findByRole(root, 'result-escape-path');
     const statGrid = findByRole(root, 'result-stat-grid');
     const bossPanel = findByRole(root, 'result-boss');
@@ -273,6 +275,7 @@ describe('createResultOverlay', () => {
       'reached'
     );
     expect(dungeonPanel.style.display).toBe('none');
+    expect(xpPanel.style.display).toBe('none');
     expect(restartButton.style.display).toBe('none');
     expect(backButton.style.cssText).toContain('background:#7cf58f');
     expect(effectsLayer.dataset['outcome']).toBe('win');
@@ -299,6 +302,12 @@ describe('createResultOverlay', () => {
     expect(findByRole(killRows[0]!, 'result-kill-count').textContent).toBe('x80');
     expect(findByRole(killRows[0]!, 'result-kill-icon').src).toBe('/slime.png');
 
+    overlay.show(makeViewModel('win', { xpReward: { xpEarned: 12, totalXp: 40 } }));
+    expect(xpPanel.style.display).toBe('grid');
+    expect(findByRole(xpPanel, 'result-xp-label').textContent).toBe('XP earned');
+    expect(findByRole(xpPanel, 'result-xp-earned').textContent).toBe('+12');
+    expect(findByRole(xpPanel, 'result-xp-total').textContent).toBe('Total XP: 40');
+
     overlay.show(makeViewModel('loss', { killRows: [] }));
     expect(root.dataset['outcome']).toBe('loss');
     expect(title.textContent).toBe('Run Over');
@@ -322,6 +331,7 @@ describe('createResultOverlay', () => {
     expect(restartButton.style.display).toBe('block');
     expect(restartButton.style.cssText).toContain('background:#ff9fcf');
     expect(backButton.style.cssText).toContain('background:#b8f1ff');
+    expect(xpPanel.style.display).toBe('none');
 
     overlay.show(
       makeViewModel('loss', {
@@ -429,6 +439,8 @@ describe('createResultOverlay', () => {
     expect(escapePath.style.display).toBe('none');
     expect(dungeonPanel.style.display).toBe('none');
     expect(dungeonPanel.children).toHaveLength(0);
+    expect(xpPanel.style.display).toBe('none');
+    expect(xpPanel.children).toHaveLength(0);
     expect(escapePath.children).toHaveLength(0);
     expect(findAllByRole(statGrid, 'result-stat')).toHaveLength(0);
     expect(killSection.style.display).toBe('none');

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-27 (projectile renderer uses `ProjectileSnapshot.size` as the per-entity effective visual size: mesh geometry stays at the base `projectileVisuals[weaponArchetypeId].worldSize`, and renderer scales that mesh by snapshot size divided by base world size, with render-only pulse layered on top). Earlier: 2026-04-24 story 017 extension: scope expanded to `projectile` and `drop`. The same `SpriteVisualSpec`, `PX_PER_WU = 240`, asset-only renderer, hard-error policy, and preload contract are reused. Two visual registries are added: `projectileVisuals` keyed by `weaponArchetypeId` and `dropVisuals` keyed by `dropArchetypeId`. Inline image nodes in `content/weapons.md` and `content/drops.md` are load-bearing sources by [content-authoring.md](content-authoring.md). `projectile.size` and `drop.radius` become **derived** fields from the corresponding PNG `worldSize`, like `contactBox` for enemy/player/boss; MD columns for them are forbidden. `projectile.hitRadius` remains a content field in MD as a separate gameplay parameter. Render-only projectile behavior (`spinSpeed`, `rotateWhileFlying`, `pulseWhenGrounded`, `explosionRadiusIndicator`) lives in `WeaponArchetype.projectile.visual` and is not part of this file; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Story 016: render-only impact effects may create transient droplets and death ghost sprites from existing slime visuals without extending `SpriteVisualSpec`; see [impact-feedback.md](impact-feedback.md). Earlier render follow-up: `enemy` and `boss` receive render-only procedural breathing through squash/stretch `mesh.scale`, with phase from `entity.id` and no new snapshot/content fields. Story 014: the authoring surface for the PNG asset path moves from MD column `image` to an inline image node `![alt](../public/...)` under `## <id>` in `content/players.md` / `content/enemies.md` / `content/bosses.md`; see "Inline media nodes as derive sources" in [content-authoring.md](content-authoring.md). Runtime contract `SpriteVisualSpec` (`image`/`sourceSizePx`/`worldSize`/`anchor`), producer rule `worldSize = sourceSizePx / PX_PER_WU`, and hard-error policy are unchanged.)
+- Updated: 2026-04-28 (story 029 prep: scope expands to pet visuals and a render-only selected companion. `content/pets.md` produces `petVisuals`, pet textures preload before menu, and the companion follows the player in renderer presentation without becoming a snapshot entity. Earlier: 2026-04-27 projectile renderer uses `ProjectileSnapshot.size` as the per-entity effective visual size: mesh geometry stays at the base `projectileVisuals[weaponArchetypeId].worldSize`, and renderer scales that mesh by snapshot size divided by base world size, with render-only pulse layered on top. Earlier: 2026-04-24 story 017 extension: scope expanded to `projectile` and `drop`. The same `SpriteVisualSpec`, `PX_PER_WU = 240`, asset-only renderer, hard-error policy, and preload contract are reused. Two visual registries are added: `projectileVisuals` keyed by `weaponArchetypeId` and `dropVisuals` keyed by `dropArchetypeId`. Inline image nodes in `content/weapons.md` and `content/drops.md` are load-bearing sources by [content-authoring.md](content-authoring.md). `projectile.size` and `drop.radius` become **derived** fields from the corresponding PNG `worldSize`, like `contactBox` for enemy/player/boss; MD columns for them are forbidden. `projectile.hitRadius` remains a content field in MD as a separate gameplay parameter. Render-only projectile behavior (`spinSpeed`, `rotateWhileFlying`, `pulseWhenGrounded`, `explosionRadiusIndicator`) lives in `WeaponArchetype.projectile.visual` and is not part of this file; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Story 016: render-only impact effects may create transient droplets and death ghost sprites from existing slime visuals without extending `SpriteVisualSpec`; see [impact-feedback.md](impact-feedback.md). Earlier render follow-up: `enemy` and `boss` receive render-only procedural breathing through squash/stretch `mesh.scale`, with phase from `entity.id` and no new snapshot/content fields. Story 014: the authoring surface for the PNG asset path moves from MD column `image` to an inline image node `![alt](../public/...)` under `## <id>` in `content/players.md` / `content/enemies.md` / `content/bosses.md`; see "Inline media nodes as derive sources" in [content-authoring.md](content-authoring.md). Runtime contract `SpriteVisualSpec` (`image`/`sourceSizePx`/`worldSize`/`anchor`), producer rule `worldSize = sourceSizePx / PX_PER_WU`, and hard-error policy are unchanged.)
 
 ## Context
 
@@ -23,10 +23,11 @@ This decision defines the stable presentation contract for sprite assets for pla
 
 ### Scope
 
-- The decision covers visual representation of entities `kind: 'player'`, `kind: 'enemy'`, `kind: 'boss'`, `kind: 'projectile'`, and `kind: 'drop'` through PNG sprites. All five kinds render through the same `SpriteVisualSpec` contract and the same reference scale `PX_PER_WU`.
+- The decision covers visual representation of entities `kind: 'player'`, `kind: 'enemy'`, `kind: 'boss'`, `kind: 'projectile'`, `kind: 'drop'`, and presentation-only pets through PNG sprites. All six visual groups render through the same `SpriteVisualSpec` contract and the same reference scale `PX_PER_WU`.
 - The decision does not introduce atlases, animation frames, directional sprites, hit/death animation, or shader effects. One archetype means one static PNG. Render-only behavior, such as projectile spin or grounded pulse, lives in archetype content fields for the relevant area ([universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)) and does not extend `SpriteVisualSpec`.
 - For `projectile` and `drop`, the visual registry key is the **archetype** id (`weaponArchetypeId` for projectile, `dropArchetypeId` for drop), not runtime entity id. This matches the `enemy`/`boss` rule: renderer selects sprite by snapshot `archetypeId`, not by `entity.id`.
 - For `projectile`, visual identity belongs to the **owning weapon**, not to a separate `ProjectileArchetype`. In content terms, a weapon always fires its own projectile. Sharing projectile sprites between weapons is out of scope at this horizon. If a separate projectile-visual registry is needed later, it will extend this decision.
+- Pets in story 029 are not simulation entities. Their visual identity belongs to `PetArchetype.id` from the content library, and selected companion movement is renderer-owned presentation.
 
 ### Visual spec
 
@@ -54,31 +55,34 @@ This decision defines the stable presentation contract for sprite assets for pla
 
 ### Visual registries
 
-- There are five separate visual registries, one per presentation area. Each is a pair of handwritten consumer and generated literals, by [content-authoring.md](content-authoring.md):
+- There are six separate visual registries, one per presentation area. Each is a pair of handwritten consumer and generated literals, by [content-authoring.md](content-authoring.md):
   - player: `src/main/render/playerVisuals.ts` <-> `src/main/render/playerVisuals.generated.ts`;
   - enemy: `src/main/render/enemyVisuals.ts` <-> `src/main/render/enemyVisuals.generated.ts`;
   - boss: `src/main/render/bossVisuals.ts` <-> `src/main/render/bossVisuals.generated.ts`;
   - projectile: `src/main/render/projectileVisuals.ts` <-> `src/main/render/projectileVisuals.generated.ts`;
-  - drop: `src/main/render/dropVisuals.ts` <-> `src/main/render/dropVisuals.generated.ts`.
+  - drop: `src/main/render/dropVisuals.ts` <-> `src/main/render/dropVisuals.generated.ts`;
+  - pet: `src/main/render/petVisuals.ts` <-> `src/main/render/petVisuals.generated.ts`.
 - There is no combined `entitySprites.generated.ts`: the rule "one MD source -> adjacent pair beside its consumer" is preserved, as with `enemies.generated.ts`/`enemyAudio.generated.ts` after 011/012.
 - Each handwritten module contains:
-  - public type `SpriteVisualSpec`, physically owned in one shared place such as `src/main/render/SpriteVisualSpec.ts` and re-exported as needed. The contract is one project-wide type, not five copies;
+  - public type `SpriteVisualSpec`, physically owned in one shared place such as `src/main/render/SpriteVisualSpec.ts` and re-exported as needed. The contract is one project-wide type, not one copy per visual registry;
   - public registry `Readonly<Record<string, SpriteVisualSpec>>`;
-  - validator that every id from the matching content registry has a visual spec and vice versa: `validatePlayerVisuals(playersRegistry)`, `validateEnemyVisuals(enemyRegistry)`, `validateBossVisuals(bossRegistry)`, `validateProjectileVisuals(weaponsRegistry)`, `validateDropVisuals(dropsRegistry)`. Mismatch throws; it is not a warning.
+  - validator that every id from the matching content registry has a visual spec and vice versa: `validatePlayerVisuals(playersRegistry)`, `validateEnemyVisuals(enemyRegistry)`, `validateBossVisuals(bossRegistry)`, `validateProjectileVisuals(weaponsRegistry)`, `validateDropVisuals(dropsRegistry)`, `validatePetVisuals(petsRegistry)`. Mismatch throws; it is not a warning.
 - Generation sources by content area:
   - `content/players.md` -> `playerVisuals.generated.ts`;
   - `content/enemies.md` -> `enemyVisuals.generated.ts`;
   - `content/bosses.md` -> `bossVisuals.generated.ts`;
   - `content/weapons.md` -> `projectileVisuals.generated.ts` (new output pair for `weapons`; key is `weaponArchetypeId` because projectile sprite belongs to the weapon by the "Scope" rule);
-  - `content/drops.md` -> `dropVisuals.generated.ts` (new output pair for `drops`; key is `dropArchetypeId`).
+  - `content/drops.md` -> `dropVisuals.generated.ts` (new output pair for `drops`; key is `dropArchetypeId`);
+  - `content/pets.md` -> `petVisuals.generated.ts` (key is `petArchetypeId`).
 - The authoring surface for the PNG asset path is an **inline image node `![alt](../public/<path>)` under the archetype H2** in `content/<area>.md` (see "Inline media nodes as derive sources" in [content-authoring.md](content-authoring.md)). MD column `image` is forbidden because it would be a second source of truth for the same derived field. The inline node URL is written to `.generated.ts` as a public-relative path after stripping the `../public/` prefix, per the same section. Fields `sourceSizePx`/`worldSize`/`anchor` are wholly forbidden in MD: they are either derived (`sourceSizePx`, `worldSize`) or fixed by contract (`anchor`). This is a specific case of the [content-authoring.md](content-authoring.md) rule that MD columns for derived fields are forbidden.
 - In `weapons`, a weapon H2 section already carries an inline audio link for `fire` (story 014). From 017, the same section also carries a **required** inline image node for the projectile sprite. The two media kinds, audio link vs image, use distinct syntax and do not conflict. In `drops`, the inline image node becomes required for the first time.
+- In `pets`, each pet H2 section carries a required inline image node for the pet sprite. `sourceSizePx` and `worldSize` are derived from that PNG; `anchor` remains fixed at `{0.5, 0.5}`.
 
 ### Asset-only renderer
 
-- In [src/main/render/Renderer.ts](../src/main/render/Renderer.ts), branches for `player`/`enemy`/`boss`/`projectile`/`drop` create `THREE.Mesh` with `THREE.PlaneGeometry(worldSize.width, worldSize.height)` and `THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false })`. `THREE.CircleGeometry` is not used for these kinds.
+- In [src/main/render/Renderer.ts](../src/main/render/Renderer.ts), branches for `player`/`enemy`/`boss`/`projectile`/`drop` and the selected pet companion create `THREE.Mesh` with `THREE.PlaneGeometry(worldSize.width, worldSize.height)` and `THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false })`. `THREE.CircleGeometry` is not used for these kinds.
 - `map` comes from the preloaded `THREE.Texture` set, keyed by `archetypeId` (for projectile this is `weaponArchetypeId`; for drop this is `dropArchetypeId`). Renderer **does not** initiate texture loading; missing texture is a hard error (see below).
-- Gameplay body contact for `player` / `enemy` / `boss` does not live in this file. After [body-contact-boxes.md](body-contact-boxes.md), its owner is derived `contactBox` in the shared/runtime layer. `worldSize` and `contactBox` are produced the same way at the 013 horizon, but they are separate contracts: the first is presentation-only, the second is gameplay.
+- Gameplay body contact for `player` / `enemy` / `boss` does not live in this file. After [body-contact-boxes.md](body-contact-boxes.md), its owner is derived `contactBox` in the shared/runtime layer. `worldSize` and `contactBox` are produced the same way at the 013 horizon, but they are separate contracts: the first is presentation-only, the second is gameplay. Pets have no `contactBox` in story 029 because they are not gameplay entities.
 - For `projectile`, visual size (`projectile.size`) is **derived** from `worldSize` in `projectileVisuals[weaponArchetypeId]`, following the same single-source-of-truth rule as `contactBox` for enemy/player/boss in [body-contact-boxes.md](body-contact-boxes.md). MD columns/fields for `projectile.size` are forbidden. `projectile.hitRadius` remains an explicit content field in MD: it is a **separate** gameplay parameter that may intentionally differ from the visual, such as a long laser visual with a narrow center hit.
 - Runtime projectiles may have an effective visual `size` that differs from the base `worldSize`, for example after `projectileSizeMultiplier` applies at spawn time. Renderer reads that per-entity value from `ProjectileSnapshot.size` ([snapshot-shape.md](snapshot-shape.md)) and scales the projectile mesh by `snapshot.size / projectileVisuals[weaponArchetypeId].worldSize`. Renderer must not infer effective projectile size from `weaponHud.modifiers`, because already spawned projectiles, non-player projectiles, and weapon switching all make owner-local weapon state insufficient for per-projectile presentation. The base `PlaneGeometry` and `SpriteVisualSpec.worldSize` remain unchanged.
 - For `drop`, visual and pickup radius (`drop.radius`) is **derived** from `worldSize` in `dropVisuals[dropArchetypeId]` by `radius = min(worldSize.width, worldSize.height) / 2`. MD columns/fields for `drop.radius` are forbidden. If visual size and pickup zone later need to diverge, like projectile `size`/`hitRadius`, a separate content field `pickupRadius` or `pickupBox` will be introduced. Until then, one PNG defines both.
@@ -89,17 +93,28 @@ This decision defines the stable presentation contract for sprite assets for pla
 ### Procedural breathing
 
 - Static PNG remains the source visual, but `Renderer` may apply a small presentation-only squash/stretch to the existing sprite mesh. This is intentionally a render pass, not a simulation system: it changes only `THREE.Mesh.scale` and never writes to snapshot state, archetypes, `SpriteVisualSpec`, `worldSize`, `contactBox`, movement, collision, projectile targeting, or spawn/balance values.
-- On the current horizon the effect applies to `enemy` and `boss` sprites only. `player` stays unscaled so input feel and player silhouette remain stable; `projectile` carries its own render-only motion (spin, grounded pulse) governed by `WeaponArchetype.projectile.visual` in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md), and `drop` may carry render-only pulse/bob driven by `DropArchetype` content fields when added. Neither uses the procedural breathing curve described below.
+- On the current horizon the effect applies to `enemy`, `boss`, and selected pet companion sprites. `player` stays unscaled so input feel and player silhouette remain stable; `projectile` carries its own render-only motion (spin, grounded pulse) governed by `WeaponArchetype.projectile.visual` in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md), and `drop` may carry render-only pulse/bob driven by `DropArchetype` content fields when added. Neither uses the procedural breathing curve described below.
 - The breathing curve is sinusoidal and deterministic from render time plus entity identity:
   ```ts
-  breath = sin(nowMs * breathHz + entity.id * phaseStride)
+  breath = sin(nowMs * breathHz + phaseKey * phaseStride)
   scaleX = 1 + amplitude * breath
   scaleY = 1 - amplitude * verticalRatio * breath
   ```
-  Positive `breath` makes the slime wider and slightly lower; negative `breath` makes it narrower and taller. Different `entity.id` values provide phase offsets so a wave of slimes does not animate in lockstep.
+  Positive `breath` makes the slime wider and slightly lower; negative `breath` makes it narrower and taller. Runtime enemies/bosses use `entity.id` as `phaseKey`; the selected pet uses a stable hash or index derived from `petArchetypeId`. Different keys provide phase offsets so a wave of slimes does not animate in lockstep.
 - Amplitudes are deliberately small renderer-owned constants. Normal enemies may use a stronger amplitude than bosses; bosses should read as alive but heavier. Tuning these numbers is visual polish inside `src/main/render/**`, not content authoring.
 - The effect must remain independent of `renderScalePreset`, DPR, canvas backing size, arena size, and simulation tick rate. It uses wall/render time for presentation, so it is allowed to be visually non-authoritative in the same way interpolation and drop pulsing are presentation-only.
 - If future animation frames, skeletons, shader deformation, event impulses such as hit/landing squash, or per-archetype animation profiles are introduced, they extend this section. They must still preserve the core rule: sprite deformation cannot become gameplay geometry unless [body-contact-boxes.md](body-contact-boxes.md) is explicitly updated.
+
+### Selected pet companion
+
+- A selected pet companion is created only by `Renderer` from main-thread progression state passed by `UiShell` during session setup. It is not spawned by `SpawnSystem`, stored in `EntityStore`, exported in snapshots, or published through runtime events.
+- If no pet is selected, no companion mesh exists.
+- If a pet is selected, the renderer validates that the `petArchetypeId` exists in the pet content registry, the `petVisuals` registry, and the preloaded texture set. Missing ids or textures are hard errors, not silent fallback.
+- The companion initial position is computed from the first player snapshot in a run: two `SessionDefinition.player.radius` units to the right of the player.
+- While the player is within four `SessionDefinition.player.radius` units, the companion remains at its current render position.
+- When distance from companion to player exceeds four `SessionDefinition.player.radius` units, renderer moves the companion toward the current player position during render frames until the distance decreases. This movement is presentation-only and does not enter simulation determinism.
+- The companion uses the same procedural breathing curve style as enemies, with renderer-owned amplitude/timing constants.
+- Companion mesh z-order is near friendly/player presentation and must not hide projectiles, HUD, or player input feedback. Exact z values are renderer implementation details.
 
 ### Impact effects
 
@@ -114,36 +129,39 @@ This decision defines the stable presentation contract for sprite assets for pla
   2. A visual spec references an `image` that is not present in the preloaded texture set (see "Preload contract").
   3. A visual spec references an `archetypeId` missing from the corresponding content registry: orphan visual.
   4. The content registry contains an `id` that has no visual registry entry: orphan archetype.
+  5. A selected pet id from client progression has no pet content entry, pet visual spec, or preloaded texture.
 - Checkpoints:
-  - Validators (`validatePlayerVisuals`/`validateEnemyVisuals`/`validateBossVisuals`/`validateProjectileVisuals`/`validateDropVisuals`) run at session start, before the first tick, and catch cases 3 and 4.
+  - Validators (`validatePlayerVisuals`/`validateEnemyVisuals`/`validateBossVisuals`/`validateProjectileVisuals`/`validateDropVisuals`/`validatePetVisuals`) run at startup/session start, before first use, and catch cases 3 and 4.
   - Preload (see [main-ui-shell.md](main-ui-shell.md), `loading` phase) catches case 2 during loading and moves `UiShell` to `error('preload')` with a clear message. The app does not reach `menu`.
   - Renderer catches case 1 on first mesh lookup and throws. Reaching that point means visual/content registries were assembled incorrectly and a validator missed it; tests should expose that.
-- No `?? 0xffffff` colors, `?? CircleGeometry`, or `?? defaultTexture` for any of the five kinds. Any such fallback is a review blocker.
+- No `?? 0xffffff` colors, `?? CircleGeometry`, or `?? defaultTexture` for any snapshot sprite kind or the selected pet companion. Any such fallback is a review blocker.
 
 ### Preload contract
 
 - The full `loading` phase, splash, and preload lifecycle are defined in [main-ui-shell.md](main-ui-shell.md). This file only records sprite-asset requirements:
-  - The texture preload list is the union of `image` values from all five visual registries (`player`/`enemy`/`boss`/`projectile`/`drop`), sorted for determinism.
+  - The texture preload list is the union of `image` values from all six visual registries (`player`/`enemy`/`boss`/`projectile`/`drop`/`pet`), sorted for determinism.
   - Before `loading -> menu`, every PNG in that list must be successfully loaded **and decoded**. A loaded but not decoded bitmap is not ready; decoding is the expensive part of first texture appearance.
   - Lazy-loading sprites during a session is forbidden. Renderer only reads keys guaranteed to exist in the preloaded set.
 
 ### Tests
 
 - Unit test for `PX_PER_WU`: value is 240, and it is the single source of truth. Grepping `src/**` and `scripts/**` finds exactly one initialization.
-- `validateEnemyVisuals` / `validateBossVisuals` / `validatePlayerVisuals` / `validateProjectileVisuals` / `validateDropVisuals`: live registries pass happy path; mismatch (orphan visual / orphan archetype) throws with a clear message containing `archetypeId` and area name.
-- Renderer hard error: creating a mesh for an `archetypeId` missing from visual registry throws; missing texture in the preloaded set throws. Regression test: `Renderer` does not create `CircleGeometry` for any of the five kinds; any import/use of `CircleGeometry` in those branches is an error.
+- `validateEnemyVisuals` / `validateBossVisuals` / `validatePlayerVisuals` / `validateProjectileVisuals` / `validateDropVisuals` / `validatePetVisuals`: live registries pass happy path; mismatch (orphan visual / orphan archetype) throws with a clear message containing `archetypeId` and area name.
+- Renderer hard error: creating a mesh for an `archetypeId` missing from visual registry throws; missing texture in the preloaded set throws. Regression test: `Renderer` does not create `CircleGeometry` for any of the five snapshot entity kinds or the selected pet companion; any import/use of `CircleGeometry` in those branches is an error.
 - Arena independence test: changing `arena.width`/`arena.height` does not change any spec `worldSize`. This is a unit test over `SpriteVisualSpec` data, not renderer.
-- Renderer breathing: `enemy` receives render-only `mesh.scale` squash/stretch for a given `nowMs`, while `player` stays at `scale = 1`. `projectile` and `drop` do not receive the slime breathing curve; projectile scale may still come from `ProjectileSnapshot.size` and grounded pulse, and drop scale may come from renderer-owned pickup readability pulse.
+- Renderer breathing: `enemy` and selected pet companion receive render-only `mesh.scale` squash/stretch for a given `nowMs`, while `player` stays at `scale = 1`. `projectile` and `drop` do not receive the slime breathing curve; projectile scale may still come from `ProjectileSnapshot.size` and grounded pulse, and drop scale may come from renderer-owned pickup readability pulse.
+- Renderer companion movement: with a selected pet, the first player snapshot places the companion at `player.x + 2 * player.radius`; if later distance exceeds `4 * player.radius`, render frames move it toward the player. With no selected pet, no companion mesh is created.
 - Content-build test: in `weapons.generated.ts`, each `projectile.size` is physically equal to the `worldSize` of the matching `projectileVisuals.generated.ts` entry. In `drops.generated.ts`, `radius` equals `min(worldSize.width, worldSize.height) / 2` for the matching `dropVisuals.generated.ts` entry. This is not a cross-check between two sources; it checks that the generator did not diverge a derived value across two outputs.
 
 ## Consequences
 
-- 013 gets a compact contract: one shared `SpriteVisualSpec` type, three initial registries later extended to five, one `PX_PER_WU = 240` constant, and one hard-error path. Renderer stops being the place where magic drawing colors and radii live.
+- 013 gets a compact contract: one shared `SpriteVisualSpec` type, three initial registries later extended to six, one `PX_PER_WU = 240` constant, and one hard-error path. Renderer stops being the place where magic drawing colors and radii live.
 - Future stories such as unique boss visuals, directional frames, or atlases extend this file, by adding fields to `SpriteVisualSpec` or introducing an atlas layer, rather than reopening the local contract for "how to describe a sprite".
 - Procedural breathing gives static PNGs minimal life without expanding content or snapshot contracts. The cost is one more renderer-owned polish pass and a need to keep amplitudes small enough that the visual contour does not promise different hitboxes.
 - `EnemyArchetype.color`/`BossArchetype.color` lose part of their original audience. This is accepted debt: until a consumer exists, such as debug overlay or minimap, the field is a placeholder. Removing it is a separate decision after a real consumer appears or is explicitly ruled out.
 - Generator may read PNG files to derive `sourceSizePx`. This is the first case where MD is not the generator's only physical input; general derived-field rules live in [content-authoring.md](content-authoring.md), and this file defines the concrete consumer.
 - Render scale presets ([render-scale.md](render-scale.md)) and pixel density (DPR) do not affect sprite size in wu. The preset changes canvas backing pixels; the sprite remains the same world size. The "no hardware advantage" invariant remains intact.
+- Pets add one more preloaded visual registry and a small renderer-owned companion update path, but they do not widen the simulation snapshot or combat model.
 - Cost: new visual file pairs (`*Visuals.ts` <-> `*Visuals.generated.ts`), one shared `SpriteVisualSpec.ts`, one `spriteScale.ts` constant, and a longer app startup preload. Faster first sprite appearance during combat offsets the startup cost.
 
 ## Related
@@ -161,4 +179,5 @@ This decision defines the stable presentation contract for sprite assets for pla
 - [impact-feedback.md](impact-feedback.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [drops.md](drops.md)
+- [../stories/029-xp-and-pet-companions.md](../stories/029-xp-and-pet-companions.md)
 - [../stories/017-universal-weapons-and-projectiles.md](../stories/017-universal-weapons-and-projectiles.md)

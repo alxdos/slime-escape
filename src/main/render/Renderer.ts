@@ -2,9 +2,10 @@ import * as THREE from 'three';
 
 import { BOSS_ARCHETYPES } from '../../shared/content/bosses';
 import { ENEMY_ARCHETYPES } from '../../shared/content/enemies';
+import { PET_ARCHETYPES } from '../../shared/content/pets';
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
 import type { RuntimeEvent } from '../../shared/events';
-import type { ArenaConfig, SessionDefinition } from '../../shared/session';
+import type { ArenaConfig, PlayerSpawn, SessionDefinition } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import type {
   BossSnapshot,
@@ -31,6 +32,7 @@ import {
   type SlimeDropletEffect
 } from './ImpactEffectStore';
 import { createLandingTelegraphLayer } from './landingTelegraph';
+import { PET_VISUALS } from './petVisuals';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
 import { PROJECTILE_VISUALS } from './projectileVisuals';
 import {
@@ -70,8 +72,9 @@ export type RendererInit = Readonly<{
   canvas: HTMLCanvasElement;
   renderScalePreset: RenderScalePreset;
   arena: ArenaConfig;
-  session: Pick<SessionDefinition, 'backgrounds' | 'encounters'>;
+  session: Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player'>;
   spriteTextures: TextureMap;
+  selectedPetId?: string | null;
   getSnapshotPair: () => SnapshotPair;
   getPortalDescriptors?: () => ReadonlyArray<VibeJamPortalDescriptor>;
   getAim?: AimAccessor;
@@ -125,6 +128,7 @@ const ARC_PREVIEW_Z = 0.04;
 const ARC_PREVIEW_RADIUS_WU = 0.18;
 const SLIME_STAIN_Z = -0.25;
 const DEATH_GHOST_Z = 0.045;
+const COMPANION_Z = -0.02;
 const DROP_PULSE_HZ = 1.6;
 const DROP_PULSE_AMPLITUDE = 0.15;
 const PROJECTILE_GROUNDED_PULSE_AMPLITUDE = 0.1;
@@ -132,6 +136,9 @@ const SLIME_BREATH_HZ = 0.85;
 const SLIME_BREATH_AMPLITUDE = 0.07;
 const SLIME_BREATH_VERTICAL_RATIO = 0.82;
 const BOSS_BREATH_AMPLITUDE = 0.045;
+const COMPANION_BREATH_ENTITY_ID = 0;
+const COMPANION_SPAWN_OFFSET_RADII = 2;
+const COMPANION_FOLLOW_DISTANCE_RADII = 4;
 const ZONE_OVERLAY_Z = 0.2;
 const ZONE_OVERLAY_OPACITY = 0.86;
 const ZONE_CORNER_RADIUS_FACTOR = 0.25;
@@ -162,6 +169,13 @@ type PickupGhostEntry = EntityMeshEntry & {
   readonly startY: number;
   readonly startedAtMs: number;
   readonly expiresAtMs: number;
+};
+
+type CompanionEntry = EntityMeshEntry & {
+  x: number;
+  y: number;
+  initialized: boolean;
+  lastUpdatedAtMs: number | null;
 };
 
 type CharacterSnapGrid = Readonly<{
@@ -229,6 +243,11 @@ export function createRenderer(init: RendererInit): Renderer {
   playerMesh.add(createStatusMarker(DEFAULT_PLAYER_VISUAL.worldSize.height));
   playerMesh.visible = false;
   scene.add(playerMesh);
+
+  const companionEntry = createCompanionEntry(init.selectedPetId ?? null, init.spriteTextures);
+  if (companionEntry !== null) {
+    scene.add(companionEntry.mesh);
+  }
 
   const crosshair = createCrosshair();
   crosshair.visible = false;
@@ -422,6 +441,13 @@ export function createRenderer(init: RendererInit): Renderer {
       const hitImpulsesByTarget = indexHitImpulses(impactSnapshot.hitImpulses);
       const alpha = computeAlpha(pair);
       updatePlayer(playerMesh, pair, alpha, characterSnapGrid);
+      updateCompanion(
+        companionEntry,
+        pair,
+        alpha,
+        init.session.player,
+        characterSnapGrid
+      );
       updateEntities(
         pair,
         alpha,
@@ -534,6 +560,7 @@ export function createRenderer(init: RendererInit): Renderer {
       scene.remove(arenaBorder);
       scene.remove(arenaBackground.mesh);
       disposeEntityMesh(playerEntry);
+      if (companionEntry !== null) disposeEntityMesh(companionEntry);
       scene.remove(crosshair);
       disposeArcPreview(arcPreview);
       scene.remove(zoneOverlay.mesh);
@@ -707,6 +734,36 @@ function createSpriteMesh(
   const mesh = new THREE.Mesh(geometry, material);
   mesh.position.z = z;
   return { mesh, geometry, material };
+}
+
+function createCompanionEntry(
+  selectedPetId: string | null,
+  spriteTextures: TextureMap
+): CompanionEntry | null {
+  if (selectedPetId === null) {
+    return null;
+  }
+  requirePetArchetype(selectedPetId);
+  const entry = createSpriteMesh(
+    requireVisualSpec(PET_VISUALS, selectedPetId, 'pet'),
+    requireSpriteTexture(spriteTextures, selectedPetId, 'pet'),
+    COMPANION_Z
+  );
+  entry.mesh.visible = false;
+  return {
+    ...entry,
+    x: 0,
+    y: 0,
+    initialized: false,
+    lastUpdatedAtMs: null
+  };
+}
+
+function requirePetArchetype(petId: string): void {
+  if (PET_ARCHETYPES[petId] !== undefined) {
+    return;
+  }
+  throw new Error(`pet archetype missing for id "${petId}"`);
 }
 
 function createProjectileRadiusIndicator(): THREE.Mesh {
@@ -1024,7 +1081,7 @@ function disposeObjectTree(root: THREE.Object3D): void {
 function requireVisualSpec(
   visuals: Readonly<Record<string, SpriteVisualSpec>>,
   archetypeId: string,
-  kind: 'player' | 'enemy' | 'boss' | 'projectile' | 'drop'
+  kind: 'player' | 'enemy' | 'boss' | 'projectile' | 'drop' | 'pet'
 ): SpriteVisualSpec {
   const visual = visuals[archetypeId];
   if (visual !== undefined) {
@@ -1036,7 +1093,7 @@ function requireVisualSpec(
 function requireSpriteTexture(
   textures: TextureMap,
   archetypeId: string,
-  kind: 'player' | 'enemy' | 'boss' | 'projectile' | 'drop'
+  kind: 'player' | 'enemy' | 'boss' | 'projectile' | 'drop' | 'pet'
 ): THREE.Texture {
   const texture = textures[archetypeId];
   if (texture !== undefined) {
@@ -1265,6 +1322,96 @@ function updatePlayer(
   mesh.visible = true;
   setSnappedMeshPosition(mesh, x, y, 0, snapGrid);
   applyStatusMarker(mesh, player.statusEffects ?? [], pair.nowMs);
+}
+
+function updateCompanion(
+  entry: CompanionEntry | null,
+  pair: SnapshotPair,
+  alpha: number,
+  player: PlayerSpawn,
+  snapGrid: CharacterSnapGrid | null
+): void {
+  if (entry === null) {
+    return;
+  }
+  const playerPosition = findInterpolatedPlayerPosition(pair, alpha);
+  if (playerPosition === null) {
+    entry.mesh.visible = false;
+    entry.lastUpdatedAtMs = pair.nowMs;
+    return;
+  }
+
+  if (!entry.initialized) {
+    entry.x = playerPosition.x + player.radius * COMPANION_SPAWN_OFFSET_RADII;
+    entry.y = playerPosition.y;
+    entry.initialized = true;
+  } else {
+    const elapsedSeconds =
+      entry.lastUpdatedAtMs === null
+        ? 0
+        : Math.max(0, (pair.nowMs - entry.lastUpdatedAtMs) / 1000);
+    moveCompanionTowardPlayer(entry, playerPosition, player, elapsedSeconds);
+  }
+  entry.lastUpdatedAtMs = pair.nowMs;
+  entry.mesh.visible = true;
+  setSnappedMeshPosition(entry.mesh, entry.x, entry.y, entry.mesh.position.z, snapGrid);
+  applySlimePresentation(
+    entry.mesh,
+    pair.nowMs,
+    COMPANION_BREATH_ENTITY_ID,
+    SLIME_BREATH_AMPLITUDE,
+    undefined
+  );
+}
+
+function findInterpolatedPlayerPosition(
+  pair: SnapshotPair,
+  alpha: number
+): Readonly<{ x: number; y: number }> | null {
+  const player = findPlayerSnapshot(pair.curr);
+  if (player === null) {
+    return null;
+  }
+  const prevPlayer = findPlayerSnapshot(pair.prev);
+  if (prevPlayer === null) {
+    return { x: player.x, y: player.y };
+  }
+  return {
+    x: prevPlayer.x + (player.x - prevPlayer.x) * alpha,
+    y: prevPlayer.y + (player.y - prevPlayer.y) * alpha
+  };
+}
+
+function findPlayerSnapshot(snapshot: Snapshot | null): PlayerSnapshot | null {
+  return (
+    snapshot?.entities.find(
+      (entity): entity is PlayerSnapshot => entity.kind === 'player'
+    ) ?? null
+  );
+}
+
+function moveCompanionTowardPlayer(
+  entry: CompanionEntry,
+  playerPosition: Readonly<{ x: number; y: number }>,
+  player: PlayerSpawn,
+  elapsedSeconds: number
+): void {
+  if (elapsedSeconds <= 0) {
+    return;
+  }
+  const dx = playerPosition.x - entry.x;
+  const dy = playerPosition.y - entry.y;
+  const distance = Math.hypot(dx, dy);
+  const followDistance = player.radius * COMPANION_FOLLOW_DISTANCE_RADII;
+  if (distance <= followDistance || distance <= 0) {
+    return;
+  }
+  const step = Math.min(distance - followDistance, player.maxSpeed * elapsedSeconds);
+  if (step <= 0) {
+    return;
+  }
+  entry.x += (dx / distance) * step;
+  entry.y += (dy / distance) * step;
 }
 
 function updateEntities<S extends EntitySnapshot>(

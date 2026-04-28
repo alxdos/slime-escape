@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-25 (story 019: `EnemyArchetype.carrierDrop` removed; per-spawn guaranteed drops, dropTable replacement, and retaliation replacement move to [spawn-overrides.md](spawn-overrides.md). `EnemyArchetype.dropTable` and `EnemyArchetype.retaliation` remain archetype defaults. Earlier: 2026-04-24 cleanup pass: legacy scalar `WeaponArchetype` and legacy `{ primaryWeaponArchetypeId }` `Loadout` removed; only the current 017 forms remain. `DropEffect` is no longer redefined here; the single source of truth is [drops.md](drops.md). `WeaponArchetype` carries no audio field by [audio.md](audio.md). 017 alignment: `WeaponArchetype` and `Loadout` follow [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: optional field/status/drop-magnet/carrier extensions are owned by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: story 016 impact feedback, story 013 sprite/contact boxes, story 012 MD-generated weapons/drops/bosses.)
+- Updated: 2026-04-28 (story 029 prep: add `PetArchetype` and `PetEconomy` to the content library; pets are collection/presentation content in this story and have no combat fields. Earlier: 2026-04-25 story 019: `EnemyArchetype.carrierDrop` removed; per-spawn guaranteed drops, dropTable replacement, and retaliation replacement move to [spawn-overrides.md](spawn-overrides.md). `EnemyArchetype.dropTable` and `EnemyArchetype.retaliation` remain archetype defaults. Earlier: 2026-04-24 cleanup pass: legacy scalar `WeaponArchetype` and legacy `{ primaryWeaponArchetypeId }` `Loadout` removed; only the current 017 forms remain. `DropEffect` is no longer redefined here; the single source of truth is [drops.md](drops.md). `WeaponArchetype` carries no audio field by [audio.md](audio.md). 017 alignment: `WeaponArchetype` and `Loadout` follow [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: optional field/status/drop-magnet/carrier extensions are owned by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: story 016 impact feedback, story 013 sprite/contact boxes, story 012 MD-generated weapons/drops/bosses.)
 
 ## Context
 
@@ -109,6 +109,30 @@ Also, `SessionDefinition.loadout` ([session-definition.md](session-definition.md
 - `DropEffect`, including its union, `heal`, weapon-related kinds, and pickup-modifier kind, has [drops.md](drops.md) as the single source of truth. The shape is not duplicated here.
 - The full contract for how drops spawn, live, are picked up, and apply `DropEffect` lives in [drops.md](drops.md). This section only defines the archetype shape and its place in the `content library`.
 
+### PetArchetype and PetEconomy
+
+- Minimal shape for content area `pets` (story 029):
+  ```ts
+  type PetQuality = 'green' | 'purple';
+
+  type PetArchetype = Readonly<{
+    id: string;
+    displayName: string;
+    quality: PetQuality;
+  }>;
+
+  type PetEconomy = Readonly<{
+    xpPerDestroyedSlime: number;     // integer >= 0
+    standPrices: Readonly<Record<PetQuality, number>>; // integer >= 0
+  }>;
+  ```
+- `PetArchetype` is collection and presentation content. It intentionally has no HP, contact box, combat stats, weapon, behavior, effect, aura, cooldown, or modifier fields in story 029.
+- `quality` is the only grouping field used by the Lab stands and the Pets inventory zones in the first version. Green and purple pools are disjoint by pet id.
+- `PetEconomy.xpPerDestroyedSlime` is the content-owned coefficient for result XP. Story 029 derives earned XP as `summary.kills.total * xpPerDestroyedSlime` for eligible campaign results.
+- `PetEconomy.standPrices` is the content-owned source for the Lab prices. UI code must not hardcode green or purple XP prices.
+- Owned pets and selected pet are `client progression` ([content-boundaries.md](content-boundaries.md)) and store only `PetArchetype.id`, never embedded archetype objects.
+- In story 029 a selected pet is presentation-only. It must not be represented as a combat entity, must not take damage, and must not influence `SessionDefinition`, combat systems, win/loss, drops, or result stats.
+
 ### BossArchetype
 
 - Minimal shape for 006:
@@ -184,6 +208,7 @@ Also, `SessionDefinition.loadout` ([session-definition.md](session-definition.md
   - `EnemyArchetype` registry, for example `enemies.ts`;
   - `WeaponArchetype` registry, for example `weapons.ts`;
   - `DropArchetype` registry, for example `drops.ts`;
+  - `PetArchetype` registry and `PetEconomy`, for example `pets.ts`;
   - `BossArchetype` registry, for example `bosses.ts`;
   - `index.ts` re-exports registries together with existing arenas/presets.
 - A registry has one allowed structure: `Record<string, Archetype>` keyed by `archetype.id`. This prevents drift between the object key and `id`.
@@ -194,6 +219,7 @@ Also, `SessionDefinition.loadout` ([session-definition.md](session-definition.md
 - `SpawnSystem` and `CombatSystem` remain independent of specific content and operate through `id` resolution.
 - `Loadout` becomes a stable `SessionDefinition` contract; weapon-selection UI in 007 can consume it without redefining shape.
 - A possible archetype plugin/modding layer outside the MVP can sit on the same "registry + id" model without rewriting stories.
+- Pet collection uses the same registry/id model without making pets part of authoritative simulation while they are cosmetic companions.
 
 ## Related
 
@@ -217,3 +243,4 @@ Also, `SessionDefinition.loadout` ([session-definition.md](session-definition.md
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
 - [spawn-overrides.md](spawn-overrides.md)
+- [../stories/029-xp-and-pet-companions.md](../stories/029-xp-and-pet-companions.md)
