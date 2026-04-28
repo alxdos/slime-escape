@@ -1,6 +1,6 @@
 # XP And Pet Companions
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-28
 - Updated: 2026-04-28
 
@@ -102,7 +102,15 @@ XP, owned pets, and selected pet are local browser `client progression` owned by
 | T5 | [x] | Implement Lab sub-screen: green/purple stand states, price/affordability, random unowned purchase, immediate ownership, flip reveal, click-to-dismiss zoom, `Complete` state, and focused UI/store tests. | Purchase must never spend XP on a duplicate or completed quality. |
 | T6 | [x] | Implement Pets sub-screen: green/purple owned inventory zones, white selected-companion area, select owned pet, clear selected pet, persistence, and focused UI/store tests. | Selecting/clearing writes through progression before the next run starts. |
 | T7 | [x] | Implement selected companion renderer presentation: preload pet textures, pass selected pet id from `UiShell`, spawn two player radii to the right, follow only beyond four radii, breathe like enemies, and stay out of sim/snapshots/combat. | Missing selected pet content/visual/texture is a hard error. |
-| T8 | [ ] | Run focused verification and record manual checks. | `npm run content:check`, typecheck/tests touched by the implementation, plus live checks for Result XP, persistence reload, Lab purchase/Complete, Pets select/clear, and companion movement/breathing. |
+| T8 | [x] | Run focused verification and record manual checks. | `npm run content:check`, typecheck/tests touched by the implementation, plus live checks for Result XP, persistence reload, Lab purchase/Complete, Pets select/clear, and companion movement/breathing. |
+
+## Verification
+
+- Automated: `npm run content:check`.
+- Automated: `npm test -- src/shared/content/pets.test.ts src/main/render/petVisuals.test.ts src/main/ui/MenuPetsViewModel.test.ts src/main/ui/MenuLabViewModel.test.ts src/main/ui/MenuOverlay.test.ts src/main/ui/UiShell.test.ts src/main/ui/ResultViewModel.test.ts src/main/ui/ResultOverlay.test.ts src/main/progression/ClientProgressionStore.test.ts src/main/render/Renderer.test.ts`.
+- Automated: `npm run typecheck`.
+- Automated: `git diff --check`.
+- Manual: live Pets and Lab layout was reviewed in browser, adjusted from feedback, and rechecked by the requester before PR creation.
 
 ## Related
 
