@@ -657,6 +657,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         arena: session.arena,
         session,
         spriteTextures,
+        selectedPetId:
+          options.source === 'campaign' ? clientProgressionStore.get().selectedPetId : null,
         getSnapshotPair: sim.snapshotPair,
         getPortalDescriptors: portalController.portals,
         getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)

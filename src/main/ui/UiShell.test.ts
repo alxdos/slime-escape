@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { PET_01 } from '../../shared/content/pets';
 import { getPlayableModeCatalog, type ModePresetId } from '../../shared/content/sessions';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
@@ -13,6 +14,7 @@ import type {
 } from '../progression/ClientProgressionStore';
 import { createClientProgressionStore } from '../progression/ClientProgressionStore';
 import { DROP_VISUALS } from '../render/dropVisuals';
+import { PET_VISUALS } from '../render/petVisuals';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 import type { Renderer, RendererInit } from '../render/Renderer';
 import type { TextureMap } from '../render/spritePreload';
@@ -1339,13 +1341,16 @@ function createClientProgressionStoreHarness(
 }
 
 describe('UiShell', () => {
-  it('preloads projectile and drop sprite registries before showing the menu', () => {
+  it('preloads projectile, drop, and pet sprite registries before showing the menu', () => {
     const preloadIds = new Set(STARTUP_SPRITE_SPECS.map((spec) => spec.archetypeId));
 
     for (const archetypeId of Object.keys(PROJECTILE_VISUALS)) {
       expect(preloadIds.has(archetypeId)).toBe(true);
     }
     for (const archetypeId of Object.keys(DROP_VISUALS)) {
+      expect(preloadIds.has(archetypeId)).toBe(true);
+    }
+    for (const archetypeId of Object.keys(PET_VISUALS)) {
       expect(preloadIds.has(archetypeId)).toBe(true);
     }
   });
@@ -2086,6 +2091,84 @@ describe('UiShell', () => {
       selectedPetId: 'pet-05'
     });
     expect(store.get().selectedPetId).toBeNull();
+  });
+
+  it('passes the selected pet id into campaign renderer creation', async () => {
+    const menu = createMenuHarness();
+    const renderer = createRendererHarness();
+    const store = createClientProgressionStore({
+      storage: null,
+      randomInt: () => 0
+    });
+    store.awardXp(25);
+    store.purchasePet('green');
+    store.selectPet(PET_01.id);
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession('campaign-pet-session'),
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: () => store,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.start('campaign-normal');
+    await flushUiShellStartup();
+
+    expect(renderer.lastInit()?.selectedPetId).toBe(PET_01.id);
+  });
+
+  it('does not pass selected pets into non-campaign renderer creation', async () => {
+    const menu = createMenuHarness();
+    const renderer = createRendererHarness();
+    const store = createClientProgressionStore({
+      storage: null,
+      randomInt: () => 0
+    });
+    store.awardXp(25);
+    store.purchasePet('green');
+    store.selectPet(PET_01.id);
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession('training-pet-session'),
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: () => store,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.startTraining();
+    await flushUiShellStartup();
+
+    expect(renderer.lastInit()?.selectedPetId).toBeNull();
   });
 
   it('starts the Dungeon preset from the Dungeon subscreen action', async () => {
