@@ -84,13 +84,23 @@ function bossEncounter(id: string): EncounterDefinition {
   };
 }
 
+type TestEncounterSnapshot =
+  Omit<NonNullable<Snapshot['encounter']>, 'waveOrdinal'> &
+    Partial<Pick<NonNullable<Snapshot['encounter']>, 'waveOrdinal'>>;
+
 function snapshot(
-  encounter: NonNullable<Snapshot['encounter']> | null
+  encounter: TestEncounterSnapshot | null
 ): Snapshot {
   return {
     simTimeMs: 0,
     entities: [],
-    encounter,
+    encounter:
+      encounter === null
+        ? null
+        : {
+            waveOrdinal: encounter.type === 'wave' ? encounter.index + 1 : null,
+            ...encounter
+          },
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null,

@@ -96,6 +96,7 @@ export type EncounterSnapshot = Readonly<{
   type: EncounterType;
   index: number;
   elapsedMs: number;
+  waveOrdinal: number | null;
 }>;
 
 export type ZoneMode = 'disabled' | 'shrink' | 'expand';

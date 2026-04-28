@@ -24,6 +24,7 @@ export type EncounterContext = Readonly<{
   encounter: EncounterDefinition;
   index: number;
   startSimMs: number;
+  waveOrdinal: number | null;
 }>;
 
 export type SessionFlowSystem = Readonly<{
@@ -57,6 +58,8 @@ type ActiveSession = {
   def: SessionDefinition;
   encounterIndex: number;
   encounterStartSimMs: number;
+  activeWaveOrdinal: number | null;
+  dungeonWaveOrdinal: number;
 };
 
 export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSystem {
@@ -78,12 +81,17 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     deps.onSessionStart?.(next, sessionRng);
     clock.toRunning();
     const simTime = clock.simTimeMs();
-    active = { def: next, encounterIndex: 0, encounterStartSimMs: simTime };
+    active = {
+      def: next,
+      encounterIndex: 0,
+      encounterStartSimMs: simTime,
+      activeWaveOrdinal: null,
+      dungeonWaveOrdinal: 0
+    };
     emitEvent({ kind: 'sessionStart', simTime });
     const firstEncounter = next.encounters[0];
     if (firstEncounter !== undefined) {
-      deps.onEncounterStart?.(firstEncounter);
-      emitEvent({ kind: 'encounterStart', simTime });
+      activateEncounter(0, simTime);
     }
   }
 
@@ -187,15 +195,15 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     );
 
     if (nextIndex === null) {
+      if (active.def.winCondition.kind === 'dungeon') {
+        activateEncounter(0, simTimeMs);
+        return;
+      }
       finalizeRunAfterLastEncounter(simTimeMs);
       return;
     }
 
-    active.encounterIndex = nextIndex;
-    active.encounterStartSimMs = simTimeMs;
-    const nextEncounter = active.def.encounters[nextIndex]!;
-    deps.onEncounterStart?.(nextEncounter);
-    emitEvent({ kind: 'encounterStart', simTime: simTimeMs });
+    activateEncounter(nextIndex, simTimeMs);
   }
 
   function onPlayerDeath(): void {
@@ -234,6 +242,17 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     emitTerminalEvent('win', simTime);
     emitEvent({ kind: 'sessionStop', simTime });
     tearDown();
+  }
+
+  function activateEncounter(index: number, simTimeMs: number): void {
+    if (active === null) return;
+    const encounter = active.def.encounters[index];
+    if (encounter === undefined) return;
+    active.encounterIndex = index;
+    active.encounterStartSimMs = simTimeMs;
+    active.activeWaveOrdinal = resolveWaveOrdinal(active, encounter, index);
+    deps.onEncounterStart?.(encounter);
+    emitEvent({ kind: 'encounterStart', simTime: simTimeMs });
   }
 
   function emitTerminalEvent(outcome: SessionResultOutcome, simTimeMs: number): void {
@@ -277,12 +296,39 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
       return {
         encounter,
         index: active.encounterIndex,
-        startSimMs: active.encounterStartSimMs
+        startSimMs: active.encounterStartSimMs,
+        waveOrdinal: active.activeWaveOrdinal
       };
     },
     inputState: () => input,
     rng: () => sessionRng
   };
+}
+
+function resolveWaveOrdinal(
+  active: ActiveSession,
+  encounter: EncounterDefinition,
+  index: number
+): number | null {
+  if (encounter.type !== 'wave') return null;
+  if (active.def.winCondition.kind === 'dungeon') {
+    active.dungeonWaveOrdinal += 1;
+    return active.dungeonWaveOrdinal;
+  }
+  return countWavesThrough(active.def.encounters, index);
+}
+
+function countWavesThrough(
+  encounters: ReadonlyArray<EncounterDefinition>,
+  encounterIndex: number
+): number {
+  let ordinal = 0;
+  for (let index = 0; index <= encounterIndex; index += 1) {
+    if (encounters[index]?.type === 'wave') {
+      ordinal += 1;
+    }
+  }
+  return ordinal;
 }
 
 function shouldTransition(

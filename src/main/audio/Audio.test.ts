@@ -793,7 +793,8 @@ describe('createAudio', () => {
           id: 'boss-encounter',
           type: 'boss',
           index: 0,
-          elapsedMs: 500
+          elapsedMs: 500,
+          waveOrdinal: null
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
@@ -905,7 +906,8 @@ describe('createAudio', () => {
           id: 'wave-1',
           type: 'wave',
           index: 0,
-          elapsedMs: 0
+          elapsedMs: 0,
+          waveOrdinal: 1
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
@@ -934,7 +936,8 @@ describe('createAudio', () => {
           id: 'wave-1',
           type: 'wave',
           index: 0,
-          elapsedMs: 20
+          elapsedMs: 20,
+          waveOrdinal: 1
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
@@ -962,7 +965,8 @@ describe('createAudio', () => {
           id: 'wave-1',
           type: 'wave',
           index: 0,
-          elapsedMs: 0
+          elapsedMs: 0,
+          waveOrdinal: 1
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
@@ -1042,7 +1046,8 @@ describe('createAudio', () => {
           id: 'wave-1',
           type: 'wave',
           index: 0,
-          elapsedMs: 0
+          elapsedMs: 0,
+          waveOrdinal: 1
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
@@ -1077,7 +1082,8 @@ describe('createAudio', () => {
           id: 'boss-encounter',
           type: 'boss',
           index: 0,
-          elapsedMs: 0
+          elapsedMs: 0,
+          waveOrdinal: null
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
@@ -1108,7 +1114,8 @@ describe('createAudio', () => {
           id: 'wave-2',
           type: 'wave',
           index: 1,
-          elapsedMs: 0
+          elapsedMs: 0,
+          waveOrdinal: 2
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
@@ -1158,7 +1165,8 @@ describe('createAudio', () => {
         id: 'wave-1',
         type: 'wave',
         index: 0,
-        elapsedMs: 500
+        elapsedMs: 500,
+        waveOrdinal: 1
       },
       zone: { mode: 'disabled', margin: 0 },
       waveProgress: null,
@@ -1221,7 +1229,8 @@ describe('createAudio', () => {
           id: 'wave-1',
           type: 'wave',
           index: 0,
-          elapsedMs: 0
+          elapsedMs: 0,
+          waveOrdinal: 1
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
@@ -1241,7 +1250,8 @@ describe('createAudio', () => {
           id: 'wave-1',
           type: 'wave',
           index: 0,
-          elapsedMs: 1000
+          elapsedMs: 1000,
+          waveOrdinal: 1
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
@@ -1269,7 +1279,8 @@ describe('createAudio', () => {
           id: 'wave-1',
           type: 'wave',
           index: 0,
-          elapsedMs: 1500
+          elapsedMs: 1500,
+          waveOrdinal: 1
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
@@ -1298,7 +1309,8 @@ describe('createAudio', () => {
           id: 'wave-1',
           type: 'wave',
           index: 0,
-          elapsedMs: 5000
+          elapsedMs: 5000,
+          waveOrdinal: 1
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,

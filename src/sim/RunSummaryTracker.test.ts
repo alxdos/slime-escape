@@ -32,7 +32,8 @@ describe('RunSummaryTracker', () => {
       activeEncounter: {
         encounter: encounter('w1', 'wave'),
         index: 0,
-        startSimMs: 0
+        startSimMs: 0,
+        waveOrdinal: 1
       },
       waveProgress: { dispatched: 1, total: 1, alive: 0 },
       store
@@ -72,7 +73,8 @@ describe('RunSummaryTracker', () => {
       activeEncounter: {
         encounter: encounters[2]!,
         index: 2,
-        startSimMs: 100
+        startSimMs: 100,
+        waveOrdinal: 2
       },
       waveProgress: { dispatched: 5, total: 10, alive: 2 },
       store
@@ -103,7 +105,8 @@ describe('RunSummaryTracker', () => {
       activeEncounter: {
         encounter: encounters[1]!,
         index: 1,
-        startSimMs: 400
+        startSimMs: 400,
+        waveOrdinal: null
       },
       waveProgress: { dispatched: 1, total: 1, alive: 1 },
       store
@@ -138,7 +141,8 @@ describe('RunSummaryTracker', () => {
       activeEncounter: {
         encounter: sandbox,
         index: 0,
-        startSimMs: 0
+        startSimMs: 0,
+        waveOrdinal: null
       },
       waveProgress: null,
       store
