@@ -29,6 +29,7 @@ import type {
 
 import type { EscapeProgressPath, EscapeProgressPathInit } from './EscapeProgressPath';
 import type { EscapeProgressPathViewModel } from './EscapeProgressPathViewModel';
+import type { DungeonWaveCounter, DungeonWaveCounterInit } from './DungeonWaveCounter';
 import type { Hud, HudInit } from './Hud';
 import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
@@ -214,10 +215,12 @@ function createDeferredVoid() {
 function createUiShellForTest(init: UiShellInit) {
   const titleOverlay = createTitleOverlayHarness();
   const escapeProgressPath = createEscapeProgressPathHarness();
+  const dungeonWaveCounter = createDungeonWaveCounterHarness();
   const phaseTransitionCurtain = createPhaseTransitionCurtainHarness();
   return createUiShell({
     runStartupPreload: () => Promise.resolve(EMPTY_TEXTURE_MAP),
     createEscapeProgressPath: escapeProgressPath.factory,
+    createDungeonWaveCounter: dungeonWaveCounter.factory,
     createTitleOverlay: titleOverlay.factory,
     createPhaseTransitionCurtain: phaseTransitionCurtain.factory,
     ...init
@@ -934,6 +937,35 @@ function createEscapeProgressPathHarness() {
   };
 }
 
+function createDungeonWaveCounterHarness() {
+  const calls = {
+    attach: 0,
+    update: 0,
+    detach: 0,
+    dispose: 0
+  };
+
+  return {
+    factory(_init: DungeonWaveCounterInit): DungeonWaveCounter {
+      return {
+        attach(): void {
+          calls.attach += 1;
+        },
+        update(): void {
+          calls.update += 1;
+        },
+        detach(): void {
+          calls.detach += 1;
+        },
+        dispose(): void {
+          calls.dispose += 1;
+        }
+      };
+    },
+    calls
+  };
+}
+
 function createTitleOverlayHarness() {
   const calls = {
     attach: 0,
@@ -1258,6 +1290,7 @@ describe('UiShell', () => {
     const sim = createSimHarness();
     const hud = createHudHarness();
     const escapeProgressPath = createEscapeProgressPathHarness();
+    const dungeonWaveCounter = createDungeonWaveCounterHarness();
     const titleOverlay = createTitleOverlayHarness();
     const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
@@ -1285,6 +1318,7 @@ describe('UiShell', () => {
       createInputController: input.factory,
       createHud: hud.factory,
       createEscapeProgressPath: escapeProgressPath.factory,
+      createDungeonWaveCounter: dungeonWaveCounter.factory,
       createTitleOverlay: titleOverlay.factory,
       createAudio: audio.factory,
       windowTarget,
@@ -1302,6 +1336,7 @@ describe('UiShell', () => {
     expect(input.calls.start).toBe(1);
     expect(hud.calls.attach).toBe(1);
     expect(escapeProgressPath.calls.attach).toBe(1);
+    expect(dungeonWaveCounter.calls.attach).toBe(1);
     expect(titleOverlay.calls.attach).toBe(1);
     expect(menu.isVisible()).toBe(false);
     expect(pause.isVisible()).toBe(false);
@@ -1469,6 +1504,7 @@ describe('UiShell', () => {
     const sim = createSimHarness();
     const hud = createHudHarness();
     const escapeProgressPath = createEscapeProgressPathHarness();
+    const dungeonWaveCounter = createDungeonWaveCounterHarness();
     const titleOverlay = createTitleOverlayHarness();
     const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
@@ -1494,6 +1530,7 @@ describe('UiShell', () => {
       createInputController: input.factory,
       createHud: hud.factory,
       createEscapeProgressPath: escapeProgressPath.factory,
+      createDungeonWaveCounter: dungeonWaveCounter.factory,
       createTitleOverlay: titleOverlay.factory,
       createAudio: audio.factory,
       windowTarget,
@@ -1525,6 +1562,7 @@ describe('UiShell', () => {
     expect(input.calls.start).toBe(1);
     expect(hud.calls.attach).toBe(1);
     expect(escapeProgressPath.calls.attach).toBe(1);
+    expect(dungeonWaveCounter.calls.attach).toBe(1);
     expect(titleOverlay.calls.attach).toBe(1);
     expect(menu.isVisible()).toBe(false);
     expect(pause.isVisible()).toBe(false);
@@ -1534,6 +1572,7 @@ describe('UiShell', () => {
     shell.onFrame();
     expect(hud.calls.update).toBe(1);
     expect(escapeProgressPath.calls.update).toBe(1);
+    expect(dungeonWaveCounter.calls.update).toBe(1);
     expect(titleOverlay.calls.update).toBe(1);
     expect(audio.calls.update).toBe(1);
   });
@@ -1968,6 +2007,7 @@ describe('UiShell', () => {
     const sim = createSimHarness();
     const hud = createHudHarness();
     const escapeProgressPath = createEscapeProgressPathHarness();
+    const dungeonWaveCounter = createDungeonWaveCounterHarness();
     const titleOverlay = createTitleOverlayHarness();
     const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
@@ -1988,6 +2028,7 @@ describe('UiShell', () => {
       createInputController: input.factory,
       createHud: hud.factory,
       createEscapeProgressPath: escapeProgressPath.factory,
+      createDungeonWaveCounter: dungeonWaveCounter.factory,
       createTitleOverlay: titleOverlay.factory,
       createAudio: audio.factory,
       windowTarget,
@@ -2017,6 +2058,7 @@ describe('UiShell', () => {
     expect(input.calls.stop).toBe(1);
     expect(renderer.calls.dispose).toBe(1);
     expect(titleOverlay.calls.detach).toBe(1);
+    expect(dungeonWaveCounter.calls.detach).toBe(1);
     expect(escapeProgressPath.calls.detach).toBe(1);
     expect(hud.calls.detach).toBe(1);
     expect(audio.calls.detach).toBe(1);
@@ -2574,6 +2616,7 @@ describe('UiShell', () => {
     const sim = createSimHarness();
     const hud = createHudHarness();
     const escapeProgressPath = createEscapeProgressPathHarness();
+    const dungeonWaveCounter = createDungeonWaveCounterHarness();
     const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
@@ -2593,6 +2636,7 @@ describe('UiShell', () => {
       createInputController: input.factory,
       createHud: hud.factory,
       createEscapeProgressPath: escapeProgressPath.factory,
+      createDungeonWaveCounter: dungeonWaveCounter.factory,
       createAudio: audio.factory,
       windowTarget,
       documentTarget
@@ -2604,6 +2648,7 @@ describe('UiShell', () => {
     shell.onFrame();
     expect(hud.calls.update).toBe(1);
     expect(escapeProgressPath.calls.update).toBe(1);
+    expect(dungeonWaveCounter.calls.update).toBe(1);
     expect(renderer.calls.render).toBe(1);
     expect(audio.calls.update).toBe(1);
 
@@ -2619,6 +2664,7 @@ describe('UiShell', () => {
     shell.onFrame();
     expect(hud.calls.update).toBe(1);
     expect(escapeProgressPath.calls.update).toBe(2);
+    expect(dungeonWaveCounter.calls.update).toBe(2);
     expect(renderer.calls.render).toBe(2);
     expect(audio.calls.update).toBe(2);
     expect(pause.isVisible()).toBe(true);

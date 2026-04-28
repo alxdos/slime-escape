@@ -21,9 +21,9 @@
 
 | backgroundId | image |
 |---|---|
-| cellar | ![Cellar](../../public/images/bg/bg-02.jpg) |
-| tunnels | ![Tunnels](../../public/images/bg/bg-04.jpg) |
-| vault | ![Vault](../../public/images/bg/bg-05.jpg) |
+| cellar | ![Cellar](../../public/images/bg/bg-06.jpg) |
+| tunnels | ![Tunnels](../../public/images/bg/bg-06.jpg) |
+| vault | ![Vault](../../public/images/bg/bg-06.jpg) |
 
 # Encounters
 
@@ -56,7 +56,11 @@
 | 5 | slime-shell |
 | 6 | slime-hornling |
 | 7 | slime-spark |
-| 8 | slime-many-eye |
+| 8 | slime-stonehead |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 8 | none | none | none | none | rock-thrower | 0 |
 
 ## dungeon-reset-1
 
@@ -106,8 +110,12 @@
 | 6 | slime-mech-crab |
 | 7 | slime-trickster |
 | 8 | slime-many-eye |
-| 9 | slime-shell |
+| 9 | slime-stonehead |
 | 10 | slime-mech-crab |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 9 | none | none | none | none | rock-thrower | 0 |
 
 ## dungeon-reset-2
 
@@ -161,6 +169,11 @@
 | 10 | slime-flame |
 | 11 | slime-wraith |
 | 12 | slime-mech-crab |
+
+| seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
+|---:|---|---|---|---:|---|---|
+| 1 | none | none | none | none | rock-thrower | 0 |
+| 9 | none | none | none | none | rock-thrower | 0 |
 
 ## dungeon-reset-3
 

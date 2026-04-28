@@ -398,7 +398,7 @@ function dungeonBestWaveStyle(): string {
   return [
     'position:absolute',
     'left:31.6%',
-    'top:55.2%',
+    'top:48.2%',
     'width:33.8%',
     'height:27.8%',
     'display:flex',

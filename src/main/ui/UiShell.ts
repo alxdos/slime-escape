@@ -46,6 +46,11 @@ import {
 } from './EscapeProgressPath';
 import { deriveLiveEscapeProgressPathViewModel } from './EscapeProgressPathViewModel';
 import {
+  createDungeonWaveCounter,
+  type DungeonWaveCounter,
+  type DungeonWaveCounterInit
+} from './DungeonWaveCounter';
+import {
   createMenuOverlay,
   type MenuOverlay,
   type MenuOverlayInit
@@ -119,6 +124,7 @@ type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
 type CreateEscapeProgressPathFn = (init: EscapeProgressPathInit) => EscapeProgressPath;
+type CreateDungeonWaveCounterFn = (init: DungeonWaveCounterInit) => DungeonWaveCounter;
 type CreateTitleOverlayFn = (init: TitleOverlayInit) => TitleOverlay;
 type CreateVibeJamPortalControllerFn = (
   init: VibeJamPortalControllerInit
@@ -150,6 +156,7 @@ export type UiShellInit = Readonly<{
   createInputController?: CreateInputControllerFn;
   createHud?: CreateHudFn;
   createEscapeProgressPath?: CreateEscapeProgressPathFn;
+  createDungeonWaveCounter?: CreateDungeonWaveCounterFn;
   createTitleOverlay?: CreateTitleOverlayFn;
   createVibeJamPortalController?: CreateVibeJamPortalControllerFn;
   createAudio?: CreateAudioFn;
@@ -202,6 +209,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   const hudFactory = init.createHud ?? createHud;
   const escapeProgressPathFactory =
     init.createEscapeProgressPath ?? createEscapeProgressPath;
+  const dungeonWaveCounterFactory =
+    init.createDungeonWaveCounter ?? createDungeonWaveCounter;
   const titleOverlayFactory = init.createTitleOverlay ?? createTitleOverlay;
   const portalControllerFactory =
     init.createVibeJamPortalController ?? createVibeJamPortalController;
@@ -236,6 +245,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let lastStartedPreset: ModePreset | null = null;
   const hud = hudFactory({ parent: init.parent });
   const escapeProgressPath = escapeProgressPathFactory({ parent: init.parent });
+  const dungeonWaveCounter = dungeonWaveCounterFactory({ parent: init.parent });
   const titleOverlay = titleOverlayFactory({ parent: init.parent });
   const clientSettingsStore = clientSettingsStoreFactory();
   const dungeonBestWaveStore = dungeonBestWaveStoreFactory();
@@ -625,6 +635,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     let sessionStarted = false;
     let hudAttached = false;
     let escapeProgressPathAttached = false;
+    let dungeonWaveCounterAttached = false;
     let titleOverlayAttached = false;
     let portalControllerAttached = false;
     try {
@@ -639,6 +650,8 @@ export function createUiShell(init: UiShellInit): UiShell {
       hudAttached = true;
       escapeProgressPath.attach(session);
       escapeProgressPathAttached = true;
+      dungeonWaveCounter.attach(session);
+      dungeonWaveCounterAttached = true;
       titleOverlay.attach(session);
       titleOverlayAttached = true;
       portalController.attachSession(session);
@@ -649,6 +662,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
       if (titleOverlayAttached) {
         titleOverlay.detach();
+      }
+      if (dungeonWaveCounterAttached) {
+        dungeonWaveCounter.detach();
       }
       if (escapeProgressPathAttached) {
         escapeProgressPath.detach();
@@ -697,6 +713,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (hadClientSession) {
       portalController.detachSession();
       titleOverlay.detach();
+      dungeonWaveCounter.detach();
       escapeProgressPath.detach();
       hud.detach();
       audio.detach();
@@ -924,6 +941,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
       if (activeSession !== null) {
         escapeProgressPath.update(snapshotPair, phase);
+        dungeonWaveCounter.update(snapshotPair, phase);
         titleOverlay.update(snapshotPair, phase);
         if (phase.kind === 'paused') {
           pause.setEscapePath(
@@ -950,6 +968,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       result.dispose();
       settingsOverlay.dispose();
       titleOverlay.dispose();
+      dungeonWaveCounter.dispose();
       escapeProgressPath.dispose();
       hud.dispose();
       unsubscribeAudioSettings();

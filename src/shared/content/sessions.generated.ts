@@ -2270,15 +2270,15 @@ export const SESSION_PRESET_TEMPLATES = {
     backgrounds: [
       {
         id: 'cellar',
-        imageUrl: '/images/bg/bg-02.jpg'
+        imageUrl: '/images/bg/bg-06.jpg'
       },
       {
         id: 'tunnels',
-        imageUrl: '/images/bg/bg-04.jpg'
+        imageUrl: '/images/bg/bg-06.jpg'
       },
       {
         id: 'vault',
-        imageUrl: '/images/bg/bg-05.jpg'
+        imageUrl: '/images/bg/bg-06.jpg'
       }
     ],
     musicSampleId: 'music/100-waves',
@@ -2303,7 +2303,10 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_SHELL.id },
             { archetypeId: SLIME_HORNLING.id },
             { archetypeId: SLIME_SPARK.id },
-            { archetypeId: SLIME_MANY_EYE.id }
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            }
           ],
           spawnIntervalMs: 1150,
           maxAlive: 5,
@@ -2347,7 +2350,10 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_MECH_CRAB.id },
             { archetypeId: SLIME_TRICKSTER.id },
             { archetypeId: SLIME_MANY_EYE.id },
-            { archetypeId: SLIME_SHELL.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_MECH_CRAB.id }
           ],
           spawnIntervalMs: 1000,
@@ -2384,7 +2390,10 @@ export const SESSION_PRESET_TEMPLATES = {
         spawnPlan: {
           kind: 'wave',
           spawns: [
-            { archetypeId: SLIME_STONEHEAD.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_FLAME.id },
             { archetypeId: SLIME_SPARK.id },
             { archetypeId: SLIME_WRAITH.id },
@@ -2392,7 +2401,10 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_TRICKSTER.id },
             { archetypeId: SLIME_MANY_EYE.id },
             { archetypeId: SLIME_MECH_CRAB.id },
-            { archetypeId: SLIME_STONEHEAD.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
             { archetypeId: SLIME_FLAME.id },
             { archetypeId: SLIME_WRAITH.id },
             { archetypeId: SLIME_MECH_CRAB.id }
