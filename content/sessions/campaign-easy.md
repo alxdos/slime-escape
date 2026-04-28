@@ -180,7 +180,7 @@
 
 | seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs | loadoutWeaponIds | selectedWeaponIndex |
 |---:|---|---|---|---:|---|---|
-| 2 | none | none | none | none | smg | 0 |
+| 2 | none | none | none | none | rock-thrower | 0 |
 
 ## campaign-easy-set-5-wave-2
 
@@ -216,4 +216,4 @@
 |---:|---|---|---|---:|---|---|
 | 3 | none | none | none | none | rock-thrower | 0 |
 | 4 | heal-orb | empty | none | none | none | none |
-| 6 | none | none | none | none | smg | 0 |
+| 6 | none | none | none | none | rock-thrower | 0 |

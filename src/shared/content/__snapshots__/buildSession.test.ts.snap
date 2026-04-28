@@ -245,7 +245,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -323,7 +323,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -644,7 +644,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -722,7 +722,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -1043,7 +1043,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -1121,7 +1121,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -1335,7 +1335,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -1478,7 +1478,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -1546,28 +1546,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
       "tuning": null,
       "type": "boss",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
-      "backgroundId": "set-1",
-      "id": "campaign-set-1-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Scrapyard Wraiths",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
       "zoneBehavior": {
         "kind": "disabled",
       },
@@ -1897,28 +1875,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
-      "backgroundId": "set-2",
-      "id": "campaign-set-2-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Industrial Mutants",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "introDurationMs": 2500,
@@ -1956,7 +1912,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -1986,7 +1942,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -2045,7 +2001,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -2069,7 +2025,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -2099,7 +2055,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -2158,7 +2114,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -2188,7 +2144,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -2218,7 +2174,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -2236,7 +2192,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -2309,28 +2265,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
-      "backgroundId": "set-3",
-      "id": "campaign-set-3-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Kingdom at War",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "introDurationMs": 2500,
@@ -2380,7 +2314,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -2449,7 +2383,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -2501,7 +2435,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -2591,7 +2525,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -2628,7 +2562,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -2699,28 +2633,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
       "tuning": null,
       "type": "boss",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
-      "backgroundId": "set-4",
-      "id": "campaign-set-4-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Techno Finale",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
       "zoneBehavior": {
         "kind": "disabled",
       },
@@ -3267,7 +3179,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -3410,7 +3322,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -3478,28 +3390,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
       "tuning": null,
       "type": "boss",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
-      "backgroundId": "set-1",
-      "id": "campaign-set-1-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Scrapyard Wraiths",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
       "zoneBehavior": {
         "kind": "disabled",
       },
@@ -3829,28 +3719,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
-      "backgroundId": "set-2",
-      "id": "campaign-set-2-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Industrial Mutants",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "introDurationMs": 2500,
@@ -3888,7 +3756,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -3918,7 +3786,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -3977,7 +3845,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -4001,7 +3869,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -4031,7 +3899,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -4090,7 +3958,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -4120,7 +3988,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -4150,7 +4018,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -4168,7 +4036,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -4241,28 +4109,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
-      "backgroundId": "set-3",
-      "id": "campaign-set-3-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Kingdom at War",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "introDurationMs": 2500,
@@ -4312,7 +4158,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -4381,7 +4227,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -4433,7 +4279,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -4523,7 +4369,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -4560,7 +4406,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -4631,28 +4477,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
       "tuning": null,
       "type": "boss",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
-      "backgroundId": "set-4",
-      "id": "campaign-set-4-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Techno Finale",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
       "zoneBehavior": {
         "kind": "disabled",
       },
@@ -5199,7 +5023,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -5342,7 +5166,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -5410,28 +5234,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
       "tuning": null,
       "type": "boss",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
-      "backgroundId": "set-1",
-      "id": "campaign-set-1-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Scrapyard Wraiths",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
       "zoneBehavior": {
         "kind": "disabled",
       },
@@ -5761,28 +5563,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
-      "backgroundId": "set-2",
-      "id": "campaign-set-2-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Industrial Mutants",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
       "backgroundId": "set-3",
       "id": "campaign-set-3-wave-1",
       "introDurationMs": 2500,
@@ -5820,7 +5600,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -5850,7 +5630,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -5909,7 +5689,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -5933,7 +5713,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -5963,7 +5743,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -6022,7 +5802,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -6052,7 +5832,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -6082,7 +5862,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "smg",
+                  "rock-thrower",
                 ],
               },
             },
@@ -6100,7 +5880,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "sniper",
+                  "grenade-launcher",
                 ],
               },
             },
@@ -6173,28 +5953,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
     },
     {
-      "backgroundId": "set-3",
-      "id": "campaign-set-3-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Kingdom at War",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
       "backgroundId": "set-4",
       "id": "campaign-set-4-wave-1",
       "introDurationMs": 2500,
@@ -6244,7 +6002,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -6313,7 +6071,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -6365,7 +6123,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -6455,7 +6213,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -6492,7 +6250,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
               "loadout": {
                 "selectedIndex": 0,
                 "weapons": [
-                  "bomb-placer",
+                  "pistol",
                 ],
               },
             },
@@ -6563,28 +6321,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       },
       "tuning": null,
       "type": "boss",
-      "zoneBehavior": {
-        "kind": "disabled",
-      },
-    },
-    {
-      "backgroundId": "set-4",
-      "id": "campaign-set-4-after-boss-break",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Next: Techno Finale",
-      "transitionRules": {
-        "durationMs": 2500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
       "zoneBehavior": {
         "kind": "disabled",
       },
@@ -12542,31 +12278,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
     {
       "backgroundId": "portal",
-      "id": "portal-break-1",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "The portal opens in pulses. Breathe when it does, then move.",
-      "transitionRules": {
-        "durationMs": 6500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2400,
-        "fromMargin": 1.2,
-        "kind": "expandLinear",
-        "toMargin": 0,
-      },
-    },
-    {
-      "backgroundId": "portal",
       "id": "portal-wave-2",
       "introDurationMs": 1600,
       "name": "Horns in the Signal",
@@ -12610,34 +12321,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 15000,
-        "fromMargin": 0,
+        "fromMargin": 1.2,
         "kind": "shrinkLinear",
         "toMargin": 1.7,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-2",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Sparks mark the fast ones. Clear them before the circle tightens.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2400,
-        "fromMargin": 1.7,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -12707,34 +12393,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 16500,
-        "fromMargin": 0,
+        "fromMargin": 1.7,
         "kind": "shrinkLinear",
         "toMargin": 2.2,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-3",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Heavy slimes carry strange tools. Take what falls and keep running.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 2.2,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -12810,34 +12471,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 17500,
-        "fromMargin": 0,
+        "fromMargin": 2.2,
         "kind": "shrinkLinear",
         "toMargin": 2.6,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-4",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "The gate is learning your route. Change lanes before the next pull.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 2.6,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -12927,34 +12563,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 19000,
-        "fromMargin": 0,
+        "fromMargin": 2.6,
         "kind": "shrinkLinear",
         "toMargin": 3,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-5",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Do not save every pickup. Spend power while the crowd is still thin.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2600,
-        "fromMargin": 3,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -13058,34 +12669,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 20500,
-        "fromMargin": 0,
+        "fromMargin": 3,
         "kind": "shrinkLinear",
         "toMargin": 3.4,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-6",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Flame slimes make panic expensive. Keep the center in sight.",
-      "transitionRules": {
-        "durationMs": 6500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2600,
-        "fromMargin": 3.4,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -13203,34 +12789,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 22000,
-        "fromMargin": 0,
+        "fromMargin": 3.4,
         "kind": "shrinkLinear",
         "toMargin": 3.8,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-7",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "The portal is throwing work crews now. Break the lifters first.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2700,
-        "fromMargin": 3.8,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -13362,34 +12923,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 23500,
-        "fromMargin": 0,
+        "fromMargin": 3.8,
         "kind": "shrinkLinear",
         "toMargin": 4.2,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-8",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Saw slime means no lazy circles. Cut across the arena when it commits.",
-      "transitionRules": {
-        "durationMs": 7500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2700,
-        "fromMargin": 4.2,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -13535,34 +13071,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 25000,
-        "fromMargin": 0,
+        "fromMargin": 4.2,
         "kind": "shrinkLinear",
         "toMargin": 4.6,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-9",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "One more wave. Save a clean lane and a ready weapon.",
-      "transitionRules": {
-        "durationMs": 6500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2800,
-        "fromMargin": 4.6,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -13733,7 +13244,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 27000,
-        "fromMargin": 0,
+        "fromMargin": 4.6,
         "kind": "shrinkLinear",
         "toMargin": 5,
       },
@@ -13918,31 +13429,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
     {
       "backgroundId": "portal",
-      "id": "portal-break-1",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "The portal opens in pulses. Breathe when it does, then move.",
-      "transitionRules": {
-        "durationMs": 6500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2400,
-        "fromMargin": 1.2,
-        "kind": "expandLinear",
-        "toMargin": 0,
-      },
-    },
-    {
-      "backgroundId": "portal",
       "id": "portal-wave-2",
       "introDurationMs": 1600,
       "name": "Horns in the Signal",
@@ -13986,34 +13472,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 15000,
-        "fromMargin": 0,
+        "fromMargin": 1.2,
         "kind": "shrinkLinear",
         "toMargin": 1.7,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-2",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Sparks mark the fast ones. Clear them before the circle tightens.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2400,
-        "fromMargin": 1.7,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -14083,34 +13544,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 16500,
-        "fromMargin": 0,
+        "fromMargin": 1.7,
         "kind": "shrinkLinear",
         "toMargin": 2.2,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-3",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Heavy slimes carry strange tools. Take what falls and keep running.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 2.2,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -14186,34 +13622,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 17500,
-        "fromMargin": 0,
+        "fromMargin": 2.2,
         "kind": "shrinkLinear",
         "toMargin": 2.6,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-4",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "The gate is learning your route. Change lanes before the next pull.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 2.6,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -14303,34 +13714,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 19000,
-        "fromMargin": 0,
+        "fromMargin": 2.6,
         "kind": "shrinkLinear",
         "toMargin": 3,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-5",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Do not save every pickup. Spend power while the crowd is still thin.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2600,
-        "fromMargin": 3,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -14434,34 +13820,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 20500,
-        "fromMargin": 0,
+        "fromMargin": 3,
         "kind": "shrinkLinear",
         "toMargin": 3.4,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-6",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Flame slimes make panic expensive. Keep the center in sight.",
-      "transitionRules": {
-        "durationMs": 6500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2600,
-        "fromMargin": 3.4,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -14579,34 +13940,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 22000,
-        "fromMargin": 0,
+        "fromMargin": 3.4,
         "kind": "shrinkLinear",
         "toMargin": 3.8,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-7",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "The portal is throwing work crews now. Break the lifters first.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2700,
-        "fromMargin": 3.8,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -14738,34 +14074,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 23500,
-        "fromMargin": 0,
+        "fromMargin": 3.8,
         "kind": "shrinkLinear",
         "toMargin": 4.2,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-8",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Saw slime means no lazy circles. Cut across the arena when it commits.",
-      "transitionRules": {
-        "durationMs": 7500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2700,
-        "fromMargin": 4.2,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -14911,34 +14222,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 25000,
-        "fromMargin": 0,
+        "fromMargin": 4.2,
         "kind": "shrinkLinear",
         "toMargin": 4.6,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-9",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "One more wave. Save a clean lane and a ready weapon.",
-      "transitionRules": {
-        "durationMs": 6500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2800,
-        "fromMargin": 4.6,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -15109,7 +14395,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 27000,
-        "fromMargin": 0,
+        "fromMargin": 4.6,
         "kind": "shrinkLinear",
         "toMargin": 5,
       },
@@ -15294,31 +14580,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
     {
       "backgroundId": "portal",
-      "id": "portal-break-1",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "The portal opens in pulses. Breathe when it does, then move.",
-      "transitionRules": {
-        "durationMs": 6500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2400,
-        "fromMargin": 1.2,
-        "kind": "expandLinear",
-        "toMargin": 0,
-      },
-    },
-    {
-      "backgroundId": "portal",
       "id": "portal-wave-2",
       "introDurationMs": 1600,
       "name": "Horns in the Signal",
@@ -15362,34 +14623,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 15000,
-        "fromMargin": 0,
+        "fromMargin": 1.2,
         "kind": "shrinkLinear",
         "toMargin": 1.7,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-2",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Sparks mark the fast ones. Clear them before the circle tightens.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2400,
-        "fromMargin": 1.7,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -15459,34 +14695,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 16500,
-        "fromMargin": 0,
+        "fromMargin": 1.7,
         "kind": "shrinkLinear",
         "toMargin": 2.2,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-3",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Heavy slimes carry strange tools. Take what falls and keep running.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 2.2,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -15562,34 +14773,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 17500,
-        "fromMargin": 0,
+        "fromMargin": 2.2,
         "kind": "shrinkLinear",
         "toMargin": 2.6,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-4",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "The gate is learning your route. Change lanes before the next pull.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2500,
-        "fromMargin": 2.6,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -15679,34 +14865,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 19000,
-        "fromMargin": 0,
+        "fromMargin": 2.6,
         "kind": "shrinkLinear",
         "toMargin": 3,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-5",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Do not save every pickup. Spend power while the crowd is still thin.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2600,
-        "fromMargin": 3,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -15810,34 +14971,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 20500,
-        "fromMargin": 0,
+        "fromMargin": 3,
         "kind": "shrinkLinear",
         "toMargin": 3.4,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-6",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Flame slimes make panic expensive. Keep the center in sight.",
-      "transitionRules": {
-        "durationMs": 6500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2600,
-        "fromMargin": 3.4,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -15955,34 +15091,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 22000,
-        "fromMargin": 0,
+        "fromMargin": 3.4,
         "kind": "shrinkLinear",
         "toMargin": 3.8,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-7",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "The portal is throwing work crews now. Break the lifters first.",
-      "transitionRules": {
-        "durationMs": 7000,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2700,
-        "fromMargin": 3.8,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -16114,34 +15225,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 23500,
-        "fromMargin": 0,
+        "fromMargin": 3.8,
         "kind": "shrinkLinear",
         "toMargin": 4.2,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-8",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "Saw slime means no lazy circles. Cut across the arena when it commits.",
-      "transitionRules": {
-        "durationMs": 7500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2700,
-        "fromMargin": 4.2,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -16287,34 +15373,9 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 25000,
-        "fromMargin": 0,
+        "fromMargin": 4.2,
         "kind": "shrinkLinear",
         "toMargin": 4.6,
-      },
-    },
-    {
-      "backgroundId": "portal",
-      "id": "portal-break-9",
-      "introDurationMs": 0,
-      "name": null,
-      "objectives": [],
-      "rewardRules": null,
-      "spawnPlan": {
-        "kind": "empty",
-      },
-      "text": "One more wave. Save a clean lane and a ready weapon.",
-      "transitionRules": {
-        "durationMs": 6500,
-        "kind": "timer",
-        "next": "sequential",
-      },
-      "tuning": null,
-      "type": "break",
-      "zoneBehavior": {
-        "durationMs": 2800,
-        "fromMargin": 4.6,
-        "kind": "expandLinear",
-        "toMargin": 0,
       },
     },
     {
@@ -16485,7 +15546,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "type": "wave",
       "zoneBehavior": {
         "durationMs": 27000,
-        "fromMargin": 0,
+        "fromMargin": 4.6,
         "kind": "shrinkLinear",
         "toMargin": 5,
       },

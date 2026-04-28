@@ -133,6 +133,7 @@ const SLIME_BREATH_AMPLITUDE = 0.07;
 const SLIME_BREATH_VERTICAL_RATIO = 0.82;
 const BOSS_BREATH_AMPLITUDE = 0.045;
 const ZONE_OVERLAY_Z = 0.2;
+const ZONE_OVERLAY_OPACITY = 0.86;
 const ZONE_CORNER_RADIUS_FACTOR = 0.25;
 const ZONE_FEATHER_WU = 1.5;
 const PICKUP_GHOST_TTL_MS = 280;
@@ -1654,7 +1655,8 @@ function createZoneOverlay(arena: ArenaConfig): ZoneOverlay {
       uHalfSize: { value: new THREE.Vector2(arena.width / 2, arena.height / 2) },
       uMargin: { value: 0 },
       uCornerRadius: { value: cornerRadius },
-      uFeather: { value: ZONE_FEATHER_WU }
+      uFeather: { value: ZONE_FEATHER_WU },
+      uOpacity: { value: ZONE_OVERLAY_OPACITY }
     },
     vertexShader: `
       varying vec2 vWorldXY;
@@ -1670,6 +1672,7 @@ function createZoneOverlay(arena: ArenaConfig): ZoneOverlay {
       uniform float uMargin;
       uniform float uCornerRadius;
       uniform float uFeather;
+      uniform float uOpacity;
 
       float sdRoundedBox(vec2 p, vec2 b, float r) {
         vec2 q = abs(p) - b + vec2(r);
@@ -1681,7 +1684,7 @@ function createZoneOverlay(arena: ArenaConfig): ZoneOverlay {
         float r = min(uCornerRadius, min(inner.x, inner.y));
         float d = sdRoundedBox(vWorldXY, inner, r);
         float alpha = clamp(smoothstep(0.0, uFeather, d), 0.0, 1.0);
-        gl_FragColor = vec4(0.0, 0.0, 0.0, alpha);
+        gl_FragColor = vec4(0.0, 0.0, 0.0, alpha * uOpacity);
       }
     `
   });

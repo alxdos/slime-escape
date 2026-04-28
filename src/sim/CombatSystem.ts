@@ -549,12 +549,12 @@ function applyFirePatternModifiers(
   modifiers: ReadonlyArray<WeaponModifier>
 ): FirePattern {
   if (pattern.kind !== 'single') return pattern;
-  const countMultiplier = modifiers.reduce((acc, modifier) => {
-    return modifier.kind === 'symmetricProjectileMultiplier'
-      ? acc * modifier.multiplier
-      : acc;
-  }, 1);
-  const count = Math.max(1, Math.round(pattern.count * countMultiplier));
+  const extraDirections = modifiers.reduce((acc, modifier) => {
+    if (modifier.kind !== 'symmetricProjectileMultiplier') return acc;
+    // Legacy "x2" content now means one extra symmetric direction, not a full count double.
+    return acc + Math.max(0, Math.round(modifier.multiplier) - 1);
+  }, 0);
+  const count = Math.max(1, pattern.count + extraDirections);
   const spreadRadians =
     pattern.spreadRadians === 0 && count > 1
       ? WEAPON_MODIFIER_MIN_SPREAD_RADIANS

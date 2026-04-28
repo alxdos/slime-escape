@@ -104,7 +104,7 @@
 | 1 | none | empty | none | none | none | none |
 | 2 | none | empty | none | none | none | none |
 | 3 | none | empty | none | none | none | none |
-| 4 | none | empty | none | none | smg | 0 |
+| 4 | none | empty | none | none | rock-thrower | 0 |
 | 5 | none | empty | none | none | none | none |
 | 6 | none | empty | none | none | none | none |
 | 7 | none | empty | none | none | none | none |
@@ -160,7 +160,7 @@
 | 9 | none | empty | none | none | none | none |
 | 10 | none | empty | none | none | none | none |
 | 11 | none | empty | none | none | none | none |
-| 12 | none | empty | none | none | smg | 0 |
+| 12 | none | empty | none | none | rock-thrower | 0 |
 
 ## campaign-set-1-pre-boss-break
 
@@ -195,21 +195,6 @@
 | bossEdgeMargin | 0.5 |
 | zoneKind | disabled |
 | transitionKind | allEnemiesCleared |
-| next | sequential |
-
-## campaign-set-1-after-boss-break
-
-| field | value |
-|---|---|
-| type | break |
-| backgroundId | set-1 |
-| introDurationMs | none |
-| name | none |
-| text | Next: Scrapyard Wraiths |
-| spawnKind | empty |
-| zoneKind | disabled |
-| transitionKind | timer |
-| transitionDurationMs | 2500 |
 | next | sequential |
 
 ## campaign-set-2-wave-1
@@ -386,21 +371,6 @@
 | transitionKind | allEnemiesCleared |
 | next | sequential |
 
-## campaign-set-2-after-boss-break
-
-| field | value |
-|---|---|
-| type | break |
-| backgroundId | set-2 |
-| introDurationMs | none |
-| name | none |
-| text | Next: Industrial Mutants |
-| spawnKind | empty |
-| zoneKind | disabled |
-| transitionKind | timer |
-| transitionDurationMs | 2500 |
-| next | sequential |
-
 ## campaign-set-3-wave-1
 
 | field | value |
@@ -437,11 +407,11 @@
 | 1 | none | empty | none | none | none | none |
 | 2 | none | empty | none | none | none | none |
 | 3 | none | empty | none | none | none | none |
-| 4 | none | empty | none | none | smg | 0 |
+| 4 | none | empty | none | none | rock-thrower | 0 |
 | 5 | none | empty | none | none | none | none |
 | 6 | none | empty | none | none | none | none |
 | 7 | none | empty | none | none | none | none |
-| 8 | none | empty | none | none | sniper | 0 |
+| 8 | none | empty | none | none | grenade-launcher | 0 |
 
 ## campaign-set-3-wave-2
 
@@ -482,14 +452,14 @@
 | 1 | none | empty | none | none | none | none |
 | 2 | none | empty | none | none | none | none |
 | 3 | none | empty | none | none | none | none |
-| 4 | none | empty | none | none | smg | 0 |
+| 4 | none | empty | none | none | rock-thrower | 0 |
 | 5 | none | empty | none | none | none | none |
 | 6 | none | empty | none | none | none | none |
-| 7 | none | empty | none | none | sniper | 0 |
+| 7 | none | empty | none | none | grenade-launcher | 0 |
 | 8 | none | empty | none | none | none | none |
 | 9 | none | empty | none | none | none | none |
 | 10 | none | empty | none | none | none | none |
-| 11 | none | empty | none | none | smg | 0 |
+| 11 | none | empty | none | none | rock-thrower | 0 |
 
 
 ## campaign-set-3-wave-3
@@ -534,17 +504,17 @@
 | 1 | none | empty | none | none | none | none |
 | 2 | none | empty | none | none | none | none |
 | 3 | none | empty | none | none | none | none |
-| 4 | none | empty | none | none | smg | 0 |
+| 4 | none | empty | none | none | rock-thrower | 0 |
 | 5 | none | empty | none | none | none | none |
 | 6 | none | empty | none | none | none | none |
 | 7 | none | empty | none | none | none | none |
-| 8 | none | empty | none | none | sniper | 0 |
+| 8 | none | empty | none | none | grenade-launcher | 0 |
 | 9 | none | empty | none | none | none | none |
 | 10 | none | empty | none | none | none | none |
 | 11 | none | empty | none | none | none | none |
-| 12 | none | empty | none | none | smg | 0 |
+| 12 | none | empty | none | none | rock-thrower | 0 |
 | 13 | none | empty | none | none | none | none |
-| 14 | none | empty | none | none | sniper | 0 |
+| 14 | none | empty | none | none | grenade-launcher | 0 |
 
 ## campaign-set-3-pre-boss-break
 
@@ -579,21 +549,6 @@
 | bossEdgeMargin | 0.5 |
 | zoneKind | disabled |
 | transitionKind | allEnemiesCleared |
-| next | sequential |
-
-## campaign-set-3-after-boss-break
-
-| field | value |
-|---|---|
-| type | break |
-| backgroundId | set-3 |
-| introDurationMs | none |
-| name | none |
-| text | Next: Kingdom at War |
-| spawnKind | empty |
-| zoneKind | disabled |
-| transitionKind | timer |
-| transitionDurationMs | 2500 |
 | next | sequential |
 
 ## campaign-set-4-wave-1
@@ -635,7 +590,7 @@
 | 4 | none | empty | none | none | none | none |
 | 5 | none | none | none | none | none | none |
 | 6 | none | empty | none | none | none | none |
-| 7 | none | empty | none | none | bomb-placer | 0 |
+| 7 | none | empty | none | none | pistol | 0 |
 | 8 | none | none | none | none | none | none |
 
 ## campaign-set-4-wave-2
@@ -679,14 +634,14 @@
 | 2 | none | none | none | none | none | none |
 | 3 | none | empty | none | none | none | none |
 | 4 | none | empty | true | 2600 | none | none |
-| 5 | none | empty | none | none | bomb-placer | 0 |
+| 5 | none | empty | none | none | pistol | 0 |
 | 6 | none | empty | none | none | none | none |
 | 7 | none | empty | none | none | none | none |
 | 8 | none | empty | none | none | none | none |
 | 9 | none | empty | none | none | none | none |
 | 10 | none | empty | none | none | none | none |
 | 11 | none | empty | true | 2600 | none | none |
-| 12 | none | empty | none | none | bomb-placer | 0 |
+| 12 | none | empty | none | none | pistol | 0 |
 
 
 ## campaign-set-4-wave-3
@@ -737,12 +692,12 @@
 | 6 | none | empty | none | none | none | none |
 | 7 | none | empty | none | none | none | none |
 | 8 | none | empty | none | none | none | none |
-| 9 | none | empty | none | none | bomb-placer | 0 |
+| 9 | none | empty | none | none | pistol | 0 |
 | 10 | none | none | none | none | none | none |
 | 11 | none | empty | none | none | none | none |
 | 12 | none | empty | true | 3000 | none | none |
 | 13 | none | empty | none | none | none | none |
-| 14 | none | empty | none | none | bomb-placer | 0 |
+| 14 | none | empty | none | none | pistol | 0 |
 | 15 | none | none | none | none | none | none |
 
 ## campaign-set-4-pre-boss-break
@@ -778,21 +733,6 @@
 | bossEdgeMargin | 0.5 |
 | zoneKind | disabled |
 | transitionKind | allEnemiesCleared |
-| next | sequential |
-
-## campaign-set-4-after-boss-break
-
-| field | value |
-|---|---|
-| type | break |
-| backgroundId | set-4 |
-| introDurationMs | none |
-| name | none |
-| text | Next: Techno Finale |
-| spawnKind | empty |
-| zoneKind | disabled |
-| transitionKind | timer |
-| transitionDurationMs | 2500 |
 | next | sequential |
 
 ## campaign-set-5-wave-1

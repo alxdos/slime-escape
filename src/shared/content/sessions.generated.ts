@@ -165,7 +165,7 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_DOOR.id },
             {
               archetypeId: SLIME_CANDLE.id,
-              override: { loadout: { weapons: [SMG.id], selectedIndex: 0 } }
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
             },
             { archetypeId: SLIME_DOOR.id },
             { archetypeId: SLIME_MECH.id },
@@ -204,7 +204,7 @@ export const SESSION_PRESET_TEMPLATES = {
             { archetypeId: SLIME_DOOR.id },
             {
               archetypeId: SLIME_CANDLE.id,
-              override: { loadout: { weapons: [SMG.id], selectedIndex: 0 } }
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
             },
             { archetypeId: SLIME_MECH.id }
           ],
@@ -325,7 +325,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_SPARK.id,
-              override: { dropTable: [], loadout: { weapons: [SMG.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
             },
             {
               archetypeId: SLIME_SPARK.id,
@@ -414,7 +414,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_STONEHEAD.id,
-              override: { dropTable: [], loadout: { weapons: [SMG.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
             }
           ],
           spawnIntervalMs: 825,
@@ -458,20 +458,6 @@ export const SESSION_PRESET_TEMPLATES = {
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
-        tuning: null
-      },
-      {
-        id: 'campaign-set-1-after-boss-break',
-        type: 'break',
-        backgroundId: 'set-1',
-        introDurationMs: 0,
-        name: null,
-        text: 'Next: Scrapyard Wraiths',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'disabled' },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 2500, next: 'sequential' },
         tuning: null
       },
       {
@@ -673,20 +659,6 @@ export const SESSION_PRESET_TEMPLATES = {
         tuning: null
       },
       {
-        id: 'campaign-set-2-after-boss-break',
-        type: 'break',
-        backgroundId: 'set-2',
-        introDurationMs: 0,
-        name: null,
-        text: 'Next: Industrial Mutants',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'disabled' },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 2500, next: 'sequential' },
-        tuning: null
-      },
-      {
         id: 'campaign-set-3-wave-1',
         type: 'wave',
         backgroundId: 'set-3',
@@ -710,7 +682,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [SMG.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
             },
             {
               archetypeId: SLIME_BUG.id,
@@ -726,7 +698,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [SNIPER.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [GRENADE_LAUNCHER.id], selectedIndex: 0 } }
             }
           ],
           spawnIntervalMs: 975,
@@ -763,7 +735,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [SMG.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
             },
             {
               archetypeId: SLIME_ECHO.id,
@@ -775,7 +747,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [SNIPER.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [GRENADE_LAUNCHER.id], selectedIndex: 0 } }
             },
             {
               archetypeId: SLIME_ECHO.id,
@@ -791,7 +763,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [SMG.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
             }
           ],
           spawnIntervalMs: 788,
@@ -828,7 +800,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [SMG.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
             },
             {
               archetypeId: SLIME_DRONE.id,
@@ -844,7 +816,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [SNIPER.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [GRENADE_LAUNCHER.id], selectedIndex: 0 } }
             },
             {
               archetypeId: SLIME_SAW.id,
@@ -860,7 +832,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [SMG.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
             },
             {
               archetypeId: SLIME_DRONE.id,
@@ -868,7 +840,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [SNIPER.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [GRENADE_LAUNCHER.id], selectedIndex: 0 } }
             }
           ],
           spawnIntervalMs: 675,
@@ -915,20 +887,6 @@ export const SESSION_PRESET_TEMPLATES = {
         tuning: null
       },
       {
-        id: 'campaign-set-3-after-boss-break',
-        type: 'break',
-        backgroundId: 'set-3',
-        introDurationMs: 0,
-        name: null,
-        text: 'Next: Kingdom at War',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'disabled' },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 2500, next: 'sequential' },
-        tuning: null
-      },
-      {
         id: 'campaign-set-4-wave-1',
         type: 'wave',
         backgroundId: 'set-4',
@@ -958,7 +916,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [BOMB_PLACER.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
             },
             { archetypeId: SLIME_FORTRESS.id }
           ],
@@ -997,7 +955,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [BOMB_PLACER.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
             },
             {
               archetypeId: SLIME_SPLITTER.id,
@@ -1025,7 +983,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [BOMB_PLACER.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
             }
           ],
           spawnIntervalMs: 713,
@@ -1079,7 +1037,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [BOMB_PLACER.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
             },
             { archetypeId: SLIME_FORTRESS.id },
             {
@@ -1096,7 +1054,7 @@ export const SESSION_PRESET_TEMPLATES = {
             },
             {
               archetypeId: SLIME_IDOL.id,
-              override: { dropTable: [], loadout: { weapons: [BOMB_PLACER.id], selectedIndex: 0 } }
+              override: { dropTable: [], loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }
             },
             { archetypeId: SLIME_KINGLING.id }
           ],
@@ -1141,20 +1099,6 @@ export const SESSION_PRESET_TEMPLATES = {
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
-        tuning: null
-      },
-      {
-        id: 'campaign-set-4-after-boss-break',
-        type: 'break',
-        backgroundId: 'set-4',
-        introDurationMs: 0,
-        name: null,
-        text: 'Next: Techno Finale',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'disabled' },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 2500, next: 'sequential' },
         tuning: null
       },
       {
@@ -2317,7 +2261,7 @@ export const SESSION_PRESET_TEMPLATES = {
   portal: {
     presetId: 'portal',
     displayName: 'Portal Run',
-    description: 'Vibe Jam entry point: ten escalating waves, short portal breaths, armed slimes, and a final gargoyle boss.',
+    description: 'Vibe Jam entry point: ten escalating waves, armed slimes, and a final gargoyle boss.',
     visibleInMenu: false,
     order: 90,
     arena: SANDBOX_ARENA,
@@ -2361,20 +2305,6 @@ export const SESSION_PRESET_TEMPLATES = {
         tuning: null
       },
       {
-        id: 'portal-break-1',
-        type: 'break',
-        backgroundId: 'portal',
-        introDurationMs: 0,
-        name: null,
-        text: 'The portal opens in pulses. Breathe when it does, then move.',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'expandLinear', fromMargin: 1.2, toMargin: 0, durationMs: 2400 },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 6500, next: 'sequential' },
-        tuning: null
-      },
-      {
         id: 'portal-wave-2',
         type: 'wave',
         backgroundId: 'portal',
@@ -2396,24 +2326,10 @@ export const SESSION_PRESET_TEMPLATES = {
           maxAlive: 5,
           edgeMargin: 0.5
         },
-        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 1.7, durationMs: 15000 },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 1.2, toMargin: 1.7, durationMs: 15000 },
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
-        tuning: null
-      },
-      {
-        id: 'portal-break-2',
-        type: 'break',
-        backgroundId: 'portal',
-        introDurationMs: 0,
-        name: null,
-        text: 'Sparks mark the fast ones. Clear them before the circle tightens.',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'expandLinear', fromMargin: 1.7, toMargin: 0, durationMs: 2400 },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 7000, next: 'sequential' },
         tuning: null
       },
       {
@@ -2446,24 +2362,10 @@ export const SESSION_PRESET_TEMPLATES = {
           maxAlive: 6,
           edgeMargin: 0.5
         },
-        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 2.2, durationMs: 16500 },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 1.7, toMargin: 2.2, durationMs: 16500 },
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
-        tuning: null
-      },
-      {
-        id: 'portal-break-3',
-        type: 'break',
-        backgroundId: 'portal',
-        introDurationMs: 0,
-        name: null,
-        text: 'Heavy slimes carry strange tools. Take what falls and keep running.',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'expandLinear', fromMargin: 2.2, toMargin: 0, durationMs: 2500 },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 7000, next: 'sequential' },
         tuning: null
       },
       {
@@ -2498,24 +2400,10 @@ export const SESSION_PRESET_TEMPLATES = {
           maxAlive: 6,
           edgeMargin: 0.5
         },
-        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 2.6, durationMs: 17500 },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 2.2, toMargin: 2.6, durationMs: 17500 },
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
-        tuning: null
-      },
-      {
-        id: 'portal-break-4',
-        type: 'break',
-        backgroundId: 'portal',
-        introDurationMs: 0,
-        name: null,
-        text: 'The gate is learning your route. Change lanes before the next pull.',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'expandLinear', fromMargin: 2.6, toMargin: 0, durationMs: 2500 },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 7000, next: 'sequential' },
         tuning: null
       },
       {
@@ -2555,24 +2443,10 @@ export const SESSION_PRESET_TEMPLATES = {
           maxAlive: 7,
           edgeMargin: 0.5
         },
-        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 3, durationMs: 19000 },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 2.6, toMargin: 3, durationMs: 19000 },
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
-        tuning: null
-      },
-      {
-        id: 'portal-break-5',
-        type: 'break',
-        backgroundId: 'portal',
-        introDurationMs: 0,
-        name: null,
-        text: 'Do not save every pickup. Spend power while the crowd is still thin.',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'expandLinear', fromMargin: 3, toMargin: 0, durationMs: 2600 },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 7000, next: 'sequential' },
         tuning: null
       },
       {
@@ -2617,24 +2491,10 @@ export const SESSION_PRESET_TEMPLATES = {
           maxAlive: 8,
           edgeMargin: 0.5
         },
-        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 3.4, durationMs: 20500 },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 3, toMargin: 3.4, durationMs: 20500 },
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
-        tuning: null
-      },
-      {
-        id: 'portal-break-6',
-        type: 'break',
-        backgroundId: 'portal',
-        introDurationMs: 0,
-        name: null,
-        text: 'Flame slimes make panic expensive. Keep the center in sight.',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'expandLinear', fromMargin: 3.4, toMargin: 0, durationMs: 2600 },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 6500, next: 'sequential' },
         tuning: null
       },
       {
@@ -2684,24 +2544,10 @@ export const SESSION_PRESET_TEMPLATES = {
           maxAlive: 8,
           edgeMargin: 0.5
         },
-        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 3.8, durationMs: 22000 },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 3.4, toMargin: 3.8, durationMs: 22000 },
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
-        tuning: null
-      },
-      {
-        id: 'portal-break-7',
-        type: 'break',
-        backgroundId: 'portal',
-        introDurationMs: 0,
-        name: null,
-        text: 'The portal is throwing work crews now. Break the lifters first.',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'expandLinear', fromMargin: 3.8, toMargin: 0, durationMs: 2700 },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 7000, next: 'sequential' },
         tuning: null
       },
       {
@@ -2756,24 +2602,10 @@ export const SESSION_PRESET_TEMPLATES = {
           maxAlive: 9,
           edgeMargin: 0.5
         },
-        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 4.2, durationMs: 23500 },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 3.8, toMargin: 4.2, durationMs: 23500 },
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
-        tuning: null
-      },
-      {
-        id: 'portal-break-8',
-        type: 'break',
-        backgroundId: 'portal',
-        introDurationMs: 0,
-        name: null,
-        text: 'Saw slime means no lazy circles. Cut across the arena when it commits.',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'expandLinear', fromMargin: 4.2, toMargin: 0, durationMs: 2700 },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 7500, next: 'sequential' },
         tuning: null
       },
       {
@@ -2833,24 +2665,10 @@ export const SESSION_PRESET_TEMPLATES = {
           maxAlive: 10,
           edgeMargin: 0.5
         },
-        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 4.6, durationMs: 25000 },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 4.2, toMargin: 4.6, durationMs: 25000 },
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
-        tuning: null
-      },
-      {
-        id: 'portal-break-9',
-        type: 'break',
-        backgroundId: 'portal',
-        introDurationMs: 0,
-        name: null,
-        text: 'One more wave. Save a clean lane and a ready weapon.',
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'expandLinear', fromMargin: 4.6, toMargin: 0, durationMs: 2800 },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'timer', durationMs: 6500, next: 'sequential' },
         tuning: null
       },
       {
@@ -2919,7 +2737,7 @@ export const SESSION_PRESET_TEMPLATES = {
           maxAlive: 11,
           edgeMargin: 0.5
         },
-        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 5, durationMs: 27000 },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 4.6, toMargin: 5, durationMs: 27000 },
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },

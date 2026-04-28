@@ -455,6 +455,34 @@ describe('CombatSystem', () => {
     );
   });
 
+  it('adds one symmetric projectile per count modifier stack instead of doubling wide weapons', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const player = store.spawnPlayer(PLAYER_SPEC);
+    combat.setPlayerLoadout(player.id, { weapons: [SHOTGUN.id], selectedIndex: 0 }, 0);
+    combat.addModifierToSelectedWeapon(player.id, {
+      kind: 'symmetricProjectileMultiplier',
+      multiplier: 2
+    });
+    if (SHOTGUN.firePattern.kind !== 'single') throw new Error('expected shotgun single pattern');
+
+    combat.tick(
+      makeInput({
+        aimWorld: { x: 5, y: 0 },
+        firing: true,
+        loadout: { weapons: [SHOTGUN.id], selectedIndex: 0 }
+      }),
+      store,
+      index,
+      0,
+      ARENA,
+      () => {}
+    );
+
+    expect(store.projectileCount()).toBe(SHOTGUN.firePattern.count + 1);
+  });
+
   it('applies arc speed modifiers by shortening flight without changing the landing point', () => {
     const store = createEntityStore();
     const index = createSpatialIndex();

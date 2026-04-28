@@ -387,7 +387,7 @@ describe('buildSessionDefinition (portal)', () => {
 });
 
 describe('buildSessionDefinition shooting slime difficulty pillars', () => {
-  it('campaign-easy keeps enemy loadouts to late readable shooters and guarantees heal carriers', () => {
+  it('campaign-easy keeps enemy loadouts to late readable rock throwers and guarantees heal carriers', () => {
     const session = buildSessionDefinition(resolveModePreset('campaign-easy'), { seed: 2 });
     const entries = spawnEntries(session);
     const waveCount = session.encounters.filter((encounter) => encounter.spawnPlan.kind === 'wave')
@@ -396,7 +396,7 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
       entry.override?.guaranteedDrops?.includes(HEAL_ORB.id)
     ).length;
     const hazardEntries = entries.filter((entry) => entry.override?.loadout !== undefined);
-    const allowedEasyHazards = new Set([ROCK_THROWER.id, SMG.id]);
+    const allowedEasyHazards = new Set([ROCK_THROWER.id]);
 
     expect(session.rules.damage.slimeFriendlyFire).toBe(true);
     expect(session.rules.aimAssist.enabled).toBe(true);
@@ -430,7 +430,7 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
     expect(
       hazardEntries.some((entry) => hasWeapon(entry.override!.loadout!, ROCK_THROWER.id))
     ).toBe(true);
-    expect(hazardEntries.some((entry) => hasWeapon(entry.override!.loadout!, SMG.id))).toBe(true);
+    expect(hazardEntries.some((entry) => hasWeapon(entry.override!.loadout!, SMG.id))).toBe(false);
     expect(healCarrierCount).toBeGreaterThanOrEqual(Math.floor(waveCount / 2));
   });
 
@@ -494,12 +494,12 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
         hasWeapon(loadout, ROCK_THROWER.id, GRENADE_LAUNCHER.id)
       )
     ).toBe(true);
-    expect(loadoutsForSet(entries, 3).some((loadout) => hasWeapon(loadout, SMG.id, SNIPER.id))).toBe(
-      true
-    );
-    expect(loadoutsForSet(entries, 4).some((loadout) => hasWeapon(loadout, BOMB_PLACER.id))).toBe(
-      true
-    );
+    expect(
+      loadoutsForSet(entries, 3).some((loadout) =>
+        hasWeapon(loadout, ROCK_THROWER.id, GRENADE_LAUNCHER.id)
+      )
+    ).toBe(true);
+    expect(loadoutsForSet(entries, 4).some((loadout) => hasWeapon(loadout, PISTOL.id))).toBe(true);
     expect(
       loadoutsForSet(entries, 5).some((loadout) => hasWeapon(loadout, FIREBALL_STAFF.id))
     ).toBe(true);
