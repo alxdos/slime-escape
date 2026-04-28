@@ -28,6 +28,7 @@ import type { EscapeProgressPathViewModel } from './EscapeProgressPathViewModel'
 import type { Hud, HudInit } from './Hud';
 import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
+import type { MenuScreenId, MenuSubscreenId, MenuTeaserControlId } from './MenuOverlayLayout';
 import type { TeaserControlId } from './MenuOverlayState';
 import type {
   PhaseTransitionCurtain,
@@ -220,10 +221,14 @@ function createMenuHarness() {
   let onStartTraining: (() => void) | null = null;
   let onOpenSettings: (() => void) | null = null;
   let onToggleFullscreen: (() => void) | null = null;
+  let onOpenScreen: ((screenId: MenuSubscreenId) => void) | null = null;
+  let onBackToMainMenu: (() => void) | null = null;
   let onTeaser: ((controlId: TeaserControlId) => void) | null = null;
+  let onSubscreenTeaser: ((controlId: MenuTeaserControlId) => void) | null = null;
   let onButtonHover: (() => void) | null = null;
   let onModeSwitch: (() => void) | null = null;
   let modes: ReadonlyArray<{ presetId: ModePresetId }> = [];
+  let activeScreen: MenuScreenId = 'main';
   let root: FakeDomElement | null = null;
 
   const overlay: MenuOverlay = {
@@ -239,6 +244,12 @@ function createMenuHarness() {
         root.style.display = 'none';
       }
     },
+    showScreen(screenId): void {
+      activeScreen = screenId;
+    },
+    screen(): MenuScreenId {
+      return activeScreen;
+    },
     isVisible(): boolean {
       return visible;
     },
@@ -252,7 +263,10 @@ function createMenuHarness() {
       onStartTraining = init.onStartTraining;
       onOpenSettings = init.onOpenSettings;
       onToggleFullscreen = init.onToggleFullscreen;
+      onOpenScreen = init.onOpenScreen;
+      onBackToMainMenu = init.onBackToMainMenu;
       onTeaser = init.onTeaser;
+      onSubscreenTeaser = init.onSubscreenTeaser;
       onButtonHover = init.onButtonHover;
       onModeSwitch = init.onModeSwitch;
       root = new FakeDomElement();
@@ -291,6 +305,27 @@ function createMenuHarness() {
         return;
       }
       onTeaser?.(controlId);
+    },
+    openScreen(screenId: MenuSubscreenId): void {
+      if (!visible) {
+        return;
+      }
+      onOpenScreen?.(screenId);
+    },
+    backToMainMenu(): void {
+      if (!visible) {
+        return;
+      }
+      onBackToMainMenu?.();
+    },
+    subscreenTeaser(controlId: MenuTeaserControlId): void {
+      if (!visible) {
+        return;
+      }
+      onSubscreenTeaser?.(controlId);
+    },
+    screen(): MenuScreenId {
+      return activeScreen;
     },
     hoverButton(): void {
       if (!visible) {
@@ -1612,7 +1647,7 @@ describe('UiShell', () => {
     expect(input.calls.start).toBe(1);
   });
 
-  it('routes training, fullscreen, and teaser menu callbacks without starting teaser sessions', async () => {
+  it('routes training, fullscreen, teaser, and menu screen callbacks without starting teaser sessions', async () => {
     const menu = createMenuHarness();
     const renderer = createRendererHarness();
     const input = createInputHarness();
@@ -1653,7 +1688,13 @@ describe('UiShell', () => {
 
     menu.hoverButton();
     menu.switchMode();
-    menu.teaser('pets');
+    menu.teaser('soon');
+    menu.openScreen('pets');
+    await flushUiShellStartup();
+    expect(menu.screen()).toBe('pets');
+    menu.backToMainMenu();
+    await flushUiShellStartup();
+    expect(menu.screen()).toBe('main');
     expect(sim.startSessions).toHaveLength(0);
 
     menu.toggleFullscreen();
@@ -1668,6 +1709,8 @@ describe('UiShell', () => {
     expect(audio.uiEvents).toEqual([
       'buttonHover',
       'modeSwitch',
+      'buttonClick',
+      'buttonClick',
       'buttonClick',
       'buttonClick',
       'buttonClick'

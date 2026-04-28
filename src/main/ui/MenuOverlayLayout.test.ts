@@ -4,7 +4,8 @@ import {
   MAIN_MENU_CONTROLS,
   MAIN_MENU_LOGO,
   MAIN_MENU_STAGE,
-  MAIN_MENU_STAGE_WIDTH_VH
+  MAIN_MENU_STAGE_WIDTH_VH,
+  MENU_SUBSCREENS
 } from './MenuOverlayLayout';
 
 describe('MenuOverlayLayout', () => {
@@ -45,17 +46,55 @@ describe('MenuOverlayLayout', () => {
     ]);
   });
 
+  it('declares the lazy-loaded lab, pets, and dungeon screen assets', () => {
+    expect(MENU_SUBSCREENS.lab.background).toBe('/images/bg/bg-lab.jpg');
+    expect(MENU_SUBSCREENS.lab.controls.map((control) => control.src)).toEqual([
+      '/images/menu/menu-lab-back.png'
+    ]);
+    expect(MENU_SUBSCREENS.pets.background).toBe('/images/bg/bg-pets.jpg');
+    expect(MENU_SUBSCREENS.pets.controls.map((control) => control.src)).toEqual([
+      '/images/menu/menu-pets-back.png'
+    ]);
+    expect(MENU_SUBSCREENS.dungeon.background).toBe('/images/bg/bg-dungeon.jpg');
+    expect(MENU_SUBSCREENS.dungeon.controls.map((control) => control.src)).toEqual([
+      '/images/menu/menu-dn-mode.png',
+      '/images/menu/menu-dn-play.png',
+      '/images/menu/menu-dn-back.png'
+    ]);
+  });
+
   it('keeps controls inside stable stage bounds', () => {
     for (const control of MAIN_MENU_CONTROLS) {
       expect(control.leftPercent).toBeGreaterThanOrEqual(0);
-      expect(control.topPercent).toBeGreaterThanOrEqual(0);
+      expect(control.topPercent ?? control.bottomPercent).toBeGreaterThanOrEqual(0);
       expect(control.widthPercent).toBeGreaterThan(0);
       expect(control.leftPercent + control.widthPercent).toBeLessThanOrEqual(100);
       expect(control.aspectRatio).toBeGreaterThan(0);
       const heightPercent =
         (control.widthPercent / control.aspectRatio) *
         (MAIN_MENU_STAGE.width / MAIN_MENU_STAGE.height);
-      expect(control.topPercent + heightPercent).toBeLessThanOrEqual(100);
+      if (control.bottomPercent === undefined) {
+        expect((control.topPercent ?? 0) + heightPercent).toBeLessThanOrEqual(100);
+      } else {
+        expect(control.bottomPercent + heightPercent).toBeLessThanOrEqual(100);
+      }
+    }
+    for (const screen of Object.values(MENU_SUBSCREENS)) {
+      for (const control of screen.controls) {
+        expect(control.leftPercent).toBeGreaterThanOrEqual(0);
+        expect(control.topPercent ?? control.bottomPercent).toBeGreaterThanOrEqual(0);
+        expect(control.widthPercent).toBeGreaterThan(0);
+        expect(control.leftPercent + control.widthPercent).toBeLessThanOrEqual(100);
+        expect(control.aspectRatio).toBeGreaterThan(0);
+        const heightPercent =
+          (control.widthPercent / control.aspectRatio) *
+          (MAIN_MENU_STAGE.width / MAIN_MENU_STAGE.height);
+        if (control.bottomPercent === undefined) {
+          expect((control.topPercent ?? 0) + heightPercent).toBeLessThanOrEqual(100);
+        } else {
+          expect(control.bottomPercent + heightPercent).toBeLessThanOrEqual(100);
+        }
+      }
     }
   });
 });

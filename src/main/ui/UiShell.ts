@@ -45,6 +45,7 @@ import {
   type MenuOverlay,
   type MenuOverlayInit
 } from './MenuOverlay';
+import type { MenuSubscreenId } from './MenuOverlayLayout';
 import {
   createPhaseTransitionCurtain,
   type PhaseTransitionCurtain,
@@ -286,12 +287,33 @@ export function createUiShell(init: UiShellInit): UiShell {
       audio.playUi('buttonClick');
       void toggleFullscreen();
     },
+    onOpenScreen(screenId) {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
+        return;
+      }
+      audio.playUi('buttonClick');
+      openMenuScreen(screenId);
+    },
+    onBackToMainMenu() {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
+        return;
+      }
+      audio.playUi('buttonClick');
+      closeMenuScreen();
+    },
     onTeaser(controlId) {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
       }
       audio.playUi('buttonClick');
       log.info('menu teaser selected', { controlId });
+    },
+    onSubscreenTeaser(controlId) {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
+        return;
+      }
+      audio.playUi('buttonClick');
+      log.info('menu subscreen teaser selected', { controlId });
     },
     onButtonHover() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
@@ -474,6 +496,36 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (next.kind === 'result' && previousPhase.kind !== 'result') {
       audio.playUi('overlayShow');
     }
+  }
+
+  function openMenuScreen(screenId: MenuSubscreenId): void {
+    if (phase.kind !== 'menu' || menu.screen() !== 'main' || isTransitionActive()) {
+      return;
+    }
+
+    transitionActive = true;
+    void phaseTransitionCurtain
+      .run(() => {
+        menu.showScreen(screenId);
+      })
+      .finally(() => {
+        transitionActive = false;
+      });
+  }
+
+  function closeMenuScreen(): void {
+    if (phase.kind !== 'menu' || menu.screen() === 'main' || isTransitionActive()) {
+      return;
+    }
+
+    transitionActive = true;
+    void phaseTransitionCurtain
+      .run(() => {
+        menu.showScreen('main');
+      })
+      .finally(() => {
+        transitionActive = false;
+      });
   }
 
   function startPresetId(presetId: ModePresetId): void {

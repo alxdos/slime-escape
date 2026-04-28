@@ -1,10 +1,10 @@
 import type { ModePresetId } from '../../shared/content/sessions';
 import { assertNever } from '../../shared/protocol';
 
-import type { MenuControlId } from './MenuOverlayLayout';
+import type { MenuControlId, MenuSubscreenId } from './MenuOverlayLayout';
 
 export type CampaignModeControlId = 'mode-easy' | 'mode-normal' | 'mode-hard';
-export type TeaserControlId = 'soon' | 'pets' | 'dungeon' | 'lab';
+export type TeaserControlId = 'soon';
 
 export type MenuControlAction =
   | Readonly<{ kind: 'selectMode'; presetId: ModePresetId }>
@@ -12,6 +12,7 @@ export type MenuControlAction =
   | Readonly<{ kind: 'startTraining' }>
   | Readonly<{ kind: 'openSettings' }>
   | Readonly<{ kind: 'toggleFullscreen' }>
+  | Readonly<{ kind: 'openScreen'; screenId: MenuSubscreenId }>
   | Readonly<{ kind: 'teaser'; controlId: TeaserControlId }>;
 
 export const DEFAULT_SELECTED_CAMPAIGN_MODE: ModePresetId = 'campaign-normal';
@@ -22,7 +23,7 @@ export const CAMPAIGN_MODE_BY_CONTROL = Object.freeze({
   'mode-hard': 'campaign-hard'
 }) satisfies Readonly<Record<CampaignModeControlId, ModePresetId>>;
 
-const TEASER_CONTROL_IDS = new Set<MenuControlId>(['soon', 'pets', 'dungeon', 'lab']);
+const TEASER_CONTROL_IDS = new Set<MenuControlId>(['soon']);
 
 export function isCampaignModeControl(
   controlId: MenuControlId
@@ -54,10 +55,11 @@ export function resolveMenuControlAction(
       return { kind: 'openSettings' };
     case 'fullscreen':
       return { kind: 'toggleFullscreen' };
-    case 'soon':
     case 'pets':
     case 'dungeon':
     case 'lab':
+      return { kind: 'openScreen', screenId: controlId };
+    case 'soon':
       return { kind: 'teaser', controlId };
     default:
       return assertNever(controlId);

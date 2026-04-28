@@ -88,7 +88,10 @@ describe('MenuOverlay', () => {
       onStartTraining() {},
       onOpenSettings() {},
       onToggleFullscreen() {},
+      onOpenScreen() {},
+      onBackToMainMenu() {},
       onTeaser() {},
+      onSubscreenTeaser() {},
       onButtonHover() {},
       onModeSwitch() {}
     });

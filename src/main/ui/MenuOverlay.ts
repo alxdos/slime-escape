@@ -6,8 +6,13 @@ import {
   MAIN_MENU_LOGO,
   MAIN_MENU_STAGE,
   MAIN_MENU_STAGE_WIDTH_VH,
+  MENU_SUBSCREENS,
   type MenuImageLayout,
-  type MenuControlLayout
+  type MenuControlLayout,
+  type MenuScreenId,
+  type MenuSubscreenControlLayout,
+  type MenuSubscreenId,
+  type MenuTeaserControlId
 } from './MenuOverlayLayout';
 import {
   CAMPAIGN_MODE_BY_CONTROL,
@@ -28,7 +33,10 @@ export type MenuOverlayInit = Readonly<{
   onStartTraining(): void;
   onOpenSettings(): void;
   onToggleFullscreen(): void;
+  onOpenScreen(screenId: MenuSubscreenId): void;
+  onBackToMainMenu(): void;
   onTeaser(controlId: TeaserControlId): void;
+  onSubscreenTeaser(controlId: MenuTeaserControlId): void;
   onButtonHover(): void;
   onModeSwitch(): void;
 }>;
@@ -36,6 +44,8 @@ export type MenuOverlayInit = Readonly<{
 export type MenuOverlay = Readonly<{
   show(): void;
   hide(): void;
+  showScreen(screenId: MenuScreenId): void;
+  screen(): MenuScreenId;
   isVisible(): boolean;
   dispose(): void;
 }>;
@@ -49,16 +59,19 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   style.textContent = menuOverlayCss();
   root.appendChild(style);
 
-  const stage = document.createElement('div');
-  stage.dataset['role'] = 'menu-stage';
-  stage.style.cssText = stageStyle();
+  const mainStage = document.createElement('div');
+  mainStage.dataset['role'] = 'menu-stage';
+  mainStage.style.cssText = stageStyle(MAIN_MENU_STAGE.background);
 
   const logo = createStageImage(MAIN_MENU_LOGO);
-  stage.appendChild(logo);
+  mainStage.appendChild(logo);
 
   const modeButtons = new Map<ModePresetId, HTMLButtonElement>();
   const controlButtons: HTMLButtonElement[] = [];
+  const subscreenButtons = new Map<MenuScreenId, HTMLButtonElement[]>();
+  const subscreenStages = new Map<MenuSubscreenId, HTMLDivElement>();
   let selectedMode: ModePresetId = DEFAULT_SELECTED_CAMPAIGN_MODE;
+  let activeScreen: MenuScreenId = 'main';
   let feedbackTimeout: number | null = null;
 
   const teaserFeedback = document.createElement('div');
@@ -71,17 +84,17 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     if (isCampaignModeControl(control.id)) {
       modeButtons.set(CAMPAIGN_MODE_BY_CONTROL[control.id], button);
     }
-    stage.appendChild(button);
+    mainStage.appendChild(button);
   }
-  stage.appendChild(teaserFeedback);
+  mainStage.appendChild(teaserFeedback);
 
   const socialLinks = createSocialLinkRail();
   socialLinks.className = `${socialLinks.className} menu-social-link-rail`;
   socialLinks.dataset['placement'] = 'menu';
   socialLinks.style.cssText = `${socialLinks.style.cssText};${menuSocialLinkRailStyle()}`;
-  stage.appendChild(socialLinks);
+  mainStage.appendChild(socialLinks);
 
-  root.appendChild(stage);
+  root.appendChild(mainStage);
   init.parent.appendChild(root);
 
   let visible = true;
@@ -91,11 +104,23 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     show(): void {
       visible = true;
       root.style.display = 'flex';
-      restartAppearAnimations();
+      applyScreenVisibility();
+      restartActiveScreenAnimations();
     },
     hide(): void {
       visible = false;
       root.style.display = 'none';
+    },
+    showScreen(screenId): void {
+      activeScreen = screenId;
+      if (screenId !== 'main') {
+        ensureSubscreenStage(screenId);
+      }
+      applyScreenVisibility();
+      restartActiveScreenAnimations();
+    },
+    screen(): MenuScreenId {
+      return activeScreen;
     },
     isVisible(): boolean {
       return visible;
@@ -134,9 +159,28 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
       case 'toggleFullscreen':
         init.onToggleFullscreen();
         return;
+      case 'openScreen':
+        init.onOpenScreen(action.screenId);
+        return;
       case 'teaser':
         showTeaserFeedback();
         init.onTeaser(action.controlId);
+        return;
+    }
+  }
+
+  function handleSubscreenControl(control: MenuSubscreenControlLayout): void {
+    switch (control.kind) {
+      case 'back':
+        init.onBackToMainMenu();
+        return;
+      case 'mode':
+        return;
+      case 'teaser':
+        showTeaserFeedback();
+        if (control.id === 'dungeon-play') {
+          init.onSubscreenTeaser(control.id);
+        }
         return;
     }
   }
@@ -150,6 +194,7 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   }
 
   function showTeaserFeedback(): void {
+    activeStage().appendChild(teaserFeedback);
     teaserFeedback.textContent = 'Coming Soon';
     teaserFeedback.style.opacity = '1';
     if (feedbackTimeout !== null) {
@@ -161,6 +206,13 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     }, TEASER_FEEDBACK_VISIBLE_MS);
   }
 
+  function activeStage(): HTMLDivElement {
+    if (activeScreen === 'main') {
+      return mainStage;
+    }
+    return ensureSubscreenStage(activeScreen);
+  }
+
   function restartAppearAnimations(): void {
     for (const button of controlButtons) {
       button.classList.remove('menu-control-enter');
@@ -169,6 +221,61 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
       void button.offsetWidth;
       button.classList.add('menu-control-enter');
     }
+  }
+
+  function restartSubscreenAnimations(screenId: MenuScreenId): void {
+    for (const button of subscreenButtons.get(screenId) ?? []) {
+      button.classList.remove('menu-control-enter');
+    }
+    for (const button of subscreenButtons.get(screenId) ?? []) {
+      void button.offsetWidth;
+      button.classList.add('menu-control-enter');
+    }
+  }
+
+  function restartActiveScreenAnimations(): void {
+    if (activeScreen === 'main') {
+      restartAppearAnimations();
+      return;
+    }
+    restartSubscreenAnimations(activeScreen);
+  }
+
+  function applyScreenVisibility(): void {
+    mainStage.style.display = activeScreen === 'main' ? 'block' : 'none';
+    for (const [screenId, stage] of subscreenStages.entries()) {
+      stage.style.display = activeScreen === screenId ? 'block' : 'none';
+    }
+  }
+
+  function ensureSubscreenStage(screenId: MenuSubscreenId): HTMLDivElement {
+    const existingStage = subscreenStages.get(screenId);
+    if (existingStage !== undefined) {
+      return existingStage;
+    }
+
+    const layout = MENU_SUBSCREENS[screenId];
+    const stage = document.createElement('div');
+    stage.dataset['role'] = 'menu-subscreen-stage';
+    stage.dataset['screenId'] = screenId;
+    stage.style.cssText = `${stageStyle(layout.background)};display:none`;
+
+    const buttons: HTMLButtonElement[] = [];
+    for (const [index, control] of layout.controls.entries()) {
+      const button = createSubscreenControlButton(
+        control,
+        index,
+        handleSubscreenControl,
+        init.onButtonHover
+      );
+      buttons.push(button);
+      stage.appendChild(button);
+    }
+
+    subscreenButtons.set(screenId, buttons);
+    subscreenStages.set(screenId, stage);
+    root.appendChild(stage);
+    return stage;
   }
 }
 
@@ -219,6 +326,44 @@ function createControlButton(
   return button;
 }
 
+function createSubscreenControlButton(
+  control: MenuSubscreenControlLayout,
+  index: number,
+  onControl: (control: MenuSubscreenControlLayout) => void,
+  onHover: () => void
+): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'menu-image-button';
+  button.dataset['role'] = 'menu-subscreen-button';
+  button.dataset['controlId'] = control.id;
+  button.dataset['controlKind'] = control.kind;
+  if (control.kind === 'teaser') {
+    button.dataset['soon'] = 'true';
+  }
+  if (control.selected === true) {
+    button.dataset['selected'] = 'true';
+    button.setAttribute('aria-pressed', 'true');
+    if (control.selectedTone !== undefined) {
+      button.dataset['selectedTone'] = control.selectedTone;
+    }
+  }
+  button.setAttribute('aria-label', control.label);
+  button.style.cssText = controlButtonStyle(control, index);
+
+  const image = document.createElement('img');
+  image.alt = '';
+  image.src = control.src;
+  image.draggable = false;
+  image.style.cssText = controlImageStyle();
+  button.appendChild(image);
+
+  button.addEventListener('click', () => onControl(control));
+  button.addEventListener('pointerenter', onHover);
+
+  return button;
+}
+
 function stageImageStyle(layout: MenuImageLayout): string {
   return [
     'position:absolute',
@@ -250,12 +395,12 @@ function baseOverlayStyle(): string {
   ].join(';');
 }
 
-function stageStyle(): string {
+function stageStyle(background: string): string {
   return [
     'position:relative',
     `width:min(100vw, ${MAIN_MENU_STAGE_WIDTH_VH.toFixed(3)}vh)`,
     `aspect-ratio:${MAIN_MENU_STAGE.width} / ${MAIN_MENU_STAGE.height}`,
-    `background-image:url("${MAIN_MENU_STAGE.background}")`,
+    `background-image:url("${background}")`,
     'background-size:100% 100%',
     'background-position:center',
     'background-repeat:no-repeat',
@@ -264,12 +409,23 @@ function stageStyle(): string {
   ].join(';');
 }
 
-function controlButtonStyle(control: MenuControlLayout, index: number): string {
+function controlButtonStyle(
+  control: Readonly<{
+    leftPercent: number;
+    topPercent?: number;
+    bottomPercent?: number;
+    widthPercent: number;
+    aspectRatio: number;
+  }>,
+  index: number
+): string {
   return [
     'appearance:none',
     'position:absolute',
     `left:${control.leftPercent}%`,
-    `top:${control.topPercent}%`,
+    control.bottomPercent === undefined
+      ? `top:${control.topPercent ?? 0}%`
+      : `bottom:${control.bottomPercent}%`,
     `width:${control.widthPercent}%`,
     `aspect-ratio:${control.aspectRatio}`,
     'display:block',
@@ -431,6 +587,36 @@ function menuOverlayCss(): string {
   transform: translate(-1px, -1px) scale(1.015);
 }
 
+.menu-image-button[data-selected="true"][data-selected-tone="lava"] img {
+  filter:
+    brightness(1.08)
+    saturate(1.08)
+    drop-shadow(3px 0 0 #ff7a1a)
+    drop-shadow(-3px 0 0 #ff7a1a)
+    drop-shadow(0 3px 0 #ff7a1a)
+    drop-shadow(0 -3px 0 #ff7a1a)
+    drop-shadow(2px 2px 0 #ffb13d)
+    drop-shadow(-2px 2px 0 #ffb13d)
+    drop-shadow(2px -2px 0 #d93600)
+    drop-shadow(-2px -2px 0 #d93600);
+}
+
+.menu-image-button[data-selected="true"][data-selected-tone="lava"]:hover img,
+.menu-image-button[data-selected="true"][data-selected-tone="lava"]:focus-visible img {
+  filter:
+    brightness(1.16)
+    saturate(1.12)
+    drop-shadow(3px 0 0 #ff7a1a)
+    drop-shadow(-3px 0 0 #ff7a1a)
+    drop-shadow(0 3px 0 #ff7a1a)
+    drop-shadow(0 -3px 0 #ff7a1a)
+    drop-shadow(2px 2px 0 #ffb13d)
+    drop-shadow(-2px 2px 0 #ffb13d)
+    drop-shadow(2px -2px 0 #d93600)
+    drop-shadow(-2px -2px 0 #d93600)
+    drop-shadow(6px 6px 0 #000000);
+}
+
 .menu-image-button[data-soon="true"] img {
   filter: saturate(0.86) brightness(0.92);
 }
@@ -474,6 +660,20 @@ function menuOverlayCss(): string {
       drop-shadow(-2px -2px 0 #7cf58f);
   }
 
+  .menu-image-button[data-selected="true"][data-selected-tone="lava"] img {
+    filter:
+      brightness(1.1)
+      saturate(1.08)
+      drop-shadow(3px 0 0 #ff7a1a)
+      drop-shadow(-3px 0 0 #ff7a1a)
+      drop-shadow(0 3px 0 #ff7a1a)
+      drop-shadow(0 -3px 0 #ff7a1a)
+      drop-shadow(2px 2px 0 #ffb13d)
+      drop-shadow(-2px 2px 0 #ffb13d)
+      drop-shadow(2px -2px 0 #d93600)
+      drop-shadow(-2px -2px 0 #d93600);
+  }
+
   .menu-image-button[data-control-id="play"] img {
     animation: none;
   }
@@ -498,6 +698,22 @@ function menuOverlayCss(): string {
       drop-shadow(-2px 2px 0 #7cf58f)
       drop-shadow(2px -2px 0 #7cf58f)
       drop-shadow(-2px -2px 0 #7cf58f)
+      drop-shadow(6px 6px 0 #000000);
+  }
+
+  .menu-image-button[data-selected="true"][data-selected-tone="lava"]:hover img,
+  .menu-image-button[data-selected="true"][data-selected-tone="lava"]:focus-visible img {
+    filter:
+      brightness(1.16)
+      saturate(1.12)
+      drop-shadow(3px 0 0 #ff7a1a)
+      drop-shadow(-3px 0 0 #ff7a1a)
+      drop-shadow(0 3px 0 #ff7a1a)
+      drop-shadow(0 -3px 0 #ff7a1a)
+      drop-shadow(2px 2px 0 #ffb13d)
+      drop-shadow(-2px 2px 0 #ffb13d)
+      drop-shadow(2px -2px 0 #d93600)
+      drop-shadow(-2px -2px 0 #d93600)
       drop-shadow(6px 6px 0 #000000);
   }
 }

@@ -11,7 +11,17 @@ export type MenuControlId =
   | 'dungeon'
   | 'lab';
 
-export type MenuControlKind = 'top-control' | 'mode' | 'launch' | 'teaser';
+export type MenuControlKind = 'top-control' | 'mode' | 'launch' | 'screen' | 'teaser';
+export type MenuSubscreenId = 'lab' | 'pets' | 'dungeon';
+export type MenuScreenId = 'main' | MenuSubscreenId;
+export type MenuSubscreenControlId =
+  | 'lab-back'
+  | 'pets-back'
+  | 'dungeon-mode'
+  | 'dungeon-play'
+  | 'dungeon-back';
+export type MenuSubscreenControlKind = 'back' | 'mode' | 'teaser';
+export type MenuTeaserControlId = 'dungeon-play';
 
 export type MenuControlLayout = Readonly<{
   id: MenuControlId;
@@ -19,7 +29,8 @@ export type MenuControlLayout = Readonly<{
   src: string;
   label: string;
   leftPercent: number;
-  topPercent: number;
+  topPercent?: number;
+  bottomPercent?: number;
   widthPercent: number;
   aspectRatio: number;
 }>;
@@ -32,6 +43,26 @@ export type MenuImageLayout = Readonly<{
   topPercent: number;
   widthPercent: number;
   aspectRatio: number;
+}>;
+
+export type MenuSubscreenControlLayout = Readonly<{
+  id: MenuSubscreenControlId;
+  kind: MenuSubscreenControlKind;
+  src: string;
+  label: string;
+  leftPercent: number;
+  topPercent?: number;
+  bottomPercent?: number;
+  widthPercent: number;
+  aspectRatio: number;
+  selected?: boolean;
+  selectedTone?: 'lava';
+}>;
+
+export type MenuSubscreenLayout = Readonly<{
+  id: MenuSubscreenId;
+  background: string;
+  controls: ReadonlyArray<MenuSubscreenControlLayout>;
 }>;
 
 export const MAIN_MENU_STAGE = Object.freeze({
@@ -135,32 +166,105 @@ export const MAIN_MENU_CONTROLS = Object.freeze([
   },
   {
     id: 'pets',
-    kind: 'teaser',
+    kind: 'screen',
     src: '/images/menu/menu-main-pets.png',
     label: 'Pets',
     leftPercent: 0,
-    topPercent: 54.998,
+    bottomPercent: 0,
     widthPercent: 23,
     aspectRatio: 407 / 563
   },
   {
     id: 'dungeon',
-    kind: 'teaser',
+    kind: 'screen',
     src: '/images/menu/menu-main-dungeon.png',
     label: 'Dungeon',
     leftPercent: 18,
-    topPercent: 71.976,
+    bottomPercent: 0,
     widthPercent: 46,
     aspectRatio: 801 / 345
   },
   {
     id: 'lab',
-    kind: 'teaser',
+    kind: 'screen',
     src: '/images/menu/menu-main-lab.png',
     label: 'Lab',
     leftPercent: 69,
-    topPercent: 32.322,
+    bottomPercent: 0,
     widthPercent: 31,
     aspectRatio: 552 / 852
   }
 ] as const satisfies ReadonlyArray<MenuControlLayout>);
+
+export const MENU_SUBSCREENS = Object.freeze({
+  lab: {
+    id: 'lab',
+    background: '/images/bg/bg-lab.jpg',
+    controls: [
+      {
+        id: 'lab-back',
+        kind: 'back',
+        src: '/images/menu/menu-lab-back.png',
+        label: 'Back',
+        leftPercent: 81.4,
+        topPercent: 2.4,
+        widthPercent: 16.4,
+        aspectRatio: 555 / 189
+      }
+    ]
+  },
+  pets: {
+    id: 'pets',
+    background: '/images/bg/bg-pets.jpg',
+    controls: [
+      {
+        id: 'pets-back',
+        kind: 'back',
+        src: '/images/menu/menu-pets-back.png',
+        label: 'Back',
+        leftPercent: 75.6,
+        topPercent: 2.4,
+        widthPercent: 17.6,
+        aspectRatio: 502 / 192
+      }
+    ]
+  },
+  dungeon: {
+    id: 'dungeon',
+    background: '/images/bg/bg-dungeon.jpg',
+    controls: [
+      {
+        id: 'dungeon-mode',
+        kind: 'mode',
+        src: '/images/menu/menu-dn-mode.png',
+        label: 'Dungeon mode',
+        leftPercent: 36.8,
+        topPercent: 13.8,
+        widthPercent: 25,
+        aspectRatio: 759 / 195,
+        selected: true,
+        selectedTone: 'lava'
+      },
+      {
+        id: 'dungeon-play',
+        kind: 'teaser',
+        src: '/images/menu/menu-dn-play.png',
+        label: 'Dungeon play',
+        leftPercent: 27.4,
+        topPercent: 25.6,
+        widthPercent: 42,
+        aspectRatio: 1687 / 569
+      },
+      {
+        id: 'dungeon-back',
+        kind: 'back',
+        src: '/images/menu/menu-dn-back.png',
+        label: 'Back',
+        leftPercent: 26.8,
+        bottomPercent: 0,
+        widthPercent: 41.5,
+        aspectRatio: 731 / 167
+      }
+    ]
+  }
+} as const satisfies Readonly<Record<MenuSubscreenId, MenuSubscreenLayout>>);

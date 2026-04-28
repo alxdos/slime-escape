@@ -22,7 +22,7 @@ describe('MenuOverlayState', () => {
     });
   });
 
-  it('routes play, training, settings, fullscreen and teasers', () => {
+  it('routes play, training, settings, fullscreen, subscreens and teasers', () => {
     expect(resolveMenuControlAction('play', 'campaign-hard')).toEqual({
       kind: 'start',
       presetId: 'campaign-hard'
@@ -37,8 +37,20 @@ describe('MenuOverlayState', () => {
       kind: 'toggleFullscreen'
     });
     expect(resolveMenuControlAction('pets', DEFAULT_SELECTED_CAMPAIGN_MODE)).toEqual({
+      kind: 'openScreen',
+      screenId: 'pets'
+    });
+    expect(resolveMenuControlAction('dungeon', DEFAULT_SELECTED_CAMPAIGN_MODE)).toEqual({
+      kind: 'openScreen',
+      screenId: 'dungeon'
+    });
+    expect(resolveMenuControlAction('lab', DEFAULT_SELECTED_CAMPAIGN_MODE)).toEqual({
+      kind: 'openScreen',
+      screenId: 'lab'
+    });
+    expect(resolveMenuControlAction('soon', DEFAULT_SELECTED_CAMPAIGN_MODE)).toEqual({
       kind: 'teaser',
-      controlId: 'pets'
+      controlId: 'soon'
     });
   });
 });
