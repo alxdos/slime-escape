@@ -161,6 +161,8 @@ describe('MenuOverlay', () => {
     );
 
     expect(bestWave.textContent).toBe('12');
+    expect(bestWave.style.cssText).toContain('left:31.6%');
+    expect(bestWave.style.cssText).toContain('top:55.2%');
     expect(dungeonPlay?.dataset['controlKind']).toBe('start');
     expect(dungeonPlay?.dataset['soon']).toBeUndefined();
 

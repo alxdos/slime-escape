@@ -397,10 +397,10 @@ function createSubscreenControlButton(
 function dungeonBestWaveStyle(): string {
   return [
     'position:absolute',
-    'left:72.8%',
-    'top:20.8%',
-    'width:13.8%',
-    'height:8.4%',
+    'left:31.6%',
+    'top:55.2%',
+    'width:33.8%',
+    'height:27.8%',
     'display:flex',
     'align-items:center',
     'justify-content:center',
