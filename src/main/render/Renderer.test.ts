@@ -469,6 +469,12 @@ describe('createRenderer', () => {
     expect(blobs.length).toBeGreaterThan(0);
     expect(blobs[0]?.geometry).toBeInstanceOf(THREE.ShapeGeometry);
     expect(blobs[0]?.position.z).toBeLessThan(0);
+    const material = blobs[0]?.material;
+    expect(material).toBeInstanceOf(THREE.MeshBasicMaterial);
+    if (!(material instanceof THREE.MeshBasicMaterial)) throw new Error('expected droplet material');
+    expect(material.transparent).toBe(true);
+    expect(material.opacity).toBeGreaterThan(0);
+    expect(material.opacity).toBeLessThan(1);
   });
 
   it('renders death ghosts from event data even when the dead entity is absent from snapshots', () => {

@@ -128,6 +128,7 @@ const PICKUP_GHOST_Z = 0.12;
 const ARC_PREVIEW_Z = 0.04;
 const ARC_PREVIEW_RADIUS_WU = 0.18;
 const SLIME_STAIN_Z = -0.25;
+const SLIME_DROPLET_BASE_OPACITY = 0.82;
 const DEATH_GHOST_Z = 0.045;
 const COMPANION_Z = -0.02;
 const COMPANION_HP_TRACK_NAME = 'companion-hp-track';
@@ -2035,7 +2036,7 @@ function updateSlimeDropletMeshes(
     const entry = ensureSlimeDropletMesh(droplet, table, scene);
     const material = entry.material;
     if (material instanceof THREE.MeshBasicMaterial) {
-      material.opacity = droplet.opacity;
+      material.opacity = slimeDropletOpacity(droplet.opacity);
     }
     entry.mesh.position.set(droplet.x, droplet.y, SLIME_STAIN_Z);
     entry.mesh.scale.set(droplet.stainScale, droplet.stainScale, 1);
@@ -2059,7 +2060,7 @@ function ensureSlimeDropletMesh(
   const material = new THREE.MeshBasicMaterial({
     color: droplet.color,
     transparent: true,
-    opacity: droplet.opacity,
+    opacity: slimeDropletOpacity(droplet.opacity),
     depthWrite: false
   });
   const mesh = new THREE.Mesh(geometry, material);
@@ -2068,6 +2069,10 @@ function ensureSlimeDropletMesh(
   const entry: EntityMeshEntry = { mesh, geometry, material };
   table.set(droplet.id, entry);
   return entry;
+}
+
+function slimeDropletOpacity(opacity: number): number {
+  return opacity * SLIME_DROPLET_BASE_OPACITY;
 }
 
 function createIrregularBlobGeometry(droplet: SlimeDropletEffect): THREE.ShapeGeometry {
