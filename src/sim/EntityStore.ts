@@ -17,6 +17,7 @@ import type {
 } from '../shared/session';
 
 export type EntityId = number & { readonly __brand: 'EntityId' };
+export type CombatOwnerKind = 'player' | 'companion' | 'enemy' | 'boss';
 
 export type Player = {
   readonly id: EntityId;
@@ -164,7 +165,7 @@ export type Projectile = {
   readonly kind: 'projectile';
   readonly weaponArchetypeId: string;
   readonly ownerId: EntityId;
-  readonly ownerKind: 'player' | 'enemy' | 'boss';
+  readonly ownerKind: CombatOwnerKind;
   readonly motionKind: 'linear' | 'arc' | 'placed';
   readonly arcStart: Vec2 | null;
   readonly arcEnd: Vec2 | null;
@@ -205,7 +206,7 @@ export type FieldEffect = {
   readonly kind: 'fieldEffect';
   readonly archetypeId: string;
   readonly ownerId: EntityId | null;
-  readonly ownerKind: 'player' | 'enemy' | 'boss' | null;
+  readonly ownerKind: CombatOwnerKind | null;
   readonly position: { x: number; y: number };
   readonly radius: number;
   readonly applyEveryMs: number;
@@ -236,7 +237,7 @@ export type EnemySpawnSpec = Readonly<{
 export type ProjectileSpawnSpec = Readonly<{
   weaponArchetypeId: string;
   ownerId: EntityId;
-  ownerKind: 'player' | 'enemy' | 'boss';
+  ownerKind: CombatOwnerKind;
   motionKind: 'linear' | 'arc' | 'placed';
   arcStart?: Vec2 | null;
   arcEnd?: Vec2 | null;
@@ -273,7 +274,7 @@ export type DropSpawnSpec = Readonly<{
 export type FieldEffectSpawnSpec = Readonly<{
   archetypeId: string;
   ownerId: EntityId | null;
-  ownerKind: 'player' | 'enemy' | 'boss' | null;
+  ownerKind: CombatOwnerKind | null;
   position: Vec2;
   radius: number;
   applyEveryMs: number;

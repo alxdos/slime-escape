@@ -27,7 +27,7 @@ export type ProjectileSnapshot = Readonly<{
   id: number;
   kind: 'projectile';
   weaponArchetypeId: string;
-  ownerKind: 'player' | 'enemy' | 'boss';
+  ownerKind: 'player' | 'companion' | 'enemy' | 'boss';
   originX: number;
   originY: number;
   x: number;

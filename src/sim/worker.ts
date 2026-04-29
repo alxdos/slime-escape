@@ -154,13 +154,20 @@ const sessionFlow = createSessionFlowSystem({
     const player = entities.spawnPlayer(session.player);
     if (session.companion !== null) {
       const offset = session.companion.movement.orbitRadius * 0.75;
-      entities.spawnCompanion({
+      const spawnedCompanion = entities.spawnCompanion({
         ...session.companion,
         position: {
           x: player.position.x - offset,
           y: player.position.y - offset
         }
       });
+      if (session.companion.weaponLoadout !== null) {
+        combat.setCompanionLoadout(
+          spawnedCompanion.id,
+          session.companion.weaponLoadout,
+          clock.simTimeMs()
+        );
+      }
     }
     if (session.loadout !== null) {
       combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
