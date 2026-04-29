@@ -826,8 +826,8 @@ function rootStyle(): string {
 function topLeftStatusStyle(): string {
   return [
     'position:fixed',
-    'top:14px',
-    'left:14px',
+    'top:42px',
+    'left:56px',
     'display:grid',
     'gap:6px',
     'min-width:118px',
@@ -967,8 +967,8 @@ function bossBarFillStyle(): string {
 function movementHintStyle(): string {
   return [
     'position:fixed',
-    'left:16px',
-    'bottom:16px',
+    'left:64px',
+    'bottom:48px',
     'display:grid',
     'grid-template-columns:repeat(3, 34px)',
     'grid-template-rows:repeat(2, 34px)',
@@ -1004,7 +1004,7 @@ function weaponBarStyle(): string {
   return [
     'position:fixed',
     'left:50%',
-    'bottom:16px',
+    'bottom:40px',
     'transform:translateX(-50%)',
     'display:none',
     'align-items:end',
@@ -1012,7 +1012,7 @@ function weaponBarStyle(): string {
     'gap:8px',
     'max-width:min(72vw, 620px)',
     'padding:8px',
-    'overflow:hidden'
+    'overflow:visible'
   ].join(';');
 }
 
@@ -1157,8 +1157,8 @@ function timedBadgeFillStyle(): string {
 function fireHintStyle(): string {
   return [
     'position:fixed',
-    'right:16px',
-    'bottom:18px',
+    'right:64px',
+    'bottom:54px',
     'display:flex',
     'align-items:center',
     'gap:8px',

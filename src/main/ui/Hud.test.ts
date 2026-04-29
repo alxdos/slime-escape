@@ -550,6 +550,7 @@ describe('Hud view model', () => {
       }
       expect(cooldownFill.style.height).toBe('50%');
       expect(weaponBar.style.cssText).not.toContain('backdrop-filter');
+      expect(weaponBar.style.cssText).toContain('overflow:visible');
       expect(frame.style.cssText).toContain('backdrop-filter:blur(8px)');
       const movementHint = requireElement(findByDataset(parent, 'role', 'hud-movement-hint'));
       const wKey = requireElement(findByDataset(movementHint, 'key', 'W'));

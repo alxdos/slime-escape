@@ -47,8 +47,8 @@ describe('FpsOverlay', () => {
       const fps = parent.children[0];
 
       expect(fps?.dataset['role']).toBe('fps');
-      expect(fps?.style.cssText).toContain('top:48px');
-      expect(fps?.style.cssText).toContain('right:14px');
+      expect(fps?.style.cssText).toContain('top:80px');
+      expect(fps?.style.cssText).toContain('right:56px');
       expect(fps?.style.cssText).toContain('z-index:44');
 
       overlay.dispose();

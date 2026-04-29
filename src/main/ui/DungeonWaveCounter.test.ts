@@ -91,7 +91,7 @@ describe('DungeonWaveCounter', () => {
       const label = childAt(root, 1);
       const value = childAt(root, 2);
       expect(style.textContent).toContain('dungeon-wave-counter-value');
-      expect(root.style.cssText).toContain('right:14px');
+      expect(root.style.cssText).toContain('right:56px');
       expect(label.textContent).toBe('Wave');
 
       counter.update(

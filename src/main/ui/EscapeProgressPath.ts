@@ -221,8 +221,8 @@ function rootStyle(): string {
 function compactRootStyle(): string {
   return [
     rootStyle(),
-    'top:10px',
-    'right:14px',
+    'top:30px',
+    'right:56px',
     'grid-template-columns:max-content 1fr',
     'align-items:center',
     'gap:7px 10px',
@@ -382,7 +382,7 @@ function escapeProgressPathCss(): string {
 
 @media (max-width: 560px) {
   .escape-progress-path[data-presentation="compact"] {
-    max-width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 112px) !important;
     grid-template-columns: 1fr !important;
     justify-items: end !important;
     gap: 5px !important;

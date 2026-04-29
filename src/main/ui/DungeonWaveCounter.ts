@@ -127,8 +127,8 @@ export function deriveDungeonWaveCounterViewModel(
 function rootStyle(): string {
   return [
     'position:fixed',
-    'top:10px',
-    'right:14px',
+    'top:30px',
+    'right:56px',
     'display:none',
     'grid-template-columns:max-content max-content',
     'align-items:baseline',
@@ -174,7 +174,7 @@ function dungeonWaveCounterCss(): string {
   return `
 @media (max-width: 560px) {
   .dungeon-wave-counter {
-    right: 12px !important;
+    right: 48px !important;
     gap: 6px !important;
   }
 
