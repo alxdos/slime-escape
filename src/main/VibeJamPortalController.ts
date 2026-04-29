@@ -16,7 +16,12 @@ export type VibeJamPortalDescriptor = Readonly<{
   y: number;
   width: number;
   height: number;
+  travelStartedAtSimMs?: number;
+  travelDurationMs?: number;
 }>;
+
+export const VIBE_JAM_PORTAL_TRAVEL_DURATION_MS = 560;
+const PORTAL_OFFSET_PLAYER_WIDTHS = 8;
 
 export type VibeJamPortalControllerInit = Readonly<{
   href: string;
@@ -32,6 +37,13 @@ export type VibeJamPortalController = Readonly<{
   hasActiveReturnContext(): boolean;
 }>;
 
+type PendingPortalRedirect = Readonly<{
+  portalKind: VibeJamPortalDescriptor['kind'];
+  targetUrl: string;
+  startedAtSimMs: number;
+  durationMs: number;
+}>;
+
 export function createVibeJamPortalController(
   init: VibeJamPortalControllerInit
 ): VibeJamPortalController {
@@ -44,17 +56,22 @@ export function createVibeJamPortalController(
   let returnPortal: VibeJamPortalDescriptor | null = null;
   let exitPortal: VibeJamPortalDescriptor | null = null;
   let visiblePortals: ReadonlyArray<VibeJamPortalDescriptor> = [];
+  let pendingRedirect: PendingPortalRedirect | null = null;
   let redirectTriggered = false;
 
   function attachSession(nextSession: SessionDefinition): void {
     session = nextSession;
-    returnPortal = context === null ? null : createReturnPortalDescriptor(nextSession);
-    exitPortal = null;
+    returnPortal = context !== null && hasPortalEncounter(nextSession)
+      ? createReturnPortalDescriptor(nextSession)
+      : null;
+    exitPortal = shouldOpenExitPortalOnAttach(nextSession)
+      ? createExitPortalDescriptor(nextSession, null)
+      : null;
     visiblePortals = [];
   }
 
   function update(snapshot: Snapshot | null, phase: UiShellPhase): ReadonlyArray<VibeJamPortalDescriptor> {
-    if (session === null || redirectTriggered) {
+    if (session === null) {
       visiblePortals = [];
       return visiblePortals;
     }
@@ -71,28 +88,25 @@ export function createVibeJamPortalController(
 
     const encounter = snapshot.encounter;
     const type = resolveEncounterType(session, encounter);
-    if (type === 'boss') {
-      consumeReturnContext();
-      return visiblePortals;
+    if (type === 'portal' && exitPortal === null) {
+      exitPortal = createExitPortalDescriptor(session, snapshot);
     }
     if (type === 'portal') {
-      exitPortal ??= createExitPortalDescriptor(session, snapshot);
-      visiblePortals = [exitPortal];
-      redirectOnPlayerOverlap(
-        session,
-        exitPortal,
-        snapshot,
-        buildVibeJamExitUrl(exitForwardContext)
-      );
+      updatePendingRedirect(snapshot.simTimeMs);
+      visiblePortals = collectVisiblePortals();
+      beginRedirectOnPlayerOverlap(session, snapshot);
+      visiblePortals = collectVisiblePortals();
       return visiblePortals;
     }
 
-    if (context === null || returnPortal === null) {
-      visiblePortals = [];
-      return visiblePortals;
+    if (type === 'boss' && hasPortalEncounter(session)) {
+      consumeReturnContext();
     }
-    visiblePortals = [returnPortal];
-    redirectOnPlayerOverlap(session, returnPortal, snapshot, buildVibeJamReturnUrl(context));
+
+    updatePendingRedirect(snapshot.simTimeMs);
+    visiblePortals = collectVisiblePortals();
+    beginRedirectOnPlayerOverlap(session, snapshot);
+    visiblePortals = collectVisiblePortals();
     return visiblePortals;
   }
 
@@ -101,26 +115,73 @@ export function createVibeJamPortalController(
     returnPortal = null;
     exitPortal = null;
     visiblePortals = [];
+    pendingRedirect = null;
   }
 
   function consumeReturnContext(): void {
     context = null;
     returnPortal = null;
-    visiblePortals = [];
     clearStoredVibeJamPortalContext(init.storage);
   }
 
-  function redirectOnPlayerOverlap(
+  function collectVisiblePortals(): ReadonlyArray<VibeJamPortalDescriptor> {
+    const next: VibeJamPortalDescriptor[] = [];
+    if (context !== null && returnPortal !== null) {
+      next.push(applyTravelState(returnPortal));
+    }
+    if (exitPortal !== null) {
+      next.push(applyTravelState(exitPortal));
+    }
+    return next;
+  }
+
+  function applyTravelState(portal: VibeJamPortalDescriptor): VibeJamPortalDescriptor {
+    if (pendingRedirect === null || pendingRedirect.portalKind !== portal.kind) {
+      return portal;
+    }
+    return {
+      ...portal,
+      travelStartedAtSimMs: pendingRedirect.startedAtSimMs,
+      travelDurationMs: pendingRedirect.durationMs
+    };
+  }
+
+  function beginRedirectOnPlayerOverlap(
     activeSession: SessionDefinition,
-    portal: VibeJamPortalDescriptor,
-    snapshot: Snapshot,
-    targetUrl: string
+    snapshot: Snapshot
   ): void {
+    if (pendingRedirect !== null || redirectTriggered) return;
     const player = findPlayerSnapshot(snapshot);
-    if (player === null || !overlapsPortal(player, activeSession.player.contactBox, portal)) return;
+    if (player === null) return;
+
+    for (const portal of visiblePortals) {
+      if (!overlapsPortal(player, activeSession.player.contactBox, portal)) continue;
+      const targetUrl = resolvePortalTargetUrl(portal);
+      if (targetUrl === null) return;
+      pendingRedirect = {
+        portalKind: portal.kind,
+        targetUrl,
+        startedAtSimMs: snapshot.simTimeMs,
+        durationMs: VIBE_JAM_PORTAL_TRAVEL_DURATION_MS
+      };
+      redirectTriggered = true;
+      init.redirect(targetUrl);
+      return;
+    }
+  }
+
+  function resolvePortalTargetUrl(portal: VibeJamPortalDescriptor): string | null {
+    if (portal.kind === 'return') {
+      return context === null ? null : buildVibeJamReturnUrl(context);
+    }
+    return buildVibeJamExitUrl(exitForwardContext);
+  }
+
+  function updatePendingRedirect(simTimeMs: number): void {
+    if (pendingRedirect === null || redirectTriggered) return;
+    if (simTimeMs - pendingRedirect.startedAtSimMs < pendingRedirect.durationMs) return;
     redirectTriggered = true;
-    visiblePortals = [];
-    init.redirect(targetUrl);
+    init.redirect(pendingRedirect.targetUrl);
   }
 
   return {
@@ -139,7 +200,7 @@ export function createVibeJamPortalController(
 function createReturnPortalDescriptor(session: SessionDefinition): VibeJamPortalDescriptor {
   const width = session.player.contactBox.width;
   const height = session.player.contactBox.height;
-  const preferredX = session.player.position.x - 2 * width;
+  const preferredX = session.player.position.x - PORTAL_OFFSET_PLAYER_WIDTHS * width;
   const preferredY = session.player.position.y;
   return {
     kind: 'return',
@@ -152,7 +213,7 @@ function createReturnPortalDescriptor(session: SessionDefinition): VibeJamPortal
 
 function createExitPortalDescriptor(
   session: SessionDefinition,
-  snapshot: Snapshot
+  snapshot: Snapshot | null
 ): VibeJamPortalDescriptor {
   const width = session.player.contactBox.width;
   const height = session.player.contactBox.height;
@@ -160,7 +221,11 @@ function createExitPortalDescriptor(
   const maxX = session.arena.width / 2 - width / 2;
   const step = Math.max(width, session.player.contactBox.width);
   const player = findPlayerSnapshot(snapshot);
-  let x = clampPortalCenter(session.player.position.x, width, session.arena.width);
+  let x = clampPortalCenter(
+    session.player.position.x + PORTAL_OFFSET_PLAYER_WIDTHS * width,
+    width,
+    session.arena.width
+  );
 
   if (player === null) {
     return { kind: 'exit', x, y, width, height };
@@ -188,6 +253,14 @@ function clampPortalCenter(value: number, portalSize: number, arenaSize: number)
   return Math.min(max, Math.max(min, value));
 }
 
+function shouldOpenExitPortalOnAttach(session: SessionDefinition): boolean {
+  return session.encounters[0]?.type === 'portal';
+}
+
+function hasPortalEncounter(session: SessionDefinition): boolean {
+  return session.encounters.some((encounter) => encounter.type === 'portal');
+}
+
 function resolveEncounterType(
   session: SessionDefinition,
   encounter: EncounterSnapshot
@@ -200,7 +273,8 @@ function resolveEncounterType(
   return byId?.type ?? encounter.type;
 }
 
-function findPlayerSnapshot(snapshot: Snapshot): PlayerSnapshot | null {
+function findPlayerSnapshot(snapshot: Snapshot | null): PlayerSnapshot | null {
+  if (snapshot === null) return null;
   return snapshot.entities.find((entity): entity is PlayerSnapshot => entity.kind === 'player') ?? null;
 }
 

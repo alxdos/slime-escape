@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-28 (story 029 prep: XP result rewards are derived on the main thread from `summary.kills.total`; `SessionResultSummary` shape does not gain XP fields. Earlier: story 028 prep: `SessionResultSummary` gains an optional Dungeon block with fully cleared waves; endless Dungeon uses `progress.percent = null` and does not drive campaign Escape Path. Earlier: 2026-04-27 story 027 prep: loss-only Restart is an orchestration/UI action and does not change the `SessionResultSummary` payload. Earlier: story 026 prep: `portal` encounters are non-objective presentation encounters and do not contribute to result progress; the `/portal` flow normally redirects before any win result.)
+- Updated: 2026-04-28 (story 029 prep: XP result rewards are derived on the main thread from `summary.kills.total`; `SessionResultSummary` shape does not gain XP fields. Earlier: story 028 prep: `SessionResultSummary` gains an optional Dungeon block with fully cleared waves; endless Dungeon uses `progress.percent = null` and does not drive campaign Escape Path. Earlier: 2026-04-27 story 027 prep: loss-only Restart is an orchestration/UI action and does not change the `SessionResultSummary` payload. Earlier: story 026 prep: `portal` encounters are non-objective presentation encounters and do not contribute to result progress; the `/portal` flow can also finish through the normal post-boss win result.)
 
 ## Context
 

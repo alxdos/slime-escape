@@ -8,21 +8,24 @@ import {
   VIBE_JAM_PORTAL_CONTEXT_STORAGE_KEY,
   type VibeJamPortalStorage
 } from './VibeJamPortalContext';
-import { createVibeJamPortalController } from './VibeJamPortalController';
+import {
+  createVibeJamPortalController,
+  VIBE_JAM_PORTAL_TRAVEL_DURATION_MS
+} from './VibeJamPortalController';
 
 const RUNNING_PHASE = { kind: 'running' } as const;
 const PAUSED_PHASE = { kind: 'paused' } as const;
 const MENU_PHASE = { kind: 'menu' } as const;
 
 describe('VibeJamPortalController', () => {
-  it('shows a return portal two player widths left of spawn during non-boss encounters', () => {
+  it('shows a return portal eight player widths left of spawn during non-boss encounters in portal sessions', () => {
     const storage = new FakeStorage();
     const controller = createVibeJamPortalController({
       href: inboundHref('https://previous.example/return'),
       storage,
       redirect: () => {}
     });
-    const session = makeSession([encounter('wave-1', 'wave')]);
+    const session = makeSession([encounter('wave-1', 'wave'), encounter('portal-exit', 'portal')]);
 
     controller.attachSession(session);
     const portals = controller.update(snapshot('wave-1', 'wave', 0), RUNNING_PHASE);
@@ -30,7 +33,7 @@ describe('VibeJamPortalController', () => {
     expect(portals).toEqual([
       {
         kind: 'return',
-        x: -2,
+        x: -8,
         y: 0,
         width: 1,
         height: 1
@@ -39,7 +42,7 @@ describe('VibeJamPortalController', () => {
     expect(controller.hasActiveReturnContext()).toBe(true);
   });
 
-  it('keeps the return context across pre-boss session detach and later sessions', () => {
+  it('keeps the return context hidden in non-portal sessions and available in later portal sessions', () => {
     const storage = new FakeStorage();
     const controller = createVibeJamPortalController({
       href: inboundHref('https://previous.example/return'),
@@ -48,11 +51,15 @@ describe('VibeJamPortalController', () => {
     });
 
     controller.attachSession(makeSession([encounter('wave-1', 'wave')]));
-    expect(controller.update(snapshot('wave-1', 'wave', 0), RUNNING_PHASE)).toHaveLength(1);
+    expect(controller.update(snapshot('wave-1', 'wave', 0), RUNNING_PHASE)).toEqual([]);
+    expect(controller.hasActiveReturnContext()).toBe(true);
     controller.detachSession();
 
-    controller.attachSession(makeSession([encounter('training-wave', 'wave')]));
-    expect(controller.update(snapshot('training-wave', 'wave', 0), RUNNING_PHASE)).toHaveLength(1);
+    controller.attachSession(makeSession([
+      encounter('portal-wave', 'wave'),
+      encounter('portal-exit', 'portal')
+    ]));
+    expect(controller.update(snapshot('portal-wave', 'wave', 0), RUNNING_PHASE)).toHaveLength(1);
     expect(storage.entries.has(VIBE_JAM_PORTAL_CONTEXT_STORAGE_KEY)).toBe(true);
   });
 
@@ -63,7 +70,11 @@ describe('VibeJamPortalController', () => {
       storage,
       redirect: () => {}
     });
-    const session = makeSession([encounter('wave-1', 'wave'), encounter('boss-1', 'boss')]);
+    const session = makeSession([
+      encounter('wave-1', 'wave'),
+      encounter('boss-1', 'boss'),
+      encounter('portal-exit', 'portal')
+    ]);
 
     controller.attachSession(session);
     expect(controller.update(snapshot('wave-1', 'wave', 0), RUNNING_PHASE)).toHaveLength(1);
@@ -74,6 +85,22 @@ describe('VibeJamPortalController', () => {
     controller.detachSession();
     controller.attachSession(makeSession([encounter('later-wave', 'wave')]));
     expect(controller.update(snapshot('later-wave', 'wave', 0), RUNNING_PHASE)).toEqual([]);
+  });
+
+  it('does not consume the return context during bosses in non-portal sessions', () => {
+    const storage = new FakeStorage();
+    const controller = createVibeJamPortalController({
+      href: inboundHref('https://previous.example/return'),
+      storage,
+      redirect: () => {}
+    });
+
+    controller.attachSession(makeSession([encounter('wave-1', 'wave'), encounter('boss-1', 'boss')]));
+
+    expect(controller.update(snapshot('wave-1', 'wave', 0), RUNNING_PHASE)).toEqual([]);
+    expect(controller.update(snapshot('boss-1', 'boss', 1), RUNNING_PHASE)).toEqual([]);
+    expect(controller.hasActiveReturnContext()).toBe(true);
+    expect(storage.entries.has(VIBE_JAM_PORTAL_CONTEXT_STORAGE_KEY)).toBe(true);
   });
 
   it('does not show return portals during menus or missing snapshots', () => {
@@ -97,7 +124,7 @@ describe('VibeJamPortalController', () => {
       redirect: () => {}
     });
 
-    controller.attachSession(makeSession([encounter('break-1', 'break')]));
+    controller.attachSession(makeSession([encounter('break-1', 'break'), encounter('portal-exit', 'portal')]));
 
     expect(controller.update(snapshot('break-1', 'break', 0), PAUSED_PHASE)).toHaveLength(1);
   });
@@ -121,7 +148,7 @@ describe('VibeJamPortalController', () => {
       storage: new FakeStorage(),
       redirect: () => {}
     });
-    const session = makeSession([encounter('wave-1', 'wave')], {
+    const session = makeSession([encounter('wave-1', 'wave'), encounter('portal-exit', 'portal')], {
       playerX: -1.5,
       arenaWidth: 4
     });
@@ -131,18 +158,50 @@ describe('VibeJamPortalController', () => {
     expect(controller.update(snapshot('wave-1', 'wave', 0), RUNNING_PHASE)[0]?.x).toBe(-1.5);
   });
 
-  it('redirects through the return portal exactly once when the player overlaps it', () => {
+  it('starts the return redirect immediately while keeping travel state for zoom-out', () => {
     const redirect = vi.fn();
     const controller = createVibeJamPortalController({
       href: 'https://slimeescape.com/portal?portal=true&ref=https%3A%2F%2Fprevious.example%2Freturn%3Fexisting%3D1&username=Alex',
       storage: new FakeStorage(),
       redirect
     });
-    const session = makeSession([encounter('wave-1', 'wave')]);
+    const session = makeSession([encounter('wave-1', 'wave'), encounter('portal-exit', 'portal')]);
 
     controller.attachSession(session);
-    controller.update(snapshot('wave-1', 'wave', 0, { playerX: -2, playerY: 0 }), RUNNING_PHASE);
-    controller.update(snapshot('wave-1', 'wave', 0, { playerX: -2, playerY: 0 }), RUNNING_PHASE);
+    controller.update(
+      snapshot('wave-1', 'wave', 0, { playerX: -8, playerY: 0, simTimeMs: 100 }),
+      RUNNING_PHASE
+    );
+
+    expect(redirect).toHaveBeenCalledTimes(1);
+    expect(controller.portals()).toEqual([
+      {
+        kind: 'return',
+        x: -8,
+        y: 0,
+        width: 1,
+        height: 1,
+        travelStartedAtSimMs: 100,
+        travelDurationMs: VIBE_JAM_PORTAL_TRAVEL_DURATION_MS
+      }
+    ]);
+
+    controller.update(
+      snapshot('wave-1', 'wave', 0, {
+        playerX: -8,
+        playerY: 0,
+        simTimeMs: 100 + VIBE_JAM_PORTAL_TRAVEL_DURATION_MS
+      }),
+      RUNNING_PHASE
+    );
+    controller.update(
+      snapshot('wave-1', 'wave', 0, {
+        playerX: -8,
+        playerY: 0,
+        simTimeMs: 100 + VIBE_JAM_PORTAL_TRAVEL_DURATION_MS + 1
+      }),
+      RUNNING_PHASE
+    );
 
     expect(redirect).toHaveBeenCalledTimes(1);
     const url = new URL(redirect.mock.calls[0]?.[0] ?? '');
@@ -151,10 +210,10 @@ describe('VibeJamPortalController', () => {
     expect(url.searchParams.get('portal')).toBe('true');
     expect(url.searchParams.get('ref')).toBe(SLIME_ESCAPE_PORTAL_URL);
     expect(url.searchParams.get('username')).toBe('Alex');
-    expect(controller.portals()).toEqual([]);
+    expect(controller.portals()).toHaveLength(1);
   });
 
-  it('shows the exit portal only during portal encounters and shifts it right off the player', () => {
+  it('opens a persistent exit portal during portal encounters and keeps it during later waves', () => {
     const controller = createVibeJamPortalController({
       href: inboundHref('https://previous.example/return'),
       storage: new FakeStorage(),
@@ -162,21 +221,63 @@ describe('VibeJamPortalController', () => {
     });
     const session = makeSession([
       encounter('wave-1', 'wave'),
-      encounter('portal-exit', 'portal')
+      encounter('portal-opening', 'portal'),
+      encounter('wave-2', 'wave')
     ]);
 
     controller.attachSession(session);
     const wavePortals = controller.update(snapshot('wave-1', 'wave', 0), RUNNING_PHASE);
     const exitPortals = controller.update(
-      snapshot('portal-exit', 'portal', 1, { playerX: 0, playerY: 0 }),
+      snapshot('portal-opening', 'portal', 1, { playerX: 0, playerY: 0 }),
       RUNNING_PHASE
     );
+    const laterWavePortals = controller.update(snapshot('wave-2', 'wave', 2), RUNNING_PHASE);
 
     expect(wavePortals.map((portal) => portal.kind)).toEqual(['return']);
     expect(exitPortals).toEqual([
       {
+        kind: 'return',
+        x: -8,
+        y: 0,
+        width: 1,
+        height: 1
+      },
+      {
         kind: 'exit',
-        x: 1,
+        x: 8,
+        y: 0,
+        width: 1,
+        height: 1
+      }
+    ]);
+    expect(laterWavePortals.map((portal) => portal.kind)).toEqual(['return', 'exit']);
+    expect(laterWavePortals[1]?.x).toBe(8);
+  });
+
+  it('opens the exit portal on attach when a transparent portal encounter starts the session', () => {
+    const controller = createVibeJamPortalController({
+      href: inboundHref('https://previous.example/return'),
+      storage: new FakeStorage(),
+      redirect: () => {}
+    });
+    const session = makeSession([
+      encounter('portal-opening', 'portal'),
+      encounter('wave-1', 'wave')
+    ]);
+
+    controller.attachSession(session);
+
+    expect(controller.update(snapshot('wave-1', 'wave', 1), RUNNING_PHASE)).toEqual([
+      {
+        kind: 'return',
+        x: -8,
+        y: 0,
+        width: 1,
+        height: 1
+      },
+      {
+        kind: 'exit',
+        x: 8,
         y: 0,
         width: 1,
         height: 1
@@ -184,7 +285,7 @@ describe('VibeJamPortalController', () => {
     ]);
   });
 
-  it('opens the final exit portal without an inbound return context', () => {
+  it('opens the exit portal without an inbound return context', () => {
     const controller = createVibeJamPortalController({
       href: 'https://slimeescape.com/portal',
       storage: new FakeStorage(),
@@ -194,10 +295,10 @@ describe('VibeJamPortalController', () => {
 
     controller.attachSession(session);
 
-    expect(controller.update(snapshot('portal-exit', 'portal', 0, { playerX: 2 }), RUNNING_PHASE)).toEqual([
+    expect(controller.update(snapshot('portal-exit', 'portal', 0, { playerX: 0 }), RUNNING_PHASE)).toEqual([
       {
         kind: 'exit',
-        x: 0,
+        x: 8,
         y: 0,
         width: 1,
         height: 1
@@ -205,7 +306,7 @@ describe('VibeJamPortalController', () => {
     ]);
   });
 
-  it('redirects through the exit portal with Slime Escape as ref and forwarded optional params', () => {
+  it('starts the exit redirect immediately while keeping travel state for zoom-out', () => {
     const redirect = vi.fn();
     const controller = createVibeJamPortalController({
       href: 'https://slimeescape.com/portal?portal=true&ref=https%3A%2F%2Fprevious.example%2Freturn&username=Alex&color=lime',
@@ -216,7 +317,30 @@ describe('VibeJamPortalController', () => {
 
     controller.attachSession(session);
     controller.update(snapshot('portal-exit', 'portal', 0, { playerX: 0, playerY: 0 }), RUNNING_PHASE);
-    controller.update(snapshot('portal-exit', 'portal', 0, { playerX: 1, playerY: 0 }), RUNNING_PHASE);
+    controller.update(
+      snapshot('portal-exit', 'portal', 0, { playerX: 8, playerY: 0, simTimeMs: 40 }),
+      RUNNING_PHASE
+    );
+
+    expect(redirect).toHaveBeenCalledTimes(1);
+    expect(controller.portals().find((portal) => portal.kind === 'exit')).toEqual({
+      kind: 'exit',
+      x: 8,
+      y: 0,
+      width: 1,
+      height: 1,
+      travelStartedAtSimMs: 40,
+      travelDurationMs: VIBE_JAM_PORTAL_TRAVEL_DURATION_MS
+    });
+
+    controller.update(
+      snapshot('portal-exit', 'portal', 0, {
+        playerX: 8,
+        playerY: 0,
+        simTimeMs: 40 + VIBE_JAM_PORTAL_TRAVEL_DURATION_MS
+      }),
+      RUNNING_PHASE
+    );
 
     expect(redirect).toHaveBeenCalledTimes(1);
     const url = new URL(redirect.mock.calls[0]?.[0] ?? '');
@@ -235,10 +359,10 @@ function snapshot(
   id: string,
   type: EncounterType,
   index: number,
-  options: Readonly<{ playerX?: number; playerY?: number }> = {}
+  options: Readonly<{ playerX?: number; playerY?: number; simTimeMs?: number }> = {}
 ): Snapshot {
   return {
-    simTimeMs: 0,
+    simTimeMs: options.simTimeMs ?? 0,
     entities: [
       {
         id: 1,
@@ -281,7 +405,7 @@ function makeSession(
   return {
     id: 'test-session',
     seed: 1,
-    arena: { width: options.arenaWidth ?? 16, height: 9 },
+    arena: { width: options.arenaWidth ?? 24, height: 9 },
     player: {
       position: { x: options.playerX ?? 0, y: 0 },
       radius: 0.5,

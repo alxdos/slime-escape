@@ -95,7 +95,7 @@ Main principle:
 | [hud-presentation.md](hud-presentation.md) | accepted | Player-facing combat HUD: viewport regions, run timer, compact HP/boss state, control hints, weapon slots, cooldown interval, modifier badges and timed overdrive progress |
 | [session-result-summary.md](session-result-summary.md) | accepted | Terminal run summary for `win`/`loss`: progress, duration, kills, drops, boss state, defeat cause, Dungeon summary, and Result UI ownership |
 | [escape-progress-path.md](escape-progress-path.md) | accepted | Main-thread Escape Path: wave-only progress path for compact HUD, break map, and Result UI, derived from `SessionDefinition`, snapshots, and result summary without sim contract changes |
-| [vibe-jam-portals.md](vibe-jam-portals.md) | accepted | Vibe Jam portal entrypoint, inbound return context, main-thread portal interactables, final portal encounter, and redirect contracts |
+| [vibe-jam-portals.md](vibe-jam-portals.md) | accepted | Vibe Jam portal entrypoint, inbound return context, opening exit portal, normal post-boss completion, and redirect contracts |
 | [_template.md](_template.md) | template | Minimal template for a new decision |
 
 ---

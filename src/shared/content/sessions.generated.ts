@@ -2452,9 +2452,23 @@ export const SESSION_PRESET_TEMPLATES = {
     ],
     musicSampleId: 'music/005-forest',
     rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
-    winCondition: { kind: 'none' },
+    winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     encounters: [
+      {
+        id: 'portal-opening',
+        type: 'portal',
+        backgroundId: 'portal',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: { kind: 'empty' },
+        zoneBehavior: { kind: 'disabled' },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
       {
         id: 'portal-wave-1',
         type: 'wave',
@@ -2951,20 +2965,6 @@ export const SESSION_PRESET_TEMPLATES = {
         objectives: [],
         rewardRules: null,
         transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
-        tuning: null
-      },
-      {
-        id: 'portal-exit',
-        type: 'portal',
-        backgroundId: 'portal',
-        introDurationMs: 0,
-        name: null,
-        text: null,
-        spawnPlan: { kind: 'empty' },
-        zoneBehavior: { kind: 'disabled' },
-        objectives: [],
-        rewardRules: null,
-        transitionRules: { kind: 'never', next: 'sequential' },
         tuning: null
       }
     ]

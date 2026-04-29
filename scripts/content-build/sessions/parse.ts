@@ -908,8 +908,12 @@ function validatePortalEncounterKindPairings(
   if (zoneKind !== 'disabled') {
     throw fieldError(field, 'zoneKind', 'expected disabled for encounter type "portal"');
   }
-  if (transitionKind !== 'never') {
-    throw fieldError(field, 'transitionKind', 'expected never for encounter type "portal"');
+  if (transitionKind !== 'never' && transitionKind !== 'allEnemiesCleared') {
+    throw fieldError(
+      field,
+      'transitionKind',
+      'expected never or allEnemiesCleared for encounter type "portal"'
+    );
   }
 }
 

@@ -28,6 +28,7 @@ const CROSSHAIR_RENDER_ORDER = 21;
 const PORTAL_GROUP_NAME = 'vibe-jam-portal';
 const PORTAL_INTERIOR_NAME = 'vibe-jam-portal-interior';
 const PORTAL_OUTLINE_NAME = 'vibe-jam-portal-outline';
+const PORTAL_RETURN_LABEL_NAME = 'vibe-jam-portal-return-label';
 const PORTAL_INTERIOR_COLOR = 0x000000;
 
 type FakeRendererOp =
@@ -89,9 +90,12 @@ function createEmptySnapshotPair(): SnapshotPair {
 
 type SnapshotEntities = NonNullable<SnapshotPair['curr']>['entities'];
 
-function createSnapshot(entities: SnapshotEntities): NonNullable<SnapshotPair['curr']> {
+function createSnapshot(
+  entities: SnapshotEntities,
+  overrides: Readonly<{ simTimeMs?: number }> = {}
+): NonNullable<SnapshotPair['curr']> {
   return {
-    simTimeMs: 0,
+    simTimeMs: overrides.simTimeMs ?? 0,
     entities,
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
@@ -222,10 +226,14 @@ function findCrosshairGroup(scene: THREE.Scene | null): THREE.Group | null {
 }
 
 function findPortalGroup(scene: THREE.Scene | null): THREE.Group | null {
-  if (scene === null) return null;
-  return scene.children.find((child): child is THREE.Group => {
+  return findPortalGroups(scene)[0] ?? null;
+}
+
+function findPortalGroups(scene: THREE.Scene | null): THREE.Group[] {
+  if (scene === null) return [];
+  return scene.children.filter((child): child is THREE.Group => {
     return child instanceof THREE.Group && child.name === PORTAL_GROUP_NAME;
-  }) ?? null;
+  });
 }
 
 function findPortalPart(
@@ -1223,6 +1231,7 @@ describe('createRenderer', () => {
     const portal = findPortalGroup(backend.lastScene());
     const interior = findPortalPart(portal, PORTAL_INTERIOR_NAME);
     const outline = findPortalPart(portal, PORTAL_OUTLINE_NAME);
+    const label = findPortalPart(portal, PORTAL_RETURN_LABEL_NAME);
 
     expect(portal).not.toBeNull();
     expect(portal?.position.x).toBeCloseTo(2);
@@ -1237,6 +1246,11 @@ describe('createRenderer', () => {
     expect((outline?.material as THREE.MeshBasicMaterial | undefined)?.color.getHex()).not.toBe(
       PORTAL_INTERIOR_COLOR
     );
+    expect(label?.geometry).toBeInstanceOf(THREE.PlaneGeometry);
+    expect(label?.visible).toBe(true);
+    expect(label?.position.y).toBeLessThan(0);
+    expect(label?.scale.x).toBeCloseTo(1 / 1.2);
+    expect(label?.scale.y).toBeCloseTo(1 / 1.6);
   });
 
   it('animates portal outline shimmer unless reduced motion is requested', () => {
@@ -1315,6 +1329,51 @@ describe('createRenderer', () => {
     expect(reducedFirstColor).toBe(reducedSecondColor);
   });
 
+  it('uses a distinct cyan-pink shimmer for exit portals', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const portals: ReadonlyArray<VibeJamPortalDescriptor> = [
+      { kind: 'return', x: -8, y: 0, width: 1, height: 1 },
+      { kind: 'exit', x: 8, y: 0, width: 1, height: 1 }
+    ];
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => ({ ...createEmptySnapshotPair(), nowMs: 120 }),
+      getPortalDescriptors: () => portals,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const groups = findPortalGroups(backend.lastScene());
+    const returnPortal = groups.find((group) => group.position.x === -8) ?? null;
+    const exitPortal = groups.find((group) => group.position.x === 8) ?? null;
+    const returnOutline = findPortalPart(returnPortal, PORTAL_OUTLINE_NAME);
+    const exitOutline = findPortalPart(exitPortal, PORTAL_OUTLINE_NAME);
+    const returnLabel = findPortalPart(returnPortal, PORTAL_RETURN_LABEL_NAME);
+    const exitLabel = findPortalPart(exitPortal, PORTAL_RETURN_LABEL_NAME);
+
+    expect(groups).toHaveLength(2);
+    expect((returnOutline?.material as THREE.MeshBasicMaterial | undefined)?.color.getHex()).not.toBe(
+      (exitOutline?.material as THREE.MeshBasicMaterial | undefined)?.color.getHex()
+    );
+    expect(returnLabel?.visible).toBe(true);
+    expect(exitLabel?.visible).toBe(false);
+  });
+
   it('removes portal meshes when main stops providing descriptors', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();
@@ -1348,6 +1407,58 @@ describe('createRenderer', () => {
     renderer.render();
 
     expect(findPortalGroup(backend.lastScene())).toBeNull();
+  });
+
+  it('keeps the portal visible while portal travel zooms the player sprite out', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const playerTexture = new THREE.Texture();
+    const portals: ReadonlyArray<VibeJamPortalDescriptor> = [
+      {
+        kind: 'exit',
+        x: 2,
+        y: 0,
+        width: 1,
+        height: 1,
+        travelStartedAtSimMs: 0,
+        travelDurationMs: 1000
+      }
+    ];
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [DEFAULT_PLAYER_VISUAL.archetypeId]: playerTexture }),
+      getSnapshotPair: () => ({
+        prev: null,
+        curr: createSnapshot([{ id: 1, kind: 'player', x: 2, y: 0, hp: 5, maxHp: 5 }], {
+          simTimeMs: 500
+        }),
+        currReceivedAtMs: 0,
+        nowMs: 500
+      }),
+      getPortalDescriptors: () => portals,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const playerMesh = findMeshWithMaterialMap(backend.lastScene(), playerTexture);
+
+    expect(findPortalGroup(backend.lastScene())).not.toBeNull();
+    expect(playerMesh?.scale.x).toBeLessThan(1);
+    expect(playerMesh?.scale.y).toBeLessThan(1);
+    expect(playerMesh?.scale.x).toBeGreaterThan(0.08);
   });
 
   it('animates picked-up drops toward the current picker position while shrinking', () => {

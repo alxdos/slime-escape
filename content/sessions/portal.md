@@ -16,7 +16,7 @@
 | aimAssistMaxAngleRadians | 0 |
 | aimAssistMaxDistance | 0 |
 | aimAssistStrength | 0 |
-| winCondition | none |
+| winCondition | allEncountersComplete |
 | lossCondition | playerDeath |
 
 | backgroundId | image |
@@ -24,6 +24,20 @@
 | portal | ![Portal](../../public/images/bg/bg-01.jpg) |
 
 # Encounters
+
+## portal-opening
+
+| field | value |
+|---|---|
+| type | portal |
+| backgroundId | portal |
+| introDurationMs | none |
+| name | none |
+| text | none |
+| spawnKind | empty |
+| zoneKind | disabled |
+| transitionKind | allEnemiesCleared |
+| next | sequential |
 
 ## portal-wave-1
 
@@ -491,18 +505,4 @@
 | bossEdgeMargin | 0.5 |
 | zoneKind | disabled |
 | transitionKind | allEnemiesCleared |
-| next | sequential |
-
-## portal-exit
-
-| field | value |
-|---|---|
-| type | portal |
-| backgroundId | portal |
-| introDurationMs | none |
-| name | none |
-| text | none |
-| spawnKind | empty |
-| zoneKind | disabled |
-| transitionKind | never |
 | next | sequential |

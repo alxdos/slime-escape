@@ -74,16 +74,18 @@ describe('content-build sessions area', () => {
     });
   });
 
-  it('parses the portal preset as an external-redirect session ending in a portal encounter', async () => {
+  it('parses the portal preset as a normal-completion session with a transparent opening portal', async () => {
     const fixture = await copySessionsFixture();
     const area = await parseSessionsArea(fixture.sourceDirectory);
     const portal = area.presets.find((preset) => preset.presetId === 'portal');
+    const openingEncounter = portal?.encounters.at(0);
+    const firstWave = portal?.encounters.at(1);
     const finalEncounter = portal?.encounters.at(-1);
 
-    expect(portal?.winCondition).toEqual({ kind: 'none' });
+    expect(portal?.winCondition).toEqual({ kind: 'allEncountersComplete' });
     expect(portal?.lossCondition).toEqual({ kind: 'playerDeath' });
-    expect(finalEncounter).toMatchObject({
-      id: 'portal-exit',
+    expect(openingEncounter).toMatchObject({
+      id: 'portal-opening',
       type: 'portal',
       backgroundId: 'portal',
       introDurationMs: 0,
@@ -91,8 +93,18 @@ describe('content-build sessions area', () => {
       text: null,
       spawnPlan: { kind: 'empty' },
       zoneBehavior: { kind: 'disabled' },
-      transitionRules: { kind: 'never', next: 'sequential' }
+      transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' }
     });
+    expect(firstWave?.id).toBe('portal-wave-1');
+    expect(finalEncounter).toMatchObject({
+      id: 'portal-boss',
+      type: 'boss',
+      backgroundId: 'portal',
+      spawnPlan: { kind: 'boss', bossArchetype: { id: 'boss-gargoyle' } },
+      zoneBehavior: { kind: 'disabled' },
+      transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' }
+    });
+    expect(portal?.encounters.some((encounter) => encounter.id === 'portal-exit')).toBe(false);
   });
 
   it('parses the dungeon preset as an endless authored wave loop', async () => {
@@ -162,7 +174,7 @@ describe('content-build sessions area', () => {
     {
       name: 'spawnKind',
       mutate: (source: string) =>
-        replaceInSection(source, 'portal-exit', '| spawnKind | empty |', '| spawnKind | static |'),
+        replaceInSection(source, 'portal-opening', '| spawnKind | empty |', '| spawnKind | static |'),
       pattern: /spawnKind.*expected empty for encounter type "portal"/
     },
     {
@@ -170,7 +182,7 @@ describe('content-build sessions area', () => {
       mutate: (source: string) =>
         replaceInSection(
           source,
-          'portal-exit',
+          'portal-opening',
           '| zoneKind | disabled |',
           '| zoneKind | shrinkLinear |'
         ),
@@ -181,11 +193,11 @@ describe('content-build sessions area', () => {
       mutate: (source: string) =>
         replaceInSection(
           source,
-          'portal-exit',
-          '| transitionKind | never |',
-          '| transitionKind | allEnemiesCleared |'
+          'portal-opening',
+          '| transitionKind | allEnemiesCleared |\n| next | sequential |',
+          '| transitionKind | timer |\n| transitionDurationMs | 100 |\n| next | sequential |'
         ),
-      pattern: /transitionKind.*expected never for encounter type "portal"/
+      pattern: /transitionKind.*expected never or allEnemiesCleared for encounter type "portal"/
     }
   ]) {
     it(`rejects invalid portal encounter ${testCase.name}`, async () => {

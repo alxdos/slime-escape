@@ -382,22 +382,16 @@ describe('buildSessionDefinition (dungeon)', () => {
 });
 
 describe('buildSessionDefinition (portal)', () => {
-  it('uses external redirect completion with a terminal portal encounter after the gargoyle boss', () => {
+  it('uses normal completion with a transparent opening portal', () => {
     const session = buildSessionDefinition(resolveModePreset('portal'), { seed: 26 });
+    const openingEncounter = session.encounters.at(0);
+    const firstWave = session.encounters.at(1);
     const finalEncounter = session.encounters.at(-1);
-    const penultimateEncounter = session.encounters.at(-2);
 
-    expect(session.winCondition).toEqual({ kind: 'none' });
+    expect(session.winCondition).toEqual({ kind: 'allEncountersComplete' });
     expect(session.lossCondition).toEqual({ kind: 'playerDeath' });
-    expect(penultimateEncounter?.id).toBe('portal-boss');
-    expect(penultimateEncounter?.type).toBe('boss');
-    expect(penultimateEncounter?.spawnPlan.kind).toBe('boss');
-    if (penultimateEncounter?.spawnPlan.kind !== 'boss') {
-      throw new Error('expected portal-boss to keep a boss spawn plan');
-    }
-    expect(penultimateEncounter.spawnPlan.bossArchetypeId).toBe('boss-gargoyle');
-    expect(finalEncounter).toMatchObject({
-      id: 'portal-exit',
+    expect(openingEncounter).toMatchObject({
+      id: 'portal-opening',
       type: 'portal',
       backgroundId: 'portal',
       introDurationMs: 0,
@@ -405,8 +399,17 @@ describe('buildSessionDefinition (portal)', () => {
       text: null,
       spawnPlan: { kind: 'empty' },
       zoneBehavior: { kind: 'disabled' },
-      transitionRules: { kind: 'never', next: 'sequential' }
+      transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' }
     });
+    expect(firstWave?.id).toBe('portal-wave-1');
+    expect(finalEncounter?.id).toBe('portal-boss');
+    expect(finalEncounter?.type).toBe('boss');
+    expect(finalEncounter?.spawnPlan.kind).toBe('boss');
+    if (finalEncounter?.spawnPlan.kind !== 'boss') {
+      throw new Error('expected portal-boss to keep a boss spawn plan');
+    }
+    expect(finalEncounter.spawnPlan.bossArchetypeId).toBe('boss-gargoyle');
+    expect(session.encounters.some((encounter) => encounter.id === 'portal-exit')).toBe(false);
   });
 });
 
