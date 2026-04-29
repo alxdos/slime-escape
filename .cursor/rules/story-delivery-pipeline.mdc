@@ -1,16 +1,24 @@
 ---
-description: Story delivery pipeline — architect (design → stories), coder/architect alignment, implementation, review, PR
-globs: "{stories,design}/**/*.md"
+description: Story delivery pipeline — game-designer (optional product prep) → architect (design → stories) → coder; alignment, review, PR
+globs: "{stories,design,docs}/**/*.md"
 alwaysApply: false
 ---
 
 # Story delivery pipeline
 
-Roles and boundaries are defined by the `game-architect` and `game-coder` skills in `.cursor/skills/`. When you switch phases, state the active mode explicitly (architect / coder).
+Role boundaries: `game-designer`, `game-architect`, and `game-coder` in `.cursor/skills/`. When you switch phases, state the active mode explicitly (designer / architect / coder).
+
+## Game designer — preliminary story shaping (optional)
+
+Use **before** the architect locks `design/` and decomposes `Tasks` when the slice is still fuzzy or only exists as a rough idea.
+
+1. Follow the `game-designer` skill: align with `docs/`, check `stories/README.md` for overlap, and shape **Player-facing**, **Acceptance**, and **Out of scope** (and short product intent/rules if needed).
+2. This step is **preparatory** — it does not create `design/` decisions, `Related`, or `Tasks`. When product sections are clear enough to verify, hand off to **architect** for engineering prep.
+3. If `Player-facing` / `Acceptance` are missing or not testable, fix them here (or with the human product owner) before asking the architect to wire `design/`.
 
 ## Architect — preparing a story
 
-1. If anything is unclear, ask. When several options exist, list the trade-offs and state your recommendation.
+1. If anything is unclear, ask. When several options exist, list the trade-offs and state your recommendation. If the product half of the story is not ready, send it back to **game-designer** / the author instead of inventing `Player-facing` or `Acceptance`.
 2. **First**, create or update the relevant decisions under `design/` (see `design/README.md` for the format: one file per decision).
 3. **Only after that**, update `stories/`: `Related`, a short `Technical` section, the `Tasks` breakdown, and `Status`. Update the table in `stories/README.md` if needed. Do not write `Player-facing`, `Acceptance`, or `Out of scope` on behalf of product.
 4. Commit on the **story branch** (see "Git" below).
