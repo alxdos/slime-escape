@@ -9,6 +9,8 @@ const ALERT_DURATION_MS = 300;
 const GUARD_ORBIT_RADIANS_PER_SEC = 1.1;
 const REST_OFFSET_SCALE = 0.75;
 const GHOST_OFFSET_SCALE = 0.5;
+const RESCUE_SAFE_GHOST_DISTANCE_SCALE = 0.75;
+const GHOST_SPEED_MULTIPLIER = 0.5;
 const ARRIVAL_EPSILON = 0.02;
 
 type Hostile = Enemy | Boss;
@@ -119,7 +121,7 @@ function tickGhostCompanion(
     companion.mode = 'ghost';
   }
 
-  steerToward(companion, ghostPosition(player, companion), arena);
+  steerToward(companion, ghostPosition(player, companion), arena, GHOST_SPEED_MULTIPLIER);
   tryBoop(companion, player, store, simTimeMs, emit);
 }
 
@@ -202,31 +204,53 @@ function engagePosition(player: Player, companion: Companion, target: Hostile): 
 }
 
 function ghostPosition(player: Player, companion: Companion): Vec2 {
-  const offset = companion.movement.orbitRadius * GHOST_OFFSET_SCALE;
+  const rescueSafeAxisOffset =
+    (companion.rescue.radius * RESCUE_SAFE_GHOST_DISTANCE_SCALE) / Math.SQRT2;
+  const offset = Math.min(
+    companion.movement.orbitRadius * GHOST_OFFSET_SCALE,
+    rescueSafeAxisOffset
+  );
   return { x: player.position.x - offset, y: player.position.y - offset };
 }
 
-function steerToward(companion: Companion, desired: Vec2, arena: ArenaConfig): void {
+function steerToward(
+  companion: Companion,
+  desired: Vec2,
+  arena: ArenaConfig,
+  speedMultiplier = 1
+): void {
   const dx = desired.x - companion.position.x;
   const dy = desired.y - companion.position.y;
   const dist = Math.hypot(dx, dy);
+  const maxSpeed = companion.movement.maxSpeed * speedMultiplier;
   const desiredVelocity =
     dist <= ARRIVAL_EPSILON
       ? { x: 0, y: 0 }
       : {
-          x: (dx / dist) * Math.min(companion.movement.maxSpeed, dist / SIM_STEP_SEC),
-          y: (dy / dist) * Math.min(companion.movement.maxSpeed, dist / SIM_STEP_SEC)
+          x: (dx / dist) * Math.min(maxSpeed, dist / SIM_STEP_SEC),
+          y: (dy / dist) * Math.min(maxSpeed, dist / SIM_STEP_SEC)
         };
-  const nextVelocity = accelerateVelocity(
-    { x: companion.velocity.vx, y: companion.velocity.vy },
-    desiredVelocity,
-    companion.movement.acceleration * SIM_STEP_SEC
+  const nextVelocity = clampVelocityLength(
+    accelerateVelocity(
+      { x: companion.velocity.vx, y: companion.velocity.vy },
+      desiredVelocity,
+      companion.movement.acceleration * SIM_STEP_SEC
+    ),
+    maxSpeed
   );
   companion.velocity.vx = nextVelocity.x;
   companion.velocity.vy = nextVelocity.y;
   companion.position.x += companion.velocity.vx * SIM_STEP_SEC;
   companion.position.y += companion.velocity.vy * SIM_STEP_SEC;
   clampToArena(companion, arena);
+}
+
+function clampVelocityLength(velocity: Vec2, maxSpeed: number): Vec2 {
+  if (maxSpeed <= 0) return { x: 0, y: 0 };
+  const speed = Math.hypot(velocity.x, velocity.y);
+  if (speed <= maxSpeed || speed === 0) return velocity;
+  const scale = maxSpeed / speed;
+  return { x: velocity.x * scale, y: velocity.y * scale };
 }
 
 function accelerateVelocity(current: Vec2, desired: Vec2, maxDelta: number): Vec2 {

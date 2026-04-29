@@ -184,6 +184,40 @@ describe('CompanionSystem ghost and rescue', () => {
     expect(rescued.hp).toBe(3);
     expect(rescued.maxHp).toBe(companion.maxHp);
   });
+
+  it('caps ghost movement at half of configured companion speed', () => {
+    const { companion, player, system, store } = setup({
+      ...BASE_COMPANION,
+      position: { x: 8, y: 0 },
+      movement: { maxSpeed: 8, acceleration: 1000, orbitRadius: 4 }
+    });
+    companion.state = 'ghost';
+    companion.hp = 0;
+    player.position.x = 0;
+    player.position.y = 0;
+
+    system.tick(ARENA, store, ACTIVE_WAVE, 0);
+
+    expect(Math.hypot(companion.velocity.vx, companion.velocity.vy)).toBeCloseTo(4, 10);
+  });
+
+  it('keeps the ghost follow point inside rescue radius during long channeling', () => {
+    const { companion, system, store } = setup({
+      ...BASE_COMPANION,
+      position: { x: 1.3, y: 0 },
+      movement: { maxSpeed: 20, acceleration: 1000, orbitRadius: 3.2 },
+      rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
+    });
+    companion.state = 'ghost';
+    companion.hp = 0;
+
+    for (let step = 0; companion.state === 'ghost' && step < 360; step += 1) {
+      system.tick(ARENA, store, ACTIVE_WAVE, step * SIM_STEP_MS);
+    }
+
+    expect(companion.state).toBe('alive');
+    expect(companion.rescueProgressMs).toBe(0);
+  });
 });
 
 describe('CompanionSystem boop', () => {

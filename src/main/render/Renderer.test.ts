@@ -133,12 +133,15 @@ function createTextureEntries(
 }
 
 function createRenderSession(
-  overrides: Partial<Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player'>> = {}
-): Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player'> {
+  overrides: Partial<
+    Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player' | 'companion'>
+  > = {}
+): Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player' | 'companion'> {
   return {
     backgrounds: [],
     encounters: [],
     player: TRAINING_PLAYER,
+    companion: null,
     ...overrides
   };
 }
@@ -832,7 +835,18 @@ describe('createRenderer', () => {
       canvas,
       renderScalePreset: 'medium',
       arena: { width: 16, height: 9 },
-      session: createRenderSession(),
+      session: createRenderSession({
+        companion: {
+          petArchetypeId: PET_01.id,
+          maxHp: 6,
+          contactBox: { width: 0.55, height: 0.55 },
+          movement: { maxSpeed: 3, acceleration: 22, orbitRadius: 3.2 },
+          threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
+          weaponLoadout: { weapons: ['pistol'], selectedIndex: 0 },
+          boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
+          rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
+        }
+      }),
       spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
       getSnapshotPair: () => pair,
       windowTarget: {
@@ -850,10 +864,14 @@ describe('createRenderer', () => {
     renderer.render();
 
     const companionMesh = findMeshWithMaterialMap(backend.lastScene(), petTexture);
+    const rescueFill = findChildMeshByName(companionMesh, 'companion-hp-rescue-fill');
     const ghostAura = findChildMeshByName(companionMesh, 'companion-ghost-aura');
     const rescueRing = findChildMeshByName(companionMesh, 'companion-rescue-ring');
     const material = companionMesh?.material;
     expect(companionMesh?.scale.x).toBeLessThan(0);
+    expect(rescueFill?.parent?.scale.x).toBeLessThan(0);
+    expect(rescueFill?.visible).toBe(true);
+    expect(rescueFill?.scale.x).toBeCloseTo(0.25);
     expect(ghostAura?.visible).toBe(true);
     expect(rescueRing?.visible).toBe(true);
     expect(material).toBeInstanceOf(THREE.MeshBasicMaterial);

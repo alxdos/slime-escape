@@ -14,7 +14,11 @@ import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
-import { createCombatSystem, SLIME_WEAPON_COOLDOWN_MULTIPLIER } from './CombatSystem';
+import {
+  COMPANION_WEAPON_COOLDOWN_MULTIPLIER,
+  createCombatSystem,
+  SLIME_WEAPON_COOLDOWN_MULTIPLIER
+} from './CombatSystem';
 import {
   createEntityStore,
   type BossSpawnSpec,
@@ -1395,8 +1399,9 @@ describe('CombatSystem', () => {
   it('fires companion weapons at the selected runtime threat', () => {
     const { store, index, combat } = setupCombat();
     const companion = store.spawnCompanion({ ...COMPANION_SPEC, position: { x: -2, y: 0 } });
-    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 2, y: 0 }));
+    const enemy = store.spawnEnemy({ ...stationaryEnemySpec({ x: 12, y: 0 }), maxHp: 999 });
     const events: RuntimeEvent[] = [];
+    const companionCooldownMs = PISTOL.cooldownMs * COMPANION_WEAPON_COOLDOWN_MULTIPLIER;
     companion.targetId = enemy.id;
 
     combat.setCompanionLoadout(companion.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
@@ -1416,6 +1421,30 @@ describe('CombatSystem', () => {
     expect(fire.shooterId).toBe(companion.id);
     expect(fire.dirX).toBeCloseTo(1);
     expect(fire.dirY).toBeCloseTo(0);
+
+    combat.tick(
+      makeInput({ firing: false }),
+      store,
+      index,
+      companionCooldownMs - 1,
+      ARENA,
+      (event) => events.push(event)
+    );
+    expect(
+      events.filter((event) => event.kind === 'fire' && event.shooterId === companion.id)
+    ).toHaveLength(1);
+
+    combat.tick(
+      makeInput({ firing: false }),
+      store,
+      index,
+      companionCooldownMs,
+      ARENA,
+      (event) => events.push(event)
+    );
+    expect(
+      events.filter((event) => event.kind === 'fire' && event.shooterId === companion.id)
+    ).toHaveLength(2);
   });
 
   it('disables companion firing while ghost and restores it when alive again', () => {

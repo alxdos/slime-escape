@@ -238,6 +238,31 @@ describe('createSampleRegistry', () => {
     });
   });
 
+  it('registers pet rescue samples on the sfx bus', () => {
+    const context = new FakeAudioContext();
+    const audioApi: AudioApi = {
+      createContext(): AudioContextLike {
+        return context;
+      },
+      async fetchArrayBuffer(): Promise<ArrayBuffer> {
+        return createArrayBuffer(4);
+      }
+    };
+
+    const registry = createSampleRegistry({
+      audioApi,
+      context
+    });
+
+    expect(registry.require('pets/shuffle')).toEqual({
+      id: 'pets/shuffle',
+      url: '/sfx/pets/shuffle.mp3',
+      category: 'sfx',
+      normalizedGain: 1,
+      defaultGain: 1
+    });
+  });
+
   it('normalizes public music folder tracks with explicit per-file overrides', () => {
     const musicFolderEntries = DEFAULT_SAMPLE_ENTRIES.filter((entry) => entry.id.startsWith('music/'));
     const defaultNormalizedEntries = musicFolderEntries.filter(

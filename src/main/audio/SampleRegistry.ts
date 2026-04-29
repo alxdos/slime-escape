@@ -307,6 +307,13 @@ export const DEFAULT_SAMPLE_ENTRIES: ReadonlyArray<SampleEntry> = Object.freeze(
     defaultGain: 1
   },
   {
+    id: 'pets/shuffle',
+    url: '/sfx/pets/shuffle.mp3',
+    category: 'sfx',
+    normalizedGain: 1,
+    defaultGain: 1
+  },
+  {
     id: 'ui/open-1',
     url: '/sfx/ui/open-1.mp3',
     category: 'ui',

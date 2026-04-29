@@ -35,9 +35,9 @@
 | maxHp | 4 |
 | contactBoxWidth | 0.55 |
 | contactBoxHeight | 0.55 |
-| movementMaxSpeed | 5.5 |
+| movementMaxSpeed | 3 |
 | movementAcceleration | 22 |
-| movementOrbitRadius | 1.6 |
+| movementOrbitRadius | 3.2 |
 | threatAcquireRadius | 5.5 |
 | threatReleaseRadius | 6.5 |
 | weaponLoadoutIds | pistol |
@@ -47,7 +47,7 @@
 | boopDurationMs | 260 |
 | boopCooldownMs | 900 |
 | rescueRadius | 1.4 |
-| rescueDurationMs | 1000 |
+| rescueDurationMs | 5000 |
 | rescueReviveHpFraction | 0.5 |
 
 # Encounters

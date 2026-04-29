@@ -20,11 +20,11 @@ export const SESSION_PRESET_TEMPLATES = {
     companion: {
       maxHp: 4,
       contactBox: { width: 0.55, height: 0.55 },
-      movement: { maxSpeed: 5.5, acceleration: 22, orbitRadius: 1.6 },
+      movement: { maxSpeed: 3, acceleration: 22, orbitRadius: 3.2 },
       threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
       weaponLoadout: { weapons: [PISTOL.id], selectedIndex: 0 },
       boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
-      rescue: { radius: 1.4, durationMs: 1000, reviveHpFraction: 0.5 }
+      rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
     },
     loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 1 },
     backgrounds: [
@@ -240,11 +240,11 @@ export const SESSION_PRESET_TEMPLATES = {
     companion: {
       maxHp: 4,
       contactBox: { width: 0.55, height: 0.55 },
-      movement: { maxSpeed: 5.5, acceleration: 22, orbitRadius: 1.6 },
+      movement: { maxSpeed: 3, acceleration: 22, orbitRadius: 3.2 },
       threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
       weaponLoadout: { weapons: [PISTOL.id], selectedIndex: 0 },
       boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
-      rescue: { radius: 1.4, durationMs: 1000, reviveHpFraction: 0.5 }
+      rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
     },
     loadout: { weapons: [PISTOL.id, SMG.id, ROCK_THROWER.id], selectedIndex: 0 },
     backgrounds: [
@@ -1359,11 +1359,11 @@ export const SESSION_PRESET_TEMPLATES = {
     companion: {
       maxHp: 4,
       contactBox: { width: 0.55, height: 0.55 },
-      movement: { maxSpeed: 5.5, acceleration: 22, orbitRadius: 1.6 },
+      movement: { maxSpeed: 3, acceleration: 22, orbitRadius: 3.2 },
       threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
       weaponLoadout: { weapons: [PISTOL.id], selectedIndex: 0 },
       boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
-      rescue: { radius: 1.4, durationMs: 1000, reviveHpFraction: 0.5 }
+      rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
     },
     loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id], selectedIndex: 0 },
     backgrounds: [

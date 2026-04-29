@@ -73,7 +73,7 @@ export type RendererInit = Readonly<{
   canvas: HTMLCanvasElement;
   renderScalePreset: RenderScalePreset;
   arena: ArenaConfig;
-  session: Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player'>;
+  session: Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player' | 'companion'>;
   spriteTextures: TextureMap;
   selectedPetId?: string | null;
   getSnapshotPair: () => SnapshotPair;
@@ -132,6 +132,7 @@ const DEATH_GHOST_Z = 0.045;
 const COMPANION_Z = -0.02;
 const COMPANION_HP_TRACK_NAME = 'companion-hp-track';
 const COMPANION_HP_FILL_NAME = 'companion-hp-fill';
+const COMPANION_HP_RESCUE_FILL_NAME = 'companion-hp-rescue-fill';
 const COMPANION_WARNING_MARKER_NAME = 'companion-warning-marker';
 const COMPANION_GHOST_AURA_NAME = 'companion-ghost-aura';
 const COMPANION_RESCUE_RING_NAME = 'companion-rescue-ring';
@@ -141,6 +142,7 @@ const COMPANION_HP_BAR_OFFSET_WU = 0.22;
 const COMPANION_HP_TRACK_COLOR = 0x161b22;
 const COMPANION_HP_FILL_COLOR = 0x7ee7c8;
 const COMPANION_HP_GHOST_FILL_COLOR = 0x9bd5ff;
+const COMPANION_HP_RESCUE_FILL_COLOR = 0xffe066;
 const COMPANION_WARNING_COLOR = 0xffe066;
 const COMPANION_GHOST_COLOR = 0x9bd5ff;
 const COMPANION_RESCUE_COLOR = 0xa7f070;
@@ -510,6 +512,7 @@ export function createRenderer(init: RendererInit): Renderer {
           applyCompanionPresentation(
             entry.mesh,
             entity,
+            init.session.companion,
             pair.nowMs,
             hitImpulsesByTarget.get(entity.id)
           )
@@ -942,6 +945,20 @@ function createCompanionHpBar(entityHeight: number): THREE.Group {
   fill.name = COMPANION_HP_FILL_NAME;
   fill.position.z = 0.01;
   group.add(fill);
+
+  const rescueFill = new THREE.Mesh(
+    new THREE.PlaneGeometry(COMPANION_HP_BAR_WIDTH_WU, COMPANION_HP_BAR_HEIGHT_WU),
+    new THREE.MeshBasicMaterial({
+      color: COMPANION_HP_RESCUE_FILL_COLOR,
+      transparent: true,
+      opacity: 0.94,
+      depthWrite: false
+    })
+  );
+  rescueFill.name = COMPANION_HP_RESCUE_FILL_NAME;
+  rescueFill.position.z = 0.02;
+  rescueFill.visible = false;
+  group.add(rescueFill);
   return group;
 }
 
@@ -1221,6 +1238,7 @@ function applyEnemyPresentation(
 function applyCompanionPresentation(
   mesh: THREE.Mesh,
   entity: CompanionSnapshot,
+  companionConfig: SessionDefinition['companion'],
   nowMs: number,
   hitImpulse: HitImpulseEffect | undefined
 ): void {
@@ -1234,7 +1252,7 @@ function applyCompanionPresentation(
       entity.state === 'ghost' ? 0.5 + 0.1 * shimmer01(nowMs, entity.id, 260) : 1;
   }
 
-  applyCompanionHpBar(mesh, entity);
+  applyCompanionHpBar(mesh, entity, companionConfig, flip);
   applyCompanionWarningMarker(mesh, entity, nowMs);
   applyCompanionGhostAura(mesh, entity, nowMs);
   applyCompanionRescueRing(mesh, entity, nowMs);
@@ -1256,17 +1274,38 @@ function companionFlipSign(entity: CompanionSnapshot, nowMs: number): number {
   return 1;
 }
 
-function applyCompanionHpBar(mesh: THREE.Mesh, entity: CompanionSnapshot): void {
+function applyCompanionHpBar(
+  mesh: THREE.Mesh,
+  entity: CompanionSnapshot,
+  companionConfig: SessionDefinition['companion'],
+  flip: number
+): void {
   const track = findChildMesh(mesh, COMPANION_HP_TRACK_NAME);
   const fill = findChildMesh(mesh, COMPANION_HP_FILL_NAME);
-  if (track === null || fill === null) return;
+  const rescueFill = findChildMesh(mesh, COMPANION_HP_RESCUE_FILL_NAME);
+  if (track === null || fill === null || rescueFill === null) return;
+  if (track.parent !== null) {
+    track.parent.scale.x = flip;
+  }
   const visible = entity.maxHp > 0;
   track.visible = visible;
   fill.visible = visible;
+  const rescueProgress = entity.rescueProgress;
+  rescueFill.visible = visible && companionConfig !== null && rescueProgress !== null;
   if (!visible) return;
-  const ratio = Math.max(0, Math.min(1, entity.hp / entity.maxHp));
+  const ratio = clamp01(entity.hp / entity.maxHp);
   fill.scale.x = ratio;
   fill.position.x = (-COMPANION_HP_BAR_WIDTH_WU * (1 - ratio)) / 2;
+  if (companionConfig !== null && rescueProgress !== null) {
+    const reviveHp = Math.max(
+      1,
+      Math.ceil(entity.maxHp * companionConfig.rescue.reviveHpFraction)
+    );
+    const targetRatio = clamp01(reviveHp / entity.maxHp);
+    const progressRatio = ratio + (targetRatio - ratio) * rescueProgress;
+    rescueFill.scale.x = clamp01(progressRatio);
+    rescueFill.position.x = (-COMPANION_HP_BAR_WIDTH_WU * (1 - rescueFill.scale.x)) / 2;
+  }
   const fillMaterial = fill.material;
   if (!Array.isArray(fillMaterial) && fillMaterial instanceof THREE.MeshBasicMaterial) {
     fillMaterial.color.setHex(
@@ -1539,7 +1578,11 @@ function computeAlpha(pair: SnapshotPair): number {
   const span = curr.simTimeMs - prev.simTimeMs;
   if (span <= 0) return 1;
   const raw = (renderSimTimeMs - prev.simTimeMs) / span;
-  return Math.max(0, Math.min(1, raw));
+  return clamp01(raw);
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 function createCrosshair(): THREE.Group {

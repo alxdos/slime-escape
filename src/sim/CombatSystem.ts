@@ -35,6 +35,7 @@ const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const WEAPON_MODIFIER_MIN_SPREAD_RADIANS = 0.25;
 const MAX_STACKS_PER_WEAPON_MODIFIER = 2;
 export const SLIME_WEAPON_COOLDOWN_MULTIPLIER = 4;
+export const COMPANION_WEAPON_COOLDOWN_MULTIPLIER = 4;
 
 export type DamageSource =
   | {
@@ -741,7 +742,9 @@ function initialFireDelayMs(baseCooldownMs: number, ownerKind: ShooterWeapons['o
 }
 
 function ownerCooldownMultiplier(ownerKind: ShooterWeapons['ownerKind']): number {
-  return ownerKind === 'enemy' ? SLIME_WEAPON_COOLDOWN_MULTIPLIER : 1;
+  if (ownerKind === 'enemy') return SLIME_WEAPON_COOLDOWN_MULTIPLIER;
+  if (ownerKind === 'companion') return COMPANION_WEAPON_COOLDOWN_MULTIPLIER;
+  return 1;
 }
 
 function aimedSpreadDirections(
