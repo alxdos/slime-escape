@@ -4,6 +4,7 @@ import type { DropEffect } from '../shared/content/drops';
 
 import {
   createEntityStore,
+  type CompanionSpawnSpec,
   type DropSpawnSpec,
   type EnemySpawnSpec,
   type EntityId,
@@ -70,6 +71,18 @@ const FIELD_EFFECT_SPEC: FieldEffectSpawnSpec = {
   effects: [{ kind: 'damage', amount: 1 }]
 };
 
+const COMPANION_SPEC: CompanionSpawnSpec = {
+  petArchetypeId: 'debug-buddy',
+  position: { x: -1, y: 1 },
+  contactBox: { width: 0.9, height: 0.8 },
+  maxHp: 5,
+  movement: { maxSpeed: 5, acceleration: 20, orbitRadius: 1.6 },
+  threat: { acquireRadius: 5, releaseRadius: 7 },
+  weaponLoadout: { weapons: ['pistol'], selectedIndex: 0 },
+  boop: { radius: 1.2, impulse: 6, durationMs: 150, cooldownMs: 500 },
+  rescue: { radius: 1.1, durationMs: 1000, reviveHpFraction: 0.5 }
+};
+
 describe('EntityStore', () => {
   it('starts empty', () => {
     const store = createEntityStore();
@@ -110,6 +123,38 @@ describe('EntityStore', () => {
     store.clear();
     expect(store.player()).toBeNull();
     expect(() => store.spawnPlayer(SPEC)).not.toThrow();
+  });
+
+  it('spawns a companion with copied session-owned config', () => {
+    const store = createEntityStore();
+    const loadout = { weapons: ['pistol'], selectedIndex: 0 };
+    const companion = store.spawnCompanion({ ...COMPANION_SPEC, weaponLoadout: loadout });
+
+    loadout.weapons[0] = 'smg';
+
+    expect(companion.kind).toBe('companion');
+    expect(companion.petArchetypeId).toBe(COMPANION_SPEC.petArchetypeId);
+    expect(companion.hp).toBe(COMPANION_SPEC.maxHp);
+    expect(companion.maxHp).toBe(COMPANION_SPEC.maxHp);
+    expect(companion.position).toEqual(COMPANION_SPEC.position);
+    expect(companion.velocity).toEqual({ vx: 0, vy: 0 });
+    expect(companion.state).toBe('alive');
+    expect(companion.mode).toBe('rest');
+    expect(companion.targetId).toBeNull();
+    expect(companion.weaponLoadout).toEqual({ weapons: ['pistol'], selectedIndex: 0 });
+    expect(companion.weaponLoadout).not.toBe(loadout);
+    expect(store.companion()).toBe(companion);
+    expect(store.companionById(companion.id)).toBe(companion);
+  });
+
+  it('rejects double companion spawn until cleared', () => {
+    const store = createEntityStore();
+    store.spawnCompanion(COMPANION_SPEC);
+    expect(() => store.spawnCompanion(COMPANION_SPEC)).toThrow();
+
+    store.clear();
+    expect(store.companion()).toBeNull();
+    expect(() => store.spawnCompanion(COMPANION_SPEC)).not.toThrow();
   });
 
   it('spawns an enemy with hp initialised from maxHp', () => {

@@ -5,7 +5,16 @@ import type {
   DetonationTrigger,
   ExplosionSpec
 } from '../shared/content/weapons';
-import type { ContactBox, PlayerSpawn, Vec2 } from '../shared/session';
+import type {
+  CompanionBoopConfig,
+  CompanionMovementConfig,
+  CompanionRescueConfig,
+  CompanionThreatConfig,
+  ContactBox,
+  Loadout,
+  PlayerSpawn,
+  Vec2
+} from '../shared/session';
 
 export type EntityId = number & { readonly __brand: 'EntityId' };
 
@@ -20,6 +29,31 @@ export type Player = {
   velocity: { vx: number; vy: number };
   hp: number;
   statusEffects: ActorStatusEffect[];
+};
+
+export type CompanionState = 'alive' | 'ghost';
+export type CompanionMode = 'rest' | 'guard' | 'alert' | 'engage' | 'rescue' | 'ghost';
+
+export type Companion = {
+  readonly id: EntityId;
+  readonly kind: 'companion';
+  readonly petArchetypeId: string;
+  readonly contactBox: ContactBox;
+  readonly maxHp: number;
+  readonly movement: CompanionMovementConfig;
+  readonly threat: CompanionThreatConfig;
+  readonly weaponLoadout: Loadout | null;
+  readonly boop: CompanionBoopConfig;
+  readonly rescue: CompanionRescueConfig;
+  position: { x: number; y: number };
+  velocity: { vx: number; vy: number };
+  hp: number;
+  state: CompanionState;
+  mode: CompanionMode;
+  targetId: EntityId | null;
+  rescueProgressMs: number;
+  boopReadyAtSimMs: number;
+  alertUntilSimMs: number;
 };
 
 export type KnockbackState = {
@@ -267,14 +301,29 @@ export type BossSpawnSpec = Readonly<{
   attackIdsFromArchetype: ReadonlyArray<string>;
 }>;
 
+export type CompanionSpawnSpec = Readonly<{
+  petArchetypeId: string;
+  position: Vec2;
+  contactBox: ContactBox;
+  maxHp: number;
+  movement: CompanionMovementConfig;
+  threat: CompanionThreatConfig;
+  weaponLoadout: Loadout | null;
+  boop: CompanionBoopConfig;
+  rescue: CompanionRescueConfig;
+}>;
+
 export type EntityStore = Readonly<{
   spawnPlayer(spec: PlayerSpawn): Player;
+  spawnCompanion(spec: CompanionSpawnSpec): Companion;
   spawnEnemy(spec: EnemySpawnSpec): Enemy;
   spawnBoss(spec: BossSpawnSpec): Boss;
   spawnProjectile(spec: ProjectileSpawnSpec): Projectile;
   spawnDrop(spec: DropSpawnSpec): Drop;
   spawnFieldEffect(spec: FieldEffectSpawnSpec): FieldEffect;
   player(): Player | null;
+  companion(): Companion | null;
+  companionById(id: EntityId): Companion | null;
   enemyById(id: EntityId): Enemy | null;
   bossById(id: EntityId): Boss | null;
   projectileById(id: EntityId): Projectile | null;
@@ -296,12 +345,14 @@ export type EntityStore = Readonly<{
   removeDrop(id: EntityId): boolean;
   removeFieldEffect(id: EntityId): boolean;
   removePlayer(): boolean;
+  removeCompanion(): boolean;
   clear(): void;
 }>;
 
 export function createEntityStore(): EntityStore {
   let nextId = 1;
   let player: Player | null = null;
+  let companion: Companion | null = null;
   const enemies = new Map<EntityId, Enemy>();
   const bosses = new Map<EntityId, Boss>();
   const projectiles = new Map<EntityId, Projectile>();
@@ -332,6 +383,56 @@ export function createEntityStore(): EntityStore {
         statusEffects: []
       };
       player = next;
+      return next;
+    },
+    spawnCompanion(spec): Companion {
+      if (companion !== null) {
+        throw new Error('companion already spawned');
+      }
+      const next: Companion = {
+        id: makeId(),
+        kind: 'companion',
+        petArchetypeId: spec.petArchetypeId,
+        contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
+        maxHp: spec.maxHp,
+        movement: {
+          maxSpeed: spec.movement.maxSpeed,
+          acceleration: spec.movement.acceleration,
+          orbitRadius: spec.movement.orbitRadius
+        },
+        threat: {
+          acquireRadius: spec.threat.acquireRadius,
+          releaseRadius: spec.threat.releaseRadius
+        },
+        weaponLoadout:
+          spec.weaponLoadout === null
+            ? null
+            : {
+                weapons: [...spec.weaponLoadout.weapons],
+                selectedIndex: spec.weaponLoadout.selectedIndex
+              },
+        boop: {
+          radius: spec.boop.radius,
+          impulse: spec.boop.impulse,
+          durationMs: spec.boop.durationMs,
+          cooldownMs: spec.boop.cooldownMs
+        },
+        rescue: {
+          radius: spec.rescue.radius,
+          durationMs: spec.rescue.durationMs,
+          reviveHpFraction: spec.rescue.reviveHpFraction
+        },
+        position: { x: spec.position.x, y: spec.position.y },
+        velocity: { vx: 0, vy: 0 },
+        hp: spec.maxHp,
+        state: 'alive',
+        mode: 'rest',
+        targetId: null,
+        rescueProgressMs: 0,
+        boopReadyAtSimMs: 0,
+        alertUntilSimMs: 0
+      };
+      companion = next;
       return next;
     },
     spawnEnemy(spec): Enemy {
@@ -482,6 +583,12 @@ export function createEntityStore(): EntityStore {
     player(): Player | null {
       return player;
     },
+    companion(): Companion | null {
+      return companion;
+    },
+    companionById(id): Companion | null {
+      return companion?.id === id ? companion : null;
+    },
     enemyById(id): Enemy | null {
       return enemies.get(id) ?? null;
     },
@@ -547,8 +654,14 @@ export function createEntityStore(): EntityStore {
       player = null;
       return true;
     },
+    removeCompanion(): boolean {
+      if (companion === null) return false;
+      companion = null;
+      return true;
+    },
     clear(): void {
       player = null;
+      companion = null;
       enemies.clear();
       bosses.clear();
       projectiles.clear();

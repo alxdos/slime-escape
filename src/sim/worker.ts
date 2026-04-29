@@ -3,6 +3,7 @@ import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
 
 import { createBossPhaseSystem } from './BossPhaseSystem';
+import { createCompanionSystem } from './CompanionSystem';
 import { createCombatSystem } from './CombatSystem';
 import { createDropSystem } from './DropSystem';
 import { createEntityStore } from './EntityStore';
@@ -23,6 +24,7 @@ const entities = createEntityStore();
 const exporter = createSnapshotExportSystem();
 const movement = createMovementSystem();
 const bossPhase = createBossPhaseSystem();
+const companion = createCompanionSystem();
 const combat = createCombatSystem();
 const spawn = createSpawnSystem({
   onEnemySpawned(enemyId, loadout, simTimeMs) {
@@ -71,6 +73,12 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
   spawn.onTick(simTimeMs, entities);
   const bossIntents = bossPhase.tick(entities, session.arena, simTimeMs, emitEvent);
   movement.tick(session.arena, entities, sessionFlow.inputState(), simTimeMs);
+  companion.tick(
+    session.arena,
+    entities,
+    sessionFlow.activeEncounter()?.encounter ?? null,
+    simTimeMs
+  );
   const combatIntents = combat.tick(
     sessionFlow.inputState(),
     entities,
@@ -144,6 +152,16 @@ const sessionFlow = createSessionFlowSystem({
     combat.setDamageRules(session.rules.damage);
     fieldEffects.setDamageRules(session.rules.damage);
     const player = entities.spawnPlayer(session.player);
+    if (session.companion !== null) {
+      const offset = session.companion.movement.orbitRadius * 0.75;
+      entities.spawnCompanion({
+        ...session.companion,
+        position: {
+          x: player.position.x - offset,
+          y: player.position.y - offset
+        }
+      });
+    }
     if (session.loadout !== null) {
       combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
     }
