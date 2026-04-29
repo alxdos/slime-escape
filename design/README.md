@@ -60,6 +60,7 @@ Main principle:
 | [thread-model.md](thread-model.md) | accepted | Boundary between the `main thread`, `simulation worker`, and rendering |
 | [runtime-systems.md](runtime-systems.md) | accepted | Minimal `core runtime` systems and the simulation lifecycle |
 | [content-boundaries.md](content-boundaries.md) | accepted | Separation between the `content library`, session configuration, runtime state, client progression, and client settings |
+| [companion-combat.md](companion-combat.md) | accepted | Runtime companion contract: session-owned pet config, companion system, weapon/boop/rescue behavior, ghost state, and snapshots |
 | [arena-and-coordinates.md](arena-and-coordinates.md) | accepted | World coordinate system, arena shape, and fit-to-viewport rule |
 | [input-commands.md](input-commands.md) | accepted | `InputCommand` shape, WASD, Pointer Lock, aiming, left mouse button, and Esc pause |
 | [web-stack.md](web-stack.md) | accepted | Bundler, language, package manager, and the `src/main`, `src/sim`, `src/shared` layout |

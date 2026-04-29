@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-24 (cleanup pass: legacy single-primary projectile shape no longer reproduced as a typed example; only the migration rule remains in one sentence. 017 alignment: data shapes live in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md); this file owns stable `CombatSystem` responsibilities, tick order, hit/damage pipeline and integration boundaries. 018 alignment: mines and field/status follow-ups are delegated to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
+- Updated: 2026-04-29 (story 030 prep: `CombatSystem` accepts companion shooter state, companion target shapes, and friendly player/companion damage filtering; companion AI/boop/rescue remain in [companion-combat.md](companion-combat.md). Earlier: 2026-04-24 cleanup pass: legacy single-primary projectile shape no longer reproduced as a typed example; only the migration rule remains in one sentence. 017 alignment: data shapes live in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md); this file owns stable `CombatSystem` responsibilities, tick order, hit/damage pipeline and integration boundaries. 018 alignment: mines and field/status follow-ups are delegated to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
 
 ## Context
 
@@ -43,7 +43,7 @@ This file remains necessary because [universal-weapons-and-projectiles.md](unive
 - `MovementSystem` still does not move projectiles. Actor movement, chase behavior and player controls remain outside `CombatSystem`.
 - `HealthDeathSystem` remains the only owner of HP decrement and death. `CombatSystem` never mutates `hp`; it emits damage intents.
 - `DropSystem` owns pickup and drop-effect application. For weapon upgrade drops, `DropSystem` may call the narrow runtime API that mutates owner-local `WeaponInstance` modifiers; it must not spawn projectiles.
-- `BossPhaseSystem` and future enemy behavior systems may request firing, choose weapon instances, or set aim/targeting state, but projectile creation still routes through `CombatSystem`.
+- `BossPhaseSystem`, `CompanionSystem`, and future enemy behavior systems may request firing, choose weapon instances, or set aim/targeting state, but projectile creation still routes through `CombatSystem`.
 
 ### Projectile as runtime entity
 
@@ -70,13 +70,14 @@ This file remains necessary because [universal-weapons-and-projectiles.md](unive
 - `linear` projectiles integrate position by velocity.
 - `arc` projectiles use deterministic interpolation from spawn point to landing point over configured flight time/range. The simulation collision point is the 2D ground/shadow position; visual height is render-only.
 - `placed` projectiles start grounded at spawn and do not move.
-- Hit detection against `player` / `enemy` / `boss` uses projectile `hitRadius` against target `contactBox` as fixed by [body-contact-boxes.md](body-contact-boxes.md).
+- Hit detection against `player` / `enemy` / `boss` / `companion` uses projectile `hitRadius` against target `contactBox` as fixed by [body-contact-boxes.md](body-contact-boxes.md).
 - Broadphase may use `SpatialIndex` but `EntityStore` remains the source of truth.
 - The no-tunneling content invariant still applies to each projectile motion profile. Builder/content validation must warn or fail when speed, radius and expected target box sizes cannot be checked safely without sweep tests. Sweep tests are still a separate future design.
 
 ### Damage rules
 
 - Default rule: a projectile or explosion can damage any damageable entity except its owner.
+- Story 030 adds one friendly alliance: `player` and `companion` cannot damage each other with projectiles or explosions. Companion-owned projectiles can damage enemies and bosses; enemy/boss projectiles can damage the companion unless a future explicit rule narrows that.
 - The active session's `rules.damage.slimeFriendlyFire` filters enemy-to-enemy damage as defined in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) and [session-definition.md](session-definition.md).
 - Damage filtering must be centralized in one helper used by impact, explosion, proximity-trigger checks and future field effects. Per-feature ad hoc target filters are not allowed.
 - Friendly-fire retaliation is not a damage rule. It is behavior/aggro state defined in [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).
@@ -133,4 +134,6 @@ The order is intentional: fragments spawned by an explosion do not hit in the sa
 - [logging.md](logging.md)
 - [impact-feedback.md](impact-feedback.md)
 - [body-contact-boxes.md](body-contact-boxes.md)
+- [companion-combat.md](companion-combat.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
+- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)

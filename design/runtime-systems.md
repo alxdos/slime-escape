@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-27 (story 026 prep: Vibe Jam portals are main-thread interactables and do not add simulation systems, runtime events, or snapshot entities; see [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: 2026-04-26 story 024: `RunSummaryTracker` observes deaths/drop pickups/progress and provides `SessionResultSummary` for terminal `win`/`loss` events; see [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-24 017 alignment: `CombatSystem` owns universal weapon/projectile lifecycle from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `FieldEffectSystem` and `StatusEffectSystem` are added after health/death and before drops; see [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: boss encounter, bossPhaseChange, drops.)
+- Updated: 2026-04-29 (story 030 prep: add `CompanionSystem` after movement and before combat for companion AI, inertial steering, threat selection, boop, and rescue; full contract in [companion-combat.md](companion-combat.md). Earlier: 2026-04-27 story 026 prep: Vibe Jam portals are main-thread interactables and do not add simulation systems, runtime events, or snapshot entities; see [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: 2026-04-26 story 024: `RunSummaryTracker` observes deaths/drop pickups/progress and provides `SessionResultSummary` for terminal `win`/`loss` events; see [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-24 017 alignment: `CombatSystem` owns universal weapon/projectile lifecycle from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `FieldEffectSystem` and `StatusEffectSystem` are added after health/death and before drops; see [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: boss encounter, bossPhaseChange, drops.)
 
 ## Context
 
@@ -16,6 +16,7 @@ The MVP needs a compact `core runtime` that supports campaign, training, and cha
   - `EntityStore` — storage and lifecycle for runtime entities;
   - `SpatialIndex` — fast neighbor lookup for enemies, bullets, and drops;
   - `MovementSystem` — movement of controlled actors (player, enemies with behavior); projectile movement lives in `CombatSystem`, see [projectiles-and-combat.md](projectiles-and-combat.md);
+  - `CompanionSystem` — companion behavior modes, deterministic threat selection, inertial movement, boop, rescue, and companion aim intent;
   - `CombatSystem` — firing, hits, damage, cooldowns;
   - `HealthDeathSystem` — HP, death, entity removal, death hooks;
   - `SpawnSystem` — execution of `spawnPlan`;
@@ -33,13 +34,14 @@ The MVP needs a compact `core runtime` that supports campaign, training, and cha
   3. `SpawnSystem`;
   4. `BossPhaseSystem` and other high-level encounter rules;
   5. `MovementSystem`;
-  6. `CombatSystem`;
-  7. `HealthDeathSystem`;
-  8. `FieldEffectSystem`;
-  9. `StatusEffectSystem`;
-  10. `DropSystem`;
-  11. `ZoneSystem`;
-  12. `SnapshotExportSystem`.
+  6. `CompanionSystem`;
+  7. `CombatSystem`;
+  8. `HealthDeathSystem`;
+  9. `FieldEffectSystem`;
+  10. `StatusEffectSystem`;
+  11. `DropSystem`;
+  12. `ZoneSystem`;
+  13. `SnapshotExportSystem`.
 - Local order changes during prototyping are allowed only if the general principle remains: encounter control rules first, then action simulation, then death/drop consequences, then state export.
 - Network code, saves, complex inventory, crafting, and a full mod system are outside MVP runtime.
 - Do not use a separate physics engine; collisions and overlap checks remain custom and 2D-oriented.
@@ -48,6 +50,7 @@ The MVP needs a compact `core runtime` that supports campaign, training, and cha
   - `SessionFlowSystem` decides which encounter is active, when the run ends, and which session-level events are published; it owns session lifecycle and encounter transitions (see below);
   - `SpawnSystem` only executes `spawnPlan` and does not decide win or loss; `spawnPlan` shape and execution are defined in [spawn-plan.md](spawn-plan.md);
   - `MovementSystem` changes positions and basic kinematics of **controlled actors** (player, enemies with behavior), but does not apply damage; it owns the invariant "entity does not leave arena bounds" ([arena-and-coordinates.md](arena-and-coordinates.md)) and reads bounds from active `SessionDefinition.arena`, not from a global constant; projectiles live outside `MovementSystem` (see [projectiles-and-combat.md](projectiles-and-combat.md));
+  - `CompanionSystem` owns companion-specific AI and movement after [companion-combat.md](companion-combat.md): mode selection, smooth velocity steering, threat acquisition, boop impulses, ghost follow, rescue progress, and companion aim intent. It does not create projectiles, apply HP damage, or publish normal death events;
   - `CombatSystem` creates shots, moves projectiles, computes hits and explosions, and produces damage intents; the full contract is [projectiles-and-combat.md](projectiles-and-combat.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md);
   - `HealthDeathSystem` is the only layer that applies final HP loss, records death, and removes damageable entities; the full contract is [health-and-death.md](health-and-death.md);
   - `FieldEffectSystem` owns `fieldEffect` entity lifetime and periodic damage/status applications; it produces intents/applications, does not mutate HP directly, and follows [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md);
@@ -71,7 +74,8 @@ The MVP needs a compact `core runtime` that supports campaign, training, and cha
 - Runtime events must be produced by the systems that own the event fact:
   - `SessionFlowSystem` — pause/resume, encounter start/end, win/loss;
   - `CombatSystem` — fire/hit/explosion;
-  - `HealthDeathSystem` — death;
+  - `CompanionSystem` — companionBoop and companionRescued;
+  - `HealthDeathSystem` — death and companionDowned;
   - `DropSystem` — dropSpawn/dropPickup/dropExpire (full contract for kinds and ownership — [snapshot-shape.md](snapshot-shape.md), [drops.md](drops.md));
   - `BossPhaseSystem` — `bossPhaseChange` ([snapshot-shape.md](snapshot-shape.md)).
   `FieldEffectSystem` and `StatusEffectSystem` may publish future presentation events only after [snapshot-shape.md](snapshot-shape.md) defines their exact kinds.
@@ -128,3 +132,4 @@ The MVP needs a compact `core runtime` that supports campaign, training, and cha
 - [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
 - [session-result-summary.md](session-result-summary.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
+- [companion-combat.md](companion-combat.md)

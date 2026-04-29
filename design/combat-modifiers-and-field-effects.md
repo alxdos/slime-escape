@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-24
-- Updated: 2026-04-25 (story 019: carrier guaranteed drops and friendly-fire retaliation become per-spawn override fields ([spawn-overrides.md](spawn-overrides.md)), not `EnemyArchetype` fields. The archetype default for retaliation remains; `EnemyArchetype.carrierDrop` is removed. Earlier: 2026-04-24 cleanup pass: aim assist owner fixed to `main thread`; drop magnet binding to `DropEffect.kind: 'pickupModifier'` made explicit so the new union member is the single extension surface in this story.)
+- Updated: 2026-04-29 (story 030 prep: field-effect owner metadata accepts `companion` and uses the same player/companion friendly damage filter as projectiles/explosions. Earlier: 2026-04-25 story 019: carrier guaranteed drops and friendly-fire retaliation become per-spawn override fields ([spawn-overrides.md](spawn-overrides.md)), not `EnemyArchetype` fields. The archetype default for retaliation remains; `EnemyArchetype.carrierDrop` is removed. Earlier: 2026-04-24 cleanup pass: aim assist owner fixed to `main thread`; drop magnet binding to `DropEffect.kind: 'pickupModifier'` made explicit so the new union member is the single extension surface in this story.)
 
 ## Context
 
@@ -35,7 +35,7 @@ The next layer of combat juice should be designed separately so the universal we
     kind: 'fieldEffect';
     archetypeId: string;
     ownerId: EntityId | null;
-    ownerKind: 'player' | 'enemy' | 'boss' | null;
+    ownerKind: 'player' | 'enemy' | 'boss' | 'companion' | null;
     position: { x: number; y: number };
     radius: number;
     applyEveryMs: number;
@@ -47,7 +47,7 @@ The next layer of combat juice should be designed separately so the universal we
 - `fieldEffect` lives in `EntityStore` and is exported in snapshots only with presentation fields needed by renderer.
 - `CombatSystem` can spawn a field effect as part of projectile explosion resolution, but the lifetime and periodic application belong to a dedicated `FieldEffectSystem`.
 - `FieldEffectSystem` runs after `HealthDeathSystem` and before `StatusEffectSystem`/`DropSystem` per [runtime-systems.md](runtime-systems.md). It produces damage intents and actor-effect applications; it does not mutate HP directly.
-- Field effects use the same damage rules as explosions from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md), including owner exclusion and `slimeFriendlyFire`.
+- Field effects use the same damage rules as explosions from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md) and [companion-combat.md](companion-combat.md), including owner exclusion, `slimeFriendlyFire`, and the player/companion friendly alliance.
 
 ### Actor status effects
 
@@ -164,3 +164,5 @@ The next layer of combat juice should be designed separately so the universal we
 - [testing.md](testing.md)
 - [../stories/018-combat-modifiers-and-field-effects.md](../stories/018-combat-modifiers-and-field-effects.md)
 - [spawn-overrides.md](spawn-overrides.md)
+- [companion-combat.md](companion-combat.md)
+- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)

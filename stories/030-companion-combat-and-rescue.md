@@ -1,6 +1,6 @@
 # Companion Combat And Rescue
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-29
 - Updated: 2026-04-29
 
@@ -39,6 +39,20 @@ The selected pet should feel like a small living ally, not a cosmetic marker. It
 - Sees: if the player leaves the rescue area too soon, rescue does not complete.
 - Sees: different pets may express personality through presentation such as idle timing, look-around behavior, or ghost appearance, without changing combat strength.
 
+## Technical
+
+- Companion combat is worker-authoritative and session-owned by [companion-combat.md](../design/companion-combat.md).
+- `SessionDefinition.companion` is the only simulation-visible bridge from selected pet progression to runtime companion behavior. If it is `null`, no runtime companion exists.
+- `PetArchetype` remains collection/presentation identity only. Pet-specific HP, damage, cooldown, weapon, contact box, movement, boop, and rescue stats are forbidden.
+- `content/sessions/<presetId>.md` may add an optional `# Companion` field table for session tuning. The selected pet id is never authored in MD; `UiShell` passes it to the session builder at run start.
+- Runtime adds `kind: 'companion'` plus `CompanionSnapshot`, `CompanionSystem`, and companion events `companionBoop`, `companionDowned`, and `companionRescued`.
+- `CompanionSystem` runs after `MovementSystem` and before `CombatSystem`. It owns mode selection, inertial movement, deterministic threat acquisition, boop, rescue, ghost follow, and companion aim intent.
+- `CombatSystem` owns companion weapon firing through the existing owner-local weapon instance model with `ownerKind: 'companion'`.
+- Damage rules add the friendly alliance `player + companion`: player projectiles cannot damage the companion, and companion projectiles cannot damage the player or companion.
+- `HealthDeathSystem` applies companion damage, but HP reaching zero transitions the companion to `ghost` instead of publishing normal `death`, running death hooks, spawning drops, incrementing result kills, or removing the entity.
+- `Renderer` draws the companion from `CompanionSnapshot.petArchetypeId` and `petVisuals`. Look-around flips, rescue flip rate, ghost shimmer, and personality are presentation-only.
+- The in-world companion HP bar is presentation owned and reads from `CompanionSnapshot.hp/maxHp`.
+
 ## Out of scope
 
 - Pet upgrades, pet levels, rarity-based stats, or permanent combat advantages.
@@ -68,3 +82,37 @@ The selected pet should feel like a small living ally, not a cosmetic marker. It
 - Leaving the rescue area before the rescue completes prevents the revive.
 - After rescue completes, the pet returns alive with partial HP and can use its weapon again if the current run allows it.
 - Demo scenario: select a pet, start a companion-enabled campaign, watch it rest during a break, patrol during a wave, warn on a close slime, attack when armed, get knocked into ghost form, rescue it by standing nearby, and confirm it returns alive without changing the player's own weapon or stats.
+
+## Tasks
+
+| # | Status | Task |
+|---|--------|------|
+| T1 | [x] | Record architecture decisions for session ownership, runtime system boundaries, snapshots/events, damage rules, ghost/downed handling, rendering, and MD authoring. |
+| T2 | [ ] | Extend session types, content authoring, generated session data, and builder options so companion-enabled presets can produce `SessionDefinition.companion` from selected pet progression plus session tuning. |
+| T3 | [ ] | Add companion runtime entity support, `CompanionSystem`, inertial movement modes, deterministic threat acquisition, ghost follow, rescue progress, and boop impulse behavior. |
+| T4 | [ ] | Integrate companion weapon firing and combat rules: `ownerKind: 'companion'`, friendly alliance filtering, companion projectile events, weapon disable in ghost state, and weapon restore after rescue. |
+| T5 | [ ] | Integrate companion HP/downed/rescue lifecycle in health/death, result summary, and cleanup rules without normal death hooks or entity removal. |
+| T6 | [ ] | Add snapshot/event exports and renderer/UI presentation: companion sprite, HP bar, rest/guard/alert/engage/ghost/rescue visuals, look-around flips, warning, slime hit feedback, ghost aura, and rescue flip animation. |
+| T7 | [ ] | Cover the feature with focused tests for builder validation, runtime mode transitions, smooth movement constraints, damage rules, downed/rescue behavior, boop without damage, snapshot/events, and renderer hard-error paths. |
+| T8 | [ ] | Run content checks, typecheck/build/test, and a manual demo pass over the full select-pet -> run -> fight -> ghost -> rescue scenario. |
+
+## Related
+
+- [companion-combat.md](../design/companion-combat.md)
+- [content-boundaries.md](../design/content-boundaries.md)
+- [content-archetypes.md](../design/content-archetypes.md)
+- [content-authoring.md](../design/content-authoring.md)
+- [session-definition.md](../design/session-definition.md)
+- [runtime-systems.md](../design/runtime-systems.md)
+- [projectiles-and-combat.md](../design/projectiles-and-combat.md)
+- [universal-weapons-and-projectiles.md](../design/universal-weapons-and-projectiles.md)
+- [non-player-firing.md](../design/non-player-firing.md)
+- [combat-modifiers-and-field-effects.md](../design/combat-modifiers-and-field-effects.md)
+- [health-and-death.md](../design/health-and-death.md)
+- [snapshot-shape.md](../design/snapshot-shape.md)
+- [enemy-contact.md](../design/enemy-contact.md)
+- [body-contact-boxes.md](../design/body-contact-boxes.md)
+- [impact-feedback.md](../design/impact-feedback.md)
+- [sprite-assets.md](../design/sprite-assets.md)
+- [main-ui-shell.md](../design/main-ui-shell.md)
+- [session-result-summary.md](../design/session-result-summary.md)

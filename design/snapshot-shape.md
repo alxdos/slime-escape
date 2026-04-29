@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-28 (story 028 prep: `EncounterSnapshot` adds `waveOrdinal: number | null` so Dungeon can show an increasing run-level wave number while looping authored encounter indices. Earlier: 2026-04-27 story 026 prep: `EncounterSnapshot.type` includes the new `portal` encounter type, but portals do not become entity snapshots or runtime events; main-thread portal descriptors are defined in [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: projectile snapshots expose effective runtime `size` so render can show projectile-size modifiers without inferring weapon state on the main thread; existing `originX`/`originY` projectile fields are documented here as presentation data copied from runtime `Projectile.origin`). Earlier: 2026-04-26 story 024: terminal `win`/`loss` runtime events carry `SessionResultSummary`; authoritative result stats are defined in [session-result-summary.md](session-result-summary.md). Earlier story 022: `WeaponHudSnapshot` receives a cooldown interval (`cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`), permanent `modifiers`, and active `timedEffects` for the weapon-slot HUD; the presentation contract lives in [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-25 story 020: `ProjectileSnapshot` receives required field `arcEnd: { x: number; y: number } | null`, the fixed world landing position for an in-flight arc projectile; it is `null` for grounded projectiles and for linear/placed motion. Source of truth is `CombatSystem` at projectile creation; `SnapshotExportSystem` copies the value and does not recompute it. The render contract for landing telegraphs on non-player in-flight arcs is [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD, and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
+- Updated: 2026-04-29 (story 030 prep: add `CompanionSnapshot`, `ownerKind: 'companion'`, `targetKind: 'companion'`, and companion boop/downed/rescued events; full behavior contract in [companion-combat.md](companion-combat.md). Earlier: 2026-04-28 story 028 prep: `EncounterSnapshot` adds `waveOrdinal: number | null` so Dungeon can show an increasing run-level wave number while looping authored encounter indices. Earlier: 2026-04-27 story 026 prep: `EncounterSnapshot.type` includes the new `portal` encounter type, but portals do not become entity snapshots or runtime events; main-thread portal descriptors are defined in [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: projectile snapshots expose effective runtime `size` so render can show projectile-size modifiers without inferring weapon state on the main thread; existing `originX`/`originY` projectile fields are documented here as presentation data copied from runtime `Projectile.origin`). Earlier: 2026-04-26 story 024: terminal `win`/`loss` runtime events carry `SessionResultSummary`; authoritative result stats are defined in [session-result-summary.md](session-result-summary.md). Earlier story 022: `WeaponHudSnapshot` receives a cooldown interval (`cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`), permanent `modifiers`, and active `timedEffects` for the weapon-slot HUD; the presentation contract lives in [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-25 story 020: `ProjectileSnapshot` receives required field `arcEnd: { x: number; y: number } | null`, the fixed world landing position for an in-flight arc projectile; it is `null` for grounded projectiles and for linear/placed motion. Source of truth is `CombatSystem` at projectile creation; `SnapshotExportSystem` copies the value and does not recompute it. The render contract for landing telegraphs on non-player in-flight arcs is [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD, and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
 
 ## Context
 
@@ -31,6 +31,7 @@ Without an explicit contract, those shapes would be defined locally in 003, then
 type EntitySnapshot =
   | PlayerSnapshot
   | EnemySnapshot
+  | CompanionSnapshot
   | ProjectileSnapshot
   | DropSnapshot
   | BossSnapshot
@@ -67,7 +68,7 @@ type EntitySnapshot =
     id: number;
     kind: 'projectile';
     weaponArchetypeId: string;
-    ownerKind: 'player' | 'enemy' | 'boss';
+    ownerKind: 'player' | 'enemy' | 'boss' | 'companion';
     originX: number;
     originY: number;
     x: number;
@@ -88,6 +89,23 @@ type EntitySnapshot =
 - `size` is the effective runtime visual size copied from runtime `Projectile.size`. It equals the base `WeaponArchetype.projectile.size` for unmodified shots and includes spawn-time `projectileSizeMultiplier` effects for modified shots. `SnapshotExportSystem` copies this value and does not recompute it from `weaponArchetypeId` or from `weaponHud.modifiers`. `size` is not `hitRadius`: projectile collision remains owned by `CombatSystem`, and `hitRadius` stays out of snapshots until a renderer/HUD/debug story needs it explicitly.
 - `state`, `visualState`, `explosionRadius`, and `detonateAtSimMs` are required by story 017 presentation: sprite orientation/spin, grounded pulse, and radius indicators must not be inferred from hidden sim state. `detonateAtSimMs` is presentation timing; gameplay detonation remains owned by `CombatSystem`.
 - `arcEnd` (story 020) is the fixed world landing position for an in-flight arc projectile. It is copied from runtime `Projectile` without recomputation on each snapshot; it is `null` for an arc projectile in `state: 'grounded'`, because landing already happened, and **always** `null` for linear/placed motion. The field is required, and `null` is the only way to say "not applicable"; there is no `undefined`/optional marker. The full render contract for landing telegraphs, including when to show them, marker size, and the player-owned arc exception, lives in [landing-telegraph.md](landing-telegraph.md). Snapshot itself does not carry "telegraph needed"; renderer derives that from `state + arcEnd + ownerKind`.
+- `CompanionSnapshot` (030, [companion-combat.md](companion-combat.md)):
+  ```ts
+  {
+    id: number;
+    kind: 'companion';
+    petArchetypeId: string;
+    x: number;
+    y: number;
+    hp: number;
+    maxHp: number;
+    state: 'alive' | 'ghost';
+    mode: 'rest' | 'guard' | 'alert' | 'engage' | 'rescue' | 'ghost';
+    rescueProgress: number | null; // [0, 1] while rescue is active; null otherwise
+    targetId: number | null;
+  }
+  ```
+  Companion snapshots are exported only when `SessionDefinition.companion` is present. `petArchetypeId` is presentation identity; combat tuning stays in immutable session configuration and runtime state.
 - `DropSnapshot` (story 005, see [drops.md](drops.md)):
   ```ts
   {
@@ -212,7 +230,7 @@ type EntitySnapshot =
 
 ### Runtime events: kind contract
 
-- Three combat kinds are added to the existing lifecycle kinds from [runtime-systems.md](runtime-systems.md) (`sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`). Story 004 adds `win` and `loss`; story 005 adds three drop kinds (`dropSpawn`, `dropPickup`, `dropExpire`):
+- Combat, companion, and drop kinds extend the existing lifecycle kinds from [runtime-systems.md](runtime-systems.md) (`sessionStart`, `sessionStop`, `encounterStart`, `encounterEnd`, `pause`, `resume`). Story 004 adds `win` and `loss`; story 005 adds three drop kinds (`dropSpawn`, `dropPickup`, `dropExpire`):
   ```ts
   type RuntimeEvent =
     // lifecycle (see runtime-systems.md)
@@ -227,7 +245,7 @@ type EntitySnapshot =
         kind: 'fire';
         simTime: number;
         shooterId: number;
-        ownerKind: 'player' | 'enemy' | 'boss';
+        ownerKind: 'player' | 'enemy' | 'boss' | 'companion';
         weaponArchetypeId: string;
         originX: number;
         originY: number;
@@ -239,8 +257,8 @@ type EntitySnapshot =
         simTime: number;
         projectileId: number;
         targetId: number;
-        targetKind: 'enemy' | 'player' | 'boss';
-        targetArchetypeId: string | null; // enemy/boss id; null for player
+        targetKind: 'enemy' | 'player' | 'boss' | 'companion';
+        targetArchetypeId: string | null; // enemy/boss id or companion pet id; null for player
         weaponArchetypeId: string;
         damage: number;
         impactDirX: number;     // normalized projectile travel direction
@@ -252,7 +270,7 @@ type EntitySnapshot =
         kind: 'explosion';
         simTime: number;
         projectileId: number;
-        ownerKind: 'player' | 'enemy' | 'boss';
+        ownerKind: 'player' | 'enemy' | 'boss' | 'companion';
         weaponArchetypeId: string;
         damage: number;
         radius: number;
@@ -277,6 +295,38 @@ type EntitySnapshot =
         bossId: number;
         phaseIndex: number;
         phaseId: string;
+      }
+    | {
+        kind: 'companionBoop';
+        simTime: number;
+        companionId: number;
+        targetId: number;
+        targetKind: 'enemy' | 'boss';
+        x: number;
+        y: number;
+        impulseDirX: number;
+        impulseDirY: number;
+      }
+    | {
+        kind: 'companionDowned';
+        simTime: number;
+        companionId: number;
+        petArchetypeId: string;
+        weaponArchetypeId: string | null;
+        impactDirX: number | null;
+        impactDirY: number | null;
+        x: number;
+        y: number;
+      }
+    | {
+        kind: 'companionRescued';
+        simTime: number;
+        companionId: number;
+        petArchetypeId: string;
+        hp: number;
+        maxHp: number;
+        x: number;
+        y: number;
       }
     // session lifecycle (this file, story 004; summary extension: session-result-summary.md)
     | { kind: 'win'; simTime: number; summary: SessionResultSummary }
@@ -309,13 +359,15 @@ type EntitySnapshot =
       };
   ```
 - `win`/`loss` carry `simTime` and `summary`. The full `SessionResultSummary` shape, stats owner, and progress/kills/boss/defeat-cause rules are defined in [session-result-summary.md](session-result-summary.md). `summary.outcome` must match `event.kind`, and `summary.durationMs` must match `event.simTime`.
-- `hit.targetArchetypeId` and `death.weaponArchetypeId`/`impactDir*` exist for main-thread presentation consumers ([impact-feedback.md](impact-feedback.md)): renderer must not reconstruct target color, bullet direction, or death cause from nearby snapshots, because the target may be removed before the next frame. For `targetKind: 'player'`, target archetype is absent and the field is `null`; for non-projectile deaths, weapon/direction fields are `null`.
+- `hit.targetArchetypeId` and `death.weaponArchetypeId`/`impactDir*` exist for main-thread presentation consumers ([impact-feedback.md](impact-feedback.md)): renderer must not reconstruct target color, bullet direction, or death cause from nearby snapshots, because the target may be removed before the next frame. For `targetKind: 'player'`, target archetype is absent and the field is `null`; for `targetKind: 'companion'`, the value is the companion `petArchetypeId`. For non-projectile deaths, weapon/direction fields are `null`.
 - Owner systems (see [runtime-systems.md](runtime-systems.md)):
   - `fire`, `hit`, and `explosion` are published by `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md));
   - `death` is published by `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) immediately after death is recorded and before death hooks run;
+  - `companionDowned` is published by `HealthDeathSystem` when companion HP reaches zero without entering the normal death/removal path;
+  - `companionBoop` and `companionRescued` are published by `CompanionSystem` ([companion-combat.md](companion-combat.md));
   - `win` and `loss` are published by `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md), [session-definition.md](session-definition.md)) exactly once per run;
   - `dropSpawn`, `dropPickup`, and `dropExpire` are published by `DropSystem` ([drops.md](drops.md)): `dropSpawn` inside the death hook synchronously after `EntityStore.spawnDrop`; `dropPickup` and `dropExpire` during the `DropSystem` tick phase, by [drops.md](drops.md) rules, with exactly one of them for each drop.
-- No other system may publish `fire`/`hit`/`explosion`/`death`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`/`bossPhaseChange`. Exception: `BossPhaseSystem` publishes only `bossPhaseChange`; `DropSystem` subscribes to death hooks for drops and does not replace `death`. Neither system publishes an alternate death or victory event.
+- No other system may publish `fire`/`hit`/`explosion`/`death`/`companionBoop`/`companionDowned`/`companionRescued`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`/`bossPhaseChange`. Exception: `BossPhaseSystem` publishes only `bossPhaseChange`; `DropSystem` subscribes to death hooks for drops and does not replace `death`. Neither system publishes an alternate death or victory event.
 - Vibe Jam portals do not add snapshot entity kinds or runtime events in story 026. The main thread derives portal descriptors and redirect checks from `SessionDefinition`, `SnapshotPair.curr`, and browser URL context; see [vibe-jam-portals.md](vibe-jam-portals.md).
 
 ### Guarantees and priorities
@@ -357,4 +409,6 @@ type EntitySnapshot =
 - [hud-presentation.md](hud-presentation.md)
 - [session-result-summary.md](session-result-summary.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
+- [companion-combat.md](companion-combat.md)
 - [../stories/028-dungeon-mode.md](../stories/028-dungeon-mode.md)
+- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)

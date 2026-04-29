@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-27 (story 026 prep: Vibe Jam portal size and main-thread overlap checks use `SessionDefinition.player.contactBox`; see [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: 2026-04-23 follow-up: `projectiles-and-combat.md` reuses the same `contactBox` contract for projectile hit detection against `player` / `enemy` / `boss`; session-builder static/boss spawn fit is no longer part of radius-based transition debt.)
+- Updated: 2026-04-29 (story 030 prep: companion projectile/contact target shape comes from `SessionDefinition.companion.contactBox`, not pet sprite size, so pet identity stays non-stat presentation. Earlier: 2026-04-27 story 026 prep: Vibe Jam portal size and main-thread overlap checks use `SessionDefinition.player.contactBox`; see [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: 2026-04-23 follow-up: `projectiles-and-combat.md` reuses the same `contactBox` contract for projectile hit detection against `player` / `enemy` / `boss`; session-builder static/boss spawn fit is no longer part of radius-based transition debt.)
 
 ## Context
 
@@ -19,7 +19,7 @@ Moving the whole simulation to ellipses or arbitrary masks for the MVP is excess
 ### Scope
 
 - The original owner of this decision is **body contact** for `player`, `enemy`, `boss`, and player clamp against arena bounds.
-- After the follow-up in [projectiles-and-combat.md](projectiles-and-combat.md), the same `contactBox` is also used as the target shape for projectile hit detection against `player` / `enemy` / `boss`.
+- After the follow-up in [projectiles-and-combat.md](projectiles-and-combat.md), the same `contactBox` is also used as the target shape for projectile hit detection against `player` / `enemy` / `boss` / `companion`.
 - `drop`, zone/hazard overlap, and other circle-based checks are still **not** migrated by this decision; they remain separate work.
 - Body-contact shape is an axis-aligned rectangle (`contactBox`), with no rotation and no skew. The box center equals `entity.position`.
 
@@ -37,8 +37,10 @@ Moving the whole simulation to ellipses or arbitrary masks for the MVP is excess
   - in `PlayerSpawn` inside `SessionDefinition.player`;
   - in `EnemyArchetype`;
   - in `BossArchetype`;
+  - in `CompanionSessionConfig` inside `SessionDefinition.companion` when companion combat is enabled;
   - on the corresponding runtime entities in `EntityStore`.
 - For story 013, `contactBox` is a **derived field from the asset**: it equals sprite `worldSize`, derived from the same PNG and the same `PX_PER_WU` as the visual registry. No separate MD columns `contactBox.width` / `contactBox.height` are introduced.
+- Companion `contactBox` is intentionally **not** derived from the selected pet sprite. Story 030 keeps pet identity from becoming a combat stat by making the companion gameplay footprint a session-owned value shared by that run.
 - This is intentionally a minimal bridge between visual and gameplay. If a tighter box is needed later (for example, ignoring transparent PNG padding or adding a manual override), that will extend this decision rather than revisiting consumers.
 
 ### Body contact in CombatSystem
@@ -93,3 +95,5 @@ Moving the whole simulation to ellipses or arbitrary masks for the MVP is excess
 - [content-authoring.md](content-authoring.md)
 - [../stories/013-sprite-assets-and-loader.md](../stories/013-sprite-assets-and-loader.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
+- [companion-combat.md](companion-combat.md)
+- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)

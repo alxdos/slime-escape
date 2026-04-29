@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-25
-- Updated: 2026-04-26 (correction: slime `WeaponInstance`s live **not on the `enemy` entity**, but in the same `shooterWeapons: Map<EntityId, ShooterWeapons>` inside the `CombatSystem` closure as the player loadout. Reality in 017: `ShooterWeapons.ownerKind` already supports `'enemy'`/`'boss'`; `setPlayerLoadout(playerId, loadout, simTimeMs)` is the only loadout initialization path in `CombatSystem`; cleanup happens only through `combat.clear()` on session start/stop. Slimes add symmetric `setEnemyLoadout` / `removeShooter` APIs plus a callback from `SpawnSystem` for wiring. The previous wording about `weapons`/`selectedWeaponIndex` fields on runtime `enemy` entities and automatic cleanup through entity removal was wrong.)
+- Updated: 2026-04-29 (story 030 prep: companion firing reuses the same `CombatSystem.shooterWeapons` ownership model but has separate AI/aim/rescue rules in [companion-combat.md](companion-combat.md); this file remains enemy-specific. Earlier: 2026-04-26 correction: slime `WeaponInstance`s live **not on the `enemy` entity**, but in the same `shooterWeapons: Map<EntityId, ShooterWeapons>` inside the `CombatSystem` closure as the player loadout. Reality in 017: `ShooterWeapons.ownerKind` already supports `'enemy'`/`'boss'`; `setPlayerLoadout(playerId, loadout, simTimeMs)` is the only loadout initialization path in `CombatSystem`; cleanup happens only through `combat.clear()` on session start/stop. Slimes add symmetric `setEnemyLoadout` / `removeShooter` APIs plus a callback from `SpawnSystem` for wiring. The previous wording about `weapons`/`selectedWeaponIndex` fields on runtime `enemy` entities and automatic cleanup through entity removal was wrong.)
 
 ## Context
 
@@ -19,6 +19,7 @@ Without an explicit contract, story 020 would implicitly define where shooter st
 ### Scope
 
 - This decision covers the firing path **only for `kind: 'enemy'`** entities whose effective `loadout` is not `null` after spawn overrides are applied.
+- Companion firing is out of scope for this file. It uses the universal owner-local weapon model, but mode selection, target acquisition, aim intent, ghost weapon disable, and rescue restore are owned by [companion-combat.md](companion-combat.md).
 - Boss firing (`kind: 'boss'`) is out of scope. Boss remains on `BossPhaseSystem`. If a boss ever moves to the universal weapon model, that will be a separate decision that references this file.
 - Player firing (`kind: 'player'`) is out of scope. It is already defined by [projectiles-and-combat.md](projectiles-and-combat.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md); this file does not reopen it.
 - AI targeting, such as line of sight, leading shots, kiting, target priority, and phase-based weapon switching, is out of scope. For this horizon, a shooting slime is a naive bot: it aims at the player's current position and fires when cooldown is ready.
@@ -29,12 +30,12 @@ Without an explicit contract, story 020 would implicitly define where shooter st
 - `ShooterWeapons` is already established by the 017 implementation with the needed discriminators:
   ```ts
   type ShooterWeapons = {
-    ownerKind: 'player' | 'enemy' | 'boss';
+    ownerKind: 'player' | 'enemy' | 'boss' | 'companion';
     weapons: WeaponInstance[];
     selectedIndex: number | null;
   };
   ```
-- This is not a speculative side table. Player loadout already lives here today, and `setPlayerLoadout(playerId, loadout, simTimeMs)` plus `clear()` are its only mutators. Adding slimes extends the same structure instead of creating a parallel one.
+- This is not a speculative side table. Player loadout already lives here today, and `setPlayerLoadout(playerId, loadout, simTimeMs)` plus `clear()` are its only mutators. Adding slimes and later companions extends the same structure instead of creating a parallel one.
 - Two new `CombatSystem` methods mirror the player API:
   ```ts
   setEnemyLoadout(enemyId: EntityId, loadout: Loadout, simTimeMs: number): void;
@@ -174,4 +175,6 @@ Without an explicit contract, story 020 would implicitly define where shooter st
 - [rng.md](rng.md)
 - [testing.md](testing.md)
 - [landing-telegraph.md](landing-telegraph.md)
+- [companion-combat.md](companion-combat.md)
 - [../stories/020-shooting-slimes.md](../stories/020-shooting-slimes.md)
+- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)

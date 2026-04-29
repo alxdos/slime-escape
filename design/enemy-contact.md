@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (body contact for player <-> enemy/boss moved from circle-vs-circle to `contactBox`; see [body-contact-boxes.md](body-contact-boxes.md). Broadphase uses a derived bounds radius. The `Knockback at contact` section is preserved.)
+- Updated: 2026-04-29 (story 030 prep: companion boop is a separate non-damage knockback source owned by [companion-combat.md](companion-combat.md); this file remains enemy/boss contact damage. Earlier: 2026-04-23 body contact for player <-> enemy/boss moved from circle-vs-circle to `contactBox`; see [body-contact-boxes.md](body-contact-boxes.md). Broadphase uses a derived bounds radius. The `Knockback at contact` section is preserved.)
 
 ## Context
 
@@ -83,6 +83,7 @@ Without an explicit contract, 004 would implicitly place contact damage in an ar
   - `MovementSystem` **does not clamp** enemy positions to arena bounds during knockback. This matches the existing rule that arena bounds apply only to controlled actors ([arena-and-coordinates.md](arena-and-coordinates.md), [runtime-systems.md](runtime-systems.md)). An enemy may briefly bounce beyond the arena and then return through chase logic.
 - Knockback **does not cancel** contact cooldown. If the enemy bounces away while `contactCooldownMs` has not expired, a repeated overlap still cannot produce another intent. This preserves the rule that a single enemy cannot hit more often than once per `contactCooldownMs`.
 - Knockback parameters are `EnemyArchetype` fields ([content-archetypes.md](content-archetypes.md)). This is intentional: different enemies bounce differently, such as a small slime flying farther and a tank moving less, and that tuning belongs in content rather than system code.
+- Companion boop from [companion-combat.md](companion-combat.md) reuses compatible knockback state on hostile targets, but it is not contact damage and does not create `DamageIntent`. The "knockback never happens separately from damage" rule above is scoped to this enemy-contact phase only.
 
 ### Symmetry and extension
 
@@ -112,3 +113,5 @@ Without an explicit contract, 004 would implicitly place contact damage in an ar
 - [body-contact-boxes.md](body-contact-boxes.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
 - [impact-feedback.md](impact-feedback.md)
+- [companion-combat.md](companion-combat.md)
+- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
