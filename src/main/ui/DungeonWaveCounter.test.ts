@@ -190,7 +190,8 @@ function makeSession(overrides: Partial<SessionDefinition> = {}): SessionDefinit
     winCondition: { kind: 'dungeon' },
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null,
-    ...overrides
+    ...overrides,
+    companion: overrides.companion ?? null
   };
 }
 

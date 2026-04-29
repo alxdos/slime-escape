@@ -20,6 +20,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -419,6 +420,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -818,6 +820,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -1225,6 +1228,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -3069,6 +3073,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -4913,6 +4918,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -6757,6 +6763,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -8445,6 +8452,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -10133,6 +10141,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -11805,6 +11814,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -11947,6 +11957,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -12089,6 +12100,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -12239,6 +12251,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
       "imageUrl": "/images/bg/bg-06.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "cellar",
@@ -12594,6 +12607,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
       "imageUrl": "/images/bg/bg-06.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "cellar",
@@ -12949,6 +12963,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
       "imageUrl": "/images/bg/bg-06.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "cellar",
@@ -13296,6 +13311,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "portal",
@@ -14447,6 +14463,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "portal",
@@ -15598,6 +15615,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "portal",
@@ -16749,6 +16767,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -16823,6 +16842,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -16897,6 +16917,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -16971,6 +16992,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -17063,6 +17085,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -17155,6 +17178,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -17255,6 +17279,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "imageUrl": "/images/bg/bg-03.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "range",
@@ -17789,6 +17814,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "imageUrl": "/images/bg/bg-03.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "range",
@@ -18323,6 +18349,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "imageUrl": "/images/bg/bg-03.jpg",
     },
   ],
+  "companion": null,
   "encounters": [
     {
       "backgroundId": "range",

@@ -2,6 +2,7 @@ import { readdir } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
 
 import type {
+  CompanionSessionConfig,
   EncounterType,
   Loadout,
   LossCondition,
@@ -121,6 +122,7 @@ export type ParsedSessionPreset = Readonly<{
   order: number;
   arena: ParsedRef;
   player: ParsedRef;
+  companion: ParsedCompanionConfig | null;
   loadout: ParsedLoadout | null;
   backgrounds: ReadonlyArray<ParsedSessionBackground>;
   musicSampleId: string | null;
@@ -134,6 +136,11 @@ export type ParsedLoadout = Readonly<{
   weapons: ReadonlyArray<ParsedRef>;
   selectedIndex: Loadout['selectedIndex'];
 }>;
+
+export type ParsedCompanionConfig = Omit<CompanionSessionConfig, 'petArchetypeId' | 'weaponLoadout'> &
+  Readonly<{
+    weaponLoadout: ParsedLoadout | null;
+  }>;
 
 export type ParsedSessionsArea = Readonly<{
   sourceDirectory: string;
@@ -222,6 +229,7 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
   const encountersSection = requireSection(document, 'Encounters');
   const sessionTables = requireSessionTables(sessionSection);
   const sessionFields = fieldReader(sessionSection, sessionTables.fields);
+  const companionSection = findTopLevelSection(document, 'Companion');
   const backgrounds = parseSessionBackgrounds(sessionSection, sessionTables.backgrounds);
   const backgroundIds = new Set(backgrounds.map((background) => background.id));
 
@@ -234,6 +242,7 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
     order: sessionFields.readNumber('order'),
     arena: parseArenaRef(sessionFields, 'arenaId'),
     player: parsePlayerRef(sessionFields, 'playerId'),
+    companion: parseCompanionSection(companionSection),
     loadout: parseLoadout(sessionFields),
     backgrounds,
     musicSampleId: parseMusicSampleId(sessionFields),
@@ -248,6 +257,10 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
   return preset;
 }
 
+function findTopLevelSection(document: MarkdownDocument, title: string): MarkdownSection | null {
+  return document.sections.find((section) => section.title === title) ?? null;
+}
+
 function validateSessionPreset(preset: ParsedSessionPreset): void {
   if (preset.winCondition.kind !== 'dungeon') return;
   if (preset.lossCondition.kind !== 'playerDeath') {
@@ -260,6 +273,101 @@ function validateSessionPreset(preset: ParsedSessionPreset): void {
       `${preset.sourcePath}: winCondition "dungeon" requires at least one wave encounter`
     );
   }
+}
+
+function parseCompanionSection(section: MarkdownSection | null): ParsedCompanionConfig | null {
+  if (section === null) {
+    return null;
+  }
+  const table = requireCompanionTable(section);
+  const field = fieldReader(section, table);
+  if (!parseBooleanField(field, 'enabled')) {
+    return null;
+  }
+
+  const acquireRadius = parsePositiveNumberField(field, 'threatAcquireRadius');
+  const releaseRadius = parsePositiveNumberField(field, 'threatReleaseRadius');
+  if (releaseRadius < acquireRadius) {
+    throw fieldError(field, 'threatReleaseRadius', 'expected >= threatAcquireRadius');
+  }
+
+  return {
+    maxHp: parsePositiveIntegerField(field, 'maxHp'),
+    contactBox: {
+      width: parsePositiveNumberField(field, 'contactBoxWidth'),
+      height: parsePositiveNumberField(field, 'contactBoxHeight')
+    },
+    movement: {
+      maxSpeed: parsePositiveNumberField(field, 'movementMaxSpeed'),
+      acceleration: parsePositiveNumberField(field, 'movementAcceleration'),
+      orbitRadius: parsePositiveNumberField(field, 'movementOrbitRadius')
+    },
+    threat: {
+      acquireRadius,
+      releaseRadius
+    },
+    weaponLoadout: parseCompanionWeaponLoadout(field),
+    boop: {
+      radius: parsePositiveNumberField(field, 'boopRadius'),
+      impulse: parsePositiveNumberField(field, 'boopImpulse'),
+      durationMs: parsePositiveIntegerField(field, 'boopDurationMs'),
+      cooldownMs: parsePositiveIntegerField(field, 'boopCooldownMs')
+    },
+    rescue: {
+      radius: parsePositiveNumberField(field, 'rescueRadius'),
+      durationMs: parsePositiveIntegerField(field, 'rescueDurationMs'),
+      reviveHpFraction: parseFractionField(field, 'rescueReviveHpFraction')
+    }
+  };
+}
+
+function requireCompanionTable(section: MarkdownSection): MarkdownTable {
+  const table = section.tables[0];
+  if (table === undefined) {
+    throw sectionError(section, 'expected field/value table');
+  }
+  assertFieldValueHeader(section, table);
+  if (section.tables.length > 1) {
+    throw sectionError(section, 'expected exactly one GFM table');
+  }
+  return table;
+}
+
+function parseCompanionWeaponLoadout(field: FieldReader): ParsedLoadout | null {
+  return parseLoadoutCells({
+    section: field.section,
+    weaponIdsCell: field.readCell('weaponLoadoutIds'),
+    selectedIndexCell: field.readCell('weaponSelectedIndex'),
+    rowId: 'weaponLoadoutIds',
+    selectedIndexRowId: 'weaponSelectedIndex',
+    weaponColumnName: 'value',
+    selectedIndexColumnName: 'value',
+    allowNoneSelectedIndex: false
+  });
+}
+
+function parsePositiveNumberField(field: FieldReader, fieldName: string): number {
+  const value = field.readNumber(fieldName);
+  if (value <= 0) {
+    throw fieldError(field, fieldName, 'expected > 0');
+  }
+  return value;
+}
+
+function parsePositiveIntegerField(field: FieldReader, fieldName: string): number {
+  const value = field.readNumber(fieldName);
+  if (!Number.isInteger(value) || value <= 0) {
+    throw fieldError(field, fieldName, 'expected integer > 0');
+  }
+  return value;
+}
+
+function parseFractionField(field: FieldReader, fieldName: string): number {
+  const value = field.readNumber(fieldName);
+  if (!(value > 0 && value <= 1)) {
+    throw fieldError(field, fieldName, 'expected > 0 and <= 1');
+  }
+  return value;
 }
 
 function parseEncounterSection(

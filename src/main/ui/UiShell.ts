@@ -640,7 +640,8 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (phase.kind !== 'menu') return;
     if (activeSession !== null) return;
 
-    const session = builder(preset, { seed: makeSeed() });
+    const selectedPetId = clientProgressionStore.get().selectedPetId;
+    const session = builder(preset, { seed: makeSeed(), selectedPetId });
     const clientSettings = clientSettingsStore.get();
     const spriteTextures = preloadedTextures;
     if (spriteTextures === null) {
@@ -657,8 +658,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         arena: session.arena,
         session,
         spriteTextures,
-        selectedPetId:
-          options.source === 'campaign' ? clientProgressionStore.get().selectedPetId : null,
+        selectedPetId: session.companion === null && options.source === 'campaign' ? selectedPetId : null,
         getSnapshotPair: sim.snapshotPair,
         getPortalDescriptors: portalController.portals,
         getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)

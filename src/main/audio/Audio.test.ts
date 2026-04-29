@@ -244,6 +244,7 @@ function makeBossSession(
       maxSpeed: 5,
       maxHp: 5
     },
+    companion: null,
     loadout: { weapons: ['pistol'], selectedIndex: 0 },
     backgrounds: [],
     musicSampleId: overrides.musicSampleId ?? null,

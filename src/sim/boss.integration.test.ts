@@ -78,6 +78,7 @@ function bossOnlySession(seed: number): SessionDefinition {
     seed,
     arena: SANDBOX_ARENA,
     player: TRAINING_PLAYER,
+    companion: null,
     loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
     backgrounds: [],
     musicSampleId: null,

@@ -68,6 +68,41 @@ export type Loadout = Readonly<{
   selectedIndex: number | null;
 }>;
 
+export type CompanionMovementConfig = Readonly<{
+  maxSpeed: number;
+  acceleration: number;
+  orbitRadius: number;
+}>;
+
+export type CompanionThreatConfig = Readonly<{
+  acquireRadius: number;
+  releaseRadius: number;
+}>;
+
+export type CompanionBoopConfig = Readonly<{
+  radius: number;
+  impulse: number;
+  durationMs: number;
+  cooldownMs: number;
+}>;
+
+export type CompanionRescueConfig = Readonly<{
+  radius: number;
+  durationMs: number;
+  reviveHpFraction: number;
+}>;
+
+export type CompanionSessionConfig = Readonly<{
+  petArchetypeId: string;
+  maxHp: number;
+  contactBox: ContactBox;
+  movement: CompanionMovementConfig;
+  threat: CompanionThreatConfig;
+  weaponLoadout: Loadout | null;
+  boop: CompanionBoopConfig;
+  rescue: CompanionRescueConfig;
+}>;
+
 export type DamageRules = Readonly<{
   slimeFriendlyFire: boolean;
 }>;
@@ -148,6 +183,7 @@ export type SessionDefinition = Readonly<{
   seed: number;
   arena: ArenaConfig;
   player: PlayerSpawn;
+  companion: CompanionSessionConfig | null;
   loadout: Loadout | null;
   backgrounds: ReadonlyArray<SessionBackground>;
   musicSampleId: string | null;

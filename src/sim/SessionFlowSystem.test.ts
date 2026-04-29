@@ -322,6 +322,7 @@ function makeSession(
       maxSpeed: 6,
       maxHp: 1
     },
+    companion: null,
     loadout: options?.loadout ?? null,
     backgrounds: [],
     musicSampleId: null,

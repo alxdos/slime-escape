@@ -88,7 +88,7 @@ The selected pet should feel like a small living ally, not a cosmetic marker. It
 | # | Status | Task |
 |---|--------|------|
 | T1 | [x] | Record architecture decisions for session ownership, runtime system boundaries, snapshots/events, damage rules, ghost/downed handling, rendering, and MD authoring. |
-| T2 | [ ] | Extend session types, content authoring, generated session data, and builder options so companion-enabled presets can produce `SessionDefinition.companion` from selected pet progression plus session tuning. |
+| T2 | [x] | Extend session types, content authoring, generated session data, and builder options so companion-enabled presets can produce `SessionDefinition.companion` from selected pet progression plus session tuning. |
 | T3 | [ ] | Add companion runtime entity support, `CompanionSystem`, inertial movement modes, deterministic threat acquisition, ghost follow, rescue progress, and boop impulse behavior. |
 | T4 | [ ] | Integrate companion weapon firing and combat rules: `ownerKind: 'companion'`, friendly alliance filtering, companion projectile events, weapon disable in ghost state, and weapon restore after rescue. |
 | T5 | [ ] | Integrate companion HP/downed/rescue lifecycle in health/death, result summary, and cleanup rules without normal death hooks or entity removal. |
