@@ -1,3 +1,4 @@
+import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig, EncounterDefinition, Vec2 } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
@@ -17,13 +18,14 @@ export type CompanionSystem = Readonly<{
     arena: ArenaConfig,
     store: EntityStore,
     encounter: EncounterDefinition | null,
-    simTimeMs: number
+    simTimeMs: number,
+    emit?: (event: RuntimeEvent) => void
   ): void;
 }>;
 
 export function createCompanionSystem(): CompanionSystem {
   return {
-    tick(arena, store, encounter, simTimeMs): void {
+    tick(arena, store, encounter, simTimeMs, emit): void {
       const companion = store.companion();
       if (companion === null) return;
       const player = store.player();
@@ -34,7 +36,7 @@ export function createCompanionSystem(): CompanionSystem {
       }
 
       if (companion.state === 'ghost') {
-        tickGhostCompanion(companion, player, store, arena, simTimeMs);
+        tickGhostCompanion(companion, player, store, arena, simTimeMs, emit);
         return;
       }
 
@@ -85,7 +87,8 @@ function tickGhostCompanion(
   player: Player,
   store: EntityStore,
   arena: ArenaConfig,
-  simTimeMs: number
+  simTimeMs: number,
+  emit: ((event: RuntimeEvent) => void) | undefined
 ): void {
   companion.targetId = null;
   if (distance(companion.position, player.position) <= companion.rescue.radius) {
@@ -96,6 +99,16 @@ function tickGhostCompanion(
       companion.rescueProgressMs = 0;
       companion.mode = 'rest';
       steerToward(companion, restPosition(player, companion), arena);
+      emit?.({
+        kind: 'companionRescued',
+        simTime: simTimeMs,
+        companionId: companion.id,
+        petArchetypeId: companion.petArchetypeId,
+        hp: companion.hp,
+        maxHp: companion.maxHp,
+        x: companion.position.x,
+        y: companion.position.y
+      });
       tryBoop(companion, player, store, simTimeMs);
       return;
     }

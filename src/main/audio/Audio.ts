@@ -551,6 +551,8 @@ export function createAudio(init: AudioInit = {}): Audio {
       case 'pause':
       case 'resume':
       case 'loss':
+      case 'companionDowned':
+      case 'companionRescued':
       case 'dropSpawn':
       case 'dropExpire':
         return;

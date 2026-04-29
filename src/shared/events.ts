@@ -55,6 +55,24 @@ export type RuntimeEvent =
       x: number;
       y: number;
     }
+  | {
+      kind: 'companionDowned';
+      simTime: number;
+      companionId: number;
+      petArchetypeId: string;
+      x: number;
+      y: number;
+    }
+  | {
+      kind: 'companionRescued';
+      simTime: number;
+      companionId: number;
+      petArchetypeId: string;
+      hp: number;
+      maxHp: number;
+      x: number;
+      y: number;
+    }
   | { kind: 'win'; simTime: number; summary: SessionResultSummary }
   | { kind: 'loss'; simTime: number; summary: SessionResultSummary }
   | {

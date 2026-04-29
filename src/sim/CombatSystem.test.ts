@@ -1574,6 +1574,43 @@ describe('CombatSystem contact intents', () => {
     expect(intent.source.enemyId).toBe(enemy.id);
   });
 
+  it('forms enemyContact DamageIntent for an overlapping living companion', () => {
+    const { store, index, combat } = setupContact();
+    const player = store.player();
+    if (player === null) throw new Error('expected player');
+    player.position.x = -10;
+    const companion = store.spawnCompanion({
+      ...COMPANION_SPEC,
+      position: { x: 0, y: 0 }
+    });
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 0.4, y: 0 }));
+
+    const intents = combat.tick(makeInput(), store, index, 0, ARENA, () => {});
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(companion.id);
+    if (intents[0]?.source.kind !== 'enemyContact') throw new Error('expected contact');
+    expect(intents[0].source.enemyId).toBe(enemy.id);
+  });
+
+  it('does not form enemyContact intents for a ghost companion', () => {
+    const { store, index, combat } = setupContact();
+    const player = store.player();
+    if (player === null) throw new Error('expected player');
+    player.position.x = -10;
+    const companion = store.spawnCompanion({
+      ...COMPANION_SPEC,
+      position: { x: 0, y: 0 }
+    });
+    companion.state = 'ghost';
+    companion.hp = 0;
+    store.spawnEnemy(contactEnemySpec({ x: 0.4, y: 0 }));
+
+    const intents = combat.tick(makeInput(), store, index, 0, ARENA, () => {});
+
+    expect(intents).toHaveLength(0);
+  });
+
   it('does not emit a runtime event for the contact', () => {
     const { store, index, combat } = setupContact();
     store.spawnEnemy(contactEnemySpec({ x: 1.2, y: 0.9 }));

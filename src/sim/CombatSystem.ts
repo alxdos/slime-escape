@@ -1040,31 +1040,58 @@ function runContactIntents(
   maxEnemyContactBoundsRadius: number
 ): DamageIntent[] {
   const player = store.player();
-  if (player === null) return [];
   const intents: DamageIntent[] = [];
-  const range = contactBoundsRadius(player) + maxEnemyContactBoundsRadius;
-  const candidates = index.queryRadius(player.position.x, player.position.y, range);
+  if (player !== null) {
+    addEnemyContactIntentsForTarget(player, index, simTimeMs, maxEnemyContactBoundsRadius, intents);
+  }
+  const companion = store.companion();
+  if (companion !== null && companion.state === 'alive') {
+    addEnemyContactIntentsForTarget(
+      companion,
+      index,
+      simTimeMs,
+      maxEnemyContactBoundsRadius,
+      intents
+    );
+  }
+  return intents;
+}
+
+type ContactTarget = Player | Companion;
+
+function addEnemyContactIntentsForTarget(
+  target: ContactTarget,
+  index: SpatialIndex,
+  simTimeMs: number,
+  maxEnemyContactBoundsRadius: number,
+  intents: DamageIntent[]
+): void {
+  const range = contactBoundsRadius(target) + maxEnemyContactBoundsRadius;
+  const candidates = index.queryRadius(target.position.x, target.position.y, range);
   for (const candidate of candidates) {
     if (candidate.kind !== 'enemy' && candidate.kind !== 'boss') continue;
     const enemy = candidate;
     if (enemy.contactDamage <= 0) continue;
     if (simTimeMs < enemy.nextContactSimMs) continue;
-    if (!boxesOverlap(player, enemy)) continue;
+    if (!boxesOverlap(target, enemy)) continue;
     intents.push({
-      targetId: player.id,
+      targetId: target.id,
       amount: enemy.contactDamage,
       source: { kind: 'enemyContact', enemyId: enemy.id },
-      hitPosition: { x: player.position.x, y: player.position.y }
+      hitPosition: { x: target.position.x, y: target.position.y }
     });
     enemy.nextContactSimMs = simTimeMs + enemy.contactCooldownMs;
-    applyKnockbackToChaser(enemy, player, simTimeMs);
+    applyKnockbackToChaser(enemy, target, simTimeMs);
   }
-  return intents;
 }
 
-function applyKnockbackToChaser(enemy: Enemy | Boss, player: Player, simTimeMs: number): void {
-  const ndx = enemy.position.x - player.position.x;
-  const ndy = enemy.position.y - player.position.y;
+function applyKnockbackToChaser(
+  enemy: Enemy | Boss,
+  target: ContactTarget,
+  simTimeMs: number
+): void {
+  const ndx = enemy.position.x - target.position.x;
+  const ndy = enemy.position.y - target.position.y;
   const dist = Math.hypot(ndx, ndy);
   let nx: number;
   let ny: number;
@@ -1083,7 +1110,7 @@ function applyKnockbackToChaser(enemy: Enemy | Boss, player: Player, simTimeMs: 
   }
   const approachSpeed = Math.max(
     0,
-    (player.velocity.vx - enemy.velocity.vx) * nx + (player.velocity.vy - enemy.velocity.vy) * ny
+    (target.velocity.vx - enemy.velocity.vx) * nx + (target.velocity.vy - enemy.velocity.vy) * ny
   );
   const impulseSpeed =
     enemy.knockbackBaseImpulse + enemy.knockbackVelocityScale * approachSpeed;

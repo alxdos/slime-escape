@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig, EncounterDefinition } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
@@ -149,17 +150,24 @@ describe('CompanionSystem ghost and rescue', () => {
 
   it('revives a ghost companion with the configured partial hp after channel completion', () => {
     const { companion, system, store } = setup();
+    const events: RuntimeEvent[] = [];
     companion.state = 'ghost';
     companion.hp = 0;
 
     system.tick(ARENA, store, ACTIVE_WAVE, 0);
     system.tick(ARENA, store, ACTIVE_WAVE, SIM_STEP_MS);
-    system.tick(ARENA, store, ACTIVE_WAVE, SIM_STEP_MS * 2);
+    system.tick(ARENA, store, ACTIVE_WAVE, SIM_STEP_MS * 2, (event) => events.push(event));
 
     expect(companion.state).toBe('alive');
     expect(companion.hp).toBe(3);
     expect(companion.mode).toBe('rest');
     expect(companion.rescueProgressMs).toBe(0);
+    const rescued = events.find((event) => event.kind === 'companionRescued');
+    if (rescued?.kind !== 'companionRescued') throw new Error('expected companionRescued');
+    expect(rescued.companionId).toBe(companion.id);
+    expect(rescued.petArchetypeId).toBe(companion.petArchetypeId);
+    expect(rescued.hp).toBe(3);
+    expect(rescued.maxHp).toBe(companion.maxHp);
   });
 });
 

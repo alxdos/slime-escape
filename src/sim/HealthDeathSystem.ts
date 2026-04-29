@@ -2,7 +2,7 @@ import type { RuntimeEvent } from '../shared/events';
 import type { Vec2 } from '../shared/session';
 
 import type { DamageIntent, DamageSource } from './CombatSystem';
-import type { Boss, Enemy, EntityId, EntityStore, Player } from './EntityStore';
+import type { Boss, Companion, Enemy, EntityId, EntityStore, Player } from './EntityStore';
 
 export type DeathContext = Readonly<{
   entityId: EntityId;
@@ -17,7 +17,7 @@ export type DeathHook = (ctx: DeathContext) => void;
 
 export type DamageContext = Readonly<{
   targetId: EntityId;
-  targetKind: 'enemy' | 'player' | 'boss';
+  targetKind: 'enemy' | 'player' | 'companion' | 'boss';
   targetArchetypeId: string | null;
   amount: number;
   source: DamageSource;
@@ -26,6 +26,13 @@ export type DamageContext = Readonly<{
 }>;
 
 export type DamageHook = (ctx: DamageContext) => void;
+
+type CompanionDownedContext = Readonly<{
+  companionId: EntityId;
+  petArchetypeId: string;
+  position: Vec2;
+  simTime: number;
+}>;
 
 export type HealthDeathSystem = Readonly<{
   registerHook(hook: DeathHook): void;
@@ -50,9 +57,19 @@ export function createHealthDeathSystem(): HealthDeathSystem {
       damageHooks.push(hook);
     },
     tick(intents, store, simTimeMs, emit): void {
-      const { deaths, damages } = applyDamage(intents, store, simTimeMs);
+      const { deaths, damages, companionDowned } = applyDamage(intents, store, simTimeMs);
       for (const damage of damages) {
         for (const hook of damageHooks) hook(damage);
+      }
+      for (const downed of companionDowned) {
+        emit({
+          kind: 'companionDowned',
+          simTime: downed.simTime,
+          companionId: downed.companionId,
+          petArchetypeId: downed.petArchetypeId,
+          x: downed.position.x,
+          y: downed.position.y
+        });
       }
       for (const death of deaths) {
         emit({
@@ -89,9 +106,14 @@ function applyDamage(
   intents: ReadonlyArray<DamageIntent>,
   store: EntityStore,
   simTimeMs: number
-): Readonly<{ deaths: DeathContext[]; damages: DamageContext[] }> {
+): Readonly<{
+  deaths: DeathContext[];
+  damages: DamageContext[];
+  companionDowned: CompanionDownedContext[];
+}> {
   const deaths: DeathContext[] = [];
   const damages: DamageContext[] = [];
+  const companionDowned: CompanionDownedContext[] = [];
   for (const intent of intents) {
     if (intent.amount <= 0) continue;
     const target = resolveTarget(intent.targetId, store);
@@ -99,16 +121,28 @@ function applyDamage(
     if (target.hp === 0) continue;
     target.hp = Math.max(0, target.hp - intent.amount);
     damages.push(makeDamageContext(target, intent, simTimeMs));
+    if (target.kind === 'companion') {
+      if (target.hp === 0) {
+        target.state = 'ghost';
+        target.mode = 'ghost';
+        target.targetId = null;
+        target.rescueProgressMs = 0;
+        companionDowned.push(makeCompanionDownedContext(target, simTimeMs));
+      }
+      continue;
+    }
     if (target.hp === 0) {
       deaths.push(makeDeathContext(target, intent.source, simTimeMs));
     }
   }
-  return { deaths, damages };
+  return { deaths, damages, companionDowned };
 }
 
-function resolveTarget(id: EntityId, store: EntityStore): Enemy | Boss | Player | null {
+function resolveTarget(id: EntityId, store: EntityStore): Enemy | Boss | Player | Companion | null {
   const player = store.player();
   if (player !== null && player.id === id) return player;
+  const companion = store.companion();
+  if (companion !== null && companion.id === id) return companion;
   const enemy = store.enemyById(id);
   if (enemy !== null) return enemy;
   return store.bossById(id);
@@ -132,7 +166,7 @@ function makeDeathContext(
 }
 
 function makeDamageContext(
-  target: Enemy | Boss | Player,
+  target: Enemy | Boss | Player | Companion,
   intent: DamageIntent,
   simTimeMs: number
 ): DamageContext {
@@ -145,6 +179,18 @@ function makeDamageContext(
     amount: intent.amount,
     source: intent.source,
     hitPosition: { x: intent.hitPosition.x, y: intent.hitPosition.y },
+    simTime: simTimeMs
+  };
+}
+
+function makeCompanionDownedContext(
+  companion: Companion,
+  simTimeMs: number
+): CompanionDownedContext {
+  return {
+    companionId: companion.id,
+    petArchetypeId: companion.petArchetypeId,
+    position: { x: companion.position.x, y: companion.position.y },
     simTime: simTimeMs
   };
 }

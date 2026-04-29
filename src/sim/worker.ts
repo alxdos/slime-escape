@@ -77,7 +77,8 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     session.arena,
     entities,
     sessionFlow.activeEncounter()?.encounter ?? null,
-    simTimeMs
+    simTimeMs,
+    emitEvent
   );
   const combatIntents = combat.tick(
     sessionFlow.inputState(),

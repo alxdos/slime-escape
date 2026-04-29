@@ -91,7 +91,7 @@ The selected pet should feel like a small living ally, not a cosmetic marker. It
 | T2 | [x] | Extend session types, content authoring, generated session data, and builder options so companion-enabled presets can produce `SessionDefinition.companion` from selected pet progression plus session tuning. |
 | T3 | [x] | Add companion runtime entity support, `CompanionSystem`, inertial movement modes, deterministic threat acquisition, ghost follow, rescue progress, and boop impulse behavior. |
 | T4 | [x] | Integrate companion weapon firing and combat rules: `ownerKind: 'companion'`, friendly alliance filtering, companion projectile events, weapon disable in ghost state, and weapon restore after rescue. |
-| T5 | [ ] | Integrate companion HP/downed/rescue lifecycle in health/death, result summary, and cleanup rules without normal death hooks or entity removal. |
+| T5 | [x] | Integrate companion HP/downed/rescue lifecycle in health/death, result summary, and cleanup rules without normal death hooks or entity removal. |
 | T6 | [ ] | Add snapshot/event exports and renderer/UI presentation: companion sprite, HP bar, rest/guard/alert/engage/ghost/rescue visuals, look-around flips, warning, slime hit feedback, ghost aura, and rescue flip animation. |
 | T7 | [ ] | Cover the feature with focused tests for builder validation, runtime mode transitions, smooth movement constraints, damage rules, downed/rescue behavior, boop without damage, snapshot/events, and renderer hard-error paths. |
 | T8 | [ ] | Run content checks, typecheck/build/test, and a manual demo pass over the full select-pet -> run -> fight -> ghost -> rescue scenario. |
