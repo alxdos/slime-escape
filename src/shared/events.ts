@@ -60,8 +60,22 @@ export type RuntimeEvent =
       simTime: number;
       companionId: number;
       petArchetypeId: string;
+      weaponArchetypeId: string | null;
+      impactDirX: number | null;
+      impactDirY: number | null;
       x: number;
       y: number;
+    }
+  | {
+      kind: 'companionBoop';
+      simTime: number;
+      companionId: number;
+      targetId: number;
+      targetKind: 'enemy' | 'boss';
+      x: number;
+      y: number;
+      impulseDirX: number;
+      impulseDirY: number;
     }
   | {
       kind: 'companionRescued';

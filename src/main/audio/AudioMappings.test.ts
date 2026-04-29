@@ -36,6 +36,7 @@ function createSampleRegistryHarness(): Pick<SampleRegistry, 'require'> {
     'boss/boss-ahaha',
     'events/explosion',
     'events/drop-pickup',
+    'pets/revival',
     'ui/open-1',
     'ui/open-2',
     'ui/fanfare',
@@ -124,6 +125,7 @@ describe('createAudioMappings', () => {
     expect(mappings.resolveBossSample('fire', 'boss-scrap-king')).toBe('boss/boss-fireball');
     expect(mappings.resolveEventSample('explosion')).toBe('events/explosion');
     expect(mappings.resolveEventSample('dropPickup')).toBe('events/drop-pickup');
+    expect(mappings.resolveEventSample('companionRescued')).toBe('pets/revival');
     expect(mappings.resolveEventSample('victoryFanfare')).toBe('ui/fanfare');
     expect(mappings.resolveUiSample('overlayShow')).toBe('ui/open-1');
     expect(mappings.resolveUiSample('buttonHover')).toBe('ui/open-1');

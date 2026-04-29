@@ -9,6 +9,7 @@ import type { ArenaConfig, PlayerSpawn, SessionDefinition } from '../../shared/s
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import type {
   BossSnapshot,
+  CompanionSnapshot,
   DropSnapshot,
   EnemySnapshot,
   EntitySnapshot,
@@ -129,6 +130,20 @@ const ARC_PREVIEW_RADIUS_WU = 0.18;
 const SLIME_STAIN_Z = -0.25;
 const DEATH_GHOST_Z = 0.045;
 const COMPANION_Z = -0.02;
+const COMPANION_HP_TRACK_NAME = 'companion-hp-track';
+const COMPANION_HP_FILL_NAME = 'companion-hp-fill';
+const COMPANION_WARNING_MARKER_NAME = 'companion-warning-marker';
+const COMPANION_GHOST_AURA_NAME = 'companion-ghost-aura';
+const COMPANION_RESCUE_RING_NAME = 'companion-rescue-ring';
+const COMPANION_HP_BAR_WIDTH_WU = 0.74;
+const COMPANION_HP_BAR_HEIGHT_WU = 0.07;
+const COMPANION_HP_BAR_OFFSET_WU = 0.22;
+const COMPANION_HP_TRACK_COLOR = 0x161b22;
+const COMPANION_HP_FILL_COLOR = 0x7ee7c8;
+const COMPANION_HP_GHOST_FILL_COLOR = 0x9bd5ff;
+const COMPANION_WARNING_COLOR = 0xffe066;
+const COMPANION_GHOST_COLOR = 0x9bd5ff;
+const COMPANION_RESCUE_COLOR = 0xa7f070;
 const DROP_PULSE_HZ = 1.6;
 const DROP_PULSE_AMPLITUDE = 0.15;
 const PROJECTILE_GROUNDED_PULSE_AMPLITUDE = 0.1;
@@ -285,6 +300,7 @@ export function createRenderer(init: RendererInit): Renderer {
   ) / 2;
 
   const enemyMeshes = new Map<number, EntityMeshEntry>();
+  const companionMeshes = new Map<number, EntityMeshEntry>();
   const bossMeshes = new Map<number, EntityMeshEntry>();
   const projectileMeshes = new Map<number, EntityMeshEntry>();
   const dropMeshes = new Map<number, EntityMeshEntry>();
@@ -374,6 +390,25 @@ export function createRenderer(init: RendererInit): Renderer {
     return entry;
   }
 
+  function ensureCompanionMesh(snap: CompanionSnapshot): EntityMeshEntry {
+    const existing = companionMeshes.get(snap.id);
+    if (existing !== undefined) return existing;
+    requirePetArchetype(snap.petArchetypeId);
+    const visual = requireVisualSpec(PET_VISUALS, snap.petArchetypeId, 'pet');
+    const entry = createSpriteMesh(
+      visual,
+      requireSpriteTexture(init.spriteTextures, snap.petArchetypeId, 'pet'),
+      COMPANION_Z
+    );
+    entry.mesh.add(createCompanionHpBar(visual.worldSize.height));
+    entry.mesh.add(createCompanionWarningMarker(visual.worldSize.height));
+    entry.mesh.add(createCompanionGhostAura(visual.worldSize));
+    entry.mesh.add(createCompanionRescueRing(visual.worldSize));
+    scene.add(entry.mesh);
+    companionMeshes.set(snap.id, entry);
+    return entry;
+  }
+
   function ensureProjectileMesh(snap: ProjectileSnapshot): EntityMeshEntry {
     const existing = projectileMeshes.get(snap.id);
     if (existing !== undefined) return existing;
@@ -451,6 +486,8 @@ export function createRenderer(init: RendererInit): Renderer {
       const hitImpulsesByTarget = indexHitImpulses(impactSnapshot.hitImpulses);
       const alpha = computeAlpha(pair);
       const portalDescriptors = init.getPortalDescriptors?.() ?? [];
+      const hasRuntimeCompanion =
+        pair.curr?.entities.some((entity) => entity.kind === 'companion') === true;
       updatePlayer(playerMesh, pair, alpha, characterSnapGrid);
       applyPlayerPortalTravelPresentation(playerEntry, pair, portalDescriptors);
       updateCompanion(
@@ -458,7 +495,24 @@ export function createRenderer(init: RendererInit): Renderer {
         pair,
         alpha,
         init.session.player,
-        characterSnapGrid
+        characterSnapGrid,
+        hasRuntimeCompanion
+      );
+      updateEntities(
+        pair,
+        alpha,
+        (e): e is CompanionSnapshot => e.kind === 'companion',
+        companionMeshes,
+        ensureCompanionMesh,
+        disposeEntityMesh,
+        characterSnapGrid,
+        (entry, entity) =>
+          applyCompanionPresentation(
+            entry.mesh,
+            entity,
+            pair.nowMs,
+            hitImpulsesByTarget.get(entity.id)
+          )
       );
       updateEntities(
         pair,
@@ -578,6 +632,8 @@ export function createRenderer(init: RendererInit): Renderer {
       scene.remove(zoneOverlay.mesh);
       for (const entry of enemyMeshes.values()) disposeEntityMesh(entry);
       enemyMeshes.clear();
+      for (const entry of companionMeshes.values()) disposeEntityMesh(entry);
+      companionMeshes.clear();
       for (const entry of bossMeshes.values()) disposeEntityMesh(entry);
       bossMeshes.clear();
       for (const entry of projectileMeshes.values()) disposeEntityMesh(entry);
@@ -857,6 +913,93 @@ function createStatusMarker(entityHeight: number): THREE.Mesh {
   return mesh;
 }
 
+function createCompanionHpBar(entityHeight: number): THREE.Group {
+  const group = new THREE.Group();
+  group.position.y = entityHeight / 2 + COMPANION_HP_BAR_OFFSET_WU;
+  group.position.z = 0.07;
+
+  const track = new THREE.Mesh(
+    new THREE.PlaneGeometry(COMPANION_HP_BAR_WIDTH_WU, COMPANION_HP_BAR_HEIGHT_WU),
+    new THREE.MeshBasicMaterial({
+      color: COMPANION_HP_TRACK_COLOR,
+      transparent: true,
+      opacity: 0.82,
+      depthWrite: false
+    })
+  );
+  track.name = COMPANION_HP_TRACK_NAME;
+  group.add(track);
+
+  const fill = new THREE.Mesh(
+    new THREE.PlaneGeometry(COMPANION_HP_BAR_WIDTH_WU, COMPANION_HP_BAR_HEIGHT_WU),
+    new THREE.MeshBasicMaterial({
+      color: COMPANION_HP_FILL_COLOR,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false
+    })
+  );
+  fill.name = COMPANION_HP_FILL_NAME;
+  fill.position.z = 0.01;
+  group.add(fill);
+  return group;
+}
+
+function createCompanionWarningMarker(entityHeight: number): THREE.Mesh {
+  const marker = new THREE.Mesh(
+    new THREE.RingGeometry(0.14, 0.2, 3),
+    new THREE.MeshBasicMaterial({
+      color: COMPANION_WARNING_COLOR,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false
+    })
+  );
+  marker.name = COMPANION_WARNING_MARKER_NAME;
+  marker.position.y = entityHeight / 2 + 0.48;
+  marker.position.z = 0.08;
+  marker.visible = false;
+  return marker;
+}
+
+function createCompanionGhostAura(worldSize: SpriteVisualSpec['worldSize']): THREE.Mesh {
+  const aura = new THREE.Mesh(
+    new THREE.RingGeometry(0.5, 0.62, 48),
+    new THREE.MeshBasicMaterial({
+      color: COMPANION_GHOST_COLOR,
+      transparent: true,
+      opacity: 0.28,
+      depthWrite: false
+    })
+  );
+  aura.name = COMPANION_GHOST_AURA_NAME;
+  aura.position.z = -0.01;
+  const baseScale = Math.max(worldSize.width, worldSize.height);
+  aura.scale.set(baseScale, baseScale, 1);
+  aura.userData['baseScale'] = baseScale;
+  aura.visible = false;
+  return aura;
+}
+
+function createCompanionRescueRing(worldSize: SpriteVisualSpec['worldSize']): THREE.Mesh {
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.52, 0.6, 48),
+    new THREE.MeshBasicMaterial({
+      color: COMPANION_RESCUE_COLOR,
+      transparent: true,
+      opacity: 0.72,
+      depthWrite: false
+    })
+  );
+  ring.name = COMPANION_RESCUE_RING_NAME;
+  ring.position.z = 0.075;
+  const baseScale = Math.max(worldSize.width, worldSize.height);
+  ring.scale.set(baseScale, baseScale, 1);
+  ring.userData['baseScale'] = baseScale;
+  ring.visible = false;
+  return ring;
+}
+
 function createPortalMesh(): PortalMeshEntry {
   const group = new THREE.Group();
   group.name = PORTAL_GROUP_NAME;
@@ -1073,6 +1216,130 @@ function applyEnemyPresentation(
   const marker = mesh.children.find((child) => child.name === CARRIER_REWARD_MARKER_NAME);
   if (marker !== undefined) marker.visible = entity.carrierDropMarker === 'reward';
   applyStatusMarker(mesh, entity.statusEffects ?? [], nowMs);
+}
+
+function applyCompanionPresentation(
+  mesh: THREE.Mesh,
+  entity: CompanionSnapshot,
+  nowMs: number,
+  hitImpulse: HitImpulseEffect | undefined
+): void {
+  applySlimePresentation(mesh, nowMs, entity.id, SLIME_BREATH_AMPLITUDE, hitImpulse);
+  const flip = companionFlipSign(entity, nowMs);
+  mesh.scale.x = Math.abs(mesh.scale.x) * flip;
+
+  const material = mesh.material;
+  if (!Array.isArray(material) && material instanceof THREE.MeshBasicMaterial) {
+    material.opacity =
+      entity.state === 'ghost' ? 0.5 + 0.1 * shimmer01(nowMs, entity.id, 260) : 1;
+  }
+
+  applyCompanionHpBar(mesh, entity);
+  applyCompanionWarningMarker(mesh, entity, nowMs);
+  applyCompanionGhostAura(mesh, entity, nowMs);
+  applyCompanionRescueRing(mesh, entity, nowMs);
+}
+
+function companionFlipSign(entity: CompanionSnapshot, nowMs: number): number {
+  if (entity.mode === 'rescue') {
+    return Math.floor(nowMs / 90) % 2 === 0 ? 1 : -1;
+  }
+  if (entity.mode === 'alert') {
+    return Math.floor(nowMs / 140) % 2 === 0 ? 1 : -1;
+  }
+  if (entity.mode === 'rest') {
+    return Math.sin(nowMs / 820 + entity.id * 1.7) > 0.72 ? -1 : 1;
+  }
+  if (entity.state === 'ghost') {
+    return Math.sin(nowMs / 540 + entity.id) >= 0 ? 1 : -1;
+  }
+  return 1;
+}
+
+function applyCompanionHpBar(mesh: THREE.Mesh, entity: CompanionSnapshot): void {
+  const track = findChildMesh(mesh, COMPANION_HP_TRACK_NAME);
+  const fill = findChildMesh(mesh, COMPANION_HP_FILL_NAME);
+  if (track === null || fill === null) return;
+  const visible = entity.maxHp > 0;
+  track.visible = visible;
+  fill.visible = visible;
+  if (!visible) return;
+  const ratio = Math.max(0, Math.min(1, entity.hp / entity.maxHp));
+  fill.scale.x = ratio;
+  fill.position.x = (-COMPANION_HP_BAR_WIDTH_WU * (1 - ratio)) / 2;
+  const fillMaterial = fill.material;
+  if (!Array.isArray(fillMaterial) && fillMaterial instanceof THREE.MeshBasicMaterial) {
+    fillMaterial.color.setHex(
+      entity.state === 'ghost' ? COMPANION_HP_GHOST_FILL_COLOR : COMPANION_HP_FILL_COLOR
+    );
+    fillMaterial.opacity = entity.state === 'ghost' ? 0.48 : 0.95;
+  }
+}
+
+function applyCompanionWarningMarker(
+  mesh: THREE.Mesh,
+  entity: CompanionSnapshot,
+  nowMs: number
+): void {
+  const marker = findChildMesh(mesh, COMPANION_WARNING_MARKER_NAME);
+  if (marker === null) return;
+  marker.visible = entity.mode === 'alert';
+  if (!marker.visible) return;
+  const pulse = 0.9 + 0.22 * shimmer01(nowMs, entity.id, 80);
+  marker.scale.set(pulse, pulse, 1);
+  marker.rotation.z = nowMs / 120;
+}
+
+function applyCompanionGhostAura(mesh: THREE.Mesh, entity: CompanionSnapshot, nowMs: number): void {
+  const aura = findChildMesh(mesh, COMPANION_GHOST_AURA_NAME);
+  if (aura === null) return;
+  aura.visible = entity.state === 'ghost';
+  if (!aura.visible) return;
+  const pulse = 0.94 + 0.12 * shimmer01(nowMs, entity.id, 420);
+  const baseScale = companionChildBaseScale(aura);
+  aura.scale.x = baseScale * pulse;
+  aura.scale.y = baseScale * pulse;
+  const material = aura.material;
+  if (!Array.isArray(material) && material instanceof THREE.MeshBasicMaterial) {
+    material.opacity = 0.22 + 0.16 * shimmer01(nowMs, entity.id, 300);
+  }
+}
+
+function applyCompanionRescueRing(
+  mesh: THREE.Mesh,
+  entity: CompanionSnapshot,
+  nowMs: number
+): void {
+  const ring = findChildMesh(mesh, COMPANION_RESCUE_RING_NAME);
+  if (ring === null) return;
+  ring.visible = entity.mode === 'rescue';
+  if (!ring.visible) return;
+  const progress = entity.rescueProgress ?? 0;
+  const pulse = 0.86 + progress * 0.28 + 0.08 * shimmer01(nowMs, entity.id, 120);
+  const baseScale = companionChildBaseScale(ring);
+  ring.scale.x = baseScale * pulse;
+  ring.scale.y = baseScale * pulse;
+  ring.rotation.z = -nowMs / 150;
+}
+
+function companionChildBaseScale(mesh: THREE.Mesh): number {
+  const raw = mesh.userData['baseScale'];
+  return typeof raw === 'number' && Number.isFinite(raw) ? raw : 1;
+}
+
+function findChildMesh(root: THREE.Object3D, name: string): THREE.Mesh | null {
+  let found: THREE.Mesh | null = null;
+  root.traverse((child) => {
+    if (found !== null) return;
+    if (child instanceof THREE.Mesh && child.name === name) {
+      found = child;
+    }
+  });
+  return found;
+}
+
+function shimmer01(nowMs: number, entityId: number, periodMs: number): number {
+  return 0.5 + 0.5 * Math.sin((nowMs / periodMs) * Math.PI * 2 + entityId);
 }
 
 function applyStatusMarker(
@@ -1453,9 +1720,15 @@ function updateCompanion(
   pair: SnapshotPair,
   alpha: number,
   player: PlayerSpawn,
-  snapGrid: CharacterSnapGrid | null
+  snapGrid: CharacterSnapGrid | null,
+  hiddenByRuntimeCompanion: boolean
 ): void {
   if (entry === null) {
+    return;
+  }
+  if (hiddenByRuntimeCompanion) {
+    entry.mesh.visible = false;
+    entry.lastUpdatedAtMs = pair.nowMs;
     return;
   }
   const playerPosition = findInterpolatedPlayerPosition(pair, alpha);

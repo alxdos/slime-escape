@@ -866,6 +866,27 @@ describe('createAudio', () => {
     expect(context.sources).toHaveLength(1);
   });
 
+  it('plays the pet revival sample when a companion is rescued', async () => {
+    const { audio, context, fetchedUrls } = createAudioHarness();
+    context.setState('running');
+
+    audio.handleEvent({
+      kind: 'companionRescued',
+      simTime: 240,
+      companionId: 4,
+      petArchetypeId: 'pet-01',
+      hp: 2,
+      maxHp: 4,
+      x: 1,
+      y: 2
+    });
+
+    await flushAudioWork();
+
+    expect(fetchedUrls).toEqual(['/sfx/pets/revival.mp3']);
+    expect(context.sources).toHaveLength(1);
+  });
+
   it('drops the oldest one-shot when more than 32 one-shots overlap', async () => {
     const { audio, context } = createAudioHarness();
     context.setState('running');

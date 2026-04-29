@@ -80,6 +80,39 @@ describe('ImpactEffectStore', () => {
     });
   });
 
+  it('creates friendly slime hit feedback for companion projectile hits', () => {
+    const store = createStore();
+
+    store.handleEvent(
+      {
+        kind: 'hit',
+        simTime: 100,
+        projectileId: 10,
+        targetId: 99,
+        targetKind: 'companion',
+        targetArchetypeId: 'pet-01',
+        weaponArchetypeId: 'pistol',
+        damage: 1,
+        impactDirX: 0,
+        impactDirY: -2,
+        x: 1,
+        y: 2
+      },
+      500
+    );
+
+    const snapshot = store.snapshot();
+    expect(snapshot.hitImpulses).toHaveLength(1);
+    expect(snapshot.hitImpulses[0]).toMatchObject({
+      targetId: 99,
+      targetKind: 'companion',
+      dirX: 0,
+      dirY: -1
+    });
+    expect(snapshot.droplets.length).toBeGreaterThan(0);
+    expect(snapshot.droplets.every((droplet) => droplet.color === 0x7ee7c8)).toBe(true);
+  });
+
   it('creates death ghosts and larger bursts for slime deaths', () => {
     const store = createStore();
 

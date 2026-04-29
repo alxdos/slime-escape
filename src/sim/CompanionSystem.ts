@@ -40,7 +40,7 @@ export function createCompanionSystem(): CompanionSystem {
         return;
       }
 
-      tickLivingCompanion(companion, player, store, arena, encounter, simTimeMs);
+      tickLivingCompanion(companion, player, store, arena, encounter, simTimeMs, emit);
     }
   };
 }
@@ -51,7 +51,8 @@ function tickLivingCompanion(
   store: EntityStore,
   arena: ArenaConfig,
   encounter: EncounterDefinition | null,
-  simTimeMs: number
+  simTimeMs: number,
+  emit: ((event: RuntimeEvent) => void) | undefined
 ): void {
   const previousTargetId = companion.targetId;
   const target = acquireThreat(companion, store);
@@ -66,20 +67,20 @@ function tickLivingCompanion(
     companion.mode = 'rest';
     companion.targetId = null;
     steerToward(companion, restPosition(player, companion), arena);
-    tryBoop(companion, player, store, simTimeMs);
+    tryBoop(companion, player, store, simTimeMs, emit);
     return;
   }
 
   if (target === null) {
     companion.mode = 'guard';
     steerToward(companion, guardPosition(player, companion, simTimeMs), arena);
-    tryBoop(companion, player, store, simTimeMs);
+    tryBoop(companion, player, store, simTimeMs, emit);
     return;
   }
 
   companion.mode = simTimeMs < companion.alertUntilSimMs ? 'alert' : 'engage';
   steerToward(companion, engagePosition(player, companion, target), arena);
-  tryBoop(companion, player, store, simTimeMs);
+  tryBoop(companion, player, store, simTimeMs, emit);
 }
 
 function tickGhostCompanion(
@@ -109,7 +110,7 @@ function tickGhostCompanion(
         x: companion.position.x,
         y: companion.position.y
       });
-      tryBoop(companion, player, store, simTimeMs);
+      tryBoop(companion, player, store, simTimeMs, emit);
       return;
     }
     companion.mode = 'rescue';
@@ -119,7 +120,7 @@ function tickGhostCompanion(
   }
 
   steerToward(companion, ghostPosition(player, companion), arena);
-  tryBoop(companion, player, store, simTimeMs);
+  tryBoop(companion, player, store, simTimeMs, emit);
 }
 
 function acquireThreat(companion: Companion, store: EntityStore): Hostile | null {
@@ -252,7 +253,8 @@ function tryBoop(
   companion: Companion,
   player: Player,
   store: EntityStore,
-  simTimeMs: number
+  simTimeMs: number,
+  emit: ((event: RuntimeEvent) => void) | undefined
 ): void {
   if (simTimeMs < companion.boopReadyAtSimMs) return;
   const target = nearestBoopTarget(companion, store);
@@ -275,6 +277,17 @@ function tryBoop(
     endSimMs: simTimeMs + companion.boop.durationMs
   };
   companion.boopReadyAtSimMs = simTimeMs + companion.boop.cooldownMs;
+  emit?.({
+    kind: 'companionBoop',
+    simTime: simTimeMs,
+    companionId: companion.id,
+    targetId: target.id,
+    targetKind: target.kind,
+    x: target.position.x,
+    y: target.position.y,
+    impulseDirX: direction.x,
+    impulseDirY: direction.y
+  });
 }
 
 function nearestBoopTarget(companion: Companion, store: EntityStore): Hostile | null {

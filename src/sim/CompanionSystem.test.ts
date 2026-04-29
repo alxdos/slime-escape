@@ -180,8 +180,9 @@ describe('CompanionSystem boop', () => {
       boop: { radius: 2, impulse: 3, durationMs: 150, cooldownMs: 500 }
     });
     const enemy = store.spawnEnemy(enemyAt(1, 0));
+    const events: RuntimeEvent[] = [];
 
-    system.tick(ARENA, store, ACTIVE_WAVE, 0);
+    system.tick(ARENA, store, ACTIVE_WAVE, 0, (event) => events.push(event));
     expect(enemy.hp).toBe(enemy.maxHp);
     expect(enemy.knockback).toEqual({
       vx: 6,
@@ -189,6 +190,13 @@ describe('CompanionSystem boop', () => {
       startSimMs: 0,
       endSimMs: 150
     });
+    const boop = events.find((event) => event.kind === 'companionBoop');
+    if (boop?.kind !== 'companionBoop') throw new Error('expected companionBoop');
+    expect(boop.companionId).toBe(companion.id);
+    expect(boop.targetId).toBe(enemy.id);
+    expect(boop.targetKind).toBe('enemy');
+    expect(boop.impulseDirX).toBe(1);
+    expect(boop.impulseDirY).toBe(0);
 
     enemy.knockback = null;
     system.tick(ARENA, store, ACTIVE_WAVE, SIM_STEP_MS);

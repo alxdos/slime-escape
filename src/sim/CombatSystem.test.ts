@@ -1508,7 +1508,7 @@ describe('CombatSystem', () => {
     const hit = events.find((event) => event.kind === 'hit');
     if (hit?.kind !== 'hit') throw new Error('expected hit event');
     expect(hit.targetKind).toBe('companion');
-    expect(hit.targetArchetypeId).toBeNull();
+    expect(hit.targetArchetypeId).toBe(COMPANION_SPEC.petArchetypeId);
   });
 
   it('removeShooter stops future enemy firing', () => {

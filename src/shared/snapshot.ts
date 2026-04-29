@@ -11,6 +11,20 @@ export type PlayerSnapshot = Readonly<{
   statusEffects?: ReadonlyArray<StatusEffectSnapshot>;
 }>;
 
+export type CompanionSnapshot = Readonly<{
+  id: number;
+  kind: 'companion';
+  petArchetypeId: string;
+  x: number;
+  y: number;
+  hp: number;
+  maxHp: number;
+  state: 'alive' | 'ghost';
+  mode: 'rest' | 'guard' | 'alert' | 'engage' | 'rescue' | 'ghost';
+  rescueProgress: number | null;
+  targetId: number | null;
+}>;
+
 export type EnemySnapshot = Readonly<{
   id: number;
   kind: 'enemy';
@@ -83,6 +97,7 @@ export type FieldEffectSnapshot = Readonly<{
 
 export type EntitySnapshot =
   | PlayerSnapshot
+  | CompanionSnapshot
   | EnemySnapshot
   | ProjectileSnapshot
   | DropSnapshot

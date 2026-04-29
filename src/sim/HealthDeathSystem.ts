@@ -31,6 +31,7 @@ type CompanionDownedContext = Readonly<{
   companionId: EntityId;
   petArchetypeId: string;
   position: Vec2;
+  cause: DamageSource;
   simTime: number;
 }>;
 
@@ -67,6 +68,9 @@ export function createHealthDeathSystem(): HealthDeathSystem {
           simTime: downed.simTime,
           companionId: downed.companionId,
           petArchetypeId: downed.petArchetypeId,
+          weaponArchetypeId: weaponArchetypeIdForDamageSource(downed.cause),
+          impactDirX: downed.cause.kind === 'projectile' ? downed.cause.impactDirX : null,
+          impactDirY: downed.cause.kind === 'projectile' ? downed.cause.impactDirY : null,
           x: downed.position.x,
           y: downed.position.y
         });
@@ -78,10 +82,7 @@ export function createHealthDeathSystem(): HealthDeathSystem {
           entityId: death.entityId,
           entityKind: death.entityKind,
           archetypeId: death.archetypeId,
-          weaponArchetypeId:
-            death.cause.kind === 'projectile' || death.cause.kind === 'explosion'
-              ? death.cause.weaponArchetypeId
-              : null,
+          weaponArchetypeId: weaponArchetypeIdForDamageSource(death.cause),
           impactDirX: death.cause.kind === 'projectile' ? death.cause.impactDirX : null,
           impactDirY: death.cause.kind === 'projectile' ? death.cause.impactDirY : null,
           x: death.position.x,
@@ -127,7 +128,7 @@ function applyDamage(
         target.mode = 'ghost';
         target.targetId = null;
         target.rescueProgressMs = 0;
-        companionDowned.push(makeCompanionDownedContext(target, simTimeMs));
+        companionDowned.push(makeCompanionDownedContext(target, intent.source, simTimeMs));
       }
       continue;
     }
@@ -171,7 +172,11 @@ function makeDamageContext(
   simTimeMs: number
 ): DamageContext {
   const archetypeId =
-    target.kind === 'enemy' || target.kind === 'boss' ? target.archetypeId : null;
+    target.kind === 'enemy' || target.kind === 'boss'
+      ? target.archetypeId
+      : target.kind === 'companion'
+        ? target.petArchetypeId
+        : null;
   return {
     targetId: target.id,
     targetKind: target.kind,
@@ -185,12 +190,20 @@ function makeDamageContext(
 
 function makeCompanionDownedContext(
   companion: Companion,
+  cause: DamageSource,
   simTimeMs: number
 ): CompanionDownedContext {
   return {
     companionId: companion.id,
     petArchetypeId: companion.petArchetypeId,
     position: { x: companion.position.x, y: companion.position.y },
+    cause,
     simTime: simTimeMs
   };
+}
+
+function weaponArchetypeIdForDamageSource(source: DamageSource): string | null {
+  return source.kind === 'projectile' || source.kind === 'explosion'
+    ? source.weaponArchetypeId
+    : null;
 }

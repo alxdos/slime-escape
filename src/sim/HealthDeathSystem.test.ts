@@ -377,7 +377,7 @@ describe('HealthDeathSystem companion damage', () => {
     expect(companion.state).toBe('alive');
     expect(damages).toHaveLength(1);
     expect(damages[0]?.targetKind).toBe('companion');
-    expect(damages[0]?.targetArchetypeId).toBeNull();
+    expect(damages[0]?.targetArchetypeId).toBe(COMPANION_SPEC.petArchetypeId);
     expect(damages[0]?.simTime).toBe(77);
   });
 
@@ -408,8 +408,28 @@ describe('HealthDeathSystem companion damage', () => {
     if (downed?.kind !== 'companionDowned') throw new Error('expected companionDowned');
     expect(downed.companionId).toBe(companion.id);
     expect(downed.petArchetypeId).toBe(COMPANION_SPEC.petArchetypeId);
+    expect(downed.weaponArchetypeId).toBeNull();
+    expect(downed.impactDirX).toBeNull();
+    expect(downed.impactDirY).toBeNull();
     expect(downed.x).toBe(COMPANION_SPEC.position.x);
     expect(downed.y).toBe(COMPANION_SPEC.position.y);
+  });
+
+  it('copies projectile metadata into companionDowned events', () => {
+    const store = createEntityStore();
+    const companion = store.spawnCompanion(COMPANION_SPEC);
+    const sys = createHealthDeathSystem();
+    const events: RuntimeEvent[] = [];
+
+    sys.tick([makeIntent(companion.id, companion.maxHp)], store, 100, (event) =>
+      events.push(event)
+    );
+
+    const downed = events.find((event) => event.kind === 'companionDowned');
+    if (downed?.kind !== 'companionDowned') throw new Error('expected companionDowned');
+    expect(downed.weaponArchetypeId).toBe(PISTOL.id);
+    expect(downed.impactDirX).toBe(1);
+    expect(downed.impactDirY).toBe(0);
   });
 
   it('ignores additional same-tick damage after the companion is downed', () => {

@@ -552,10 +552,17 @@ export function createAudio(init: AudioInit = {}): Audio {
       case 'resume':
       case 'loss':
       case 'companionDowned':
-      case 'companionRescued':
+      case 'companionBoop':
       case 'dropSpawn':
       case 'dropExpire':
         return;
+      case 'companionRescued': {
+        const sampleId = dependencies.audioMappings.resolveEventSample('companionRescued');
+        if (sampleId !== null) {
+          playSampleById(sampleId);
+        }
+        return;
+      }
       case 'win': {
         const sampleId = dependencies.audioMappings.resolveEventSample('victoryFanfare');
         if (sampleId !== null) {

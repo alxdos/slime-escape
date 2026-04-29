@@ -4,6 +4,7 @@ import type { WeaponArchetype } from '../../shared/content/weapons';
 import type { RuntimeEvent } from '../../shared/events';
 
 type SlimeKind = 'enemy' | 'boss';
+type HitTargetKind = SlimeKind | 'companion';
 
 type ImpactEffectStoreInit = Readonly<{
   enemyRegistry: Readonly<Record<string, EnemyArchetype>>;
@@ -13,7 +14,7 @@ type ImpactEffectStoreInit = Readonly<{
 
 export type HitImpulseEffect = Readonly<{
   targetId: number;
-  targetKind: SlimeKind;
+  targetKind: HitTargetKind;
   startedAtMs: number;
   expiresAtMs: number;
   dirX: number;
@@ -86,6 +87,7 @@ const DEATH_GHOST_END_SCALE = 1.38;
 const MAX_HIT_IMPULSES = 128;
 const MAX_DROPLETS = 1420;
 const MAX_DEATH_GHOSTS = 32;
+const COMPANION_HIT_SLIME_COLOR = 0x7ee7c8;
 
 export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffectStore {
   const hitImpulses = new Map<number, HitImpulseEffect>();
@@ -108,15 +110,16 @@ export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffe
   }
 
   function handleHit(event: Extract<RuntimeEvent, { kind: 'hit' }>, nowMs: number): void {
-    if (!isSlimeKind(event.targetKind) || event.targetArchetypeId === null) return;
-    const color = resolveSlimeColor(event.targetKind, event.targetArchetypeId);
+    const targetKind = hitFeedbackTargetKind(event.targetKind);
+    if (targetKind === null) return;
+    const color = resolveHitColor(event);
     if (color === null) return;
 
     const force = resolveWeaponForce(event.weaponArchetypeId);
     const dir = normalizeOrFallback(event.impactDirX, event.impactDirY, 1, 0);
     hitImpulses.set(event.targetId, {
       targetId: event.targetId,
-      targetKind: event.targetKind,
+      targetKind,
       startedAtMs: nowMs,
       expiresAtMs: nowMs + HIT_IMPULSE_TTL_MS,
       dirX: dir.x,
@@ -125,7 +128,12 @@ export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffe
     });
     cullMapToBudget(hitImpulses, MAX_HIT_IMPULSES);
     spawnDroplets({
-      seed: hashEventSeed(event.simTime, event.projectileId, event.targetId, event.weaponArchetypeId),
+      seed: hashEventSeed(
+        event.simTime,
+        event.projectileId,
+        event.targetId,
+        event.weaponArchetypeId
+      ),
       nowMs,
       color,
       x: event.x,
@@ -286,6 +294,12 @@ export function createImpactEffectStore(init: ImpactEffectStoreInit): ImpactEffe
     return archetype?.color ?? null;
   }
 
+  function resolveHitColor(event: Extract<RuntimeEvent, { kind: 'hit' }>): number | null {
+    if (event.targetKind === 'companion') return COMPANION_HIT_SLIME_COLOR;
+    if (!isSlimeKind(event.targetKind) || event.targetArchetypeId === null) return null;
+    return resolveSlimeColor(event.targetKind, event.targetArchetypeId);
+  }
+
   function resolveWeaponForce(weaponArchetypeId: string): number {
     return init.weaponRegistry[weaponArchetypeId]?.projectile.knockbackImpulse ?? 0;
   }
@@ -360,6 +374,11 @@ function easeOutCubic(t: number): number {
 
 function isSlimeKind(kind: string): kind is SlimeKind {
   return kind === 'enemy' || kind === 'boss';
+}
+
+function hitFeedbackTargetKind(kind: string): HitTargetKind | null {
+  if (kind === 'companion') return kind;
+  return isSlimeKind(kind) ? kind : null;
 }
 
 function normalizeOrFallback(

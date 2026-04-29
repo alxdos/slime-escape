@@ -1168,8 +1168,7 @@ function runHitDetection(
         projectileId: projectile.id,
         targetId: target.id,
         targetKind: target.kind,
-        targetArchetypeId:
-          target.kind === 'enemy' || target.kind === 'boss' ? target.archetypeId : null,
+        targetArchetypeId: targetArchetypeIdForHitEvent(target),
         weaponArchetypeId: projectile.weaponArchetypeId,
         damage: projectile.impactDamage,
         impactDirX: impactDir.x,
@@ -1191,6 +1190,16 @@ function runHitDetection(
   }
 
   return intents;
+}
+
+function targetArchetypeIdForHitEvent(target: DamageableTarget): string | null {
+  if (target.kind === 'enemy' || target.kind === 'boss') {
+    return target.archetypeId;
+  }
+  if (target.kind === 'companion') {
+    return target.petArchetypeId;
+  }
+  return null;
 }
 
 function isImpactEligible(projectile: Projectile, simTimeMs: number): boolean {
