@@ -44,7 +44,7 @@ import {
   SMG,
   SNIPER
 } from './weapons';
-import { PET_01 } from './pets';
+import { PET_01, PET_02 } from './pets';
 
 const ACCEPTANCE_PRESET_IDS = Object.keys(SESSION_PRESET_TEMPLATES) as ModePresetId[];
 const ACCEPTANCE_SEEDS = [0, 1, 42] as const;
@@ -323,6 +323,28 @@ describe('buildSessionDefinition (campaign)', () => {
       weaponLoadout: { weapons: [PISTOL.id], selectedIndex: 0 },
       boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
       rescue: { radius: 1.4, durationMs: 1000, reviveHpFraction: 0.5 }
+    });
+  });
+
+  it('uses pet identity only for companion presentation, not combat tuning', () => {
+    const first = buildSessionDefinition(CAMPAIGN_PRESET, {
+      seed: 2,
+      selectedPetId: PET_01.id
+    });
+    const second = buildSessionDefinition(CAMPAIGN_PRESET, {
+      seed: 2,
+      selectedPetId: PET_02.id
+    });
+
+    if (first.companion === null || second.companion === null) {
+      throw new Error('expected companion config');
+    }
+    expect({
+      ...first.companion,
+      petArchetypeId: 'presentation-only'
+    }).toEqual({
+      ...second.companion,
+      petArchetypeId: 'presentation-only'
     });
   });
 

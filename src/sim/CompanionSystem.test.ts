@@ -92,6 +92,21 @@ describe('CompanionSystem movement modes', () => {
     );
   });
 
+  it('does not instantly reverse velocity when the desired direction flips', () => {
+    const { companion, player, system, store } = setup({
+      ...BASE_COMPANION,
+      position: { x: 3, y: 0 },
+      movement: { maxSpeed: 10, acceleration: 4, orbitRadius: 1 }
+    });
+    companion.velocity.vx = 5;
+    player.velocity.vx = 10;
+
+    system.tick(ARENA, store, null, 0);
+
+    expect(companion.velocity.vx).toBeGreaterThan(0);
+    expect(companion.velocity.vx).toBeCloseTo(5 - 4 * SIM_STEP_SEC);
+  });
+
   it('guards during combat when no threat is inside acquire radius', () => {
     const { companion, system, store } = setup();
 
