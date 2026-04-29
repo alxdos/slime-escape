@@ -1849,7 +1849,7 @@ describe('createRenderer', () => {
     }
   });
 
-  it('adds render-only squash and stretch to slime sprites without scaling the player', () => {
+  it('adds render-only squash and stretch to slime sprites while the player breathes', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();
     const playerTexture = new THREE.Texture();
@@ -1899,8 +1899,8 @@ describe('createRenderer', () => {
     const playerMesh = findMeshWithMaterialMap(scene, playerTexture);
     const enemyMesh = findMeshWithMaterialMap(scene, enemyTexture);
 
-    expect(playerMesh?.scale.x).toBe(1);
-    expect(playerMesh?.scale.y).toBe(1);
+    expect(playerMesh?.scale.x).toBeGreaterThan(1);
+    expect(playerMesh?.scale.y).toBeLessThan(1);
     expect(enemyMesh?.scale.x).toBeCloseTo(1.07);
     expect(enemyMesh?.scale.y).toBeCloseTo(0.9426);
   });

@@ -149,6 +149,13 @@ const COMPANION_RESCUE_COLOR = 0xa7f070;
 const DROP_PULSE_HZ = 1.6;
 const DROP_PULSE_AMPLITUDE = 0.15;
 const PROJECTILE_GROUNDED_PULSE_AMPLITUDE = 0.1;
+const PLAYER_BREATH_HZ = 0.72;
+const PLAYER_BREATH_AMPLITUDE = 0.028;
+const PLAYER_BREATH_VERTICAL_RATIO = 0.64;
+const PLAYER_MOVE_STRETCH_AMPLITUDE = 0.035;
+const PLAYER_MOVE_BOB_AMPLITUDE_WU = 0.035;
+const PLAYER_MOVE_LEAN_RADIANS = 0.08;
+const PLAYER_PRESENTATION_MAX_SPEED = 6;
 const SLIME_BREATH_HZ = 0.85;
 const SLIME_BREATH_AMPLITUDE = 0.07;
 const SLIME_BREATH_VERTICAL_RATIO = 0.82;
@@ -1180,7 +1187,6 @@ function applyPlayerPortalTravelPresentation(
 ): void {
   const progress = resolvePortalTravelProgress(pair, portals);
   if (progress === null) {
-    entry.mesh.scale.set(1, 1, 1);
     if (entry.material instanceof THREE.MeshBasicMaterial) {
       entry.material.opacity = 1;
     }
@@ -1189,7 +1195,7 @@ function applyPlayerPortalTravelPresentation(
 
   const eased = easeOutCubic(progress);
   const scale = Math.max(PORTAL_TRAVEL_MIN_PLAYER_SCALE, 1 - 0.92 * eased);
-  entry.mesh.scale.set(scale, scale, 1);
+  entry.mesh.scale.set(entry.mesh.scale.x * scale, entry.mesh.scale.y * scale, 1);
   if (entry.material instanceof THREE.MeshBasicMaterial) {
     entry.material.opacity = Math.max(0.2, 1 - 0.8 * eased);
   }
@@ -1745,9 +1751,10 @@ function updatePlayer(
     return;
   }
   const prevPlayer = prev ? prev.entities.find((e) => e.kind === 'player') : undefined;
-  if (!prevPlayer) {
+  if (!prev || !prevPlayer) {
     mesh.visible = true;
     setSnappedMeshPosition(mesh, player.x, player.y, 0, snapGrid);
+    applyPlayerPresentation(mesh, pair.nowMs, { dx: 0, dy: 0, strength: 0 });
     applyStatusMarker(mesh, player.statusEffects ?? [], pair.nowMs);
     return;
   }
@@ -1755,7 +1762,58 @@ function updatePlayer(
   const y = prevPlayer.y + (player.y - prevPlayer.y) * alpha;
   mesh.visible = true;
   setSnappedMeshPosition(mesh, x, y, 0, snapGrid);
+  applyPlayerPresentation(
+    mesh,
+    pair.nowMs,
+    playerPresentationMotion(prevPlayer, player, prev, curr)
+  );
   applyStatusMarker(mesh, player.statusEffects ?? [], pair.nowMs);
+}
+
+type PlayerPresentationMotion = Readonly<{
+  dx: number;
+  dy: number;
+  strength: number;
+}>;
+
+function playerPresentationMotion(
+  prevPlayer: PlayerSnapshot,
+  player: PlayerSnapshot,
+  prev: Snapshot,
+  curr: Snapshot
+): PlayerPresentationMotion {
+  const dx = player.x - prevPlayer.x;
+  const dy = player.y - prevPlayer.y;
+  const distance = Math.hypot(dx, dy);
+  const spanSeconds = Math.max(0, (curr.simTimeMs - prev.simTimeMs) / 1000);
+  if (distance === 0 || spanSeconds === 0) {
+    return { dx: 0, dy: 0, strength: 0 };
+  }
+  const speed = distance / spanSeconds;
+  return {
+    dx: dx / distance,
+    dy: dy / distance,
+    strength: clamp01(speed / PLAYER_PRESENTATION_MAX_SPEED)
+  };
+}
+
+function applyPlayerPresentation(
+  mesh: THREE.Mesh,
+  nowMs: number,
+  motion: PlayerPresentationMotion
+): void {
+  const breath = Math.sin((nowMs / 1000) * PLAYER_BREATH_HZ * Math.PI * 2);
+  const stride = Math.abs(Math.sin(nowMs / 95));
+  const move = motion.strength * stride;
+  mesh.scale.set(
+    1 + PLAYER_BREATH_AMPLITUDE * breath + PLAYER_MOVE_STRETCH_AMPLITUDE * move,
+    1 -
+      PLAYER_BREATH_AMPLITUDE * PLAYER_BREATH_VERTICAL_RATIO * breath -
+      PLAYER_MOVE_STRETCH_AMPLITUDE * 0.6 * move,
+    1
+  );
+  mesh.rotation.z = -motion.dx * PLAYER_MOVE_LEAN_RADIANS * motion.strength;
+  mesh.position.y += PLAYER_MOVE_BOB_AMPLITUDE_WU * move;
 }
 
 function updateCompanion(
