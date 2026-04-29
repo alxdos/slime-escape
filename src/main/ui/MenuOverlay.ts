@@ -907,15 +907,15 @@ function petsSelectedAreaStyle(): string {
 }
 
 function petsInventoryZoneStyle(quality: PetQuality): string {
-  const topPercent = quality === 'green' ? 17.8 : 55.6;
+  const topPercent = quality === 'green' ? 12.8 : 60.6;
   return [
     'position:absolute',
-    'left:66.4%',
+    'left:56.4%',
     `top:${topPercent}%`,
-    'width:24.8%',
+    'width:34.8%',
     'height:35.2%',
     'display:grid',
-    'grid-template-columns:repeat(2, minmax(0, 1fr))',
+    'grid-template-columns:repeat(3, minmax(0, 1fr))',
     'align-content:start',
     'gap:7%',
     'box-sizing:border-box',
