@@ -12,7 +12,7 @@ import { assertNever } from '../shared/protocol';
 import type { Rng } from '../shared/rng';
 import { SIM_STEP_MS } from '../shared/timing';
 
-import type { EntityId, EntityStore } from './EntityStore';
+import type { Companion, EntityId, EntityStore } from './EntityStore';
 import type { DeathContext } from './HealthDeathSystem';
 
 export type DropSystem = Readonly<{
@@ -116,7 +116,14 @@ export function createDropSystem(
           const reach = pickupReach(drop.radius + player.radius, activeModifier);
           if (dx * dx + dy * dy > reach * reach) continue;
 
-          applyDropEffect(drop.effect, store, simTimeMs, weaponEffects, pickupModifiers);
+          applyDropEffect(
+            drop.effect,
+            player.id,
+            store,
+            simTimeMs,
+            weaponEffects,
+            pickupModifiers
+          );
           pickedUp.add(drop.id);
           onPickup?.({
             entityId: drop.id,
@@ -133,6 +140,45 @@ export function createDropSystem(
             x: drop.position.x,
             y: drop.position.y
           });
+        }
+      }
+
+      const companion = store.companion();
+      if (isCompanionHealPickupEligible(companion)) {
+        const companionRadius = bodyRadius(companion.contactBox);
+        for (const drop of store.drops()) {
+          if (expired.has(drop.id) || pickedUp.has(drop.id)) continue;
+          if (drop.effect.kind !== 'heal') continue;
+          const dx = drop.position.x - companion.position.x;
+          const dy = drop.position.y - companion.position.y;
+          const reach = companionRadius + drop.radius;
+          if (dx * dx + dy * dy > reach * reach) continue;
+
+          applyDropEffect(
+            drop.effect,
+            companion.id,
+            store,
+            simTimeMs,
+            weaponEffects,
+            pickupModifiers
+          );
+          pickedUp.add(drop.id);
+          onPickup?.({
+            entityId: drop.id,
+            archetypeId: drop.archetypeId,
+            pickerId: companion.id,
+            simTime: simTimeMs
+          });
+          emit({
+            kind: 'dropPickup',
+            simTime: simTimeMs,
+            entityId: drop.id,
+            archetypeId: drop.archetypeId,
+            pickerId: companion.id,
+            x: drop.position.x,
+            y: drop.position.y
+          });
+          if (companion.hp >= companion.maxHp) break;
         }
       }
 
@@ -241,8 +287,17 @@ function pickupReach(baseReach: number, modifier: PickupModifier | null): number
   return modifier === null ? baseReach : baseReach * modifier.pickupRadiusMultiplier;
 }
 
+function isCompanionHealPickupEligible(companion: Companion | null): companion is Companion {
+  return companion !== null && companion.state === 'alive' && companion.hp < companion.maxHp;
+}
+
+function bodyRadius(contactBox: Readonly<{ width: number; height: number }>): number {
+  return Math.max(contactBox.width, contactBox.height) / 2;
+}
+
 function applyDropEffect(
   effect: DropEffect,
+  pickerId: EntityId,
   store: EntityStore,
   simTimeMs: number,
   weaponEffects: WeaponDropEffectSink | null,
@@ -251,19 +306,26 @@ function applyDropEffect(
   switch (effect.kind) {
     case 'heal': {
       const player = store.player();
-      if (player === null) return;
-      player.hp = Math.min(player.maxHp, player.hp + effect.amount);
+      if (player !== null && player.id === pickerId) {
+        player.hp = Math.min(player.maxHp, player.hp + effect.amount);
+        return;
+      }
+      const companion = store.companionById(pickerId);
+      if (companion === null || companion.state !== 'alive' || companion.hp >= companion.maxHp) {
+        return;
+      }
+      companion.hp = Math.min(companion.maxHp, companion.hp + effect.amount);
       return;
     }
     case 'addWeaponModifier': {
       const player = store.player();
-      if (player === null) return;
+      if (player === null || player.id !== pickerId) return;
       weaponEffects?.addModifierToSelectedWeapon(player.id, effect.modifier);
       return;
     }
     case 'temporaryOverdrive': {
       const player = store.player();
-      if (player === null) return;
+      if (player === null || player.id !== pickerId) return;
       weaponEffects?.applyTemporaryOverdriveToSelectedWeapon(
         player.id,
         effect.cooldownMultiplier,
@@ -274,7 +336,7 @@ function applyDropEffect(
     }
     case 'pickupModifier': {
       const player = store.player();
-      if (player === null) return;
+      if (player === null || player.id !== pickerId) return;
       pickupModifiers.set(
         player.id,
         mergePickupModifier(pickupModifiers.get(player.id), effect.modifier)

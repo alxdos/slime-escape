@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { RuntimeEvent } from '../shared/events';
+import { HEAL_ORB } from '../shared/content/drops';
 import type { ArenaConfig, EncounterDefinition } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
@@ -8,6 +9,7 @@ import { createCompanionSystem } from './CompanionSystem';
 import {
   createEntityStore,
   type CompanionSpawnSpec,
+  type DropSpawnSpec,
   type EnemySpawnSpec
 } from './EntityStore';
 
@@ -73,6 +75,18 @@ function enemyAt(x: number, y: number, overrides: Partial<EnemySpawnSpec> = {}) 
     ...BASE_ENEMY,
     ...overrides,
     position: { x, y }
+  };
+}
+
+function healDropAt(x: number, y: number, overrides: Partial<DropSpawnSpec> = {}) {
+  return {
+    archetypeId: HEAL_ORB.id,
+    position: { x, y },
+    radius: HEAL_ORB.radius,
+    effect: HEAL_ORB.effect,
+    color: HEAL_ORB.color,
+    expireAtSimMs: 10_000,
+    ...overrides
   };
 }
 
@@ -144,6 +158,51 @@ describe('CompanionSystem movement modes', () => {
     system.tick(ARENA, store, ACTIVE_WAVE, SIM_STEP_MS);
 
     expect(companion.targetId).toBe(current.id);
+  });
+});
+
+describe('CompanionSystem heal drop seeking', () => {
+  it('prioritizes a nearby heal drop while damaged and clears hostile target', () => {
+    const { companion, system, store } = setup({
+      ...BASE_COMPANION,
+      movement: { maxSpeed: 8, acceleration: 24, orbitRadius: 2 }
+    });
+    companion.hp = companion.maxHp - 1;
+    store.spawnEnemy(enemyAt(-1, 0));
+    store.spawnDrop(healDropAt(2, 0));
+
+    system.tick(ARENA, store, ACTIVE_WAVE, 0);
+
+    expect(companion.targetId).toBeNull();
+    expect(companion.mode).toBe('guard');
+    expect(companion.velocity.vx).toBeGreaterThan(0);
+    expect(Math.abs(companion.velocity.vy)).toBeLessThan(1e-10);
+  });
+
+  it('ignores heal drops while already at full hp and can acquire a threat', () => {
+    const { companion, system, store } = setup();
+    const enemy = store.spawnEnemy(enemyAt(1, 0));
+    store.spawnDrop(healDropAt(-1, 0));
+
+    system.tick(ARENA, store, ACTIVE_WAVE, 0);
+
+    expect(companion.targetId).toBe(enemy.id);
+    expect(companion.mode).toBe('alert');
+  });
+
+  it('ignores heal drops outside the threat acquisition radius', () => {
+    const { companion, system, store } = setup({
+      ...BASE_COMPANION,
+      threat: { acquireRadius: 1, releaseRadius: 2 }
+    });
+    companion.hp = companion.maxHp - 1;
+    const enemy = store.spawnEnemy(enemyAt(0.5, 0));
+    store.spawnDrop(healDropAt(2, 0));
+
+    system.tick(ARENA, store, ACTIVE_WAVE, 0);
+
+    expect(companion.targetId).toBe(enemy.id);
+    expect(companion.mode).toBe('alert');
   });
 });
 

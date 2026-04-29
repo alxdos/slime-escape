@@ -2,7 +2,7 @@ import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig, EncounterDefinition, Vec2 } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
-import type { Boss, Companion, Enemy, EntityId, EntityStore, Player } from './EntityStore';
+import type { Boss, Companion, Drop, Enemy, EntityId, EntityStore, Player } from './EntityStore';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const ALERT_DURATION_MS = 300;
@@ -56,6 +56,15 @@ function tickLivingCompanion(
   simTimeMs: number,
   emit: ((event: RuntimeEvent) => void) | undefined
 ): void {
+  const healDrop = nearestHealDrop(companion, store, simTimeMs);
+  if (healDrop !== null) {
+    companion.targetId = null;
+    companion.mode = isCombatEncounter(encounter) ? 'guard' : 'rest';
+    steerToward(companion, healDrop.position, arena);
+    tryBoop(companion, player, store, simTimeMs, emit);
+    return;
+  }
+
   const previousTargetId = companion.targetId;
   const target = acquireThreat(companion, store);
   if (target === null) {
@@ -146,6 +155,26 @@ function acquireThreat(companion: Companion, store: EntityStore): Hostile | null
       (candidateDistance === bestDistance && (best === null || hostile.id < best.id))
     ) {
       best = hostile;
+      bestDistance = candidateDistance;
+    }
+  }
+  return best;
+}
+
+function nearestHealDrop(companion: Companion, store: EntityStore, simTimeMs: number): Drop | null {
+  if (companion.hp >= companion.maxHp) return null;
+  let best: Drop | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const drop of store.drops()) {
+    if (drop.effect.kind !== 'heal') continue;
+    if (simTimeMs >= drop.expireAtSimMs) continue;
+    const candidateDistance = distance(companion.position, drop.position);
+    if (candidateDistance > companion.threat.acquireRadius) continue;
+    if (
+      candidateDistance < bestDistance ||
+      (candidateDistance === bestDistance && (best === null || drop.id < best.id))
+    ) {
+      best = drop;
       bestDistance = candidateDistance;
     }
   }

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-29
-- Updated: 2026-04-29
+- Updated: 2026-04-29 (follow-up: a living damaged companion may seek nearby heal drops and pick up only that drop effect through `DropSystem`; player-only modifier drops stay player-only.)
 
 ## Context
 
@@ -99,6 +99,7 @@ It owns:
 
 - companion behavior mode selection
 - deterministic threat acquisition
+- deterministic heal-drop seeking when alive and damaged
 - inertial companion movement
 - companion aim intent for `CombatSystem`
 - protective boop impulses
@@ -121,6 +122,8 @@ Modes:
 - `rescue`: while the player remains inside the rescue radius, rescue progress advances. Leaving the radius cancels or resets progress according to the session rescue config.
 
 Threat acquisition is deterministic: choose the nearest enemy or boss inside the acquisition radius, with entity id as the tie breaker. A release radius prevents target flicker.
+
+When the companion is `alive` and `hp < maxHp`, it may temporarily prioritize the nearest `heal` drop inside its threat acquisition radius before hostile engagement. The search uses `DropEffect.kind === 'heal'`, distance from the companion, `threatAcquireRadius` as the search radius, and entity id as the tie breaker. While moving toward the heal drop, the companion clears its hostile `targetId`; this prevents weapon fire from hiding the fact that it is retreating to recover. No new snapshot mode is introduced for heal seeking: renderer can continue to show the existing rest/guard/engage presentation.
 
 Look-around flips, idle personality timing, ghost shimmer, and rescue flip rate are presentation details. They may vary by `petArchetypeId`, but they must not affect simulation.
 
@@ -196,6 +199,12 @@ Runtime events gain:
 Existing `hit` events may use `targetKind: 'companion'` for friendly slime hit feedback.
 
 The renderer draws companion visuals from `petArchetypeId` and the existing pet visual registry. The in-world companion HP bar is presentation owned and reads from `CompanionSnapshot.hp/maxHp`.
+
+### Heal drop pickup
+
+`CompanionSystem` owns the decision to move toward a nearby heal drop. `DropSystem` remains the only system that applies `DropEffect`, removes the drop, reports pickup facts, and emits `dropPickup`.
+
+A companion can pick up only `DropEffect.kind === 'heal'`, only while `state === 'alive'`, and only while `hp < maxHp`. Weapon modifier, temporary overdrive, and pickup modifier drops remain player-only. A ghost companion cannot heal from drops; it must be rescued through the rescue rule above.
 
 ## Consequences
 

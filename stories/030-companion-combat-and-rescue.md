@@ -47,6 +47,7 @@ The selected pet should feel like a small living ally, not a cosmetic marker. It
 - `content/sessions/<presetId>.md` may add an optional `# Companion` field table for session tuning. The selected pet id is never authored in MD; `UiShell` passes it to the session builder at run start.
 - Runtime adds `kind: 'companion'` plus `CompanionSnapshot`, `CompanionSystem`, and companion events `companionBoop`, `companionDowned`, and `companionRescued`.
 - `CompanionSystem` runs after `MovementSystem` and before `CombatSystem`. It owns mode selection, inertial movement, deterministic threat acquisition, boop, rescue, ghost follow, and companion aim intent.
+- A living damaged companion may seek nearby heal drops, but pickup/removal/effect application stays owned by `DropSystem` per [drops.md](../design/drops.md).
 - `CombatSystem` owns companion weapon firing through the existing owner-local weapon instance model with `ownerKind: 'companion'`.
 - Damage rules add the friendly alliance `player + companion`: player projectiles cannot damage the companion, and companion projectiles cannot damage the player or companion.
 - `HealthDeathSystem` applies companion damage, but HP reaching zero transitions the companion to `ghost` instead of publishing normal `death`, running death hooks, spawning drops, incrementing result kills, or removing the entity.
@@ -95,6 +96,7 @@ The selected pet should feel like a small living ally, not a cosmetic marker. It
 | T6 | [x] | Add snapshot/event exports and renderer/UI presentation: companion sprite, HP bar, rest/guard/alert/engage/ghost/rescue visuals, look-around flips, warning, slime hit feedback, ghost aura, and rescue flip animation. |
 | T7 | [x] | Cover the feature with focused tests for builder validation, runtime mode transitions, smooth movement constraints, damage rules, downed/rescue behavior, boop without damage, snapshot/events, and renderer hard-error paths. |
 | T8 | [ ] | Run content checks, typecheck/build/test, and a manual demo pass over the full select-pet -> run -> fight -> ghost -> rescue scenario. |
+| T9 | [x] | Let a living damaged companion seek nearby heal drops and pick up only that effect through `DropSystem`, with tests for player-only modifier drops. |
 
 ## Related
 
@@ -108,6 +110,7 @@ The selected pet should feel like a small living ally, not a cosmetic marker. It
 - [universal-weapons-and-projectiles.md](../design/universal-weapons-and-projectiles.md)
 - [non-player-firing.md](../design/non-player-firing.md)
 - [combat-modifiers-and-field-effects.md](../design/combat-modifiers-and-field-effects.md)
+- [drops.md](../design/drops.md)
 - [health-and-death.md](../design/health-and-death.md)
 - [snapshot-shape.md](../design/snapshot-shape.md)
 - [enemy-contact.md](../design/enemy-contact.md)
