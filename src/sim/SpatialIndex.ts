@@ -1,6 +1,6 @@
-import type { Boss, Enemy, EntityStore, Player, Projectile } from './EntityStore';
+import type { Boss, Companion, Enemy, EntityStore, Player, Projectile } from './EntityStore';
 
-export type IndexedEntity = Player | Enemy | Boss | Projectile;
+export type IndexedEntity = Player | Companion | Enemy | Boss | Projectile;
 
 export type SpatialIndex = Readonly<{
   rebuild(store: EntityStore): void;
@@ -22,6 +22,8 @@ export function createSpatialIndex(): SpatialIndex {
       entries = [];
       const p = store.player();
       if (p !== null) entries.push(p);
+      const companion = store.companion();
+      if (companion !== null) entries.push(companion);
       for (const enemy of store.enemies()) entries.push(enemy);
       for (const boss of store.bosses()) entries.push(boss);
       for (const projectile of store.projectiles()) entries.push(projectile);

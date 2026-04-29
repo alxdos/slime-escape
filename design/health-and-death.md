@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-26 (story 024: `RunSummaryTracker` becomes the explicit session-level stats/progression death hook consumer; see [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-24 017 alignment: projectile and explosion damage both flow through `DamageIntent`; 018 alignment: field/status damage sources are added for future `FieldEffectSystem`/`StatusEffectSystem`. Earlier: 016 impact direction, 006 boss, 005 drops.)
+- Updated: 2026-04-29 (story 030 prep: companion entities are damageable but use a downed ghost transition instead of the removable death path; projectile/explosion sources support `ownerKind: 'companion'`. Earlier: 2026-04-26 story 024: `RunSummaryTracker` becomes the explicit session-level stats/progression death hook consumer; see [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-24 017 alignment: projectile and explosion damage both flow through `DamageIntent`; 018 alignment: field/status damage sources are added for future `FieldEffectSystem`/`StatusEffectSystem`. Earlier: 016 impact direction, 006 boss, 005 drops.)
 
 ## Context
 
@@ -27,7 +27,7 @@ Without this contract, story 003 will implicitly introduce "HP directly in `Enti
     maxHp: number;    // integer > 0, copied from archetype
   };
   ```
-- In 003, only `enemy` has `HasHealth`. Story 004 gives `HasHealth` to the player as well: `Player` in `EntityStore` gets `hp`/`maxHp` fields initialized from `SessionDefinition.player.maxHp` ([content-archetypes.md](content-archetypes.md), [session-definition.md](session-definition.md)) at session start. No new kind is introduced; the "HP on entity" contract is the same for `enemy` and `player`.
+- In 003, only `enemy` has `HasHealth`. Story 004 gives `HasHealth` to the player as well: `Player` in `EntityStore` gets `hp`/`maxHp` fields initialized from `SessionDefinition.player.maxHp` ([content-archetypes.md](content-archetypes.md), [session-definition.md](session-definition.md)) at session start. Story 030 gives `HasHealth` to `companion` when `SessionDefinition.companion` is present; companion HP is initialized from `SessionDefinition.companion.maxHp` ([companion-combat.md](companion-combat.md)).
 - Projectiles (`projectile`) have no HP, and `HealthDeathSystem` does not touch them.
 
 ### Damage intents
@@ -38,8 +38,8 @@ Without this contract, story 003 will implicitly introduce "HP directly in `Enti
     targetId: EntityId;
     amount: number;     // integer > 0
     source:
-      | { kind: 'projectile'; projectileId: EntityId; ownerKind: 'player' | 'enemy' | 'boss'; weaponArchetypeId: string; impactDirX: number; impactDirY: number }
-      | { kind: 'explosion'; projectileId: EntityId; ownerKind: 'player' | 'enemy' | 'boss'; weaponArchetypeId: string }
+      | { kind: 'projectile'; projectileId: EntityId; ownerKind: 'player' | 'enemy' | 'boss' | 'companion'; weaponArchetypeId: string; impactDirX: number; impactDirY: number }
+      | { kind: 'explosion'; projectileId: EntityId; ownerKind: 'player' | 'enemy' | 'boss' | 'companion'; weaponArchetypeId: string }
       | { kind: 'enemyContact'; enemyId: EntityId }                  // active from 004; contract — enemy-contact.md
       | { kind: 'fieldEffect'; fieldEffectId: EntityId; archetypeId: string }
       | { kind: 'statusEffect'; statusKind: string; sourceEntityId: EntityId | null }
@@ -60,7 +60,21 @@ Without this contract, story 003 will implicitly introduce "HP directly in `Enti
   2. when `hp > 0 → hp == 0`, the entity is marked as "died on this tick";
   3. repeated intents to the same target later in the same tick after its death are **ignored**, preventing overkill and double death-hook execution.
 - Entities marked as "died on this tick" form an ordered death event list for the current tick.
+- `kind: 'companion'` is the only damageable entity that does not enter the normal death list. When companion HP transitions from `> 0` to `0`, `HealthDeathSystem` changes the companion to `state: 'ghost'`, publishes `companionDowned`, and leaves the entity in `EntityStore` for snapshots and rescue. The companion does not publish `death`, does not run death hooks, and is not removed by `removeDead()`.
 - When publishing a `death` runtime event, `HealthDeathSystem` copies only presentation-safe impact metadata from the final `DamageIntent.source`: for projectile death, `weaponArchetypeId` and normalized `impactDirX/Y`; for explosion death, `weaponArchetypeId` without directional impact; for other sources, `null`. Full event shape is defined in [snapshot-shape.md](snapshot-shape.md), and consumer meaning in [impact-feedback.md](impact-feedback.md).
+
+### Companion downed state
+
+- Companion defeat is a downed transition, not a death-hook transition.
+- `HealthDeathSystem` owns the HP-to-ghost edge because it is still the only system applying final HP loss.
+- The downed transition:
+  - clamps `hp` to `0`;
+  - changes companion `state` to `ghost`;
+  - clears active companion firing for the current ghost duration;
+  - emits `companionDowned` with the companion id, `petArchetypeId`, position, and final impact metadata needed by presentation;
+  - leaves the entity in snapshots as `CompanionSnapshot.state === 'ghost'`.
+- `RunSummaryTracker`, `DropSystem`, `SessionFlowSystem`, XP rewards, and win/loss logic ignore `companionDowned`.
+- Rescue and revived HP are owned by `CompanionSystem`, not by `HealthDeathSystem`; rescue is not a heal channel for arbitrary entities.
 
 ### Death hooks
 
@@ -135,3 +149,5 @@ Without this contract, story 003 will implicitly introduce "HP directly in `Enti
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
 - [session-result-summary.md](session-result-summary.md)
+- [companion-combat.md](companion-combat.md)
+- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-24
-- Updated: 2026-04-24
+- Updated: 2026-04-29 (story 030 prep: companion hit feedback uses friendly slime splashes from `hit.targetKind === 'companion'`; companion downed uses `companionDowned`, not normal `death`.)
 
 ## Context
 
@@ -53,8 +53,8 @@ state. Projectile knockback changes enemy/boss position, so it belongs to simula
     simTime: number;
     projectileId: number;
     targetId: number;
-    targetKind: 'enemy' | 'player' | 'boss';
-    targetArchetypeId: string | null; // enemy/boss id; null for player
+    targetKind: 'enemy' | 'player' | 'boss' | 'companion';
+    targetArchetypeId: string | null; // enemy/boss id or companion pet id; null for player
     weaponArchetypeId: string;
     damage: number;
     impactDirX: number; // normalized projectile movement direction
@@ -102,8 +102,8 @@ state. Projectile knockback changes enemy/boss position, so it belongs to simula
 - `UiShell` remains the owner of `SimWorkerHost.onEvent`. It fans simulation events out to
   presentation consumers: audio, then renderer if it exists, then shell-level transitions
   (`win`/`loss`) and logging.
-- `Renderer` filters events internally. In this story it reacts to `hit` and `death` for
-  `targetKind` / `entityKind` in `{ 'enemy', 'boss' }`.
+- `Renderer` filters events internally. For the slime impact layer it reacts to `hit` for
+  `targetKind` in `{ 'enemy', 'boss', 'companion' }`, `death` for `entityKind` in `{ 'enemy', 'boss' }`, and companion-specific edge events from [companion-combat.md](companion-combat.md).
 - Renderer clears all transient impact effects on `dispose()` and when the next session renderer is
   created. Effects do not survive returning to the menu.
 
@@ -142,8 +142,7 @@ state. Projectile knockback changes enemy/boss position, so it belongs to simula
 - Per-weapon variation is derived from `WeaponArchetype.projectile`. The primary force signal is
   `knockbackImpulse`; `impactDamage`, `hitRadius`, and projectile `size` can be secondary visual
   inputs. Exact counts, speeds, and spread curves are renderer-owned tuning constants.
-- Droplet color comes from `EnemyArchetype.color` or `BossArchetype.color`. Base sprites remain
-  PNG-driven; `color` is used here as slime material color for impact effects.
+- Droplet color comes from `EnemyArchetype.color` or `BossArchetype.color`. Companion hit droplets use a renderer-owned friendly slime color keyed by `petArchetypeId` or a shared companion fallback color; this is presentation only and must not add combat fields to `PetArchetype`. Base sprites remain PNG-driven; `color` is used here as slime material color for impact effects.
 - Droplets have a render-only lifetime:
   - short flight/fall animation;
   - for roughly the first two seconds after landing, the floor stain grows slightly;
@@ -166,6 +165,7 @@ state. Projectile knockback changes enemy/boss position, so it belongs to simula
 
 - On `death` for `enemy` / `boss`, renderer creates a transient ghost sprite from the same visual
   registry and preloaded texture as the live sprite.
+- Companion ghost state is not a `death` ghost. It is persistent runtime state from `CompanionSnapshot.state === 'ghost'`; the downed edge uses `companionDowned` for presentation/audio.
 - Ghost starts from event `x/y`, not from a live mesh lookup. This is required because the entity is
   removed before the next snapshot.
 - Ghost moves quickly:
@@ -228,3 +228,5 @@ state. Projectile knockback changes enemy/boss position, so it belongs to simula
 - [rng.md](rng.md)
 - [testing.md](testing.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
+- [companion-combat.md](companion-combat.md)
+- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)

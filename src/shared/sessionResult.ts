@@ -56,12 +56,12 @@ export type ResultDungeonSummary = Readonly<{
 export type ResultDefeatCause =
   | Readonly<{
       kind: 'projectile';
-      ownerKind: 'player' | 'enemy' | 'boss';
+      ownerKind: 'player' | 'companion' | 'enemy' | 'boss';
       weaponArchetypeId: string;
     }>
   | Readonly<{
       kind: 'explosion';
-      ownerKind: 'player' | 'enemy' | 'boss';
+      ownerKind: 'player' | 'companion' | 'enemy' | 'boss';
       weaponArchetypeId: string;
     }>
   | Readonly<{

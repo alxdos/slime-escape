@@ -1,5 +1,6 @@
 import type {
   ArenaConfig,
+  CompanionSessionConfig,
   EncounterDefinition,
   Loadout,
   PlayerSpawn,
@@ -37,6 +38,8 @@ export type SessionPresetEncounterTemplate = Omit<EncounterDefinition, 'spawnPla
     spawnPlan: SessionPresetSpawnPlanTemplate;
   }>;
 
+export type SessionPresetCompanionTemplate = Omit<CompanionSessionConfig, 'petArchetypeId'>;
+
 export type SessionPresetTemplate = Readonly<{
   presetId: string;
   displayName: string;
@@ -45,6 +48,7 @@ export type SessionPresetTemplate = Readonly<{
   order: number;
   arena: ArenaConfig;
   player: PlayerSpawn;
+  companion: SessionPresetCompanionTemplate | null;
   loadout: Loadout | null;
   backgrounds: ReadonlyArray<SessionBackground>;
   musicSampleId: string | null;

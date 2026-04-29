@@ -272,7 +272,8 @@ function makeSession(
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null,
-    ...overrides
+    ...overrides,
+    companion: overrides.companion ?? null
   };
 }
 

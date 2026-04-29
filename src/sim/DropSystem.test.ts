@@ -8,7 +8,12 @@ import { SIM_STEP_MS } from '../shared/timing';
 
 import type { DamageIntent } from './CombatSystem';
 import { createDropSystem, type WeaponDropEffectSink } from './DropSystem';
-import { createEntityStore, type Enemy, type EntityId } from './EntityStore';
+import {
+  createEntityStore,
+  type CompanionSpawnSpec,
+  type Enemy,
+  type EntityId
+} from './EntityStore';
 import { createHealthDeathSystem, type DeathContext } from './HealthDeathSystem';
 
 function squareContactBox(radius: number) {
@@ -21,6 +26,17 @@ const PLAYER_SPEC = {
   contactBox: squareContactBox(0.5),
   maxSpeed: 6,
   maxHp: 5
+};
+const COMPANION_SPEC: CompanionSpawnSpec = {
+  petArchetypeId: 'debug-buddy',
+  position: { x: 0, y: 0 },
+  contactBox: squareContactBox(0.4),
+  maxHp: 4,
+  movement: { maxSpeed: 3, acceleration: 12, orbitRadius: 3.2 },
+  threat: { acquireRadius: 4, releaseRadius: 6 },
+  weaponLoadout: null,
+  boop: { radius: 1, impulse: 4, durationMs: 120, cooldownMs: 500 },
+  rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
 };
 const NO_DROP_TEST_ENEMY: EnemyArchetype = {
   id: 'test-no-drop-enemy',
@@ -412,6 +428,177 @@ describe('DropSystem tick (ttl, pickup, heal)', () => {
     expect(pickup.pickerId).toBe(player.id);
     expect(player.hp).toBe(3); // 2 + 1 (heal-orb amount)
     expect(store.dropCount()).toBe(0);
+  });
+
+  it('lets a damaged living companion pick up an overlapping heal drop', () => {
+    const store = createEntityStore();
+    const player = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      position: { x: 10, y: 0 }
+    });
+    const companion = store.spawnCompanion(COMPANION_SPEC);
+    companion.hp = 2;
+    const drop = store.spawnDrop({
+      archetypeId: HEAL_ORB.id,
+      position: { x: 0.3, y: 0 },
+      radius: HEAL_ORB.radius,
+      effect: HEAL_ORB.effect,
+      color: HEAL_ORB.color,
+      expireAtSimMs: 9999
+    });
+    const facts: Array<{ pickerId: EntityId; entityId: EntityId }> = [];
+    const drops = createDropSystem(REGISTRY, DROP_ARCHETYPES, null, (fact) => {
+      facts.push({ pickerId: fact.pickerId, entityId: fact.entityId });
+    });
+    drops.setRng(createRng(1));
+    const events: RuntimeEvent[] = [];
+
+    drops.tick(1000, store, (e) => events.push(e));
+
+    expect(companion.hp).toBe(3);
+    expect(player.hp).toBe(player.maxHp);
+    expect(store.dropCount()).toBe(0);
+    expect(facts).toEqual([{ pickerId: companion.id, entityId: drop.id }]);
+    const pickup = events[0];
+    if (pickup?.kind !== 'dropPickup') throw new Error('expected dropPickup');
+    expect(pickup.pickerId).toBe(companion.id);
+    expect(pickup.entityId).toBe(drop.id);
+  });
+
+  it('does not let a full-health companion consume heal drops', () => {
+    const store = createEntityStore();
+    store.spawnPlayer({ ...PLAYER_SPEC, position: { x: 10, y: 0 } });
+    store.spawnCompanion(COMPANION_SPEC);
+    const drop = store.spawnDrop({
+      archetypeId: HEAL_ORB.id,
+      position: { x: 0, y: 0 },
+      radius: HEAL_ORB.radius,
+      effect: HEAL_ORB.effect,
+      color: HEAL_ORB.color,
+      expireAtSimMs: 9999
+    });
+    const drops = createDropSystem(REGISTRY, DROP_ARCHETYPES);
+    drops.setRng(createRng(1));
+    const events: RuntimeEvent[] = [];
+
+    drops.tick(1000, store, (e) => events.push(e));
+
+    expect(store.dropById(drop.id)).not.toBeNull();
+    expect(events).toHaveLength(0);
+  });
+
+  it('stops companion heal pickup once the companion reaches max hp', () => {
+    const store = createEntityStore();
+    store.spawnPlayer({ ...PLAYER_SPEC, position: { x: 10, y: 0 } });
+    const companion = store.spawnCompanion(COMPANION_SPEC);
+    companion.hp = companion.maxHp - 1;
+    const first = store.spawnDrop({
+      archetypeId: HEAL_ORB.id,
+      position: { x: 0, y: 0 },
+      radius: HEAL_ORB.radius,
+      effect: HEAL_ORB.effect,
+      color: HEAL_ORB.color,
+      expireAtSimMs: 9999
+    });
+    const second = store.spawnDrop({
+      archetypeId: HEAL_ORB.id,
+      position: { x: 0.1, y: 0 },
+      radius: HEAL_ORB.radius,
+      effect: HEAL_ORB.effect,
+      color: HEAL_ORB.color,
+      expireAtSimMs: 9999
+    });
+    const drops = createDropSystem(REGISTRY, DROP_ARCHETYPES);
+    drops.setRng(createRng(1));
+    const events: RuntimeEvent[] = [];
+
+    drops.tick(1000, store, (e) => events.push(e));
+
+    expect(companion.hp).toBe(companion.maxHp);
+    expect(store.dropById(first.id)).toBeNull();
+    expect(store.dropById(second.id)).not.toBeNull();
+    expect(events.map((e) => e.kind)).toEqual(['dropPickup']);
+  });
+
+  it('does not let a ghost companion heal from drops', () => {
+    const store = createEntityStore();
+    store.spawnPlayer({ ...PLAYER_SPEC, position: { x: 10, y: 0 } });
+    const companion = store.spawnCompanion(COMPANION_SPEC);
+    companion.state = 'ghost';
+    companion.hp = 0;
+    const drop = store.spawnDrop({
+      archetypeId: HEAL_ORB.id,
+      position: { x: 0, y: 0 },
+      radius: HEAL_ORB.radius,
+      effect: HEAL_ORB.effect,
+      color: HEAL_ORB.color,
+      expireAtSimMs: 9999
+    });
+    const drops = createDropSystem(REGISTRY, DROP_ARCHETYPES);
+    drops.setRng(createRng(1));
+    const events: RuntimeEvent[] = [];
+
+    drops.tick(1000, store, (e) => events.push(e));
+
+    expect(companion.hp).toBe(0);
+    expect(store.dropById(drop.id)).not.toBeNull();
+    expect(events).toHaveLength(0);
+  });
+
+  it('keeps weapon and pickup modifier drops player-only when the companion overlaps them', () => {
+    const store = createEntityStore();
+    store.spawnPlayer({ ...PLAYER_SPEC, position: { x: 10, y: 0 } });
+    const companion = store.spawnCompanion(COMPANION_SPEC);
+    companion.hp = 1;
+    const sizeUp = store.spawnDrop({
+      archetypeId: SIZE_UP.id,
+      position: { x: 0, y: 0 },
+      radius: SIZE_UP.radius,
+      effect: SIZE_UP.effect,
+      color: SIZE_UP.color,
+      expireAtSimMs: 9999
+    });
+    const overdrive = store.spawnDrop({
+      archetypeId: OVERDRIVE.id,
+      position: { x: 0.1, y: 0 },
+      radius: OVERDRIVE.radius,
+      effect: OVERDRIVE.effect,
+      color: OVERDRIVE.color,
+      expireAtSimMs: 9999
+    });
+    const magnet = store.spawnDrop({
+      archetypeId: MAGNET.id,
+      position: { x: -0.1, y: 0 },
+      radius: MAGNET.radius,
+      effect: MAGNET.effect,
+      color: MAGNET.color,
+      expireAtSimMs: 9999
+    });
+    const modifierCalls: Array<Parameters<WeaponDropEffectSink['addModifierToSelectedWeapon']>> =
+      [];
+    const overdriveCalls: Array<
+      Parameters<WeaponDropEffectSink['applyTemporaryOverdriveToSelectedWeapon']>
+    > = [];
+    const sink: WeaponDropEffectSink = {
+      addModifierToSelectedWeapon(ownerId, modifier) {
+        modifierCalls.push([ownerId, modifier]);
+      },
+      applyTemporaryOverdriveToSelectedWeapon(ownerId, cooldownMultiplier, durationMs, simTimeMs) {
+        overdriveCalls.push([ownerId, cooldownMultiplier, durationMs, simTimeMs]);
+      }
+    };
+    const drops = createDropSystem(REGISTRY, DROP_ARCHETYPES, sink);
+    drops.setRng(createRng(1));
+    const events: RuntimeEvent[] = [];
+
+    drops.tick(1000, store, (e) => events.push(e));
+
+    expect(store.dropById(sizeUp.id)).not.toBeNull();
+    expect(store.dropById(overdrive.id)).not.toBeNull();
+    expect(store.dropById(magnet.id)).not.toBeNull();
+    expect(modifierCalls).toEqual([]);
+    expect(overdriveCalls).toEqual([]);
+    expect(events).toHaveLength(0);
   });
 
   it('routes weapon modifier pickups through the weapon-state sink', () => {

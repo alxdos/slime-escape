@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-26 (story 024: `DropSystem` exposes successful pickup facts to `RunSummaryTracker` for `SessionResultSummary`; see [session-result-summary.md](session-result-summary.md). Earlier story 019: guaranteed drops and archetype `dropTable` replacement move from the archetype to [spawn-overrides.md](spawn-overrides.md); `DropSystem` reads per-spawn `dropTable` and `guaranteedDrops` from the runtime `enemy` entity, not from `EnemyArchetype`. Earlier: 2026-04-24 sprite extension: `Drop` rendering moves from primitives to PNG sprites by [sprite-assets.md](sprite-assets.md); the `dropVisuals` registry keyed by `dropArchetypeId` is added there and sourced from inline image nodes in `content/drops.md`. Cleanup pass: `DropEffect` is the single source of truth for the union; `kind: 'pickupModifier'` is added explicitly here as the binding point for the drop magnet from [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). 017 alignment: `DropEffect` includes weapon modifier and temporary overdrive effects from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: drop magnet uses the new `pickupModifier` kind; carrier drops are defined by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
+- Updated: 2026-04-29 (story 030 follow-up: a living damaged companion may pick up `heal` drops only; player remains the only picker for weapon/pickup modifiers. Earlier story 024: `DropSystem` exposes successful pickup facts to `RunSummaryTracker` for `SessionResultSummary`; see [session-result-summary.md](session-result-summary.md). Earlier story 019: guaranteed drops and archetype `dropTable` replacement move from the archetype to [spawn-overrides.md](spawn-overrides.md); `DropSystem` reads per-spawn `dropTable` and `guaranteedDrops` from the runtime `enemy` entity, not from `EnemyArchetype`. Earlier: 2026-04-24 sprite extension: `Drop` rendering moves from primitives to PNG sprites by [sprite-assets.md](sprite-assets.md); the `dropVisuals` registry keyed by `dropArchetypeId` is added there and sourced from inline image nodes in `content/drops.md`. Cleanup pass: `DropEffect` is the single source of truth for the union; `kind: 'pickupModifier'` is added explicitly here as the binding point for the drop magnet from [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). 017 alignment: `DropEffect` includes weapon modifier and temporary overdrive effects from [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: drop magnet uses the new `pickupModifier` kind; carrier drops are defined by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
 
 ## Context
 
@@ -119,9 +119,11 @@ Story 005 is the first time drops become playable. Without an explicit contract,
 
 - During the `DropSystem` tick phase, after `HealthDeathSystem.removeDead()` and before `ZoneSystem`, the system walks all drops in `EntityStore` and decides in a strict order:
   1. **ttl expiry**: if `simTime >= drop.expireAtSimMs`, mark the drop for removal and publish `dropExpire` first (see [snapshot-shape.md](snapshot-shape.md)). Pickup is no longer possible for this drop on the same step: one drop has exactly one end-of-life event, either `dropPickup` or `dropExpire`.
-  2. **pickup detection**: for drops not marked by ttl, test overlap with the player: `dist(player.position, drop.position) <= player.radius + drop.radius`, where `player.radius` is derived from the player sprite (`max(contactBox.width, contactBox.height) / 2`) rather than from a manual field in `content/players.md`. If the player is absent (`store.player() === null`), pickup is a no-op for all drops. This matches the general systems tolerance for `player === null` from [health-and-death.md](health-and-death.md).
-  3. on overlap: apply `drop.effect` (see below), report the pickup fact to `RunSummaryTracker` for final statistics ([session-result-summary.md](session-result-summary.md)), mark the drop for removal, and publish `dropPickup`.
-  4. remove marked drops from `EntityStore`.
+  2. **player pickup detection**: for drops not marked by ttl, test overlap with the player: `dist(player.position, drop.position) <= player.radius + drop.radius`, where `player.radius` is derived from the player sprite (`max(contactBox.width, contactBox.height) / 2`) rather than from a manual field in `content/players.md`. If the player is absent (`store.player() === null`), player pickup is a no-op for all drops. This matches the general systems tolerance for `player === null` from [health-and-death.md](health-and-death.md).
+  3. on player overlap: apply `drop.effect` (see below), report the pickup fact to `RunSummaryTracker` for final statistics ([session-result-summary.md](session-result-summary.md)), mark the drop for removal, and publish `dropPickup`.
+  4. **companion heal pickup detection**: for remaining drops not picked by the player, if a living companion exists and `companion.hp < companion.maxHp`, test only `DropEffect.kind === 'heal'` drops for overlap with the companion. The companion pickup radius is derived from its body contact shape as `max(contactBox.width, contactBox.height) / 2`; the overlap rule is `dist(companion.position, drop.position) <= companionBodyRadius + drop.radius`.
+  5. on companion heal overlap: apply the heal to the companion, report the pickup fact with `pickerId = companion.id`, mark the drop for removal, and publish `dropPickup`.
+  6. remove marked drops from `EntityStore`.
 - "ttl before pickup" is intentional. On the tick where a drop expires exactly while overlapping the player, it counts as expired, not picked up. This removes a same-tick "did I make it?" ambiguity and makes behavior deterministic. With project tick rates (`SIM_HZ = 60`, [simulation-timing.md](simulation-timing.md)), the exact one-tick tie can happen only when `ttlMs` is exactly divisible by `SIM_STEP_MS`, and is not considered meaningful for UX.
 - `SpatialIndex` ([runtime-systems.md](runtime-systems.md)) is not required for pickup at the 005 horizon: the number of drops in the arena is small, usually at most dozens, so a linear pass is cheaper. If profiling later shows pressure, using `SpatialIndex` inside `DropSystem` is an implementation detail, not a contract.
 - `DropSystem` does not move drops or clamp them to arena bounds. A drop always spawns at the enemy death position, which is already inside the arena by [arena-and-coordinates.md](arena-and-coordinates.md). If a future mechanic allows drops outside the arena, it will be a separate decision.
@@ -129,23 +131,30 @@ Story 005 is the first time drops become playable. Without an explicit contract,
 ### Applying the effect
 
 - The effect is applied inside `DropSystem` during pickup, synchronously, before `dropPickup` is published. This means the state observed by HUD/audio alongside `dropPickup` already includes the applied effect: player HP has changed and the item is gone from `EntityStore`.
-- In 005, the only implementation is `DropEffect.kind: 'heal'`:
+- In 005, the baseline implementation is `DropEffect.kind: 'heal'`:
   ```ts
   player.hp = min(player.maxHp, player.hp + effect.amount)
   ```
+  In story 030, the same heal effect may target a living damaged companion when the companion is the picker:
+  ```ts
+  companion.hp = min(companion.maxHp, companion.hp + effect.amount)
+  ```
   - content guarantees `amount > 0`;
-  - `min(player.maxHp, ...)` is the only clamp. Overheal is not introduced and will need a separate decision if required later;
-  - healing a dead player is impossible by construction: pickup is a no-op when `player === null`, and the player has already been removed by this phase if they died on the same tick.
+  - the picker's `maxHp` is the only clamp. Overheal is not introduced and will need a separate decision if required later;
+  - healing a dead player is impossible by construction: pickup is a no-op when `player === null`, and the player has already been removed by this phase if they died on the same tick;
+  - healing a ghost companion is forbidden by construction: companion heal pickup checks only `state === 'alive'` and `hp < maxHp`.
 - `HealthDeathSystem` remains the **only owner of HP decrement** ([health-and-death.md](health-and-death.md): `CombatSystem` may not read or mutate HP; all subtractions are performed only by `HealthDeathSystem`). Heal is an **increment**, explicitly owned by `DropSystem`. The MVP does not introduce a separate buff/heal application system. There is one positive HP mutation point: `DropSystem`. If other heal sources appear later, such as regeneration over time or a boss effect, that will be a separate decision and the right time to discuss a shared effect bus.
 - `DropSystem` **does not** create `DamageIntent`s and **does not** call `HealthDeathSystem`. Heal must not produce death events, run death hooks, or enter the shared `applyDamage` tick.
 - No other system may apply `DropEffect`. `DropEffect` is the contract for what a drop does on pickup, not a general `EffectIntent` for arbitrary sources.
-- Weapon modifier and overdrive effects mutate owner-local weapon state through the narrow runtime API defined by [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). `DropSystem` still owns pickup and removal; it does not spawn projectiles.
-- `pickupModifier` effects mutate owner-local pickup-related player state owned by `DropSystem` itself (see [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)). `HealthDeathSystem` and `CombatSystem` do not touch that state.
+- Weapon modifier and overdrive effects mutate owner-local weapon state through the narrow runtime API defined by [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). These effects remain player-only. A companion must not pick them up or receive weapon/pickup modifier benefits through drops.
+- `pickupModifier` effects mutate owner-local pickup-related player state owned by `DropSystem` itself (see [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)). They remain player-only. `HealthDeathSystem` and `CombatSystem` do not touch that state.
 
 ### Allies, enemies, and ownership
 
-- In 005, only the player picks up drops. Enemies do not pick up drops: pickup checks only the pair "player <-> drop" and does not iterate enemies. This matches the general `ownerKind`-based interaction model from [projectiles-and-combat.md](projectiles-and-combat.md). Drops do not have an owner because they do not belong to the shooter; they belong to the arena once spawned.
-- If enemy collectors or allied NPCs are ever needed, this decision can extend the "who picks up" section, while preserving the contract that one pickup creates one event and applies one effect.
+- The player can pick up every `DropEffect` kind.
+- A living companion can pick up only `heal` drops and only while `hp < maxHp`. This gives the companion survivability without making pet identity or collection state a hidden power source ([companion-combat.md](companion-combat.md)).
+- Enemies do not pick up drops. This matches the general `ownerKind`-based interaction model from [projectiles-and-combat.md](projectiles-and-combat.md). Drops do not have an owner because they do not belong to the shooter; they belong to the arena once spawned.
+- If enemy collectors or broader allied NPC pickup are ever needed, this decision can extend the "who picks up" section again, while preserving the contract that one pickup creates one event and applies one effect.
 
 ### Randomness source
 

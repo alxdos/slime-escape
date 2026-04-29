@@ -5,7 +5,7 @@ import type { RuntimeEvent } from '../shared/events';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import type { DamageIntent } from './CombatSystem';
-import { createEntityStore, type EntityId } from './EntityStore';
+import { createEntityStore, type CompanionSpawnSpec, type EntityId } from './EntityStore';
 import {
   createHealthDeathSystem,
   type DamageContext,
@@ -28,6 +28,17 @@ const STATIONARY_TEST_ENEMY = {
   knockbackDurationMs: 1,
   color: 0xff7766
 } as const;
+const COMPANION_SPEC: CompanionSpawnSpec = {
+  petArchetypeId: 'debug-buddy',
+  position: { x: 2, y: 3 },
+  contactBox: { width: 0.8, height: 0.8 },
+  maxHp: 4,
+  movement: { maxSpeed: 8, acceleration: 20, orbitRadius: 2 },
+  threat: { acquireRadius: 6, releaseRadius: 8 },
+  weaponLoadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+  boop: { radius: 0.25, impulse: 4, durationMs: 120, cooldownMs: 500 },
+  rescue: { radius: 1, durationMs: SIM_STEP_MS * 3, reviveHpFraction: 0.5 }
+};
 
 function makeIntent(targetId: EntityId, amount: number): DamageIntent {
   return {
@@ -41,6 +52,15 @@ function makeIntent(targetId: EntityId, amount: number): DamageIntent {
       impactDirX: 1,
       impactDirY: 0
     },
+    hitPosition: { x: 0, y: 0 }
+  };
+}
+
+function makeContactIntent(enemyId: EntityId, targetId: EntityId, amount: number): DamageIntent {
+  return {
+    targetId,
+    amount,
+    source: { kind: 'enemyContact', enemyId },
     hitPosition: { x: 0, y: 0 }
   };
 }
@@ -238,15 +258,6 @@ describe('HealthDeathSystem', () => {
 });
 
 describe('HealthDeathSystem player damage', () => {
-  function makeContactIntent(enemyId: EntityId, targetId: EntityId, amount: number): DamageIntent {
-    return {
-      targetId,
-      amount,
-      source: { kind: 'enemyContact', enemyId },
-      hitPosition: { x: 0, y: 0 }
-    };
-  }
-
   it('applies enemyContact damage to the player and clamps at zero', () => {
     const store = createEntityStore();
     const player = store.spawnPlayer({
@@ -348,5 +359,99 @@ describe('HealthDeathSystem player damage', () => {
       (e) => events.push(e)
     );
     expect(events).toHaveLength(0);
+  });
+});
+
+describe('HealthDeathSystem companion damage', () => {
+  it('applies damage to a companion and reports damage hooks with targetKind companion', () => {
+    const store = createEntityStore();
+    const companion = store.spawnCompanion(COMPANION_SPEC);
+    const enemy = spawnTarget(store, 1);
+    const sys = createHealthDeathSystem();
+    const damages: DamageContext[] = [];
+    sys.registerDamageHook((ctx) => damages.push(ctx));
+
+    sys.tick([makeContactIntent(enemy.id, companion.id, 1)], store, 77, () => {});
+
+    expect(companion.hp).toBe(3);
+    expect(companion.state).toBe('alive');
+    expect(damages).toHaveLength(1);
+    expect(damages[0]?.targetKind).toBe('companion');
+    expect(damages[0]?.targetArchetypeId).toBe(COMPANION_SPEC.petArchetypeId);
+    expect(damages[0]?.simTime).toBe(77);
+  });
+
+  it('turns a defeated companion into a ghost without death hooks or removal', () => {
+    const store = createEntityStore();
+    const companion = store.spawnCompanion(COMPANION_SPEC);
+    const enemy = spawnTarget(store, 1);
+    companion.targetId = enemy.id;
+    companion.rescueProgressMs = SIM_STEP_MS;
+    const sys = createHealthDeathSystem();
+    const deathHook = vi.fn();
+    const events: RuntimeEvent[] = [];
+    sys.registerHook(deathHook);
+
+    sys.tick([makeContactIntent(enemy.id, companion.id, companion.maxHp)], store, 100, (event) =>
+      events.push(event)
+    );
+
+    expect(companion.hp).toBe(0);
+    expect(companion.state).toBe('ghost');
+    expect(companion.mode).toBe('ghost');
+    expect(companion.targetId).toBeNull();
+    expect(companion.rescueProgressMs).toBe(0);
+    expect(store.companion()).toBe(companion);
+    expect(deathHook).not.toHaveBeenCalled();
+    expect(events.filter((event) => event.kind === 'death')).toHaveLength(0);
+    const downed = events.find((event) => event.kind === 'companionDowned');
+    if (downed?.kind !== 'companionDowned') throw new Error('expected companionDowned');
+    expect(downed.companionId).toBe(companion.id);
+    expect(downed.petArchetypeId).toBe(COMPANION_SPEC.petArchetypeId);
+    expect(downed.weaponArchetypeId).toBeNull();
+    expect(downed.impactDirX).toBeNull();
+    expect(downed.impactDirY).toBeNull();
+    expect(downed.x).toBe(COMPANION_SPEC.position.x);
+    expect(downed.y).toBe(COMPANION_SPEC.position.y);
+  });
+
+  it('copies projectile metadata into companionDowned events', () => {
+    const store = createEntityStore();
+    const companion = store.spawnCompanion(COMPANION_SPEC);
+    const sys = createHealthDeathSystem();
+    const events: RuntimeEvent[] = [];
+
+    sys.tick([makeIntent(companion.id, companion.maxHp)], store, 100, (event) =>
+      events.push(event)
+    );
+
+    const downed = events.find((event) => event.kind === 'companionDowned');
+    if (downed?.kind !== 'companionDowned') throw new Error('expected companionDowned');
+    expect(downed.weaponArchetypeId).toBe(PISTOL.id);
+    expect(downed.impactDirX).toBe(1);
+    expect(downed.impactDirY).toBe(0);
+  });
+
+  it('ignores additional same-tick damage after the companion is downed', () => {
+    const store = createEntityStore();
+    const companion = store.spawnCompanion(COMPANION_SPEC);
+    const enemy = spawnTarget(store, 1);
+    const sys = createHealthDeathSystem();
+    const damages: DamageContext[] = [];
+    const events: RuntimeEvent[] = [];
+    sys.registerDamageHook((ctx) => damages.push(ctx));
+
+    sys.tick(
+      [
+        makeContactIntent(enemy.id, companion.id, companion.maxHp),
+        makeContactIntent(enemy.id, companion.id, companion.maxHp)
+      ],
+      store,
+      100,
+      (event) => events.push(event)
+    );
+
+    expect(damages).toHaveLength(1);
+    expect(events.filter((event) => event.kind === 'companionDowned')).toHaveLength(1);
   });
 });

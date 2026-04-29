@@ -25,6 +25,29 @@
 | set-3 | ![Set 3](../../public/images/bg/bg-03.jpg) |
 | set-5 | ![Set 5](../../public/images/bg/bg-05.jpg) |
 
+# Companion
+
+| field | value |
+|---|---|
+| enabled | true |
+| maxHp | 4 |
+| contactBoxWidth | 0.55 |
+| contactBoxHeight | 0.55 |
+| movementMaxSpeed | 3 |
+| movementAcceleration | 22 |
+| movementOrbitRadius | 3.2 |
+| threatAcquireRadius | 5.5 |
+| threatReleaseRadius | 6.5 |
+| weaponLoadoutIds | pistol |
+| weaponSelectedIndex | 0 |
+| boopRadius | 1.1 |
+| boopImpulse | 7 |
+| boopDurationMs | 260 |
+| boopCooldownMs | 900 |
+| rescueRadius | 1.4 |
+| rescueDurationMs | 5000 |
+| rescueReviveHpFraction | 0.5 |
+
 # Encounters
 
 ## campaign-easy-set-1-wave-1

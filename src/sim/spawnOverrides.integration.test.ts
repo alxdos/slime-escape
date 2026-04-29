@@ -29,7 +29,7 @@ type RecordedSpawnOverrideEvent =
   | Readonly<{
       kind: 'fire';
       simTime: number;
-      ownerKind: 'player' | 'enemy' | 'boss';
+      ownerKind: 'player' | 'companion' | 'enemy' | 'boss';
       weaponArchetypeId: string;
       x: number;
       y: number;
@@ -39,7 +39,7 @@ type RecordedSpawnOverrideEvent =
   | Readonly<{
       kind: 'hit';
       simTime: number;
-      targetKind: 'enemy' | 'player' | 'boss';
+      targetKind: 'enemy' | 'player' | 'companion' | 'boss';
       targetArchetypeId: string | null;
       weaponArchetypeId: string;
       damage: number;
@@ -49,7 +49,7 @@ type RecordedSpawnOverrideEvent =
   | Readonly<{
       kind: 'explosion';
       simTime: number;
-      ownerKind: 'player' | 'enemy' | 'boss';
+      ownerKind: 'player' | 'companion' | 'enemy' | 'boss';
       weaponArchetypeId: string;
       damage: number;
       radius: number;

@@ -44,6 +44,7 @@ import {
   SMG,
   SNIPER
 } from './weapons';
+import { PET_01, PET_02 } from './pets';
 
 const ACCEPTANCE_PRESET_IDS = Object.keys(SESSION_PRESET_TEMPLATES) as ModePresetId[];
 const ACCEPTANCE_SEEDS = [0, 1, 42] as const;
@@ -301,6 +302,67 @@ describe('buildSessionDefinition (training)', () => {
 });
 
 describe('buildSessionDefinition (campaign)', () => {
+  it('builds no companion when the selected pet is null', () => {
+    const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
+
+    expect(session.companion).toBeNull();
+  });
+
+  it('builds session-owned companion config from a selected pet', () => {
+    const session = buildSessionDefinition(CAMPAIGN_PRESET, {
+      seed: 2,
+      selectedPetId: PET_01.id
+    });
+
+    expect(session.companion).toEqual({
+      petArchetypeId: PET_01.id,
+      maxHp: 4,
+      contactBox: { width: 0.55, height: 0.55 },
+      movement: { maxSpeed: 3, acceleration: 22, orbitRadius: 3.2 },
+      threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
+      weaponLoadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+      boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
+      rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
+    });
+  });
+
+  it('uses pet identity only for companion presentation, not combat tuning', () => {
+    const first = buildSessionDefinition(CAMPAIGN_PRESET, {
+      seed: 2,
+      selectedPetId: PET_01.id
+    });
+    const second = buildSessionDefinition(CAMPAIGN_PRESET, {
+      seed: 2,
+      selectedPetId: PET_02.id
+    });
+
+    if (first.companion === null || second.companion === null) {
+      throw new Error('expected companion config');
+    }
+    expect({
+      ...first.companion,
+      petArchetypeId: 'presentation-only'
+    }).toEqual({
+      ...second.companion,
+      petArchetypeId: 'presentation-only'
+    });
+  });
+
+  it('keeps selected pets out of presets without companion tuning', () => {
+    const session = buildSessionDefinition(TRAINING_PRESET, {
+      seed: 2,
+      selectedPetId: PET_01.id
+    });
+
+    expect(session.companion).toBeNull();
+  });
+
+  it('rejects an unknown selected pet for a companion-enabled preset', () => {
+    expect(() =>
+      buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2, selectedPetId: 'missing-pet' })
+    ).toThrow(/unknown pet archetype "missing-pet"/);
+  });
+
   it('campaign: five acts, each followed by its own boss', () => {
     const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
 

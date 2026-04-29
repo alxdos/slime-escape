@@ -14,10 +14,15 @@ import type { RuntimeEvent } from '../shared/events';
 import type { ArenaConfig } from '../shared/session';
 import { SIM_STEP_MS } from '../shared/timing';
 
-import { createCombatSystem, SLIME_WEAPON_COOLDOWN_MULTIPLIER } from './CombatSystem';
+import {
+  COMPANION_WEAPON_COOLDOWN_MULTIPLIER,
+  createCombatSystem,
+  SLIME_WEAPON_COOLDOWN_MULTIPLIER
+} from './CombatSystem';
 import {
   createEntityStore,
   type BossSpawnSpec,
+  type CompanionSpawnSpec,
   type EnemySpawnSpec,
   type EntityId,
   type ProjectileSpawnSpec
@@ -78,6 +83,17 @@ const TEST_BOSS: BossSpawnSpec = {
   phaseId: 'test-phase',
   activeAttackIds: [],
   attackIdsFromArchetype: []
+};
+const COMPANION_SPEC: CompanionSpawnSpec = {
+  petArchetypeId: 'debug-buddy',
+  position: { x: 0, y: 0 },
+  contactBox: { width: 0.8, height: 0.8 },
+  maxHp: 5,
+  movement: { maxSpeed: 8, acceleration: 20, orbitRadius: 2 },
+  threat: { acquireRadius: 6, releaseRadius: 8 },
+  weaponLoadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+  boop: { radius: 0.25, impulse: 4, durationMs: 120, cooldownMs: 500 },
+  rescue: { radius: 1, durationMs: SIM_STEP_MS * 3, reviveHpFraction: 0.5 }
 };
 
 function pistolProjectileSpawnSpec(
@@ -1380,6 +1396,150 @@ describe('CombatSystem', () => {
     ).toHaveLength(2);
   });
 
+  it('fires companion weapons at the selected runtime threat', () => {
+    const { store, index, combat } = setupCombat();
+    const companion = store.spawnCompanion({ ...COMPANION_SPEC, position: { x: -2, y: 0 } });
+    const enemy = store.spawnEnemy({ ...stationaryEnemySpec({ x: 12, y: 0 }), maxHp: 999 });
+    const events: RuntimeEvent[] = [];
+    const companionCooldownMs = PISTOL.cooldownMs * COMPANION_WEAPON_COOLDOWN_MULTIPLIER;
+    companion.targetId = enemy.id;
+
+    combat.setCompanionLoadout(companion.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+    combat.tick(makeInput({ firing: false }), store, index, 0, ARENA, (event) =>
+      events.push(event)
+    );
+
+    const projectile = [...store.projectiles()][0];
+    expect(projectile).toBeDefined();
+    expect(projectile?.ownerId).toBe(companion.id);
+    expect(projectile?.ownerKind).toBe('companion');
+    expect(projectile?.velocity.vx).toBeGreaterThan(0);
+    expect(projectile?.velocity.vy).toBeCloseTo(0);
+    const fire = events.find((event) => event.kind === 'fire');
+    if (fire?.kind !== 'fire') throw new Error('expected companion fire event');
+    expect(fire.ownerKind).toBe('companion');
+    expect(fire.shooterId).toBe(companion.id);
+    expect(fire.dirX).toBeCloseTo(1);
+    expect(fire.dirY).toBeCloseTo(0);
+
+    combat.tick(
+      makeInput({ firing: false }),
+      store,
+      index,
+      companionCooldownMs - 1,
+      ARENA,
+      (event) => events.push(event)
+    );
+    expect(
+      events.filter((event) => event.kind === 'fire' && event.shooterId === companion.id)
+    ).toHaveLength(1);
+
+    combat.tick(
+      makeInput({ firing: false }),
+      store,
+      index,
+      companionCooldownMs,
+      ARENA,
+      (event) => events.push(event)
+    );
+    expect(
+      events.filter((event) => event.kind === 'fire' && event.shooterId === companion.id)
+    ).toHaveLength(2);
+  });
+
+  it('disables companion firing while ghost and restores it when alive again', () => {
+    const { store, index, combat } = setupCombat();
+    const companion = store.spawnCompanion({ ...COMPANION_SPEC, position: { x: -2, y: 0 } });
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 2, y: 0 }));
+    const events: RuntimeEvent[] = [];
+    companion.targetId = enemy.id;
+    companion.state = 'ghost';
+    companion.hp = 0;
+
+    combat.setCompanionLoadout(companion.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+    combat.tick(makeInput({ firing: false }), store, index, 0, ARENA, (event) =>
+      events.push(event)
+    );
+    expect(store.projectileCount()).toBe(0);
+
+    companion.state = 'alive';
+    companion.hp = 2;
+    combat.tick(makeInput({ firing: false }), store, index, SIM_STEP_MS, ARENA, (event) =>
+      events.push(event)
+    );
+
+    expect(store.projectileCount()).toBe(1);
+    expect(events.filter((event) => event.kind === 'fire')).toHaveLength(1);
+  });
+
+  it('keeps player and companion allied for projectile hit detection', () => {
+    const { store, index, combat, player } = setupCombat();
+    const companion = store.spawnCompanion({ ...COMPANION_SPEC, position: { x: 0, y: 0 } });
+    const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 0, y: 0 }));
+    const events: RuntimeEvent[] = [];
+    store.spawnProjectile(
+      pistolProjectileSpawnSpec({
+        ownerId: companion.id,
+        ownerKind: 'companion',
+        position: { x: 0, y: 0 },
+        velocity: { vx: 0, vy: 0 }
+      })
+    );
+    player.position.x = 0;
+
+    const intents = combat.tick(makeInput({ firing: false }), store, index, 0, ARENA, (event) =>
+      events.push(event)
+    );
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(enemy.id);
+    expect(events.filter((event) => event.kind === 'hit')).toHaveLength(1);
+  });
+
+  it('prevents player projectiles from hitting the companion', () => {
+    const { store, index, combat, player } = setupCombat();
+    const companion = store.spawnCompanion({ ...COMPANION_SPEC, position: { x: 0, y: 0 } });
+    store.spawnProjectile(
+      pistolProjectileSpawnSpec({
+        ownerId: player.id,
+        ownerKind: 'player',
+        position: companion.position,
+        velocity: { vx: 0, vy: 0 }
+      })
+    );
+
+    const intents = combat.tick(makeInput({ firing: false }), store, index, 0, ARENA, () => {});
+
+    expect(intents).toHaveLength(0);
+    expect(store.projectileCount()).toBe(1);
+  });
+
+  it('allows enemy projectiles to hit the companion', () => {
+    const { store, index, combat, player } = setupCombat();
+    const companion = store.spawnCompanion({ ...COMPANION_SPEC, position: { x: 0, y: 0 } });
+    const events: RuntimeEvent[] = [];
+    player.position.x = 10;
+    store.spawnProjectile(
+      pistolProjectileSpawnSpec({
+        ownerId: 999 as EntityId,
+        ownerKind: 'enemy',
+        position: companion.position,
+        velocity: { vx: 0, vy: 0 }
+      })
+    );
+
+    const intents = combat.tick(makeInput({ firing: false }), store, index, 0, ARENA, (event) =>
+      events.push(event)
+    );
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(companion.id);
+    const hit = events.find((event) => event.kind === 'hit');
+    if (hit?.kind !== 'hit') throw new Error('expected hit event');
+    expect(hit.targetKind).toBe('companion');
+    expect(hit.targetArchetypeId).toBe(COMPANION_SPEC.petArchetypeId);
+  });
+
   it('removeShooter stops future enemy firing', () => {
     const { store, index, combat } = setupCombat();
     const enemy = store.spawnEnemy(stationaryEnemySpec({ x: -4, y: 0 }));
@@ -1441,6 +1601,43 @@ describe('CombatSystem contact intents', () => {
     expect(intent.amount).toBe(CONTACT_TEST_ENEMY.contactDamage);
     if (intent.source.kind !== 'enemyContact') throw new Error('expected enemyContact source');
     expect(intent.source.enemyId).toBe(enemy.id);
+  });
+
+  it('forms enemyContact DamageIntent for an overlapping living companion', () => {
+    const { store, index, combat } = setupContact();
+    const player = store.player();
+    if (player === null) throw new Error('expected player');
+    player.position.x = -10;
+    const companion = store.spawnCompanion({
+      ...COMPANION_SPEC,
+      position: { x: 0, y: 0 }
+    });
+    const enemy = store.spawnEnemy(contactEnemySpec({ x: 0.4, y: 0 }));
+
+    const intents = combat.tick(makeInput(), store, index, 0, ARENA, () => {});
+
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(companion.id);
+    if (intents[0]?.source.kind !== 'enemyContact') throw new Error('expected contact');
+    expect(intents[0].source.enemyId).toBe(enemy.id);
+  });
+
+  it('does not form enemyContact intents for a ghost companion', () => {
+    const { store, index, combat } = setupContact();
+    const player = store.player();
+    if (player === null) throw new Error('expected player');
+    player.position.x = -10;
+    const companion = store.spawnCompanion({
+      ...COMPANION_SPEC,
+      position: { x: 0, y: 0 }
+    });
+    companion.state = 'ghost';
+    companion.hp = 0;
+    store.spawnEnemy(contactEnemySpec({ x: 0.4, y: 0 }));
+
+    const intents = combat.tick(makeInput(), store, index, 0, ARENA, () => {});
+
+    expect(intents).toHaveLength(0);
   });
 
   it('does not emit a runtime event for the contact', () => {

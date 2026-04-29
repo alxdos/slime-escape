@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-28 (story 029 prep: add `PetArchetype` and `PetEconomy` to the content library; pets are collection/presentation content in this story and have no combat fields. Earlier: 2026-04-25 story 019: `EnemyArchetype.carrierDrop` removed; per-spawn guaranteed drops, dropTable replacement, and retaliation replacement move to [spawn-overrides.md](spawn-overrides.md). `EnemyArchetype.dropTable` and `EnemyArchetype.retaliation` remain archetype defaults. Earlier: 2026-04-24 cleanup pass: legacy scalar `WeaponArchetype` and legacy `{ primaryWeaponArchetypeId }` `Loadout` removed; only the current 017 forms remain. `DropEffect` is no longer redefined here; the single source of truth is [drops.md](drops.md). `WeaponArchetype` carries no audio field by [audio.md](audio.md). 017 alignment: `WeaponArchetype` and `Loadout` follow [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: optional field/status/drop-magnet/carrier extensions are owned by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: story 016 impact feedback, story 013 sprite/contact boxes, story 012 MD-generated weapons/drops/bosses.)
+- Updated: 2026-04-29 (story 030 prep: `PetArchetype` stays presentation/economy identity only; companion combat HP, contact box, movement, weapon, boop, and rescue values live in `SessionDefinition.companion`. Earlier: 2026-04-28 story 029 prep: add `PetArchetype` and `PetEconomy` to the content library; pets are collection/presentation content in this story and have no combat fields. Earlier: 2026-04-25 story 019: `EnemyArchetype.carrierDrop` removed; per-spawn guaranteed drops, dropTable replacement, and retaliation replacement move to [spawn-overrides.md](spawn-overrides.md). `EnemyArchetype.dropTable` and `EnemyArchetype.retaliation` remain archetype defaults. Earlier: 2026-04-24 cleanup pass: legacy scalar `WeaponArchetype` and legacy `{ primaryWeaponArchetypeId }` `Loadout` removed; only the current 017 forms remain. `DropEffect` is no longer redefined here; the single source of truth is [drops.md](drops.md). `WeaponArchetype` carries no audio field by [audio.md](audio.md). 017 alignment: `WeaponArchetype` and `Loadout` follow [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: optional field/status/drop-magnet/carrier extensions are owned by [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: story 016 impact feedback, story 013 sprite/contact boxes, story 012 MD-generated weapons/drops/bosses.)
 
 ## Context
 
@@ -132,6 +132,7 @@ Also, `SessionDefinition.loadout` ([session-definition.md](session-definition.md
 - `PetEconomy.standPrices` is the content-owned source for the Lab prices. UI code must not hardcode green or purple XP prices.
 - Owned pets and selected pet are `client progression` ([content-boundaries.md](content-boundaries.md)) and store only `PetArchetype.id`, never embedded archetype objects.
 - In story 029 a selected pet is presentation-only. It must not be represented as a combat entity, must not take damage, and must not influence `SessionDefinition`, combat systems, win/loss, drops, or result stats.
+- In story 030, a selected pet can become a runtime companion only through `SessionDefinition.companion` ([companion-combat.md](companion-combat.md)). `PetArchetype` still must not gain combat fields; pet identity may select sprite/personality presentation only.
 
 ### BossArchetype
 
@@ -219,7 +220,7 @@ Also, `SessionDefinition.loadout` ([session-definition.md](session-definition.md
 - `SpawnSystem` and `CombatSystem` remain independent of specific content and operate through `id` resolution.
 - `Loadout` becomes a stable `SessionDefinition` contract; weapon-selection UI in 007 can consume it without redefining shape.
 - A possible archetype plugin/modding layer outside the MVP can sit on the same "registry + id" model without rewriting stories.
-- Pet collection uses the same registry/id model without making pets part of authoritative simulation while they are cosmetic companions.
+- Pet collection uses the same registry/id model without making permanent pet ownership a combat-stat source.
 
 ## Related
 
@@ -243,4 +244,6 @@ Also, `SessionDefinition.loadout` ([session-definition.md](session-definition.md
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
 - [spawn-overrides.md](spawn-overrides.md)
+- [companion-combat.md](companion-combat.md)
 - [../stories/029-xp-and-pet-companions.md](../stories/029-xp-and-pet-companions.md)
+- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)

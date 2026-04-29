@@ -244,6 +244,7 @@ function makeBossSession(
       maxSpeed: 5,
       maxHp: 5
     },
+    companion: null,
     loadout: { weapons: ['pistol'], selectedIndex: 0 },
     backgrounds: [],
     musicSampleId: overrides.musicSampleId ?? null,
@@ -863,6 +864,70 @@ describe('createAudio', () => {
 
     expect(fetchedUrls).toEqual(['/sfx/ui/fanfare.mp3']);
     expect(context.sources).toHaveLength(1);
+  });
+
+  it('plays the pet revival sample when a companion is rescued', async () => {
+    const { audio, context, fetchedUrls } = createAudioHarness();
+    context.setState('running');
+
+    audio.handleEvent({
+      kind: 'companionRescued',
+      simTime: 240,
+      companionId: 4,
+      petArchetypeId: 'pet-01',
+      hp: 2,
+      maxHp: 4,
+      x: 1,
+      y: 2
+    });
+
+    await flushAudioWork();
+
+    expect(fetchedUrls).toEqual(['/sfx/pets/revival.mp3']);
+    expect(context.sources).toHaveLength(1);
+  });
+
+  it('plays the pet shuffle sample while companion rescue is active', async () => {
+    const { audio, context, fetchedUrls } = createAudioHarness();
+    context.setState('running');
+    const rescueSnapshot: Snapshot = {
+      simTimeMs: 100,
+      entities: [
+        {
+          id: 4,
+          kind: 'companion',
+          petArchetypeId: 'pet-01',
+          x: 1,
+          y: 2,
+          hp: 0,
+          maxHp: 4,
+          state: 'ghost',
+          mode: 'rescue',
+          rescueProgress: 0.25,
+          targetId: null
+        }
+      ],
+      encounter: null,
+      zone: { mode: 'disabled', margin: 0 },
+      waveProgress: null,
+      bossHud: null,
+      weaponHud: null
+    };
+
+    audio.update(makeSnapshotPair(rescueSnapshot, 1000), { kind: 'running' }, null);
+    await flushAudioWork();
+
+    expect(fetchedUrls).toEqual(['/sfx/pets/shuffle.mp3']);
+    expect(context.sources).toHaveLength(1);
+
+    audio.update(makeSnapshotPair(rescueSnapshot, 1599), { kind: 'running' }, null);
+    await flushAudioWork();
+    expect(context.sources).toHaveLength(1);
+
+    audio.update(makeSnapshotPair(rescueSnapshot, 1600), { kind: 'running' }, null);
+    await flushAudioWork();
+    expect(fetchedUrls).toEqual(['/sfx/pets/shuffle.mp3']);
+    expect(context.sources).toHaveLength(2);
   });
 
   it('drops the oldest one-shot when more than 32 one-shots overlap', async () => {

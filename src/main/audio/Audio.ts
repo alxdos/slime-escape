@@ -83,6 +83,8 @@ const MAX_ACTIVE_ONE_SHOTS = 32;
 const PAUSED_MUSIC_DUCK_GAIN = 0.5;
 const BOSS_MUSIC_SAMPLE_ID = 'boss/boss-music';
 const MENU_MUSIC_SAMPLE_ID = 'music/digital-dawn';
+const COMPANION_RESCUE_SAMPLE_ID = 'pets/shuffle';
+const COMPANION_RESCUE_SAMPLE_INTERVAL_MS = 600;
 
 export function createAudio(init: AudioInit = {}): Audio {
   const audioLog = init.log ?? defaultLog;
@@ -117,6 +119,7 @@ export function createAudio(init: AudioInit = {}): Audio {
 
   if (sampleRegistry !== null) {
     validateMusicSampleId(sampleRegistry, BOSS_MUSIC_SAMPLE_ID, 'bossTrack');
+    sampleRegistry.require(COMPANION_RESCUE_SAMPLE_ID);
   }
 
   let attachedSession: SessionDefinition | null = null;
@@ -128,6 +131,7 @@ export function createAudio(init: AudioInit = {}): Audio {
   let activeMusic: ActiveMusicPlayback | null = null;
   let musicRequestToken = 0;
   const enemyVoiceTimers = new Map<number, number>();
+  let nextCompanionRescueSampleAtMs: number | null = null;
 
   function getPlaybackDependencies(): PlaybackDependencies | null {
     if (runtime === null || sampleRegistry === null || audioMappings === null || disposed) {
@@ -410,6 +414,25 @@ export function createAudio(init: AudioInit = {}): Audio {
     }
   }
 
+  function syncCompanionRescueAudio(snapshotPair: SnapshotPair, phase: UiShellPhase): void {
+    const snapshot = snapshotPair.curr;
+    if (phase.kind !== 'running' || snapshot === null || !hasRescuingCompanion(snapshot)) {
+      nextCompanionRescueSampleAtMs = null;
+      return;
+    }
+
+    if (nextCompanionRescueSampleAtMs === null) {
+      nextCompanionRescueSampleAtMs = snapshotPair.nowMs;
+    }
+
+    if (snapshotPair.nowMs < nextCompanionRescueSampleAtMs) {
+      return;
+    }
+
+    playSampleById(COMPANION_RESCUE_SAMPLE_ID);
+    nextCompanionRescueSampleAtMs = snapshotPair.nowMs + COMPANION_RESCUE_SAMPLE_INTERVAL_MS;
+  }
+
   function resolveEntity(targetId: number): EntitySnapshot | null {
     return latestSnapshot?.entities.find((entity) => entity.id === targetId) ?? null;
   }
@@ -551,9 +574,18 @@ export function createAudio(init: AudioInit = {}): Audio {
       case 'pause':
       case 'resume':
       case 'loss':
+      case 'companionDowned':
+      case 'companionBoop':
       case 'dropSpawn':
       case 'dropExpire':
         return;
+      case 'companionRescued': {
+        const sampleId = dependencies.audioMappings.resolveEventSample('companionRescued');
+        if (sampleId !== null) {
+          playSampleById(sampleId);
+        }
+        return;
+      }
       case 'win': {
         const sampleId = dependencies.audioMappings.resolveEventSample('victoryFanfare');
         if (sampleId !== null) {
@@ -600,6 +632,7 @@ export function createAudio(init: AudioInit = {}): Audio {
         phase.kind === 'loading' ||
         phase.kind === 'error'
       ) {
+        nextCompanionRescueSampleAtMs = null;
         syncMusicForPhase(phase);
         return;
       }
@@ -608,6 +641,7 @@ export function createAudio(init: AudioInit = {}): Audio {
       }
       syncMusicForPhase(phase);
       syncEnemyAmbient(snapshotPair, phase);
+      syncCompanionRescueAudio(snapshotPair, phase);
     },
     attach(session): void {
       if (session.musicSampleId !== null && sampleRegistry !== null) {
@@ -619,6 +653,7 @@ export function createAudio(init: AudioInit = {}): Audio {
       attachedSession = null;
       latestSnapshot = null;
       enemyVoiceTimers.clear();
+      nextCompanionRescueSampleAtMs = null;
       stopMusicPlayback();
     },
     playUi(eventId): void {
@@ -654,6 +689,7 @@ export function createAudio(init: AudioInit = {}): Audio {
       attachedSession = null;
       latestSnapshot = null;
       enemyVoiceTimers.clear();
+      nextCompanionRescueSampleAtMs = null;
 
       if (runtime === null) {
         return;
@@ -775,4 +811,13 @@ export function calculateEffectiveGain(
   }>
 ): number {
   return sample.normalizedGain * sample.defaultGain * (init.perCallGainMul ?? 1);
+}
+
+function hasRescuingCompanion(snapshot: Snapshot): boolean {
+  return snapshot.entities.some(
+    (entity) =>
+      entity.kind === 'companion' &&
+      entity.mode === 'rescue' &&
+      entity.rescueProgress !== null
+  );
 }

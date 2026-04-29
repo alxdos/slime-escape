@@ -2,8 +2,10 @@ import { log } from '../log';
 import { assertNever } from '../protocol';
 import type {
   ArenaConfig,
+  CompanionSessionConfig,
   ContactBox,
   EncounterDefinition,
+  Loadout,
   SessionDefinition,
   SpawnOverride,
   SpawnPlan,
@@ -14,6 +16,7 @@ import { SIM_STEP_MS } from '../timing';
 import { BOSS_ARCHETYPES } from './bosses';
 import { DROP_ARCHETYPES } from './drops';
 import { ENEMY_ARCHETYPES, validateEnemyRegistry } from './enemies';
+import { PET_ARCHETYPES } from './pets';
 import { SESSION_PRESET_TEMPLATES } from './sessions.generated';
 import type {
   BossSpawnPlanTemplate,
@@ -27,6 +30,7 @@ import { WEAPON_ARCHETYPES } from './weapons';
 export type BuildOptions = Readonly<{
   seed: number;
   id?: string;
+  selectedPetId?: string | null;
 }>;
 
 export function buildSessionDefinition(
@@ -46,6 +50,7 @@ export function buildSessionDefinition(
     seed: options.seed,
     arena: template.arena,
     player: template.player,
+    companion: resolveCompanionConfig(template, options.selectedPetId ?? null),
     loadout: template.loadout,
     backgrounds: template.backgrounds,
     musicSampleId: template.musicSampleId,
@@ -55,6 +60,25 @@ export function buildSessionDefinition(
     winCondition: template.winCondition,
     lossCondition: template.lossCondition,
     uiMeta: null
+  };
+}
+
+function resolveCompanionConfig(
+  template: SessionPresetTemplate,
+  selectedPetId: string | null
+): CompanionSessionConfig | null {
+  if (template.companion === null || selectedPetId === null) {
+    return null;
+  }
+  if (PET_ARCHETYPES[selectedPetId] === undefined) {
+    throw new Error(
+      `session preset "${template.presetId}" companion selectedPetId references unknown pet archetype "${selectedPetId}"`
+    );
+  }
+  assertLoadoutWeaponsResolve(template.companion.weaponLoadout, template.presetId, 'companion.weaponLoadout');
+  return {
+    petArchetypeId: selectedPetId,
+    ...template.companion
   };
 }
 
@@ -163,11 +187,22 @@ function assertOverrideLoadoutResolves(
   encounter: SessionPresetEncounterTemplate,
   spawnIndex: number
 ): void {
-  for (const weaponArchetypeId of override.loadout?.weapons ?? []) {
+  assertLoadoutWeaponsResolve(
+    override.loadout ?? null,
+    template.presetId,
+    `encounter "${encounter.id}" spawn #${spawnIndex + 1} override.loadout`
+  );
+}
+
+function assertLoadoutWeaponsResolve(
+  loadout: Loadout | null,
+  presetId: string,
+  context: string
+): void {
+  for (const weaponArchetypeId of loadout?.weapons ?? []) {
     if (WEAPON_ARCHETYPES[weaponArchetypeId] !== undefined) continue;
     throw new Error(
-      `session preset "${template.presetId}" encounter "${encounter.id}" spawn #${spawnIndex + 1} ` +
-        `override.loadout.weapons references unknown weapon archetype "${weaponArchetypeId}"`
+      `session preset "${presetId}" ${context}.weapons references unknown weapon archetype "${weaponArchetypeId}"`
     );
   }
 }

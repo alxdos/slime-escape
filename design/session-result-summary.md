@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-28 (story 029 prep: XP result rewards are derived on the main thread from `summary.kills.total`; `SessionResultSummary` shape does not gain XP fields. Earlier: story 028 prep: `SessionResultSummary` gains an optional Dungeon block with fully cleared waves; endless Dungeon uses `progress.percent = null` and does not drive campaign Escape Path. Earlier: 2026-04-27 story 027 prep: loss-only Restart is an orchestration/UI action and does not change the `SessionResultSummary` payload. Earlier: story 026 prep: `portal` encounters are non-objective presentation encounters and do not contribute to result progress; the `/portal` flow can also finish through the normal post-boss win result.)
+- Updated: 2026-04-29 (story 030 prep: companion-caused enemy/boss kills count like other defeated hostiles, while companion downed events do not affect result summary; projectile/explosion owner metadata includes `companion`. Earlier: 2026-04-28 story 029 prep: XP result rewards are derived on the main thread from `summary.kills.total`; `SessionResultSummary` shape does not gain XP fields. Earlier: story 028 prep: `SessionResultSummary` gains an optional Dungeon block with fully cleared waves; endless Dungeon uses `progress.percent = null` and does not drive campaign Escape Path. Earlier: 2026-04-27 story 027 prep: loss-only Restart is an orchestration/UI action and does not change the `SessionResultSummary` payload. Earlier: story 026 prep: `portal` encounters are non-objective presentation encounters and do not contribute to result progress; the `/portal` flow can also finish through the normal post-boss win result.)
 
 ## Context
 
@@ -81,8 +81,8 @@ type ResultDungeonSummary = Readonly<{
 }>;
 
 type ResultDefeatCause =
-  | Readonly<{ kind: 'projectile'; ownerKind: 'player' | 'enemy' | 'boss'; weaponArchetypeId: string }>
-  | Readonly<{ kind: 'explosion'; ownerKind: 'player' | 'enemy' | 'boss'; weaponArchetypeId: string }>
+  | Readonly<{ kind: 'projectile'; ownerKind: 'player' | 'enemy' | 'boss' | 'companion'; weaponArchetypeId: string }>
+  | Readonly<{ kind: 'explosion'; ownerKind: 'player' | 'enemy' | 'boss' | 'companion'; weaponArchetypeId: string }>
   | Readonly<{ kind: 'enemyContact'; sourceEntityId: number; sourceEntityKind: 'enemy' | 'boss' | null; archetypeId: string | null }>
   | Readonly<{ kind: 'boss'; bossId: number; bossArchetypeId: string | null; attackId: string }>
   | Readonly<{ kind: 'fieldEffect'; fieldEffectId: number; archetypeId: string }>
@@ -91,6 +91,7 @@ type ResultDefeatCause =
 ```
 
 - `kills.total` counts defeated `enemy` and `boss` entities. Player death is not a kill.
+- Companion downed/rescued events are ignored by result summary. Companion-owned projectile kills still increment defeated `enemy`/`boss` counts because the summary records hostiles defeated, not who landed the final hit.
 - `kills.byArchetype` includes only entries with `count > 0`. It is sorted by `count desc`, then `entityKind`, then `archetypeId` for deterministic UI/tests.
 - `drops.pickedUpTotal` counts successful `dropPickup` events. Breakdown by drop archetype is intentionally not part of story 024.
 - `defeat` is non-null only for `outcome: 'loss'` when the loss was caused by player death and a cause can be serialized from `DeathContext.cause`.
@@ -172,5 +173,7 @@ type ResultDefeatCause =
 - [../stories/024-session-end-results.md](../stories/024-session-end-results.md)
 - [../stories/027-social-links.md](../stories/027-social-links.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
+- [companion-combat.md](companion-combat.md)
 - [../stories/028-dungeon-mode.md](../stories/028-dungeon-mode.md)
 - [../stories/029-xp-and-pet-companions.md](../stories/029-xp-and-pet-companions.md)
+- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)

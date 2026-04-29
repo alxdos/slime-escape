@@ -1,4 +1,5 @@
 import type {
+  ParsedCompanionConfig,
   ParsedEncounter,
   ParsedLoadout,
   ParsedLossCondition,
@@ -65,6 +66,7 @@ function renderPreset(preset: ParsedSessionPreset): string {
     order: ${formatNumber(preset.order)},
     arena: ${preset.arena.constName},
     player: ${preset.player.constName},
+    companion: ${renderCompanionConfig(preset.companion)},
     loadout: ${renderLoadout(preset.loadout)},
     backgrounds: [
 ${preset.backgrounds.map(renderBackground).join(',\n')}
@@ -77,6 +79,21 @@ ${preset.backgrounds.map(renderBackground).join(',\n')}
 ${preset.encounters.map(renderEncounter).join(',\n')}
     ]
   }`;
+}
+
+function renderCompanionConfig(companion: ParsedCompanionConfig | null): string {
+  if (companion === null) {
+    return 'null';
+  }
+  return `{
+      maxHp: ${formatNumber(companion.maxHp)},
+      contactBox: { width: ${formatNumber(companion.contactBox.width)}, height: ${formatNumber(companion.contactBox.height)} },
+      movement: { maxSpeed: ${formatNumber(companion.movement.maxSpeed)}, acceleration: ${formatNumber(companion.movement.acceleration)}, orbitRadius: ${formatNumber(companion.movement.orbitRadius)} },
+      threat: { acquireRadius: ${formatNumber(companion.threat.acquireRadius)}, releaseRadius: ${formatNumber(companion.threat.releaseRadius)} },
+      weaponLoadout: ${renderLoadout(companion.weaponLoadout)},
+      boop: { radius: ${formatNumber(companion.boop.radius)}, impulse: ${formatNumber(companion.boop.impulse)}, durationMs: ${formatNumber(companion.boop.durationMs)}, cooldownMs: ${formatNumber(companion.boop.cooldownMs)} },
+      rescue: { radius: ${formatNumber(companion.rescue.radius)}, durationMs: ${formatNumber(companion.rescue.durationMs)}, reviveHpFraction: ${formatNumber(companion.rescue.reviveHpFraction)} }
+    }`;
 }
 
 function renderEncounter(encounter: ParsedEncounter): string {
@@ -261,6 +278,9 @@ function collectImports(area: ParsedSessionsArea): ReadonlyMap<ImportBucket, Rea
       for (const weapon of preset.loadout.weapons) {
         addImport(imports, 'weapons', weapon.constName);
       }
+    }
+    for (const weapon of preset.companion?.weaponLoadout?.weapons ?? []) {
+      addImport(imports, 'weapons', weapon.constName);
     }
     for (const encounter of preset.encounters) {
       collectSpawnImports(imports, encounter.spawnPlan);

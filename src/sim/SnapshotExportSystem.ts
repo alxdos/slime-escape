@@ -52,6 +52,25 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           }))
         });
       }
+      const companion = store.companion();
+      if (companion !== null) {
+        entities.push({
+          id: companion.id,
+          kind: 'companion',
+          petArchetypeId: companion.petArchetypeId,
+          x: companion.position.x,
+          y: companion.position.y,
+          hp: companion.hp,
+          maxHp: companion.maxHp,
+          state: companion.state,
+          mode: companion.mode,
+          rescueProgress:
+            companion.mode === 'rescue'
+              ? clampRatio(companion.rescueProgressMs / companion.rescue.durationMs)
+              : null,
+          targetId: companion.targetId
+        });
+      }
       for (const enemy of store.enemies()) {
         entities.push({
           id: enemy.id,
@@ -215,6 +234,10 @@ function projectileVisualState(
   const spinRadians = ((visual?.spinRadiansPerSec ?? 0) * simTimeMs) / 1000;
   const pulsePhase = (((simTimeMs % 1000) + 1000) % 1000) / 1000;
   return { angleRadians, spinRadians, pulsePhase };
+}
+
+function clampRatio(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 function makeEncounterSnapshot(

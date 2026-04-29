@@ -11,7 +11,7 @@ export type RuntimeEvent =
       kind: 'fire';
       simTime: number;
       shooterId: number;
-      ownerKind: 'player' | 'enemy' | 'boss';
+      ownerKind: 'player' | 'companion' | 'enemy' | 'boss';
       weaponArchetypeId: string;
       originX: number;
       originY: number;
@@ -23,7 +23,7 @@ export type RuntimeEvent =
       simTime: number;
       projectileId: number;
       targetId: number;
-      targetKind: 'enemy' | 'player' | 'boss';
+      targetKind: 'enemy' | 'player' | 'companion' | 'boss';
       targetArchetypeId: string | null;
       weaponArchetypeId: string;
       damage: number;
@@ -36,7 +36,7 @@ export type RuntimeEvent =
       kind: 'explosion';
       simTime: number;
       projectileId: number;
-      ownerKind: 'player' | 'enemy' | 'boss';
+      ownerKind: 'player' | 'companion' | 'enemy' | 'boss';
       weaponArchetypeId: string;
       damage: number;
       radius: number;
@@ -52,6 +52,38 @@ export type RuntimeEvent =
       weaponArchetypeId: string | null;
       impactDirX: number | null;
       impactDirY: number | null;
+      x: number;
+      y: number;
+    }
+  | {
+      kind: 'companionDowned';
+      simTime: number;
+      companionId: number;
+      petArchetypeId: string;
+      weaponArchetypeId: string | null;
+      impactDirX: number | null;
+      impactDirY: number | null;
+      x: number;
+      y: number;
+    }
+  | {
+      kind: 'companionBoop';
+      simTime: number;
+      companionId: number;
+      targetId: number;
+      targetKind: 'enemy' | 'boss';
+      x: number;
+      y: number;
+      impulseDirX: number;
+      impulseDirY: number;
+    }
+  | {
+      kind: 'companionRescued';
+      simTime: number;
+      companionId: number;
+      petArchetypeId: string;
+      hp: number;
+      maxHp: number;
       x: number;
       y: number;
     }

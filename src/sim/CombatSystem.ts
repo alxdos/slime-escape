@@ -16,7 +16,16 @@ import type { ArenaConfig, DamageRules, Loadout, Vec2 } from '../shared/session'
 import type { WeaponHudSnapshot, WeaponTimedEffectHudSnapshot } from '../shared/snapshot';
 import { SIM_STEP_MS } from '../shared/timing';
 
-import type { Boss, Enemy, EntityId, EntityStore, Player, Projectile } from './EntityStore';
+import type {
+  Boss,
+  CombatOwnerKind,
+  Companion,
+  Enemy,
+  EntityId,
+  EntityStore,
+  Player,
+  Projectile
+} from './EntityStore';
 import { canDamageTarget, DEFAULT_DAMAGE_RULES } from './DamageRules';
 import type { ActorEffectIntent } from './FieldEffectSystem';
 import type { RuntimeInputState } from './RuntimeInputState';
@@ -26,13 +35,14 @@ const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const WEAPON_MODIFIER_MIN_SPREAD_RADIANS = 0.25;
 const MAX_STACKS_PER_WEAPON_MODIFIER = 2;
 export const SLIME_WEAPON_COOLDOWN_MULTIPLIER = 4;
+export const COMPANION_WEAPON_COOLDOWN_MULTIPLIER = 4;
 
 export type DamageSource =
   | {
       kind: 'projectile';
       projectileId: EntityId;
       ownerId?: EntityId;
-      ownerKind: 'player' | 'enemy' | 'boss';
+      ownerKind: CombatOwnerKind;
       weaponArchetypeId: string;
       impactDirX: number;
       impactDirY: number;
@@ -41,7 +51,7 @@ export type DamageSource =
       kind: 'explosion';
       projectileId: EntityId;
       ownerId?: EntityId;
-      ownerKind: 'player' | 'enemy' | 'boss';
+      ownerKind: CombatOwnerKind;
       weaponArchetypeId: string;
     }
   | { kind: 'enemyContact'; enemyId: EntityId }
@@ -73,7 +83,7 @@ export type WeaponFireResult = Readonly<{
 }>;
 
 type ShooterWeapons = {
-  ownerKind: 'player' | 'enemy' | 'boss';
+  ownerKind: CombatOwnerKind;
   weapons: WeaponInstance[];
   selectedIndex: number | null;
 };
@@ -81,6 +91,7 @@ type ShooterWeapons = {
 export type CombatSystem = Readonly<{
   setDamageRules(rules: DamageRules): void;
   setPlayerLoadout(playerId: EntityId, loadout: Loadout, simTimeMs: number): void;
+  setCompanionLoadout(companionId: EntityId, loadout: Loadout, simTimeMs: number): void;
   setEnemyLoadout(enemyId: EntityId, loadout: Loadout, simTimeMs: number): void;
   removeShooter(entityId: EntityId): void;
   addModifierToSelectedWeapon(ownerId: EntityId, modifier: WeaponModifier): boolean;
@@ -118,6 +129,12 @@ export function createCombatSystem(
       shooterWeapons.set(
         playerId,
         buildShooterWeapons(loadout, 'player', weaponRegistry, simTimeMs)
+      );
+    },
+    setCompanionLoadout(companionId, loadout, simTimeMs): void {
+      shooterWeapons.set(
+        companionId,
+        buildShooterWeapons(loadout, 'companion', weaponRegistry, simTimeMs)
       );
     },
     setEnemyLoadout(enemyId, loadout, simTimeMs): void {
@@ -187,6 +204,7 @@ export function createCombatSystem(
       const projectileRemovals = new Set<EntityId>();
       syncPlayerSelectedIndex(input, store, shooterWeapons);
       runPlayerFiringDecisions(input, store, simTimeMs, shooterWeapons, weaponRegistry, emit);
+      runCompanionFiringDecisions(store, simTimeMs, shooterWeapons, weaponRegistry, emit);
       runEnemyFiringDecisions(store, simTimeMs, shooterWeapons, weaponRegistry, emit);
       runProjectileMovement(store, simTimeMs, projectileRemovals);
       markLifetimeCleanup(store, simTimeMs, arena, projectileRemovals);
@@ -288,6 +306,73 @@ function runPlayerFiringDecisions(
   });
 }
 
+function runCompanionFiringDecisions(
+  store: EntityStore,
+  simTimeMs: number,
+  shooterWeapons: Map<EntityId, ShooterWeapons>,
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
+  emit: (event: RuntimeEvent) => void
+): void {
+  const companion = store.companion();
+  if (companion === null) return;
+  if (companion.state !== 'alive') return;
+
+  const target = resolveCompanionTarget(store, companion.targetId);
+  if (target === null) return;
+
+  const weapons = shooterWeapons.get(companion.id);
+  if (weapons === undefined || weapons.ownerKind !== 'companion') return;
+  const selectedWeapon = selectedWeaponInstance(weapons);
+  if (selectedWeapon === null) return;
+  if (simTimeMs < selectedWeapon.nextFireSimMs) return;
+
+  const aimDx = target.position.x - companion.position.x;
+  const aimDy = target.position.y - companion.position.y;
+  if (aimDx === 0 && aimDy === 0) return;
+
+  const archetype = weaponRegistry[selectedWeapon.archetypeId];
+  if (archetype === undefined) return;
+  const result = fireWeaponProjectiles(
+    store,
+    archetype,
+    selectedWeapon.modifiers,
+    companion.id,
+    'companion',
+    companion.position,
+    target.position,
+    simTimeMs
+  );
+  if (result === null) return;
+
+  selectedWeapon.cooldownStartedAtSimMs = simTimeMs;
+  selectedWeapon.nextFireSimMs =
+    simTimeMs +
+    effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs, weapons.ownerKind);
+  emit({
+    kind: 'fire',
+    simTime: simTimeMs,
+    shooterId: companion.id,
+    ownerKind: 'companion',
+    weaponArchetypeId: archetype.id,
+    originX: companion.position.x,
+    originY: companion.position.y,
+    dirX: result.eventDirection.x,
+    dirY: result.eventDirection.y
+  });
+}
+
+function resolveCompanionTarget(
+  store: EntityStore,
+  targetId: EntityId | null
+): Enemy | Boss | null {
+  if (targetId === null) return null;
+  const enemy = store.enemyById(targetId);
+  if (enemy !== null && enemy.hp > 0) return enemy;
+  const boss = store.bossById(targetId);
+  if (boss !== null && boss.hp > 0) return boss;
+  return null;
+}
+
 function runEnemyFiringDecisions(
   store: EntityStore,
   simTimeMs: number,
@@ -347,7 +432,7 @@ export function fireWeaponProjectiles(
   archetype: WeaponArchetype,
   modifiers: ReadonlyArray<WeaponModifier>,
   ownerId: EntityId,
-  ownerKind: 'player' | 'enemy' | 'boss',
+  ownerKind: CombatOwnerKind,
   origin: Vec2,
   aimWorld: Vec2,
   simTimeMs: number
@@ -419,7 +504,7 @@ function createWeaponInstance(
 
 function buildShooterWeapons(
   loadout: Loadout,
-  ownerKind: 'player' | 'enemy' | 'boss',
+  ownerKind: CombatOwnerKind,
   weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
   simTimeMs: number
 ): ShooterWeapons {
@@ -657,7 +742,9 @@ function initialFireDelayMs(baseCooldownMs: number, ownerKind: ShooterWeapons['o
 }
 
 function ownerCooldownMultiplier(ownerKind: ShooterWeapons['ownerKind']): number {
-  return ownerKind === 'enemy' ? SLIME_WEAPON_COOLDOWN_MULTIPLIER : 1;
+  if (ownerKind === 'enemy') return SLIME_WEAPON_COOLDOWN_MULTIPLIER;
+  if (ownerKind === 'companion') return COMPANION_WEAPON_COOLDOWN_MULTIPLIER;
+  return 1;
 }
 
 function aimedSpreadDirections(
@@ -687,7 +774,7 @@ function spawnProjectilesForDirections(
   weaponArchetypeId: string,
   projectile: ProjectileArchetype,
   ownerId: EntityId,
-  ownerKind: 'player' | 'enemy' | 'boss',
+  ownerKind: CombatOwnerKind,
   origin: Vec2,
   directions: ReadonlyArray<Vec2>,
   simTimeMs: number,
@@ -714,7 +801,7 @@ function spawnProjectileForDirection(
   weaponArchetypeId: string,
   projectile: ProjectileArchetype,
   ownerId: EntityId,
-  ownerKind: 'player' | 'enemy' | 'boss',
+  ownerKind: CombatOwnerKind,
   origin: Vec2,
   direction: Vec2,
   simTimeMs: number,
@@ -956,31 +1043,58 @@ function runContactIntents(
   maxEnemyContactBoundsRadius: number
 ): DamageIntent[] {
   const player = store.player();
-  if (player === null) return [];
   const intents: DamageIntent[] = [];
-  const range = contactBoundsRadius(player) + maxEnemyContactBoundsRadius;
-  const candidates = index.queryRadius(player.position.x, player.position.y, range);
+  if (player !== null) {
+    addEnemyContactIntentsForTarget(player, index, simTimeMs, maxEnemyContactBoundsRadius, intents);
+  }
+  const companion = store.companion();
+  if (companion !== null && companion.state === 'alive') {
+    addEnemyContactIntentsForTarget(
+      companion,
+      index,
+      simTimeMs,
+      maxEnemyContactBoundsRadius,
+      intents
+    );
+  }
+  return intents;
+}
+
+type ContactTarget = Player | Companion;
+
+function addEnemyContactIntentsForTarget(
+  target: ContactTarget,
+  index: SpatialIndex,
+  simTimeMs: number,
+  maxEnemyContactBoundsRadius: number,
+  intents: DamageIntent[]
+): void {
+  const range = contactBoundsRadius(target) + maxEnemyContactBoundsRadius;
+  const candidates = index.queryRadius(target.position.x, target.position.y, range);
   for (const candidate of candidates) {
     if (candidate.kind !== 'enemy' && candidate.kind !== 'boss') continue;
     const enemy = candidate;
     if (enemy.contactDamage <= 0) continue;
     if (simTimeMs < enemy.nextContactSimMs) continue;
-    if (!boxesOverlap(player, enemy)) continue;
+    if (!boxesOverlap(target, enemy)) continue;
     intents.push({
-      targetId: player.id,
+      targetId: target.id,
       amount: enemy.contactDamage,
       source: { kind: 'enemyContact', enemyId: enemy.id },
-      hitPosition: { x: player.position.x, y: player.position.y }
+      hitPosition: { x: target.position.x, y: target.position.y }
     });
     enemy.nextContactSimMs = simTimeMs + enemy.contactCooldownMs;
-    applyKnockbackToChaser(enemy, player, simTimeMs);
+    applyKnockbackToChaser(enemy, target, simTimeMs);
   }
-  return intents;
 }
 
-function applyKnockbackToChaser(enemy: Enemy | Boss, player: Player, simTimeMs: number): void {
-  const ndx = enemy.position.x - player.position.x;
-  const ndy = enemy.position.y - player.position.y;
+function applyKnockbackToChaser(
+  enemy: Enemy | Boss,
+  target: ContactTarget,
+  simTimeMs: number
+): void {
+  const ndx = enemy.position.x - target.position.x;
+  const ndy = enemy.position.y - target.position.y;
   const dist = Math.hypot(ndx, ndy);
   let nx: number;
   let ny: number;
@@ -999,7 +1113,7 @@ function applyKnockbackToChaser(enemy: Enemy | Boss, player: Player, simTimeMs: 
   }
   const approachSpeed = Math.max(
     0,
-    (player.velocity.vx - enemy.velocity.vx) * nx + (player.velocity.vy - enemy.velocity.vy) * ny
+    (target.velocity.vx - enemy.velocity.vx) * nx + (target.velocity.vy - enemy.velocity.vy) * ny
   );
   const impulseSpeed =
     enemy.knockbackBaseImpulse + enemy.knockbackVelocityScale * approachSpeed;
@@ -1011,7 +1125,7 @@ function applyKnockbackToChaser(enemy: Enemy | Boss, player: Player, simTimeMs: 
   };
 }
 
-type DamageableTarget = Enemy | Boss | Player;
+type DamageableTarget = Enemy | Boss | Player | Companion;
 
 function runHitDetection(
   store: EntityStore,
@@ -1057,7 +1171,7 @@ function runHitDetection(
         projectileId: projectile.id,
         targetId: target.id,
         targetKind: target.kind,
-        targetArchetypeId: target.kind === 'player' ? null : target.archetypeId,
+        targetArchetypeId: targetArchetypeIdForHitEvent(target),
         weaponArchetypeId: projectile.weaponArchetypeId,
         damage: projectile.impactDamage,
         impactDirX: impactDir.x,
@@ -1079,6 +1193,16 @@ function runHitDetection(
   }
 
   return intents;
+}
+
+function targetArchetypeIdForHitEvent(target: DamageableTarget): string | null {
+  if (target.kind === 'enemy' || target.kind === 'boss') {
+    return target.archetypeId;
+  }
+  if (target.kind === 'companion') {
+    return target.petArchetypeId;
+  }
+  return null;
 }
 
 function isImpactEligible(projectile: Projectile, simTimeMs: number): boolean {
@@ -1133,7 +1257,14 @@ function asValidTarget(
   projectile: Projectile,
   damageRules: DamageRules
 ): DamageableTarget | null {
-  if (entity.kind !== 'player' && entity.kind !== 'enemy' && entity.kind !== 'boss') return null;
+  if (
+    entity.kind !== 'player' &&
+    entity.kind !== 'companion' &&
+    entity.kind !== 'enemy' &&
+    entity.kind !== 'boss'
+  ) {
+    return null;
+  }
   if (projectile.hitEntityIds.has(entity.id)) return null;
   if (!canProjectileDamage(projectile, entity, damageRules)) return null;
   return entity;
@@ -1307,7 +1438,14 @@ function asExplosionTarget(
   projectile: Projectile,
   damageRules: DamageRules
 ): DamageableTarget | null {
-  if (entity.kind !== 'player' && entity.kind !== 'enemy' && entity.kind !== 'boss') return null;
+  if (
+    entity.kind !== 'player' &&
+    entity.kind !== 'companion' &&
+    entity.kind !== 'enemy' &&
+    entity.kind !== 'boss'
+  ) {
+    return null;
+  }
   if (!canProjectileDamage(projectile, entity, damageRules)) return null;
   return entity;
 }
@@ -1410,6 +1548,10 @@ function computeMaxProjectileTargetBoundsRadius(store: EntityStore): number {
   const player = store.player();
   if (player !== null) {
     max = Math.max(max, contactBoundsRadius(player));
+  }
+  const companion = store.companion();
+  if (companion !== null) {
+    max = Math.max(max, contactBoundsRadius(companion));
   }
   for (const archetype of Object.values(ENEMY_ARCHETYPES)) {
     max = Math.max(max, contactBoundsRadius(archetype));

@@ -1,5 +1,5 @@
 import type { DamageSource } from './CombatSystem';
-import type { EntityId, EntityStore } from './EntityStore';
+import type { CombatOwnerKind, EntityId, EntityStore } from './EntityStore';
 import type { DamageContext } from './HealthDeathSystem';
 
 export type RetaliationSystem = Readonly<{
@@ -28,7 +28,7 @@ export function createRetaliationSystem(): RetaliationSystem {
 
 function damageOwner(
   source: DamageSource
-): { ownerId: EntityId; ownerKind: 'player' | 'enemy' | 'boss' } | null {
+): { ownerId: EntityId; ownerKind: CombatOwnerKind } | null {
   if (source.kind !== 'projectile' && source.kind !== 'explosion') return null;
   if (source.ownerId === undefined) return null;
   return { ownerId: source.ownerId, ownerKind: source.ownerKind };

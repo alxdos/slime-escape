@@ -11,6 +11,7 @@ import { TRAINING_PLAYER } from '../../shared/content/players';
 import { BOMB_PLACER, GRENADE_LAUNCHER, PISTOL, ROCK_THROWER } from '../../shared/content/weapons';
 import type { SessionDefinition } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
+import type { CompanionSnapshot } from '../../shared/snapshot';
 import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
 import { DROP_VISUALS } from './dropVisuals';
 import { LANDING_TELEGRAPH_NAME } from './landingTelegraph';
@@ -132,12 +133,15 @@ function createTextureEntries(
 }
 
 function createRenderSession(
-  overrides: Partial<Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player'>> = {}
-): Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player'> {
+  overrides: Partial<
+    Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player' | 'companion'>
+  > = {}
+): Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player' | 'companion'> {
   return {
     backgrounds: [],
     encounters: [],
     player: TRAINING_PLAYER,
+    companion: null,
     ...overrides
   };
 }
@@ -162,7 +166,10 @@ function createEncounter(
   };
 }
 
-function findMeshWithMaterialMap(scene: THREE.Scene | null, texture: THREE.Texture): THREE.Mesh | null {
+function findMeshWithMaterialMap(
+  scene: THREE.Scene | null,
+  texture: THREE.Texture
+): THREE.Mesh | null {
   if (scene === null) return null;
   return scene.children.find((child): child is THREE.Mesh => {
     if (!(child instanceof THREE.Mesh)) return false;
@@ -170,6 +177,34 @@ function findMeshWithMaterialMap(scene: THREE.Scene | null, texture: THREE.Textu
     if (Array.isArray(material)) return false;
     return material instanceof THREE.MeshBasicMaterial && material.map === texture;
   }) ?? null;
+}
+
+function findMeshesWithMaterialMap(
+  scene: THREE.Scene | null,
+  texture: THREE.Texture
+): THREE.Mesh[] {
+  if (scene === null) return [];
+  return scene.children.filter((child): child is THREE.Mesh => {
+    if (!(child instanceof THREE.Mesh)) return false;
+    const material = child.material;
+    if (Array.isArray(material)) return false;
+    return material instanceof THREE.MeshBasicMaterial && material.map === texture;
+  });
+}
+
+function findChildMeshByName(
+  root: THREE.Object3D | null | undefined,
+  name: string
+): THREE.Mesh | null {
+  if (root === null || root === undefined) return null;
+  let found: THREE.Mesh | null = null;
+  root.traverse((child) => {
+    if (found !== null) return;
+    if (child instanceof THREE.Mesh && child.name === name) {
+      found = child;
+    }
+  });
+  return found;
 }
 
 function findSlimeBlobMeshes(scene: THREE.Scene | null, color: number): THREE.Mesh[] {
@@ -251,6 +286,25 @@ function setTextureImageSize(texture: THREE.Texture, width: number, height: numb
     value: { width, height },
     configurable: true
   });
+}
+
+function companionSnapshot(
+  overrides: Partial<CompanionSnapshot> = {}
+): CompanionSnapshot {
+  return {
+    id: 7,
+    kind: 'companion',
+    petArchetypeId: PET_01.id,
+    x: 2,
+    y: -1,
+    hp: 3,
+    maxHp: 6,
+    state: 'alive',
+    mode: 'alert',
+    rescueProgress: null,
+    targetId: 2,
+    ...overrides
+  };
 }
 
 describe('createRenderer', () => {
@@ -715,6 +769,206 @@ describe('createRenderer', () => {
     renderer.render();
 
     expect(findMeshWithMaterialMap(backend.lastScene(), petTexture)).toBeNull();
+  });
+
+  it('renders runtime companion snapshots with an HP bar and warning marker', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const petTexture = new THREE.Texture();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
+      selectedPetId: null,
+      getSnapshotPair: () =>
+        createSnapshotPairWithEntities([
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+          companionSnapshot()
+        ]),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const companionMesh = findMeshWithMaterialMap(backend.lastScene(), petTexture);
+    expect(companionMesh).not.toBeNull();
+    expect(companionMesh?.position.x).toBeCloseTo(2);
+    expect(companionMesh?.position.y).toBeCloseTo(-1);
+    const hpFill = findChildMeshByName(companionMesh, 'companion-hp-fill');
+    const warningMarker = findChildMeshByName(companionMesh, 'companion-warning-marker');
+    expect(hpFill?.visible).toBe(true);
+    expect(hpFill?.scale.x).toBeCloseTo(0.5);
+    expect(warningMarker?.visible).toBe(true);
+  });
+
+  it('renders ghost rescue state with aura, rescue ring and rapid flip', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const petTexture = new THREE.Texture();
+    const pair: SnapshotPair = {
+      prev: null,
+      curr: createSnapshot([
+        { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+        companionSnapshot({
+          hp: 0,
+          state: 'ghost',
+          mode: 'rescue',
+          rescueProgress: 0.5,
+          targetId: null
+        })
+      ]),
+      currReceivedAtMs: 0,
+      nowMs: 90
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession({
+        companion: {
+          petArchetypeId: PET_01.id,
+          maxHp: 6,
+          contactBox: { width: 0.55, height: 0.55 },
+          movement: { maxSpeed: 3, acceleration: 22, orbitRadius: 3.2 },
+          threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
+          weaponLoadout: { weapons: ['pistol'], selectedIndex: 0 },
+          boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
+          rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
+        }
+      }),
+      spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const companionMesh = findMeshWithMaterialMap(backend.lastScene(), petTexture);
+    const rescueFill = findChildMeshByName(companionMesh, 'companion-hp-rescue-fill');
+    const ghostAura = findChildMeshByName(companionMesh, 'companion-ghost-aura');
+    const rescueRing = findChildMeshByName(companionMesh, 'companion-rescue-ring');
+    const material = companionMesh?.material;
+    expect(companionMesh?.scale.x).toBeLessThan(0);
+    expect(rescueFill?.parent?.scale.x).toBeLessThan(0);
+    expect(rescueFill?.visible).toBe(true);
+    expect(rescueFill?.scale.x).toBeCloseTo(0.25);
+    expect(ghostAura?.visible).toBe(true);
+    expect(rescueRing?.visible).toBe(true);
+    expect(material).toBeInstanceOf(THREE.MeshBasicMaterial);
+    expect((material as THREE.MeshBasicMaterial).opacity).toBeLessThan(1);
+  });
+
+  it('hides the renderer-only selected companion when a runtime companion exists', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const petTexture = new THREE.Texture();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
+      selectedPetId: PET_01.id,
+      getSnapshotPair: () =>
+        createSnapshotPairWithEntities([
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+          companionSnapshot({ x: -2, y: 1 })
+        ]),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const petMeshes = findMeshesWithMaterialMap(backend.lastScene(), petTexture);
+    const visiblePetMeshes = petMeshes.filter((mesh) => mesh.visible);
+    expect(petMeshes).toHaveLength(2);
+    expect(visiblePetMeshes).toHaveLength(1);
+    expect(visiblePetMeshes[0]?.position.x).toBeCloseTo(-2);
+    expect(visiblePetMeshes[0]?.position.y).toBeCloseTo(1);
+  });
+
+  it('throws for runtime companion snapshots with missing pet content or texture', () => {
+    const canvas = createCanvasHarness();
+    const missingPetBackend = createRendererBackendHarness();
+    const missingPetRenderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ 'missing-pet': new THREE.Texture() }),
+      getSnapshotPair: () =>
+        createSnapshotPairWithEntities([
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+          companionSnapshot({ petArchetypeId: 'missing-pet' })
+        ]),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: missingPetBackend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    expect(() => missingPetRenderer.render()).toThrow('pet archetype missing');
+
+    const missingTextureBackend = createRendererBackendHarness();
+    const missingTextureRenderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () =>
+        createSnapshotPairWithEntities([
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+          companionSnapshot()
+        ]),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: missingTextureBackend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    expect(() => missingTextureRenderer.render()).toThrow('pet texture missing');
   });
 
   it('shows a reward marker on carrier enemies', () => {

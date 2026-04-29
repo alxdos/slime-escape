@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-24
-- Updated: 2026-04-26 (story 022: owner-local `WeaponInstance` also carries cooldown interval start and temporary overdrive start so `WeaponHudSnapshot` can render cooldown fill and timed upgrade progress without guessing; see [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-24 sprite extension: `ProjectileVisualSpec` form fixed to render-only behavior fields only; sprite identity (PNG path / `worldSize` / `anchor`) lives in the `projectileVisuals` registry per [sprite-assets.md](sprite-assets.md), keyed by `weaponArchetypeId`. cleanup pass: `audio?` field removed from `WeaponArchetype` to keep [audio.md](audio.md) invariant «no audio fields on archetypes»; no-op weapon-modifier rule reduced to a single deterministic case; `temporaryOverdrive.target` documented as single-value on this horizon; aim assist owner and pickup magnet binding moved to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) without ambiguity. Fireball follow-up: `multiDirection` directions are aim-relative offsets, not world axes.)
+- Updated: 2026-04-29 (story 030 prep: universal weapon ownership extends to `companion`; companion loadout is session-owned and has no pet-archetype stats or modifier drops. Earlier: 2026-04-26 story 022: owner-local `WeaponInstance` also carries cooldown interval start and temporary overdrive start so `WeaponHudSnapshot` can render cooldown fill and timed upgrade progress without guessing; see [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-24 sprite extension: `ProjectileVisualSpec` form fixed to render-only behavior fields only; sprite identity (PNG path / `worldSize` / `anchor`) lives in the `projectileVisuals` registry per [sprite-assets.md](sprite-assets.md), keyed by `weaponArchetypeId`. cleanup pass: `audio?` field removed from `WeaponArchetype` to keep [audio.md](audio.md) invariant «no audio fields on archetypes»; no-op weapon-modifier rule reduced to a single deterministic case; `temporaryOverdrive.target` documented as single-value on this horizon; aim assist owner and pickup magnet binding moved to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md) without ambiguity. Fireball follow-up: `multiDirection` directions are aim-relative offsets, not world axes.)
 
 ## Context
 
@@ -10,7 +10,7 @@
 
 The next weapon slice needs a more general contract:
 
-- any combat actor (`player`, `enemy`, `boss`) can own one or more weapon instances;
+- any combat actor (`player`, `enemy`, `boss`, `companion`) can own one or more weapon instances;
 - the same weapon archetype can be granted to different owners without duplicating content;
 - the default damage rule is permissive: a projectile can damage any damageable entity except when the active session rules filter it out;
 - weapons can emit bullets, thrown objects, grenades, bombs and four-direction fireballs;
@@ -81,7 +81,7 @@ Without a new contract, each new weapon would either add special branches to `Co
     kind: 'projectile';
     weaponArchetypeId: string;
     ownerId: EntityId;
-    ownerKind: 'player' | 'enemy' | 'boss';
+    ownerKind: 'player' | 'enemy' | 'boss' | 'companion';
     state: 'flying' | 'grounded';
     position: { x: number; y: number };
     velocity: { vx: number; vy: number };
@@ -147,6 +147,7 @@ Without a new contract, each new weapon would either add special branches to `Co
   ```
 - `slimeFriendlyFire: true` means `enemy` projectiles and explosions may damage other `enemy` entities. `false` means `enemy`-to-`enemy` damage is filtered out.
 - This field only controls slime-to-slime damage. Player/boss/enemy interactions otherwise follow the default permissive rule on this horizon.
+- Story 030 adds the player/companion friendly alliance in [projectiles-and-combat.md](projectiles-and-combat.md): player-owned projectiles cannot damage the companion, and companion-owned projectiles cannot damage the player or companion.
 - The rules object is copied into runtime state at session start and treated as immutable for the run.
 
 ### Weapon loadout and switching
@@ -158,10 +159,10 @@ Without a new contract, each new weapon would either add special branches to `Co
     selectedIndex: number | null;
   }>;
   ```
-- `weapons` contains `WeaponArchetype.id` values. The same ids can be used in player, enemy or boss loadouts.
+- `weapons` contains `WeaponArchetype.id` values. The same ids can be used in player, enemy, boss, or companion loadouts.
 - `selectedIndex: null` means weapons are holstered. A non-null value must point inside `weapons`.
 - The player switches weapon by input slots `1..9`; slot input selects the corresponding loadout index. A dedicated holster command sets `selectedIndex = null`.
-- Enemies and bosses can receive loadouts from content/session assembly too, but their selection policy belongs to their behavior systems. This decision only requires that their firing path uses the same weapon instance model.
+- Enemies, bosses, and companions can receive loadouts from content/session assembly too, but their selection policy belongs to their behavior systems. Companion loadout availability is defined by `SessionDefinition.companion.weaponLoadout` ([companion-combat.md](companion-combat.md)); pet archetypes do not define weapons.
 - Runtime `WeaponInstance` is owner-local state:
   ```ts
   type WeaponInstance = {
@@ -245,4 +246,6 @@ Without a new contract, each new weapon would either add special branches to `Co
 - [rng.md](rng.md)
 - [testing.md](testing.md)
 - [hud-presentation.md](hud-presentation.md)
+- [companion-combat.md](companion-combat.md)
 - [../stories/017-universal-weapons-and-projectiles.md](../stories/017-universal-weapons-and-projectiles.md)
+- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)

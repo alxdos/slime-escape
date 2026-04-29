@@ -4,7 +4,7 @@ import { PISTOL, type WeaponModifier } from '../shared/content/weapons';
 import type { WeaponTimedEffectHudSnapshot, ZoneSnapshot } from '../shared/snapshot';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../shared/timing';
 
-import { createEntityStore, type EntityId } from './EntityStore';
+import { createEntityStore, type CompanionSpawnSpec, type EntityId } from './EntityStore';
 import type { EncounterContext } from './SessionFlowSystem';
 import { createSnapshotExportSystem, type SnapshotSources } from './SnapshotExportSystem';
 
@@ -33,6 +33,17 @@ const STATIONARY_TEST_ENEMY = {
   knockbackDurationMs: 1,
   color: 0xff7766
 } as const;
+const COMPANION_SPEC: CompanionSpawnSpec = {
+  petArchetypeId: 'debug-buddy',
+  position: { x: -1, y: 2 },
+  contactBox: { width: 0.8, height: 0.8 },
+  maxHp: 6,
+  movement: { maxSpeed: 8, acceleration: 20, orbitRadius: 2 },
+  threat: { acquireRadius: 6, releaseRadius: 8 },
+  weaponLoadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+  boop: { radius: 0.25, impulse: 4, durationMs: 120, cooldownMs: 500 },
+  rescue: { radius: 1, durationMs: SIM_STEP_MS * 4, reviveHpFraction: 0.5 }
+};
 
 describe('SnapshotExportSystem', () => {
   it('emits the player entity with kind "player"', () => {
@@ -65,6 +76,32 @@ describe('SnapshotExportSystem', () => {
     const snapshot = exporter.onTick(0, store, NO_SOURCES);
 
     expect(snapshot?.entities).toHaveLength(0);
+  });
+
+  it('emits companion state, mode, target and rescue progress', () => {
+    const store = createEntityStore();
+    const companion = store.spawnCompanion(COMPANION_SPEC);
+    companion.hp = 2;
+    companion.state = 'ghost';
+    companion.mode = 'rescue';
+    companion.rescueProgressMs = SIM_STEP_MS * 2;
+    companion.targetId = 99 as EntityId;
+    const exporter = createSnapshotExportSystem();
+
+    const snapshot = exporter.onTick(0, store, NO_SOURCES);
+    const entity = snapshot?.entities.find((candidate) => candidate.kind === 'companion');
+
+    expect(entity).toBeDefined();
+    if (entity?.kind !== 'companion') throw new Error('expected companion snapshot');
+    expect(entity.petArchetypeId).toBe(COMPANION_SPEC.petArchetypeId);
+    expect(entity.x).toBe(COMPANION_SPEC.position.x);
+    expect(entity.y).toBe(COMPANION_SPEC.position.y);
+    expect(entity.hp).toBe(2);
+    expect(entity.maxHp).toBe(COMPANION_SPEC.maxHp);
+    expect(entity.state).toBe('ghost');
+    expect(entity.mode).toBe('rescue');
+    expect(entity.rescueProgress).toBe(0.5);
+    expect(entity.targetId).toBe(99);
   });
 
   it('emits exactly once per TICKS_PER_SNAPSHOT', () => {

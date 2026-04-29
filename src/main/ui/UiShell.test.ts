@@ -137,7 +137,8 @@ function makeSession(
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null,
-    ...overrides
+    ...overrides,
+    companion: overrides.companion ?? null
   };
 }
 
@@ -2130,6 +2131,63 @@ describe('UiShell', () => {
     await flushUiShellStartup();
 
     expect(renderer.lastInit()?.selectedPetId).toBe(PET_01.id);
+  });
+
+  it('passes selected pet id to the builder but not renderer for runtime companion sessions', async () => {
+    const menu = createMenuHarness();
+    const renderer = createRendererHarness();
+    const sim = createSimHarness();
+    const store = createClientProgressionStore({
+      storage: null,
+      randomInt: () => 0
+    });
+    store.awardXp(25);
+    store.purchasePet('green');
+    store.selectPet(PET_01.id);
+    const buildOptions: Array<Readonly<{ selectedPetId?: string | null }>> = [];
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: (_preset, options) => {
+        buildOptions.push(options);
+        return makeSession('campaign-runtime-companion-session', {
+          companion: {
+            petArchetypeId: options.selectedPetId ?? PET_01.id,
+            maxHp: 4,
+            contactBox: { width: 0.55, height: 0.55 },
+            movement: { maxSpeed: 3, acceleration: 22, orbitRadius: 3.2 },
+            threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
+            weaponLoadout: { weapons: ['pistol'], selectedIndex: 0 },
+            boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
+            rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
+          }
+        });
+      },
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: createInputHarness().factory,
+      createHud: createHudHarness().factory,
+      createAudio: createAudioHarness().factory,
+      createClientProgressionStore: () => store,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.start('campaign-normal');
+    await flushUiShellStartup();
+
+    expect(buildOptions[0]?.selectedPetId).toBe(PET_01.id);
+    expect(sim.startSessions[0]?.companion?.petArchetypeId).toBe(PET_01.id);
+    expect(renderer.lastInit()?.selectedPetId).toBeNull();
   });
 
   it('does not pass selected pets into non-campaign renderer creation', async () => {

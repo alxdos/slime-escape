@@ -1,11 +1,11 @@
 import type { DamageRules } from '../shared/session';
 
-import type { Boss, Enemy, EntityId, Player } from './EntityStore';
+import type { Boss, CombatOwnerKind, Companion, Enemy, EntityId, Player } from './EntityStore';
 
 export const DEFAULT_DAMAGE_RULES: DamageRules = { slimeFriendlyFire: false };
 
-export type DamageOwnerKind = 'player' | 'enemy' | 'boss';
-export type DamageableEntity = Player | Enemy | Boss;
+export type DamageOwnerKind = CombatOwnerKind;
+export type DamageableEntity = Player | Companion | Enemy | Boss;
 
 export type DamageOwner = Readonly<{
   ownerId: EntityId | null;
@@ -18,6 +18,13 @@ export function canDamageTarget(
   damageRules: DamageRules
 ): boolean {
   if (owner.ownerId !== null && target.id === owner.ownerId) return false;
+  if (owner.ownerKind === 'player' && target.kind === 'companion') return false;
+  if (
+    owner.ownerKind === 'companion' &&
+    (target.kind === 'player' || target.kind === 'companion')
+  ) {
+    return false;
+  }
   if (owner.ownerKind === 'enemy' && target.kind === 'enemy' && !damageRules.slimeFriendlyFire) {
     return false;
   }
