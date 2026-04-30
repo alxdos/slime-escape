@@ -1,8 +1,8 @@
 # Extract Simulation Core From Worker Host
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-30
-- Updated: 2026-04-30 (architect prep: recorded the host interface in [sim-core-interface.md](../design/sim-core-interface.md), the clock split in [simulation-timing.md](../design/simulation-timing.md), and the new layer reservation in [web-stack.md](../design/web-stack.md); refined Technical / Tasks / Related to match; moved Status to `in-progress` per the architect skill's `planned → in-progress` rule, since T1 (architectural PR) is the first task of this story.)
+- Updated: 2026-04-30 (closed: shared sim core extracted, automated checks passed, and local campaign smoke verified.)
 
 ## Product intent
 
@@ -50,7 +50,7 @@ Mechanically: every system file in `src/sim/**` and its tests move to `src/share
 | T6 | [x] | Add an automated boundary test (modeled on `server/src/importBoundaries.test.ts`) that scans `src/shared/sim/**` and fails on `self.`, `postMessage`, `Worker`, `setInterval`, `setTimeout`, `performance.now`, `performance.timeOrigin`, `addEventListener`, `globalThis`, `window.`, `document.`, and on imports of host-specific packages (`node:*`, `socket.io`, `socket.io-client`, browser-only modules). | Code PR, may land with T5. |
 | T7 | [x] | Update import paths in any consumer of `src/sim/**` outside the worker entry. Today this is limited to test files; the existing `src/main/sim/SimWorkerHost.ts` keeps its `new Worker(new URL('../../sim/worker.ts', import.meta.url))`. Ensure the server boundary test in `server/src/importBoundaries.test.ts` still passes unchanged (server is not allowed to import `src/sim/**`, but is allowed to import `src/shared/sim/**` once it exists; that ability is exercised by story 036, not here). | Code PR, depends on T5. |
 | T8 | [x] | Run automated checks: root typecheck, root tests (sim systems + main integration), root build, server typecheck and tests, content drift check. Fix only import paths and the new boundary test; no behavioral changes. | Depends on T7. |
-| T9 | [ ] | Manual smoke check: campaign, training, and dungeon each play through one wave/encounter without regression. Public Arena online flow is left untouched and is expected to keep behaving as today. | Depends on T8. |
+| T9 | [x] | Manual smoke check: campaign, training, and dungeon each play through one wave/encounter without regression. Public Arena online flow is left untouched and is expected to keep behaving as today. | Depends on T8. |
 
 ## Related
 
