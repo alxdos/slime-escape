@@ -107,6 +107,54 @@ describe('MobileInputController', () => {
     expect(commands[1]).toEqual({ kind: 'move', dx: 0, dy: 0 });
   });
 
+  it('classifies child-target pointer starts in game-surface coordinates instead of target offsets', () => {
+    const surface = new FakeElement(800, 400, makeRect(50, 100, 800, 400));
+    const childTarget = new FakeElement(200, 120, makeRect(80, 340, 200, 120));
+    surface.appendChild(childTarget);
+    const windowTarget = new FakeEventTarget();
+    const commands: InputCommand[] = [];
+    const controller = createMobileInputController({
+      surface,
+      arena: { width: 32, height: 18 },
+      pixelsPerWorldUnit: () => 10,
+      initialAim: { x: 0, y: 0 },
+      onCommand: (command) => commands.push(command),
+      onPause: () => {},
+      windowTarget
+    });
+
+    controller.start();
+    surface.dispatch(
+      'pointerdown',
+      pointerEvent('pointerdown', surface, {
+        pointerId: 25,
+        x: 150,
+        y: 380,
+        offsetX: 10,
+        offsetY: 10,
+        target: childTarget
+      })
+    );
+    windowTarget.dispatch(
+      'pointermove',
+      pointerEvent('pointermove', surface, {
+        pointerId: 25,
+        x: 222,
+        y: 308,
+        offsetX: 82,
+        offsetY: -62,
+        target: childTarget
+      })
+    );
+
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).toMatchObject({ kind: 'move' });
+    if (commands[0]?.kind !== 'move') throw new Error('expected move command');
+    expect(commands[0].dx).toBeCloseTo(Math.SQRT1_2, 6);
+    expect(commands[0].dy).toBeCloseTo(Math.SQRT1_2, 6);
+    expect(surface.capturedPointers).toEqual([25]);
+  });
+
   it('maps lower-right relative drags to clamped aim world coordinates', () => {
     const surface = new FakeElement(800, 400);
     const windowTarget = new FakeEventTarget();
@@ -371,14 +419,16 @@ function pointerEvent(
     pointerId: number;
     x: number;
     y: number;
+    offsetX?: number;
+    offsetY?: number;
     target?: EventTarget;
   }>
 ): PointerEvent {
   const event = new Event(type, { cancelable: true });
   Object.defineProperties(event, {
     pointerId: { value: init.pointerId },
-    offsetX: { value: init.x },
-    offsetY: { value: init.y },
+    offsetX: { value: init.offsetX ?? init.x },
+    offsetY: { value: init.offsetY ?? init.y },
     clientX: { value: init.x },
     clientY: { value: init.y },
     target: { value: init.target ?? defaultTarget }

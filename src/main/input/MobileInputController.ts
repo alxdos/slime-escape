@@ -349,10 +349,6 @@ function moveFromDrag(origin: SurfacePoint, point: SurfacePoint): MoveVector {
 }
 
 function surfacePointFromEvent(event: PointerEvent, surface: MobileSurface): SurfacePoint {
-  const offset = event as PointerEvent & Readonly<{ offsetX?: number; offsetY?: number }>;
-  if (Number.isFinite(offset.offsetX) && Number.isFinite(offset.offsetY)) {
-    return { x: offset.offsetX, y: offset.offsetY };
-  }
   const rect = surface.getBoundingClientRect();
   return {
     x: event.clientX - rect.left,
