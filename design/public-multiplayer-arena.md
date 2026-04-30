@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-30
-- Updated: 2026-04-30 (story 032 loadout follow-up: Public Arena regular players use the full generated `portal` session loadout, and the server owns each regular player's selected weapon slot. Adding an existing weapon such as `shotgun` to `portal.md` must make it available without arena-specific weapon code. Earlier story 032 audio follow-up: online hit presentation events are delivered only to the projectile owner and hit target and carry the target form needed for configured hit audio; online death presentation events are delivered to every connected player and carry the dead form needed for configured death audio. Earlier story 032 T19 review follow-up: Public Arena regular player health/movement and regular weapon loadout come from the generated `portal` session player/loadout, while online weapon behavior, projectile presentation, and weapon fire audio are driven by existing `WeaponArchetype`/weapon mapping content rather than a rock-specific implementation. Earlier story 032 T18 follow-up: Public Arena regular progression uses the full authored enemy slime roster in content order and the server must not silently fall back for missing form entries. Story 032 T17 follow-up: public input rate limiting, shutdown close reason, and deterministic overlapping projectile target selection are recorded. Story 032 T16 follow-up: online progression ids and boss level live in shared headless config so server authority and client HUD labels use the same boss-level denominator.)
+- Updated: 2026-04-30 (story 033 snapshot delivery cleanup: the first slice does not perform per-socket interest filtering — every connected socket receives the same authoritative arena snapshot. Authoritative snapshots carry only changing arena state; arena bounds and the recipient's player id are delivered once via `publicArena:joinAccepted` and cached on the client for the lifetime of the connection, in line with the rule from [snapshot-shape.md](snapshot-shape.md). Reintroducing interest filtering requires live measurement and an updated decision recorded here. Earlier story 032 loadout follow-up: Public Arena regular players use the full generated `portal` session loadout, and the server owns each regular player's selected weapon slot. Adding an existing weapon such as `shotgun` to `portal.md` must make it available without arena-specific weapon code. Earlier story 032 audio follow-up: online hit presentation events are delivered only to the projectile owner and hit target and carry the target form needed for configured hit audio; online death presentation events are delivered to every connected player and carry the dead form needed for configured death audio. Earlier story 032 T19 review follow-up: Public Arena regular player health/movement and regular weapon loadout come from the generated `portal` session player/loadout, while online weapon behavior, projectile presentation, and weapon fire audio are driven by existing `WeaponArchetype`/weapon mapping content rather than a rock-specific implementation. Earlier story 032 T18 follow-up: Public Arena regular progression uses the full authored enemy slime roster in content order and the server must not silently fall back for missing form entries. Story 032 T17 follow-up: public input rate limiting, shutdown close reason, and deterministic overlapping projectile target selection are recorded. Story 032 T16 follow-up: online progression ids and boss level live in shared headless config so server authority and client HUD labels use the same boss-level denominator.)
 
 ## Context
 
@@ -105,24 +105,23 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 - Frequent gameplay snapshots are sent per socket, not as a full room-wide world broadcast.
 - Join/reject/identity messages are reliable.
 - Frequent position/projectile snapshots are sent as volatile messages. If one is dropped, the next snapshot replaces it.
+- Authoritative snapshots carry only changing arena state, in line with the rule from [snapshot-shape.md](snapshot-shape.md). Immutable session configuration — arena bounds and the recipient's player id — is delivered once via `publicArena:joinAccepted` and cached by the client for the lifetime of the connection. Repeating immutable values on each snapshot tick is forbidden.
 - Gameplay-critical state must be recoverable from authoritative snapshots. Presentation events may be used for hit/death/level-up effects, but the client must not become the source of truth because it received or missed an event.
 - Presentation event delivery is purpose-specific in the first slice: `fire` goes to the shooter, `hit` goes to the projectile owner and hit target, `death` goes to all connected players, `explosion` goes to the owner, and `levelUp`/`spawn` go to the affected player.
 - The first protocol only needs:
   - client -> server: join request, input intent, disconnect/leave;
-  - server -> client: accepted/rejected, authoritative snapshot, presentation events, server error/close reason.
+  - server -> client: accepted (carrying arena bounds, the assigned player id, server cap, current population, and tick/snapshot rates), rejected, authoritative snapshot of changing state, presentation events, server error/close reason.
 - Network protocol types live in the server package or in `src/shared/**` only if both the static client and the server import them. They must not be hidden in browser UI modules.
 - The server rate-limits `publicArena:input` per socket as a protective boundary around the authoritative simulation. The first slice accepts up to `240` input intents per socket per `1000 ms` server-time window. Excess input intents are dropped, not queued, and do not disconnect the socket. This limit is intentionally above normal desktop/mobile input cadence, including high-refresh pointer movement, and can be revisited only after measurement.
 - Before an intentional server shutdown through `PublicArenaServer.close()`, connected sockets receive `publicArena:closeReason` with `reason: 'serverShutdown'` and the message `Arena server is restarting.`. Unplanned socket loss may still surface as `serverError` on the client.
 
-### Interest snapshots
+### Snapshot delivery
 
-- The arena remains one shared simulation, but payload delivery is interest-based.
-- The server builds an interest rectangle for each connected player and sends that socket only the players/projectiles/effects that intersect the rectangle.
-- The interest rectangle must be a superset of what the client can currently see: active visible area plus a margin for fast projectiles, interpolation, and edge entry.
-- For the first slice, the server may use a conservative fixed interest size derived from the largest current desktop visible area plus margin, centered and clamped around the player's authoritative position. This keeps the implementation simple, avoids trusting arbitrary client viewport values, and still avoids broadcasting the full public arena world to every socket.
-- Later work may narrow interest to exact desktop/mobile visible area and camera state if payload size becomes a real problem. That extension must not change gameplay authority.
-- Interest filtering is a network optimization only. It must not affect hit detection, projectile motion, HP, death, level progression, or boss transforms.
-- With the first cap of `200` players, a simple per-socket scan over current players and projectiles is acceptable. A spatial index is optional only after measurement shows the scan is too expensive.
+- The arena remains one shared simulation. The first slice does not perform per-socket interest filtering: every connected socket receives the same authoritative arena snapshot, covering all players and projectiles in the `35 x 35 wu` arena.
+- The previous configured interest rectangle already covered the full arena width and almost the full arena height, so the filter ran a per-socket scan and a divergent snapshot path while in practice filtering almost nothing. Removing it simplifies the snapshot path without losing observable accuracy.
+- Authoritative snapshots carry only changing arena state (see "Socket.IO contract" above and [snapshot-shape.md](snapshot-shape.md)). Arena bounds and the recipient's player id are delivered once via `publicArena:joinAccepted` and cached by the client; they must not be repeated on each snapshot tick.
+- The per-socket emit path on the server is a single `snapshotFor` returning the same authoritative state for every socket. The simulation does not maintain a separate filtered snapshot accessor.
+- Reintroducing interest filtering is allowed only after live measurement shows that per-socket payload at the current cap (`200`) is a real problem. The reintroduction must be recorded as an updated decision here, must remain a network optimization only (no effect on hit detection, projectile motion, HP, death, level progression, or boss transforms), and must continue to deliver a superset of what the client can currently see.
 
 ### Client integration
 
@@ -144,7 +143,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
   - death resets to level 1;
   - boss transform;
   - boss versus boss damage;
-  - interest snapshot filtering.
+  - snapshots delivered to two distant sockets are equal in `players`/`projectiles` and contain no immutable session config (`arena`/recipient player id).
 - Socket.IO integration tests are allowed for the protocol handshake, but most gameplay tests should call pure arena functions directly.
 - Live verification remains a required delivery step: do not treat local dev-server/browser checks as complete until the user verifies the requested online flow.
 
@@ -154,7 +153,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 - Server authority keeps kills, HP, boss transforms, and level resets stable even when clients lag or drop snapshot packets.
 - The current local `src/sim` runtime remains clean and one-player focused. The cost is some duplicated compact gameplay logic on the server for movement/projectiles/deathmatch rules.
 - Reuse stays at the right layer: content ids, world units, timing constants, sprites, and protocol types can be shared; browser UI and local worker session flow are not dragged into the server.
-- Interest snapshots reduce network payload without changing the simple one-arena product model.
+- Snapshot delivery is the simplest possible shape for the first slice: every socket receives the same full arena snapshot, and snapshots carry only changing state. Per-tick payload is dominated by what actually moves, not by repeated session configuration.
 - If the mode grows past one process or needs persistence, this decision must be extended or superseded before adding Redis adapters, database state, reconnect restoration, account identity, or multiple arena shards.
 
 ## Related
