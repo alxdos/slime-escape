@@ -1,6 +1,6 @@
 import type { InputCommand } from './input.js';
 
-export const PUBLIC_ARENA_PROTOCOL_VERSION = 3;
+export const PUBLIC_ARENA_PROTOCOL_VERSION = 4;
 export const PUBLIC_ARENA_FULL_MESSAGE = 'The online arena is full. Try again soon.';
 
 export const PUBLIC_ARENA_EVENTS = {
@@ -55,7 +55,7 @@ export type PublicArenaJoinRejected = Readonly<{
 
 export type PublicArenaInputIntent = Extract<
   InputCommand,
-  { kind: 'move' } | { kind: 'aim' } | { kind: 'fire' }
+  { kind: 'move' } | { kind: 'aim' } | { kind: 'fire' } | { kind: 'selectWeaponSlot' }
 >;
 
 export type PublicArenaLeaveRequest = Readonly<{
@@ -80,6 +80,7 @@ export type PublicArenaPlayerSnapshot = Readonly<{
   maxHp: number;
   level: number;
   form: PublicArenaPlayerFormSnapshot;
+  selectedWeaponIndex: number | null;
 }>;
 
 export type PublicArenaProjectileSnapshot = Readonly<{

@@ -806,10 +806,16 @@ function createPublicArenaHudHarness() {
 function createPublicArenaCombatAffordancesHarness() {
   let visible = false;
   let createCount = 0;
+  let updateCount = 0;
+  let lastSnapshot: PublicArenaSnapshot | null | undefined;
 
   const affordances: PublicArenaCombatAffordances = {
     show(): void {
       visible = true;
+    },
+    update(snapshot): void {
+      updateCount += 1;
+      lastSnapshot = snapshot;
     },
     hide(): void {
       visible = false;
@@ -827,6 +833,12 @@ function createPublicArenaCombatAffordancesHarness() {
     },
     createCount(): number {
       return createCount;
+    },
+    updateCount(): number {
+      return updateCount;
+    },
+    lastSnapshot(): PublicArenaSnapshot | null | undefined {
+      return lastSnapshot;
     },
     isVisible(): boolean {
       return visible;
@@ -943,7 +955,8 @@ function makePublicArenaSnapshot(): PublicArenaSnapshot {
         hp: 20,
         maxHp: 20,
         level: 3,
-        form: { kind: 'slime', archetypeId: 'slime-hornling' }
+        form: { kind: 'slime', archetypeId: 'slime-hornling' },
+        selectedWeaponIndex: 0
       }
     ],
     projectiles: []
@@ -2760,7 +2773,8 @@ describe('UiShell', () => {
     expect(publicArenaClient.sentInputs()).toEqual([
       { kind: 'move', dx: 1, dy: 0 },
       { kind: 'aim', x: 3, y: 4 },
-      { kind: 'fire', phase: 'start' }
+      { kind: 'fire', phase: 'start' },
+      { kind: 'selectWeaponSlot', slotIndex: 1 }
     ]);
 
     windowTarget.dispatch(
@@ -2783,6 +2797,7 @@ describe('UiShell', () => {
       { kind: 'move', dx: 1, dy: 0 },
       { kind: 'aim', x: 3, y: 4 },
       { kind: 'fire', phase: 'start' },
+      { kind: 'selectWeaponSlot', slotIndex: 1 },
       { kind: 'move', dx: 0, dy: 0 },
       { kind: 'fire', phase: 'stop' }
     ]);
@@ -3207,7 +3222,8 @@ describe('UiShell', () => {
     expect(publicArenaClient.sentInputs()).toEqual([
       { kind: 'move', dx: 0, dy: -1 },
       { kind: 'aim', x: 5, y: 6 },
-      { kind: 'fire', phase: 'stop' }
+      { kind: 'fire', phase: 'stop' },
+      { kind: 'selectWeaponSlot', slotIndex: 0 }
     ]);
 
     mobileInput.lastInit()?.onPause();
@@ -3223,6 +3239,7 @@ describe('UiShell', () => {
       { kind: 'move', dx: 0, dy: -1 },
       { kind: 'aim', x: 5, y: 6 },
       { kind: 'fire', phase: 'stop' },
+      { kind: 'selectWeaponSlot', slotIndex: 0 },
       { kind: 'move', dx: 0, dy: 0 },
       { kind: 'fire', phase: 'stop' }
     ]);

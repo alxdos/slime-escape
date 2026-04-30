@@ -7,13 +7,11 @@ import type {
 } from '../../shared/publicArenaProtocol';
 import { WEAPON_ARCHETYPES } from '../../shared/content/weapons';
 import {
+  PUBLIC_ARENA_LOADOUT,
   PUBLIC_ARENA_PRESENTATION_CONFIG,
   type PublicArenaPresentationConfig
 } from '../../shared/content/publicArena';
-import {
-  PUBLIC_ARENA_BOSS_WEAPON_ID,
-  PUBLIC_ARENA_REGULAR_WEAPON_ID
-} from '../../shared/publicArenaProgression';
+import { PUBLIC_ARENA_BOSS_WEAPON_ID } from '../../shared/publicArenaProgression';
 import type { ArenaConfig } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import { createArcPreview, updateArcPreview } from '../render/arcPreview';
@@ -705,7 +703,28 @@ function selectedPublicArenaWeaponId(snapshot: PublicArenaSnapshot | null): stri
   if (player === undefined) {
     return null;
   }
-  return player.form.kind === 'boss' ? PUBLIC_ARENA_BOSS_WEAPON_ID : PUBLIC_ARENA_REGULAR_WEAPON_ID;
+  if (player.form.kind === 'boss') {
+    return PUBLIC_ARENA_BOSS_WEAPON_ID;
+  }
+  return regularWeaponIdAtIndex(
+    player.selectedWeaponIndex ?? defaultPublicArenaSelectedWeaponIndex()
+  );
+}
+
+function defaultPublicArenaSelectedWeaponIndex(): number {
+  const selectedIndex = PUBLIC_ARENA_LOADOUT.selectedIndex;
+  if (selectedIndex === null) {
+    throw new Error('Public Arena portal loadout must select a weapon for aim affordances.');
+  }
+  return selectedIndex;
+}
+
+function regularWeaponIdAtIndex(index: number): string {
+  const weaponId = PUBLIC_ARENA_LOADOUT.weapons[index];
+  if (weaponId === undefined) {
+    throw new Error(`Public Arena snapshot has invalid selected weapon index ${index}.`);
+  }
+  return weaponId;
 }
 
 function findSelfPosition(snapshot: PublicArenaSnapshot | null): Readonly<{ x: number; y: number }> {

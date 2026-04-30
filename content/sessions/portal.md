@@ -10,7 +10,7 @@
 | arenaWidth | 35 |
 | arenaHeight | 35 |
 | playerId | hero-training |
-| loadoutWeaponIds | rock-thrower |
+| loadoutWeaponIds | rock-thrower, shotgun |
 | selectedWeaponIndex | 0 |
 | slimeFriendlyFire | true |
 | aimAssistEnabled | false |

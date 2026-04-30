@@ -103,10 +103,13 @@ describe('content-build sessions area', () => {
     const portal = area.presets.find((preset) => preset.presetId === 'portal');
     const openingEncounter = portal?.encounters.at(0);
 
-    expect(portal?.arena).toEqual({ width: 40, height: 40 });
+    expect(portal?.arena).toEqual({ width: 35, height: 35 });
     expect(portal?.musicSampleId).toBeNull();
     expect(portal?.loadout).toEqual({
-      weapons: [{ id: 'rock-thrower', constName: 'ROCK_THROWER' }],
+      weapons: [
+        { id: 'rock-thrower', constName: 'ROCK_THROWER' },
+        { id: 'shotgun', constName: 'SHOTGUN' }
+      ],
       selectedIndex: 0
     });
     expect(portal?.winCondition).toEqual({ kind: 'none' });
@@ -133,7 +136,11 @@ describe('content-build sessions area', () => {
     const fixture = await copySessionsFixture({
       'portal.md': (source) =>
         replaceExact(
-          replaceExact(source, '| loadoutWeaponIds | rock-thrower |', '| loadoutWeaponIds | none |'),
+          replaceExact(
+            source,
+            '| loadoutWeaponIds | rock-thrower, shotgun |',
+            '| loadoutWeaponIds | none |'
+          ),
           '| selectedWeaponIndex | 0 |',
           '| selectedWeaponIndex | none |'
         )

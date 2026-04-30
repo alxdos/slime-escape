@@ -115,7 +115,8 @@ function makeSnapshot(options: Readonly<{ selfLevel?: number }> = {}) {
         hp: 28,
         maxHp: 40,
         level: options.selfLevel ?? 4,
-        form: { kind: 'slime', archetypeId: 'slime-hornling' }
+        form: { kind: 'slime', archetypeId: 'slime-hornling' },
+        selectedWeaponIndex: 0
       }
     ],
     projectiles: []

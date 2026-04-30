@@ -5,7 +5,9 @@ import { ENEMY_ARCHETYPE_LIST } from './content/enemies';
 import {
   PUBLIC_ARENA_BOSS_LEVEL,
   PUBLIC_ARENA_REGULAR_FORM_STATS,
+  PUBLIC_ARENA_REGULAR_SELECTED_WEAPON_INDEX,
   PUBLIC_ARENA_REGULAR_WEAPON_ID,
+  PUBLIC_ARENA_REGULAR_WEAPON_IDS,
   PUBLIC_ARENA_SLIME_FORM_CHAIN
 } from './publicArenaProgression';
 
@@ -29,8 +31,10 @@ describe('public arena progression', () => {
     expect(PUBLIC_ARENA_BOSS_LEVEL).toBe(ENEMY_ARCHETYPE_LIST.length + 1);
   });
 
-  it('derives the regular weapon from the selected portal loadout slot', () => {
+  it('derives regular weapons from the portal loadout slots', () => {
     expect(PUBLIC_ARENA_LOADOUT.selectedIndex).toBe(0);
+    expect(PUBLIC_ARENA_REGULAR_WEAPON_IDS).toEqual(PUBLIC_ARENA_LOADOUT.weapons);
+    expect(PUBLIC_ARENA_REGULAR_SELECTED_WEAPON_INDEX).toBe(0);
     expect(PUBLIC_ARENA_REGULAR_WEAPON_ID).toBe(PUBLIC_ARENA_LOADOUT.weapons[0]);
   });
 });

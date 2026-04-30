@@ -6,6 +6,7 @@ import {
   BOMB_PLACER,
   GRENADE_LAUNCHER,
   ROCK_THROWER,
+  SHOTGUN,
   SMG,
   SNIPER
 } from '../../src/shared/content/weapons.generated.js';
@@ -21,6 +22,7 @@ import {
   PUBLIC_ARENA_BOSS_WEAPON_ID,
   PUBLIC_ARENA_INTEREST_HEIGHT_WU,
   PUBLIC_ARENA_REGULAR_WEAPON_ID,
+  PUBLIC_ARENA_REGULAR_WEAPON_IDS,
   PUBLIC_ARENA_SPAWN_PROTECTION_MS,
   PUBLIC_ARENA_SLIME_FORM_CHAIN,
   createPublicArenaSimulation
@@ -195,7 +197,8 @@ describe('PublicArenaSimulation', () => {
       level: 1,
       hp: PUBLIC_ARENA_PLAYER.maxHp,
       maxHp: PUBLIC_ARENA_PLAYER.maxHp,
-      form: { kind: 'slime', archetypeId: PUBLIC_ARENA_SLIME_FORM_CHAIN[0] }
+      form: { kind: 'slime', archetypeId: PUBLIC_ARENA_SLIME_FORM_CHAIN[0] },
+      selectedWeaponIndex: 0
     });
   });
 
@@ -291,6 +294,39 @@ describe('PublicArenaSimulation', () => {
         weaponArchetypeId: weapon.id
       });
     }
+  });
+
+  it('selects generated portal loadout slots and fires the chosen regular weapon', () => {
+    const shotgunSlotIndex = PUBLIC_ARENA_REGULAR_WEAPON_IDS.indexOf(SHOTGUN.id);
+    if (shotgunSlotIndex < 0) {
+      throw new Error('Public Arena portal loadout must include shotgun for this story.');
+    }
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('shooter', 0, 0));
+    simulation.drainEvents();
+
+    simulation.applyInput('shooter', {
+      kind: 'selectWeaponSlot',
+      slotIndex: shotgunSlotIndex
+    });
+    simulation.applyInput('shooter', {
+      kind: 'selectWeaponSlot',
+      slotIndex: PUBLIC_ARENA_REGULAR_WEAPON_IDS.length
+    });
+    simulation.applyInput('shooter', { kind: 'aim', x: 3, y: 0 });
+    simulation.applyInput('shooter', { kind: 'fire', phase: 'start' });
+    const projectiles = tickUntilProjectile(simulation, 'shooter', SHOTGUN.id);
+    const fireEvent = simulation.drainEvents().find((event) => event.kind === 'fire');
+
+    expect(playerSnapshot(simulation, 'shooter').selectedWeaponIndex).toBe(shotgunSlotIndex);
+    expect(projectiles.length).toBeGreaterThan(0);
+    expect(projectiles[0]?.weaponArchetypeId).toBe(SHOTGUN.id);
+    expect(projectiles[0]?.size).toEqual(SHOTGUN.projectile.size);
+    expect(fireEvent).toMatchObject({
+      kind: 'fire',
+      shooterId: 'shooter',
+      weaponArchetypeId: SHOTGUN.id
+    });
   });
 
   it('exports arc and grounded projectile presentation state from generated weapon content', () => {
@@ -400,6 +436,7 @@ describe('PublicArenaSimulation', () => {
     promoteToBoss(simulation, 'killer', 'victim');
     const boss = playerSnapshot(simulation, 'killer');
     expect(boss.form).toEqual({ kind: 'boss', archetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID });
+    expect(boss.selectedWeaponIndex).toBeNull();
     expect(boss.maxHp).toBeGreaterThan(100);
 
     simulation.removePlayer('victim');

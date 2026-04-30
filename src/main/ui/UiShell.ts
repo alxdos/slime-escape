@@ -897,6 +897,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         const visibleAreaCamera = ensurePublicArenaRenderer(snapshot.arena);
         ensurePublicArenaInput(snapshot.arena, visibleAreaCamera);
         publicArenaHud.update(snapshot, publicArenaPlayerCap);
+        publicArenaCombatAffordances.update(snapshot);
       },
       onPresentation(event) {
         if (!isCurrentPublicArenaConnection(connectionId)) {
@@ -946,6 +947,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     publicArenaPlayerCap = playerCap;
     portalController.attachPublicArena();
     publicArenaHud.update(null, playerCap);
+    publicArenaCombatAffordances.update(null);
   }
 
   function ensurePublicArenaRenderer(arena: PublicArenaWorldBounds): VisibleAreaCamera {
@@ -1864,8 +1866,8 @@ function publicArenaIntentFromInput(command: InputCommand): PublicArenaInputInte
     case 'move':
     case 'aim':
     case 'fire':
-      return command;
     case 'selectWeaponSlot':
+      return command;
     case 'holsterWeapon':
       return null;
     default:
@@ -1935,6 +1937,7 @@ function createNullPublicArenaCombatAffordances(
 ): PublicArenaCombatAffordances {
   return {
     show(): void {},
+    update(): void {},
     hide(): void {},
     isVisible(): boolean {
       return false;

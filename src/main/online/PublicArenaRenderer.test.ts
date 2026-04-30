@@ -128,8 +128,17 @@ describe('PublicArenaRenderer', () => {
     expect(selfLabel?.position.y).toBeGreaterThan(selfHpBar?.position.y ?? 0);
 
     const camera = backend.lastCamera();
-    expect(camera.position.x).toBeCloseTo(4);
+    expect(camera.position.x).toBeCloseTo(1.5);
     expect(camera.position.y).toBeCloseTo(-4);
+
+    snapshot = {
+      ...makeSnapshot(),
+      players: makeSnapshot().players.map((player) =>
+        player.id === 'self' ? { ...player, selectedWeaponIndex: 1 } : player
+      )
+    };
+    renderer.render();
+    expect(arcPreview?.visible).toBe(false);
 
     snapshot = {
       ...makeSnapshot(),
@@ -224,7 +233,8 @@ function makeSnapshot(): PublicArenaSnapshot {
         hp: 10,
         maxHp: 20,
         level: 1,
-        form: { kind: 'slime', archetypeId: 'slime-one-eye' }
+        form: { kind: 'slime', archetypeId: 'slime-one-eye' },
+        selectedWeaponIndex: 0
       },
       {
         id: 'other',
@@ -233,7 +243,8 @@ function makeSnapshot(): PublicArenaSnapshot {
         hp: 24,
         maxHp: 24,
         level: 2,
-        form: { kind: 'slime', archetypeId: 'slime-hornling' }
+        form: { kind: 'slime', archetypeId: 'slime-hornling' },
+        selectedWeaponIndex: 0
       },
       {
         id: 'boss',
@@ -242,7 +253,8 @@ function makeSnapshot(): PublicArenaSnapshot {
         hp: 180,
         maxHp: 180,
         level: 8,
-        form: { kind: 'boss', archetypeId: 'boss-tower-sentinel' }
+        form: { kind: 'boss', archetypeId: 'boss-tower-sentinel' },
+        selectedWeaponIndex: null
       }
     ],
     projectiles: [

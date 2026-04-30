@@ -8,7 +8,9 @@ export {
   PUBLIC_ARENA_BOSS_LEVEL,
   PUBLIC_ARENA_BOSS_WEAPON_ID,
   PUBLIC_ARENA_REGULAR_FORM_STATS,
+  PUBLIC_ARENA_REGULAR_SELECTED_WEAPON_INDEX,
   PUBLIC_ARENA_REGULAR_WEAPON_ID,
+  PUBLIC_ARENA_REGULAR_WEAPON_IDS,
   PUBLIC_ARENA_SLIME_FORM_CHAIN
 } from '../../src/shared/publicArenaProgression.js';
 import {
@@ -16,7 +18,8 @@ import {
   PUBLIC_ARENA_BOSS_LEVEL,
   PUBLIC_ARENA_BOSS_WEAPON_ID,
   PUBLIC_ARENA_REGULAR_FORM_STATS,
-  PUBLIC_ARENA_REGULAR_WEAPON_ID,
+  PUBLIC_ARENA_REGULAR_SELECTED_WEAPON_INDEX,
+  PUBLIC_ARENA_REGULAR_WEAPON_IDS,
   PUBLIC_ARENA_SLIME_FORM_CHAIN
 } from '../../src/shared/publicArenaProgression.js';
 import type {
@@ -109,6 +112,18 @@ type WeaponConfig = Readonly<{
   firePattern: FirePattern;
   projectile: ProjectileConfig;
 }>;
+type ActiveWeaponSelection =
+  | Readonly<{
+      kind: 'regular';
+      slotIndex: number;
+      weapon: WeaponConfig;
+      nextFireAtSimMs: number;
+    }>
+  | Readonly<{
+      kind: 'boss';
+      weapon: WeaponConfig;
+      nextFireAtSimMs: number;
+    }>;
 
 type RuntimePlayer = {
   id: PublicArenaPlayerId;
@@ -130,7 +145,9 @@ type RuntimePlayer = {
   moveDir: Vector;
   aim: Vector;
   firing: boolean;
-  nextFireAtSimMs: number;
+  selectedWeaponIndex: number;
+  regularNextFireAtSimMs: number[];
+  bossNextFireAtSimMs: number;
   spawnProtectionUntilSimMs: number;
 };
 
@@ -169,6 +186,8 @@ type RuntimeProjectile = {
 
 export type PublicArenaSimulationInit = Readonly<{
   regularWeaponId?: string;
+  regularWeaponIds?: ReadonlyArray<string>;
+  regularSelectedWeaponIndex?: number;
   bossWeaponId?: string;
 }>;
 
@@ -200,8 +219,11 @@ const BOSS_STATS: ActorStats = {
 export function createPublicArenaSimulation(
   init: PublicArenaSimulationInit = {}
 ): PublicArenaSimulation {
-  const regularWeapon = weaponConfigFromArchetype(
-    init.regularWeaponId ?? PUBLIC_ARENA_REGULAR_WEAPON_ID
+  const regularWeaponIds = regularWeaponIdsForInit(init);
+  const regularWeapons = regularWeaponIds.map(weaponConfigFromArchetype);
+  const defaultRegularSelectedWeaponIndex = requireSelectedRegularWeaponIndex(
+    regularSelectedWeaponIndexForInit(init),
+    regularWeapons.length
   );
   const bossWeapon = weaponConfigFromArchetype(
     init.bossWeaponId ?? PUBLIC_ARENA_BOSS_WEAPON_ID
@@ -238,7 +260,9 @@ export function createPublicArenaSimulation(
       moveDir: { x: 0, y: 0 },
       aim: { x: member.spawn.x + 1, y: member.spawn.y },
       firing: false,
-      nextFireAtSimMs: 0,
+      selectedWeaponIndex: defaultRegularSelectedWeaponIndex,
+      regularNextFireAtSimMs: regularWeapons.map(() => 0),
+      bossNextFireAtSimMs: 0,
       spawnProtectionUntilSimMs: simTimeMs + PUBLIC_ARENA_SPAWN_PROTECTION_MS
     };
     players.set(player.id, player);
@@ -273,6 +297,11 @@ export function createPublicArenaSimulation(
       case 'fire':
         player.firing = intent.phase === 'start';
         return;
+      case 'selectWeaponSlot':
+        if (isValidWeaponSlot(intent.slotIndex, regularWeapons.length)) {
+          player.selectedWeaponIndex = intent.slotIndex;
+        }
+        return;
       default:
         return assertNever(intent);
     }
@@ -304,11 +333,15 @@ export function createPublicArenaSimulation(
 
   function fireWeapons(): void {
     for (const player of players.values()) {
-      if (!player.firing || simTimeMs < player.nextFireAtSimMs) {
+      if (!player.firing) {
+        continue;
+      }
+      const selection = activeWeaponSelection(player);
+      if (selection === null || simTimeMs < selection.nextFireAtSimMs) {
         continue;
       }
 
-      const weapon = player.form.kind === 'boss' ? bossWeapon : regularWeapon;
+      const weapon = selection.weapon;
       const directions = fireDirections(player, weapon);
       if (directions.length === 0) {
         continue;
@@ -328,7 +361,45 @@ export function createPublicArenaSimulation(
         dirX: eventDirection.x,
         dirY: eventDirection.y
       });
-      player.nextFireAtSimMs = simTimeMs + weapon.cooldownMs;
+      setNextFireAtSimMs(player, selection, simTimeMs + weapon.cooldownMs);
+    }
+  }
+
+  function activeWeaponSelection(player: RuntimePlayer): ActiveWeaponSelection | null {
+    if (player.form.kind === 'boss') {
+      return {
+        kind: 'boss',
+        weapon: bossWeapon,
+        nextFireAtSimMs: player.bossNextFireAtSimMs
+      };
+    }
+    const slotIndex = player.selectedWeaponIndex;
+    const weapon = regularWeapons[slotIndex];
+    if (weapon === undefined) {
+      return null;
+    }
+    return {
+      kind: 'regular',
+      slotIndex,
+      weapon,
+      nextFireAtSimMs: player.regularNextFireAtSimMs[slotIndex] ?? 0
+    };
+  }
+
+  function setNextFireAtSimMs(
+    player: RuntimePlayer,
+    selection: ActiveWeaponSelection,
+    nextFireAtSimMs: number
+  ): void {
+    switch (selection.kind) {
+      case 'regular':
+        player.regularNextFireAtSimMs[selection.slotIndex] = nextFireAtSimMs;
+        return;
+      case 'boss':
+        player.bossNextFireAtSimMs = nextFireAtSimMs;
+        return;
+      default:
+        assertNever(selection);
     }
   }
 
@@ -982,6 +1053,40 @@ function isImpactEligible(projectile: RuntimeProjectile, simTimeMs: number): boo
   return projectile.motionKind === 'arc' && projectile.groundAtSimMs === simTimeMs;
 }
 
+function regularWeaponIdsForInit(init: PublicArenaSimulationInit): ReadonlyArray<string> {
+  if (init.regularWeaponIds !== undefined) {
+    if (init.regularWeaponIds.length === 0) {
+      throw new Error('Public Arena regular weapon ids must not be empty.');
+    }
+    return [...init.regularWeaponIds];
+  }
+  if (init.regularWeaponId !== undefined) {
+    return [init.regularWeaponId];
+  }
+  return PUBLIC_ARENA_REGULAR_WEAPON_IDS;
+}
+
+function regularSelectedWeaponIndexForInit(init: PublicArenaSimulationInit): number {
+  if (init.regularSelectedWeaponIndex !== undefined) {
+    return init.regularSelectedWeaponIndex;
+  }
+  if (init.regularWeaponId !== undefined || init.regularWeaponIds !== undefined) {
+    return 0;
+  }
+  return PUBLIC_ARENA_REGULAR_SELECTED_WEAPON_INDEX;
+}
+
+function requireSelectedRegularWeaponIndex(slotIndex: number, weaponCount: number): number {
+  if (!isValidWeaponSlot(slotIndex, weaponCount)) {
+    throw new Error(`Public Arena regular selected weapon index ${slotIndex} is invalid.`);
+  }
+  return slotIndex;
+}
+
+function isValidWeaponSlot(slotIndex: number, weaponCount: number): boolean {
+  return Number.isInteger(slotIndex) && slotIndex >= 0 && slotIndex < weaponCount;
+}
+
 function weaponConfigFromArchetype(weaponArchetypeId: string): WeaponConfig {
   const archetype = Object.values(GENERATED_WEAPONS).find(
     (candidate) => candidate.id === weaponArchetypeId
@@ -1092,7 +1197,8 @@ function toPlayerSnapshot(player: RuntimePlayer): PublicArenaPlayerSnapshot {
     hp: player.hp,
     maxHp: player.maxHp,
     level: player.level,
-    form: player.form
+    form: player.form,
+    selectedWeaponIndex: player.form.kind === 'boss' ? null : player.selectedWeaponIndex
   };
 }
 

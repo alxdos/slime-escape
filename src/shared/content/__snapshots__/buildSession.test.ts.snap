@@ -13340,6 +13340,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     "selectedIndex": 0,
     "weapons": [
       "rock-thrower",
+      "shotgun",
     ],
   },
   "lossCondition": {
@@ -13420,6 +13421,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     "selectedIndex": 0,
     "weapons": [
       "rock-thrower",
+      "shotgun",
     ],
   },
   "lossCondition": {
@@ -13500,6 +13502,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     "selectedIndex": 0,
     "weapons": [
       "rock-thrower",
+      "shotgun",
     ],
   },
   "lossCondition": {

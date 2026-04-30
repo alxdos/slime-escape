@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { PUBLIC_ARENA_LOADOUT } from '../../shared/content/publicArena';
+import { PUBLIC_ARENA_LOADOUT, PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/content/publicArena';
+import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 
 import { createPublicArenaCombatAffordances } from './PublicArenaCombatAffordances';
@@ -139,9 +140,17 @@ describe('PublicArenaCombatAffordances', () => {
       );
       expect(weaponSlots).toHaveLength(PUBLIC_ARENA_LOADOUT.weapons.length);
       expect(weaponSlots[0]?.dataset['weaponSlot']).toBe('0');
+      expect(weaponSlots[1]?.dataset['weaponSlot']).toBe('1');
       expect(PUBLIC_ARENA_LOADOUT.selectedIndex).toBe(0);
       expect(weaponImage.src).toBe(PROJECTILE_VISUALS[selectedWeaponId]?.image);
       expect(weaponBar.style.display).toBe('flex');
+      expect(slotFrame(weaponSlots[0]).style.borderColor).toBe('rgba(255,255,255,0.94)');
+      expect(slotFrame(weaponSlots[1]).style.borderColor).toBe('rgba(255,255,255,0.18)');
+
+      affordances.update(publicArenaSnapshotWithSelectedWeapon(1));
+
+      expect(slotFrame(weaponSlots[0]).style.borderColor).toBe('rgba(255,255,255,0.18)');
+      expect(slotFrame(weaponSlots[1]).style.borderColor).toBe('rgba(255,255,255,0.94)');
 
       expect(affordances.isVisible()).toBe(false);
       expect(root.style.display).toBe('none');
@@ -156,6 +165,36 @@ describe('PublicArenaCombatAffordances', () => {
     });
   });
 });
+
+function publicArenaSnapshotWithSelectedWeapon(selectedWeaponIndex: number): PublicArenaSnapshot {
+  return {
+    simTimeMs: 120,
+    selfId: 'self',
+    arena: PUBLIC_ARENA_WORLD_BOUNDS,
+    population: 1,
+    players: [
+      {
+        id: 'self',
+        x: 0,
+        y: 0,
+        hp: 20,
+        maxHp: 20,
+        level: 1,
+        form: { kind: 'slime', archetypeId: 'slime-one-eye' },
+        selectedWeaponIndex
+      }
+    ],
+    projectiles: []
+  };
+}
+
+function slotFrame(slot: FakeElement | undefined): FakeElement {
+  const frame = slot?.children[1];
+  if (frame === undefined) {
+    throw new Error('expected weapon slot frame');
+  }
+  return frame;
+}
 
 function findByTag(root: FakeElement | null, tagName: string): FakeElement | null {
   if (root === null) {
