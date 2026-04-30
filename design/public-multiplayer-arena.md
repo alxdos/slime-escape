@@ -6,7 +6,7 @@
 
 ## Context
 
-Story 032 introduces the first online gameplay mode: one public deathmatch arena where many players control slimes, throw rocks, level through slime forms, die back to level 1, and may become the tower boss.
+The public arena runtime is an online gameplay mode where many players control slimes, throw rocks, level through slime forms, die back to level 1, and may become the tower boss.
 
 The existing runtime is a local browser game: `main thread` owns UI/render/input, a `simulation worker` owns one-player session state, and `SessionDefinition` describes authored campaign/training/dungeon runs. That architecture gives useful contracts for world units, arena bounds, content ids, input, snapshots, projectiles, and sprites, but it does not define:
 
@@ -46,7 +46,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 - The server owns:
   - connected player identity for the current socket;
   - the in-memory `PublicArenaState`;
-  - the fixed `40 x 40 wu` arena;
+  - the fixed public arena loaded from generated session content;
   - player positions, HP, levels, current form, boss state, weapon cooldowns, projectiles, deaths, respawns, and population count.
 - Identity is socket-local in the first slice. There are no accounts, player names, profiles, moderation records, or persistent arena progress.
 - Disconnecting removes the player from the arena and loses their current level/state.
@@ -55,7 +55,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 ### Arena model
 
 - The online mode has exactly one public arena state in memory.
-- The arena is a `40 x 40 wu` square, centered on `(0, 0)`, using the coordinate rules from [arena-and-coordinates.md](arena-and-coordinates.md).
+- The arena is a content-authored rectangle centered on `(0, 0)`, using the coordinate rules from [arena-and-coordinates.md](arena-and-coordinates.md). The content source is generated through the normal sessions content pipeline; the server and client must not duplicate those dimensions in a separate Public Arena config file.
 - Spawn areas are the four arena corners. The first slice can choose a deterministic or simple rotating corner assignment; it does not need spawn balancing, squads, or private spawn groups.
 - If the current connected-player count reaches the configured cap, the server rejects the next join with a clear "arena full" response and does not add that socket to `PublicArenaState`.
 - All connected players are combatants in the same arena. There are no AI enemies, authored waves, encounter transitions, win/loss results, zone behavior, drops, pets, or campaign progression in this runtime.
@@ -104,7 +104,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 - The arena remains one shared simulation, but payload delivery is interest-based.
 - The server builds an interest rectangle for each connected player and sends that socket only the players/projectiles/effects that intersect the rectangle.
 - The interest rectangle must be a superset of what the client can currently see: active visible area plus a margin for fast projectiles, interpolation, and edge entry.
-- For the first slice, the server may use a conservative fixed interest size derived from the largest current desktop visible area plus margin, centered and clamped around the player's authoritative position. This keeps the implementation simple, avoids trusting arbitrary client viewport values, and still avoids broadcasting the full `40 x 40 wu` world to every socket.
+- For the first slice, the server may use a conservative fixed interest size derived from the largest current desktop visible area plus margin, centered and clamped around the player's authoritative position. This keeps the implementation simple, avoids trusting arbitrary client viewport values, and still avoids broadcasting the full public arena world to every socket.
 - Later work may narrow interest to exact desktop/mobile visible area and camera state if payload size becomes a real problem. That extension must not change gameplay authority.
 - Interest filtering is a network optimization only. It must not affect hit detection, projectile motion, HP, death, level progression, or boss transforms.
 - With the first cap of `200` players, a simple per-socket scan over current players and projectiles is acceptable. A spatial index is optional only after measurement shows the scan is too expensive.
@@ -113,6 +113,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 
 - The existing web app remains the player-facing shell. It adds a Public Arena entry point that connects to the stateful server.
 - Online arena rendering uses server snapshots and existing visual registries for slime, boss, projectile, and impact presentation.
+- The online arena background and active background id come from generated session content. Authored local waves, breaks, and boss encounters are not part of the online arena runtime.
 - Desktop/mobile camera and visible-area presentation stay client-side. They affect what the player sees and how aim maps to world coordinates, but they do not give the client authority over the arena.
 - The online client may reuse existing input mapping rules, including mobile touch controls, by sending the same kind of world-space movement/aim/fire intent to the server instead of the local worker.
 - Local campaign, training, dungeon, settings, progression, and existing result screens remain unchanged.
@@ -122,7 +123,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 - Server arena logic must be testable without opening real sockets:
   - cap and join rejection;
   - corner spawn selection;
-  - movement clamped to `40 x 40 wu`;
+  - movement clamped to the generated public arena bounds;
   - rock/fire projectile hits;
   - kill gives `+1` level;
   - death resets to level 1;
@@ -130,7 +131,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
   - boss versus boss damage;
   - interest snapshot filtering.
 - Socket.IO integration tests are allowed for the protocol handshake, but most gameplay tests should call pure arena functions directly.
-- Live verification still follows the story pipeline: do not treat local dev-server/browser checks as complete until the user verifies the requested online flow.
+- Live verification remains a required delivery step: do not treat local dev-server/browser checks as complete until the user verifies the requested online flow.
 
 ## Consequences
 
@@ -143,7 +144,6 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 
 ## Related
 
-- [../stories/032-public-slime-arena.md](../stories/032-public-slime-arena.md)
 - [web-stack.md](web-stack.md)
 - [content-boundaries.md](content-boundaries.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)

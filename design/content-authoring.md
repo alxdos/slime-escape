@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-29 (story 030 prep: `sessions` may include an optional `# Companion` field table for companion-enabled preset tuning; selected pet id still comes from client progression, not MD. Earlier: 2026-04-28 story 029 prep: add the `pets` area, producing pet content and pet visual registries from `content/pets.md`. Earlier: story 028 prep: the `sessions` area accepts `winCondition | dungeon` for the Dungeon preset; semantics live in [session-definition.md](session-definition.md). Earlier: 2026-04-27 story 026 prep: the `sessions` area accepts encounter `type: portal`, paired with `spawnKind: empty`, `zoneKind: disabled`, `transitionKind: never` or `allEnemiesCleared`, and presentation fields constrained by [encounter-presentation.md](encounter-presentation.md); portal behavior is defined in [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: 2026-04-26 story 021: the `# Session` partition, first `field | value` table in the `sessions` area, receives required field `musicSampleId`; allowed values are `none` (-> `null`) or plain sampleId, cross-validated against `SampleRegistry` with `category: 'music'` ([audio.md](audio.md)). The encounter `field | value` table in the same area receives presentation fields `introDurationMs` / `name` / `text`, with paired constraints by `encounter.type`; exact shape and hard-error rules live in [encounter-presentation.md](encounter-presentation.md). This file defines the authoring surface and allowed cell forms: `none` -> `null`/`0`, integer `>= 0`, and non-empty string. Earlier: 2026-04-25 story 020: the override table in a `sessions` encounter section gains `loadoutWeaponIds | selectedWeaponIndex` for `SpawnOverride.loadout` ([spawn-overrides.md](spawn-overrides.md)). This makes that override table an exception to the "narrow table: id + <=4 fields" rule: exactly for the `sessions` override table, `seq` plus 6 fields is allowed in fixed column order. `loadoutWeaponIds` uses the existing CSV list-in-cell form for weapon ids. Earlier: story 019 adds a third optional encounter table `seq | guaranteedDrops | dropTable | retaliationEnabled | retaliationDurationMs` for per-spawn override fields from [spawn-overrides.md](spawn-overrides.md); "Multiple tables in one H2 section" expands from two allowed tables to three for `sessions`. A controlled list-in-cell exception is added for override-table `dropTable`: comma-separated `dropArchetypeId:chance` pairs. Earlier: story 017 aligns session loadout/rules authoring with ordered loadouts: `sessions` use `loadoutWeaponIds` plus `selectedWeaponIndex`, and `slimeFriendlyFire` for `rules.damage.slimeFriendlyFire`. Story 017 sprite extension: `weapons` and `drops` receive a required inline image node `![alt](../public/<path>)` under each archetype H2 as the load-bearing derive source for projectile/drop sprite; a parallel MD `image` column is forbidden by the no-two-sources rule. Earlier: story 015 adds multi-file `sessions`, session backgrounds table, and multiple-table H2 rules. Story 014 adds inline media nodes and shared resource set partitions. Story 013 adds external assets as derived-field sources and includes `players`. Story 012 adds the "fill out, do not trim down" rule for aligning MD with existing layers.)
+- Updated: 2026-04-30
 
 ## Context
 
@@ -16,7 +16,7 @@ We need an authoring surface for game designers with these properties:
 - an MD error never causes silent substitution or partial writes: either everything is valid and rewritten atomically, or generated files remain as they were and the build fails with a clear message;
 - generated files cannot drift from MD: there is no state where MD says one thing and committed generated output says another.
 
-This decision defines stable rules for the layer. Exact fields for a specific area, such as column names and balance table groups, belong to that area and its story rather than this document.
+This decision defines stable rules for the layer. Exact fields for a specific area, such as column names and balance table groups, belong to that area's own contract rather than this document.
 
 ## Decision
 
@@ -60,7 +60,7 @@ This decision defines stable rules for the layer. Exact fields for a specific ar
 - By default, "one file = one area" is mandatory: each area has one `content/<area>.md`, and every value of every field of every unit in that area lives in that file.
 - In cases where an area consists of **independent units of one type**, and each unit is much richer than a comparison-table row, the area may be represented as a folder `content/<area>/` with one MD file per unit. Such areas are explicitly listed here; adding multi-file layout in generator code without updating this file is forbidden.
 - Current multi-file areas:
-  - `sessions` (`content/sessions/<presetId>.md`): each file describes one session preset in full, including preset metadata (`displayName`/`description`/`visibleInMenu`/`order`), session-level background-image table in `# Session`, and full encounter list in `# Encounters` order.
+  - `sessions` (`content/sessions/<presetId>.md`): each file describes one session preset in full, including preset metadata (`displayName`/`description`/`visibleInMenu`/`order`), required arena dimensions (`arenaWidth`/`arenaHeight`) in world units, session-level background-image table in `# Session`, and full encounter list in `# Encounters` order.
 - In the `sessions` `# Session` field table, `winCondition` accepts the existing scalar values plus `dungeon`. The cell renders to `{ kind: 'dungeon' }`; runtime looping semantics are defined in [session-definition.md](session-definition.md), not in the generator.
 - In a `sessions` file, optional `# Companion` contains one `field | value` table for `CompanionSessionConfig` tuning from [companion-combat.md](companion-combat.md). The table never includes a pet id; selected pet identity comes from client progression at run start. `weaponLoadoutIds` uses the existing CSV id list form or `none`; `weaponSelectedIndex` follows normal loadout index/null/none validation.
 - Required rules for multi-file areas:
@@ -94,7 +94,7 @@ This decision defines stable rules for the layer. Exact fields for a specific ar
 - Load-bearing inline images use `![alt](../public/<path>)`. The URL must be a relative path from the MD file to `public/`; generator strips the public prefix and writes a public-relative path. Other URL schemes (`http(s)://`, `/`, `./`, aliases) are errors.
 - Load-bearing inline audio links use link text as `sampleId` and URL matching `SampleRegistry[sampleId].url`. Both sides are validated. A mismatch is an area-generator error.
 - A load-bearing inline media node replaces the equivalent MD column. For example, if sprite image is authored through inline image, an `image` column for the same archetype is forbidden.
-- Multiple media kinds may coexist under the same H2 if their syntax and roles differ. For `weapons`, story 014 audio-link for `fire` and story 017 image for projectile sprite share the same H2 without conflict.
+- Multiple media kinds may coexist under the same H2 if their syntax and roles differ. For `weapons`, audio links for `fire` and image links for projectile sprites share the same H2 without conflict.
 - For `pets`, the inline image node under each pet H2 is load-bearing and produces the matching `petVisuals.generated.ts` entry. A parallel `image`, `sourceSizePx`, `worldSize`, or `anchor` column is forbidden by the derived-field rules.
 
 ### Shared resource set partition
@@ -182,13 +182,8 @@ Existing npm scripts remain: `dev = vite`, `build = tsc -p tsconfig.json && tsc 
 - [web-stack.md](web-stack.md)
 - [logging.md](logging.md)
 - [testing.md](testing.md)
-- [../stories/014-md-inline-media.md](../stories/014-md-inline-media.md)
 - [session-definition.md](session-definition.md)
 - [main-ui-shell.md](main-ui-shell.md)
-- [../stories/015-sessions-from-md.md](../stories/015-sessions-from-md.md)
 - [spawn-overrides.md](spawn-overrides.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
 - [companion-combat.md](companion-combat.md)
-- [../stories/028-dungeon-mode.md](../stories/028-dungeon-mode.md)
-- [../stories/029-xp-and-pet-companions.md](../stories/029-xp-and-pet-companions.md)
-- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)

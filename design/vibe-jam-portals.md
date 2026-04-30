@@ -2,22 +2,22 @@
 
 - Status: accepted
 - Created: 2026-04-27
-- Updated: 2026-04-29
+- Updated: 2026-04-30
 
 ## Context
 
 Vibe Jam 2026 defines an optional portal webring on top of the required widget. A game may expose an exit portal that sends the player to `https://vibej.am/portal/2026`. When the portal redirector sends a player into a game, it adds `portal=true`; if it also provides `ref`, the receiving game should provide a start/return portal so the player can go back.
 
-Slime Escape already has a separate `/portal` page entrypoint. That page configures `UiShell` with `SLIME_ESCAPE_AUTO_START = "portal"` and a portal-specific loading image. This decision records how that entrypoint, incoming portal context, return portals, and the exit portal fit the existing `main thread` / `simulation worker` architecture.
+Slime Escape has a separate `/portal` page entrypoint. That entrypoint enters the online Public Arena instead of auto-starting a local authored combat run. This decision records how the page entrypoint, incoming portal context, return portals, and portal presentation data fit the existing `main thread` / online arena architecture.
 
 ## Decision
 
 ### Entrypoint contract
 
-- `/portal` is a static page entrypoint that runs the normal main bundle and sets `window.SLIME_ESCAPE_AUTO_START = "portal"` before `/src/main/index.ts` is imported.
-- `src/main/index.ts` resolves `SLIME_ESCAPE_AUTO_START` only from page globals. URL query parameters must not start sessions directly.
-- If the page global is a valid `ModePresetId`, `UiShell` receives it as `autoStartPresetId`. After successful startup preload, `UiShell` may transition directly into that preset, using the same session-start path as `menu -> running`.
-- The normal root entrypoint remains menu-first. Auto-start is a page-entrypoint configuration, not a new generic menu behavior.
+- `/portal` is a static page entrypoint that runs the normal main bundle and enters the Public Arena flow.
+- URL query parameters must not start local sessions directly.
+- The normal root entrypoint remains menu-first. `/portal` is a page-entrypoint configuration, not a new generic menu behavior.
+- `content/sessions/portal.md` is still the content-authored source for portal presentation data, but it no longer defines an authored local wave/break/boss run.
 
 ### Incoming portal context
 
@@ -52,15 +52,11 @@ Slime Escape already has a separate `/portal` page entrypoint. That page configu
   - `name` is `null`;
   - `text` is `null`.
 - `portal` encounters are not objective encounters for result progress. They do not add wave count, boss count, or completion percent weight.
-- The special `/portal` session ends its authored combat chain as:
-  ```text
-  portal-opening -> waves -> boss-gargoyle
-  ```
-- The portal session uses the normal run completion path after the boss: `winCondition: allEncountersComplete` and `lossCondition: playerDeath`. The exit portal remains an optional forward route during the run, not the only way to finish the session.
+- The old local `/portal` authored combat chain is not part of the portal entrypoint. The portal entrypoint leads to the online Public Arena; waves, breaks, local boss encounters, and local run completion are not part of the portal content.
 
 ### Exit portal
 
-- An exit portal is opened by a `portal` encounter. Current content authors that encounter in the `/portal` session; once opened, it remains visible through later waves, breaks, and boss encounters.
+- An exit portal may be opened by portal-capable presentation flow. The portal entrypoint does not require local authored waves, breaks, or boss encounters to keep an exit portal alive.
 - The preferred exit portal position mirrors the return portal on the right:
   ```text
   x = session.player.position.x + 8 * session.player.contactBox.width
@@ -81,7 +77,7 @@ Slime Escape already has a separate `/portal` page entrypoint. That page configu
 ### Main-thread ownership and simulation boundary
 
 - Portals are main-thread browser/world interactables, not simulation entities.
-- Do not add a `portal` `EntitySnapshot` kind and do not add portal runtime events for this story.
+- Do not add a `portal` `EntitySnapshot` kind and do not add portal runtime events for this decision.
 - A main-thread portal controller derives visible portals from:
   - current browser portal context;
   - immutable `SessionDefinition`;
@@ -121,5 +117,4 @@ Slime Escape already has a separate `/portal` page entrypoint. That page configu
 - [runtime-systems.md](runtime-systems.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
 - [body-contact-boxes.md](body-contact-boxes.md)
-- [../stories/026-vibe-jam-portals.md](../stories/026-vibe-jam-portals.md)
 - [Vibe Jam 2026 portals](https://vibej.am/2026/#rules)

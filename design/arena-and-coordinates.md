@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-30 (story 031 follow-up: the arena remains the full world while [camera-and-visible-area.md](camera-and-visible-area.md) defines desktop full-arena view and mobile smaller visible area/camera following. Earlier story 031 prep: mobile web support added a rotated game root and effective viewport; see [mobile-web-support.md](mobile-web-support.md). Earlier: 2026-04-27 story 026 prep: Vibe Jam portal placement uses the existing arena bounds and clamps/shifts main-thread portal descriptors inside the arena; see [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: 2026-04-19.)
+- Updated: 2026-04-30
 
 ## Context
 
@@ -27,12 +27,12 @@ Gameplay is built around a single arena ([../docs/GDD_CORE.md](../docs/GDD_CORE.
 
 - The arena is a rectangle centered at `(0, 0)`, described by two positive numbers, `width` and `height`, in wu.
 - Safe coordinate bounds: `x ∈ [-width/2, +width/2]`, `y ∈ [-height/2, +height/2]`.
-- Concrete `width` and `height` values for each mode/preset are defined in the `content library` (see [content-boundaries.md](content-boundaries.md), [web-stack.md](web-stack.md)) and enter `SessionDefinition.arena`. Hardcoding arena size in system code is forbidden.
+- Concrete `width` and `height` values for each mode/preset are authored in the `content library` as `arenaWidth` and `arenaHeight` fields in `content/sessions/*.md` (see [content-boundaries.md](content-boundaries.md), [web-stack.md](web-stack.md)) and enter `SessionDefinition.arena`. Hardcoding arena size in system code is forbidden.
 - Arena aspect ratio, `arenaAspect = width / height`, is content, not engine behavior. Every render and UI system must work correctly for any `arenaAspect`.
 
 ### Mapping visible area to viewport (fit / letterbox / pillarbox)
 
-- The `main thread` always shows the active **visible area** while preserving its proportions. The visible area is resolved by [camera-and-visible-area.md](camera-and-visible-area.md): with the current `32 x 18` arena desktop resolves to the full arena, while mobile resolves to a smaller camera window and future larger desktop arenas may scroll.
+- The `main thread` always shows the active **visible area** while preserving its proportions. The visible area is resolved by [camera-and-visible-area.md](camera-and-visible-area.md): depending on the authored arena and camera profile, desktop may resolve to the full arena while mobile or larger arenas may scroll.
 - Stretching the visible area to fit the viewport is forbidden.
 - The viewport used for fitting is the effective game viewport. On desktop this equals the browser viewport; on mobile web it is the landscape game surface from [mobile-web-support.md](mobile-web-support.md).
 - When `visibleAspect` and `viewportAspect` differ:
@@ -52,7 +52,7 @@ Gameplay is built around a single arena ([../docs/GDD_CORE.md](../docs/GDD_CORE.
 ### "No hardware advantage" invariant
 
 - Arena bounds, spawning, dark-zone radius, movement speed, and deterministic simulation behavior **do not depend** on window size, DPR, render scale from 009, screen size, or mobile profile.
-- The visible area may differ from the full arena only through an explicit camera decision such as [camera-and-visible-area.md](camera-and-visible-area.md). This can happen on mobile now and can happen on desktop/non-mobile when a future arena is larger than the desktop `18 wu` short-side anchor. It is main-thread presentation state, not simulation or content-authoring state.
+- The visible area may differ from the full arena only through an explicit camera decision such as [camera-and-visible-area.md](camera-and-visible-area.md). This can happen on mobile now and can happen on desktop/non-mobile when a future arena is larger than the desktop visible-area anchor. It is main-thread presentation state, not simulation or content-authoring state.
 - Window size and DPR affect image pixel density and CSS fitting, not arena bounds or simulation balance.
 - Any attempt to make arena bounds or simulation balance depend on window size violates this decision.
 
@@ -67,7 +67,7 @@ Gameplay is built around a single arena ([../docs/GDD_CORE.md](../docs/GDD_CORE.
 - `SessionDefinition.arena` gets a required `{ width, height }` pair in wu; formalized in [session-definition.md](session-definition.md).
 - `MovementSystem` ([runtime-systems.md](runtime-systems.md)) must read bounds from the active session, not from a global constant.
 - Aim and Pointer Lock ([input-commands.md](input-commands.md)) can compute cursor world position with a simple linear mapping without external offsets.
-- Story 002 defines one concrete `{ width, height }` value for sandbox mode in the `content library`; future stories add new arenas through data, not by editing systems.
+- Sandbox mode defines one concrete `{ width, height }` value in the `content library`; future arenas are added through data, not by editing systems.
 - Dark zone (004) and spawning (003) can rely on arena bounds as the only source of "edge", with no dependency on window size.
 - Support for unusual non-mobile aspect ratios (ultrawide, portrait windows) is reduced to correct CSS fitting; gameplay does not change.
 - Mobile web support deliberately adapts the main-thread visible area to the effective landscape game viewport aspect, while leaving the final session arena untouched.
