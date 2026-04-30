@@ -1,6 +1,6 @@
 import type { InputCommand } from './input.js';
 
-export const PUBLIC_ARENA_PROTOCOL_VERSION = 2;
+export const PUBLIC_ARENA_PROTOCOL_VERSION = 3;
 export const PUBLIC_ARENA_FULL_MESSAGE = 'The online arena is full. Try again soon.';
 
 export const PUBLIC_ARENA_EVENTS = {
@@ -129,7 +129,10 @@ export type PublicArenaPresentationEvent =
       kind: 'hit';
       simTimeMs: number;
       projectileId: PublicArenaProjectileId;
+      ownerId: PublicArenaPlayerId;
+      ownerKind: 'player' | 'boss';
       targetId: PublicArenaPlayerId;
+      targetForm: PublicArenaPlayerFormSnapshot;
       weaponArchetypeId: string;
       damage: number;
       x: number;
@@ -154,6 +157,7 @@ export type PublicArenaPresentationEvent =
       simTimeMs: number;
       playerId: PublicArenaPlayerId;
       killerId: PublicArenaPlayerId | null;
+      form: PublicArenaPlayerFormSnapshot;
       weaponArchetypeId: string | null;
       x: number;
       y: number;

@@ -252,7 +252,7 @@ export function publishPresentationEvents(
   }
 
   for (const event of events) {
-    for (const playerId of publicArenaPresentationRecipients(event)) {
+    for (const playerId of publicArenaPresentationRecipients(event, members)) {
       const member = socketsByPlayerId.get(playerId);
       if (member === undefined) {
         continue;
@@ -264,25 +264,30 @@ export function publishPresentationEvents(
 }
 
 function publicArenaPresentationRecipients(
-  event: PublicArenaPresentationEvent
+  event: PublicArenaPresentationEvent,
+  members: ReadonlyArray<PublicArenaMember>
 ): ReadonlyArray<PublicArenaPlayerId> {
   switch (event.kind) {
     case 'fire':
       return [event.shooterId];
     case 'hit':
-      return [event.targetId];
+      return uniquePlayerIds([event.ownerId, event.targetId]);
     case 'explosion':
       return [event.ownerId];
     case 'death':
-      return event.killerId === null || event.killerId === event.playerId
-        ? [event.playerId]
-        : [event.playerId, event.killerId];
+      return members.map((member) => member.playerId);
     case 'levelUp':
     case 'spawn':
       return [event.playerId];
     default:
       return event satisfies never;
   }
+}
+
+function uniquePlayerIds(
+  playerIds: ReadonlyArray<PublicArenaPlayerId>
+): ReadonlyArray<PublicArenaPlayerId> {
+  return Array.from(new Set(playerIds));
 }
 
 function protocolMismatchRejection(population: number, playerCap: number): PublicArenaJoinRejected {

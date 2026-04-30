@@ -8,7 +8,7 @@ import {
 
 describe('public arena protocol constants', () => {
   it('uses one current protocol version', () => {
-    expect(PUBLIC_ARENA_PROTOCOL_VERSION).toBe(2);
+    expect(PUBLIC_ARENA_PROTOCOL_VERSION).toBe(3);
   });
 
   it('keeps every socket event name unique and namespaced', () => {

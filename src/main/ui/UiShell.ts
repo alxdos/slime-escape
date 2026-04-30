@@ -13,6 +13,7 @@ import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type {
   PublicArenaInputIntent,
+  PublicArenaPlayerFormSnapshot,
   PublicArenaPresentationEvent,
   PublicArenaSnapshot,
   PublicArenaWorldBounds
@@ -1810,12 +1811,51 @@ function publicArenaPresentationToAudioEvent(
         y: event.y
       };
     case 'hit':
+      return {
+        kind: 'hit',
+        simTime: event.simTimeMs,
+        projectileId: 0,
+        targetId: 0,
+        targetKind: publicArenaFormToRuntimeEntityKind(event.targetForm),
+        targetArchetypeId: event.targetForm.archetypeId,
+        weaponArchetypeId: event.weaponArchetypeId,
+        damage: event.damage,
+        impactDirX: event.impactDirX,
+        impactDirY: event.impactDirY,
+        x: event.x,
+        y: event.y
+      };
     case 'death':
+      return {
+        kind: 'death',
+        simTime: event.simTimeMs,
+        entityId: 0,
+        entityKind: publicArenaFormToRuntimeEntityKind(event.form),
+        archetypeId: event.form.archetypeId,
+        weaponArchetypeId: event.weaponArchetypeId,
+        impactDirX: null,
+        impactDirY: null,
+        x: event.x,
+        y: event.y
+      };
     case 'levelUp':
     case 'spawn':
       return null;
     default:
       return event satisfies never;
+  }
+}
+
+function publicArenaFormToRuntimeEntityKind(
+  form: PublicArenaPlayerFormSnapshot
+): 'enemy' | 'boss' {
+  switch (form.kind) {
+    case 'slime':
+      return 'enemy';
+    case 'boss':
+      return 'boss';
+    default:
+      return form satisfies never;
   }
 }
 

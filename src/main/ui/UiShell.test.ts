@@ -2687,6 +2687,70 @@ describe('UiShell', () => {
       ownerKind: 'player'
     });
 
+    publicArenaClient.presentation({
+      kind: 'hit',
+      simTimeMs: 150,
+      projectileId: 'projectile-a',
+      ownerId: 'socket-a',
+      ownerKind: 'player',
+      targetId: 'socket-b',
+      targetForm: { kind: 'slime', archetypeId: 'slime-one-eye' },
+      weaponArchetypeId: 'rock-thrower',
+      damage: 3,
+      x: 3,
+      y: 2,
+      impactDirX: 1,
+      impactDirY: 0
+    });
+
+    expect(audio.events.at(-1)).toMatchObject({
+      kind: 'hit',
+      targetKind: 'enemy',
+      targetArchetypeId: 'slime-one-eye',
+      weaponArchetypeId: 'rock-thrower'
+    });
+
+    publicArenaClient.presentation({
+      kind: 'hit',
+      simTimeMs: 151,
+      projectileId: 'projectile-b',
+      ownerId: 'socket-b',
+      ownerKind: 'player',
+      targetId: 'socket-a',
+      targetForm: { kind: 'slime', archetypeId: 'slime-hornling' },
+      weaponArchetypeId: 'rock-thrower',
+      damage: 3,
+      x: 1,
+      y: 2,
+      impactDirX: -1,
+      impactDirY: 0
+    });
+
+    expect(audio.events.at(-1)).toMatchObject({
+      kind: 'hit',
+      targetKind: 'enemy',
+      targetArchetypeId: 'slime-hornling',
+      weaponArchetypeId: 'rock-thrower'
+    });
+
+    publicArenaClient.presentation({
+      kind: 'death',
+      simTimeMs: 160,
+      playerId: 'socket-b',
+      killerId: 'socket-a',
+      form: { kind: 'boss', archetypeId: 'boss-tower-sentinel' },
+      weaponArchetypeId: 'rock-thrower',
+      x: 3,
+      y: 2
+    });
+
+    expect(audio.events.at(-1)).toMatchObject({
+      kind: 'death',
+      entityKind: 'boss',
+      archetypeId: 'boss-tower-sentinel',
+      weaponArchetypeId: 'rock-thrower'
+    });
+
     input.lastInit()?.onCommand({ kind: 'move', dx: 1, dy: 0 });
     input.lastInit()?.onCommand({ kind: 'aim', x: 3, y: 4 });
     input.lastInit()?.onCommand({ kind: 'fire', phase: 'start' });

@@ -86,16 +86,35 @@ describe('PublicArenaServer hardening', () => {
       simTimeMs: 16,
       playerId: 'player-b',
       killerId: 'player-a',
+      form: { kind: 'slime' as const, archetypeId: 'slime-one-eye' },
       weaponArchetypeId: 'rock-thrower',
       x: 1,
       y: 0
     };
+    const hitEvent = {
+      kind: 'hit' as const,
+      simTimeMs: 18,
+      projectileId: 'projectile-a',
+      ownerId: 'player-a',
+      ownerKind: 'player' as const,
+      targetId: 'player-b',
+      targetForm: { kind: 'slime' as const, archetypeId: 'slime-one-eye' },
+      weaponArchetypeId: 'rock-thrower',
+      damage: 3,
+      x: 1,
+      y: 0,
+      impactDirX: 1,
+      impactDirY: 0
+    };
 
-    publishPresentationEvents(io, members, [fireEvent, deathEvent]);
+    publishPresentationEvents(io, members, [fireEvent, deathEvent, hitEvent]);
 
     expect(socketA.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, fireEvent);
+    expect(socketA.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, hitEvent);
     expect(socketA.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, deathEvent);
+    expect(socketB.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, hitEvent);
     expect(socketB.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, deathEvent);
-    expect(socketC.emit).not.toHaveBeenCalled();
+    expect(socketC.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, deathEvent);
+    expect(socketC.emit).not.toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, hitEvent);
   });
 });

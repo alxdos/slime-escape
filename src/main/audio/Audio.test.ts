@@ -613,6 +613,32 @@ describe('createAudio', () => {
     expect(log.warn).not.toHaveBeenCalled();
   });
 
+  it('falls back to the event archetype when an enemy hit arrives without a snapshot entity', async () => {
+    const { audio, context, log } = createAudioHarness();
+    context.setState('running');
+
+    audio.handleEvent({
+      kind: 'hit',
+      simTime: 110,
+      projectileId: 1,
+      targetId: 99,
+      targetKind: 'enemy',
+      targetArchetypeId: 'slime-one-eye',
+      weaponArchetypeId: 'rock-thrower',
+      damage: 3,
+      impactDirX: 1,
+      impactDirY: 0,
+      x: 0,
+      y: 0
+    });
+
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(1);
+    expect(context.sources[0]?.startCalls).toBe(1);
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
   it('warns once and skips boss hit playback when the boss hit mapping is absent', async () => {
     const { audio, context, log } = createAudioHarness();
     context.setState('running');

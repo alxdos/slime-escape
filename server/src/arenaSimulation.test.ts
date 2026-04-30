@@ -243,6 +243,12 @@ describe('PublicArenaSimulation', () => {
     const hit = tickUntilHit(simulation);
 
     expect(projectiles[0]?.size).toEqual(ROCK_THROWER.projectile.size);
+    expect(hit.ownerId).toBe('killer');
+    expect(hit.ownerKind).toBe('player');
+    expect(hit.targetForm).toEqual({
+      kind: 'slime',
+      archetypeId: PUBLIC_ARENA_SLIME_FORM_CHAIN[0]
+    });
     expect(hit.damage).toBe(ROCK_THROWER.projectile.impactDamage);
     expect(hpBefore - playerSnapshot(simulation, 'victim').hp).toBe(
       ROCK_THROWER.projectile.impactDamage
@@ -371,8 +377,13 @@ describe('PublicArenaSimulation', () => {
     const events = tickUntilDeath(simulation, 'killer', 'victim');
     const killer = playerSnapshot(simulation, 'killer');
     const victim = playerSnapshot(simulation, 'victim');
+    const death = events.find((event) => event.kind === 'death');
 
     expect(events.some((event) => event.kind === 'hit' && event.weaponArchetypeId === PUBLIC_ARENA_REGULAR_WEAPON_ID)).toBe(true);
+    expect(death).toMatchObject({
+      playerId: 'victim',
+      form: { kind: 'slime', archetypeId: PUBLIC_ARENA_SLIME_FORM_CHAIN[0] }
+    });
     expect(killer.level).toBe(2);
     expect(killer.form).toEqual({ kind: 'slime', archetypeId: PUBLIC_ARENA_SLIME_FORM_CHAIN[1] });
     expect(victim.level).toBe(1);
