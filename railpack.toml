@@ -1,8 +1,0 @@
-[providers]
-# Explicitly use Node.js provider, not the Vite/frontend provider
-# that would otherwise be detected from the root package.json
-node = true
-
-[deploy]
-buildCommand = "npm ci --prefix server && npm run build --prefix server"
-startCommand = "npm run start --prefix server"
