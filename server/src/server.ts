@@ -233,7 +233,7 @@ function publishSnapshots(
     if (socket === undefined) {
       continue;
     }
-    const snapshot = simulation.interestSnapshotFor(member.playerId);
+    const snapshot = simulation.snapshotFor(member.playerId);
     if (snapshot === null) {
       continue;
     }
