@@ -3,12 +3,13 @@ import { describe, expect, it } from 'vitest';
 import {
   PUBLIC_ARENA_EVENTS,
   PUBLIC_ARENA_FULL_MESSAGE,
-  PUBLIC_ARENA_PROTOCOL_VERSION
+  PUBLIC_ARENA_PROTOCOL_VERSION,
+  type PublicArenaSnapshot
 } from './publicArenaProtocol';
 
 describe('public arena protocol constants', () => {
   it('uses one current protocol version', () => {
-    expect(PUBLIC_ARENA_PROTOCOL_VERSION).toBe(4);
+    expect(PUBLIC_ARENA_PROTOCOL_VERSION).toBe(5);
   });
 
   it('keeps every socket event name unique and namespaced', () => {
@@ -21,5 +22,17 @@ describe('public arena protocol constants', () => {
   it('has a clear full-arena player message', () => {
     expect(PUBLIC_ARENA_FULL_MESSAGE.toLowerCase()).toContain('arena');
     expect(PUBLIC_ARENA_FULL_MESSAGE.toLowerCase()).toContain('full');
+  });
+
+  it('keeps authoritative snapshots limited to changing arena state', () => {
+    const snapshot = {
+      simTimeMs: 1000,
+      population: 0,
+      players: [],
+      projectiles: []
+    } satisfies PublicArenaSnapshot;
+
+    expect('selfId' in snapshot).toBe(false);
+    expect('arena' in snapshot).toBe(false);
   });
 });

@@ -2,8 +2,7 @@ import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 
 import {
-  PUBLIC_ARENA_PRESENTATION_CONFIG,
-  PUBLIC_ARENA_WORLD_BOUNDS
+  PUBLIC_ARENA_PRESENTATION_CONFIG
 } from '../../shared/content/publicArena';
 import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
 import { ARC_PREVIEW_NAME } from '../render/arcPreview';
@@ -72,6 +71,7 @@ describe('PublicArenaRenderer', () => {
     const renderer = createPublicArenaRenderer({
       canvas: makeCanvas(),
       arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
+      selfId: 'self',
       renderScalePreset: 'medium',
       spriteTextures: textures,
       getSnapshot: () => snapshot,
@@ -171,6 +171,7 @@ describe('PublicArenaRenderer', () => {
     const renderer = createPublicArenaRenderer({
       canvas: makeCanvas(),
       arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
+      selfId: 'self',
       renderScalePreset: 'medium',
       spriteTextures: createSpriteTextures(),
       getSnapshot: () => null,
@@ -222,8 +223,6 @@ function requireActivePublicArenaBackground() {
 function makeSnapshot(): PublicArenaSnapshot {
   return {
     simTimeMs: 1000,
-    selfId: 'self',
-    arena: PUBLIC_ARENA_WORLD_BOUNDS,
     population: 3,
     players: [
       {

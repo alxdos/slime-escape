@@ -1,6 +1,6 @@
 import type { InputCommand } from './input.js';
 
-export const PUBLIC_ARENA_PROTOCOL_VERSION = 4;
+export const PUBLIC_ARENA_PROTOCOL_VERSION = 5;
 export const PUBLIC_ARENA_FULL_MESSAGE = 'The online arena is full. Try again soon.';
 
 export const PUBLIC_ARENA_EVENTS = {
@@ -107,8 +107,6 @@ export type PublicArenaProjectileSnapshot = Readonly<{
 
 export type PublicArenaSnapshot = Readonly<{
   simTimeMs: number;
-  selfId: PublicArenaPlayerId;
-  arena: PublicArenaWorldBounds;
   population: number;
   players: ReadonlyArray<PublicArenaPlayerSnapshot>;
   projectiles: ReadonlyArray<PublicArenaProjectileSnapshot>;

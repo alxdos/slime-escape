@@ -20,7 +20,6 @@ import {
   PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
   PUBLIC_ARENA_BOSS_LEVEL,
   PUBLIC_ARENA_BOSS_WEAPON_ID,
-  PUBLIC_ARENA_INTEREST_HEIGHT_WU,
   PUBLIC_ARENA_REGULAR_WEAPON_ID,
   PUBLIC_ARENA_REGULAR_WEAPON_IDS,
   PUBLIC_ARENA_SPAWN_PROTECTION_MS,
@@ -599,18 +598,44 @@ describe('PublicArenaSimulation', () => {
     expect(tickUntilHit(simulation).targetId).toBe('a-target');
   });
 
-  it('filters interest snapshots without changing the authoritative arena snapshot', () => {
+  it('exports equal full snapshots for distant players without immutable config', () => {
     const simulation = createPublicArenaSimulation();
-    simulation.addPlayer(member('self', 0, 0));
-    simulation.addPlayer(member('nearby', 0, PUBLIC_ARENA_INTEREST_HEIGHT_WU / 2 - 1));
-    simulation.addPlayer(member('far-away', 0, PUBLIC_ARENA_WORLD_BOUNDS.maxY - 0.5));
+    simulation.addPlayer(
+      member(
+        'corner-a',
+        PUBLIC_ARENA_WORLD_BOUNDS.minX + 1,
+        PUBLIC_ARENA_WORLD_BOUNDS.minY + 1
+      )
+    );
+    simulation.addPlayer(
+      member(
+        'corner-b',
+        PUBLIC_ARENA_WORLD_BOUNDS.maxX - 1,
+        PUBLIC_ARENA_WORLD_BOUNDS.maxY - 1
+      )
+    );
+    simulation.drainEvents();
 
-    const fullSnapshot = simulation.snapshotFor('self');
-    const interestSnapshot = simulation.interestSnapshotFor('self');
+    simulation.applyInput('corner-a', {
+      kind: 'aim',
+      x: PUBLIC_ARENA_WORLD_BOUNDS.maxX - 1,
+      y: PUBLIC_ARENA_WORLD_BOUNDS.maxY - 1
+    });
+    simulation.applyInput('corner-a', { kind: 'fire', phase: 'start' });
+    tickUntilProjectile(simulation, 'corner-a', PUBLIC_ARENA_REGULAR_WEAPON_ID);
 
-    expect(fullSnapshot?.players.map((player) => player.id).sort()).toEqual(['far-away', 'nearby', 'self']);
-    expect(interestSnapshot?.players.map((player) => player.id).sort()).toEqual(['nearby', 'self']);
-    expect(fullSnapshot?.population).toBe(3);
-    expect(interestSnapshot?.population).toBe(3);
+    const snapshotA = simulation.snapshotFor('corner-a');
+    const snapshotB = simulation.snapshotFor('corner-b');
+    if (snapshotA === null || snapshotB === null) {
+      throw new Error('missing full public arena snapshots for distant players');
+    }
+
+    expect(snapshotA.players).toEqual(snapshotB.players);
+    expect(snapshotA.projectiles).toEqual(snapshotB.projectiles);
+    expect(snapshotA.projectiles.length).toBeGreaterThan(0);
+    expect('selfId' in snapshotA).toBe(false);
+    expect('arena' in snapshotA).toBe(false);
+    expect('selfId' in snapshotB).toBe(false);
+    expect('arena' in snapshotB).toBe(false);
   });
 });
