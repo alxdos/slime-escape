@@ -1,6 +1,5 @@
 export type MobileWebProfile = Readonly<{
   isMobile: boolean;
-  screenLandscapeAspect: number;
 }>;
 
 export type MobileProfileInput = Readonly<{
@@ -39,10 +38,8 @@ type GameSurfaceWindowTarget = Pick<
   Partial<Pick<Window, 'matchMedia'>>;
 
 export function detectMobileWebProfile(input: MobileProfileInput): MobileWebProfile {
-  const screenLandscapeAspect = landscapeAspect(input.screenWidth, input.screenHeight);
   return {
-    isMobile: input.maxTouchPoints > 0 && input.screenHeight > input.screenWidth,
-    screenLandscapeAspect
+    isMobile: input.maxTouchPoints > 0 && input.screenHeight > input.screenWidth
   };
 }
 
@@ -139,12 +136,6 @@ function readViewport(windowTarget: Pick<Window, 'innerWidth' | 'innerHeight'>):
     width: windowTarget.innerWidth,
     height: windowTarget.innerHeight
   };
-}
-
-function landscapeAspect(width: number, height: number): number {
-  const safeWidth = clampViewportSide(width);
-  const safeHeight = clampViewportSide(height);
-  return Math.max(safeWidth, safeHeight) / Math.min(safeWidth, safeHeight);
 }
 
 function clampViewportSide(value: number): number {

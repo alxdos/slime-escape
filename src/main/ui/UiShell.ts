@@ -20,7 +20,11 @@ import {
   createMobileInputController,
   type MobileInputControllerInit
 } from '../input/MobileInputController';
-import type { GameViewportProvider, MobileWebProfile } from '../mobileWebProfile';
+import {
+  resolveEffectiveGameViewport,
+  type GameViewportProvider,
+  type MobileWebProfile
+} from '../mobileWebProfile';
 import {
   createVisibleAreaCamera,
   type VisibleAreaCamera,
@@ -121,7 +125,8 @@ export type SessionResult = SessionResultOutcome;
 export type { UiShellPhase } from './UiShellPhase';
 export { STARTUP_SPRITE_SPECS } from './startupAssets';
 
-type WindowTarget = Pick<Window, 'addEventListener' | 'removeEventListener'>;
+type WindowTarget = Pick<Window, 'addEventListener' | 'removeEventListener'> &
+  Partial<Pick<Window, 'innerWidth' | 'innerHeight' | 'devicePixelRatio' | 'matchMedia'>>;
 type DocumentTarget = Pick<Document, 'addEventListener' | 'removeEventListener'> & {
   pointerLockElement: Element | null;
   exitPointerLock?: () => void;
@@ -273,8 +278,10 @@ export function createUiShell(init: UiShellInit): UiShell {
   const assignLocation = init.assignLocation ?? defaultAssignLocation;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
-  const rendererWindowTarget =
-    init.gameViewport === undefined ? undefined : createRendererWindowTarget(init.gameViewport);
+  const gameViewport =
+    init.gameViewport ??
+    createWindowGameViewport(windowTarget, init.mobileProfile ?? { isMobile: false });
+  const rendererWindowTarget = createRendererWindowTarget(gameViewport);
   const autoStartPresetId = init.autoStartPresetId ?? null;
   const portalStorage =
     init.portalStorage === undefined ? createBrowserVibeJamPortalStorage() : init.portalStorage;
@@ -711,7 +718,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         getSnapshotPair: sim.snapshotPair,
         getPortalDescriptors: portalController.portals,
         getAim: () => (input !== null && input.isActive() ? input.currentAim() : null),
-        ...(rendererWindowTarget === undefined ? {} : { windowTarget: rendererWindowTarget })
+        windowTarget: rendererWindowTarget
       });
       const activeRenderer = nextRenderer;
       let lastRendererPreset = clientSettings.renderScalePreset;
@@ -977,6 +984,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     windowTarget.addEventListener('pointerdown', unlockAudioFromGesture as EventListener);
     windowTarget.addEventListener('keydown', unlockAudioFromGesture as EventListener);
     windowTarget.addEventListener('resize', onResize);
+    windowTarget.addEventListener('orientationchange', onResize);
     windowTarget.addEventListener('keydown', onKeyDown as EventListener);
     documentTarget.addEventListener('pointerlockchange', onPointerLockChange);
   }
@@ -985,6 +993,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     windowTarget.removeEventListener('pointerdown', unlockAudioFromGesture as EventListener);
     windowTarget.removeEventListener('keydown', unlockAudioFromGesture as EventListener);
     windowTarget.removeEventListener('resize', onResize);
+    windowTarget.removeEventListener('orientationchange', onResize);
     windowTarget.removeEventListener('keydown', onKeyDown as EventListener);
     documentTarget.removeEventListener('pointerlockchange', onPointerLockChange);
   }
@@ -1040,16 +1049,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function currentEffectiveViewport(): Readonly<{ width: number; height: number }> {
-    if (init.gameViewport !== undefined) {
-      return init.gameViewport.current();
-    }
-    if (init.mobileProfile?.isMobile === true) {
-      return {
-        width: init.mobileProfile.screenLandscapeAspect,
-        height: 1
-      };
-    }
-    return { width: 16, height: 9 };
+    return gameViewport.current();
   }
 
   function pixelsPerWorldUnitFromVisibleArea(
@@ -1205,6 +1205,32 @@ function queryWeaponSlotElements(parent: HTMLElement): HTMLElement[] {
   return [...parent.querySelectorAll<HTMLElement>('[data-weapon-slot]')];
 }
 
+function createWindowGameViewport(
+  windowTarget: WindowTarget,
+  profile: MobileWebProfile
+): GameViewportProvider {
+  const matchMedia = windowTarget.matchMedia;
+  return {
+    current(): Readonly<{ width: number; height: number }> {
+      const effectiveViewport = resolveEffectiveGameViewport(profile, {
+        width: safeViewportSide(windowTarget.innerWidth, 16),
+        height: safeViewportSide(windowTarget.innerHeight, 9)
+      });
+      return { width: effectiveViewport.width, height: effectiveViewport.height };
+    },
+    devicePixelRatio(): number {
+      return safeViewportSide(windowTarget.devicePixelRatio, 1);
+    },
+    ...(matchMedia === undefined
+      ? {}
+      : {
+          matchMedia(query: string): MediaQueryList {
+            return matchMedia.call(windowTarget, query);
+          }
+        })
+  };
+}
+
 function createRendererWindowTarget(gameViewport: GameViewportProvider): RendererInit['windowTarget'] {
   const matchMedia = gameViewport.matchMedia;
 
@@ -1226,6 +1252,10 @@ function createRendererWindowTarget(gameViewport: GameViewportProvider): Rendere
           }
         })
   };
+}
+
+function safeViewportSide(value: number | undefined, fallback: number): number {
+  return value !== undefined && Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function formatStartupError(error: unknown): string {

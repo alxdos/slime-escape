@@ -15,7 +15,6 @@ describe('detectMobileWebProfile', () => {
     });
 
     expect(profile.isMobile).toBe(true);
-    expect(profile.screenLandscapeAspect).toBeCloseTo(844 / 390, 6);
   });
 
   it('keeps tall non-touch desktop windows on the desktop path', () => {
@@ -42,7 +41,7 @@ describe('detectMobileWebProfile', () => {
 describe('resolveEffectiveGameViewport', () => {
   it('uses the raw viewport on desktop even when it is portrait-shaped', () => {
     const viewport = resolveEffectiveGameViewport(
-      { isMobile: false, screenLandscapeAspect: 16 / 9 },
+      { isMobile: false },
       { width: 500, height: 900 }
     );
 
@@ -55,7 +54,7 @@ describe('resolveEffectiveGameViewport', () => {
 
   it('uses a stable landscape effective viewport on mobile portrait', () => {
     const viewport = resolveEffectiveGameViewport(
-      { isMobile: true, screenLandscapeAspect: 844 / 390 },
+      { isMobile: true },
       { width: 390, height: 844 }
     );
 
@@ -68,7 +67,7 @@ describe('resolveEffectiveGameViewport', () => {
 
   it('keeps mobile landscape unrotated while preserving the same effective shape', () => {
     const viewport = resolveEffectiveGameViewport(
-      { isMobile: true, screenLandscapeAspect: 844 / 390 },
+      { isMobile: true },
       { width: 844, height: 390 }
     );
 
@@ -97,7 +96,7 @@ describe('createGameSurfaceController', () => {
 
     const controller = createGameSurfaceController({
       root: createFakeRoot(),
-      profile: { isMobile: true, screenLandscapeAspect: 844 / 390 },
+      profile: { isMobile: true },
       windowTarget
     });
 

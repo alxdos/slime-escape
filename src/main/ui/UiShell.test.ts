@@ -1648,6 +1648,74 @@ describe('UiShell', () => {
     expect(rendererWindowTarget?.innerHeight).toBe(430);
     expect(rendererWindowTarget?.matchMedia?.('(test-query)').matches).toBe(true);
     expect(matchMediaReceiver).toBe(gameViewport);
+
+    viewport = { width: 960, height: 540 };
+    windowTarget.dispatch('orientationchange', new Event('orientationchange'));
+    expect(renderer.calls.fitToWindow).toBe(1);
+    expect(rendererWindowTarget?.innerWidth).toBe(960);
+    expect(rendererWindowTarget?.innerHeight).toBe(540);
+  });
+
+  it('derives fallback renderer viewport from the mobile profile when no provider is injected', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const mobileInput = createMobileInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = Object.assign(new FakeEventTarget(), {
+      innerWidth: 390,
+      innerHeight: 844,
+      devicePixelRatio: 2
+    });
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      autoStartPresetId: 'training',
+      buildSessionDefinition: () =>
+        makeSession('mobile-fallback-viewport-session', {
+          arena: { width: 32, height: 18 }
+        }),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createMobileInputController: mobileInput.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget,
+      mobileProfile: { isMobile: true }
+    });
+
+    await flushUiShellStartup();
+
+    const rendererWindowTarget = renderer.lastInit()?.windowTarget;
+    expect(rendererWindowTarget?.innerWidth).toBe(844);
+    expect(rendererWindowTarget?.innerHeight).toBe(390);
+    expect(rendererWindowTarget?.devicePixelRatio).toBe(2);
+    expect(renderer.lastInit()?.visibleAreaCamera?.visibleArea().width).toBeCloseTo(
+      (844 / 390) * 12,
+      6
+    );
+
+    windowTarget.innerWidth = 430;
+    windowTarget.innerHeight = 932;
+    windowTarget.dispatch('orientationchange', new Event('orientationchange'));
+
+    expect(renderer.calls.fitToWindow).toBe(1);
+    expect(rendererWindowTarget?.innerWidth).toBe(932);
+    expect(rendererWindowTarget?.innerHeight).toBe(430);
   });
 
   it('keeps mobile session building on the content-authored arena', async () => {
@@ -1688,8 +1756,7 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget,
       mobileProfile: {
-        isMobile: true,
-        screenLandscapeAspect: 844 / 390
+        isMobile: true
       }
     });
 
@@ -1777,8 +1844,7 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget,
       mobileProfile: {
-        isMobile: true,
-        screenLandscapeAspect: 844 / 390
+        isMobile: true
       }
     });
 
@@ -1832,8 +1898,7 @@ describe('UiShell', () => {
       windowTarget,
       documentTarget,
       mobileProfile: {
-        isMobile: true,
-        screenLandscapeAspect: 844 / 390
+        isMobile: true
       }
     });
 
