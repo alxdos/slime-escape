@@ -61,6 +61,7 @@ The façade `SimulationCore` exposes exactly the following methods. Method names
 - The host owns the wall-clock driver: `setInterval`, `setTimeout`, `requestAnimationFrame`, or any equivalent loop that can call `core.pump(now)`. The choice is host-specific.
 - The host owns reading wall-clock time (`performance.now()` in browser/Node, or any monotonic source the host trusts) and passes it as the `nowMs` argument.
 - The core owns the catch-up loop, the `SIM_STEP_MS` step, and `simTime` accumulation. It must not call wall-clock APIs itself. The split is recorded in [simulation-timing.md](simulation-timing.md); this file states only the boundary at the interface level.
+- The first call to `pump(nowMs)` after `createSimulationCore` (and, equivalently, the first call after each `start(session)`) establishes the wall-clock baseline and does not advance ticks; subsequent calls drive the catch-up loop against that baseline. Hosts that need an instant first tick must therefore prime the pump with one no-op call before relying on tick output.
 
 ## Consequences
 

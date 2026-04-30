@@ -27,6 +27,8 @@ const FORBIDDEN_REFERENCES: readonly BoundaryRule[] = [
   { name: 'setTimeout', pattern: /\bsetTimeout\b/ },
   { name: 'performance.now', pattern: /\bperformance\.now\b/ },
   { name: 'performance.timeOrigin', pattern: /\bperformance\.timeOrigin\b/ },
+  { name: 'Date.now', pattern: /\bDate\.now\b/ },
+  { name: 'Date.UTC', pattern: /\bDate\.UTC\b/ },
   { name: 'addEventListener', pattern: /\baddEventListener\b/ },
   { name: 'globalThis', pattern: /\bglobalThis\b/ },
   { name: 'window.', pattern: /\bwindow\./ },
