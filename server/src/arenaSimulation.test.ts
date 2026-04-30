@@ -199,7 +199,7 @@ describe('PublicArenaSimulation', () => {
     });
   });
 
-  it('moves players with normalized intent and clamps them inside the 40 x 40 arena', () => {
+  it('moves players with normalized intent and clamps them inside the generated arena bounds', () => {
     const simulation = createPublicArenaSimulation();
     simulation.addPlayer(member('player-a', -19, -19));
     simulation.applyInput('player-a', { kind: 'move', dx: -1, dy: -1 });
@@ -362,8 +362,10 @@ describe('PublicArenaSimulation', () => {
 
   it('throws rocks, kills a player, gives the killer exactly one level, and resets the victim', () => {
     const simulation = createPublicArenaSimulation();
-    simulation.addPlayer(member('killer', 18, 0));
-    simulation.addPlayer(member('victim', 19, 0));
+    const victimSpawnX = PUBLIC_ARENA_WORLD_BOUNDS.maxX - 1;
+    const killerSpawnX = victimSpawnX - 1;
+    simulation.addPlayer(member('killer', killerSpawnX, 0));
+    simulation.addPlayer(member('victim', victimSpawnX, 0));
     simulation.drainEvents();
 
     const events = tickUntilDeath(simulation, 'killer', 'victim');
@@ -375,7 +377,7 @@ describe('PublicArenaSimulation', () => {
     expect(killer.form).toEqual({ kind: 'slime', archetypeId: PUBLIC_ARENA_SLIME_FORM_CHAIN[1] });
     expect(victim.level).toBe(1);
     expect(victim.hp).toBe(victim.maxHp);
-    expect(victim.x).toBe(19);
+    expect(victim.x).toBe(victimSpawnX);
   });
 
   it('transforms the final level into the tower boss and fires boss fireballs', () => {

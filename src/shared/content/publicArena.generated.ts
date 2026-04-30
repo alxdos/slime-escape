@@ -4,7 +4,7 @@ import { TRAINING_PLAYER } from './players.generated.js';
 import { ROCK_THROWER } from './weapons.generated.js';
 
 export const PUBLIC_ARENA_PRESENTATION_CONTENT = {
-  arena: { width: 40, height: 40 },
+  arena: { width: 35, height: 35 },
   player: TRAINING_PLAYER,
   loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 },
   backgrounds: [

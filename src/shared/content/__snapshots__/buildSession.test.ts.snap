@@ -13302,8 +13302,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
 exports[`buildSessionDefinition acceptance snapshots > matches accepted portal session for seed 0 1`] = `
 {
   "arena": {
-    "height": 40,
-    "width": 40,
+    "height": 35,
+    "width": 35,
   },
   "backgrounds": [
     {
@@ -13382,8 +13382,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
 exports[`buildSessionDefinition acceptance snapshots > matches accepted portal session for seed 1 1`] = `
 {
   "arena": {
-    "height": 40,
-    "width": 40,
+    "height": 35,
+    "width": 35,
   },
   "backgrounds": [
     {
@@ -13462,8 +13462,8 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
 exports[`buildSessionDefinition acceptance snapshots > matches accepted portal session for seed 42 1`] = `
 {
   "arena": {
-    "height": 40,
-    "width": 40,
+    "height": 35,
+    "width": 35,
   },
   "backgrounds": [
     {

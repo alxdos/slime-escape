@@ -2469,7 +2469,7 @@ export const SESSION_PRESET_TEMPLATES = {
     description: 'Vibe Jam entry point and Public Arena presentation source.',
     visibleInMenu: false,
     order: 90,
-    arena: { width: 40, height: 40 },
+    arena: { width: 35, height: 35 },
     player: TRAINING_PLAYER,
     companion: null,
     loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 },

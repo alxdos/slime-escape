@@ -7,8 +7,8 @@
 | musicSampleId | none |
 | visibleInMenu | false |
 | order | 90 |
-| arenaWidth | 40 |
-| arenaHeight | 40 |
+| arenaWidth | 35 |
+| arenaHeight | 35 |
 | playerId | hero-training |
 | loadoutWeaponIds | rock-thrower |
 | selectedWeaponIndex | 0 |
