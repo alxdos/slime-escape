@@ -107,7 +107,7 @@ Mobile support is main-thread presentation and input work based on [mobile-web-s
 | T7 | [x] | Record follow-up architecture for arena vs visible area, desktop/mobile smaller-side anchors, camera following, active visible-area input mapping, and world-based dark zone wording. | Added [camera-and-visible-area.md](../design/camera-and-visible-area.md) and aligned adjacent decisions/docs. |
 | T8 | [x] | Replace the implemented mobile `arenaOverride` path with main-thread visible-area camera state: keep `SessionDefinition.arena` content-authored, remove mobile arena replacement from session building, and preserve current desktop behavior for `32 x 18`. | Desktop/non-mobile anchor is `18 wu`; mobile anchor is `12 wu`; mobile aspect follows physical landscape screen ratio. |
 | T9 | [x] | Update renderer/camera fitting: render the active visible area, follow the player through the free-movement zone when the arena is larger than the visible area, clamp camera to arena bounds, and draw the dark zone from world/arena `margin` rather than viewport bounds. | Current desktop arena should still look unchanged; future larger arenas can scroll on desktop. |
-| T10 | [ ] | Update input mapping to the active visible area: convert desktop Pointer Lock and mobile aim deltas through `visibleArea.height`, account for camera center, and keep aim clamped to arena bounds. | No new `InputCommand` kinds; simulation stays headless. |
+| T10 | [x] | Update input mapping to the active visible area: convert desktop Pointer Lock and mobile aim deltas through `visibleArea.height`, account for camera center, and keep aim clamped to arena bounds. | No new `InputCommand` kinds; simulation stays headless. |
 
 ## Related
 

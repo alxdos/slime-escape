@@ -844,10 +844,12 @@ function createInputHarness() {
     stop: 0,
     requestLock: 0
   };
+  let lastInit: InputControllerInit | null = null;
 
   return {
-    factory(_init: InputControllerInit): InputController {
+    factory(init: InputControllerInit): InputController {
       calls.create += 1;
+      lastInit = init;
       return {
         start(): void {
           calls.start += 1;
@@ -866,7 +868,10 @@ function createInputHarness() {
         }
       };
     },
-    calls
+    calls,
+    lastInit(): InputControllerInit | null {
+      return lastInit;
+    }
   };
 }
 
@@ -1694,6 +1699,96 @@ describe('UiShell', () => {
 
     expect('arenaOverride' in (buildOptions[0] ?? {})).toBe(false);
     expect(sim.startSessions[0]?.arena).toEqual({ width: 16, height: 9 });
+  });
+
+  it('maps desktop pointer-lock aim deltas through the desktop visible-area height', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () =>
+        makeSession('desktop-visible-area-input-session', {
+          arena: { width: 32, height: 18 }
+        }),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.start('training');
+    await flushUiShellStartup();
+
+    expect(input.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(900 / 18, 6);
+  });
+
+  it('maps mobile aim-stick deltas through the smaller mobile visible-area height', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const desktopInput = createInputHarness();
+    const mobileInput = createMobileInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      buildSessionDefinition: () =>
+        makeSession('mobile-visible-area-input-session', {
+          arena: { width: 32, height: 18 }
+        }),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: desktopInput.factory,
+      createMobileInputController: mobileInput.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget,
+      mobileProfile: {
+        isMobile: true,
+        screenLandscapeAspect: 844 / 390
+      }
+    });
+
+    await flushUiShellStartup();
+    menu.start('training');
+    await flushUiShellStartup();
+
+    expect(desktopInput.calls.create).toBe(0);
+    expect(mobileInput.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(390 / 12, 6);
+    expect(renderer.lastInit()?.visibleAreaCamera?.visibleArea().height).toBe(12);
   });
 
   it('uses the mobile input adapter in mobile mode and restarts it around overlay pause', async () => {

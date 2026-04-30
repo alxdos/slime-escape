@@ -723,7 +723,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         activeRenderer.applyScalePolicy(settings.renderScalePreset);
       });
 
-      nextInput = createSessionInputController(session);
+      nextInput = createSessionInputController(session, visibleAreaCamera);
     } catch (error: unknown) {
       nextUnsubscribeRendererSettings?.();
       nextRenderer?.dispose();
@@ -993,13 +993,17 @@ export function createUiShell(init: UiShellInit): UiShell {
     renderer?.fitToWindow();
   }
 
-  function createSessionInputController(session: SessionDefinition): InputController {
+  function createSessionInputController(
+    session: SessionDefinition,
+    visibleAreaCamera: VisibleAreaCamera
+  ): InputController {
     const inputCommandSink = (command: InputCommand): void => {
       sim.sendInput(applyAimAssist(command, session.rules.aimAssist, sim.snapshotPair().curr));
     };
     const sharedInput = {
       arena: session.arena,
-      pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height,
+      pixelsPerWorldUnit: () =>
+        pixelsPerWorldUnitFromVisibleArea(init.canvas, visibleAreaCamera),
       initialAim: session.player.position,
       onCommand: inputCommandSink
     };
@@ -1046,6 +1050,13 @@ export function createUiShell(init: UiShellInit): UiShell {
       };
     }
     return { width: 16, height: 9 };
+  }
+
+  function pixelsPerWorldUnitFromVisibleArea(
+    canvas: HTMLCanvasElement,
+    visibleAreaCamera: VisibleAreaCamera
+  ): number {
+    return canvas.clientHeight / visibleAreaCamera.visibleArea().height;
   }
 
   function onStartupPreloadProgress(loaded: number, total: number): void {
