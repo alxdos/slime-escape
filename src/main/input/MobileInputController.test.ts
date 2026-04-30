@@ -155,6 +155,32 @@ describe('MobileInputController', () => {
     expect(surface.capturedPointers).toEqual([25]);
   });
 
+  it('maps portrait-rotated surface touches into landscape control zones and drag deltas', () => {
+    const surface = new FakeElement(844, 390, makeRect(0, 0, 390, 844));
+    const windowTarget = new FakeEventTarget();
+    const commands: InputCommand[] = [];
+    const controller = createMobileInputController({
+      surface,
+      arena: { width: 32, height: 18 },
+      pixelsPerWorldUnit: () => 10,
+      initialAim: { x: 0, y: 0 },
+      onCommand: (command) => commands.push(command),
+      onPause: () => {},
+      windowTarget
+    });
+
+    controller.start();
+    surface.dispatch('pointerdown', pointerEvent('pointerdown', surface, { pointerId: 26, x: 88, y: 100 }));
+    windowTarget.dispatch('pointermove', pointerEvent('pointermove', surface, { pointerId: 26, x: 88, y: 172 }));
+
+    expect(commands).toHaveLength(1);
+    expect(commands[0]).toMatchObject({ kind: 'move' });
+    if (commands[0]?.kind !== 'move') throw new Error('expected move command');
+    expect(commands[0].dx).toBeCloseTo(1, 6);
+    expect(commands[0].dy).toBeCloseTo(0, 6);
+    expect(surface.capturedPointers).toEqual([26]);
+  });
+
   it('maps lower-right relative drags to clamped aim world coordinates', () => {
     const surface = new FakeElement(800, 400);
     const windowTarget = new FakeEventTarget();

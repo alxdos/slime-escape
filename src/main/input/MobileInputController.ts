@@ -161,7 +161,7 @@ export function createMobileInputController(init: MobileInputControllerInit): In
   }
 
   function classifyPointerStart(event: PointerEvent, point: SurfacePoint): PointerZone {
-    if (isPausePointerStart(event, point)) {
+    if (isPausePointerStart(event)) {
       return 'pause';
     }
     const size = surfaceSize(init.surface);
@@ -174,7 +174,7 @@ export function createMobileInputController(init: MobileInputControllerInit): In
     return 'aim';
   }
 
-  function isPausePointerStart(event: PointerEvent, point: SurfacePoint): boolean {
+  function isPausePointerStart(event: PointerEvent): boolean {
     const pauseElement = init.pauseElement?.() ?? null;
     if (pauseElement === null) {
       return false;
@@ -182,13 +182,13 @@ export function createMobileInputController(init: MobileInputControllerInit): In
     if (pauseElement.contains(event.target as Node | null)) {
       return true;
     }
-    const surfaceRect = init.surface.getBoundingClientRect();
     const pauseRect = pauseElement.getBoundingClientRect();
-    const left = pauseRect.left - surfaceRect.left - PAUSE_HIT_PADDING_PX;
-    const right = pauseRect.right - surfaceRect.left + PAUSE_HIT_PADDING_PX;
-    const top = pauseRect.top - surfaceRect.top - PAUSE_HIT_PADDING_PX;
-    const bottom = pauseRect.bottom - surfaceRect.top + PAUSE_HIT_PADDING_PX;
-    return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+    return (
+      event.clientX >= pauseRect.left - PAUSE_HIT_PADDING_PX &&
+      event.clientX <= pauseRect.right + PAUSE_HIT_PADDING_PX &&
+      event.clientY >= pauseRect.top - PAUSE_HIT_PADDING_PX &&
+      event.clientY <= pauseRect.bottom + PAUSE_HIT_PADDING_PX
+    );
   }
 
   function weaponSlotIndexFromPointer(event: PointerEvent): number | null {
@@ -350,9 +350,22 @@ function moveFromDrag(origin: SurfacePoint, point: SurfacePoint): MoveVector {
 
 function surfacePointFromEvent(event: PointerEvent, surface: MobileSurface): SurfacePoint {
   const rect = surface.getBoundingClientRect();
-  return {
+  const size = surfaceSize(surface);
+  const visualPoint = {
     x: event.clientX - rect.left,
     y: event.clientY - rect.top
+  };
+
+  if (isPortraitRotatedSurface(rect, size)) {
+    return {
+      x: visualPoint.y * (size.width / rect.height),
+      y: size.height - visualPoint.x * (size.height / rect.width)
+    };
+  }
+
+  return {
+    x: rect.width > 0 ? visualPoint.x * (size.width / rect.width) : visualPoint.x,
+    y: rect.height > 0 ? visualPoint.y * (size.height / rect.height) : visualPoint.y
   };
 }
 
@@ -362,6 +375,22 @@ function surfaceSize(surface: MobileSurface): SurfaceSize {
     width: surface.clientWidth > 0 ? surface.clientWidth : rect.width,
     height: surface.clientHeight > 0 ? surface.clientHeight : rect.height
   };
+}
+
+function isPortraitRotatedSurface(rect: DOMRect, size: SurfaceSize): boolean {
+  if (rect.width <= 0 || rect.height <= 0 || size.width <= 0 || size.height <= 0) {
+    return false;
+  }
+  return (
+    size.width > size.height &&
+    rect.height > rect.width &&
+    approximatelyEqual(rect.width, size.height) &&
+    approximatelyEqual(rect.height, size.width)
+  );
+}
+
+function approximatelyEqual(left: number, right: number): boolean {
+  return Math.abs(left - right) <= 0.5;
 }
 
 function parseWeaponSlotIndex(value: string | undefined): number | null {
