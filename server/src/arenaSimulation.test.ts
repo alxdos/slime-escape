@@ -1,0 +1,208 @@
+import { describe, expect, it } from 'vitest';
+
+import type { PublicArenaPlayerId } from '../../src/shared/publicArenaProtocol.js';
+
+import {
+  PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
+  PUBLIC_ARENA_BOSS_LEVEL,
+  PUBLIC_ARENA_BOSS_WEAPON_ID,
+  PUBLIC_ARENA_REGULAR_WEAPON_ID,
+  PUBLIC_ARENA_SLIME_FORM_CHAIN,
+  createPublicArenaSimulation
+} from './arenaSimulation.js';
+import { PUBLIC_ARENA_WORLD_BOUNDS, type PublicArenaMember } from './arenaState.js';
+
+function member(playerId: PublicArenaPlayerId, x: number, y: number): PublicArenaMember {
+  return {
+    socketId: playerId,
+    playerId,
+    spawn: { x, y },
+    level: 1
+  };
+}
+
+function playerSnapshot(simulation: ReturnType<typeof createPublicArenaSimulation>, selfId: PublicArenaPlayerId) {
+  const snapshot = simulation.snapshotFor(selfId);
+  if (snapshot === null) {
+    throw new Error(`missing snapshot for ${selfId}`);
+  }
+  const player = snapshot.players.find((candidate) => candidate.id === selfId);
+  if (player === undefined) {
+    throw new Error(`missing player ${selfId}`);
+  }
+  return player;
+}
+
+function tickUntilDeath(
+  simulation: ReturnType<typeof createPublicArenaSimulation>,
+  killerId: PublicArenaPlayerId,
+  victimId: PublicArenaPlayerId
+) {
+  simulation.applyInput(killerId, { kind: 'aim', x: 0.5, y: 0 });
+  simulation.applyInput(killerId, { kind: 'fire', phase: 'start' });
+
+  for (let i = 0; i < 3000; i += 1) {
+    simulation.tick();
+    const events = simulation.drainEvents();
+    const death = events.find((event) => event.kind === 'death' && event.playerId === victimId);
+    if (death !== undefined) {
+      simulation.applyInput(killerId, { kind: 'fire', phase: 'stop' });
+      return events;
+    }
+  }
+
+  throw new Error(`${killerId} did not kill ${victimId}`);
+}
+
+function promoteToBoss(
+  simulation: ReturnType<typeof createPublicArenaSimulation>,
+  killerId: PublicArenaPlayerId,
+  victimId: PublicArenaPlayerId
+): void {
+  while (playerSnapshot(simulation, killerId).level < PUBLIC_ARENA_BOSS_LEVEL) {
+    tickUntilDeath(simulation, killerId, victimId);
+  }
+}
+
+function tickUntilProjectile(
+  simulation: ReturnType<typeof createPublicArenaSimulation>,
+  selfId: PublicArenaPlayerId,
+  weaponArchetypeId: string
+) {
+  for (let i = 0; i < 120; i += 1) {
+    simulation.tick();
+    const snapshot = simulation.snapshotFor(selfId);
+    const projectiles = snapshot?.projectiles.filter(
+      (projectile) => projectile.weaponArchetypeId === weaponArchetypeId
+    );
+    if (projectiles !== undefined && projectiles.length > 0) {
+      return projectiles;
+    }
+  }
+  throw new Error(`no ${weaponArchetypeId} projectile was fired`);
+}
+
+describe('PublicArenaSimulation', () => {
+  it('spawns level 1 slime players and exports authoritative snapshots', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('player-a', -1, 2));
+
+    const player = playerSnapshot(simulation, 'player-a');
+
+    expect(player).toMatchObject({
+      id: 'player-a',
+      x: -1,
+      y: 2,
+      level: 1,
+      hp: 2,
+      maxHp: 2,
+      form: { kind: 'slime', archetypeId: PUBLIC_ARENA_SLIME_FORM_CHAIN[0] }
+    });
+  });
+
+  it('moves players with normalized intent and clamps them inside the 40 x 40 arena', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('player-a', -19, -19));
+    simulation.applyInput('player-a', { kind: 'move', dx: -1, dy: -1 });
+
+    for (let i = 0; i < 200; i += 1) {
+      simulation.tick();
+    }
+
+    const player = playerSnapshot(simulation, 'player-a');
+    expect(player.x).toBeGreaterThanOrEqual(PUBLIC_ARENA_WORLD_BOUNDS.minX + 0.4);
+    expect(player.y).toBeGreaterThanOrEqual(PUBLIC_ARENA_WORLD_BOUNDS.minY + 0.4);
+  });
+
+  it('throws rocks, kills a player, gives the killer exactly one level, and resets the victim', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('killer', 0, 0));
+    simulation.addPlayer(member('victim', 0.5, 0));
+    simulation.drainEvents();
+
+    const events = tickUntilDeath(simulation, 'killer', 'victim');
+    const killer = playerSnapshot(simulation, 'killer');
+    const victim = playerSnapshot(simulation, 'victim');
+
+    expect(events.some((event) => event.kind === 'hit' && event.weaponArchetypeId === PUBLIC_ARENA_REGULAR_WEAPON_ID)).toBe(true);
+    expect(killer.level).toBe(2);
+    expect(killer.form).toEqual({ kind: 'slime', archetypeId: PUBLIC_ARENA_SLIME_FORM_CHAIN[1] });
+    expect(victim.level).toBe(1);
+    expect(victim.hp).toBe(victim.maxHp);
+    expect(victim.x).toBe(0.5);
+  });
+
+  it('transforms the final level into the tower boss and fires boss fireballs', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('killer', 0, 0));
+    simulation.addPlayer(member('victim', 0.5, 0));
+    simulation.drainEvents();
+
+    promoteToBoss(simulation, 'killer', 'victim');
+    const boss = playerSnapshot(simulation, 'killer');
+    expect(boss.form).toEqual({ kind: 'boss', archetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID });
+    expect(boss.maxHp).toBeGreaterThan(100);
+
+    simulation.removePlayer('victim');
+    simulation.applyInput('killer', { kind: 'fire', phase: 'start' });
+    const projectiles = tickUntilProjectile(simulation, 'killer', PUBLIC_ARENA_BOSS_WEAPON_ID);
+
+    expect(projectiles).toHaveLength(4);
+  });
+
+  it('lets bosses damage other bosses', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('boss-a', 0, 0));
+    simulation.addPlayer(member('boss-b', 1, 0));
+    simulation.addPlayer(member('victim', 0.5, 0));
+    simulation.drainEvents();
+
+    promoteToBoss(simulation, 'boss-a', 'victim');
+    promoteToBoss(simulation, 'boss-b', 'victim');
+    const hpBefore = playerSnapshot(simulation, 'boss-b').hp;
+
+    simulation.applyInput('boss-a', { kind: 'fire', phase: 'start' });
+    for (let i = 0; i < 120; i += 1) {
+      simulation.tick();
+    }
+
+    expect(playerSnapshot(simulation, 'boss-b').hp).toBeLessThan(hpBefore);
+  });
+
+  it('does not let overlapping burst projectiles kill a respawned player again in the same tick', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('boss', 0, 0));
+    simulation.addPlayer(member('victim', 0.5, 0));
+    simulation.drainEvents();
+
+    promoteToBoss(simulation, 'boss', 'victim');
+    simulation.applyInput('boss', { kind: 'fire', phase: 'start' });
+
+    for (let i = 0; i < 120; i += 1) {
+      simulation.tick();
+      const events = simulation.drainEvents();
+      const deathCount = events.filter((event) => event.kind === 'death' && event.playerId === 'victim').length;
+      if (deathCount > 0) {
+        expect(deathCount).toBe(1);
+        return;
+      }
+    }
+
+    throw new Error('boss burst did not kill the victim');
+  });
+
+  it('killing a boss advances the killer by exactly one level', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('killer', 0, 0));
+    simulation.addPlayer(member('boss-victim', 0.5, 0));
+    simulation.addPlayer(member('fodder', 0.5, 0));
+    simulation.drainEvents();
+
+    promoteToBoss(simulation, 'boss-victim', 'fodder');
+    const levelBefore = playerSnapshot(simulation, 'killer').level;
+
+    tickUntilDeath(simulation, 'killer', 'boss-victim');
+
+    expect(playerSnapshot(simulation, 'killer').level).toBe(levelBefore + 1);
+  });
+});

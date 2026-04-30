@@ -11,7 +11,9 @@ import {
   PUBLIC_ARENA_PROTOCOL_VERSION,
   type PublicArenaJoinRejected
 } from '../../src/shared/publicArenaProtocol.js';
+import { SIM_STEP_MS } from '../../src/shared/timing.js';
 import { createPublicArenaState } from './arenaState.js';
+import { createPublicArenaSimulation } from './arenaSimulation.js';
 import type { PublicArenaServerConfig } from './config.js';
 
 const PUBLIC_ARENA_ROOM = 'public-arena';
@@ -39,6 +41,8 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
     tickHz: config.tickHz,
     snapshotHz: config.snapshotHz
   });
+  const simulation = createPublicArenaSimulation();
+  let tickTimer: NodeJS.Timeout | null = null;
 
   const httpServer = createServer((req, res) => {
     if (req.url === '/healthz') {
@@ -67,12 +71,16 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
   io.on('connection', (socket) => {
     socket.on(PUBLIC_ARENA_EVENTS.join, (request) => {
       if (request.protocolVersion !== PUBLIC_ARENA_PROTOCOL_VERSION) {
-        socket.emit(PUBLIC_ARENA_EVENTS.joinRejected, protocolMismatchRejection(arena.population(), config.playerCap));
+        socket.emit(
+          PUBLIC_ARENA_EVENTS.joinRejected,
+          protocolMismatchRejection(arena.population(), config.playerCap)
+        );
         return;
       }
 
       const result = arena.join(socket.id);
       if (result.kind === 'accepted') {
+        simulation.addPlayer(result.member);
         void socket.join(PUBLIC_ARENA_ROOM);
         socket.emit(PUBLIC_ARENA_EVENTS.joinAccepted, result.message);
         return;
@@ -83,11 +91,17 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
 
     socket.on(PUBLIC_ARENA_EVENTS.leave, () => {
       arena.leave(socket.id);
+      simulation.removePlayer(socket.id);
       void socket.leave(PUBLIC_ARENA_ROOM);
+    });
+
+    socket.on(PUBLIC_ARENA_EVENTS.input, (intent) => {
+      simulation.applyInput(socket.id, intent);
     });
 
     socket.on('disconnect', () => {
       arena.leave(socket.id);
+      simulation.removePlayer(socket.id);
     });
   });
 
@@ -99,11 +113,21 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
         httpServer.once('error', reject);
         httpServer.listen(config.port, config.host, () => {
           httpServer.off('error', reject);
+          if (tickTimer === null) {
+            tickTimer = setInterval(() => {
+              simulation.tick();
+            }, SIM_STEP_MS);
+          }
           resolve();
         });
       });
     },
     close() {
+      if (tickTimer !== null) {
+        clearInterval(tickTimer);
+        tickTimer = null;
+      }
+
       return new Promise((resolve, reject) => {
         io.close((ioError) => {
           if (ioError !== undefined) {
