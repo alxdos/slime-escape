@@ -1190,6 +1190,7 @@ function createInputHarness() {
     create: 0,
     start: 0,
     stop: 0,
+    syncAim: 0,
     requestLock: 0
   };
   let lastInit: InputControllerInit | null = null;
@@ -1211,6 +1212,9 @@ function createInputHarness() {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim(): void {
+          calls.syncAim += 1;
+        },
         requestLock(): void {
           calls.requestLock += 1;
         }
@@ -1228,6 +1232,7 @@ function createMobileInputHarness() {
     create: 0,
     start: 0,
     stop: 0,
+    syncAim: 0,
     requestLock: 0
   };
   let lastInit: MobileInputControllerInit | null = null;
@@ -1248,6 +1253,9 @@ function createMobileInputHarness() {
         },
         currentAim() {
           return { x: 0, y: 0 };
+        },
+        syncAim(): void {
+          calls.syncAim += 1;
         },
         requestLock(): void {
           calls.requestLock += 1;
@@ -4094,6 +4102,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,
@@ -4162,6 +4171,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,
@@ -4220,6 +4230,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,
@@ -4285,6 +4296,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,
@@ -4692,6 +4704,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,
@@ -4767,6 +4780,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,

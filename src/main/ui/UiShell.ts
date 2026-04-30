@@ -1022,9 +1022,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       activePublicArenaClient.sendInput(intent);
     };
     const sharedInput = {
-      arena,
       pixelsPerWorldUnit: () =>
         pixelsPerWorldUnitFromVisibleArea(init.canvas, visibleAreaCamera),
+      visibleArea: () => visibleAreaCamera.visibleArea(),
       initialAim: findPublicArenaSelfPosition(),
       onCommand: inputCommandSink
     };
@@ -1509,9 +1509,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       sim.sendInput(applyAimAssist(command, session.rules.aimAssist, sim.snapshotPair().curr));
     };
     const sharedInput = {
-      arena: session.arena,
       pixelsPerWorldUnit: () =>
         pixelsPerWorldUnitFromVisibleArea(init.canvas, visibleAreaCamera),
+      visibleArea: () => visibleAreaCamera.visibleArea(),
       initialAim: session.player.position,
       onCommand: inputCommandSink
     };
@@ -1652,8 +1652,10 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
       audio.update(snapshotPair, phase, snapshotPair.curr?.encounter ?? null);
       renderer?.render();
+      input?.syncAim();
       if (phase.kind === 'online') {
         publicArenaRenderer?.render();
+        publicArenaInput?.syncAim();
       }
     },
     phase(): UiShellPhase {

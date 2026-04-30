@@ -86,8 +86,8 @@ describe('MobileInputController', () => {
     const commands: InputCommand[] = [];
     const controller = createMobileInputController({
       surface,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command),
       onPause: () => {},
@@ -115,8 +115,8 @@ describe('MobileInputController', () => {
     const commands: InputCommand[] = [];
     const controller = createMobileInputController({
       surface,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command),
       onPause: () => {},
@@ -161,8 +161,8 @@ describe('MobileInputController', () => {
     const commands: InputCommand[] = [];
     const controller = createMobileInputController({
       surface,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command),
       onPause: () => {},
@@ -187,8 +187,8 @@ describe('MobileInputController', () => {
     const commands: InputCommand[] = [];
     const controller = createMobileInputController({
       surface,
-      arena: { width: 10, height: 6 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 10, height: 6, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command),
       onPause: () => {},
@@ -207,6 +207,30 @@ describe('MobileInputController', () => {
     expect(controller.currentAim()).toEqual({ x: 5, y: 3 });
   });
 
+  it('resyncs mobile world aim when the visible-area center moves', () => {
+    const surface = new FakeElement(800, 400);
+    const windowTarget = new FakeEventTarget();
+    const commands: InputCommand[] = [];
+    let center = { x: 0, y: 0 };
+    const controller = createMobileInputController({
+      surface,
+      pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 12, height: 8, center }),
+      initialAim: { x: 0, y: 0 },
+      onCommand: (command) => commands.push(command),
+      onPause: () => {},
+      windowTarget
+    });
+
+    controller.start();
+    center = { x: -4, y: 1 };
+    expect(controller.currentAim()).toEqual({ x: -4, y: 1 });
+
+    controller.syncAim();
+
+    expect(commands).toEqual([{ kind: 'aim', x: -4, y: 1 }]);
+  });
+
   it('keeps tap fire active for at least one simulation step and supports multiple fire touches', () => {
     const surface = new FakeElement(800, 400);
     const windowTarget = new FakeEventTarget();
@@ -214,8 +238,8 @@ describe('MobileInputController', () => {
     const commands: InputCommand[] = [];
     const controller = createMobileInputController({
       surface,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command),
       onPause: () => {},
@@ -249,8 +273,8 @@ describe('MobileInputController', () => {
     const commands: InputCommand[] = [];
     const controller = createMobileInputController({
       surface,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command),
       onPause: () => {},
@@ -277,8 +301,8 @@ describe('MobileInputController', () => {
     const commands: InputCommand[] = [];
     const controller = createMobileInputController({
       surface,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command),
       onPause: () => {},
@@ -302,8 +326,8 @@ describe('MobileInputController', () => {
     const commands: InputCommand[] = [];
     const controller = createMobileInputController({
       surface,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command),
       onPause: () => {},
@@ -327,8 +351,8 @@ describe('MobileInputController', () => {
     let pauseCalls = 0;
     const controller = createMobileInputController({
       surface,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command),
       onPause: () => {
@@ -369,8 +393,8 @@ describe('MobileInputController', () => {
     const commands: InputCommand[] = [];
     const controller = createMobileInputController({
       surface,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command),
       onPause: () => {},
@@ -401,8 +425,8 @@ describe('MobileInputController', () => {
     let pauseCalls = 0;
     const controller = createMobileInputController({
       surface,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command),
       onPause: () => {

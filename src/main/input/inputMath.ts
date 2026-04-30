@@ -1,5 +1,4 @@
 import type { InputCommand } from '../../shared/input';
-import type { ArenaConfig } from '../../shared/session';
 
 export type KeyState = Readonly<{
   up: boolean;
@@ -9,6 +8,12 @@ export type KeyState = Readonly<{
 }>;
 
 export type Vec2 = Readonly<{ x: number; y: number }>;
+
+export type VisibleAreaLike = Readonly<{
+  width: number;
+  height: number;
+  center: Vec2;
+}>;
 
 export type MoveVector = Readonly<{ dx: number; dy: number }>;
 
@@ -27,30 +32,44 @@ export function moveVectorFromKeys(keys: KeyState): MoveVector {
   return len > 1 ? { dx: dx / len, dy: dy / len } : { dx, dy };
 }
 
-export function clampAimToArena(aim: Vec2, arena: ArenaConfig): Vec2 {
-  const halfW = arena.width / 2;
-  const halfH = arena.height / 2;
+export function viewportAimFromWorldAim(aim: Vec2, visibleArea: VisibleAreaLike): Vec2 {
+  return clampAimToVisibleArea(
+    {
+      x: aim.x - visibleArea.center.x,
+      y: aim.y - visibleArea.center.y
+    },
+    visibleArea
+  );
+}
+
+export function worldAimFromViewportAim(
+  viewportAim: Vec2,
+  visibleArea: VisibleAreaLike
+): Vec2 {
+  const clampedAim = clampAimToVisibleArea(viewportAim, visibleArea);
   return {
-    x: clamp(aim.x, -halfW, halfW),
-    y: clamp(aim.y, -halfH, halfH)
+    x: visibleArea.center.x + clampedAim.x,
+    y: visibleArea.center.y + clampedAim.y
   };
 }
 
-export function applyMouseDeltaToAim(
-  aim: Vec2,
+export function applyMouseDeltaToViewportAim(
+  viewportAim: Vec2,
   movementX: number,
   movementY: number,
   pixelsPerWorldUnit: number,
-  arena: ArenaConfig
+  visibleArea: VisibleAreaLike
 ): Vec2 {
   if (pixelsPerWorldUnit <= 0) {
-    return aim;
+    return clampAimToVisibleArea(viewportAim, visibleArea);
   }
-  const next = {
-    x: aim.x + movementX / pixelsPerWorldUnit,
-    y: aim.y - movementY / pixelsPerWorldUnit
-  };
-  return clampAimToArena(next, arena);
+  return clampAimToVisibleArea(
+    {
+      x: viewportAim.x + movementX / pixelsPerWorldUnit,
+      y: viewportAim.y - movementY / pixelsPerWorldUnit
+    },
+    visibleArea
+  );
 }
 
 export function weaponHotkeyCommandFromCode(code: string): WeaponHotkeyCommand | null {
@@ -58,6 +77,13 @@ export function weaponHotkeyCommandFromCode(code: string): WeaponHotkeyCommand |
   const match = /^Digit([1-9])$/.exec(code);
   if (match === null) return null;
   return { kind: 'selectWeaponSlot', slotIndex: Number(match[1]) - 1 };
+}
+
+function clampAimToVisibleArea(aim: Vec2, visibleArea: VisibleAreaLike): Vec2 {
+  return {
+    x: clamp(aim.x, -visibleArea.width / 2, visibleArea.width / 2),
+    y: clamp(aim.y, -visibleArea.height / 2, visibleArea.height / 2)
+  };
 }
 
 function clamp(value: number, min: number, max: number): number {
