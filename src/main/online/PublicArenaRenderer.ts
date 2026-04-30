@@ -12,6 +12,12 @@ import {
 import type { ArenaConfig } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import { BOSS_VISUALS } from '../render/bossVisuals';
+import {
+  createCrosshair,
+  disposeCrosshair,
+  updateCrosshair,
+  type AimAccessor
+} from '../render/crosshair';
 import { ENEMY_VISUALS } from '../render/enemyVisuals';
 import { fitCanvasToViewport } from '../render/fitToViewport';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
@@ -51,6 +57,7 @@ export type PublicArenaRendererInit = Readonly<{
   presentationConfig?: PublicArenaPresentationConfig;
   spriteTextures: TextureMap;
   getSnapshot(): PublicArenaSnapshot | null;
+  getAim?: AimAccessor;
   visibleAreaCamera?: VisibleAreaCamera;
   windowTarget?: PublicArenaRendererWindowTarget;
   createRendererBackend?: CreatePublicArenaRendererBackendFn;
@@ -69,6 +76,7 @@ type PlayerMeshEntry = Readonly<{
   sprite: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
   selfRing: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
+  isSelf: boolean;
   visualKey: string;
   level: number;
 }>;
@@ -91,6 +99,14 @@ const SELF_RING_COLOR = 0x5ee7ff;
 const LEVEL_LABEL_WIDTH_WU = 0.78;
 const LEVEL_LABEL_HEIGHT_WU = 0.3;
 const LEVEL_LABEL_GAP_WU = 0.28;
+const SELF_LEVEL_LABEL_GAP_WU = 0.16;
+const SELF_HP_TRACK_NAME = 'public-arena-self-hp-track';
+const SELF_HP_FILL_NAME = 'public-arena-self-hp-fill';
+const SELF_HP_BAR_WIDTH_WU = 0.74;
+const SELF_HP_BAR_HEIGHT_WU = 0.07;
+const SELF_HP_BAR_OFFSET_WU = 0.22;
+const SELF_HP_TRACK_COLOR = 0x161b22;
+const SELF_HP_FILL_COLOR = 0x7ee7c8;
 const SLIME_BREATH_HZ = 0.85;
 const SLIME_BREATH_AMPLITUDE = 0.055;
 const BOSS_BREATH_AMPLITUDE = 0.035;
@@ -140,6 +156,9 @@ export function createPublicArenaRenderer(
 
   const playerMeshes = new Map<string, PlayerMeshEntry>();
   const projectileMeshes = new Map<string, ProjectileMeshEntry>();
+  const crosshair = createCrosshair();
+  crosshair.visible = false;
+  scene.add(crosshair);
   let currentRenderScalePreset = init.renderScalePreset;
 
   function applyResolvedScalePolicy(
@@ -189,6 +208,7 @@ export function createPublicArenaRenderer(
       applyCameraVisibleArea(camera, visibleAreaCamera.visibleArea());
       syncPlayers(snapshot, playerMeshes, init.spriteTextures, scene, nowMs);
       syncProjectiles(snapshot, projectileMeshes, init.spriteTextures, scene);
+      updateCrosshair(crosshair, init.getAim);
       renderer.render(scene, camera);
     },
     fitToWindow,
@@ -204,10 +224,12 @@ export function createPublicArenaRenderer(
       projectileMeshes.clear();
       scene.remove(arenaBackground.mesh);
       scene.remove(arenaBorder);
+      scene.remove(crosshair);
       arenaGeometry.dispose();
       arenaBackground.dispose();
       arenaBorder.geometry.dispose();
       (arenaBorder.material as THREE.Material).dispose();
+      disposeCrosshair(crosshair);
       renderer.dispose();
     }
   };
@@ -312,6 +334,9 @@ function syncPlayers(
     entry.group.position.set(player.x, player.y, 0);
     entry.selfRing.visible = player.id === snapshot?.selfId;
     entry.group.visible = true;
+    if (entry.isSelf) {
+      applySelfHpBar(entry.group, player);
+    }
     applyPlayerBreath(entry.sprite, player, nowMs);
   }
   for (const [id, entry] of entries) {
@@ -330,7 +355,13 @@ function ensurePlayerEntry(
 ): PlayerMeshEntry {
   const visualKey = playerVisualKey(player);
   const existing = entries.get(player.id);
-  if (existing !== undefined && existing.visualKey === visualKey && existing.level === player.level) {
+  const isSelf = player.id === selfId;
+  if (
+    existing !== undefined &&
+    existing.visualKey === visualKey &&
+    existing.level === player.level &&
+    existing.isSelf === isSelf
+  ) {
     return existing;
   }
   return replacePlayerEntry(player, entries, textures, scene, selfId);
@@ -349,6 +380,7 @@ function replacePlayerEntry(
   }
 
   const visual = playerVisualSpec(player);
+  const isSelf = player.id === selfId;
   const texture = requireSpriteTexture(textures, visual.archetypeId, player.form.kind);
   const group = new THREE.Group();
   group.name = 'public-arena-player';
@@ -362,10 +394,14 @@ function replacePlayerEntry(
   group.add(sprite);
 
   const selfRing = createSelfRing(visual);
-  selfRing.visible = player.id === selfId;
+  selfRing.visible = isSelf;
   group.add(selfRing);
 
-  const label = createLevelLabel(player.level, visual.worldSize.height);
+  if (isSelf) {
+    group.add(createSelfHpBar(visual.worldSize.height));
+  }
+
+  const label = createLevelLabel(player.level, visual.worldSize.height, isSelf);
   group.add(label);
 
   scene.add(group);
@@ -374,6 +410,7 @@ function replacePlayerEntry(
     sprite,
     label,
     selfRing,
+    isSelf,
     visualKey: playerVisualKey(player),
     level: player.level
   };
@@ -478,7 +515,8 @@ function createSelfRing(visual: SpriteVisualSpec): THREE.Mesh<THREE.RingGeometry
 
 function createLevelLabel(
   level: number,
-  visualHeight: number
+  visualHeight: number,
+  isSelf: boolean
 ): THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> {
   const texture = createLevelLabelTexture(level);
   const material = new THREE.MeshBasicMaterial({
@@ -494,10 +532,62 @@ function createLevelLabel(
     material
   );
   mesh.name = 'public-arena-level-label';
-  mesh.position.set(0, visualHeight / 2 + LEVEL_LABEL_GAP_WU, LABEL_Z);
+  mesh.position.set(0, levelLabelY(visualHeight, isSelf), LABEL_Z);
   mesh.renderOrder = 40;
   mesh.userData['level'] = level;
   return mesh;
+}
+
+function levelLabelY(visualHeight: number, isSelf: boolean): number {
+  if (!isSelf) {
+    return visualHeight / 2 + LEVEL_LABEL_GAP_WU;
+  }
+  return (
+    visualHeight / 2 +
+    SELF_HP_BAR_OFFSET_WU +
+    SELF_HP_BAR_HEIGHT_WU / 2 +
+    SELF_LEVEL_LABEL_GAP_WU +
+    LEVEL_LABEL_HEIGHT_WU / 2
+  );
+}
+
+function createSelfHpBar(visualHeight: number): THREE.Group {
+  const group = new THREE.Group();
+  group.name = 'public-arena-self-hp-bar';
+  group.position.y = visualHeight / 2 + SELF_HP_BAR_OFFSET_WU;
+  group.position.z = 0.07;
+  group.add(createSelfHpBarMesh(SELF_HP_TRACK_NAME, SELF_HP_TRACK_COLOR, 0.82));
+  const fill = createSelfHpBarMesh(SELF_HP_FILL_NAME, SELF_HP_FILL_COLOR, 0.95);
+  fill.position.z = 0.01;
+  group.add(fill);
+  return group;
+}
+
+function createSelfHpBarMesh(name: string, color: number, opacity: number): THREE.Mesh {
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(SELF_HP_BAR_WIDTH_WU, SELF_HP_BAR_HEIGHT_WU),
+    new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity,
+      depthWrite: false
+    })
+  );
+  mesh.name = name;
+  return mesh;
+}
+
+function applySelfHpBar(group: THREE.Group, player: PublicArenaPlayerSnapshot): void {
+  const track = findChildMesh(group, SELF_HP_TRACK_NAME);
+  const fill = findChildMesh(group, SELF_HP_FILL_NAME);
+  if (track === null || fill === null) return;
+  const visible = player.maxHp > 0;
+  track.visible = visible;
+  fill.visible = visible;
+  if (!visible) return;
+  const ratio = clamp01(player.hp / player.maxHp);
+  fill.scale.x = ratio;
+  fill.position.x = (-SELF_HP_BAR_WIDTH_WU * (1 - ratio)) / 2;
 }
 
 function createLevelLabelTexture(level: number): THREE.CanvasTexture | null {
@@ -598,6 +688,24 @@ function requireSpriteTexture(textures: TextureMap, archetypeId: string, kind: s
     return texture;
   }
   throw new Error(`${kind} texture missing for archetype "${archetypeId}"`);
+}
+
+function findChildMesh(root: THREE.Object3D, name: string): THREE.Mesh | null {
+  const child = root.children.find(
+    (entry): entry is THREE.Mesh => entry instanceof THREE.Mesh && entry.name === name
+  );
+  if (child !== undefined) {
+    return child;
+  }
+  for (const entry of root.children) {
+    const match = findChildMesh(entry, name);
+    if (match !== null) return match;
+  }
+  return null;
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 function disposePlayerEntry(entry: PlayerMeshEntry, scene: THREE.Scene): void {

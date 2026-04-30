@@ -28,6 +28,13 @@ import {
 import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
 
 import { BOSS_VISUALS } from './bossVisuals';
+import {
+  CROSSHAIR_COLOR,
+  createCrosshair,
+  disposeCrosshair,
+  updateCrosshair,
+  type AimAccessor
+} from './crosshair';
 import { DROP_VISUALS } from './dropVisuals';
 import { ENEMY_VISUALS } from './enemyVisuals';
 import { fitCanvasToViewport } from './fitToViewport';
@@ -48,7 +55,7 @@ import {
 import type { SpriteVisualSpec } from './SpriteVisualSpec';
 import type { TextureMap } from './spritePreload';
 
-export type AimAccessor = () => { x: number; y: number } | null;
+export type { AimAccessor } from './crosshair';
 
 type RendererWindowTarget = Pick<Window, 'innerWidth' | 'innerHeight' | 'devicePixelRatio'> &
   Partial<Pick<Window, 'matchMedia'>>;
@@ -103,19 +110,9 @@ export type Renderer = Readonly<{
 
 const ARENA_FLOOR_COLOR = 0x1b1f29;
 const ARENA_BORDER_COLOR = 0x2a3142;
-const CROSSHAIR_COLOR = 0xffe066;
-const CROSSHAIR_OPACITY = 0.78;
-const CROSSHAIR_OUTLINE_COLOR = 0x050505;
-const CROSSHAIR_OUTLINE_OPACITY = 1;
-const CROSSHAIR_OUTLINE_WIDTH_WU = 0.018;
-const CROSSHAIR_OUTLINE_NAME = 'crosshair-outline';
-const CROSSHAIR_OUTLINE_RENDER_ORDER = 20;
-const CROSSHAIR_RENDER_ORDER = 21;
 const AIM_RING_OUTLINE_COLOR = 0xd97706;
 const AIM_RING_OUTLINE_OPACITY = 0.72;
 const PROJECTILE_RADIUS_OUTLINE_OPACITY = 0.54;
-const CROSSHAIR_SIZE_WU = 0.6;
-const CROSSHAIR_THICKNESS_WU = 0.05;
 const SCENE_BG = 0x05060a;
 const ARENA_TINT_COLOR = 0x05060a;
 const ARENA_TINT_OPACITY = 0.18;
@@ -1660,94 +1657,6 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
-function createCrosshair(): THREE.Group {
-  const material = new THREE.MeshBasicMaterial({
-    color: CROSSHAIR_COLOR,
-    transparent: true,
-    opacity: CROSSHAIR_OPACITY,
-    depthTest: false,
-    depthWrite: false
-  });
-  const horizontal = new THREE.Mesh(
-    new THREE.PlaneGeometry(CROSSHAIR_SIZE_WU, CROSSHAIR_THICKNESS_WU),
-    material
-  );
-  const vertical = new THREE.Mesh(
-    new THREE.PlaneGeometry(CROSSHAIR_THICKNESS_WU, CROSSHAIR_SIZE_WU),
-    material
-  );
-  const group = new THREE.Group();
-  group.add(createCrosshairOutline());
-  group.add(horizontal);
-  group.add(vertical);
-  group.position.z = 0.1;
-  group.renderOrder = CROSSHAIR_RENDER_ORDER;
-  horizontal.renderOrder = CROSSHAIR_RENDER_ORDER;
-  vertical.renderOrder = CROSSHAIR_RENDER_ORDER;
-  return group;
-}
-
-function createCrosshairOutline(): THREE.Mesh {
-  const halfSize = CROSSHAIR_SIZE_WU / 2;
-  const halfThickness = CROSSHAIR_THICKNESS_WU / 2;
-  const shape = createPlusShape(
-    halfSize + CROSSHAIR_OUTLINE_WIDTH_WU,
-    halfThickness + CROSSHAIR_OUTLINE_WIDTH_WU
-  );
-  shape.holes.push(createPlusPath(halfSize, halfThickness, true));
-  const geometry = new THREE.ShapeGeometry(shape);
-  const material = new THREE.MeshBasicMaterial({
-    color: CROSSHAIR_OUTLINE_COLOR,
-    transparent: true,
-    opacity: CROSSHAIR_OUTLINE_OPACITY,
-    depthTest: false,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = CROSSHAIR_OUTLINE_NAME;
-  mesh.position.z = -0.001;
-  mesh.renderOrder = CROSSHAIR_OUTLINE_RENDER_ORDER;
-  return mesh;
-}
-
-function createPlusShape(halfLength: number, halfThickness: number): THREE.Shape {
-  const shape = new THREE.Shape();
-  addPlusPathPoints(shape, halfLength, halfThickness, false);
-  return shape;
-}
-
-function createPlusPath(halfLength: number, halfThickness: number, reverse: boolean): THREE.Path {
-  const path = new THREE.Path();
-  addPlusPathPoints(path, halfLength, halfThickness, reverse);
-  return path;
-}
-
-function addPlusPathPoints(
-  path: THREE.Path,
-  halfLength: number,
-  halfThickness: number,
-  reverse: boolean
-): void {
-  const points: THREE.Vector2[] = [
-    new THREE.Vector2(-halfThickness, -halfLength),
-    new THREE.Vector2(halfThickness, -halfLength),
-    new THREE.Vector2(halfThickness, -halfThickness),
-    new THREE.Vector2(halfLength, -halfThickness),
-    new THREE.Vector2(halfLength, halfThickness),
-    new THREE.Vector2(halfThickness, halfThickness),
-    new THREE.Vector2(halfThickness, halfLength),
-    new THREE.Vector2(-halfThickness, halfLength),
-    new THREE.Vector2(-halfThickness, halfThickness),
-    new THREE.Vector2(-halfLength, halfThickness),
-    new THREE.Vector2(-halfLength, -halfThickness),
-    new THREE.Vector2(-halfThickness, -halfThickness)
-  ];
-  const contour = reverse ? points.reverse() : points;
-  path.moveTo(contour[0]!.x, contour[0]!.y);
-  for (const point of contour.slice(1)) path.lineTo(point.x, point.y);
-  path.closePath();
-}
-
 function createArcPreview(): THREE.Mesh {
   const geometry = new THREE.RingGeometry(0.72, 1, 36);
   const material = new THREE.MeshBasicMaterial({
@@ -1775,20 +1684,6 @@ function createArcPreview(): THREE.Mesh {
 function disposeArcPreview(mesh: THREE.Mesh): void {
   mesh.removeFromParent();
   disposeObjectTree(mesh);
-}
-
-function disposeCrosshair(group: THREE.Group): void {
-  for (const child of group.children) {
-    if (child instanceof THREE.Mesh) {
-      child.geometry.dispose();
-      const material = child.material;
-      if (Array.isArray(material)) {
-        for (const m of material) m.dispose();
-      } else {
-        material.dispose();
-      }
-    }
-  }
 }
 
 function findById<S extends EntitySnapshot>(
@@ -2287,21 +2182,6 @@ function indexHitImpulses(
     byTarget.set(impulse.targetId, impulse);
   }
   return byTarget;
-}
-
-function updateCrosshair(group: THREE.Group, getAim: AimAccessor | undefined): void {
-  if (!getAim) {
-    group.visible = false;
-    return;
-  }
-  const aim = getAim();
-  if (!aim) {
-    group.visible = false;
-    return;
-  }
-  group.visible = true;
-  group.position.x = aim.x;
-  group.position.y = aim.y;
 }
 
 function updateArcPreview(

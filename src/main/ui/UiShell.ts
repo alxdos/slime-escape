@@ -953,6 +953,10 @@ export function createUiShell(init: UiShellInit): UiShell {
       spriteTextures: preloadedTextures,
       visibleAreaCamera,
       getSnapshot: () => publicArenaSnapshot,
+      getAim: () =>
+        publicArenaInput !== null && publicArenaInput.isActive()
+          ? publicArenaInput.currentAim()
+          : null,
       windowTarget: rendererWindowTarget
     });
     unsubscribeRendererSettings?.();

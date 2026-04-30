@@ -70,6 +70,7 @@ describe('PublicArenaRenderer', () => {
       renderScalePreset: 'medium',
       spriteTextures: textures,
       getSnapshot: () => snapshot,
+      getAim: () => ({ x: 12, y: -6 }),
       windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
       createRendererBackend: backend.factory,
       loadBackgroundTexture(url, onLoad) {
@@ -87,6 +88,10 @@ describe('PublicArenaRenderer', () => {
     const projectiles = findAllByName(scene, 'public-arena-projectile');
     const boss = players.find((player) => player.userData['formKind'] === 'boss');
     const slime = players.find((player) => player.userData['playerId'] === 'self');
+    const crosshair = findAllByName(scene, 'crosshair')[0];
+    const selfHpBar = findAllByName(slime ?? new THREE.Group(), 'public-arena-self-hp-bar')[0];
+    const selfHpFill = findAllByName(slime ?? new THREE.Group(), 'public-arena-self-hp-fill')[0];
+    const selfLabel = findAllByName(slime ?? new THREE.Group(), 'public-arena-level-label')[0];
     const background = findAllByName(scene, 'public-arena-background')[0] as
       | THREE.Mesh
       | undefined;
@@ -107,6 +112,11 @@ describe('PublicArenaRenderer', () => {
     expect(slime?.userData['archetypeId']).toBe('slime-one-eye');
     expect(materialMap(findSprite(slime))).toBe(textures['slime-one-eye']);
     expect(selfRing?.parent?.userData['playerId']).toBe('self');
+    expect(crosshair?.visible).toBe(true);
+    expect(crosshair?.position.x).toBe(12);
+    expect(crosshair?.position.y).toBe(-6);
+    expect(selfHpFill?.scale.x).toBeCloseTo(0.5);
+    expect(selfLabel?.position.y).toBeGreaterThan(selfHpBar?.position.y ?? 0);
 
     const camera = backend.lastCamera();
     expect(camera.position.x).toBeCloseTo(4);
@@ -148,7 +158,7 @@ function makeSnapshot(): PublicArenaSnapshot {
         id: 'self',
         x: 8,
         y: -4,
-        hp: 20,
+        hp: 10,
         maxHp: 20,
         level: 1,
         form: { kind: 'slime', archetypeId: 'slime-one-eye' }
