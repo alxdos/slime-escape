@@ -19,7 +19,7 @@ import {
 export const PUBLIC_ARENA_REGULAR_WEAPON_ID = 'rock-thrower';
 export const PUBLIC_ARENA_BOSS_WEAPON_ID = 'fireball-staff';
 export const PUBLIC_ARENA_BOSS_ARCHETYPE_ID = 'boss-tower-sentinel';
-export const PUBLIC_ARENA_INTEREST_WIDTH_WU = 40;
+export const PUBLIC_ARENA_INTEREST_WIDTH_WU = PUBLIC_ARENA_WORLD_BOUNDS.width;
 export const PUBLIC_ARENA_INTEREST_HEIGHT_WU = 26;
 export const PUBLIC_ARENA_SPAWN_PROTECTION_MS = 900;
 export const PUBLIC_ARENA_SLIME_FORM_CHAIN = [

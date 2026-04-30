@@ -6,6 +6,7 @@ import {
   getPlayableModeCatalog,
   type ModePresetId
 } from '../../shared/content/sessions';
+import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/publicArenaConfig';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type {
@@ -797,7 +798,7 @@ function createPublicArenaClientHarness() {
       lastInit?.onAccepted({
         protocolVersion: 1,
         playerId: 'socket-a',
-        arena: { width: 40, height: 40, minX: -20, maxX: 20, minY: -20, maxY: 20 },
+        arena: PUBLIC_ARENA_WORLD_BOUNDS,
         playerCap: 200,
         population: 1,
         tickHz: 60,
@@ -838,7 +839,7 @@ function makePublicArenaSnapshot(): PublicArenaSnapshot {
   return {
     simTimeMs: 120,
     selfId: 'socket-a',
-    arena: { width: 40, height: 40, minX: -20, maxX: 20, minY: -20, maxY: 20 },
+    arena: PUBLIC_ARENA_WORLD_BOUNDS,
     population: 7,
     players: [
       {
@@ -2479,14 +2480,7 @@ describe('UiShell', () => {
     expect(input.calls.start).toBe(1);
     expect(input.lastInit()?.initialAim).toEqual({ x: 1, y: 2 });
     expect(input.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(900 / 18, 6);
-    expect(publicArenaRenderer.lastInit()?.arena).toEqual({
-      width: 40,
-      height: 40,
-      minX: -20,
-      maxX: 20,
-      minY: -20,
-      maxY: 20
-    });
+    expect(publicArenaRenderer.lastInit()?.arena).toEqual(PUBLIC_ARENA_WORLD_BOUNDS);
     expect(publicArenaHud.level()).toBe('Level 3');
     expect(publicArenaHud.population()).toBe('Players 7/200');
     expect(publicArenaRenderer.calls.render).toBe(1);

@@ -7,6 +7,7 @@ import {
   type PublicArenaClientToServerEvents,
   type PublicArenaServerToClientEvents
 } from '../../shared/publicArenaProtocol';
+import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/publicArenaConfig';
 
 import { createPublicArenaClient, type PublicArenaSocket } from './PublicArenaClient';
 
@@ -178,7 +179,7 @@ function makeAccepted() {
   return {
     protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
     playerId: 'player-a',
-    arena: { width: 40, height: 40, minX: -20, maxX: 20, minY: -20, maxY: 20 },
+    arena: PUBLIC_ARENA_WORLD_BOUNDS,
     playerCap: 200,
     population: 1,
     tickHz: 60,

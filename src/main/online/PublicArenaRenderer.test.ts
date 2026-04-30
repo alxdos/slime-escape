@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 
+import {
+  PUBLIC_ARENA_PRESENTATION_CONFIG,
+  PUBLIC_ARENA_WORLD_BOUNDS
+} from '../../shared/publicArenaConfig';
 import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
 import type { TextureMap } from '../render/spritePreload';
 
@@ -58,14 +62,20 @@ describe('PublicArenaRenderer', () => {
     let snapshot: PublicArenaSnapshot | null = makeSnapshot();
     const backend = createRendererBackendHarness();
     const textures = createSpriteTextures();
+    const backgroundTexture = createBackgroundTexture();
     const renderer = createPublicArenaRenderer({
       canvas: makeCanvas(),
-      arena: { width: 40, height: 40 },
+      arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
       renderScalePreset: 'medium',
       spriteTextures: textures,
       getSnapshot: () => snapshot,
       windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
-      createRendererBackend: backend.factory
+      createRendererBackend: backend.factory,
+      loadBackgroundTexture(url, onLoad) {
+        expect(url).toBe('/images/bg/bg-01.jpg');
+        onLoad?.(backgroundTexture);
+        return backgroundTexture;
+      }
     });
 
     renderer.render();
@@ -76,10 +86,17 @@ describe('PublicArenaRenderer', () => {
     const projectiles = findAllByName(scene, 'public-arena-projectile');
     const boss = players.find((player) => player.userData['formKind'] === 'boss');
     const slime = players.find((player) => player.userData['playerId'] === 'self');
+    const background = findAllByName(scene, 'public-arena-background')[0] as
+      | THREE.Mesh
+      | undefined;
     const selfRing = findAllByName(scene, 'public-arena-self-ring').find(
       (ring) => ring.visible
     );
 
+    expect(background?.userData['backgroundId']).toBe('portal');
+    expect(materialMap(background ?? null)).toBe(backgroundTexture);
+    expect(backgroundTexture.repeat.x).toBeGreaterThan(1);
+    expect(backgroundTexture.repeat.y).toBeGreaterThan(1);
     expect(players).toHaveLength(3);
     expect(labels.map((label) => label.userData['level']).sort()).toEqual([1, 2, 8]);
     expect(projectiles).toHaveLength(1);
@@ -113,7 +130,7 @@ function makeSnapshot(): PublicArenaSnapshot {
   return {
     simTimeMs: 1000,
     selfId: 'self',
-    arena: { width: 40, height: 40, minX: -20, maxX: 20, minY: -20, maxY: 20 },
+    arena: PUBLIC_ARENA_WORLD_BOUNDS,
     population: 3,
     players: [
       {
@@ -167,6 +184,12 @@ function createSpriteTextures(): TextureMap {
     'boss-tower-sentinel': new THREE.Texture(),
     'rock-thrower': new THREE.Texture()
   };
+}
+
+function createBackgroundTexture(): THREE.Texture {
+  const texture = new THREE.Texture();
+  texture.image = { width: 480, height: 270 } as HTMLImageElement;
+  return texture;
 }
 
 function makeCanvas(): HTMLCanvasElement {

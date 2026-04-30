@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/publicArenaConfig';
+
 import { createPublicArenaHud } from './PublicArenaHud';
 
 class FakeStyle {
@@ -79,7 +81,7 @@ function makeSnapshot() {
   return {
     simTimeMs: 120,
     selfId: 'self',
-    arena: { width: 40, height: 40, minX: -20, maxX: 20, minY: -20, maxY: 20 },
+    arena: PUBLIC_ARENA_WORLD_BOUNDS,
     population: 12,
     players: [
       {

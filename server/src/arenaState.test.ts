@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PUBLIC_ARENA_FULL_MESSAGE } from '../../src/shared/publicArenaProtocol.js';
 import {
+  PUBLIC_ARENA_ARENA,
   PUBLIC_ARENA_CORNER_SPAWNS,
   PUBLIC_ARENA_WORLD_BOUNDS,
   PUBLIC_ARENA_WORLD_SIZE_WU,
@@ -18,6 +19,7 @@ function createTestArena(playerCap = 200) {
 
 describe('PublicArenaState membership', () => {
   it('uses the fixed 40 x 40 wu world bounds', () => {
+    expect(PUBLIC_ARENA_ARENA).toEqual({ width: 40, height: 40 });
     expect(PUBLIC_ARENA_WORLD_SIZE_WU).toBe(40);
     expect(PUBLIC_ARENA_WORLD_BOUNDS).toEqual({
       width: 40,

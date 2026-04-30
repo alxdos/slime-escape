@@ -5,7 +5,12 @@ import type {
   PublicArenaProjectileSnapshot,
   PublicArenaSnapshot
 } from '../../shared/publicArenaProtocol';
+import {
+  PUBLIC_ARENA_PRESENTATION_CONFIG,
+  type PublicArenaPresentationConfig
+} from '../../shared/publicArenaConfig';
 import type { ArenaConfig } from '../../shared/session';
+import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import { BOSS_VISUALS } from '../render/bossVisuals';
 import { ENEMY_VISUALS } from '../render/enemyVisuals';
 import { fitCanvasToViewport } from '../render/fitToViewport';
@@ -34,16 +39,22 @@ type PublicArenaRendererBackend = Readonly<{
 type CreatePublicArenaRendererBackendFn = (init: Readonly<{
   canvas: HTMLCanvasElement;
 }>) => PublicArenaRendererBackend;
+type LoadBackgroundTextureFn = (
+  url: string,
+  onLoad?: (texture: THREE.Texture) => void
+) => THREE.Texture;
 
 export type PublicArenaRendererInit = Readonly<{
   canvas: HTMLCanvasElement;
   renderScalePreset: RenderScalePreset;
   arena: ArenaConfig;
+  presentationConfig?: PublicArenaPresentationConfig;
   spriteTextures: TextureMap;
   getSnapshot(): PublicArenaSnapshot | null;
   visibleAreaCamera?: VisibleAreaCamera;
   windowTarget?: PublicArenaRendererWindowTarget;
   createRendererBackend?: CreatePublicArenaRendererBackendFn;
+  loadBackgroundTexture?: LoadBackgroundTextureFn;
 }>;
 
 export type PublicArenaRenderer = Readonly<{
@@ -70,7 +81,8 @@ type ProjectileMeshEntry = Readonly<{
 const SCENE_BG = 0x05060a;
 const ARENA_BORDER_COLOR = 0x2a3142;
 const ARENA_TINT_COLOR = 0x05060a;
-const ARENA_TINT_OPACITY = 0.18;
+const ARENA_TINT_OPACITY = 0.72;
+const BACKGROUND_Z = -1;
 const PLAYER_Z = 0;
 const PROJECTILE_Z = 0.06;
 const LABEL_Z = 0.18;
@@ -88,6 +100,7 @@ export function createPublicArenaRenderer(
   init: PublicArenaRendererInit
 ): PublicArenaRenderer {
   const windowTarget = init.windowTarget ?? window;
+  const presentationConfig = init.presentationConfig ?? PUBLIC_ARENA_PRESENTATION_CONFIG;
   const renderer =
     (init.createRendererBackend ?? createThreeRendererBackend)({
       canvas: init.canvas
@@ -111,17 +124,12 @@ export function createPublicArenaRenderer(
   applyCameraVisibleArea(camera, visibleAreaCamera.visibleArea());
 
   const arenaGeometry = new THREE.PlaneGeometry(init.arena.width, init.arena.height);
-  const arenaFloor = new THREE.Mesh(
-    arenaGeometry,
-    new THREE.MeshBasicMaterial({
-      color: ARENA_TINT_COLOR,
-      transparent: true,
-      opacity: ARENA_TINT_OPACITY,
-      depthWrite: false
-    })
-  );
-  arenaFloor.position.z = -1;
-  scene.add(arenaFloor);
+  const arenaBackground = createPublicArenaBackground({
+    arena: init.arena,
+    config: presentationConfig,
+    loadTexture: init.loadBackgroundTexture ?? loadPublicArenaBackgroundTexture
+  });
+  scene.add(arenaBackground.mesh);
 
   const arenaBorder = new THREE.LineSegments(
     new THREE.EdgesGeometry(arenaGeometry),
@@ -194,15 +202,100 @@ export function createPublicArenaRenderer(
         disposeProjectileEntry(entry, scene);
       }
       projectileMeshes.clear();
-      scene.remove(arenaFloor);
+      scene.remove(arenaBackground.mesh);
       scene.remove(arenaBorder);
       arenaGeometry.dispose();
-      arenaFloor.material.dispose();
+      arenaBackground.dispose();
       arenaBorder.geometry.dispose();
       (arenaBorder.material as THREE.Material).dispose();
       renderer.dispose();
     }
   };
+}
+
+type PublicArenaBackground = Readonly<{
+  mesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+  dispose(): void;
+}>;
+
+function createPublicArenaBackground(init: Readonly<{
+  arena: ArenaConfig;
+  config: PublicArenaPresentationConfig;
+  loadTexture: LoadBackgroundTextureFn;
+}>): PublicArenaBackground {
+  const background = init.config.backgrounds.find(
+    (entry) => entry.id === init.config.activeBackgroundId
+  );
+  if (background === undefined) {
+    throw new Error(
+      `public arena background "${init.config.activeBackgroundId}" is missing from config`
+    );
+  }
+
+  const geometry = new THREE.PlaneGeometry(1, 1);
+  const material = new THREE.MeshBasicMaterial({
+    color: ARENA_TINT_COLOR,
+    transparent: true,
+    opacity: ARENA_TINT_OPACITY,
+    depthWrite: false
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = 'public-arena-background';
+  mesh.position.z = BACKGROUND_Z;
+  mesh.userData['backgroundId'] = background.id;
+  mesh.userData['imageUrl'] = background.imageUrl;
+  mesh.scale.set(init.arena.width, init.arena.height, 1);
+
+  const texture = init.loadTexture(background.imageUrl, (loaded) => {
+    preparePublicArenaBackgroundTexture(loaded, init.arena);
+  });
+  preparePublicArenaBackgroundTexture(texture, init.arena);
+  material.map = texture;
+  material.color.set(0xffffff);
+  material.needsUpdate = true;
+
+  return {
+    mesh,
+    dispose(): void {
+      texture.dispose();
+      geometry.dispose();
+      material.dispose();
+    }
+  };
+}
+
+function loadPublicArenaBackgroundTexture(
+  url: string,
+  onLoad?: (texture: THREE.Texture) => void
+): THREE.Texture {
+  return new THREE.TextureLoader().load(url, onLoad);
+}
+
+function preparePublicArenaBackgroundTexture(texture: THREE.Texture, arena: ArenaConfig): void {
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 1);
+  texture.offset.set(0, 0);
+  const sourceSize = readTextureSourceSize(texture);
+  if (sourceSize === null) {
+    return;
+  }
+  const tileWidthWu = sourceSize.width / PX_PER_WU;
+  const tileHeightWu = sourceSize.height / PX_PER_WU;
+  texture.repeat.set(arena.width / tileWidthWu, arena.height / tileHeightWu);
+  texture.needsUpdate = true;
+}
+
+function readTextureSourceSize(texture: THREE.Texture): Readonly<{
+  width: number;
+  height: number;
+}> | null {
+  const image = texture.image as Partial<Readonly<{ width: number; height: number }>> | undefined;
+  const width = image?.width ?? 0;
+  const height = image?.height ?? 0;
+  if (width <= 0 || height <= 0) return null;
+  return { width, height };
 }
 
 function syncPlayers(
