@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { EncounterDefinition, EncounterType, SessionDefinition } from '../shared/session';
 import type { Snapshot } from '../shared/snapshot';
+import { PUBLIC_ARENA_ARENA, PUBLIC_ARENA_PLAYER } from '../shared/content/publicArena';
 import {
   SLIME_ESCAPE_PORTAL_URL,
   VIBE_JAM_EXIT_URL,
@@ -16,9 +17,10 @@ import {
 const RUNNING_PHASE = { kind: 'running' } as const;
 const PAUSED_PHASE = { kind: 'paused' } as const;
 const MENU_PHASE = { kind: 'menu' } as const;
+const ONLINE_PHASE = { kind: 'online' } as const;
 
 describe('VibeJamPortalController', () => {
-  it('shows a return portal eight player widths left of spawn during non-boss encounters in portal sessions', () => {
+  it('shows a return portal eight player widths left of the arena center during non-boss encounters in portal sessions', () => {
     const storage = new FakeStorage();
     const controller = createVibeJamPortalController({
       href: inboundHref('https://previous.example/return'),
@@ -40,6 +42,39 @@ describe('VibeJamPortalController', () => {
       }
     ]);
     expect(controller.hasActiveReturnContext()).toBe(true);
+  });
+
+  it('keeps local portal coordinates anchored to the arena center instead of player spawn', () => {
+    const controller = createVibeJamPortalController({
+      href: inboundHref('https://previous.example/return'),
+      storage: new FakeStorage(),
+      redirect: () => {}
+    });
+    const session = makeSession([encounter('portal-opening', 'portal')], {
+      playerX: 6,
+      playerY: -3,
+      arenaWidth: 40,
+      arenaHeight: 24
+    });
+
+    controller.attachSession(session);
+
+    expect(controller.update(snapshot('portal-opening', 'portal', 0), RUNNING_PHASE)).toEqual([
+      {
+        kind: 'return',
+        x: -8,
+        y: 0,
+        width: 1,
+        height: 1
+      },
+      {
+        kind: 'exit',
+        x: 8,
+        y: 0,
+        width: 1,
+        height: 1
+      }
+    ]);
   });
 
   it('keeps the return context hidden in non-portal sessions and available in later portal sessions', () => {
@@ -306,6 +341,57 @@ describe('VibeJamPortalController', () => {
     ]);
   });
 
+  it('anchors Public Arena portal coordinates to the generated arena center and keeps them in bounds', () => {
+    const controller = createVibeJamPortalController({
+      href: inboundHref('https://previous.example/return'),
+      storage: new FakeStorage(),
+      redirect: () => {}
+    });
+    const width = PUBLIC_ARENA_PLAYER.contactBox.width;
+    const height = PUBLIC_ARENA_PLAYER.contactBox.height;
+
+    controller.attachPublicArena();
+    const portals = controller.updatePublicArena(
+      { simTimeMs: 0, player: { x: 19, y: 19 } },
+      ONLINE_PHASE
+    );
+
+    expect(portals).toEqual([
+      {
+        kind: 'return',
+        x: -8 * width,
+        y: 0,
+        width,
+        height
+      },
+      {
+        kind: 'exit',
+        x: 8 * width,
+        y: 0,
+        width,
+        height
+      }
+    ]);
+    for (const portal of portals) {
+      expect(portal.x - portal.width / 2).toBeGreaterThanOrEqual(-PUBLIC_ARENA_ARENA.width / 2);
+      expect(portal.x + portal.width / 2).toBeLessThanOrEqual(PUBLIC_ARENA_ARENA.width / 2);
+      expect(portal.y - portal.height / 2).toBeGreaterThanOrEqual(-PUBLIC_ARENA_ARENA.height / 2);
+      expect(portal.y + portal.height / 2).toBeLessThanOrEqual(PUBLIC_ARENA_ARENA.height / 2);
+    }
+  });
+
+  it('does not open Public Arena portals from the normal root entrypoint', () => {
+    const controller = createVibeJamPortalController({
+      href: 'https://slimeescape.com/',
+      storage: new FakeStorage(),
+      redirect: () => {}
+    });
+
+    controller.attachPublicArena();
+
+    expect(controller.updatePublicArena({ simTimeMs: 0, player: { x: 0, y: 0 } }, ONLINE_PHASE)).toEqual([]);
+  });
+
   it('starts the exit redirect immediately while keeping travel state for zoom-out', () => {
     const redirect = vi.fn();
     const controller = createVibeJamPortalController({
@@ -400,14 +486,19 @@ function encounter(id: string, type: EncounterType): EncounterDefinition {
 
 function makeSession(
   encounters: ReadonlyArray<EncounterDefinition>,
-  options: Readonly<{ playerX?: number; arenaWidth?: number }> = {}
+  options: Readonly<{
+    playerX?: number;
+    playerY?: number;
+    arenaWidth?: number;
+    arenaHeight?: number;
+  }> = {}
 ): SessionDefinition {
   return {
     id: 'test-session',
     seed: 1,
-    arena: { width: options.arenaWidth ?? 24, height: 9 },
+    arena: { width: options.arenaWidth ?? 24, height: options.arenaHeight ?? 9 },
     player: {
-      position: { x: options.playerX ?? 0, y: 0 },
+      position: { x: options.playerX ?? 0, y: options.playerY ?? 0 },
       radius: 0.5,
       contactBox: { width: 1, height: 1 },
       maxSpeed: 5,

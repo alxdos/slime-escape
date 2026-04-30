@@ -35,10 +35,16 @@ import { resolveRenderScale, type RenderScalePreset } from '../render/renderScal
 import type { SpriteVisualSpec } from '../render/SpriteVisualSpec';
 import type { TextureMap } from '../render/spritePreload';
 import {
+  disposeVibeJamPortalMesh,
+  updateVibeJamPortalMeshes,
+  type VibeJamPortalMeshEntry
+} from '../render/vibeJamPortalPresentation';
+import {
   createVisibleAreaCamera,
   type VisibleArea,
   type VisibleAreaCamera
 } from '../visibleArea';
+import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
 
 type PublicArenaRendererWindowTarget = Pick<
   Window,
@@ -67,7 +73,9 @@ export type PublicArenaRendererInit = Readonly<{
   presentationConfig?: PublicArenaPresentationConfig;
   spriteTextures: TextureMap;
   getSnapshot(): PublicArenaSnapshot | null;
+  getPortalDescriptors?: () => ReadonlyArray<VibeJamPortalDescriptor>;
   getAim?: AimAccessor;
+  prefersReducedMotion?: boolean;
   visibleAreaCamera?: VisibleAreaCamera;
   windowTarget?: PublicArenaRendererWindowTarget;
   createRendererBackend?: CreatePublicArenaRendererBackendFn;
@@ -166,6 +174,7 @@ export function createPublicArenaRenderer(
 
   const playerMeshes = new Map<string, PlayerMeshEntry>();
   const projectileMeshes = new Map<string, ProjectileMeshEntry>();
+  const portalMeshes = new Map<VibeJamPortalDescriptor['kind'], VibeJamPortalMeshEntry>();
   const crosshair = createCrosshair();
   crosshair.visible = false;
   scene.add(crosshair);
@@ -220,6 +229,13 @@ export function createPublicArenaRenderer(
       applyCameraVisibleArea(camera, visibleAreaCamera.visibleArea());
       syncPlayers(snapshot, playerMeshes, init.spriteTextures, scene, nowMs);
       syncProjectiles(snapshot, projectileMeshes, init.spriteTextures, scene);
+      updateVibeJamPortalMeshes(
+        init.getPortalDescriptors?.() ?? [],
+        portalMeshes,
+        scene,
+        nowMs,
+        init.prefersReducedMotion === true
+      );
       updateCrosshair(crosshair, init.getAim);
       updateArcPreview(arcPreview, {
         player: findSelfArcPreviewPlayer(snapshot),
@@ -240,6 +256,10 @@ export function createPublicArenaRenderer(
         disposeProjectileEntry(entry, scene);
       }
       projectileMeshes.clear();
+      for (const entry of portalMeshes.values()) {
+        disposeVibeJamPortalMesh(scene, entry);
+      }
+      portalMeshes.clear();
       scene.remove(arenaBackground.mesh);
       scene.remove(arenaBorder);
       scene.remove(crosshair);

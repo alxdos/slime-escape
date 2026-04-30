@@ -76,7 +76,8 @@ import {
 import {
   createVibeJamPortalController,
   type VibeJamPortalController,
-  type VibeJamPortalControllerInit
+  type VibeJamPortalControllerInit,
+  type VibeJamPortalPublicArenaSnapshot
 } from '../VibeJamPortalController';
 
 import {
@@ -942,6 +943,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     tearDownPublicArenaPresentation();
     publicArenaSnapshot = null;
     publicArenaPlayerCap = playerCap;
+    portalController.attachPublicArena();
     publicArenaHud.update(null, playerCap);
   }
 
@@ -968,6 +970,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       spriteTextures: preloadedTextures,
       visibleAreaCamera,
       getSnapshot: () => publicArenaSnapshot,
+      getPortalDescriptors: portalController.portals,
       getAim: () =>
         publicArenaInput !== null && publicArenaInput.isActive()
           ? publicArenaInput.currentAim()
@@ -1075,6 +1078,18 @@ export function createUiShell(init: UiShellInit): UiShell {
     return self === undefined ? { x: 0, y: 0 } : { x: self.x, y: self.y };
   }
 
+  function publicArenaPortalSnapshot(): VibeJamPortalPublicArenaSnapshot | null {
+    const snapshot = publicArenaSnapshot;
+    if (snapshot === null) {
+      return null;
+    }
+    const self = snapshot.players.find((player) => player.id === snapshot.selfId);
+    return {
+      simTimeMs: snapshot.simTimeMs,
+      player: self === undefined ? null : { x: self.x, y: self.y }
+    };
+  }
+
   function tearDownPublicArenaPresentation(): void {
     publicArenaMenuOpen = false;
     publicArenaMenu.hide();
@@ -1099,6 +1114,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     publicArenaSnapshot = null;
     publicArenaPlayerCap = null;
     unsubscribeRendererSettings = null;
+    portalController.detachSession();
     previousInput?.stop();
     previousUnsubscribeRendererSettings?.();
     previousRenderer?.dispose();
@@ -1614,6 +1630,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       const snapshotPair = sim.snapshotPair();
       if (activeSession !== null) {
         portalController.update(snapshotPair.curr, phase);
+      }
+      if (publicArenaClient !== null || publicArenaRenderer !== null) {
+        portalController.updatePublicArena(publicArenaPortalSnapshot(), phase);
       }
       if (isRunningSessionActive()) {
         hud.update(snapshotPair);

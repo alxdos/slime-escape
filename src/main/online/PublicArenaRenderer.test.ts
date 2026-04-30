@@ -8,6 +8,10 @@ import {
 import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
 import { ARC_PREVIEW_NAME } from '../render/arcPreview';
 import type { TextureMap } from '../render/spritePreload';
+import {
+  VIBE_JAM_PORTAL_GROUP_NAME,
+  VIBE_JAM_PORTAL_RETURN_LABEL_NAME
+} from '../render/vibeJamPortalPresentation';
 
 import { createPublicArenaRenderer } from './PublicArenaRenderer';
 
@@ -136,6 +140,60 @@ describe('PublicArenaRenderer', () => {
 
     expect(findAllByName(backend.lastScene(), 'public-arena-player')).toHaveLength(1);
     expect(findAllByName(backend.lastScene(), 'public-arena-projectile')).toHaveLength(0);
+
+    renderer.dispose();
+    expect(backend.disposeCalls()).toBe(1);
+  });
+
+  it('renders Vibe Jam portal descriptors at stable world coordinates across viewport changes', () => {
+    const backend = createRendererBackendHarness();
+    const backgroundTexture = createBackgroundTexture();
+    const activeBackground = requireActivePublicArenaBackground();
+    const windowTarget = { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 };
+    const portals = [
+      {
+        kind: 'return' as const,
+        x: -9.8,
+        y: 0,
+        width: 1.225,
+        height: 2.2916666666666665
+      }
+    ];
+    const renderer = createPublicArenaRenderer({
+      canvas: makeCanvas(),
+      arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
+      renderScalePreset: 'medium',
+      spriteTextures: createSpriteTextures(),
+      getSnapshot: () => null,
+      getPortalDescriptors: () => portals,
+      windowTarget,
+      createRendererBackend: backend.factory,
+      loadBackgroundTexture(url, onLoad) {
+        expect(url).toBe(activeBackground.imageUrl);
+        onLoad?.(backgroundTexture);
+        return backgroundTexture;
+      }
+    });
+
+    renderer.render();
+
+    let portal = findAllByName(backend.lastScene(), VIBE_JAM_PORTAL_GROUP_NAME)[0];
+    expect(portal?.position.x).toBeCloseTo(-9.8);
+    expect(portal?.position.y).toBeCloseTo(0);
+    expect(portal?.scale.x).toBeCloseTo(1.225);
+    expect(portal?.scale.y).toBeCloseTo(2.2916666666666665);
+    expect(
+      findAllByName(portal ?? new THREE.Group(), VIBE_JAM_PORTAL_RETURN_LABEL_NAME)[0]?.visible
+    ).toBe(true);
+
+    windowTarget.innerWidth = 640;
+    windowTarget.innerHeight = 960;
+    renderer.fitToWindow();
+    renderer.render();
+
+    portal = findAllByName(backend.lastScene(), VIBE_JAM_PORTAL_GROUP_NAME)[0];
+    expect(portal?.position.x).toBeCloseTo(-9.8);
+    expect(portal?.position.y).toBeCloseTo(0);
 
     renderer.dispose();
     expect(backend.disposeCalls()).toBe(1);

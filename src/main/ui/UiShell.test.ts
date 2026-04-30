@@ -1439,6 +1439,8 @@ function createVibeJamPortalControllerHarness() {
     create: 0,
     attachSession: 0,
     update: 0,
+    attachPublicArena: 0,
+    updatePublicArena: 0,
     detachSession: 0
   };
   let lastInit: VibeJamPortalControllerInit | null = null;
@@ -1453,6 +1455,13 @@ function createVibeJamPortalControllerHarness() {
         },
         update(): ReadonlyArray<never> {
           calls.update += 1;
+          return [];
+        },
+        attachPublicArena(): void {
+          calls.attachPublicArena += 1;
+        },
+        updatePublicArena(): ReadonlyArray<never> {
+          calls.updatePublicArena += 1;
           return [];
         },
         detachSession(): void {
@@ -2727,6 +2736,57 @@ describe('UiShell', () => {
 
     expect(shell.phase()).toEqual({ kind: 'menu' });
     expect(menu.latestFeedback()).toBeNull();
+  });
+
+  it('wires Vibe Jam portal descriptors into Public Arena presentation without server state', async () => {
+    const menu = createMenuHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const portalController = createVibeJamPortalControllerHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      portalHref: 'https://slimeescape.com/portal?portal=true&ref=https%3A%2F%2Fprevious.example',
+      portalStorage: null,
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createHud: createHudHarness().factory,
+      createPublicArenaHud: createPublicArenaHudHarness().factory,
+      createPublicArenaCombatAffordances: createPublicArenaCombatAffordancesHarness().factory,
+      createPublicArenaMenuOverlay: createPublicArenaMenuHarness().factory,
+      createPublicArenaStatusOverlay: createPublicArenaStatusHarness().factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      createInputController: createInputHarness().factory,
+      createVibeJamPortalController: portalController.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.startPublicArena();
+    publicArenaClient.accept();
+    publicArenaClient.snapshot();
+    shell.onFrame();
+
+    expect(portalController.calls.attachPublicArena).toBe(1);
+    expect(portalController.calls.updatePublicArena).toBe(1);
+    expect(publicArenaRenderer.lastInit()?.getPortalDescriptors?.()).toEqual([]);
+
+    shell.dispose();
+
+    expect(portalController.calls.detachSession).toBeGreaterThanOrEqual(1);
   });
 
   it.each(['Escape', 'Space'])(

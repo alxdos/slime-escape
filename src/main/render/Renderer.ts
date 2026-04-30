@@ -58,6 +58,11 @@ import {
 } from './renderScale';
 import type { SpriteVisualSpec } from './SpriteVisualSpec';
 import type { TextureMap } from './spritePreload';
+import {
+  disposeVibeJamPortalMesh,
+  updateVibeJamPortalMeshes,
+  type VibeJamPortalMeshEntry
+} from './vibeJamPortalPresentation';
 
 export type { AimAccessor } from './crosshair';
 
@@ -169,25 +174,6 @@ const ZONE_OVERLAY_OPACITY = 0.86;
 const ZONE_CORNER_RADIUS_FACTOR = 0.25;
 const ZONE_FEATHER_WU = 1.5;
 const PICKUP_GHOST_TTL_MS = 280;
-const PORTAL_Z = 0.16;
-const PORTAL_GROUP_NAME = 'vibe-jam-portal';
-const PORTAL_INTERIOR_NAME = 'vibe-jam-portal-interior';
-const PORTAL_OUTLINE_NAME = 'vibe-jam-portal-outline';
-const PORTAL_RETURN_LABEL_NAME = 'vibe-jam-portal-return-label';
-const PORTAL_INTERIOR_COLOR = 0x000000;
-const PORTAL_PURPLE = 0x8b5cf6;
-const PORTAL_LIME = 0xa7f070;
-const PORTAL_CYAN = 0x5ee7ff;
-const PORTAL_PINK = 0xff6bd5;
-const PORTAL_OUTLINE_OPACITY = 0.94;
-const PORTAL_RENDER_ORDER = 18;
-const PORTAL_RETURN_LABEL_WIDTH = 1.24;
-const PORTAL_RETURN_LABEL_HEIGHT = 0.32;
-const PORTAL_RETURN_LABEL_Y = -0.86;
-const PORTAL_PURPLE_COLOR = new THREE.Color(PORTAL_PURPLE);
-const PORTAL_LIME_COLOR = new THREE.Color(PORTAL_LIME);
-const PORTAL_CYAN_COLOR = new THREE.Color(PORTAL_CYAN);
-const PORTAL_PINK_COLOR = new THREE.Color(PORTAL_PINK);
 const PORTAL_TRAVEL_MIN_PLAYER_SCALE = 0.08;
 
 type EntityMeshEntry = {
@@ -215,13 +201,6 @@ type CompanionEntry = EntityMeshEntry & {
 type CharacterSnapGrid = Readonly<{
   stepX: number;
   stepY: number;
-}>;
-
-type PortalMeshEntry = Readonly<{
-  group: THREE.Group;
-  interior: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
-  outline: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
-  label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
 }>;
 
 export function createRenderer(init: RendererInit): Renderer {
@@ -326,7 +305,7 @@ export function createRenderer(init: RendererInit): Renderer {
   const pickupGhostMeshes = new Map<number, PickupGhostEntry>();
   const slimeDropletMeshes = new Map<number, EntityMeshEntry>();
   const deathGhostMeshes = new Map<number, EntityMeshEntry>();
-  const portalMeshes = new Map<VibeJamPortalDescriptor['kind'], PortalMeshEntry>();
+  const portalMeshes = new Map<VibeJamPortalDescriptor['kind'], VibeJamPortalMeshEntry>();
 
   function applyResolvedScalePolicy(
     preset: RenderScalePreset,
@@ -621,7 +600,7 @@ export function createRenderer(init: RendererInit): Renderer {
         weaponRegistry
       });
       updateZoneOverlay(zoneOverlay, pair, alpha);
-      updatePortalMeshes(
+      updateVibeJamPortalMeshes(
         portalDescriptors,
         portalMeshes,
         scene,
@@ -680,7 +659,7 @@ export function createRenderer(init: RendererInit): Renderer {
       slimeDropletMeshes.clear();
       for (const entry of deathGhostMeshes.values()) disposeEntityMesh(entry);
       deathGhostMeshes.clear();
-      for (const entry of portalMeshes.values()) disposePortalMesh(scene, entry);
+      for (const entry of portalMeshes.values()) disposeVibeJamPortalMesh(scene, entry);
       portalMeshes.clear();
       arenaGeometry.dispose();
       arenaMaterial.dispose();
@@ -1008,162 +987,6 @@ function createCompanionRescueRing(worldSize: SpriteVisualSpec['worldSize']): TH
   return ring;
 }
 
-function createPortalMesh(): PortalMeshEntry {
-  const group = new THREE.Group();
-  group.name = PORTAL_GROUP_NAME;
-  group.position.z = PORTAL_Z;
-  group.renderOrder = PORTAL_RENDER_ORDER;
-
-  const interior = new THREE.Mesh(
-    new THREE.CircleGeometry(0.5, 64),
-    new THREE.MeshBasicMaterial({
-      color: PORTAL_INTERIOR_COLOR,
-      transparent: true,
-      opacity: 0.96,
-      depthWrite: false,
-      depthTest: false
-    })
-  );
-  interior.name = PORTAL_INTERIOR_NAME;
-  interior.renderOrder = PORTAL_RENDER_ORDER;
-  group.add(interior);
-
-  const outline = new THREE.Mesh(
-    new THREE.RingGeometry(0.52, 0.68, 64),
-    new THREE.MeshBasicMaterial({
-      color: PORTAL_PURPLE,
-      transparent: true,
-      opacity: PORTAL_OUTLINE_OPACITY,
-      depthWrite: false,
-      depthTest: false
-    })
-  );
-  outline.name = PORTAL_OUTLINE_NAME;
-  outline.position.z = 0.01;
-  outline.renderOrder = PORTAL_RENDER_ORDER + 1;
-  group.add(outline);
-
-  const label = createReturnPortalLabelMesh();
-  group.add(label);
-
-  return { group, interior, outline, label };
-}
-
-function createReturnPortalLabelMesh(): THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> {
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(PORTAL_RETURN_LABEL_WIDTH, PORTAL_RETURN_LABEL_HEIGHT),
-    createReturnPortalLabelMaterial()
-  );
-  mesh.name = PORTAL_RETURN_LABEL_NAME;
-  mesh.position.set(0, PORTAL_RETURN_LABEL_Y, 0.02);
-  mesh.renderOrder = PORTAL_RENDER_ORDER + 2;
-  mesh.visible = false;
-  return mesh;
-}
-
-function createReturnPortalLabelMaterial(): THREE.MeshBasicMaterial {
-  const texture = createReturnPortalLabelTexture();
-  return new THREE.MeshBasicMaterial({
-    map: texture,
-    color: texture === null ? 0xf7f2ff : 0xffffff,
-    transparent: true,
-    opacity: texture === null ? 0.72 : 0.98,
-    depthWrite: false,
-    depthTest: false
-  });
-}
-
-function createReturnPortalLabelTexture(): THREE.CanvasTexture | null {
-  if (typeof document === 'undefined') return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 64;
-  const ctx = canvas.getContext('2d');
-  if (ctx === null) return null;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.font = '900 42px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.lineWidth = 7;
-  ctx.strokeStyle = 'rgba(5, 6, 10, 0.9)';
-  ctx.strokeText('RETURN', canvas.width / 2, canvas.height / 2 + 2);
-  ctx.fillStyle = 'rgba(247, 242, 255, 0.96)';
-  ctx.fillText('RETURN', canvas.width / 2, canvas.height / 2 + 2);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.needsUpdate = true;
-  return texture;
-}
-
-function updatePortalMeshes(
-  descriptors: ReadonlyArray<VibeJamPortalDescriptor>,
-  entries: Map<VibeJamPortalDescriptor['kind'], PortalMeshEntry>,
-  scene: THREE.Scene,
-  nowMs: number,
-  prefersReducedMotion: boolean
-): void {
-  const active = new Set<VibeJamPortalDescriptor['kind']>();
-  for (const descriptor of descriptors) {
-    active.add(descriptor.kind);
-    const entry = ensurePortalMesh(entries, scene, descriptor.kind);
-    entry.group.position.x = descriptor.x;
-    entry.group.position.y = descriptor.y;
-    entry.group.scale.set(descriptor.width, descriptor.height, 1);
-    applyPortalLabelPresentation(entry.label, descriptor);
-    applyPortalPresentation(entry, descriptor.kind, nowMs, prefersReducedMotion);
-  }
-
-  for (const [kind, entry] of entries) {
-    if (active.has(kind)) continue;
-    disposePortalMesh(scene, entry);
-    entries.delete(kind);
-  }
-}
-
-function ensurePortalMesh(
-  entries: Map<VibeJamPortalDescriptor['kind'], PortalMeshEntry>,
-  scene: THREE.Scene,
-  kind: VibeJamPortalDescriptor['kind']
-): PortalMeshEntry {
-  const existing = entries.get(kind);
-  if (existing !== undefined) return existing;
-  const entry = createPortalMesh();
-  scene.add(entry.group);
-  entries.set(kind, entry);
-  return entry;
-}
-
-function applyPortalLabelPresentation(
-  label: PortalMeshEntry['label'],
-  descriptor: VibeJamPortalDescriptor
-): void {
-  label.visible = descriptor.kind === 'return';
-  label.scale.set(
-    1 / Math.max(0.001, descriptor.width),
-    1 / Math.max(0.001, descriptor.height),
-    1
-  );
-}
-
-function applyPortalPresentation(
-  entry: PortalMeshEntry,
-  kind: VibeJamPortalDescriptor['kind'],
-  nowMs: number,
-  prefersReducedMotion: boolean
-): void {
-  const shimmer = prefersReducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(nowMs / 220);
-  const from = kind === 'exit' ? PORTAL_CYAN_COLOR : PORTAL_PURPLE_COLOR;
-  const to = kind === 'exit' ? PORTAL_PINK_COLOR : PORTAL_LIME_COLOR;
-  entry.outline.material.color
-    .copy(from)
-    .lerp(to, shimmer);
-  entry.outline.material.opacity = prefersReducedMotion
-    ? PORTAL_OUTLINE_OPACITY
-    : 0.82 + 0.16 * shimmer;
-}
-
 function applyPlayerPortalTravelPresentation(
   entry: EntityMeshEntry,
   pair: SnapshotPair,
@@ -1205,12 +1028,6 @@ function resolvePortalTravelProgress(
     progress = Math.max(progress ?? 0, nextProgress);
   }
   return progress;
-}
-
-function disposePortalMesh(scene: THREE.Scene, entry: PortalMeshEntry): void {
-  scene.remove(entry.group);
-  entry.label.material.map?.dispose();
-  disposeObjectTree(entry.group);
 }
 
 function applyEnemyPresentation(
