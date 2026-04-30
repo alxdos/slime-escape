@@ -9,10 +9,15 @@ type EventTargetLike = Pick<EventTarget, 'addEventListener' | 'removeEventListen
 
 type MobileSurface = EventTargetLike &
   Pick<HTMLElement, 'clientWidth' | 'clientHeight' | 'getBoundingClientRect'> &
-  Partial<Pick<HTMLElement, 'setPointerCapture' | 'releasePointerCapture'>>;
+  Partial<Pick<HTMLElement, 'setPointerCapture' | 'releasePointerCapture' | 'hasPointerCapture'>>;
 
 type PauseElement = Readonly<{
   contains(node: Node | null): boolean;
+  getBoundingClientRect(): DOMRect;
+}>;
+
+type WeaponSlotElement = Readonly<{
+  dataset: DOMStringMap;
   getBoundingClientRect(): DOMRect;
 }>;
 
@@ -26,6 +31,7 @@ export type MobileInputControllerInit = Readonly<{
   onCommand(command: InputCommand): void;
   onPause(): void;
   pauseElement?: () => PauseElement | null;
+  weaponSlotElements?: () => ReadonlyArray<WeaponSlotElement>;
   windowTarget?: EventTargetLike;
   nowMs?: () => number;
   setTimeoutFn?: (callback: () => void, delayMs: number) => TimerId;
@@ -77,6 +83,13 @@ export function createMobileInputController(init: MobileInputControllerInit): In
 
   function onPointerDown(event: PointerEvent): void {
     if (!active) return;
+    const weaponSlotIndex = weaponSlotIndexFromPointer(event);
+    if (weaponSlotIndex !== null) {
+      event.preventDefault();
+      init.onCommand({ kind: 'selectWeaponSlot', slotIndex: weaponSlotIndex });
+      return;
+    }
+
     const point = surfacePointFromEvent(event, init.surface);
     const zone = classifyPointerStart(event, point);
     if (zone === 'ignored') return;
@@ -87,18 +100,20 @@ export function createMobileInputController(init: MobileInputControllerInit): In
       return;
     }
 
-    init.surface.setPointerCapture?.(event.pointerId);
     switch (zone) {
       case 'move':
         if (movementPointer !== null) return;
+        setPointerCaptureIfAvailable(init.surface, event.pointerId);
         movementPointer = { pointerId: event.pointerId, origin: point };
         sendMoveIfChanged({ dx: 0, dy: 0 });
         return;
       case 'aim':
         if (aimPointer !== null) return;
+        setPointerCaptureIfAvailable(init.surface, event.pointerId);
         aimPointer = { pointerId: event.pointerId, last: point };
         return;
       case 'fire':
+        setPointerCaptureIfAvailable(init.surface, event.pointerId);
         startFirePointer(event.pointerId);
         return;
     }
@@ -131,16 +146,16 @@ export function createMobileInputController(init: MobileInputControllerInit): In
     if (movementPointer?.pointerId === pointerId) {
       movementPointer = null;
       sendMoveIfChanged({ dx: 0, dy: 0 });
-      init.surface.releasePointerCapture?.(pointerId);
+      releasePointerCaptureIfHeld(init.surface, pointerId);
       return;
     }
     if (aimPointer?.pointerId === pointerId) {
       aimPointer = null;
-      init.surface.releasePointerCapture?.(pointerId);
+      releasePointerCaptureIfHeld(init.surface, pointerId);
       return;
     }
     if (firePointers.delete(pointerId)) {
-      init.surface.releasePointerCapture?.(pointerId);
+      releasePointerCaptureIfHeld(init.surface, pointerId);
       stopFireWhenReady();
     }
   }
@@ -174,6 +189,26 @@ export function createMobileInputController(init: MobileInputControllerInit): In
     const top = pauseRect.top - surfaceRect.top - PAUSE_HIT_PADDING_PX;
     const bottom = pauseRect.bottom - surfaceRect.top + PAUSE_HIT_PADDING_PX;
     return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+  }
+
+  function weaponSlotIndexFromPointer(event: PointerEvent): number | null {
+    const weaponSlotElements = init.weaponSlotElements?.() ?? [];
+    for (const element of weaponSlotElements) {
+      const slotIndex = parseWeaponSlotIndex(element.dataset.weaponSlot);
+      if (slotIndex === null) {
+        continue;
+      }
+      const rect = element.getBoundingClientRect();
+      if (
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+      ) {
+        return slotIndex;
+      }
+    }
+    return null;
   }
 
   function startFirePointer(pointerId: number): void {
@@ -247,7 +282,7 @@ export function createMobileInputController(init: MobileInputControllerInit): In
       ...firePointers
     ].filter((pointerId): pointerId is number => pointerId !== undefined);
     for (const pointerId of capturedPointerIds) {
-      init.surface.releasePointerCapture?.(pointerId);
+      releasePointerCaptureIfHeld(init.surface, pointerId);
     }
     movementPointer = null;
     aimPointer = null;
@@ -331,6 +366,60 @@ function surfaceSize(surface: MobileSurface): SurfaceSize {
     width: surface.clientWidth > 0 ? surface.clientWidth : rect.width,
     height: surface.clientHeight > 0 ? surface.clientHeight : rect.height
   };
+}
+
+function parseWeaponSlotIndex(value: string | undefined): number | null {
+  if (value === undefined || value.trim() === '') {
+    return null;
+  }
+  const index = Number(value);
+  return Number.isInteger(index) && index >= 0 ? index : null;
+}
+
+function setPointerCaptureIfAvailable(surface: MobileSurface, pointerId: number): void {
+  try {
+    surface.setPointerCapture?.(pointerId);
+  } catch (error) {
+    if (!isPointerCaptureLifecycleError(error)) {
+      throw error;
+    }
+  }
+}
+
+function releasePointerCaptureIfHeld(surface: MobileSurface, pointerId: number): void {
+  if (surface.releasePointerCapture === undefined) {
+    return;
+  }
+
+  if (surface.hasPointerCapture !== undefined) {
+    try {
+      if (!surface.hasPointerCapture(pointerId)) {
+        return;
+      }
+    } catch (error) {
+      if (!isPointerCaptureLifecycleError(error)) {
+        throw error;
+      }
+      return;
+    }
+  }
+
+  try {
+    surface.releasePointerCapture(pointerId);
+  } catch (error) {
+    if (!isPointerCaptureLifecycleError(error)) {
+      throw error;
+    }
+  }
+}
+
+function isPointerCaptureLifecycleError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    error.name === 'NotFoundError'
+  );
 }
 
 function defaultNowMs(): number {

@@ -73,6 +73,7 @@ export function createGameSurfaceController(init: Readonly<{
   windowTarget: GameSurfaceWindowTarget;
 }>): GameSurfaceController {
   let effectiveViewport = resolveEffectiveGameViewport(init.profile, readViewport(init.windowTarget));
+  const matchMedia = init.windowTarget.matchMedia;
 
   function applyLayout(): void {
     effectiveViewport = resolveEffectiveGameViewport(init.profile, readViewport(init.windowTarget));
@@ -119,7 +120,13 @@ export function createGameSurfaceController(init: Readonly<{
     devicePixelRatio(): number {
       return init.windowTarget.devicePixelRatio;
     },
-    matchMedia: init.windowTarget.matchMedia,
+    ...(matchMedia === undefined
+      ? {}
+      : {
+          matchMedia(query: string): MediaQueryList {
+            return matchMedia.call(init.windowTarget, query);
+          }
+        }),
     dispose(): void {
       init.windowTarget.removeEventListener('resize', onResize);
       init.windowTarget.removeEventListener('orientationchange', onResize);

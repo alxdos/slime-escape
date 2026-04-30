@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  createGameSurfaceController,
   detectMobileWebProfile,
   resolveEffectiveGameViewport
 } from './mobileWebProfile';
@@ -78,3 +79,37 @@ describe('resolveEffectiveGameViewport', () => {
     });
   });
 });
+
+describe('createGameSurfaceController', () => {
+  it('keeps matchMedia bound to the browser window target', () => {
+    let matchMediaReceiver: unknown = null;
+    const windowTarget = {
+      innerWidth: 390,
+      innerHeight: 844,
+      devicePixelRatio: 2,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      matchMedia(this: unknown, query: string): MediaQueryList {
+        matchMediaReceiver = this;
+        return { matches: query === '(test-query)' } as MediaQueryList;
+      }
+    };
+
+    const controller = createGameSurfaceController({
+      root: createFakeRoot(),
+      profile: { isMobile: true, screenLandscapeAspect: 844 / 390 },
+      windowTarget
+    });
+
+    expect(controller.matchMedia?.('(test-query)').matches).toBe(true);
+    expect(matchMediaReceiver).toBe(windowTarget);
+  });
+});
+
+function createFakeRoot(): HTMLElement {
+  const style = {
+    setProperty: () => undefined
+  };
+
+  return { style } as unknown as HTMLElement;
+}

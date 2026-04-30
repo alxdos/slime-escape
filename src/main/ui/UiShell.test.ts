@@ -1601,6 +1601,15 @@ describe('UiShell', () => {
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
     let viewport = { width: 844, height: 390 };
+    let matchMediaReceiver: unknown = null;
+    const gameViewport = {
+      current: () => viewport,
+      devicePixelRatio: () => 3,
+      matchMedia(this: unknown, query: string): MediaQueryList {
+        matchMediaReceiver = this;
+        return { matches: query === '(test-query)' } as MediaQueryList;
+      }
+    };
 
     createUiShellForTest({
       parent: {} as HTMLElement,
@@ -1619,10 +1628,7 @@ describe('UiShell', () => {
       createAudio: audio.factory,
       windowTarget,
       documentTarget,
-      gameViewport: {
-        current: () => viewport,
-        devicePixelRatio: () => 3
-      }
+      gameViewport
     });
 
     await flushUiShellStartup();
@@ -1635,6 +1641,8 @@ describe('UiShell', () => {
     viewport = { width: 932, height: 430 };
     expect(rendererWindowTarget?.innerWidth).toBe(932);
     expect(rendererWindowTarget?.innerHeight).toBe(430);
+    expect(rendererWindowTarget?.matchMedia?.('(test-query)').matches).toBe(true);
+    expect(matchMediaReceiver).toBe(gameViewport);
   });
 
   it('passes a mobile arena override to the session builder', async () => {
@@ -1710,9 +1718,13 @@ describe('UiShell', () => {
       exitPointerLock: vi.fn()
     });
     const preventDefault = vi.fn();
+    const weaponSlotElement = {} as HTMLElement;
+    const parent = {
+      querySelectorAll: vi.fn(() => [weaponSlotElement])
+    } as unknown as HTMLElement;
 
     const shell = createUiShellForTest({
-      parent: {} as HTMLElement,
+      parent,
       canvas: { clientHeight: 390 } as HTMLCanvasElement,
       buildSessionDefinition: () => makeSession('mobile-input-session'),
       createSimWorkerHost: sim.factory,
@@ -1743,6 +1755,7 @@ describe('UiShell', () => {
     expect(mobileInput.calls.start).toBe(1);
     expect(mobileInput.lastInit()?.surface).toBeDefined();
     expect(mobileInput.lastInit()?.pauseElement?.()).toBe(mobileControls.pauseButton());
+    expect(mobileInput.lastInit()?.weaponSlotElements?.()).toEqual([weaponSlotElement]);
     expect(mobileControls.isVisible()).toBe(true);
 
     windowTarget.dispatch(

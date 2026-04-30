@@ -1003,6 +1003,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         ...sharedInput,
         surface: init.parent,
         pauseElement: () => mobileControls.pauseButtonElement(),
+        weaponSlotElements: () => queryWeaponSlotElements(init.parent),
         onPause: enterOverlayPause
       });
     }
@@ -1158,7 +1159,13 @@ function defaultPortalHref(): string {
   return location.href;
 }
 
+function queryWeaponSlotElements(parent: HTMLElement): HTMLElement[] {
+  return [...parent.querySelectorAll<HTMLElement>('[data-weapon-slot]')];
+}
+
 function createRendererWindowTarget(gameViewport: GameViewportProvider): RendererInit['windowTarget'] {
+  const matchMedia = gameViewport.matchMedia;
+
   return {
     get innerWidth(): number {
       return gameViewport.current().width;
@@ -1169,7 +1176,13 @@ function createRendererWindowTarget(gameViewport: GameViewportProvider): Rendere
     get devicePixelRatio(): number {
       return gameViewport.devicePixelRatio();
     },
-    matchMedia: gameViewport.matchMedia
+    ...(matchMedia === undefined
+      ? {}
+      : {
+          matchMedia(query: string): MediaQueryList {
+            return matchMedia.call(gameViewport, query);
+          }
+        })
   };
 }
 

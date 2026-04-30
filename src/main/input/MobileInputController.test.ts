@@ -32,9 +32,11 @@ class FakeEventTarget {
 
 class FakeElement extends FakeEventTarget {
   readonly children: FakeElement[] = [];
+  readonly dataset: Record<string, string> = {};
   readonly style: Record<string, string> = {};
   readonly capturedPointers: number[] = [];
   readonly releasedPointers: number[] = [];
+  private readonly activeCaptures = new Set<number>();
 
   constructor(
     readonly clientWidth: number,
@@ -58,10 +60,22 @@ class FakeElement extends FakeEventTarget {
 
   setPointerCapture(pointerId: number): void {
     this.capturedPointers.push(pointerId);
+    this.activeCaptures.add(pointerId);
+  }
+
+  hasPointerCapture(pointerId: number): boolean {
+    return this.activeCaptures.has(pointerId);
   }
 
   releasePointerCapture(pointerId: number): void {
+    if (!this.activeCaptures.delete(pointerId)) {
+      throw createNotFoundError();
+    }
     this.releasedPointers.push(pointerId);
+  }
+
+  losePointerCapture(pointerId: number): void {
+    this.activeCaptures.delete(pointerId);
   }
 }
 
@@ -183,6 +197,53 @@ describe('MobileInputController', () => {
     ]);
   });
 
+  it('does not capture duplicate movement or aim pointer starts', () => {
+    const surface = new FakeElement(800, 400);
+    const windowTarget = new FakeEventTarget();
+    const commands: InputCommand[] = [];
+    const controller = createMobileInputController({
+      surface,
+      arena: { width: 32, height: 18 },
+      pixelsPerWorldUnit: () => 10,
+      initialAim: { x: 0, y: 0 },
+      onCommand: (command) => commands.push(command),
+      onPause: () => {},
+      windowTarget
+    });
+
+    controller.start();
+    surface.dispatch('pointerdown', pointerEvent('pointerdown', surface, { pointerId: 20, x: 100, y: 300 }));
+    surface.dispatch('pointerdown', pointerEvent('pointerdown', surface, { pointerId: 21, x: 120, y: 320 }));
+    surface.dispatch('pointerdown', pointerEvent('pointerdown', surface, { pointerId: 22, x: 700, y: 300 }));
+    surface.dispatch('pointerdown', pointerEvent('pointerdown', surface, { pointerId: 23, x: 720, y: 320 }));
+
+    expect(surface.capturedPointers).toEqual([20, 22]);
+  });
+
+  it('maps taps inside weapon slot bounds to existing slot-select commands', () => {
+    const surface = new FakeElement(800, 400);
+    const weaponSlot = new FakeElement(80, 80, makeRect(360, 300, 80, 80));
+    weaponSlot.dataset['weaponSlot'] = '1';
+    const windowTarget = new FakeEventTarget();
+    const commands: InputCommand[] = [];
+    const controller = createMobileInputController({
+      surface,
+      arena: { width: 32, height: 18 },
+      pixelsPerWorldUnit: () => 10,
+      initialAim: { x: 0, y: 0 },
+      onCommand: (command) => commands.push(command),
+      onPause: () => {},
+      weaponSlotElements: () => [weaponSlot],
+      windowTarget
+    });
+
+    controller.start();
+    surface.dispatch('pointerdown', pointerEvent('pointerdown', surface, { pointerId: 24, x: 400, y: 340 }));
+
+    expect(commands).toEqual([{ kind: 'selectWeaponSlot', slotIndex: 1 }]);
+    expect(surface.capturedPointers).toEqual([]);
+  });
+
   it('gives pause button pointer starts priority over fire without pausing dragged fire touches', () => {
     const surface = new FakeElement(800, 400);
     const pauseButton = new FakeElement(90, 42, makeRect(355, 12, 90, 42));
@@ -256,6 +317,51 @@ describe('MobileInputController', () => {
     ]);
     expect(surface.releasedPointers).toEqual([10, 11]);
   });
+
+  it('ignores browser-lost pointer capture when pause stops active controls', () => {
+    const surface = new FakeElement(800, 400);
+    const pauseButton = new FakeElement(90, 42, makeRect(355, 12, 90, 42));
+    surface.appendChild(pauseButton);
+    const windowTarget = new FakeEventTarget();
+    const commands: InputCommand[] = [];
+    let pauseCalls = 0;
+    const controller = createMobileInputController({
+      surface,
+      arena: { width: 32, height: 18 },
+      pixelsPerWorldUnit: () => 10,
+      initialAim: { x: 0, y: 0 },
+      onCommand: (command) => commands.push(command),
+      onPause: () => {
+        pauseCalls += 1;
+        controller.stop();
+      },
+      pauseElement: () => pauseButton,
+      windowTarget
+    });
+
+    controller.start();
+    surface.dispatch('pointerdown', pointerEvent('pointerdown', surface, { pointerId: 12, x: 100, y: 80 }));
+    surface.losePointerCapture(12);
+
+    expect(() => {
+      surface.dispatch(
+        'pointerdown',
+        pointerEvent('pointerdown', surface, {
+          pointerId: 13,
+          x: 400,
+          y: 30,
+          target: pauseButton
+        })
+      );
+    }).not.toThrow();
+
+    expect(pauseCalls).toBe(1);
+    expect(commands).toEqual([
+      { kind: 'fire', phase: 'start' },
+      { kind: 'fire', phase: 'stop' }
+    ]);
+    expect(surface.releasedPointers).toEqual([]);
+  });
 });
 
 function pointerEvent(
@@ -292,6 +398,12 @@ function makeRect(left: number, top: number, width: number, height: number): DOM
     bottom: top + height,
     toJSON: () => ({})
   } as DOMRect;
+}
+
+function createNotFoundError(): Error {
+  const error = new Error('No active pointer with the given id is found.');
+  error.name = 'NotFoundError';
+  return error;
 }
 
 function createTimerHarness() {
