@@ -6,9 +6,9 @@
 
 ## Product intent
 
-Public Slime Arena is a trashy always-online side mode where players drop into one shared slime pit, throw rocks at each other, evolve through slime forms by getting kills, and try to become the boss before someone knocks them back to the bottom.
+Public Slime Arena is a trashy always-online side mode where players drop into one shared slime pit, use the generated portal loadout against each other, evolve through slime forms by getting kills, and try to become the boss before someone knocks them back to the bottom.
 
-The beauty of the mode is simplicity: join, spawn, throw rocks, kill, level up, die, start over.
+The beauty of the mode is simplicity: join, spawn, fight, kill, level up, die, start over.
 
 ## Product rules
 
@@ -17,7 +17,7 @@ The beauty of the mode is simplicity: join, spawn, throw rocks, kill, level up, 
 - The server has a fixed player cap. A first target cap is `200` connected players.
 - If the arena is full, a new player does not join and sees a clear full-arena message.
 - Every player starts as the same level 1 slime.
-- All non-boss slimes use the same attack: throw rocks.
+- All non-boss slimes use the same generated portal loadout. The first content target is rock thrower plus shotgun, with rock thrower selected by default.
 - Killing any player gives exactly `+1 level`.
 - Killing a boss still gives exactly `+1 level`; it does not skip slime forms.
 - Death resets the player to level 1.
@@ -27,7 +27,7 @@ The beauty of the mode is simplicity: join, spawn, throw rocks, kill, level up, 
 - The final level transforms the player into the boss form.
 - The first boss form should use the tower boss visual from `public/assets/boss-04.png`.
 - Bosses use the standard boss scale, have much more HP than regular slimes, and are visually obvious targets.
-- Regular slimes throw rocks. Bosses may use a fire attack like the existing game boss.
+- Regular slimes use the generated portal loadout. Bosses may use a fire attack like the existing game boss.
 - Everyone can damage everyone, including boss versus boss.
 - The mode does not award campaign XP, pet progress, unlocks, or permanent account progress in the first slice.
 
@@ -40,13 +40,13 @@ The beauty of the mode is simplicity: join, spawn, throw rocks, kill, level up, 
 - Sees: on join, the player appears as the same small level 1 slime as everyone else.
 - Sees: players spawn from simple corner spawn areas.
 - Sees: every player has a level label above their slime.
-- Can do: throw rocks at other players.
+- Can do: throw rocks at other players or switch to shotgun.
 - Can do: kill another player to gain one level.
 - Sees: after gaining a level, their slime changes into the next slime form.
 - Sees: other players changing forms as they level up.
 - Sees: when they die, they respawn as a level 1 slime.
 - Sees: when another player reaches the final level, that player becomes a large boss using the tower boss visual.
-- Can do: keep throwing rocks at boss players with the crowd.
+- Can do: keep fighting boss players with the crowd.
 - Sees: boss players have much more HP and feel like a public target.
 - Can do: as a boss, use a fire attack instead of the normal rock throw.
 - Sees: if multiple bosses exist, they can fight each other.
@@ -74,6 +74,8 @@ Follow-up from playtest: online rendering should not feel like a stripped debug 
 Follow-up from review: Public Arena must not hardcode the regular rock weapon or regular player movement/health outside content. The generated `portal` session remains the source for arena bounds, background, regular player `playerId`, and regular player loadout. The server and UI derive the regular selected weapon from that loadout, and online weapon behavior, projectile presentation, arc affordances, and weapon fire audio must work from existing `content/weapons.md`/weapon mapping content when `portal.md` selects any existing weapon.
 
 Follow-up for online hit/death audio: when the local player hits another player, the local player hears the target form's configured hit sound; when the local player is hit, they hear their own form's configured hit sound. Other players do not hear third-party hit sounds. When any player dies, every connected player hears the dead form's configured death sound. Public Arena presentation events carry the owner/target/dead form data needed to reuse existing enemy/boss audio mappings; do not add arena-specific hit/death sample ids.
+
+Follow-up for regular weapon switching: the generated `portal` session loadout now includes `rock-thrower` and `shotgun`, with `rock-thrower` selected by default. The server owns the selected regular weapon slot for each regular player, accepts standard `selectWeaponSlot` intent from desktop and mobile controls, ignores invalid slot indexes, and uses the selected slot for regular weapon fire, HUD selection, and aim affordances. Boss form still uses the boss weapon while active.
 
 Follow-up for spawn/camera semantics: spawn points are arena/world coordinates derived from the generated arena bounds, not viewport coordinates. The visible area/camera adapts to the spawned player. Spawn points must be inset far enough from arena edges that the player does not appear glued to the wall.
 
@@ -106,7 +108,7 @@ Follow-up for Vibe Jam portal semantics: return portal and exit portal positions
 - Other players' levels are visible above their slimes.
 - The local player's self HP line is visible like in standard mode, and the level label is above that HP line.
 - Desktop online play shows the standard movement/fire affordances, a crosshair, and the selected weapon slot from the generated `portal` loadout.
-- A level 1 player can fire the selected weapon from the generated `portal` loadout.
+- A level 1 player can fire and switch between valid regular weapons from the generated `portal` loadout.
 - Killing another player increases the killer's level by exactly one.
 - After a level increase, the killer's slime form changes.
 - Killing a boss increases the killer's level by exactly one and does not skip forms.
@@ -116,14 +118,14 @@ Follow-up for Vibe Jam portal semantics: return portal and exit portal positions
 - The boss is larger and has much more HP than regular slimes.
 - The boss can use a fire attack.
 - Bosses can damage regular slimes and other bosses.
-- Regular slimes can damage bosses with rocks.
+- Regular slimes can damage bosses with generated portal loadout weapons.
 - Disconnecting and rejoining starts the player back at level 1.
 - The mode does not add campaign XP, pet progress, or permanent rewards after play.
 - Multiplayer exit is explicit: desktop `Esc`/`Space`/Pointer Lock loss and the mobile menu button open a minimal Public Arena menu instead of immediately leaving; choosing `Exit Arena` closes the socket and returns to menu.
 - Online spawn points are inset arena/world coordinates based on the generated arena bounds; changing the viewport must not change spawn coordinates, only the visible area/camera.
 - Vibe Jam return and exit portal positions are render-only stable arena/world coordinates derived from the arena center, not from server state, viewport, or camera state.
 - Online HUD layout shows population on the left and arena level progress in the right-side/top progress area; FPS must not be the only thing floating there during online play.
-- Demo scenario: join the public arena, spawn as level 1, throw rocks, kill one player, see the level label and slime form change, die and return to level 1, then observe a high-level player become the tower boss and fight them without any separate boss phase starting.
+- Demo scenario: join the public arena, spawn as level 1, use the regular portal loadout, kill one player, see the level label and slime form change, die and return to level 1, then observe a high-level player become the tower boss and fight them without any separate boss phase starting.
 
 ## Tasks
 
@@ -153,7 +155,8 @@ Follow-up for Vibe Jam portal semantics: return portal and exit portal positions
 | T22 | [x] | Rework the online top HUD layout. | Online population stays in the left top HUD (`Online N`), while arena level progress now occupies the right-side/top progress slot using the full slime-chain denominator. The FPS overlay is demoted below that lane with lower visual priority, and `PublicArenaHud`/`FpsOverlay`/`UiShell` tests cover labels and placement. |
 | T23 | [x] | Correct the `/portal/` page to enter the online Public Arena. | `/portal/index.html` now sets the Public Arena online auto-start signal and keeps the portal loading image. `UiShell` preserves the startup preload/ritual, then enters `onlineConnecting` through the configured arena client flow without building or starting the local `portal` session. Startup and static-page tests cover the no-local-session contract. |
 | T24 | [x] | Anchor return and exit portal coordinates to the arena center in main/render only. | Vibe Jam portal descriptors now anchor to arena-center world coordinates and use the generated Public Arena arena/player presentation config for the `/portal` online entrypoint. Public Arena receives portals only through the main-thread controller and shared render presentation, with no server snapshot or protocol fields. Controller and renderer tests cover center anchoring, authored bounds, and viewport-stable rendering. |
-| T25 | [ ] | Run automated checks and request live online verification from the user. | Include server unit tests, protocol/client tests, renderer/HUD/UI shell/startup tests, build/content checks, and a manual two-client arena check per pipeline. Confirm `/portal/` enters the online arena, explicit Public Arena exit menu, respawn protection, visible arena background, full slime progression denominator, standard combat affordances, crosshair, self HP/level stack, inset arena-coordinate spawns, render-only center-anchored return/exit portal coordinates, online count, top-right level progress, review hardening, and graceful server-close messaging. |
+| T24a | [ ] | Add shotgun to the generated portal loadout and enable standard regular weapon slot switching online. | Public Arena must reuse the generated `portal` loadout, standard `selectWeaponSlot` input, server-owned selected slot state, and existing weapon/projectile/audio content for all regular weapons. |
+| T25 | [ ] | Run automated checks and request live online verification from the user. | Include server unit tests, protocol/client tests, renderer/HUD/UI shell/startup tests, build/content checks, and a manual two-client arena check per pipeline. Confirm `/portal/` enters the online arena, explicit Public Arena exit menu, respawn protection, visible arena background, full slime progression denominator, standard combat affordances, crosshair, self HP/level stack, regular weapon switching for rock thrower plus shotgun, inset arena-coordinate spawns, render-only center-anchored return/exit portal coordinates, online count, top-right level progress, review hardening, and graceful server-close messaging. |
 
 ## Related
 
