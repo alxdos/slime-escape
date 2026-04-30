@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-30 (story 031 follow-up: aim pixel-to-world mapping uses the active visible area from [camera-and-visible-area.md](camera-and-visible-area.md), while mobile touch controls still map to existing `move`/`aim`/`fire` commands; see [mobile-web-support.md](mobile-web-support.md). Earlier: 2026-04-26 story 023 pause hotkey fix: player-facing pause overlay is `Esc` or `Space`; dev pause moves to physical `KeyP` through `UiShell`, independent of locale/CapsLock. Earlier: 017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 007 finalized pause routing through `UiShell`.)
+- Updated: 2026-04-30 (story 032 follow-up: `online` Public Arena maps desktop `Esc`/`Space`/Pointer Lock loss and the mobile menu button to the Public Arena menu from [main-ui-shell.md](main-ui-shell.md), not to local pause or immediate socket close. Earlier story 031 follow-up: aim pixel-to-world mapping uses the active visible area from [camera-and-visible-area.md](camera-and-visible-area.md), while mobile touch controls still map to existing `move`/`aim`/`fire` commands; see [mobile-web-support.md](mobile-web-support.md). Earlier: 2026-04-26 story 023 pause hotkey fix: player-facing pause overlay is `Esc` or `Space`; dev pause moves to physical `KeyP` through `UiShell`, independent of locale/CapsLock. Earlier: 017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 007 finalized pause routing through `UiShell`.)
 
 ## Context
 
@@ -77,12 +77,13 @@ There are also product requirements:
 - Mobile fire sends the same `fire start` / `fire stop` commands as left mouse button.
 - A mobile fire tap must remain active for at least one simulation step before the input layer sends `fire stop`; this keeps short taps observable without changing simulation semantics.
 - Mobile input does not request Pointer Lock. Desktop Pointer Lock behavior remains unchanged.
-- The mobile pause/menu button is not an input command. It routes to `UiShell` pause behavior and takes priority over the fire zone.
+- The mobile pause/menu button is not an input command. It routes to `UiShell` pause behavior in local `running` sessions and to the Public Arena menu in `online`, and it takes priority over the fire zone.
 
 ### Esc, pause, and Pointer Lock
 
 - `Esc` always means "open pause overlay"; the "Exit to menu" button inside the overlay calls `stopSession`.
 - During an active session, `Space` means the same player-facing action as `Esc`: open `PauseOverlay` and move `UiShell` to the `paused` phase. Because `Space` does not make the browser release Pointer Lock by itself, `UiShell` explicitly calls `document.exitPointerLock()` when entering overlay pause if Pointer Lock is active.
+- Public Arena `online` is the exception to local-session pause: `Esc`, `Space`, and Pointer Lock loss open the Public Arena menu without calling `SimWorkerHost.pause()` and without closing the socket directly. `Exit Arena` inside that menu is the explicit leave action.
 - The browser automatically releases Pointer Lock on `Esc`; this intentionally aligns with opening the pause overlay: the system cursor appears and can click buttons.
 - When leaving pause, `main` requests Pointer Lock again. Until the user makes a gesture (click), the browser may reject the request; this is valid and is handled on the next mousedown.
 - Physical `KeyP` is **dev pause**: it toggles `SimWorkerHost.pause()`/`.resume()`, but **does not** change the `UiShell` phase and **does not** show `PauseOverlay`. It uses `KeyboardEvent.code === 'KeyP'`, not `event.key`, so behavior does not depend on keyboard locale or CapsLock.
