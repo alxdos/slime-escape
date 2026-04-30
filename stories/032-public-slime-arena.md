@@ -1,6 +1,6 @@
 # Public Slime Arena
 
-- Status: in-progress
+- Status: done
 - Created: 2026-04-30
 - Updated: 2026-04-30
 
@@ -159,7 +159,7 @@ Follow-up for Vibe Jam portal semantics: return portal and exit portal positions
 | T24 | [x] | Anchor return and exit portal coordinates to the arena center in main/render only. | Vibe Jam portal descriptors now anchor to arena-center world coordinates and use the generated Public Arena arena/player presentation config for the `/portal` online entrypoint. Public Arena receives portals only through the main-thread controller and shared render presentation, with no server snapshot or protocol fields. Controller and renderer tests cover center anchoring, authored bounds, and viewport-stable rendering. |
 | T24a | [x] | Add shotgun to the generated portal loadout and enable standard regular weapon slot switching online. | Added `shotgun` to the generated `portal` loadout. Public Arena now sends standard `selectWeaponSlot` input online, stores the selected regular slot on the server, exposes it in snapshots, and uses existing weapon/projectile/audio content for regular weapon fire, HUD selection, and aim affordances. |
 | T24b | [x] | Keep virtual aim viewport-relative across local and online camera movement. | Desktop and mobile input now store aim as a visible-area offset, convert it through the current camera for crosshair/rendering and outgoing world `aim`, and resync aim after local/online camera movement changes the world point. |
-| T25 | [ ] | Run automated checks and request live online verification from the user. | Include server unit tests, protocol/client tests, renderer/HUD/UI shell/startup tests, build/content checks, and a manual two-client arena check per pipeline. Confirm `/portal/` enters the online arena, explicit Public Arena exit menu, respawn protection, visible arena background, full slime progression denominator, standard combat affordances, crosshair, self HP/level stack, regular weapon switching for rock thrower plus shotgun, inset arena-coordinate spawns, render-only center-anchored return/exit portal coordinates, online count, top-right level progress, review hardening, and graceful server-close messaging. |
+| T25 | [x] | Run automated checks and request live online verification from the user. | Automated root/server typecheck, tests, build, and diff whitespace checks passed. Live online verification was confirmed by the user after the final aim polishing pass. |
 
 ## Related
 
