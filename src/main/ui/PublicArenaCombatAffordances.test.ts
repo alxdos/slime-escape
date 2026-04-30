@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { PUBLIC_ARENA_LOADOUT, PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/content/publicArena';
+import { PUBLIC_ARENA_LOADOUT } from '../../shared/content/publicArena';
 import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 
@@ -147,7 +147,7 @@ describe('PublicArenaCombatAffordances', () => {
       expect(slotFrame(weaponSlots[0]).style.borderColor).toBe('rgba(255,255,255,0.94)');
       expect(slotFrame(weaponSlots[1]).style.borderColor).toBe('rgba(255,255,255,0.18)');
 
-      affordances.update(publicArenaSnapshotWithSelectedWeapon(1));
+      affordances.update(publicArenaSnapshotWithSelectedWeapon(1), 'self');
 
       expect(slotFrame(weaponSlots[0]).style.borderColor).toBe('rgba(255,255,255,0.18)');
       expect(slotFrame(weaponSlots[1]).style.borderColor).toBe('rgba(255,255,255,0.94)');
@@ -169,8 +169,6 @@ describe('PublicArenaCombatAffordances', () => {
 function publicArenaSnapshotWithSelectedWeapon(selectedWeaponIndex: number): PublicArenaSnapshot {
   return {
     simTimeMs: 120,
-    selfId: 'self',
-    arena: PUBLIC_ARENA_WORLD_BOUNDS,
     population: 1,
     players: [
       {

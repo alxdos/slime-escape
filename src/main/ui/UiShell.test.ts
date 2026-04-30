@@ -770,8 +770,11 @@ function createPublicArenaHudHarness() {
     show(): void {
       visible = true;
     },
-    update(snapshot, _playerCap): void {
-      const self = snapshot?.players.find((player) => player.id === snapshot.selfId) ?? null;
+    update(snapshot, selfId, _playerCap): void {
+      const self =
+        selfId === null
+          ? null
+          : (snapshot?.players.find((player) => player.id === selfId) ?? null);
       lastLevel =
         self === null
           ? `Level --/${PUBLIC_ARENA_BOSS_LEVEL}`
@@ -808,14 +811,16 @@ function createPublicArenaCombatAffordancesHarness() {
   let createCount = 0;
   let updateCount = 0;
   let lastSnapshot: PublicArenaSnapshot | null | undefined;
+  let lastSelfId: string | null | undefined;
 
   const affordances: PublicArenaCombatAffordances = {
     show(): void {
       visible = true;
     },
-    update(snapshot): void {
+    update(snapshot, selfId): void {
       updateCount += 1;
       lastSnapshot = snapshot;
+      lastSelfId = selfId;
     },
     hide(): void {
       visible = false;
@@ -839,6 +844,9 @@ function createPublicArenaCombatAffordancesHarness() {
     },
     lastSnapshot(): PublicArenaSnapshot | null | undefined {
       return lastSnapshot;
+    },
+    lastSelfId(): string | null | undefined {
+      return lastSelfId;
     },
     isVisible(): boolean {
       return visible;
@@ -944,8 +952,6 @@ function createPublicArenaClientHarness() {
 function makePublicArenaSnapshot(): PublicArenaSnapshot {
   return {
     simTimeMs: 120,
-    selfId: 'socket-a',
-    arena: PUBLIC_ARENA_WORLD_BOUNDS,
     population: 7,
     players: [
       {
@@ -2681,6 +2687,7 @@ describe('UiShell', () => {
     expect(input.lastInit()?.initialAim).toEqual({ x: 1, y: 2 });
     expect(input.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(900 / 18, 6);
     expect(publicArenaRenderer.lastInit()?.arena).toEqual(PUBLIC_ARENA_WORLD_BOUNDS);
+    expect(publicArenaRenderer.lastInit()?.selfId).toBe('socket-a');
     expect(publicArenaRenderer.lastInit()?.visibleAreaCamera?.visibleArea().center).toEqual({
       x: 1,
       y: 2
@@ -2688,6 +2695,7 @@ describe('UiShell', () => {
     expect(publicArenaRenderer.lastInit()?.getAim?.()).toEqual({ x: 0, y: 0 });
     expect(publicArenaHud.level()).toBe(`Level 3/${PUBLIC_ARENA_BOSS_LEVEL}`);
     expect(publicArenaHud.population()).toBe('Online 7');
+    expect(publicArenaCombatAffordances.lastSelfId()).toBe('socket-a');
     expect(publicArenaRenderer.calls.render).toBe(1);
 
     publicArenaClient.presentation({

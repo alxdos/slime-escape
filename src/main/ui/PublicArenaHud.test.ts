@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/content/publicArena';
 import { PUBLIC_ARENA_BOSS_LEVEL } from '../../shared/publicArenaProgression';
 
 import { createPublicArenaHud } from './PublicArenaHud';
@@ -63,7 +62,7 @@ describe('PublicArenaHud', () => {
     const hud = createPublicArenaHud({ parent });
 
     hud.show();
-    hud.update(makeSnapshot(), 200);
+    hud.update(makeSnapshot(), 'self', 200);
 
     expect(hud.isVisible()).toBe(true);
     expect(findByRole(parent, 'public-arena-hud-level').textContent).toBe(
@@ -85,7 +84,7 @@ describe('PublicArenaHud', () => {
       'text-align:right'
     );
 
-    hud.update(makeSnapshot({ selfLevel: PUBLIC_ARENA_BOSS_LEVEL + 2 }), 200);
+    hud.update(makeSnapshot({ selfLevel: PUBLIC_ARENA_BOSS_LEVEL + 2 }), 'self', 200);
 
     expect(findByRole(parent, 'public-arena-hud-level').textContent).toBe(
       `Level ${PUBLIC_ARENA_BOSS_LEVEL}/${PUBLIC_ARENA_BOSS_LEVEL}`
@@ -104,8 +103,6 @@ describe('PublicArenaHud', () => {
 function makeSnapshot(options: Readonly<{ selfLevel?: number }> = {}) {
   return {
     simTimeMs: 120,
-    selfId: 'self',
-    arena: PUBLIC_ARENA_WORLD_BOUNDS,
     population: 12,
     players: [
       {

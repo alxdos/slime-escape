@@ -103,6 +103,21 @@ describe('PublicArenaClient', () => {
     });
   });
 
+  it('reports the accepted player identity and arena from the join handshake', () => {
+    const socket = new FakePublicArenaSocket();
+    const onAccepted = vi.fn();
+    createPublicArenaClient(makeInit(socket, { onAccepted }));
+
+    socket.dispatch(PUBLIC_ARENA_EVENTS.joinAccepted, makeAccepted());
+
+    expect(onAccepted).toHaveBeenCalledWith(
+      expect.objectContaining({
+        playerId: 'player-a',
+        arena: PUBLIC_ARENA_WORLD_BOUNDS
+      })
+    );
+  });
+
   it('reports full arena rejection and disconnects', () => {
     const socket = new FakePublicArenaSocket();
     const onRejected = vi.fn();
