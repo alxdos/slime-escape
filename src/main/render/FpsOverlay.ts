@@ -11,16 +11,17 @@ export function createFpsOverlay(parent: HTMLElement): FpsOverlay {
   el.dataset['role'] = 'fps';
   el.style.cssText = [
     'position:fixed',
-    'top:80px',
+    'top:108px',
     'right:56px',
-    'padding:4px 8px',
-    'font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace',
+    'padding:3px 6px',
+    'font:10px/1 ui-monospace,SFMono-Regular,Menlo,monospace',
     'color:#cdd5e3',
     'background:rgba(10,12,16,0.6)',
     'border-radius:4px',
+    'opacity:0.56',
     'pointer-events:none',
     'user-select:none',
-    'z-index:44'
+    'z-index:30'
   ].join(';');
   el.textContent = '— fps';
   parent.appendChild(el);

@@ -23,12 +23,12 @@ export function createPublicArenaHud(init: PublicArenaHudInit): PublicArenaHud {
 
   const level = document.createElement('div');
   level.dataset['role'] = 'public-arena-hud-level';
-  level.style.cssText = primaryTextStyle();
+  level.style.cssText = levelPanelStyle();
   root.appendChild(level);
 
   const population = document.createElement('div');
   population.dataset['role'] = 'public-arena-hud-population';
-  population.style.cssText = secondaryTextStyle();
+  population.style.cssText = populationPanelStyle();
   root.appendChild(population);
 
   init.parent.appendChild(root);
@@ -60,7 +60,7 @@ export function createPublicArenaHud(init: PublicArenaHudInit): PublicArenaHud {
   return {
     show(): void {
       visible = true;
-      root.style.display = 'grid';
+      root.style.display = 'block';
     },
     update(snapshot, _playerCap): void {
       render(snapshot);
@@ -82,44 +82,59 @@ function rootStyle(): string {
   return [
     'position:fixed',
     'top:42px',
-    'left:56px',
+    'left:clamp(12px,4vw,56px)',
+    'right:clamp(12px,4vw,56px)',
     'z-index:31',
-    'display:grid',
-    'gap:4px',
+    'display:block',
     'pointer-events:none',
-    'min-width:150px',
+    'height:52px',
+    'box-sizing:border-box'
+  ].join(';');
+}
+
+function populationPanelStyle(): string {
+  return [
+    'position:absolute',
+    'top:0',
+    'left:0',
+    'width:min(190px, calc(50vw - 24px))',
     'box-sizing:border-box',
     'padding:10px 14px 12px',
     'background:rgba(5,8,14,0.62)',
     'border:2px solid rgba(255,255,255,0.16)',
     'border-radius:8px',
-    'box-shadow:0 12px 30px rgba(0,0,0,0.32)'
-  ].join(';');
-}
-
-function primaryTextStyle(): string {
-  return [
+    'box-shadow:0 12px 30px rgba(0,0,0,0.32)',
     ...comicTextStyle({
-      fontSize: '24px',
-      color: '#fff38b',
-      lineHeight: '1',
-      textAlign: 'left'
-    }),
-    'font-size:min(24px, 6vw)',
-    'overflow-wrap:anywhere'
-  ].join(';');
-}
-
-function secondaryTextStyle(): string {
-  return [
-    ...comicTextStyle({
-      fontSize: '16px',
+      fontSize: '18px',
       color: '#eef4ff',
       lineHeight: '1',
       textAlign: 'left'
     }),
-    'font-size:min(16px, 4.5vw)',
-    'opacity:0.88',
+    'font-size:min(18px, 4.8vw)',
+    'opacity:0.92',
+    'overflow-wrap:anywhere'
+  ].join(';');
+}
+
+function levelPanelStyle(): string {
+  return [
+    'position:absolute',
+    'top:0',
+    'right:0',
+    'width:min(190px, calc(50vw - 24px))',
+    'box-sizing:border-box',
+    'padding:10px 14px 12px',
+    'background:rgba(5,8,14,0.66)',
+    'border:2px solid rgba(255,243,139,0.22)',
+    'border-radius:8px',
+    'box-shadow:0 12px 30px rgba(0,0,0,0.32)',
+    ...comicTextStyle({
+      fontSize: '24px',
+      color: '#fff38b',
+      lineHeight: '1',
+      textAlign: 'right'
+    }),
+    'font-size:min(24px, 6vw)',
     'overflow-wrap:anywhere'
   ].join(';');
 }

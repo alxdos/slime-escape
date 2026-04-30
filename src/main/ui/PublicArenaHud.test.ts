@@ -72,6 +72,18 @@ describe('PublicArenaHud', () => {
     expect(findByRole(parent, 'public-arena-hud-population').textContent).toBe(
       'Online 12'
     );
+    expect(findByRole(parent, 'public-arena-hud').style.cssText).toContain(
+      'right:clamp(12px,4vw,56px)'
+    );
+    expect(findByRole(parent, 'public-arena-hud-population').style.cssText).toContain(
+      'left:0'
+    );
+    expect(findByRole(parent, 'public-arena-hud-level').style.cssText).toContain(
+      'right:0'
+    );
+    expect(findByRole(parent, 'public-arena-hud-level').style.cssText).toContain(
+      'text-align:right'
+    );
 
     hud.update(makeSnapshot({ selfLevel: PUBLIC_ARENA_BOSS_LEVEL + 2 }), 200);
 
