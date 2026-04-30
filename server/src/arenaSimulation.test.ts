@@ -6,6 +6,7 @@ import {
   PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
   PUBLIC_ARENA_BOSS_LEVEL,
   PUBLIC_ARENA_BOSS_WEAPON_ID,
+  PUBLIC_ARENA_INTEREST_HEIGHT_WU,
   PUBLIC_ARENA_REGULAR_WEAPON_ID,
   PUBLIC_ARENA_SLIME_FORM_CHAIN,
   createPublicArenaSimulation
@@ -204,5 +205,20 @@ describe('PublicArenaSimulation', () => {
     tickUntilDeath(simulation, 'killer', 'boss-victim');
 
     expect(playerSnapshot(simulation, 'killer').level).toBe(levelBefore + 1);
+  });
+
+  it('filters interest snapshots without changing the authoritative arena snapshot', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('self', 0, 0));
+    simulation.addPlayer(member('nearby', 0, PUBLIC_ARENA_INTEREST_HEIGHT_WU / 2 - 1));
+    simulation.addPlayer(member('far-away', 0, PUBLIC_ARENA_WORLD_BOUNDS.maxY - 0.5));
+
+    const fullSnapshot = simulation.snapshotFor('self');
+    const interestSnapshot = simulation.interestSnapshotFor('self');
+
+    expect(fullSnapshot?.players.map((player) => player.id).sort()).toEqual(['far-away', 'nearby', 'self']);
+    expect(interestSnapshot?.players.map((player) => player.id).sort()).toEqual(['nearby', 'self']);
+    expect(fullSnapshot?.population).toBe(3);
+    expect(interestSnapshot?.population).toBe(3);
   });
 });

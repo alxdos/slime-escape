@@ -19,6 +19,8 @@ import {
 export const PUBLIC_ARENA_REGULAR_WEAPON_ID = 'rock-thrower';
 export const PUBLIC_ARENA_BOSS_WEAPON_ID = 'fireball-staff';
 export const PUBLIC_ARENA_BOSS_ARCHETYPE_ID = 'boss-tower-sentinel';
+export const PUBLIC_ARENA_INTEREST_WIDTH_WU = 40;
+export const PUBLIC_ARENA_INTEREST_HEIGHT_WU = 26;
 export const PUBLIC_ARENA_SLIME_FORM_CHAIN = [
   'slime-one-eye',
   'slime-hornling',
@@ -29,6 +31,13 @@ export const PUBLIC_ARENA_SLIME_FORM_CHAIN = [
 export const PUBLIC_ARENA_BOSS_LEVEL = PUBLIC_ARENA_SLIME_FORM_CHAIN.length + 1;
 
 type Vector = Readonly<{ x: number; y: number }>;
+
+type InterestRect = Readonly<{
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}>;
 
 type ActorStats = Readonly<{
   form: PublicArenaPlayerFormSnapshot;
@@ -90,6 +99,7 @@ export type PublicArenaSimulation = Readonly<{
   applyInput(playerId: PublicArenaPlayerId, intent: PublicArenaInputIntent): void;
   tick(): void;
   snapshotFor(selfId: PublicArenaPlayerId): PublicArenaSnapshot | null;
+  interestSnapshotFor(selfId: PublicArenaPlayerId): PublicArenaSnapshot | null;
   drainEvents(): ReadonlyArray<PublicArenaPresentationEvent>;
 }>;
 
@@ -377,6 +387,27 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
     };
   }
 
+  function interestSnapshotFor(selfId: PublicArenaPlayerId): PublicArenaSnapshot | null {
+    const self = players.get(selfId);
+    if (self === undefined) {
+      return null;
+    }
+
+    const rect = interestRectFor(self);
+    return {
+      simTimeMs,
+      selfId,
+      arena: PUBLIC_ARENA_WORLD_BOUNDS,
+      population: players.size,
+      players: [...players.values()]
+        .filter((player) => playerIntersectsInterest(player, rect))
+        .map(toPlayerSnapshot),
+      projectiles: [...projectiles.values()]
+        .filter((projectile) => projectileIntersectsInterest(projectile, rect))
+        .map(toProjectileSnapshot)
+    };
+  }
+
   function drainEvents(): ReadonlyArray<PublicArenaPresentationEvent> {
     const drained = [...events];
     events.length = 0;
@@ -392,6 +423,7 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
     applyInput,
     tick,
     snapshotFor,
+    interestSnapshotFor,
     drainEvents
   };
 }
@@ -501,6 +533,45 @@ function toProjectileSnapshot(projectile: RuntimeProjectile): PublicArenaProject
     size: projectile.size,
     angleRadians: projectile.angleRadians
   };
+}
+
+function interestRectFor(player: RuntimePlayer): InterestRect {
+  const halfWidth = Math.min(PUBLIC_ARENA_INTEREST_WIDTH_WU, PUBLIC_ARENA_WORLD_BOUNDS.width) / 2;
+  const halfHeight = Math.min(PUBLIC_ARENA_INTEREST_HEIGHT_WU, PUBLIC_ARENA_WORLD_BOUNDS.height) / 2;
+  const centerX = clamp(
+    player.x,
+    PUBLIC_ARENA_WORLD_BOUNDS.minX + halfWidth,
+    PUBLIC_ARENA_WORLD_BOUNDS.maxX - halfWidth
+  );
+  const centerY = clamp(
+    player.y,
+    PUBLIC_ARENA_WORLD_BOUNDS.minY + halfHeight,
+    PUBLIC_ARENA_WORLD_BOUNDS.maxY - halfHeight
+  );
+  return {
+    minX: centerX - halfWidth,
+    maxX: centerX + halfWidth,
+    minY: centerY - halfHeight,
+    maxY: centerY + halfHeight
+  };
+}
+
+function playerIntersectsInterest(player: RuntimePlayer, rect: InterestRect): boolean {
+  return circleIntersectsRect(player.x, player.y, player.radius, rect);
+}
+
+function projectileIntersectsInterest(projectile: RuntimeProjectile, rect: InterestRect): boolean {
+  const radius = Math.max(projectile.size.width, projectile.size.height) / 2;
+  return circleIntersectsRect(projectile.x, projectile.y, radius, rect);
+}
+
+function circleIntersectsRect(x: number, y: number, radius: number, rect: InterestRect): boolean {
+  return (
+    x + radius >= rect.minX &&
+    x - radius <= rect.maxX &&
+    y + radius >= rect.minY &&
+    y - radius <= rect.maxY
+  );
 }
 
 function isOutsideArena(point: Vector): boolean {

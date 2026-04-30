@@ -4,6 +4,7 @@ import { Server as SocketIOServer } from 'socket.io';
 
 import type {
   PublicArenaClientToServerEvents,
+  PublicArenaPresentationEvent,
   PublicArenaServerToClientEvents
 } from '../../src/shared/publicArenaProtocol.js';
 import {
@@ -11,8 +12,8 @@ import {
   PUBLIC_ARENA_PROTOCOL_VERSION,
   type PublicArenaJoinRejected
 } from '../../src/shared/publicArenaProtocol.js';
-import { SIM_STEP_MS } from '../../src/shared/timing.js';
-import { createPublicArenaState } from './arenaState.js';
+import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../../src/shared/timing.js';
+import { createPublicArenaState, type PublicArenaMember } from './arenaState.js';
 import { createPublicArenaSimulation } from './arenaSimulation.js';
 import type { PublicArenaServerConfig } from './config.js';
 
@@ -43,6 +44,7 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
   });
   const simulation = createPublicArenaSimulation();
   let tickTimer: NodeJS.Timeout | null = null;
+  let snapshotTimer: NodeJS.Timeout | null = null;
 
   const httpServer = createServer((req, res) => {
     if (req.url === '/healthz') {
@@ -118,6 +120,12 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
               simulation.tick();
             }, SIM_STEP_MS);
           }
+          if (snapshotTimer === null) {
+            snapshotTimer = setInterval(() => {
+              publishPresentationEvents(io, simulation.drainEvents());
+              publishSnapshots(io, arena.members(), simulation);
+            }, SNAPSHOT_INTERVAL_MS);
+          }
           resolve();
         });
       });
@@ -126,6 +134,10 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
       if (tickTimer !== null) {
         clearInterval(tickTimer);
         tickTimer = null;
+      }
+      if (snapshotTimer !== null) {
+        clearInterval(snapshotTimer);
+        snapshotTimer = null;
       }
 
       return new Promise((resolve, reject) => {
@@ -151,6 +163,33 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
       });
     }
   };
+}
+
+function publishSnapshots(
+  io: SocketIOServer<PublicArenaClientToServerEvents, PublicArenaServerToClientEvents>,
+  members: ReadonlyArray<PublicArenaMember>,
+  simulation: ReturnType<typeof createPublicArenaSimulation>
+): void {
+  for (const member of members) {
+    const socket = io.sockets.sockets.get(member.socketId);
+    if (socket === undefined) {
+      continue;
+    }
+    const snapshot = simulation.interestSnapshotFor(member.playerId);
+    if (snapshot === null) {
+      continue;
+    }
+    socket.volatile.emit(PUBLIC_ARENA_EVENTS.snapshot, snapshot);
+  }
+}
+
+function publishPresentationEvents(
+  io: SocketIOServer<PublicArenaClientToServerEvents, PublicArenaServerToClientEvents>,
+  events: ReadonlyArray<PublicArenaPresentationEvent>
+): void {
+  for (const event of events) {
+    io.to(PUBLIC_ARENA_ROOM).volatile.emit(PUBLIC_ARENA_EVENTS.presentation, event);
+  }
 }
 
 function protocolMismatchRejection(population: number, playerCap: number): PublicArenaJoinRejected {
