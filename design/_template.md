@@ -1,6 +1,6 @@
 # <Title>
 
-- Status: proposed | accepted | superseded
+- Status: proposed | accepted
 - Created: YYYY-MM-DD
 - Updated: YYYY-MM-DD
 

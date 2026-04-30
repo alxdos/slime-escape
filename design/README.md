@@ -35,7 +35,7 @@ Main principle:
   - `Consequences`
   - `Related`
 - When an active decision changes, update the existing file and its `Updated` field.
-- If a decision is no longer valid, set `Status` to `superseded` and link to the replacement in `Related`.
+- If a decision is no longer valid, delete the file. Git history preserves the previous content. Before the deletion, the replacement decision (if any) must already be in place, and every `design/` file, `stories/` file, and `README` index entry that referenced the removed decision must be updated to point at the replacement or removed if no replacement is needed. The deletion lands in the same architectural PR as those updates so the tree never holds dangling links.
 
 ## How design evolves through stories
 
@@ -99,7 +99,8 @@ Main principle:
 | [session-result-summary.md](session-result-summary.md) | accepted | Terminal run summary for `win`/`loss`: progress, duration, kills, drops, boss state, defeat cause, Dungeon summary, and Result UI ownership |
 | [escape-progress-path.md](escape-progress-path.md) | accepted | Main-thread Escape Path: wave-only progress path for compact HUD, break map, and Result UI, derived from `SessionDefinition`, snapshots, and result summary without sim contract changes |
 | [vibe-jam-portals.md](vibe-jam-portals.md) | accepted | Vibe Jam portal entrypoint, inbound return context, opening exit portal, normal post-boss completion, and redirect contracts |
-| [public-multiplayer-arena.md](public-multiplayer-arena.md) | accepted | Stateful Socket.IO server package, authoritative in-memory public arena, and full per-socket snapshots that carry only changing state for the online slime deathmatch |
+| [public-multiplayer-arena.md](public-multiplayer-arena.md) | accepted | First-slice Socket.IO server package and compact in-memory public arena; provisional, scheduled for removal when the Node host (story 036) replaces it with a focused `online-arena-hosting.md` |
+| [simulation-runtime.md](simulation-runtime.md) | accepted | Single shared simulation core, browser worker host for local play and Node arena host for online modes; online modes are multi-actor sessions of the shared core, not a separate runtime |
 | [_template.md](_template.md) | template | Minimal template for a new decision |
 
 ---
