@@ -3,6 +3,7 @@ export {
   PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
   PUBLIC_ARENA_BOSS_LEVEL,
   PUBLIC_ARENA_BOSS_WEAPON_ID,
+  PUBLIC_ARENA_REGULAR_FORM_STATS,
   PUBLIC_ARENA_REGULAR_WEAPON_ID,
   PUBLIC_ARENA_SLIME_FORM_CHAIN
 } from '../../src/shared/publicArenaProgression.js';
@@ -10,6 +11,7 @@ import {
   PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
   PUBLIC_ARENA_BOSS_LEVEL,
   PUBLIC_ARENA_BOSS_WEAPON_ID,
+  PUBLIC_ARENA_REGULAR_FORM_STATS,
   PUBLIC_ARENA_REGULAR_WEAPON_ID,
   PUBLIC_ARENA_SLIME_FORM_CHAIN
 } from '../../src/shared/publicArenaProgression.js';
@@ -108,13 +110,9 @@ export type PublicArenaSimulation = Readonly<{
   drainEvents(): ReadonlyArray<PublicArenaPresentationEvent>;
 }>;
 
-const REGULAR_FORMS: ReadonlyArray<ActorStats> = [
-  regularForm('slime-one-eye', 0.4, 2, 5),
-  regularForm('slime-hornling', 0.5, 3, 5),
-  regularForm('slime-many-eye', 0.6, 4, 4.8),
-  regularForm('slime-stonehead', 0.72, 7, 4.3),
-  regularForm('slime-shell', 0.65, 6, 4.6)
-];
+const REGULAR_FORMS: ReadonlyArray<ActorStats> = PUBLIC_ARENA_REGULAR_FORM_STATS.map(
+  (form) => regularForm(form.archetypeId, form.radius, form.maxHp, form.maxSpeed)
+);
 
 const BOSS_STATS: ActorStats = {
   form: { kind: 'boss', archetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID },
@@ -471,15 +469,7 @@ function statsForLevel(level: number): ActorStats {
 
   const stats = REGULAR_FORMS[level - 1];
   if (stats === undefined) {
-    return firstRegularForm();
-  }
-  return stats;
-}
-
-function firstRegularForm(): ActorStats {
-  const stats = REGULAR_FORMS[0];
-  if (stats === undefined) {
-    throw new Error('public arena must have at least one regular form');
+    throw new Error(`public arena missing regular form stats for level ${level}`);
   }
   return stats;
 }

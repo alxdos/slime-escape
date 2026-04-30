@@ -65,7 +65,16 @@ function promoteToBoss(
   killerId: PublicArenaPlayerId,
   victimId: PublicArenaPlayerId
 ): void {
-  while (playerSnapshot(simulation, killerId).level < PUBLIC_ARENA_BOSS_LEVEL) {
+  promoteToLevel(simulation, killerId, victimId, PUBLIC_ARENA_BOSS_LEVEL);
+}
+
+function promoteToLevel(
+  simulation: ReturnType<typeof createPublicArenaSimulation>,
+  killerId: PublicArenaPlayerId,
+  victimId: PublicArenaPlayerId,
+  targetLevel: number
+): void {
+  while (playerSnapshot(simulation, killerId).level < targetLevel) {
     tickUntilDeath(simulation, killerId, victimId);
   }
 }
@@ -176,6 +185,30 @@ describe('PublicArenaSimulation', () => {
     const projectiles = tickUntilProjectile(simulation, 'killer', PUBLIC_ARENA_BOSS_WEAPON_ID);
 
     expect(projectiles).toHaveLength(4);
+  });
+
+  it('walks through the final authored slime before transforming into the boss', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('killer', 0, 0));
+    simulation.addPlayer(member('victim', 0.5, 0));
+    simulation.drainEvents();
+
+    const finalSlimeId = PUBLIC_ARENA_SLIME_FORM_CHAIN.at(-1);
+    if (finalSlimeId === undefined) {
+      throw new Error('public arena slime chain must not be empty');
+    }
+
+    promoteToLevel(simulation, 'killer', 'victim', PUBLIC_ARENA_BOSS_LEVEL - 1);
+    expect(playerSnapshot(simulation, 'killer').form).toEqual({
+      kind: 'slime',
+      archetypeId: finalSlimeId
+    });
+
+    tickUntilDeath(simulation, 'killer', 'victim');
+    expect(playerSnapshot(simulation, 'killer').form).toEqual({
+      kind: 'boss',
+      archetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID
+    });
   });
 
   it('lets bosses damage other bosses', () => {

@@ -1,8 +1,24 @@
 // AUTO-GENERATED from content/enemies.md by `npm run content:build`.
 // Do not edit by hand.
-import type { EnemyArchetype } from './enemies';
 
-export const SLIME_ONE_EYE: EnemyArchetype = {
+type GeneratedEnemyArchetype = Readonly<{
+  id: string;
+  displayName: string;
+  radius: number;
+  contactBox: Readonly<{ width: number; height: number }>;
+  maxHp: number;
+  behavior: 'stationary' | 'chase';
+  maxSpeed: number;
+  contactDamage: number;
+  contactCooldownMs: number;
+  knockbackBaseImpulse: number;
+  knockbackVelocityScale: number;
+  knockbackDurationMs: number;
+  color: number;
+  dropTable: ReadonlyArray<Readonly<{ archetypeId: string; chance: number }>>;
+  retaliation: Readonly<{ enabled: boolean; durationMs: number }>;
+}>;
+export const SLIME_ONE_EYE: GeneratedEnemyArchetype = {
   id: 'slime-one-eye',
   displayName: 'One-Eye Slime',
   radius: 0.4,
@@ -20,7 +36,7 @@ export const SLIME_ONE_EYE: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_HORNLING: EnemyArchetype = {
+export const SLIME_HORNLING: GeneratedEnemyArchetype = {
   id: 'slime-hornling',
   displayName: 'Hornling Slime',
   radius: 0.5,
@@ -38,7 +54,7 @@ export const SLIME_HORNLING: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_MANY_EYE: EnemyArchetype = {
+export const SLIME_MANY_EYE: GeneratedEnemyArchetype = {
   id: 'slime-many-eye',
   displayName: 'Many-Eye Slime',
   radius: 0.6,
@@ -56,7 +72,7 @@ export const SLIME_MANY_EYE: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_STONEHEAD: EnemyArchetype = {
+export const SLIME_STONEHEAD: GeneratedEnemyArchetype = {
   id: 'slime-stonehead',
   displayName: 'Stonehead Slime',
   radius: 0.72,
@@ -74,7 +90,7 @@ export const SLIME_STONEHEAD: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_SLEEPER: EnemyArchetype = {
+export const SLIME_SLEEPER: GeneratedEnemyArchetype = {
   id: 'slime-sleeper',
   displayName: 'Sleeper Slime',
   radius: 0.45,
@@ -92,7 +108,7 @@ export const SLIME_SLEEPER: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_SPARK: EnemyArchetype = {
+export const SLIME_SPARK: GeneratedEnemyArchetype = {
   id: 'slime-spark',
   displayName: 'Spark Slime',
   radius: 0.35,
@@ -110,7 +126,7 @@ export const SLIME_SPARK: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_WRAITH: EnemyArchetype = {
+export const SLIME_WRAITH: GeneratedEnemyArchetype = {
   id: 'slime-wraith',
   displayName: 'Wraith Slime',
   radius: 0.48,
@@ -128,7 +144,7 @@ export const SLIME_WRAITH: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_SHELL: EnemyArchetype = {
+export const SLIME_SHELL: GeneratedEnemyArchetype = {
   id: 'slime-shell',
   displayName: 'Shell Slime',
   radius: 0.65,
@@ -146,7 +162,7 @@ export const SLIME_SHELL: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_FLAME: EnemyArchetype = {
+export const SLIME_FLAME: GeneratedEnemyArchetype = {
   id: 'slime-flame',
   displayName: 'Flame Slime',
   radius: 0.44,
@@ -164,7 +180,7 @@ export const SLIME_FLAME: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_MECH_CRAB: EnemyArchetype = {
+export const SLIME_MECH_CRAB: GeneratedEnemyArchetype = {
   id: 'slime-mech-crab',
   displayName: 'Mech Crab Slime',
   radius: 0.62,
@@ -182,7 +198,7 @@ export const SLIME_MECH_CRAB: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_STACK: EnemyArchetype = {
+export const SLIME_STACK: GeneratedEnemyArchetype = {
   id: 'slime-stack',
   displayName: 'Stack Slime',
   radius: 0.58,
@@ -200,7 +216,7 @@ export const SLIME_STACK: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_TRICKSTER: EnemyArchetype = {
+export const SLIME_TRICKSTER: GeneratedEnemyArchetype = {
   id: 'slime-trickster',
   displayName: 'Trickster Slime',
   radius: 0.52,
@@ -218,7 +234,7 @@ export const SLIME_TRICKSTER: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_BUG: EnemyArchetype = {
+export const SLIME_BUG: GeneratedEnemyArchetype = {
   id: 'slime-bug',
   displayName: 'Bug Slime',
   radius: 0.48,
@@ -236,7 +252,7 @@ export const SLIME_BUG: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_LIFTER: EnemyArchetype = {
+export const SLIME_LIFTER: GeneratedEnemyArchetype = {
   id: 'slime-lifter',
   displayName: 'Lifter Slime',
   radius: 0.7,
@@ -254,7 +270,7 @@ export const SLIME_LIFTER: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_SAW: EnemyArchetype = {
+export const SLIME_SAW: GeneratedEnemyArchetype = {
   id: 'slime-saw',
   displayName: 'Saw Slime',
   radius: 0.55,
@@ -272,7 +288,7 @@ export const SLIME_SAW: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_DRONE: EnemyArchetype = {
+export const SLIME_DRONE: GeneratedEnemyArchetype = {
   id: 'slime-drone',
   displayName: 'Drone Slime',
   radius: 0.42,
@@ -290,7 +306,7 @@ export const SLIME_DRONE: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_STAR: EnemyArchetype = {
+export const SLIME_STAR: GeneratedEnemyArchetype = {
   id: 'slime-star',
   displayName: 'Star Slime',
   radius: 0.38,
@@ -308,7 +324,7 @@ export const SLIME_STAR: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_ECHO: EnemyArchetype = {
+export const SLIME_ECHO: GeneratedEnemyArchetype = {
   id: 'slime-echo',
   displayName: 'Echo Slime',
   radius: 0.36,
@@ -326,7 +342,7 @@ export const SLIME_ECHO: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_SPLITTER: EnemyArchetype = {
+export const SLIME_SPLITTER: GeneratedEnemyArchetype = {
   id: 'slime-splitter',
   displayName: 'Splitter Slime',
   radius: 0.56,
@@ -344,7 +360,7 @@ export const SLIME_SPLITTER: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_PRINCE: EnemyArchetype = {
+export const SLIME_PRINCE: GeneratedEnemyArchetype = {
   id: 'slime-prince',
   displayName: 'Prince Slime',
   radius: 0.66,
@@ -362,7 +378,7 @@ export const SLIME_PRINCE: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_KINGLING: EnemyArchetype = {
+export const SLIME_KINGLING: GeneratedEnemyArchetype = {
   id: 'slime-kingling',
   displayName: 'Kingling Slime',
   radius: 0.74,
@@ -380,7 +396,7 @@ export const SLIME_KINGLING: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_FORTRESS: EnemyArchetype = {
+export const SLIME_FORTRESS: GeneratedEnemyArchetype = {
   id: 'slime-fortress',
   displayName: 'Fortress Slime',
   radius: 0.8,
@@ -398,7 +414,7 @@ export const SLIME_FORTRESS: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_DASHER: EnemyArchetype = {
+export const SLIME_DASHER: GeneratedEnemyArchetype = {
   id: 'slime-dasher',
   displayName: 'Dasher Slime',
   radius: 0.46,
@@ -416,7 +432,7 @@ export const SLIME_DASHER: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_TADPOLE: EnemyArchetype = {
+export const SLIME_TADPOLE: GeneratedEnemyArchetype = {
   id: 'slime-tadpole',
   displayName: 'Tadpole Slime',
   radius: 0.34,
@@ -434,7 +450,7 @@ export const SLIME_TADPOLE: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_DOOR: EnemyArchetype = {
+export const SLIME_DOOR: GeneratedEnemyArchetype = {
   id: 'slime-door',
   displayName: 'Door Slime',
   radius: 0.76,
@@ -452,7 +468,7 @@ export const SLIME_DOOR: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_MECH: EnemyArchetype = {
+export const SLIME_MECH: GeneratedEnemyArchetype = {
   id: 'slime-mech',
   displayName: 'Mech Slime',
   radius: 0.7,
@@ -470,7 +486,7 @@ export const SLIME_MECH: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_CLAMPER: EnemyArchetype = {
+export const SLIME_CLAMPER: GeneratedEnemyArchetype = {
   id: 'slime-clamper',
   displayName: 'Clamper Slime',
   radius: 0.52,
@@ -488,7 +504,7 @@ export const SLIME_CLAMPER: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_CANDLE: EnemyArchetype = {
+export const SLIME_CANDLE: GeneratedEnemyArchetype = {
   id: 'slime-candle',
   displayName: 'Candle Slime',
   radius: 0.46,
@@ -506,7 +522,7 @@ export const SLIME_CANDLE: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_OBELISK: EnemyArchetype = {
+export const SLIME_OBELISK: GeneratedEnemyArchetype = {
   id: 'slime-obelisk',
   displayName: 'Obelisk Slime',
   radius: 0.5,
@@ -524,7 +540,7 @@ export const SLIME_OBELISK: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_IDOL: EnemyArchetype = {
+export const SLIME_IDOL: GeneratedEnemyArchetype = {
   id: 'slime-idol',
   displayName: 'Idol Slime',
   radius: 0.5,
@@ -542,7 +558,7 @@ export const SLIME_IDOL: EnemyArchetype = {
   retaliation: { enabled: false, durationMs: 0 }
 };
 
-export const SLIME_NINJA: EnemyArchetype = {
+export const SLIME_NINJA: GeneratedEnemyArchetype = {
   id: 'slime-ninja',
   displayName: 'Ninja Slime',
   radius: 0.54,
@@ -559,3 +575,5 @@ export const SLIME_NINJA: EnemyArchetype = {
   dropTable: [{ archetypeId: 'overdrive', chance: 0.155 }, { archetypeId: 'pierce', chance: 0.127 }],
   retaliation: { enabled: false, durationMs: 0 }
 };
+
+export const ENEMY_ARCHETYPE_LIST = [SLIME_ONE_EYE, SLIME_HORNLING, SLIME_MANY_EYE, SLIME_STONEHEAD, SLIME_SLEEPER, SLIME_SPARK, SLIME_WRAITH, SLIME_SHELL, SLIME_FLAME, SLIME_MECH_CRAB, SLIME_STACK, SLIME_TRICKSTER, SLIME_BUG, SLIME_LIFTER, SLIME_SAW, SLIME_DRONE, SLIME_STAR, SLIME_ECHO, SLIME_SPLITTER, SLIME_PRINCE, SLIME_KINGLING, SLIME_FORTRESS, SLIME_DASHER, SLIME_TADPOLE, SLIME_DOOR, SLIME_MECH, SLIME_CLAMPER, SLIME_CANDLE, SLIME_OBELISK, SLIME_IDOL, SLIME_NINJA] as const satisfies ReadonlyArray<GeneratedEnemyArchetype>;

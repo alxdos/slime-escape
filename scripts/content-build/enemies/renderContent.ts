@@ -2,21 +2,35 @@ import type { ParsedEnemiesArea, ParsedEnemy, ParsedDropTableEntry } from './par
 import { readSpriteAssetMetrics } from '../util/spriteMetrics';
 
 export function renderEnemyContent(area: ParsedEnemiesArea): string {
-  return `${renderHeader()}${renderImport()}${area.enemies
+  return `${renderHeader()}${area.enemies
     .map((enemy) => renderEnemy(area, enemy))
-    .join('\n\n')}\n`;
+    .join('\n\n')}\n\n${renderEnemyList(area.enemies)}\n`;
 }
 
 function renderHeader(): string {
   return [
     '// AUTO-GENERATED from content/enemies.md by `npm run content:build`.',
     '// Do not edit by hand.',
+    '',
+    'type GeneratedEnemyArchetype = Readonly<{',
+    '  id: string;',
+    '  displayName: string;',
+    '  radius: number;',
+    '  contactBox: Readonly<{ width: number; height: number }>;',
+    '  maxHp: number;',
+    "  behavior: 'stationary' | 'chase';",
+    '  maxSpeed: number;',
+    '  contactDamage: number;',
+    '  contactCooldownMs: number;',
+    '  knockbackBaseImpulse: number;',
+    '  knockbackVelocityScale: number;',
+    '  knockbackDurationMs: number;',
+    '  color: number;',
+    '  dropTable: ReadonlyArray<Readonly<{ archetypeId: string; chance: number }>>;',
+    '  retaliation: Readonly<{ enabled: boolean; durationMs: number }>;',
+    '}>;',
     ''
   ].join('\n');
-}
-
-function renderImport(): string {
-  return "import type { EnemyArchetype } from './enemies';\n\n";
 }
 
 function renderEnemy(area: ParsedEnemiesArea, enemy: ParsedEnemy): string {
@@ -25,7 +39,7 @@ function renderEnemy(area: ParsedEnemiesArea, enemy: ParsedEnemy): string {
     rowId: enemy.id,
     imagePath: enemy.visual.image
   });
-  return `export const ${toConstName(enemy.id)}: EnemyArchetype = {
+  return `export const ${toConstName(enemy.id)}: GeneratedEnemyArchetype = {
   id: '${enemy.id}',
   displayName: '${escapeString(enemy.displayName)}',
   radius: ${formatNumber(enemy.radius)},
@@ -42,6 +56,12 @@ function renderEnemy(area: ParsedEnemiesArea, enemy: ParsedEnemy): string {
   dropTable: ${renderDropTable(enemy.dropTable)},
   retaliation: { enabled: ${enemy.retaliation.enabled ? 'true' : 'false'}, durationMs: ${formatNumber(enemy.retaliation.durationMs)} }
 };`;
+}
+
+function renderEnemyList(enemies: ReadonlyArray<ParsedEnemy>): string {
+  return `export const ENEMY_ARCHETYPE_LIST = [${enemies
+    .map((enemy) => toConstName(enemy.id))
+    .join(', ')}] as const satisfies ReadonlyArray<GeneratedEnemyArchetype>;`;
 }
 
 function renderDropTable(dropTable: ReadonlyArray<ParsedDropTableEntry>): string {
