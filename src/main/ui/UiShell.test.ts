@@ -2517,6 +2517,130 @@ describe('UiShell', () => {
     expect(menu.latestFeedback()).toBeNull();
   });
 
+  it.each(['Escape', 'Space'])(
+    'routes desktop %s out of the public arena without pausing local sim',
+    async (code) => {
+      const menu = createMenuHarness();
+      const status = createPublicArenaStatusHarness();
+      const publicArenaHud = createPublicArenaHudHarness();
+      const publicArenaClient = createPublicArenaClientHarness();
+      const publicArenaRenderer = createPublicArenaRendererHarness();
+      const input = createInputHarness();
+      const sim = createSimHarness();
+      const hud = createHudHarness();
+      const audio = createAudioHarness();
+      const windowTarget = new FakeEventTarget();
+      const documentEvents = new FakeEventTarget();
+      const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+      const preventDefault = vi.fn();
+
+      const shell = createUiShellForTest({
+        parent: {} as HTMLElement,
+        canvas: { clientHeight: 900 } as HTMLCanvasElement,
+        createSimWorkerHost: sim.factory,
+        createMenuOverlay: menu.factory,
+        createPauseOverlay: createPauseHarness().factory,
+        createResultOverlay: createResultHarness().factory,
+        createSettingsOverlay: createSettingsOverlayHarness().factory,
+        createHud: hud.factory,
+        createPublicArenaHud: publicArenaHud.factory,
+        createPublicArenaStatusOverlay: status.factory,
+        createPublicArenaClient: publicArenaClient.factory,
+        createPublicArenaRenderer: publicArenaRenderer.factory,
+        createInputController: input.factory,
+        createAudio: audio.factory,
+        publicArenaConfig: {
+          serverUrl: 'https://arena.example.test',
+          fullArenaMessage: 'The online arena is full. Try again soon.'
+        },
+        windowTarget,
+        documentTarget
+      });
+
+      await flushUiShellStartup();
+      menu.startPublicArena();
+      publicArenaClient.accept();
+      publicArenaClient.snapshot();
+
+      expect(shell.phase()).toEqual({ kind: 'online' });
+      expect(input.calls.start).toBe(1);
+
+      windowTarget.dispatch(
+        'keydown',
+        {
+          code,
+          preventDefault,
+          repeat: false
+        } as unknown as Event
+      );
+
+      expect(preventDefault).toHaveBeenCalledTimes(1);
+      expect(publicArenaClient.disconnectCalls()).toBe(1);
+      expect(input.calls.stop).toBe(1);
+      expect(publicArenaRenderer.calls.dispose).toBe(1);
+      expect(publicArenaHud.isVisible()).toBe(false);
+      expect(sim.calls.pause).toBe(0);
+      expect(sim.calls.stop).toBe(0);
+      expect(shell.phase()).toEqual({ kind: 'menu' });
+    }
+  );
+
+  it('routes desktop public arena Pointer Lock loss back to menu', async () => {
+    const menu = createMenuHarness();
+    const status = createPublicArenaStatusHarness();
+    const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createHud: hud.factory,
+      createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaStatusOverlay: status.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      createInputController: input.factory,
+      createAudio: audio.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.startPublicArena();
+    publicArenaClient.accept();
+    publicArenaClient.snapshot();
+
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(input.calls.start).toBe(1);
+
+    documentEvents.dispatch('pointerlockchange', new Event('pointerlockchange'));
+
+    expect(publicArenaClient.disconnectCalls()).toBe(1);
+    expect(input.calls.stop).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(1);
+    expect(publicArenaHud.isVisible()).toBe(false);
+    expect(sim.calls.pause).toBe(0);
+    expect(sim.calls.stop).toBe(0);
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+  });
+
   it('shows rejection feedback and leaves the player outside the public arena', async () => {
     const menu = createMenuHarness();
     const status = createPublicArenaStatusHarness();

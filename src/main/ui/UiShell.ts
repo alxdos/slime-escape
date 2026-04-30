@@ -1288,13 +1288,25 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function onPointerLockChange(): void {
     // Browsers consume the Escape keydown that releases Pointer Lock, so
-    // lock loss is the reliable pause trigger for the player-facing overlay.
+    // lock loss is the reliable desktop trigger for pause or online exit.
     if (documentTarget.pointerLockElement !== null) return;
+    if (phase.kind === 'online' && publicArenaInput !== null) {
+      exitPublicArenaToMenu();
+      return;
+    }
     if (activeSession === null) return;
     enterOverlayPause();
   }
 
   function onKeyDown(event: KeyboardEvent): void {
+    if (phase.kind === 'online') {
+      if (event.code === SPACE_KEY_CODE || event.code === ESCAPE_KEY_CODE) {
+        event.preventDefault();
+        exitPublicArenaToMenu();
+      }
+      return;
+    }
+
     if (event.code === SPACE_KEY_CODE) {
       if (!isRunningSessionActive()) return;
       event.preventDefault();
