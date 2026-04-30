@@ -6,7 +6,7 @@
 
 ## Product intent
 
-The first mobile web support slice should make Slime Escape feel like one coherent game screen on a phone and give the player a clear first touch-control layout. A player opening the game on a touch phone should not see a narrow portrait page with a small 16:9 playfield. They should see the whole game presented as a landscape arcade surface that fits their device, with simple touch zones for moving, aiming, firing, and pausing during a run.
+The first mobile web support slice should make Slime Escape feel like one coherent game screen on a phone and give the player a clear first touch-control layout. A player opening the game on a touch phone should not see a narrow portrait page with a tiny full-arena playfield. They should see a landscape arcade surface where the arena remains the full game world, while a smaller visible area makes the character, enemies, projectiles, and controls readable on a phone.
 
 ## Product rules
 
@@ -14,8 +14,12 @@ The first mobile web support slice should make Slime Escape feel like one cohere
 - A desktop browser window that happens to be tall and narrow is still desktop behavior.
 - On a mobile device, the game surface is landscape-first even when the phone is held upright.
 - The game surface includes every player-facing layer: startup, menu, menu sub-screens, settings, combat scene, HUD, title overlays, pause, and result.
-- On a mobile device, the arena aspect follows the physical screen ratio after turning it into landscape: longer screen side divided by shorter screen side.
-- Desktop and non-mobile devices keep the existing desktop arena feel.
+- The arena remains the full playable world. Mobile support changes the visible area and camera behavior, not the arena's world bounds.
+- On desktop and non-mobile devices, the visible area equals the full arena, preserving the current desktop feel.
+- On a mobile device, the visible area is smaller than the arena and follows the physical screen ratio after turning it into landscape: longer screen side divided by shorter screen side.
+- On a mobile device, the camera has a central free-movement zone: movement inside it does not scroll the visible area.
+- When the player tries to move beyond the free-movement zone, the visible area smoothly follows through the arena while there is arena space left.
+- When the visible area reaches the arena edge, the camera stops there and the player can still move up to the arena boundary.
 - Mobile combat controls are active only during a running gameplay session.
 - Mobile combat controls use invisible screen zones. The player should not see colored zone blocks.
 - The top half of the game surface is the fire zone, except for the pause/menu button area.
@@ -29,7 +33,10 @@ The first mobile web support slice should make Slime Escape feel like one cohere
 - Sees: startup, main menu, settings, Lab, Pets, Dungeon, combat HUD, pause, and result screens are all aligned to the same rotated game surface.
 - Sees: when turning the same phone sideways, the game stays landscape and no longer looks manually rotated.
 - Sees: when turning the phone back upright, the game returns to the landscape presentation without leaving UI behind in the page.
-- Sees: on a phone, the arena uses the phone screen's own landscape shape, so the playfield wastes much less space than a fixed 16:9 arena on very wide phones.
+- Sees: on a phone, the visible area uses the phone screen's own landscape shape, so the run wastes much less space than a fixed 16:9 view on very wide phones.
+- Sees: during a mobile gameplay session, the visible area shows a smaller part of the full arena, making the character, enemies, and projectiles feel larger and easier to read.
+- Sees: during a mobile gameplay session, moving near the edge of the camera's free-movement zone smoothly scrolls the visible area through the arena.
+- Sees: when the visible area reaches the arena edge, the camera stops showing new space beyond that edge while the character can still reach the arena boundary.
 - Can do: tap existing menu, sub-screen, settings, pause, and result buttons on a phone with the hit areas visually matching what is on screen.
 - Sees: during a mobile gameplay session, desktop `WASD` and mouse-control hints are hidden.
 - Sees: during a mobile gameplay session, the top left and top right show subtle semi-transparent bullet silhouettes as firing affordances.
@@ -52,9 +59,10 @@ Mobile support is main-thread presentation and input work based on [mobile-web-s
 - Gyroscope, accelerometer, tilt, or rotation-based combat controls.
 - Gamepad support.
 - A native mobile app, install flow, PWA work, or OS-level orientation lock.
-- Phone-specific balance tuning beyond matching the arena shape to the phone screen.
+- Phone-specific balance tuning beyond the visible-area size and camera-follow feel needed for this slice.
 - Tablet-specific layout or balance rules beyond the mobile detection in this slice.
 - Changing desktop arena proportions or desktop resize behavior.
+- Large worlds, long scrolling levels, rooms, or procedural maps beyond the current arena.
 - Redesigning menu, HUD, pause, settings, or result art.
 - Colored debug overlays for the mobile control zones.
 - Customizable touch-control layout or remapping.
@@ -63,10 +71,14 @@ Mobile support is main-thread presentation and input work based on [mobile-web-s
 
 - On a touch phone held upright, loading the game shows the startup and main menu as one landscape game surface.
 - On that phone, Settings, Lab, Pets, and Dungeon screens stay inside the same landscape game surface and their buttons are tappable where they appear.
-- Starting a run on that phone shows the arena, HUD, title overlay, and pause overlay aligned to the same landscape surface.
+- Starting a run on that phone shows the combat scene, HUD, title overlay, and pause overlay aligned to the same landscape surface.
 - Rotating the phone from upright to sideways removes the forced portrait presentation without breaking menu or run layout.
 - Rotating the phone back upright restores the landscape presentation without duplicating rotation or leaving any UI layer unrotated.
-- On a phone whose screen is wider than 16:9 in landscape, the visible arena shape follows the phone screen ratio instead of staying fixed at 16:9.
+- On a phone whose screen is wider than 16:9 in landscape, the visible area follows the phone screen ratio instead of staying fixed at 16:9.
+- During a mobile run, the visible area is smaller than the full arena, so the character, enemies, and projectiles appear larger than they would in a full-arena phone view.
+- During a mobile run, moving inside the camera's free-movement zone does not scroll the visible area.
+- During a mobile run, trying to move beyond the free-movement zone scrolls the visible area smoothly while there is arena space in that direction.
+- During a mobile run, when the visible area reaches the arena edge, the camera stays clamped and does not show outside the arena while the player can still reach the arena boundary.
 - During a mobile run, the desktop `WASD` and mouse-control hints are not shown.
 - During a mobile run, the player sees semi-transparent movement and aim sticks plus subtle bullet silhouettes, but no colored zone blocks.
 - Holding in the lower-left area moves the player.
@@ -77,7 +89,7 @@ Mobile support is main-thread presentation and input work based on [mobile-web-s
 - Starting a fire touch outside the pause/menu button and dragging over the button does not accidentally open pause.
 - On desktop, resizing the browser window to a tall portrait shape does not trigger the phone presentation.
 - Existing desktop menu and gameplay presentation remain visually unchanged.
-- Demo scenario: open the game on a touch phone in portrait, navigate from the main menu to Settings and back, open one menu sub-screen and back, start a run, move with the lower-left stick, aim with the lower-right stick, fire from the top zone, pause from the top-center button, rotate the phone sideways and upright again, then end or leave the run and confirm every visible layer remains part of one landscape game surface.
+- Demo scenario: open the game on a touch phone in portrait, navigate from the main menu to Settings and back, open one menu sub-screen and back, start a run, confirm the visible area is smaller than the full arena, move inside the free-movement zone, push far enough to scroll the visible area, reach an arena edge where the camera clamps, aim with the lower-right stick, fire from the top zone, pause from the top-center button, rotate the phone sideways and upright again, then end or leave the run and confirm every visible layer remains part of one landscape game surface.
 
 ## Tasks
 
