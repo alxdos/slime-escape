@@ -22,7 +22,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 
 ### Package and deployment
 
-- Add one separate deployable npm package at repo root: `public-arena-server/`.
+- Add one separate deployable npm package at repo root: `server/`.
 - This package owns the online arena server. It has its own `package.json`, TypeScript config, source files, tests, and lockfile because it is deployed as a stateful Node process, separately from the static web build.
 - The server package may import shared, headless project code from `../src/shared/**`, including content registries, math, timing constants, and shared types.
 - The server package must not import from `../src/main/**` or `../src/sim/**`.
