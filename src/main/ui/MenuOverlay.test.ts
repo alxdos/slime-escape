@@ -187,8 +187,10 @@ describe('MenuOverlay', () => {
     const root = findByRole(parent, 'menu-overlay');
     const publicArena = findByRole(root, 'menu-public-arena-button');
 
-    expect(publicArena.textContent).toBe('Public Arena');
-    expect(publicArena.getAttribute('aria-label')).toBe('Public Arena');
+    expect(publicArena.textContent).toBe('ONLINE ARENA');
+    expect(publicArena.getAttribute('aria-label')).toBe('Join Online Arena');
+    expect(publicArena.style.cssText).toContain('left:38%');
+    expect(publicArena.style.cssText).toContain('top:6.8%');
 
     click(publicArena);
 

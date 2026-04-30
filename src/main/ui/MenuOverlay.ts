@@ -520,8 +520,8 @@ function createPublicArenaButton(onClick: () => void, onHover: () => void): HTML
   button.type = 'button';
   button.className = 'menu-public-arena-button';
   button.dataset['role'] = 'menu-public-arena-button';
-  button.setAttribute('aria-label', 'Public Arena');
-  button.textContent = 'Public Arena';
+  button.setAttribute('aria-label', 'Join Online Arena');
+  button.textContent = 'ONLINE ARENA';
   button.style.cssText = publicArenaButtonStyle();
   button.addEventListener('click', onClick);
   button.addEventListener('pointerenter', onHover);
@@ -1122,27 +1122,29 @@ function publicArenaButtonStyle(): string {
   return [
     'appearance:none',
     'position:absolute',
-    'left:62%',
-    'top:39.5%',
-    'width:25%',
-    'min-height:11%',
+    'left:38%',
+    'top:6.8%',
+    'width:24%',
+    'min-height:8.8%',
     'z-index:28',
     'box-sizing:border-box',
-    'padding:8px 13px 10px',
+    'padding:7px 13px 9px',
     'border:4px solid #050505',
     'border-radius:8px',
-    'background:#f7ef76',
-    'box-shadow:5px 6px 0 #000000',
+    'background:#d9fbff',
+    'box-shadow:none',
     'cursor:pointer',
     'touch-action:manipulation',
+    'letter-spacing:0',
     ...comicTextStyle({
-      fontSize: '25px',
+      fontSize: '24px',
       color: '#ffffff',
       lineHeight: '0.95',
       textAlign: 'center'
     }),
-    'font-size:min(3.4cqw, 5.1cqh, 28px)',
-    'overflow-wrap:anywhere'
+    'font-size:min(3.2cqw, 4.7cqh, 27px)',
+    'overflow-wrap:anywhere',
+    'white-space:normal'
   ].join(';');
 }
 
@@ -1372,6 +1374,18 @@ function menuOverlayCss(): string {
 .menu-image-button[data-soon="true"]:hover img,
 .menu-image-button[data-soon="true"]:focus-visible img {
   filter: saturate(1) brightness(1.06) drop-shadow(5px 5px 0 #000000);
+}
+
+.menu-public-arena-button {
+  outline: none;
+  transform: rotate(-1deg);
+  transition: filter 140ms ease, transform 140ms ease;
+}
+
+.menu-public-arena-button:hover,
+.menu-public-arena-button:focus-visible {
+  filter: brightness(1.1) saturate(1.04) drop-shadow(6px 6px 0 #000000);
+  transform: translate(-1px, -1px) rotate(-1deg) scale(1.015);
 }
 
 @media (max-width: 560px) {
