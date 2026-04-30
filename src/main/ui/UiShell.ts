@@ -15,6 +15,7 @@ import type { SessionResultOutcome, SessionResultSummary } from '../../shared/se
 import { createAudio, type Audio } from '../audio/Audio';
 import { applyAimAssist } from '../input/AimAssist';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
+import type { GameViewportProvider, MobileWebProfile } from '../mobileWebProfile';
 import {
   createClientProgressionStore,
   type ClientProgressionStore
@@ -179,6 +180,8 @@ export type UiShellInit = Readonly<{
   portalStorage?: VibeJamPortalStorage | null;
   windowTarget?: WindowTarget;
   documentTarget?: DocumentTarget;
+  gameViewport?: GameViewportProvider;
+  mobileProfile?: MobileWebProfile;
 }>;
 
 export type UiShell = Readonly<{
@@ -242,6 +245,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   const assignLocation = init.assignLocation ?? defaultAssignLocation;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
+  const rendererWindowTarget =
+    init.gameViewport === undefined ? undefined : createRendererWindowTarget(init.gameViewport);
   const autoStartPresetId = init.autoStartPresetId ?? null;
   const portalStorage =
     init.portalStorage === undefined ? createBrowserVibeJamPortalStorage() : init.portalStorage;
@@ -661,7 +666,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         selectedPetId: session.companion === null && options.source === 'campaign' ? selectedPetId : null,
         getSnapshotPair: sim.snapshotPair,
         getPortalDescriptors: portalController.portals,
-        getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
+        getAim: () => (input !== null && input.isActive() ? input.currentAim() : null),
+        ...(rendererWindowTarget === undefined ? {} : { windowTarget: rendererWindowTarget })
       });
       const activeRenderer = nextRenderer;
       let lastRendererPreset = clientSettings.renderScalePreset;
@@ -1084,6 +1090,21 @@ function defaultPortalHref(): string {
     return '';
   }
   return location.href;
+}
+
+function createRendererWindowTarget(gameViewport: GameViewportProvider): RendererInit['windowTarget'] {
+  return {
+    get innerWidth(): number {
+      return gameViewport.current().width;
+    },
+    get innerHeight(): number {
+      return gameViewport.current().height;
+    },
+    get devicePixelRatio(): number {
+      return gameViewport.devicePixelRatio();
+    },
+    matchMedia: gameViewport.matchMedia
+  };
 }
 
 function formatStartupError(error: unknown): string {

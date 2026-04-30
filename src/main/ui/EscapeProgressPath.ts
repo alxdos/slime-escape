@@ -8,6 +8,7 @@ import {
   type EscapeProgressPathViewModel
 } from './EscapeProgressPathViewModel';
 import type { UiShellPhase } from './UiShellPhase';
+import { GAME_VIEWPORT_WIDTH } from './gameViewportCss';
 import { COMIC_TEXT_FONT_FAMILY, comicTextStyle } from './comicTextStyle';
 
 export type EscapeProgressPathInit = Readonly<{
@@ -226,7 +227,7 @@ function compactRootStyle(): string {
     'grid-template-columns:max-content 1fr',
     'align-items:center',
     'gap:7px 10px',
-    'max-width:min(62vw, 620px)',
+    'max-width:min(62%, 620px)',
     'padding:4px 0',
     'text-align:right'
   ].join(';');
@@ -241,7 +242,7 @@ function expandedRootStyle(): string {
     'grid-template-columns:1fr',
     'justify-items:center',
     'gap:8px',
-    'width:min(760px, calc(100vw - 28px))',
+    `width:min(760px, calc(${GAME_VIEWPORT_WIDTH} - 28px))`,
     'text-align:center'
   ].join(';');
 }
@@ -382,7 +383,7 @@ function escapeProgressPathCss(): string {
 
 @media (max-width: 560px) {
   .escape-progress-path[data-presentation="compact"] {
-    max-width: calc(100vw - 112px) !important;
+    max-width: calc(${GAME_VIEWPORT_WIDTH} - 112px) !important;
     grid-template-columns: 1fr !important;
     justify-items: end !important;
     gap: 5px !important;
@@ -399,7 +400,7 @@ function escapeProgressPathCss(): string {
 
   .escape-progress-path[data-presentation="expandedBreak"] {
     top: 64px !important;
-    width: calc(100vw - 18px) !important;
+    width: calc(${GAME_VIEWPORT_WIDTH} - 18px) !important;
   }
 
   .escape-progress-path[data-presentation="expandedBreak"] [data-role="escape-progress-track"] {

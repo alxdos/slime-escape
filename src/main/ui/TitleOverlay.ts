@@ -4,6 +4,7 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 import type { UiShellPhase } from './UiShellPhase';
 import { comicTextStyle } from './comicTextStyle';
+import { GAME_VIEWPORT_WIDTH } from './gameViewportCss';
 
 export type TitleOverlayInit = Readonly<{
   parent: HTMLElement;
@@ -227,7 +228,7 @@ function rootStyle(): string {
 function titleLineStyle(): string {
   return [
     'box-sizing:border-box',
-    'max-width:min(936px, calc(100vw - 16px))',
+    `max-width:min(936px, calc(${GAME_VIEWPORT_WIDTH} - 16px))`,
     'padding:6px 8px 8px',
     'font-variant:small-caps',
     ...comicTextStyle({
@@ -244,7 +245,7 @@ function titleLineStyle(): string {
 function subtitleLineStyle(): string {
   return [
     'box-sizing:border-box',
-    'max-width:min(936px, calc(100vw - 16px))',
+    `max-width:min(936px, calc(${GAME_VIEWPORT_WIDTH} - 16px))`,
     'margin-top:2px',
     'padding:8px 10px 12px',
     ...comicTextStyle({

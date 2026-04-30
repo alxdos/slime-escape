@@ -4,6 +4,7 @@ import {
   type StartupOverlayViewModel
 } from './startupPresentation';
 import { comicTextStyle } from './comicTextStyle';
+import { GAME_VIEWPORT_HEIGHT, GAME_VIEWPORT_WIDTH } from './gameViewportCss';
 
 export type StartupOverlayInit = Readonly<{
   parent: HTMLElement;
@@ -112,8 +113,8 @@ function rootStyle(): string {
 function imageStyle(): string {
   return [
     'display:block',
-    'width:min(1120px, calc(100vw - 64px))',
-    'height:min(630px, calc(100vh - 180px))',
+    `width:min(1120px, calc(${GAME_VIEWPORT_WIDTH} - 64px))`,
+    `height:min(630px, calc(${GAME_VIEWPORT_HEIGHT} - 180px))`,
     'object-fit:contain',
     'filter:drop-shadow(0 20px 48px rgba(16,24,40,0.18))'
   ].join(';');
@@ -124,7 +125,7 @@ function footerStyle(): string {
     'display:flex',
     'flex-direction:column',
     'gap:12px',
-    'width:min(420px, calc(100vw - 64px))'
+    `width:min(420px, calc(${GAME_VIEWPORT_WIDTH} - 64px))`
   ].join(';');
 }
 

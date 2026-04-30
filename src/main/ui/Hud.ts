@@ -905,7 +905,7 @@ function bossStripStyle(): string {
     'grid-template-rows:auto 8px',
     'align-items:center',
     'gap:5px 12px',
-    'width:min(520px, 56vw)',
+    'width:min(520px, 56%)',
     'padding:8px 12px',
     'border:1px solid rgba(255,255,255,0.16)',
     'border-radius:8px',
@@ -1010,7 +1010,7 @@ function weaponBarStyle(): string {
     'align-items:end',
     'justify-content:center',
     'gap:8px',
-    'max-width:min(72vw, 620px)',
+    'max-width:min(72%, 620px)',
     'padding:8px',
     'overflow:visible'
   ].join(';');

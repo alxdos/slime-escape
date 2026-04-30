@@ -109,8 +109,12 @@ describe('PauseOverlay', () => {
       'github',
       'discord'
     ]);
-    expect(card.style.cssText).toContain('width:min(640px, calc(100vw - 120px))');
-    expect(card.style.cssText).toContain('max-height:calc(100vh - 48px)');
+    expect(card.style.cssText).toContain(
+      'width:min(640px, calc(var(--game-viewport-width, 100vw) - 120px))'
+    );
+    expect(card.style.cssText).toContain(
+      'max-height:calc(var(--game-viewport-height, 100vh) - 48px)'
+    );
     expect(escapePath.style.display).toBe('none');
 
     overlay.setEscapePath(makeEscapePathViewModel());

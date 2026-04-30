@@ -1491,6 +1491,55 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
 
+  it('passes the effective game viewport to renderer fitting', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    let viewport = { width: 844, height: 390 };
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      autoStartPresetId: 'training',
+      buildSessionDefinition: () => makeSession('mobile-viewport-session'),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget,
+      gameViewport: {
+        current: () => viewport,
+        devicePixelRatio: () => 3
+      }
+    });
+
+    await flushUiShellStartup();
+
+    const rendererWindowTarget = renderer.lastInit()?.windowTarget;
+    expect(rendererWindowTarget?.innerWidth).toBe(844);
+    expect(rendererWindowTarget?.innerHeight).toBe(390);
+    expect(rendererWindowTarget?.devicePixelRatio).toBe(3);
+
+    viewport = { width: 932, height: 430 };
+    expect(rendererWindowTarget?.innerWidth).toBe(932);
+    expect(rendererWindowTarget?.innerHeight).toBe(430);
+  });
+
   it('keeps the startup overlay visible while the post-load ritual runs', async () => {
     const parent = new FakeDomElement();
     const menu = createMenuHarness();

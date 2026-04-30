@@ -1,3 +1,5 @@
+import { GAME_VIEWPORT_WIDTH } from './gameViewportCss';
+
 export type StartupErrorOverlayInit = Readonly<{
   parent: HTMLElement;
   onReload(): void;
@@ -79,7 +81,7 @@ function cardStyle(): string {
     'display:flex',
     'flex-direction:column',
     'gap:18px',
-    'width:min(520px, calc(100vw - 64px))',
+    `width:min(520px, calc(${GAME_VIEWPORT_WIDTH} - 64px))`,
     'padding:28px 32px',
     'background:#101828',
     'border:1px solid rgba(248,113,113,0.28)',
