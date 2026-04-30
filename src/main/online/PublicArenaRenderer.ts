@@ -16,6 +16,7 @@ import {
 } from '../../shared/publicArenaProgression';
 import type { ArenaConfig } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
+import { createArcPreview, updateArcPreview } from '../render/arcPreview';
 import { BOSS_VISUALS } from '../render/bossVisuals';
 import {
   createCrosshair,
@@ -102,11 +103,6 @@ const ARENA_TINT_OPACITY = 0.72;
 const BACKGROUND_Z = -1;
 const PLAYER_Z = 0;
 const PROJECTILE_Z = 0.06;
-const ARC_PREVIEW_Z = 0.04;
-const ARC_PREVIEW_RADIUS_WU = 0.18;
-const ARC_PREVIEW_COLOR = 0x5ee7ff;
-const ARC_PREVIEW_OUTLINE_COLOR = 0xd97706;
-const ARC_PREVIEW_OUTLINE_OPACITY = 0.72;
 const LABEL_Z = 0.18;
 const SELF_RING_Z = -0.02;
 const SELF_RING_COLOR = 0x5ee7ff;
@@ -225,7 +221,12 @@ export function createPublicArenaRenderer(
       syncPlayers(snapshot, playerMeshes, init.spriteTextures, scene, nowMs);
       syncProjectiles(snapshot, projectileMeshes, init.spriteTextures, scene);
       updateCrosshair(crosshair, init.getAim);
-      updateArcPreview(arcPreview, snapshot, init.getAim);
+      updateArcPreview(arcPreview, {
+        player: findSelfArcPreviewPlayer(snapshot),
+        aim: init.getAim?.() ?? null,
+        weaponArchetypeId: selectedPublicArenaWeaponId(snapshot),
+        weaponRegistry: WEAPON_ARCHETYPES
+      });
       renderer.render(scene, camera);
     },
     fitToWindow,
@@ -672,76 +673,19 @@ function applyPlayerBreath(
   sprite.scale.set(1 + amplitude * breath, 1 - amplitude * 0.7 * breath, 1);
 }
 
-function createArcPreview(): THREE.Mesh {
-  const geometry = new THREE.RingGeometry(0.72, 1, 36);
-  const material = new THREE.MeshBasicMaterial({
-    color: ARC_PREVIEW_COLOR,
-    transparent: true,
-    opacity: 0.52,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = 'public-arena-arc-preview';
-  mesh.position.z = ARC_PREVIEW_Z;
-  mesh.add(createArcPreviewOutline());
-  mesh.scale.set(ARC_PREVIEW_RADIUS_WU, ARC_PREVIEW_RADIUS_WU, 1);
-  mesh.visible = false;
-  return mesh;
-}
-
-function createArcPreviewOutline(): THREE.Mesh {
-  const geometry = new THREE.RingGeometry(0.62, 1.1, 48);
-  const material = new THREE.MeshBasicMaterial({
-    color: ARC_PREVIEW_OUTLINE_COLOR,
-    transparent: true,
-    opacity: ARC_PREVIEW_OUTLINE_OPACITY,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = 'public-arena-arc-preview-outline';
-  mesh.position.z = -0.002;
-  return mesh;
-}
-
-function updateArcPreview(
-  mesh: THREE.Mesh,
-  snapshot: PublicArenaSnapshot | null,
-  getAim: AimAccessor | undefined
-): void {
-  const aim = getAim?.() ?? null;
+function findSelfArcPreviewPlayer(
+  snapshot: PublicArenaSnapshot | null
+): Readonly<{ x: number; y: number }> | null {
   const player = snapshot?.players.find((candidate) => candidate.id === snapshot.selfId);
-  if (aim === null || player === undefined) {
-    mesh.visible = false;
-    return;
+  return player === undefined ? null : { x: player.x, y: player.y };
+}
+
+function selectedPublicArenaWeaponId(snapshot: PublicArenaSnapshot | null): string | null {
+  const player = snapshot?.players.find((candidate) => candidate.id === snapshot.selfId);
+  if (player === undefined) {
+    return null;
   }
-  const weaponId =
-    player.form.kind === 'boss' ? PUBLIC_ARENA_BOSS_WEAPON_ID : PUBLIC_ARENA_REGULAR_WEAPON_ID;
-  const archetype = WEAPON_ARCHETYPES[weaponId];
-  if (archetype === undefined) {
-    mesh.visible = false;
-    return;
-  }
-  const motion = archetype.projectile.motion;
-  if (motion?.kind !== 'arc') {
-    mesh.visible = false;
-    return;
-  }
-  const dx = aim.x - player.x;
-  const dy = aim.y - player.y;
-  const len = Math.hypot(dx, dy);
-  if (len === 0) {
-    mesh.visible = false;
-    return;
-  }
-  const travelDistance = Math.min(motion.range, len);
-  mesh.visible = true;
-  mesh.position.x = player.x + (dx / len) * travelDistance;
-  mesh.position.y = player.y + (dy / len) * travelDistance;
-  mesh.scale.set(
-    Math.max(ARC_PREVIEW_RADIUS_WU, archetype.projectile.hitRadius),
-    Math.max(ARC_PREVIEW_RADIUS_WU, archetype.projectile.hitRadius),
-    1
-  );
+  return player.form.kind === 'boss' ? PUBLIC_ARENA_BOSS_WEAPON_ID : PUBLIC_ARENA_REGULAR_WEAPON_ID;
 }
 
 function findSelfPosition(snapshot: PublicArenaSnapshot | null): Readonly<{ x: number; y: number }> {

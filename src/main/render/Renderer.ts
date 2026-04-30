@@ -28,8 +28,8 @@ import {
 import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
 
 import { BOSS_VISUALS } from './bossVisuals';
+import { createArcPreview, updateArcPreview } from './arcPreview';
 import {
-  CROSSHAIR_COLOR,
   createCrosshair,
   disposeCrosshair,
   updateCrosshair,
@@ -114,9 +114,6 @@ export type Renderer = Readonly<{
 
 const ARENA_FLOOR_COLOR = 0x1b1f29;
 const ARENA_BORDER_COLOR = 0x2a3142;
-const AIM_RING_OUTLINE_COLOR = 0xd97706;
-const AIM_RING_OUTLINE_OPACITY = 0.72;
-const PROJECTILE_RADIUS_OUTLINE_OPACITY = 0.54;
 const SCENE_BG = 0x05060a;
 const ARENA_TINT_COLOR = 0x05060a;
 const ARENA_TINT_OPACITY = 0.18;
@@ -129,8 +126,6 @@ const STATUS_MARKER_NAME = 'status-effect-marker';
 const DROP_Z = 0.03;
 const FIELD_EFFECT_Z = -0.03;
 const PICKUP_GHOST_Z = 0.12;
-const ARC_PREVIEW_Z = 0.04;
-const ARC_PREVIEW_RADIUS_WU = 0.18;
 const SLIME_STAIN_Z = -0.25;
 const SLIME_DROPLET_BASE_OPACITY = 0.82;
 const DEATH_GHOST_Z = 0.045;
@@ -619,7 +614,12 @@ export function createRenderer(init: RendererInit): Renderer {
       pulseDropMeshes(dropMeshes, pair.nowMs);
       updatePickupGhostMeshes(pickupGhostMeshes, pair.curr, pair.nowMs, disposeEntityMesh);
       updateCrosshair(crosshair, init.getAim);
-      updateArcPreview(arcPreview, pair.curr, init.getAim, weaponRegistry);
+      updateArcPreview(arcPreview, {
+        player: localPlayerPosition(pair.curr),
+        aim: init.getAim?.() ?? null,
+        weaponArchetypeId: selectedWeaponArchetypeId(pair.curr),
+        weaponRegistry
+      });
       updateZoneOverlay(zoneOverlay, pair, alpha);
       updatePortalMeshes(
         portalDescriptors,
@@ -864,26 +864,6 @@ function requirePetArchetype(petId: string): void {
     return;
   }
   throw new Error(`pet archetype missing for id "${petId}"`);
-}
-
-function createRadiusOutlineMeshWithColor(
-  innerRadius: number,
-  outerRadius: number,
-  name: string,
-  color: number,
-  opacity: number
-): THREE.Mesh {
-  const geometry = new THREE.RingGeometry(innerRadius, outerRadius, 48);
-  const material = new THREE.MeshBasicMaterial({
-    color,
-    transparent: true,
-    opacity,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = name;
-  mesh.position.z = -0.002;
-  return mesh;
 }
 
 function createCarrierRewardMarker(enemyHeight: number): THREE.Mesh {
@@ -1562,30 +1542,6 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
-function createArcPreview(): THREE.Mesh {
-  const geometry = new THREE.RingGeometry(0.72, 1, 36);
-  const material = new THREE.MeshBasicMaterial({
-    color: CROSSHAIR_COLOR,
-    transparent: true,
-    opacity: 0.52,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.z = ARC_PREVIEW_Z;
-  mesh.add(
-    createRadiusOutlineMeshWithColor(
-      0.62,
-      1.1,
-      'arc-preview-outline',
-      AIM_RING_OUTLINE_COLOR,
-      AIM_RING_OUTLINE_OPACITY
-    )
-  );
-  mesh.scale.set(ARC_PREVIEW_RADIUS_WU, ARC_PREVIEW_RADIUS_WU, 1);
-  mesh.visible = false;
-  return mesh;
-}
-
 function disposeArcPreview(mesh: THREE.Mesh): void {
   mesh.removeFromParent();
   disposeObjectTree(mesh);
@@ -2089,58 +2045,21 @@ function indexHitImpulses(
   return byTarget;
 }
 
-function updateArcPreview(
-  mesh: THREE.Mesh,
-  snapshot: Snapshot | null,
-  getAim: AimAccessor | undefined,
-  weaponRegistry: Readonly<Record<string, WeaponArchetype>>
-): void {
-  if (snapshot === null || getAim === undefined) {
-    mesh.visible = false;
-    return;
-  }
-  const aim = getAim();
-  const weaponHud = snapshot.weaponHud;
-  const player = snapshot.entities.find(
+function localPlayerPosition(snapshot: Snapshot | null): Readonly<{ x: number; y: number }> | null {
+  const player = snapshot?.entities.find(
     (entity): entity is PlayerSnapshot => entity.kind === 'player'
   );
-  if (
-    aim === null ||
-    weaponHud === null ||
-    player === undefined ||
-    weaponHud.selectedIndex === null
-  ) {
-    mesh.visible = false;
-    return;
+  return player === undefined ? null : { x: player.x, y: player.y };
+}
+
+function selectedWeaponArchetypeId(snapshot: Snapshot | null): string | null {
+  if (snapshot === null) {
+    return null;
   }
+  const weaponHud = snapshot.weaponHud;
+  if (weaponHud === null || weaponHud.selectedIndex === null) return null;
   const selected = weaponHud.weapons.find((weapon) => weapon.index === weaponHud.selectedIndex);
-  const archetype =
-    selected === undefined ? undefined : weaponRegistry[selected.weaponArchetypeId];
-  if (archetype === undefined) {
-    mesh.visible = false;
-    return;
-  }
-  const motion = archetype.projectile.motion;
-  if (motion?.kind !== 'arc') {
-    mesh.visible = false;
-    return;
-  }
-  const dx = aim.x - player.x;
-  const dy = aim.y - player.y;
-  const len = Math.hypot(dx, dy);
-  if (len === 0) {
-    mesh.visible = false;
-    return;
-  }
-  const travelDistance = Math.min(motion.range, len);
-  mesh.visible = true;
-  mesh.position.x = player.x + (dx / len) * travelDistance;
-  mesh.position.y = player.y + (dy / len) * travelDistance;
-  mesh.scale.set(
-    Math.max(ARC_PREVIEW_RADIUS_WU, archetype.projectile.hitRadius),
-    Math.max(ARC_PREVIEW_RADIUS_WU, archetype.projectile.hitRadius),
-    1
-  );
+  return selected?.weaponArchetypeId ?? null;
 }
 
 type ZoneOverlay = Readonly<{

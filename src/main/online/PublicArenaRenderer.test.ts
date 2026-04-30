@@ -6,6 +6,7 @@ import {
   PUBLIC_ARENA_WORLD_BOUNDS
 } from '../../shared/content/publicArena';
 import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
+import { ARC_PREVIEW_NAME } from '../render/arcPreview';
 import type { TextureMap } from '../render/spritePreload';
 
 import { createPublicArenaRenderer } from './PublicArenaRenderer';
@@ -89,7 +90,7 @@ describe('PublicArenaRenderer', () => {
     const boss = players.find((player) => player.userData['formKind'] === 'boss');
     const slime = players.find((player) => player.userData['playerId'] === 'self');
     const crosshair = findAllByName(scene, 'crosshair')[0];
-    const arcPreview = findAllByName(scene, 'public-arena-arc-preview')[0];
+    const arcPreview = findAllByName(scene, ARC_PREVIEW_NAME)[0];
     const selfHpBar = findAllByName(slime ?? new THREE.Group(), 'public-arena-self-hp-bar')[0];
     const selfHpFill = findAllByName(slime ?? new THREE.Group(), 'public-arena-self-hp-fill')[0];
     const selfLabel = findAllByName(slime ?? new THREE.Group(), 'public-arena-level-label')[0];

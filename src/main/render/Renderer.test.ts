@@ -13,6 +13,7 @@ import type { SessionDefinition } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import type { CompanionSnapshot } from '../../shared/snapshot';
 import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
+import { ARC_PREVIEW_OUTLINE_NAME } from './arcPreview';
 import { DROP_VISUALS } from './dropVisuals';
 import { LANDING_TELEGRAPH_NAME } from './landingTelegraph';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
@@ -1951,7 +1952,8 @@ describe('createRenderer', () => {
     if (ROCK_THROWER.projectile.motion.kind !== 'arc') throw new Error('expected arc weapon');
     expect(preview?.visible).toBe(true);
     const outline = preview?.children.find(
-      (child): child is THREE.Mesh => child instanceof THREE.Mesh && child.name === 'arc-preview-outline'
+      (child): child is THREE.Mesh =>
+        child instanceof THREE.Mesh && child.name === ARC_PREVIEW_OUTLINE_NAME
     );
     expect(outline).toBeDefined();
     expect((outline?.material as THREE.MeshBasicMaterial | undefined)?.color.getHex()).toBe(

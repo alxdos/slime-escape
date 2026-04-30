@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
+import type { PublicArenaProjectileSnapshot } from '../../shared/publicArenaProtocol';
 import { PROJECTILE_VISUALS } from './projectileVisuals';
 import type { SpriteVisualSpec } from './SpriteVisualSpec';
 
@@ -14,21 +15,18 @@ const PROJECTILE_RADIUS_OUTLINE_COLOR = 0xd97706;
 const PROJECTILE_RADIUS_OUTLINE_OPACITY = 0.54;
 const PROJECTILE_GROUNDED_PULSE_AMPLITUDE = 0.1;
 
-export type ProjectilePresentationSnapshot = Readonly<{
-  weaponArchetypeId: string;
-  originX: number;
-  originY: number;
-  x: number;
-  y: number;
-  size: Readonly<{ width: number; height: number }>;
-  state: 'flying' | 'grounded';
-  visualState: Readonly<{
-    angleRadians: number;
-    spinRadians: number;
-    pulsePhase: number;
-  }>;
-  explosionRadius: number | null;
-}>;
+export type ProjectilePresentationSnapshot = Pick<
+  PublicArenaProjectileSnapshot,
+  | 'weaponArchetypeId'
+  | 'originX'
+  | 'originY'
+  | 'x'
+  | 'y'
+  | 'size'
+  | 'state'
+  | 'visualState'
+  | 'explosionRadius'
+>;
 
 export function createProjectileRadiusIndicator(): THREE.Mesh {
   const geometry = new THREE.CircleGeometry(1, 48);
