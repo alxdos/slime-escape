@@ -1072,9 +1072,11 @@ function createTitleOverlayHarness() {
     detach: 0,
     dispose: 0
   };
+  let lastInit: TitleOverlayInit | null = null;
 
   return {
-    factory(_init: TitleOverlayInit): TitleOverlay {
+    factory(init: TitleOverlayInit): TitleOverlay {
+      lastInit = init;
       return {
         attach(): void {
           calls.attach += 1;
@@ -1090,7 +1092,10 @@ function createTitleOverlayHarness() {
         }
       };
     },
-    calls
+    calls,
+    lastInit(): TitleOverlayInit | null {
+      return lastInit;
+    }
   };
 }
 
@@ -1728,6 +1733,7 @@ describe('UiShell', () => {
     const mobileInput = createMobileInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
+    const titleOverlay = createTitleOverlayHarness();
     const audio = createAudioHarness();
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
@@ -1752,6 +1758,7 @@ describe('UiShell', () => {
       createInputController: input.factory,
       createMobileInputController: mobileInput.factory,
       createHud: hud.factory,
+      createTitleOverlay: titleOverlay.factory,
       createAudio: audio.factory,
       windowTarget,
       documentTarget,
@@ -1766,6 +1773,7 @@ describe('UiShell', () => {
 
     expect('arenaOverride' in (buildOptions[0] ?? {})).toBe(false);
     expect(sim.startSessions[0]?.arena).toEqual({ width: 16, height: 9 });
+    expect(titleOverlay.lastInit()?.isMobile).toBe(true);
   });
 
   it('maps desktop pointer-lock aim deltas through the desktop visible-area height', async () => {

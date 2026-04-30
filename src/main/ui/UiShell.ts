@@ -306,7 +306,10 @@ export function createUiShell(init: UiShellInit): UiShell {
   const mobileControls = mobileControlsFactory({ parent: init.parent });
   const escapeProgressPath = escapeProgressPathFactory({ parent: init.parent });
   const dungeonWaveCounter = dungeonWaveCounterFactory({ parent: init.parent });
-  const titleOverlay = titleOverlayFactory({ parent: init.parent });
+  const titleOverlay = titleOverlayFactory({
+    parent: init.parent,
+    isMobile: isMobileInputMode()
+  });
   const clientSettingsStore = clientSettingsStoreFactory();
   const dungeonBestWaveStore = dungeonBestWaveStoreFactory();
   const clientProgressionStore = clientProgressionStoreFactory();

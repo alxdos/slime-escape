@@ -265,6 +265,8 @@ describe('TitleOverlay view model', () => {
       expect(root.style.display).toBe('flex');
       expect(titleLine.textContent).toBe('Wave 1');
       expect(subtitleLine.textContent).toBe('First wave');
+      expect(titleLine.style.cssText).toContain('font-size:28px');
+      expect(subtitleLine.style.cssText).toContain('font-size:44px');
 
       overlay.update(
         snapshotPair(snapshot({ id: 'wave-1', type: 'wave', index: 0, elapsedMs: 2500 })),
@@ -279,6 +281,49 @@ describe('TitleOverlay view model', () => {
 
       overlay.dispose();
       expect(parent.children).toHaveLength(0);
+    } finally {
+      if (originalDocument === undefined) {
+        delete (globalThis as Partial<typeof globalThis>).document;
+      } else {
+        Object.defineProperty(globalThis, 'document', {
+          configurable: true,
+          value: originalDocument
+        });
+      }
+    }
+  });
+
+  it('uses smaller wave title text in mobile mode', () => {
+    const originalDocument = globalThis.document;
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: new FakeDocument()
+    });
+
+    try {
+      const parent = new FakeElement();
+      const session = makeSession([wave('wave-1', 'First wave')]);
+      const overlay = createTitleOverlay({
+        parent: parent as unknown as HTMLElement,
+        isMobile: true
+      });
+
+      overlay.attach(session);
+      const root = parent.children[0]!;
+      const titleLine = root.children[0]!;
+      const subtitleLine = root.children[1]!;
+
+      overlay.update(
+        snapshotPair(snapshot({ id: 'wave-1', type: 'wave', index: 0, elapsedMs: 1000 })),
+        { kind: 'running' }
+      );
+
+      expect(titleLine.textContent).toBe('Wave 1');
+      expect(subtitleLine.textContent).toBe('First wave');
+      expect(titleLine.style.cssText).toContain('font-size:22px');
+      expect(subtitleLine.style.cssText).toContain('font-size:30px');
+
+      overlay.dispose();
     } finally {
       if (originalDocument === undefined) {
         delete (globalThis as Partial<typeof globalThis>).document;
