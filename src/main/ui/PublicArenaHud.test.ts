@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/content/publicArena';
+import { PUBLIC_ARENA_BOSS_LEVEL } from '../../shared/publicArenaProgression';
 
 import { createPublicArenaHud } from './PublicArenaHud';
 
@@ -65,9 +66,20 @@ describe('PublicArenaHud', () => {
     hud.update(makeSnapshot(), 200);
 
     expect(hud.isVisible()).toBe(true);
-    expect(findByRole(parent, 'public-arena-hud-level').textContent).toBe('Level 4');
+    expect(findByRole(parent, 'public-arena-hud-level').textContent).toBe(
+      `Level 4/${PUBLIC_ARENA_BOSS_LEVEL}`
+    );
     expect(findByRole(parent, 'public-arena-hud-population').textContent).toBe(
-      'Players 12/200'
+      'Online 12'
+    );
+
+    hud.update(makeSnapshot({ selfLevel: PUBLIC_ARENA_BOSS_LEVEL + 2 }), 200);
+
+    expect(findByRole(parent, 'public-arena-hud-level').textContent).toBe(
+      `Level ${PUBLIC_ARENA_BOSS_LEVEL}/${PUBLIC_ARENA_BOSS_LEVEL}`
+    );
+    expect(findByRole(parent, 'public-arena-hud-population').textContent).toBe(
+      'Online 12'
     );
 
     hud.hide();
@@ -77,7 +89,7 @@ describe('PublicArenaHud', () => {
   });
 });
 
-function makeSnapshot() {
+function makeSnapshot(options: Readonly<{ selfLevel?: number }> = {}) {
   return {
     simTimeMs: 120,
     selfId: 'self',
@@ -90,7 +102,7 @@ function makeSnapshot() {
         y: 2,
         hp: 28,
         maxHp: 40,
-        level: 4,
+        level: options.selfLevel ?? 4,
         form: { kind: 'slime', archetypeId: 'slime-hornling' }
       }
     ],

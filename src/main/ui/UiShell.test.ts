@@ -7,6 +7,7 @@ import {
   type ModePresetId
 } from '../../shared/content/sessions';
 import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/content/publicArena';
+import { PUBLIC_ARENA_BOSS_LEVEL } from '../../shared/publicArenaProgression';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type {
@@ -763,15 +764,13 @@ function createPublicArenaHudHarness() {
     show(): void {
       visible = true;
     },
-    update(snapshot, playerCap): void {
+    update(snapshot, _playerCap): void {
       const self = snapshot?.players.find((player) => player.id === snapshot.selfId) ?? null;
-      lastLevel = self === null ? 'Level --' : `Level ${self.level}`;
-      lastPopulation =
-        snapshot === null
-          ? 'Players --'
-          : playerCap === null
-            ? `Players ${snapshot.population}`
-            : `Players ${snapshot.population}/${playerCap}`;
+      lastLevel =
+        self === null
+          ? `Level --/${PUBLIC_ARENA_BOSS_LEVEL}`
+          : `Level ${Math.min(self.level, PUBLIC_ARENA_BOSS_LEVEL)}/${PUBLIC_ARENA_BOSS_LEVEL}`;
+      lastPopulation = snapshot === null ? 'Online --' : `Online ${snapshot.population}`;
     },
     hide(): void {
       visible = false;
@@ -2538,8 +2537,8 @@ describe('UiShell', () => {
     expect(input.lastInit()?.initialAim).toEqual({ x: 1, y: 2 });
     expect(input.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(900 / 18, 6);
     expect(publicArenaRenderer.lastInit()?.arena).toEqual(PUBLIC_ARENA_WORLD_BOUNDS);
-    expect(publicArenaHud.level()).toBe('Level 3');
-    expect(publicArenaHud.population()).toBe('Players 7/200');
+    expect(publicArenaHud.level()).toBe(`Level 3/${PUBLIC_ARENA_BOSS_LEVEL}`);
+    expect(publicArenaHud.population()).toBe('Online 7');
     expect(publicArenaRenderer.calls.render).toBe(1);
 
     input.lastInit()?.onCommand({ kind: 'move', dx: 1, dy: 0 });

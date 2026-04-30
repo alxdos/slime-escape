@@ -1,4 +1,18 @@
 import { SIM_STEP_MS } from '../../src/shared/timing.js';
+export {
+  PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
+  PUBLIC_ARENA_BOSS_LEVEL,
+  PUBLIC_ARENA_BOSS_WEAPON_ID,
+  PUBLIC_ARENA_REGULAR_WEAPON_ID,
+  PUBLIC_ARENA_SLIME_FORM_CHAIN
+} from '../../src/shared/publicArenaProgression.js';
+import {
+  PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
+  PUBLIC_ARENA_BOSS_LEVEL,
+  PUBLIC_ARENA_BOSS_WEAPON_ID,
+  PUBLIC_ARENA_REGULAR_WEAPON_ID,
+  PUBLIC_ARENA_SLIME_FORM_CHAIN
+} from '../../src/shared/publicArenaProgression.js';
 import type {
   PublicArenaInputIntent,
   PublicArenaPlayerFormSnapshot,
@@ -16,20 +30,9 @@ import {
   type PublicArenaSpawnPoint
 } from './arenaState.js';
 
-export const PUBLIC_ARENA_REGULAR_WEAPON_ID = 'rock-thrower';
-export const PUBLIC_ARENA_BOSS_WEAPON_ID = 'fireball-staff';
-export const PUBLIC_ARENA_BOSS_ARCHETYPE_ID = 'boss-tower-sentinel';
 export const PUBLIC_ARENA_INTEREST_WIDTH_WU = PUBLIC_ARENA_WORLD_BOUNDS.width;
 export const PUBLIC_ARENA_INTEREST_HEIGHT_WU = 26;
 export const PUBLIC_ARENA_SPAWN_PROTECTION_MS = 900;
-export const PUBLIC_ARENA_SLIME_FORM_CHAIN = [
-  'slime-one-eye',
-  'slime-hornling',
-  'slime-many-eye',
-  'slime-stonehead',
-  'slime-shell'
-] as const;
-export const PUBLIC_ARENA_BOSS_LEVEL = PUBLIC_ARENA_SLIME_FORM_CHAIN.length + 1;
 
 type Vector = Readonly<{ x: number; y: number }>;
 
