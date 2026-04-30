@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { SimulationClock } from '../shared/sim/SimulationClock';
 import { SIM_STEP_MS } from '../shared/timing';
 
-import { createSimulationClockHost } from './SimulationClockHost';
+import { createSimulationClockHost, type SimulationPumpTarget } from './SimulationClockHost';
 
 describe('SimulationClockHost', () => {
   let nowMs = 0;
@@ -18,37 +17,30 @@ describe('SimulationClockHost', () => {
     vi.restoreAllMocks();
   });
 
-  function fakeClock(): SimulationClock {
+  function fakePumpTarget(): SimulationPumpTarget {
     return {
-      pump: vi.fn(),
-      pause: vi.fn(),
-      resume: vi.fn(),
-      toRunning: vi.fn(),
-      toIdle: vi.fn(),
-      isPaused: () => false,
-      isRunning: () => false,
-      simTimeMs: () => 0
+      pump: vi.fn()
     };
   }
 
   it('pumps the core clock from a host timer and wall-clock source', () => {
-    const clock = fakeClock();
-    const host = createSimulationClockHost(clock, { now: () => nowMs });
+    const target = fakePumpTarget();
+    const host = createSimulationClockHost(target, { now: () => nowMs });
 
     host.start();
-    expect(clock.pump).toHaveBeenCalledWith(0);
+    expect(target.pump).toHaveBeenCalledWith(0);
 
     nowMs = SIM_STEP_MS;
     vi.advanceTimersByTime(SIM_STEP_MS);
 
-    expect(clock.pump).toHaveBeenLastCalledWith(SIM_STEP_MS);
-    expect(clock.pump).toHaveBeenCalledTimes(2);
+    expect(target.pump).toHaveBeenLastCalledWith(SIM_STEP_MS);
+    expect(target.pump).toHaveBeenCalledTimes(2);
     host.stop();
   });
 
   it('is idempotent across duplicate start and stop calls', () => {
-    const clock = fakeClock();
-    const host = createSimulationClockHost(clock, { now: () => nowMs });
+    const target = fakePumpTarget();
+    const host = createSimulationClockHost(target, { now: () => nowMs });
 
     host.start();
     host.start();
@@ -59,6 +51,6 @@ describe('SimulationClockHost', () => {
     nowMs = SIM_STEP_MS * 2;
     vi.advanceTimersByTime(SIM_STEP_MS);
 
-    expect(clock.pump).toHaveBeenCalledTimes(2);
+    expect(target.pump).toHaveBeenCalledTimes(2);
   });
 });

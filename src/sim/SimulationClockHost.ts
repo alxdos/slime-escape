@@ -1,5 +1,8 @@
-import type { SimulationClock } from '../shared/sim/SimulationClock';
 import { SIM_STEP_MS } from '../shared/timing';
+
+export type SimulationPumpTarget = Readonly<{
+  pump(nowMs: number): void;
+}>;
 
 export type SimulationClockHost = Readonly<{
   start(): void;
@@ -11,14 +14,14 @@ export type SimulationClockHostOptions = Readonly<{
 }>;
 
 export function createSimulationClockHost(
-  clock: SimulationClock,
+  target: SimulationPumpTarget,
   options: SimulationClockHostOptions = {}
 ): SimulationClockHost {
   const now = options.now ?? (() => performance.now());
   let intervalHandle: ReturnType<typeof setInterval> | null = null;
 
   function pump(): void {
-    clock.pump(now());
+    target.pump(now());
   }
 
   return {

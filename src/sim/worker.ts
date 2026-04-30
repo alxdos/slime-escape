@@ -1,237 +1,40 @@
-import type { RuntimeEvent } from '../shared/events';
 import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
-import { createBossPhaseSystem } from '../shared/sim/BossPhaseSystem';
-import { createCompanionSystem } from '../shared/sim/CompanionSystem';
-import { createCombatSystem } from '../shared/sim/CombatSystem';
-import { createDropSystem } from '../shared/sim/DropSystem';
-import { createEntityStore } from '../shared/sim/EntityStore';
-import { createFieldEffectSystem } from '../shared/sim/FieldEffectSystem';
-import { createHealthDeathSystem } from '../shared/sim/HealthDeathSystem';
-import { createMovementSystem } from '../shared/sim/MovementSystem';
-import { createRetaliationSystem } from '../shared/sim/RetaliationSystem';
-import { createRunSummaryTracker } from '../shared/sim/RunSummaryTracker';
-import { createSessionFlowSystem } from '../shared/sim/SessionFlowSystem';
-import { createSimulationClock } from '../shared/sim/SimulationClock';
-import { createSnapshotExportSystem } from '../shared/sim/SnapshotExportSystem';
-import { createSpatialIndex } from '../shared/sim/SpatialIndex';
-import { createSpawnSystem } from '../shared/sim/SpawnSystem';
-import { createStatusEffectSystem } from '../shared/sim/StatusEffectSystem';
-import { createZoneSystem } from '../shared/sim/ZoneSystem';
-import { createSimulationClockHost } from './SimulationClockHost';
+import { createSimulationCore } from '../shared/sim/SimulationCore';
 
-const entities = createEntityStore();
-const exporter = createSnapshotExportSystem();
-const movement = createMovementSystem();
-const bossPhase = createBossPhaseSystem();
-const companion = createCompanionSystem();
-const combat = createCombatSystem();
-const spawn = createSpawnSystem({
-  onEnemySpawned(enemyId, loadout, simTimeMs) {
-    combat.setEnemyLoadout(enemyId, loadout, simTimeMs);
-  }
-});
-const fieldEffects = createFieldEffectSystem();
-const healthDeath = createHealthDeathSystem();
-const statusEffects = createStatusEffectSystem();
-const retaliation = createRetaliationSystem();
-const spatialIndex = createSpatialIndex();
-const zone = createZoneSystem();
-const runSummary = createRunSummaryTracker();
-let pendingFieldDamageIntents: ReturnType<typeof fieldEffects.tick>['damageIntents'] = [];
-let pendingStatusDamageIntents: ReturnType<typeof statusEffects.tick> = [];
-const drops = createDropSystem(
-  undefined,
-  undefined,
-  {
-    addModifierToSelectedWeapon(ownerId, modifier) {
-      combat.addModifierToSelectedWeapon(ownerId, modifier);
-    },
-    applyTemporaryOverdriveToSelectedWeapon(ownerId, cooldownMultiplier, durationMs, simTimeMs) {
-      combat.applyTemporaryOverdriveToSelectedWeapon(
-        ownerId,
-        cooldownMultiplier,
-        durationMs,
-        simTimeMs
-      );
-    }
-  },
-  (fact) => runSummary.onDropPickup(fact)
-);
+import { createSimulationClockHost } from './SimulationClockHost';
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);
 }
 
-function emitEvent(event: RuntimeEvent): void {
-  postToMain({ kind: 'event', event });
-}
-
-const clock = createSimulationClock((_dtMs, simTimeMs) => {
-  const session = sessionFlow.activeSession();
-  if (session === null) return;
-  spawn.onTick(simTimeMs, entities);
-  const bossIntents = bossPhase.tick(entities, session.arena, simTimeMs, emitEvent);
-  movement.tick(session.arena, entities, sessionFlow.inputState(), simTimeMs);
-  companion.tick(
-    session.arena,
-    entities,
-    sessionFlow.activeEncounter()?.encounter ?? null,
-    simTimeMs,
-    emitEvent
-  );
-  const combatIntents = combat.tick(
-    sessionFlow.inputState(),
-    entities,
-    spatialIndex,
-    simTimeMs,
-    session.arena,
-    emitEvent
-  );
-  const combatActorEffectIntents = combat.drainActorEffectIntents();
-  const intents = [
-    ...pendingFieldDamageIntents,
-    ...pendingStatusDamageIntents,
-    ...bossIntents,
-    ...combatIntents
-  ];
-  pendingFieldDamageIntents = [];
-  pendingStatusDamageIntents = [];
-  healthDeath.tick(intents, entities, simTimeMs, emitEvent);
-  spatialIndex.rebuild(entities);
-  statusEffects.apply(combatActorEffectIntents, simTimeMs, entities);
-  const fieldEffectResult = fieldEffects.tick(simTimeMs, entities, spatialIndex);
-  statusEffects.apply(fieldEffectResult.actorEffectIntents, simTimeMs, entities);
-  pendingStatusDamageIntents = statusEffects.tick(simTimeMs, entities);
-  pendingFieldDamageIntents = fieldEffectResult.damageIntents;
-  drops.tick(simTimeMs, entities, emitEvent);
-  sessionFlow.checkTransitions(simTimeMs);
-  const zoneEncounterCtx = sessionFlow.activeEncounter();
-  zone.onTick(
-    zoneEncounterCtx === null ? undefined : simTimeMs - zoneEncounterCtx.startSimMs
-  );
-  const encounterCtx = sessionFlow.activeEncounter();
-  const waveSnap =
-    encounterCtx !== null && encounterCtx.encounter.spawnPlan.kind === 'wave'
-      ? spawn.waveProgress()
-      : null;
-  const snapshot = exporter.onTick(simTimeMs, entities, {
-    encounter: encounterCtx,
-    zone: zone.zone(),
-    waveProgress: waveSnap,
-    weaponHud: combat.weaponHudFor(entities.player()?.id ?? null, simTimeMs)
-  });
-  if (snapshot !== null) {
+const core = createSimulationCore({
+  onSnapshot(snapshot) {
     postToMain({ kind: 'snapshot', snapshot });
+  },
+  onEvent(event) {
+    postToMain({ kind: 'event', event });
   }
 });
-const clockHost = createSimulationClockHost(clock);
-
-const sessionFlow = createSessionFlowSystem({
-  clock,
-  emitEvent,
-  buildResultSummary: (outcome, simTimeMs) =>
-    runSummary.buildSummary(outcome, simTimeMs, {
-      session: sessionFlow.activeSession(),
-      activeEncounter: sessionFlow.activeEncounter(),
-      waveProgress: spawn.waveProgress(),
-      store: entities
-    }),
-  waveProgress: () => spawn.waveProgress(),
-  onSessionStart(session, rng) {
-    entities.clear();
-    exporter.reset();
-    combat.clear();
-    fieldEffects.clear();
-    statusEffects.clear();
-    drops.clear();
-    runSummary.reset();
-    zone.reset();
-    pendingFieldDamageIntents = [];
-    pendingStatusDamageIntents = [];
-    spawn.setRng(rng);
-    drops.setRng(rng);
-    combat.setDamageRules(session.rules.damage);
-    fieldEffects.setDamageRules(session.rules.damage);
-    const player = entities.spawnPlayer(session.player);
-    if (session.companion !== null) {
-      const offset = session.companion.movement.orbitRadius * 0.75;
-      const spawnedCompanion = entities.spawnCompanion({
-        ...session.companion,
-        position: {
-          x: player.position.x - offset,
-          y: player.position.y - offset
-        }
-      });
-      if (session.companion.weaponLoadout !== null) {
-        combat.setCompanionLoadout(
-          spawnedCompanion.id,
-          session.companion.weaponLoadout,
-          clock.simTimeMs()
-        );
-      }
-    }
-    if (session.loadout !== null) {
-      combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
-    }
-  },
-  onSessionStop() {
-    entities.clear();
-    exporter.reset();
-    combat.clear();
-    fieldEffects.clear();
-    statusEffects.clear();
-    drops.clear();
-    runSummary.reset();
-    zone.reset();
-    pendingFieldDamageIntents = [];
-    pendingStatusDamageIntents = [];
-    spawn.setRng(null);
-  },
-  onEncounterStart(encounter) {
-    const session = sessionFlow.activeSession();
-    if (session === null) return;
-    spawn.onEncounterStart(encounter, entities, session.arena, clock.simTimeMs());
-    zone.onEncounterStart(encounter);
-  },
-  onEncounterEnd(encounter) {
-    spawn.onEncounterEnd(encounter);
-    zone.onEncounterEnd(encounter);
-  },
-  onEncounterComplete(encounter) {
-    runSummary.onEncounterComplete(sessionFlow.activeSession(), encounter);
-  }
-});
-
-healthDeath.registerHook((ctx) => {
-  runSummary.onDeath(ctx, entities);
-  if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
-  if (ctx.entityKind === 'enemy') combat.removeShooter(ctx.entityId);
-  if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
-  if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
-  if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
-  if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
-});
-
-healthDeath.registerDamageHook((ctx) => retaliation.onDamage(ctx, entities));
+const clockHost = createSimulationClockHost(core);
 
 self.addEventListener('message', (event: MessageEvent<MainToSim>) => {
   const msg = event.data;
   switch (msg.kind) {
     case 'startSession':
-      sessionFlow.start(msg.session);
+      core.start(msg.session);
       return;
     case 'stopSession':
-      sessionFlow.stop();
+      core.stop();
       return;
     case 'pause':
-      sessionFlow.pause();
+      core.pause();
       return;
     case 'resume':
-      sessionFlow.resume();
+      core.resume();
       return;
     case 'input':
-      sessionFlow.handleInput(msg.command);
+      core.submitInput(msg.command);
       return;
     case 'debug':
       log.warn('debug command received but not implemented', { command: msg.command });
