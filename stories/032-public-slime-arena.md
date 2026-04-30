@@ -23,7 +23,7 @@ The beauty of the mode is simplicity: join, spawn, throw rocks, kill, level up, 
 - Death resets the player to level 1.
 - Disconnecting loses the current arena progress.
 - A player's level is visible above their character.
-- Each level changes the player's slime form so the player can see the evolution path.
+- Each level changes the player's slime form so the player can see the evolution path through the authored enemy slime roster.
 - The final level transforms the player into the boss form.
 - The first boss form should use the tower boss visual from `public/assets/boss-04.png`.
 - Bosses use the standard boss scale, have much more HP than regular slimes, and are visually obvious targets.
@@ -34,6 +34,7 @@ The beauty of the mode is simplicity: join, spawn, throw rocks, kill, level up, 
 ## Player-facing
 
 - Sees: a new public arena entry point that is separate from campaign, training, and dungeon.
+- Can do: open `/portal/` and enter the online Public Arena, not the old local portal preset session.
 - Sees: if the arena is full, a short message says the online arena is full and the player remains outside the match.
 - Can do: join the public arena immediately when a slot is available.
 - Sees: on join, the player appears as the same small level 1 slime as everyone else.
@@ -52,6 +53,7 @@ The beauty of the mode is simplicity: join, spawn, throw rocks, kill, level up, 
 - Sees: killing a boss does not skip levels; the killer still advances by one level.
 - Sees: a minimal HUD with their current level and the current arena population.
 - Can do: open a minimal Public Arena menu and explicitly choose to leave the multiplayer arena.
+- Sees: the standard combat control affordances still exist in online play: movement hint, fire hint, one selected rock weapon slot, aim crosshair, and a self HP bar with the level label above it.
 
 ## Technical
 
@@ -59,9 +61,19 @@ Public Slime Arena is built on [public-multiplayer-arena.md](../design/public-mu
 
 Follow-up from online testing: the online arena must not render over an empty background. The Vibe Jam `/portal` entrypoint now leads to the online Public Arena, not to the old local authored portal run. Use `content/sessions/portal.md` as the content-authored source for the online arena's presentation config: arena size, background list, and active background. Remove the old authored waves/break/boss chain from that file. Do not introduce a hand-written `publicArenaConfig` copy of the same `portal` id, arena numbers, or background path; browser and server code must read the generated shared content projection instead.
 
+Follow-up for portal entry behavior: `portal/index.html` is the public online arena page. It must request the Public Arena online flow directly instead of setting an auto-start local `portal` preset id. The portal loading image/intro can stay, but completing startup should connect to the online arena and must not start the local `src/sim` portal session.
+
 Follow-up for HUD labels: online progression ids and the final boss level are shared headless Public Arena config. Server gameplay and main-thread HUD labels must import the same boss-level denominator, while authoritative snapshots can keep reporting the server-owned raw level.
 
 Follow-up hardening before live verification: the server owns a simple per-socket input rate limit, sends an explicit `serverShutdown` close reason before intentional shutdown, and resolves overlapping projectile hits by deterministic nearest-target selection.
+
+Follow-up from playtest: the current `Level 1/6` presentation is too short because it uses a hand-picked five-slime chain. Public Arena progression should use the authored enemy slime roster from generated content so players can climb through all available slime forms before the boss level.
+
+Follow-up from playtest: online rendering should not feel like a stripped debug mode. Keep the simple deathmatch rules, but reuse the standard necessary combat UI affordances: desktop control hints, a single selected rock weapon slot, aim crosshair, self HP bar, readable online menu styling, and a better top HUD layout.
+
+Follow-up for spawn/camera semantics: spawn points are arena/world coordinates derived from the generated arena bounds, not viewport coordinates. The visible area/camera adapts to the spawned player. Spawn points must be inset far enough from arena edges that the player does not appear glued to the wall.
+
+Follow-up for Vibe Jam portal semantics: return portal and exit portal positions are client-side main/render presentation only. The server does not know about these portals, does not include them in snapshots, and does not need protocol changes for them. Their rendered positions are world-space coordinates anchored relative to the arena center and generated arena bounds. They are not viewport coordinates, and they should not drift when the visible area or camera changes.
 
 ## Out of scope
 
@@ -81,12 +93,15 @@ Follow-up hardening before live verification: the server owns a simple per-socke
 ## Acceptance
 
 - The player can choose the public slime arena from a visible entry point.
+- The `/portal/` page opens the online Public Arena flow and does not start the old local `portal` preset session.
 - If the public arena has room, the player joins without a lobby or countdown.
 - If the public arena is full, the player sees a clear full-arena message and is not connected to the arena.
 - On join, the player appears as a level 1 slime at a corner spawn area.
 - The public arena's playable world is fixed at `40 x 40 wu`, even when the visible area and camera show only part of it.
 - The player's level is visible above their slime.
 - Other players' levels are visible above their slimes.
+- The local player's self HP line is visible like in standard mode, and the level label is above that HP line.
+- Desktop online play shows the standard movement/fire affordances, a crosshair, and one selected rock weapon slot.
 - A level 1 player can throw rocks.
 - Killing another player increases the killer's level by exactly one.
 - After a level increase, the killer's slime form changes.
@@ -101,6 +116,9 @@ Follow-up hardening before live verification: the server owns a simple per-socke
 - Disconnecting and rejoining starts the player back at level 1.
 - The mode does not add campaign XP, pet progress, or permanent rewards after play.
 - Multiplayer exit is explicit: desktop `Esc`/`Space`/Pointer Lock loss and the mobile menu button open a minimal Public Arena menu instead of immediately leaving; choosing `Exit Arena` closes the socket and returns to menu.
+- Online spawn points are inset arena/world coordinates based on the generated arena bounds; changing the viewport must not change spawn coordinates, only the visible area/camera.
+- Vibe Jam return and exit portal positions are render-only stable arena/world coordinates derived from the arena center, not from server state, viewport, or camera state.
+- Online HUD layout shows population on the left and arena level progress in the right-side/top progress area; FPS must not be the only thing floating there during online play.
 - Demo scenario: join the public arena, spawn as level 1, throw rocks, kill one player, see the level label and slime form change, die and return to level 1, then observe a high-level player become the tower boss and fight them without any separate boss phase starting.
 
 ## Tasks
@@ -124,7 +142,14 @@ Follow-up hardening before live verification: the server owns a simple per-socke
 | T15 | [x] | Correct T10: replace immediate multiplayer exit with a minimal Public Arena menu. | Added an online-only Public Arena menu overlay. Desktop `Esc`, `Space`, Pointer Lock loss, and the mobile menu button now open it, stop local online input, and send neutral movement/fire intent. `Exit Arena` is the explicit socket close path, while `Resume` restores online input without using local pause state. |
 | T16 | [x] | Adjust the Public Arena HUD labels. | Added shared Public Arena progression config for the boss-level denominator. The HUD now shows `Online N` and `Level current/bossLevel`, clamping the displayed current level to the boss level while leaving authoritative snapshot levels unchanged. |
 | T17 | [x] | Address remaining code-review hardening before live verification. | Added the per-socket `publicArena:input` rate limit, the intentional shutdown `serverShutdown` close reason, and deterministic nearest-overlapping projectile target selection with player-id tie-break tests. |
-| T18 | [ ] | Run automated checks and request live online verification from the user. | Include server unit tests, protocol/client tests, renderer/HUD/UI shell tests, build/content checks, and a manual two-client arena check per pipeline. Confirm explicit Public Arena exit menu, respawn protection, visible arena background, online count, level progress text, review hardening, and graceful server-close messaging. |
+| T18 | [ ] | Expand Public Arena progression to the full authored enemy slime roster. | Replace the hand-picked five-entry `PUBLIC_ARENA_SLIME_FORM_CHAIN` with a generated/content-derived chain using every authored enemy slime in content order. The boss level is `slimeChain.length + 1`, so the HUD denominator must no longer be `6`. Server regular-form stats must cover every chain entry, preferably from `EnemyArchetype` radius/maxHp/maxSpeed or a single generated mapping, with no fallback that silently loops back to the first slime. Add tests that the chain count matches generated enemy content, that the boss level denominator follows it, and that high levels walk through the final slime before transforming into `boss-tower-sentinel`. |
+| T19 | [ ] | Restore standard desktop combat affordances in online play. | Public Arena online should reuse the standard necessary HUD affordances instead of feeling bare: bottom-left `WASD`, bottom-right left-click/fire hint, and a bottom-center weapon slot bar with exactly one selected rock slot (`rock-thrower`). Weapon switching remains out of scope; this is presentation only. Also restyle `PublicArenaMenuOverlay` to match the standard pause/menu contrast and avoid the current black text treatment. Prefer reusing existing HUD/menu subcomponents or narrow online adapters over duplicating bespoke DOM. Update desktop/mobile visibility tests so mobile keeps mobile controls while desktop gets the standard hints. |
+| T20 | [ ] | Add online aim crosshair and self HP/level stack. | `PublicArenaRenderer` should receive the current online aim from the input controller and render the same crosshair language as the standard renderer. For the local player, render a standard-style world-space HP line above the character and place the level label above that HP line. Other players may keep the existing level label without HP bars. Cover renderer tests for crosshair visibility/position, self HP ratio, and label ordering without overlap. |
+| T21 | [ ] | Tighten public arena spawn and camera semantics. | Keep spawn points in generated arena/world coordinates, never viewport coordinates. Increase the corner spawn inset from the current tight edge placement so level 1 players appear comfortably inside the arena, then clamp with the player radius. The visible-area camera must initialize/follow from the authoritative self position, so changing desktop/mobile viewport only changes what is visible, not where the player spawns. Add server tests for spawn coordinates relative to generated arena bounds and UI/visible-area tests that the camera centers/clamps around the spawned self. |
+| T22 | [ ] | Rework the online top HUD layout. | Keep the online population on the left (`Online N`). Move arena level progress (`Level current/total`) into the right-side/top progress area that is currently visually occupied only by the FPS overlay when the wave progress path is absent. FPS should be hidden, demoted, or repositioned in online so it does not look like the primary progress UI. Use the full slime-chain denominator from T18 and update `PublicArenaHud`/`FpsOverlay`/`UiShell` tests for non-overlap and expected labels. |
+| T23 | [ ] | Correct the `/portal/` page to enter the online Public Arena. | Replace the current local-preset auto-start behavior from `portal/index.html` with an online Public Arena entry signal. The startup path should preserve the portal loading image/intro, then enter `onlineConnecting` and connect through the configured `VITE_PUBLIC_ARENA_SERVER_URL` flow. It must not call `buildSessionDefinition('portal')`, `SimWorkerHost.startSession`, or any local `portal` `ModePreset` run. Update `UiShell`/startup tests so `/portal/` proves it starts the online arena and no longer expects a local `portal` session. |
+| T24 | [ ] | Anchor return and exit portal coordinates to the arena center in main/render only. | Update the Vibe Jam portal positioning helpers/descriptors on the client presentation side so return portal and exit portal positions are generated in arena/world coordinates relative to the arena center and generated arena bounds, not relative to viewport/camera and not relative to the player's current spawn position. Do not add these portals to the server simulation, server snapshots, or Public Arena protocol; the server remains unaware of them. The main/render code should read the generated Public Arena arena config already used for presentation. Add tests that viewport changes do not move the portal coordinates and that the coordinates remain inside the authored arena bounds. |
+| T25 | [ ] | Run automated checks and request live online verification from the user. | Include server unit tests, protocol/client tests, renderer/HUD/UI shell/startup tests, build/content checks, and a manual two-client arena check per pipeline. Confirm `/portal/` enters the online arena, explicit Public Arena exit menu, respawn protection, visible arena background, full slime progression denominator, standard combat affordances, crosshair, self HP/level stack, inset arena-coordinate spawns, render-only center-anchored return/exit portal coordinates, online count, top-right level progress, review hardening, and graceful server-close messaging. |
 
 ## Related
 
