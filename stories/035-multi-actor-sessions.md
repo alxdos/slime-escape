@@ -1,8 +1,8 @@
 # Multi-Actor Sessions
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-30
-- Updated: 2026-04-30
+- Updated: 2026-04-30 (architect prep: T1 design decisions recorded — `PlayerConfig` and `SessionDefinition.players[]`, `RuntimeInputState` per-player map, `submitInput(playerId, command)` host signature, multi-actor AI-targeting policy (deterministic nearest by squared distance, `playerId` lexicographic tie-break), multi-actor `lossCondition` semantics (`'playerDeath'` = any-died; `'allPlayersDead'` and `'respawnOnDeath'` recorded for stories 037/036, not implemented here), aggregated `RunSummaryTracker`, snapshot shape unchanged; explicit content-authoring rule that `content/sessions/*.md` continues to author one player per session and the build pipeline distributes it into `players: [<one>]`. Tasks broken down accordingly.)
 
 ## Product intent
 
@@ -14,7 +14,7 @@ Per [simulation-runtime.md](../design/simulation-runtime.md), the shared simulat
 
 ## Technical
 
-Generalize `SessionDefinition.player: PlayerConfig` to `SessionDefinition.players: PlayerConfig[]` (or an equivalent actors list), and `RuntimeInputState` to a map keyed by `playerId`. Pick and record an AI-targeting policy for behavior-driven enemies in a multi-actor world (working assumption: deterministic nearest-by-squared-distance with `playerId` lexicographic tie-break, mirroring existing deterministic rules elsewhere). Extend `lossCondition: 'playerDeath'` semantics to cover multi-actor cases (any-died / all-died / respawn-each); this is a recorded design decision with its rationale, not an inline choice. Decide and record multi-actor semantics for `RunSummaryTracker` (per-actor / shared / disabled). The shared simulation core consumes the new shape directly; local play continues to work as a session with `players: [<one>]`. Public Arena PvP is **not** ported in this story — its current `server/src/arenaSimulation.ts` keeps running until story 036.
+Architectural prep landed: `SessionDefinition.player: PlayerSpawn` and the top-level `loadout` are replaced by a non-empty `SessionDefinition.players: ReadonlyArray<PlayerConfig>` (per [session-definition.md](../design/session-definition.md)); `RuntimeInputState` becomes a map keyed by `PlayerConfig.id` (per [input-commands.md](../design/input-commands.md)); the host-facing `SimulationCore.submitInput(command)` becomes `submitInput(playerId, command)` (per [sim-core-interface.md](../design/sim-core-interface.md)); `MovementSystem`/`BossPhaseSystem`/`CompanionSystem` resolve "the player" via the recorded multi-actor AI-targeting policy under [runtime-systems.md](../design/runtime-systems.md); `lossCondition: 'playerDeath'` fires `loss` exactly once on the first player death (per [session-definition.md](../design/session-definition.md), [health-and-death.md](../design/health-and-death.md)); `RunSummaryTracker` aggregates across players and records `defeat` from the first dying player (per [session-result-summary.md](../design/session-result-summary.md)). Two further `lossCondition` kinds are recorded but **not implemented** here — `'allPlayersDead'` (consumer story 037) and `'respawnOnDeath'` (consumer story 036). Snapshot shape is unchanged; the existing main-side single-player UI keeps working because every local preset continues to emit `players: [<one>]`. Content authoring ergonomics are preserved per [content-authoring.md](../design/content-authoring.md): `content/sessions/*.md` continues to author one player per session at session level (`playerId`, `loadoutWeaponIds`, `selectedWeaponIndex`); the generator distributes those into the runtime `players[]` shape, and per-player MD override is **not** introduced by this story. Public Arena PvP is also not ported here — its current `server/src/arenaSimulation.ts` keeps running until story 036.
 
 ## Out of scope
 
@@ -36,11 +36,11 @@ Generalize `SessionDefinition.player: PlayerConfig` to `SessionDefinition.player
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Record the multi-actor extensions in `design/`: update [session-definition.md](../design/session-definition.md), [runtime-systems.md](../design/runtime-systems.md), [health-and-death.md](../design/health-and-death.md) (multi-actor `lossCondition`), [session-result-summary.md](../design/session-result-summary.md) (multi-actor run summary), and add or extend the AI-targeting policy decision (likely an extension of an existing file rather than a new one). | Architectural PR. |
-| T2 | [ ] | Generalize `SessionDefinition` and `RuntimeInputState` shapes in shared types. | Code PR, depends on T1. |
-| T3 | [ ] | Update `MovementSystem` AI targeting, `SessionFlowSystem` loss-condition handling, `RunSummaryTracker`, and any other system that reads "the player" to read from the actors list. | Code PR, depends on T2. |
-| T4 | [ ] | Add a multi-actor unit/integration test in the shared sim layer covering input fan-out by `playerId`, mutual damage, and one-actor-dies-other-plays-on. | Depends on T3. |
-| T5 | [ ] | Regression: run all existing sim and main integration tests, plus a manual campaign/training/dungeon pass. | |
+| T1 | [/] | Architectural PR — landed. Recorded: [session-definition.md](../design/session-definition.md) (`PlayerConfig`, `players[]`, `LossCondition` extensions, authoring-vs-runtime split), [input-commands.md](../design/input-commands.md) (per-player `RuntimeInputState`; browser worker `players[0].id` injection), [sim-core-interface.md](../design/sim-core-interface.md) (`submitInput(playerId, command)`), [runtime-systems.md](../design/runtime-systems.md) (multi-actor AI-targeting policy under `MovementSystem`; `'playerDeath'` first-death rule), [health-and-death.md](../design/health-and-death.md) (multi-actor player death and removal), [session-result-summary.md](../design/session-result-summary.md) (aggregated multi-actor `RunSummaryTracker`), [snapshot-shape.md](../design/snapshot-shape.md) (clarifying note; no field changes), [content-authoring.md](../design/content-authoring.md) (sessions area continues to author one player per session at session level; build pipeline distributes into `players: [<one>]`). | Architectural PR, no code. |
+| T2 | [ ] | Generalise shared types: `PlayerConfig`, `SessionDefinition.players[]`, drop `SessionDefinition.loadout`, `RuntimeInputState` per-player map, new `LossCondition` union members (types only — `'allPlayersDead'`/`'respawnOnDeath'` have no behaviour in 035). Update `SimulationCore.submitInput(playerId, command)`. Update content templates (`SessionPresetTemplate` in `src/shared/content/sessions.ts`) and the sessions generator (`scripts/content-build/sessions/**`) so existing presets keep their session-level authoring shape and emit `players: [<one>]` whose single `PlayerConfig` carries the session-level loadout. Update `buildSession.ts`. Update `src/sim/worker.ts` to inject `session.players[0].id` into every input message. **MD authoring shape stays unchanged** — no per-player override is added in this story. | Code PR, depends on T1. |
+| T3 | [ ] | Update systems for multi-actor reads: `MovementSystem` AI targeting (enemy chase fallback, boss chase), `BossPhaseSystem` boss-attack targeting, `CompanionSystem` orbit/threat/engage/ghost positions, `CombatSystem` per-player firing decisions and per-player loadout slot sync (iterate per-actor input map), `DropSystem` attraction (deterministic-nearest-player), `SessionFlowSystem.onPlayerDeath(entityId)` and the `'playerDeath'` first-death loss path, `HealthDeathSystem.removePlayer(id)`, `RunSummaryTracker.onDeath` recording the first dying player's cause, `EntityStore` API (`playerById(id)` and `players()` iterator alongside the existing single-player accessor). Wire `SimulationCore.onSessionStart` to spawn each player and load each player's loadout. | Code PR, depends on T2. |
+| T4 | [ ] | Add multi-actor coverage in `src/shared/sim/**`: (a) input fan-out by `playerId` produces independent movement, aim, and fire per actor; (b) both actors produce projectiles that can damage each other under `slimeFriendlyFire: true`; (c) one actor dies → `'playerDeath'` lossCondition publishes `loss` exactly once; the other actor's death does not republish. Plus a deterministic AI-targeting test: two players at known positions, one enemy at a third position; the enemy chases the nearer player, and tied positions resolve by `playerId` ascending lexicographic order. | Depends on T3. |
+| T5 | [ ] | Regression: full automated check (root typecheck + tests, root build, server typecheck + tests, content drift check, sim import-boundary test). Manual smoke (campaign, training, dungeon) requested from the user — architect/coder do not start the dev server. | Depends on T4. |
 
 ## Related
 
@@ -48,7 +48,12 @@ Generalize `SessionDefinition.player: PlayerConfig` to `SessionDefinition.player
 - [session-definition.md](../design/session-definition.md)
 - [runtime-systems.md](../design/runtime-systems.md)
 - [input-commands.md](../design/input-commands.md)
+- [sim-core-interface.md](../design/sim-core-interface.md)
 - [snapshot-shape.md](../design/snapshot-shape.md)
 - [health-and-death.md](../design/health-and-death.md)
 - [session-result-summary.md](../design/session-result-summary.md)
+- [content-authoring.md](../design/content-authoring.md)
 - [034-extract-sim-core.md](034-extract-sim-core.md)
+- [036-node-arena-host.md](036-node-arena-host.md)
+- [037-coop-vs-slimes.md](037-coop-vs-slimes.md)
+- [038-online-client-prediction.md](038-online-client-prediction.md)

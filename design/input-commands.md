@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-30 (story 032 aim polish: desktop and mobile virtual aim is stored relative to the active visible area/viewport and converted to world coordinates from the current camera before sending `aim` or drawing the crosshair, so the cursor follows the viewport in local and online play. Earlier story 032 follow-up: `online` Public Arena maps desktop `Esc`/`Space`/Pointer Lock loss and the mobile menu button to the Public Arena menu from [main-ui-shell.md](main-ui-shell.md), not to local pause or immediate socket close. Earlier story 031 follow-up: aim pixel-to-world mapping uses the active visible area from [camera-and-visible-area.md](camera-and-visible-area.md), while mobile touch controls still map to existing `move`/`aim`/`fire` commands; see [mobile-web-support.md](mobile-web-support.md). Earlier: 2026-04-26 story 023 pause hotkey fix: player-facing pause overlay is `Esc` or `Space`; dev pause moves to physical `KeyP` through `UiShell`, independent of locale/CapsLock. Earlier: 017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 007 finalized pause routing through `UiShell`.)
+- Updated: 2026-04-30 (story 035 prep: `RuntimeInputState` becomes per-player, keyed by `PlayerConfig.id` from [session-definition.md](session-definition.md). `SimulationCore.submitInput` evolves to `submitInput(playerId, command)` ([sim-core-interface.md](sim-core-interface.md)). The `MainToSim.input` envelope is **not** changed in 035; the browser worker entry tags every input with `players[0].id` from the active session, which is sound because all current local play has exactly one actor. The `InputCommand` discriminated union shape is unchanged. Earlier: 2026-04-30 story 032 aim polish: desktop and mobile virtual aim is stored relative to the active visible area/viewport and converted to world coordinates from the current camera before sending `aim` or drawing the crosshair, so the cursor follows the viewport in local and online play. Earlier story 032 follow-up: `online` Public Arena maps desktop `Esc`/`Space`/Pointer Lock loss and the mobile menu button to the Public Arena menu from [main-ui-shell.md](main-ui-shell.md), not to local pause or immediate socket close. Earlier story 031 follow-up: aim pixel-to-world mapping uses the active visible area from [camera-and-visible-area.md](camera-and-visible-area.md), while mobile touch controls still map to existing `move`/`aim`/`fire` commands; see [mobile-web-support.md](mobile-web-support.md). Earlier: 2026-04-26 story 023 pause hotkey fix: player-facing pause overlay is `Esc` or `Space`; dev pause moves to physical `KeyP` through `UiShell`, independent of locale/CapsLock. Earlier: 017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 007 finalized pause routing through `UiShell`.)
 
 ## Context
 
@@ -118,11 +118,17 @@ There are also product requirements:
 
 ### Handling in sim
 
-- `sim` stores per-session input state as part of runtime state ([content-boundaries.md](content-boundaries.md)): `{ moveDir, aimWorld, firing }`.
-- On `startSession`, input state resets to neutral values (`moveDir = (0,0)`, `aimWorld = player.position`, `firing = false`).
-- On `stopSession`, input state is discarded with the rest of runtime state.
-- On `startSession`, selected weapon state is initialized from `SessionDefinition.loadout.selectedIndex` when `loadout !== null`.
+- `sim` stores per-session input state as part of runtime state ([content-boundaries.md](content-boundaries.md)). With story 035, the state is a **map keyed by `PlayerConfig.id`**: each entry is `{ moveDir, aimWorld, firing, loadout }`, where `loadout` is the per-actor selected/holstered slot state (separate from the immutable session loadout). For sessions with `players.length === 1`, the map has exactly one entry; behaviour is identical to the previous single-player shape.
+- On `startSession`, the map is rebuilt to contain one entry per `SessionDefinition.players[]` entry. Each entry resets to neutral values (`moveDir = (0,0)`, `aimWorld = player.position`, `firing = false`); per-actor selected weapon state is initialised from that player's `PlayerConfig.loadout.selectedIndex` when `loadout !== null`.
+- On `stopSession`, the map is cleared with the rest of runtime state.
+- The host-facing entry point is `SimulationCore.submitInput(playerId, command)` ([sim-core-interface.md](sim-core-interface.md)). It updates only the entry for `playerId`. Inputs whose `playerId` is not in the active session's `players[]` are dropped with a warning through the shared log module ([logging.md](logging.md)); silent ignore is forbidden.
 - Commands received before `startSession` or after `stopSession` are dropped with a warning through the shared log module; silent ignore is forbidden.
+
+### Routing input across the host boundary
+
+- The shape of `MainToSim.input` (worker thread protocol) is **not** changed in story 035. Today it is `{ kind: 'input'; command: InputCommand }`; the field set stays exactly that way.
+- The browser worker entry (`src/sim/worker.ts`) reads `session.players[0].id` from the most recent `startSession` message and tags every subsequent `input` message with that id when calling `core.submitInput(players[0].id, command)`. This is the **local-host convention** for story 035 and is sound only because all current local play has exactly one actor — explicitly recorded so that future stories that introduce local couch co-op (not on the current roadmap) know where to extend.
+- The Node arena host ([sim-core-interface.md](sim-core-interface.md), story 036) does not use this worker convention: it derives `playerId` per Socket.IO socket and calls `core.submitInput(playerId, command)` directly per intent intake. The convention above is browser-worker-specific.
 
 ## Consequences
 
@@ -146,3 +152,6 @@ There are also product requirements:
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [mobile-web-support.md](mobile-web-support.md)
 - [public-multiplayer-arena.md](public-multiplayer-arena.md)
+- [sim-core-interface.md](sim-core-interface.md)
+- [session-definition.md](session-definition.md)
+- [../stories/035-multi-actor-sessions.md](../stories/035-multi-actor-sessions.md)

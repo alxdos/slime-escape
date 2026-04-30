@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-30
+- Updated: 2026-04-30 (story 035 prep: recorded that the `sessions` area continues to author one player per session via session-level fields (`playerId`, `loadoutWeaponIds`, `selectedWeaponIndex`); the generator distributes those into the runtime `SessionDefinition.players[]` shape from [session-definition.md](session-definition.md). Per-player MD override is not introduced and is reserved for the future co-op story.)
 
 ## Context
 
@@ -64,6 +64,7 @@ This decision defines stable rules for the layer. Exact fields for a specific ar
   - `sessions` (`content/sessions/<presetId>.md`): each file describes one session preset in full, including preset metadata (`displayName`/`description`/`visibleInMenu`/`order`), required arena dimensions (`arenaWidth`/`arenaHeight`) in world units, session-level background-image table in `# Session`, and full encounter list in `# Encounters` order.
 - In the `sessions` `# Session` field table, `winCondition` accepts the existing scalar values plus `dungeon`. The cell renders to `{ kind: 'dungeon' }`; runtime looping semantics are defined in [session-definition.md](session-definition.md), not in the generator.
 - In a `sessions` file, optional `# Companion` contains one `field | value` table for `CompanionSessionConfig` tuning from [companion-combat.md](companion-combat.md). The table never includes a pet id; selected pet identity comes from client progression at run start. `weaponLoadoutIds` uses the existing CSV id list form or `none`; `weaponSelectedIndex` follows normal loadout index/null/none validation.
+- **Sessions author one player per session through session-level fields, even though the runtime supports multiple actors.** The `# Session` `field | value` table keeps the existing single-player shape: `playerId` (the player archetype id), `loadoutWeaponIds` (CSV `weaponArchetypeId`s or `none`), and `selectedWeaponIndex` (integer, `null`, or `none`). The generator (`scripts/content-build/sessions/**`) is responsible for distributing those session-level fields into the runtime `SessionDefinition.players[]` shape recorded in [session-definition.md](session-definition.md): every authored session produces `players: [<one>]` whose single `PlayerConfig` carries the session-level `loadout`. Authors must not be required to repeat `loadout` per player in MD. Per-player override authoring is **not** introduced by story 035; if a future multi-player session story (the natural consumer is online co-op, story 037) needs a way to express asymmetric loadouts, it lands as an additive shape (e.g. an explicit `# Players` block whose rows can override the session-level defaults) and does not regress the existing single-player ergonomics — consistent with this file's "fill in, do not trim" rule above.
 - Required rules for multi-file areas:
   - filename without extension equals the **unit id** (`presetId` for sessions); a typo creates a separate id, not a continuation of another file;
   - the folder is walked in **filename-sorted** order for stable generated diffs across OS/filesystems;
@@ -188,3 +189,4 @@ Existing npm scripts remain: `dev = vite`, `build = tsc -p tsconfig.json && tsc 
 - [spawn-overrides.md](spawn-overrides.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
 - [companion-combat.md](companion-combat.md)
+- [../stories/035-multi-actor-sessions.md](../stories/035-multi-actor-sessions.md)

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-30
-- Updated: 2026-04-30
+- Updated: 2026-04-30 (story 035 prep: closed the pre-flagged gap and updated `submitInput` to its multi-actor signature `submitInput(playerId, command)`. The transitional single-actor signature shipped by story 034 is gone. The `MainToSim.input` envelope shape is intentionally not changed; the browser worker entry tags every input with `players[0].id` from the active session — the routing convention is recorded in [input-commands.md](input-commands.md). The future Node arena host (story 036) derives `playerId` per Socket.IO socket and calls `submitInput(playerId, command)` directly.)
 
 ## Context
 
@@ -10,7 +10,7 @@
 
 This file records that concrete shape: how a host constructs the core, which methods it calls into, which callbacks the core invokes back, how the wall-clock pump crosses the boundary, and what does **not** cross the boundary. Without a single recorded interface, story 036 (Node arena host) and story 038 (client running shared `MovementSystem` for prediction) would each redefine it locally and drift from the browser worker host introduced by story 034.
 
-The contract starts single-actor — that is the shape of `SessionDefinition` and `RuntimeInputState` today. Story 035 generalizes both to multi-actor; the change to `submitInput` lives in that story and updates this file at the same time.
+Story 035 generalised `SessionDefinition.player` into `SessionDefinition.players[]` and `RuntimeInputState` into a per-`playerId` map; `submitInput` carries `playerId` accordingly. The single-actor signature that shipped with story 034 is gone — local play continues to work because every local preset emits `players: [<one>]`, and the browser worker entry tags messages with `players[0].id`.
 
 ## Decision
 
@@ -38,7 +38,7 @@ The façade `SimulationCore` exposes exactly the following methods. Method names
 - `stop(): void` — reset runtime state and return the clock to idle. Mirrors `stopSession`.
 - `pause(): void` — pause the clock; equivalent to `MainToSim.kind: 'pause'`.
 - `resume(): void` — resume the clock; equivalent to `MainToSim.kind: 'resume'`.
-- `submitInput(command: InputCommand): void` — feed a single input command into the core, equivalent to `MainToSim.kind: 'input'`. **Single-actor signature is shipped by story 034. Story 035 generalizes it to `submitInput(playerId, command)` together with the `SessionDefinition.players` change; that update is the responsibility of 035 and is expected, not a contract violation.**
+- `submitInput(playerId: string, command: InputCommand): void` — feed a single input command into the core for the actor identified by `playerId` (a value from `SessionDefinition.players[].id`, see [session-definition.md](session-definition.md)). The method updates only that actor's slot in the per-player `RuntimeInputState` map ([input-commands.md](input-commands.md)). Inputs whose `playerId` is not in the active session's `players[]` are dropped with a warning through the shared log module ([logging.md](logging.md)); silent ignore is forbidden. The host is responsible for choosing `playerId` — for the browser worker host this is `session.players[0].id` (one actor per local session), for the future Node arena host it is the per-socket actor id derived at intake.
 - `pump(nowMs: number): void` — drive the simulation forward against a host-supplied wall-clock time. The core does its own catch-up against `SIM_STEP_MS` per [simulation-timing.md](simulation-timing.md). The host must not pass synthetic times to "speed up" or "skip" simulation; the value is the host's actual wall-clock now.
 
 `MainToSim.kind: 'debug'` is intentionally **not** part of the first version. Today the worker logs a warning for it and there is no consumer; when a real debug consumer appears, this file is extended (or a separate decision records the debug channel).
@@ -68,7 +68,7 @@ The façade `SimulationCore` exposes exactly the following methods. Method names
 - The browser worker host (story 034) and the Node arena host (story 036) implement the same handful of method calls and the same two callbacks. Drift between hosts is mechanical to spot, not architectural.
 - Story 038 (client-side prediction) imports the shared `MovementSystem` directly from the core's shared layer rather than going through this façade, because prediction is a partial replay against an authoritative reference, not a host of its own. That use case is intentionally outside this interface.
 - The first-version omission of telemetry and `debug` keeps the interface minimal; both are easy extensions when a real consumer appears.
-- The single-actor `submitInput(command)` signature is a known transitional shape. Story 035 must update both this file and the implementation in lockstep so the multi-actor signature lands in one architectural change rather than as drift.
+- The multi-actor `submitInput(playerId, command)` signature is the stable shape going forward. Hosts pick `playerId` per their own routing rules (browser worker uses `players[0].id`, Node arena host uses the per-socket id), but the core's input-state map is the single source of truth.
 - Internal hooks staying inside the factory means changing system wiring (e.g. adding a new `death hook` consumer) is a core-internal change, not a host-protocol change.
 
 ## Related
@@ -82,3 +82,4 @@ The façade `SimulationCore` exposes exactly the following methods. Method names
 - [session-definition.md](session-definition.md)
 - [web-stack.md](web-stack.md)
 - [rng.md](rng.md)
+- [../stories/035-multi-actor-sessions.md](../stories/035-multi-actor-sessions.md)

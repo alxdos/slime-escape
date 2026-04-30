@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-30
+- Updated: 2026-04-30 (story 035 prep: generalised the single `player` field and the top-level `loadout` field into a non-empty `players: ReadonlyArray<PlayerConfig>`, where each `PlayerConfig` carries a stable `id`, the existing per-player spawn fields, and its own `loadout`. Extended the `lossCondition` union with `'allPlayersDead'` (recorded for story 037 co-op) and `'respawnOnDeath'` (recorded for story 036 PvP hosting); only the existing `'playerDeath'` kind is implemented in story 035 and now means "any controlled actor of `entityKind === 'player'` dies". Local presets continue to behave identically as `players: [<one>]`. Earlier: 2026-04-30 story 032 prep …)
 
 ## Context
 
@@ -23,9 +23,8 @@ The game runtime must run an externally defined session, not one hardcoded scena
   id,
   seed,
   arena,
-  player,
+  players,
   companion,
-  loadout,
   backgrounds,
   musicSampleId,
   modifiers,
@@ -45,14 +44,20 @@ The game runtime must run an externally defined session, not one hardcoded scena
 - Internal structures such as `spawnPlan`, `rewardRules`, and `tuning` may evolve as long as they do not break the top-level session assembly model.
 - Minimal required field shape:
   - `arena` — rectangle `{ width, height }` in world units (see [arena-and-coordinates.md](arena-and-coordinates.md)). Concrete values are authored as `arenaWidth` and `arenaHeight` in each `content/sessions/<presetId>.md` file and generated into the preset template.
-  - `player` is the initial player description as `{ position: { x, y }, radius, contactBox, maxSpeed, maxHp }`, where coordinates and sizes are in world units, speed is in world units per second, and `maxHp` is an integer > 0 (source of `HasHealth` from [health-and-death.md](health-and-death.md)). `contactBox` is the axis-aligned body footprint for body contact and player clamp per [body-contact-boxes.md](body-contact-boxes.md). For presets where the player is not damageable (sandbox without combat), `maxHp` is still set explicitly; omitting the field is forbidden by the same "no two ways to say no data" rule as other required fields. Additional fields (status effects, inventory) may be added by separate decisions without breaking the top-level model.
+  - `players` is an ordered, **non-empty** list of `PlayerConfig` objects, one per controlled actor in the session. Each `PlayerConfig` has shape `{ id, position: { x, y }, radius, contactBox, maxSpeed, maxHp, loadout }`, where:
+    - `id` is a stable string unique within the session and lexicographically comparable. It is the only cross-host identifier for an actor: per-actor input state is keyed by `id` ([input-commands.md](input-commands.md)), AI-targeting tie-breaks resolve by `id` ascending lexicographic order ([runtime-systems.md](runtime-systems.md)), and the host (browser worker for local play, Node arena host for online) routes input messages to the owning actor by `id`. `EntityId` is a sim-internal handle and is not stable across respawns; `id` is.
+    - `position`, `radius`, `contactBox`, `maxSpeed`, `maxHp` carry the same meaning and the same units as the previous single-`player` shape: coordinates and sizes are in world units, speed is in world units per second, and `maxHp` is an integer > 0 (source of `HasHealth` from [health-and-death.md](health-and-death.md)). `contactBox` is the axis-aligned body footprint for body contact and player clamp per [body-contact-boxes.md](body-contact-boxes.md). For presets where a player is not damageable (sandbox without combat), `maxHp` is still set explicitly; omitting the field is forbidden by the same "no two ways to say no data" rule as other required fields.
+    - `loadout` is the per-actor weapon loadout, with the same `Loadout | null` shape recorded below. It is `null` for actors without a built-in weapon (sandbox without combat) and a `Loadout` for combat-enabled actors. Each actor in `players` may have a different loadout; this is required for PvP arena (story 036) and for online co-op (story 037), and it is consistent for local single-player (the single actor carries the preset's loadout). The previous top-level `SessionDefinition.loadout` field is removed: there is exactly one place to author "what weapons does player X have", inside that player's `PlayerConfig`.
+  - Additional fields (status effects, inventory) may be added to `PlayerConfig` by separate decisions without breaking the top-level model.
+  - For sessions with `players.length === 1`, the runtime behaves identically to the previous single-player shape; this is the canonical local-play mode. Local content presets (`campaign`, `training`, `dungeon`, `sandbox`, `sandbox-with-combat`, `pistolOnly`, `portal`) emit a single-element `players` list.
+  - **Authoring ergonomics are preserved.** `content/sessions/*.md` continues to author one player per session via the existing session-level fields (`playerId`, `loadoutWeaponIds`, `selectedWeaponIndex`) — see [content-authoring.md](content-authoring.md). The build pipeline (`scripts/content-build/sessions/**`) is responsible for expanding those single-player session-level fields into a single-element `players: [<one>]` for the runtime contract; the runtime gain in flexibility (per-actor loadout, future asymmetric co-op or hero classes) does **not** introduce a new authoring obligation. Per-player override in MD authoring is intentionally not introduced by story 035 — it stays a future concern of online co-op (story 037), and when it lands it must arrive as an additive rule that does not regress the existing single-player ergonomics ("fill in, do not trim").
   - `companion` is either `null` or a `CompanionSessionConfig` from [companion-combat.md](companion-combat.md). It is the only simulation-visible way for selected pet progression to affect a run. The field is required: `null` means no runtime companion, while an object means the session starts one companion entity with session-owned HP, contact shape, movement tuning, weapon availability, boop, and rescue rules.
   - `seed` — integer value, the only source of RNG determinism in simulation; nondeterministic time/randomness sources outside `seed` are forbidden.
   - `id` — stable string session identifier for logs and debug.
-- `loadout`, `modifiers`, `rules`, and `uiMeta` remain in the contract as stable names; their internal shape and requiredness depend on the preset and may evolve. The builder must explicitly set a meaningful value, `null`, or an empty object; omitting the field itself is forbidden so consumers do not need to distinguish two forms of "no data".
-- Minimal `loadout` shape:
-  - `null` — the preset has no built-in weapon (sandbox without combat, pure exploratory bring-up);
-  - `Loadout` — the preset has at least one weapon; `Loadout` shape is defined in [content-archetypes.md](content-archetypes.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md): `{ weapons: string[]; selectedIndex: number | null }`.
+- `modifiers`, `rules`, and `uiMeta` remain in the contract as stable names; their internal shape and requiredness depend on the preset and may evolve. The builder must explicitly set a meaningful value, `null`, or an empty object; omitting the field itself is forbidden so consumers do not need to distinguish two forms of "no data".
+- Minimal `loadout` shape (carried by every `PlayerConfig`, see `players` above):
+  - `null` — the actor has no built-in weapon (sandbox without combat, pure exploratory bring-up);
+  - `Loadout` — the actor has at least one weapon; `Loadout` shape is defined in [content-archetypes.md](content-archetypes.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md): `{ weapons: string[]; selectedIndex: number | null }`.
 - `rules` remains the session-owned place for gameplay switches. Current rules include:
   ```ts
   type SessionRules = Readonly<{
@@ -100,22 +105,26 @@ The game runtime must run an externally defined session, not one hardcoded scena
   Optional "break between encounters" and "runtime events on transition" are intentionally not added to `transitionRules`: the first is expressed as a separate `break` encounter with `transitionRules: { kind: 'timer' }`, and the second is covered by the already defined lifecycle events `encounterStart`/`encounterEnd` ([runtime-systems.md](runtime-systems.md)).
 - `winCondition` and `lossCondition` are defined at the whole-session level, not by individual feature implementations.
 - Minimal `winCondition` categories: `{ kind: 'allEncountersComplete' }`, `{ kind: 'bossDefeated' }`, `{ kind: 'dungeon' }`, `{ kind: 'scenarioCondition' }`, **`{ kind: 'none' }`** — the session has no automatic victory condition at all (sandbox, free-roam, dev modes).
-- Minimal `lossCondition` categories: `{ kind: 'playerDeath' }`, `{ kind: 'timerOrScenarioFail' }`, `{ kind: 'forced' }`, **`{ kind: 'none' }`** — the session has no automatic loss condition (sandbox; completion is possible only through `stopSession`).
+- Minimal `lossCondition` categories: `{ kind: 'playerDeath' }`, `{ kind: 'allPlayersDead' }`, `{ kind: 'respawnOnDeath' }`, `{ kind: 'timerOrScenarioFail' }`, `{ kind: 'forced' }`, **`{ kind: 'none' }`** — the session has no automatic loss condition (sandbox; completion is possible only through `stopSession`).
+- Multi-actor `lossCondition` semantics (the three player-related kinds):
+  - `'playerDeath'` — `loss` fires exactly once when **any** controlled actor of `entityKind === 'player'` dies. For sessions with `players.length === 1` this is identical to the previous single-player rule. This is the only player-related `lossCondition` kind implemented in story 035.
+  - `'allPlayersDead'` — `loss` fires only when **every** player in the session is dead simultaneously. Recorded for online co-op (story 037) and not implemented in 035; its consumer story owns implementation and tests.
+  - `'respawnOnDeath'` — death never produces `loss`. The dead actor respawns under session-defined rules and the run ends only through external `stopSession`. Recorded for the Node arena host running Public Arena PvP (story 036) and not implemented in 035; its consumer story owns implementation and tests.
 - `winCondition` and `lossCondition` remain required `SessionDefinition` fields. The `none` category is explicit to separate "forgot to set a condition" from "intentionally no condition". `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md)) must not generate the corresponding win/loss event automatically for `none`.
 - Active category semantics implemented by `SessionFlowSystem`:
   - `winCondition: { kind: 'allEncountersComplete' }` — `win` is published exactly once, after `encounterEnd` of the last encounter in `encounters` (when `transitionRules.next` reaches "no next encounter");
   - `winCondition: { kind: 'bossDefeated' }` — victory through a session-level death hook on an entity `kind: 'boss'`, under the conditions from [boss-encounter.md](boss-encounter.md); it is not mixed with `allEncountersComplete` in one `SessionDefinition`;
   - `winCondition: { kind: 'dungeon' }` — no automatic `win` is ever published. When `transitionRules.next` reaches "no next encounter", `SessionFlowSystem` emits the current `encounterEnd` and starts the first authored encounter again through the normal `encounterStart` path instead of completing the run. The authored encounter index still points at `SessionDefinition.encounters`; a separate run-level wave ordinal increments every time a `type === 'wave'` encounter starts, including repeated passes through the same authored wave. Dungeon sessions must use `lossCondition: { kind: 'playerDeath' }` in the first player-facing version;
-  - `lossCondition: { kind: 'playerDeath' }` — `SessionFlowSystem` registers a session-level death hook that reacts to `entityKind === 'player'` ([health-and-death.md](health-and-death.md)) and publishes `loss` exactly once;
+  - `lossCondition: { kind: 'playerDeath' }` — `SessionFlowSystem` registers a session-level death hook that reacts to `entityKind === 'player'` ([health-and-death.md](health-and-death.md)) and publishes `loss` exactly once on the **first** player death (any of `players[]`). Subsequent player deaths within the same tick or in following ticks do not republish `loss` and do not run further loss-related hooks;
   - after publishing `win` or `loss`, `SessionFlowSystem` ends the run correctly: no further encounter transitions run, the clock moves to idle, and runtime state resets through the same path as `stopSession`. A further run can start only through a new `startSession`.
 - `win`/`loss` events are the only way `main` learns about automatic session completion. While publishing the event, `SessionFlowSystem` must also perform the same runtime-state reset as `stopSession`, so `main` can react to the event without sending an explicit `stopSession` in response. The concrete event shape is in [snapshot-shape.md](snapshot-shape.md).
 - `ModePreset` is an external preset that prepares a default session but is not executed by itself.
 - Minimal preset modes:
   - `campaign` — 3 waves, breaks, final boss;
-  - `training` — a short training run without a boss. The minimal shape is exactly two wave encounters with a break encounter between them (`wave1 → break → wave2`), combat `loadout` in the current ordered shape, `winCondition: { kind: 'allEncountersComplete' }`, and `lossCondition: { kind: 'playerDeath' }`. Concrete numeric wave parameters (composition, pace, limit, break duration, `zoneBehavior` numbers) are `content library` content ([content-boundaries.md](content-boundaries.md)) and not part of this decision. Extending `training` to 3+ waves or another structure is allowed without editing this file if the preset id shape stays the same;
-  - `pistolOnly` — starting loadout is limited to the pistol;
-  - `sandbox` — one `sandbox` encounter without win/loss conditions and without built-in weapon (`loadout: null`), used for bring-up stories that do not require the combat stack;
-  - `sandbox-with-combat` — sandbox variant with an ordered `Loadout` and `spawnPlan: { kind: 'static' }` for bring-up combat entities, such as a training target. It follows all sandbox-encounter rules below: `winCondition: none`, `lossCondition: none`, the only exit path is external `stopSession`.
+  - `training` — a short training run without a boss. The minimal shape is exactly two wave encounters with a break encounter between them (`wave1 → break → wave2`), exactly one player in `players` with a combat `loadout` in the current ordered shape, `winCondition: { kind: 'allEncountersComplete' }`, and `lossCondition: { kind: 'playerDeath' }`. Concrete numeric wave parameters (composition, pace, limit, break duration, `zoneBehavior` numbers) are `content library` content ([content-boundaries.md](content-boundaries.md)) and not part of this decision. Extending `training` to 3+ waves or another structure is allowed without editing this file if the preset id shape stays the same;
+  - `pistolOnly` — the single player's `loadout` is limited to the pistol;
+  - `sandbox` — one `sandbox` encounter without win/loss conditions and with the single player's `loadout: null` (no built-in weapon), used for bring-up stories that do not require the combat stack;
+  - `sandbox-with-combat` — sandbox variant where the single player's `loadout` is an ordered `Loadout` and `spawnPlan: { kind: 'static' }` provides bring-up combat entities such as a training target. It follows all sandbox-encounter rules below: `winCondition: none`, `lossCondition: none`, the only exit path is external `stopSession`.
   - `portal` — hidden Vibe Jam/Public Arena entrypoint content source for `/portal`. It may provide presentation data such as arena dimensions and backgrounds through the normal session content pipeline, but the `/portal` entrypoint is not required to execute a local authored combat run.
   - `dungeon` — one player-facing endless-wave preset started from the existing Dungeon menu screen. It is an authored encounter loop, not procedural generation in the first version: the session must contain at least one `type === 'wave'` encounter, use `winCondition: dungeon`, and use `lossCondition: playerDeath`. Concrete wave composition, breaks, backgrounds, and scaling are content data.
 - The "Minimal preset modes" list grows as product modes appear; new preset modes are recorded in this file and not introduced locally in `src/shared/content/**`. Removing an existing preset id is handled through `superseded`/updating this file.
@@ -163,3 +172,8 @@ The game runtime must run an externally defined session, not one hardcoded scena
 - [vibe-jam-portals.md](vibe-jam-portals.md)
 - [companion-combat.md](companion-combat.md)
 - [mobile-web-support.md](mobile-web-support.md)
+- [input-commands.md](input-commands.md)
+- [sim-core-interface.md](sim-core-interface.md)
+- [session-result-summary.md](session-result-summary.md)
+- [simulation-runtime.md](simulation-runtime.md)
+- [../stories/035-multi-actor-sessions.md](../stories/035-multi-actor-sessions.md)
