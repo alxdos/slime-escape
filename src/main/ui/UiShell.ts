@@ -13,6 +13,7 @@ import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type {
   PublicArenaInputIntent,
+  PublicArenaPlayerId,
   PublicArenaPlayerFormSnapshot,
   PublicArenaPresentationEvent,
   PublicArenaSnapshot,
@@ -387,6 +388,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   let publicArenaInput: InputController | null = null;
   let publicArenaVisibleAreaCamera: VisibleAreaCamera | null = null;
   let publicArenaSnapshot: PublicArenaSnapshot | null = null;
+  let publicArenaPlayerId: PublicArenaPlayerId | null = null;
+  let publicArenaArena: PublicArenaWorldBounds | null = null;
   let publicArenaPlayerCap: number | null = null;
   let publicArenaMenuOpen = false;
   let publicArenaConnectionId = 0;
@@ -874,7 +877,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         if (!isCurrentPublicArenaConnection(connectionId)) {
           return;
         }
-        attachPublicArenaPresentation(message.playerCap);
+        attachPublicArenaPresentation({
+          playerId: message.playerId,
+          arena: message.arena,
+          playerCap: message.playerCap
+        });
         log.info('public arena accepted', {
           playerId: message.playerId,
           population: message.population
@@ -894,10 +901,11 @@ export function createUiShell(init: UiShellInit): UiShell {
           return;
         }
         publicArenaSnapshot = snapshot;
-        const visibleAreaCamera = ensurePublicArenaRenderer(snapshot.arena);
-        ensurePublicArenaInput(snapshot.arena, visibleAreaCamera);
-        publicArenaHud.update(snapshot, publicArenaPlayerCap);
-        publicArenaCombatAffordances.update(snapshot);
+        const arena = requirePublicArenaArena();
+        const visibleAreaCamera = ensurePublicArenaRenderer(arena);
+        ensurePublicArenaInput(arena, visibleAreaCamera);
+        publicArenaHud.update(snapshot, publicArenaPlayerId, publicArenaPlayerCap);
+        publicArenaCombatAffordances.update(snapshot, publicArenaPlayerId);
       },
       onPresentation(event) {
         if (!isCurrentPublicArenaConnection(connectionId)) {
@@ -941,13 +949,28 @@ export function createUiShell(init: UiShellInit): UiShell {
     }
   }
 
-  function attachPublicArenaPresentation(playerCap: number): void {
+  function attachPublicArenaPresentation(
+    handshake: Readonly<{
+      playerId: PublicArenaPlayerId;
+      arena: PublicArenaWorldBounds;
+      playerCap: number;
+    }>
+  ): void {
     tearDownPublicArenaPresentation();
     publicArenaSnapshot = null;
-    publicArenaPlayerCap = playerCap;
+    publicArenaPlayerId = handshake.playerId;
+    publicArenaArena = handshake.arena;
+    publicArenaPlayerCap = handshake.playerCap;
     portalController.attachPublicArena();
-    publicArenaHud.update(null, playerCap);
-    publicArenaCombatAffordances.update(null);
+    publicArenaHud.update(null, publicArenaPlayerId, handshake.playerCap);
+    publicArenaCombatAffordances.update(null, publicArenaPlayerId);
+  }
+
+  function requirePublicArenaArena(): PublicArenaWorldBounds {
+    if (publicArenaArena === null) {
+      throw new Error('Public Arena snapshot arrived before joinAccepted arena config.');
+    }
+    return publicArenaArena;
   }
 
   function ensurePublicArenaRenderer(arena: PublicArenaWorldBounds): VisibleAreaCamera {
@@ -970,6 +993,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       canvas: init.canvas,
       renderScalePreset: clientSettingsStore.get().renderScalePreset,
       arena,
+      selfId: requirePublicArenaPlayerId(),
       spriteTextures: preloadedTextures,
       visibleAreaCamera,
       getSnapshot: () => publicArenaSnapshot,
@@ -1060,10 +1084,11 @@ export function createUiShell(init: UiShellInit): UiShell {
     applyPhaseVisibility();
     const snapshot = publicArenaSnapshot;
     const visibleAreaCamera = publicArenaVisibleAreaCamera;
-    if (snapshot === null || visibleAreaCamera === null) {
+    const arena = publicArenaArena;
+    if (arena === null || snapshot === null || visibleAreaCamera === null) {
       return;
     }
-    ensurePublicArenaInput(snapshot.arena, visibleAreaCamera);
+    ensurePublicArenaInput(arena, visibleAreaCamera);
   }
 
   function stopPublicArenaInputForMenu(): void {
@@ -1077,7 +1102,9 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function findPublicArenaSelfPosition(): Readonly<{ x: number; y: number }> {
     const snapshot = publicArenaSnapshot;
-    const self = snapshot?.players.find((player) => player.id === snapshot.selfId);
+    const selfId = publicArenaPlayerId;
+    const self =
+      selfId === null ? undefined : snapshot?.players.find((player) => player.id === selfId);
     return self === undefined ? { x: 0, y: 0 } : { x: self.x, y: self.y };
   }
 
@@ -1086,7 +1113,9 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (snapshot === null) {
       return null;
     }
-    const self = snapshot.players.find((player) => player.id === snapshot.selfId);
+    const selfId = publicArenaPlayerId;
+    const self =
+      selfId === null ? undefined : snapshot.players.find((player) => player.id === selfId);
     return {
       simTimeMs: snapshot.simTimeMs,
       player: self === undefined ? null : { x: self.x, y: self.y }
@@ -1102,6 +1131,8 @@ export function createUiShell(init: UiShellInit): UiShell {
       publicArenaInput === null &&
       publicArenaVisibleAreaCamera === null &&
       publicArenaSnapshot === null &&
+      publicArenaPlayerId === null &&
+      publicArenaArena === null &&
       publicArenaPlayerCap === null
     ) {
       publicArenaHud.hide();
@@ -1115,6 +1146,8 @@ export function createUiShell(init: UiShellInit): UiShell {
     publicArenaRenderer = null;
     publicArenaVisibleAreaCamera = null;
     publicArenaSnapshot = null;
+    publicArenaPlayerId = null;
+    publicArenaArena = null;
     publicArenaPlayerCap = null;
     unsubscribeRendererSettings = null;
     portalController.detachSession();
@@ -1123,6 +1156,13 @@ export function createUiShell(init: UiShellInit): UiShell {
     previousRenderer?.dispose();
     publicArenaHud.hide();
     publicArenaCombatAffordances.hide();
+  }
+
+  function requirePublicArenaPlayerId(): PublicArenaPlayerId {
+    if (publicArenaPlayerId === null) {
+      throw new Error('Public Arena renderer requires the joinAccepted player id.');
+    }
+    return publicArenaPlayerId;
   }
 
   async function startPresetWithTransition(

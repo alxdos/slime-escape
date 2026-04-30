@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import type {
+  PublicArenaPlayerId,
   PublicArenaPlayerSnapshot,
   PublicArenaProjectileSnapshot,
   PublicArenaSnapshot
@@ -68,6 +69,7 @@ export type PublicArenaRendererInit = Readonly<{
   canvas: HTMLCanvasElement;
   renderScalePreset: RenderScalePreset;
   arena: ArenaConfig;
+  selfId: PublicArenaPlayerId;
   presentationConfig?: PublicArenaPresentationConfig;
   spriteTextures: TextureMap;
   getSnapshot(): PublicArenaSnapshot | null;
@@ -147,7 +149,7 @@ export function createPublicArenaRenderer(
       arena: init.arena,
       profile: 'desktop',
       effectiveViewport: readRendererViewport(windowTarget),
-      playerPosition: findSelfPosition(init.getSnapshot())
+      playerPosition: findSelfPosition(init.getSnapshot(), init.selfId)
     });
 
   const camera = new THREE.OrthographicCamera(0, 0, 0, 0, 0.1, 10);
@@ -223,9 +225,9 @@ export function createPublicArenaRenderer(
     render(): void {
       const snapshot = init.getSnapshot();
       const nowMs = snapshot?.simTimeMs ?? 0;
-      visibleAreaCamera.follow(findSelfPosition(snapshot), nowMs);
+      visibleAreaCamera.follow(findSelfPosition(snapshot, init.selfId), nowMs);
       applyCameraVisibleArea(camera, visibleAreaCamera.visibleArea());
-      syncPlayers(snapshot, playerMeshes, init.spriteTextures, scene, nowMs);
+      syncPlayers(snapshot, init.selfId, playerMeshes, init.spriteTextures, scene, nowMs);
       syncProjectiles(snapshot, projectileMeshes, init.spriteTextures, scene);
       updateVibeJamPortalMeshes(
         init.getPortalDescriptors?.() ?? [],
@@ -236,9 +238,9 @@ export function createPublicArenaRenderer(
       );
       updateCrosshair(crosshair, init.getAim);
       updateArcPreview(arcPreview, {
-        player: findSelfArcPreviewPlayer(snapshot),
+        player: findSelfArcPreviewPlayer(snapshot, init.selfId),
         aim: init.getAim?.() ?? null,
-        weaponArchetypeId: selectedPublicArenaWeaponId(snapshot),
+        weaponArchetypeId: selectedPublicArenaWeaponId(snapshot, init.selfId),
         weaponRegistry: WEAPON_ARCHETYPES
       });
       renderer.render(scene, camera);
@@ -360,6 +362,7 @@ function readTextureSourceSize(texture: THREE.Texture): Readonly<{
 
 function syncPlayers(
   snapshot: PublicArenaSnapshot | null,
+  selfId: PublicArenaPlayerId,
   entries: Map<string, PlayerMeshEntry>,
   textures: TextureMap,
   scene: THREE.Scene,
@@ -368,9 +371,9 @@ function syncPlayers(
   const alive = new Set<string>();
   for (const player of snapshot?.players ?? []) {
     alive.add(player.id);
-    const entry = ensurePlayerEntry(player, entries, textures, scene, snapshot?.selfId ?? null);
+    const entry = ensurePlayerEntry(player, entries, textures, scene, selfId);
     entry.group.position.set(player.x, player.y, 0);
-    entry.selfRing.visible = player.id === snapshot?.selfId;
+    entry.selfRing.visible = player.id === selfId;
     entry.group.visible = true;
     if (entry.isSelf) {
       applySelfHpBar(entry.group, player);
@@ -389,7 +392,7 @@ function ensurePlayerEntry(
   entries: Map<string, PlayerMeshEntry>,
   textures: TextureMap,
   scene: THREE.Scene,
-  selfId: string | null
+  selfId: PublicArenaPlayerId
 ): PlayerMeshEntry {
   const visualKey = playerVisualKey(player);
   const existing = entries.get(player.id);
@@ -410,7 +413,7 @@ function replacePlayerEntry(
   entries: Map<string, PlayerMeshEntry>,
   textures: TextureMap,
   scene: THREE.Scene,
-  selfId: string | null
+  selfId: PublicArenaPlayerId
 ): PlayerMeshEntry {
   const previous = entries.get(player.id);
   if (previous !== undefined) {
@@ -692,14 +695,18 @@ function applyPlayerBreath(
 }
 
 function findSelfArcPreviewPlayer(
-  snapshot: PublicArenaSnapshot | null
+  snapshot: PublicArenaSnapshot | null,
+  selfId: PublicArenaPlayerId
 ): Readonly<{ x: number; y: number }> | null {
-  const player = snapshot?.players.find((candidate) => candidate.id === snapshot.selfId);
+  const player = snapshot?.players.find((candidate) => candidate.id === selfId);
   return player === undefined ? null : { x: player.x, y: player.y };
 }
 
-function selectedPublicArenaWeaponId(snapshot: PublicArenaSnapshot | null): string | null {
-  const player = snapshot?.players.find((candidate) => candidate.id === snapshot.selfId);
+function selectedPublicArenaWeaponId(
+  snapshot: PublicArenaSnapshot | null,
+  selfId: PublicArenaPlayerId
+): string | null {
+  const player = snapshot?.players.find((candidate) => candidate.id === selfId);
   if (player === undefined) {
     return null;
   }
@@ -727,8 +734,11 @@ function regularWeaponIdAtIndex(index: number): string {
   return weaponId;
 }
 
-function findSelfPosition(snapshot: PublicArenaSnapshot | null): Readonly<{ x: number; y: number }> {
-  const self = snapshot?.players.find((player) => player.id === snapshot.selfId);
+function findSelfPosition(
+  snapshot: PublicArenaSnapshot | null,
+  selfId: PublicArenaPlayerId
+): Readonly<{ x: number; y: number }> {
+  const self = snapshot?.players.find((player) => player.id === selfId);
   return self === undefined ? { x: 0, y: 0 } : { x: self.x, y: self.y };
 }
 

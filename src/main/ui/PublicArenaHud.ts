@@ -1,4 +1,7 @@
-import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
+import type {
+  PublicArenaPlayerId,
+  PublicArenaSnapshot
+} from '../../shared/publicArenaProtocol';
 import { PUBLIC_ARENA_BOSS_LEVEL } from '../../shared/publicArenaProgression';
 
 import { comicTextStyle } from './comicTextStyle';
@@ -9,7 +12,11 @@ export type PublicArenaHudInit = Readonly<{
 
 export type PublicArenaHud = Readonly<{
   show(): void;
-  update(snapshot: PublicArenaSnapshot | null, playerCap: number | null): void;
+  update(
+    snapshot: PublicArenaSnapshot | null,
+    selfId: PublicArenaPlayerId | null,
+    playerCap: number | null
+  ): void;
   hide(): void;
   isVisible(): boolean;
   dispose(): void;
@@ -37,8 +44,11 @@ export function createPublicArenaHud(init: PublicArenaHudInit): PublicArenaHud {
   let lastLevelText: string | null = null;
   let lastPopulationText: string | null = null;
 
-  function render(snapshot: PublicArenaSnapshot | null): void {
-    const self = snapshot?.players.find((player) => player.id === snapshot.selfId) ?? null;
+  function render(snapshot: PublicArenaSnapshot | null, selfId: PublicArenaPlayerId | null): void {
+    const self =
+      selfId === null
+        ? null
+        : (snapshot?.players.find((player) => player.id === selfId) ?? null);
     const levelText =
       self === null
         ? `Level --/${PUBLIC_ARENA_BOSS_LEVEL}`
@@ -55,15 +65,15 @@ export function createPublicArenaHud(init: PublicArenaHudInit): PublicArenaHud {
     }
   }
 
-  render(null);
+  render(null, null);
 
   return {
     show(): void {
       visible = true;
       root.style.display = 'block';
     },
-    update(snapshot, _playerCap): void {
-      render(snapshot);
+    update(snapshot, selfId, _playerCap): void {
+      render(snapshot, selfId);
     },
     hide(): void {
       visible = false;

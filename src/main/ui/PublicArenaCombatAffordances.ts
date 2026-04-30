@@ -1,6 +1,9 @@
 import { WEAPON_ARCHETYPES } from '../../shared/content/weapons';
 import { PUBLIC_ARENA_LOADOUT } from '../../shared/content/publicArena';
-import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
+import type {
+  PublicArenaPlayerId,
+  PublicArenaSnapshot
+} from '../../shared/publicArenaProtocol';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 
 import { COMIC_TEXT_FONT_FAMILY } from './comicTextStyle';
@@ -19,7 +22,7 @@ export type PublicArenaCombatAffordancesInit = Readonly<{
 
 export type PublicArenaCombatAffordances = Readonly<{
   show(): void;
-  update(snapshot: PublicArenaSnapshot | null): void;
+  update(snapshot: PublicArenaSnapshot | null, selfId: PublicArenaPlayerId | null): void;
   hide(): void;
   isVisible(): boolean;
   dispose(): void;
@@ -54,9 +57,9 @@ export function createPublicArenaCombatAffordances(
       visible = true;
       root.style.display = 'block';
     },
-    update(snapshot): void {
+    update(snapshot, selfId): void {
       renderHudWeaponSlots(
-        createPublicArenaWeaponSlots(selectedPublicArenaWeaponIndex(snapshot)),
+        createPublicArenaWeaponSlots(selectedPublicArenaWeaponIndex(snapshot, selfId)),
         weaponBar,
         weaponBarState
       );
@@ -74,8 +77,14 @@ export function createPublicArenaCombatAffordances(
   };
 }
 
-function selectedPublicArenaWeaponIndex(snapshot: PublicArenaSnapshot | null): number | null {
-  const self = snapshot?.players.find((player) => player.id === snapshot.selfId);
+function selectedPublicArenaWeaponIndex(
+  snapshot: PublicArenaSnapshot | null,
+  selfId: PublicArenaPlayerId | null
+): number | null {
+  const self =
+    selfId === null
+      ? undefined
+      : snapshot?.players.find((player) => player.id === selfId);
   if (self === undefined) {
     return defaultPublicArenaSelectedWeaponIndex();
   }

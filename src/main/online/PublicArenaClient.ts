@@ -46,7 +46,7 @@ const CLIENT_CLOSE_MESSAGE = 'Disconnected from the online arena.';
 export function createPublicArenaClient(init: PublicArenaClientInit): PublicArenaClient {
   const socket = init.createSocket?.(init.serverUrl) ?? (io(init.serverUrl) as PublicArenaSocket);
   let closed = false;
-  let joined = false;
+  let accepted: PublicArenaJoinAccepted | null = null;
 
   function reportClose(reason: PublicArenaCloseReason): void {
     if (closed) {
@@ -66,7 +66,7 @@ export function createPublicArenaClient(init: PublicArenaClientInit): PublicAren
   });
 
   socket.on(PUBLIC_ARENA_EVENTS.joinAccepted, (message) => {
-    joined = true;
+    accepted = message;
     init.onAccepted(message);
   });
 
@@ -93,7 +93,7 @@ export function createPublicArenaClient(init: PublicArenaClientInit): PublicAren
   });
 
   socket.on('disconnect', () => {
-    if (closed || !joined) {
+    if (closed || accepted === null) {
       return;
     }
     reportClose({
@@ -104,7 +104,7 @@ export function createPublicArenaClient(init: PublicArenaClientInit): PublicAren
 
   return {
     sendInput(intent): void {
-      if (closed || !joined) {
+      if (closed || accepted === null) {
         return;
       }
       socket.emit(PUBLIC_ARENA_EVENTS.input, intent);
