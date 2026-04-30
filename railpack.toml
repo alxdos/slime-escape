@@ -5,4 +5,4 @@ node = true
 
 [deploy]
 buildCommand = "npm ci --prefix server && npm run build --prefix server"
-startCommand = "node server/dist/server/src/index.js"
+startCommand = "npm run start --prefix server"
