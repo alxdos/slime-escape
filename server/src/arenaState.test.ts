@@ -4,10 +4,12 @@ import {
   PUBLIC_ARENA_PRESENTATION_CONFIG,
   worldBoundsFromArena
 } from '../../src/shared/content/publicArena.js';
+import { PUBLIC_ARENA_REGULAR_FORM_STATS } from '../../src/shared/publicArenaProgression.js';
 import { PUBLIC_ARENA_FULL_MESSAGE } from '../../src/shared/publicArenaProtocol.js';
 import {
   PUBLIC_ARENA_ARENA,
   PUBLIC_ARENA_CORNER_SPAWNS,
+  PUBLIC_ARENA_SPAWN_INSET_WU,
   PUBLIC_ARENA_WORLD_BOUNDS,
   PUBLIC_ARENA_WORLD_SIZE_WU,
   createPublicArenaState
@@ -66,6 +68,31 @@ describe('PublicArenaState membership', () => {
       PUBLIC_ARENA_CORNER_SPAWNS[3],
       PUBLIC_ARENA_CORNER_SPAWNS[0]
     ]);
+  });
+
+  it('keeps corner spawns as inset arena-world coordinates inside generated bounds', () => {
+    const levelOneRadius = PUBLIC_ARENA_REGULAR_FORM_STATS[0]?.radius;
+    if (levelOneRadius === undefined) {
+      throw new Error('expected public arena level-one radius');
+    }
+
+    for (const spawn of PUBLIC_ARENA_CORNER_SPAWNS) {
+      const xInset =
+        spawn.x < 0
+          ? spawn.x - PUBLIC_ARENA_WORLD_BOUNDS.minX
+          : PUBLIC_ARENA_WORLD_BOUNDS.maxX - spawn.x;
+      const yInset =
+        spawn.y < 0
+          ? spawn.y - PUBLIC_ARENA_WORLD_BOUNDS.minY
+          : PUBLIC_ARENA_WORLD_BOUNDS.maxY - spawn.y;
+
+      expect(xInset).toBeCloseTo(PUBLIC_ARENA_SPAWN_INSET_WU, 6);
+      expect(yInset).toBeCloseTo(PUBLIC_ARENA_SPAWN_INSET_WU, 6);
+      expect(spawn.x - levelOneRadius).toBeGreaterThanOrEqual(PUBLIC_ARENA_WORLD_BOUNDS.minX);
+      expect(spawn.x + levelOneRadius).toBeLessThanOrEqual(PUBLIC_ARENA_WORLD_BOUNDS.maxX);
+      expect(spawn.y - levelOneRadius).toBeGreaterThanOrEqual(PUBLIC_ARENA_WORLD_BOUNDS.minY);
+      expect(spawn.y + levelOneRadius).toBeLessThanOrEqual(PUBLIC_ARENA_WORLD_BOUNDS.maxY);
+    }
   });
 
   it('rejects new sockets when the arena is full without adding them', () => {

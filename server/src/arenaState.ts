@@ -10,16 +10,24 @@ import {
   PUBLIC_ARENA_ARENA as SHARED_PUBLIC_ARENA_ARENA,
   PUBLIC_ARENA_WORLD_BOUNDS as SHARED_PUBLIC_ARENA_WORLD_BOUNDS
 } from '../../src/shared/content/publicArena.js';
+import { PUBLIC_ARENA_REGULAR_FORM_STATS } from '../../src/shared/publicArenaProgression.js';
 
-export const PUBLIC_ARENA_SPAWN_MARGIN_WU = 2;
+export const PUBLIC_ARENA_SPAWN_INSET_WU = 4;
 
 export const PUBLIC_ARENA_ARENA = SHARED_PUBLIC_ARENA_ARENA;
 export const PUBLIC_ARENA_WORLD_BOUNDS: PublicArenaWorldBounds =
   SHARED_PUBLIC_ARENA_WORLD_BOUNDS;
 export const PUBLIC_ARENA_WORLD_SIZE_WU = PUBLIC_ARENA_ARENA.width;
 
-const SPAWN_OFFSET_X = PUBLIC_ARENA_WORLD_BOUNDS.maxX - PUBLIC_ARENA_SPAWN_MARGIN_WU;
-const SPAWN_OFFSET_Y = PUBLIC_ARENA_WORLD_BOUNDS.maxY - PUBLIC_ARENA_SPAWN_MARGIN_WU;
+const PUBLIC_ARENA_LEVEL_ONE_RADIUS_WU = requireLevelOneRadius();
+const SPAWN_OFFSET_X = spawnOffsetForAxis(
+  PUBLIC_ARENA_WORLD_BOUNDS.minX,
+  PUBLIC_ARENA_WORLD_BOUNDS.maxX
+);
+const SPAWN_OFFSET_Y = spawnOffsetForAxis(
+  PUBLIC_ARENA_WORLD_BOUNDS.minY,
+  PUBLIC_ARENA_WORLD_BOUNDS.maxY
+);
 
 export const PUBLIC_ARENA_CORNER_SPAWNS: ReadonlyArray<PublicArenaSpawnPoint> = [
   { x: -SPAWN_OFFSET_X, y: -SPAWN_OFFSET_Y },
@@ -150,4 +158,20 @@ export function createPublicArenaState(options: PublicArenaStateOptions): Public
       return member;
     }
   };
+}
+
+function spawnOffsetForAxis(min: number, max: number): number {
+  const halfSize = (max - min) / 2;
+  const inset = Math.max(PUBLIC_ARENA_SPAWN_INSET_WU, PUBLIC_ARENA_LEVEL_ONE_RADIUS_WU);
+  const insetOffset = Math.max(0, halfSize - inset);
+  const radiusSafeOffset = Math.max(0, halfSize - PUBLIC_ARENA_LEVEL_ONE_RADIUS_WU);
+  return Math.min(insetOffset, radiusSafeOffset);
+}
+
+function requireLevelOneRadius(): number {
+  const levelOne = PUBLIC_ARENA_REGULAR_FORM_STATS[0];
+  if (levelOne === undefined) {
+    throw new Error('public arena requires at least one regular form for spawn placement');
+  }
+  return levelOne.radius;
 }

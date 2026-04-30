@@ -2575,6 +2575,10 @@ describe('UiShell', () => {
     expect(input.lastInit()?.initialAim).toEqual({ x: 1, y: 2 });
     expect(input.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(900 / 18, 6);
     expect(publicArenaRenderer.lastInit()?.arena).toEqual(PUBLIC_ARENA_WORLD_BOUNDS);
+    expect(publicArenaRenderer.lastInit()?.visibleAreaCamera?.visibleArea().center).toEqual({
+      x: 1,
+      y: 2
+    });
     expect(publicArenaRenderer.lastInit()?.getAim?.()).toEqual({ x: 0, y: 0 });
     expect(publicArenaHud.level()).toBe(`Level 3/${PUBLIC_ARENA_BOSS_LEVEL}`);
     expect(publicArenaHud.population()).toBe('Online 7');
