@@ -89,6 +89,7 @@ describe('PublicArenaRenderer', () => {
     const boss = players.find((player) => player.userData['formKind'] === 'boss');
     const slime = players.find((player) => player.userData['playerId'] === 'self');
     const crosshair = findAllByName(scene, 'crosshair')[0];
+    const arcPreview = findAllByName(scene, 'public-arena-arc-preview')[0];
     const selfHpBar = findAllByName(slime ?? new THREE.Group(), 'public-arena-self-hp-bar')[0];
     const selfHpFill = findAllByName(slime ?? new THREE.Group(), 'public-arena-self-hp-fill')[0];
     const selfLabel = findAllByName(slime ?? new THREE.Group(), 'public-arena-level-label')[0];
@@ -115,6 +116,9 @@ describe('PublicArenaRenderer', () => {
     expect(crosshair?.visible).toBe(true);
     expect(crosshair?.position.x).toBe(12);
     expect(crosshair?.position.y).toBe(-6);
+    expect(arcPreview?.visible).toBe(true);
+    expect(arcPreview?.position.x).toBeCloseTo(12);
+    expect(arcPreview?.position.y).toBeCloseTo(-6);
     expect(selfHpFill?.scale.x).toBeCloseTo(0.5);
     expect(selfLabel?.position.y).toBeGreaterThan(selfHpBar?.position.y ?? 0);
 
@@ -186,12 +190,22 @@ function makeSnapshot(): PublicArenaSnapshot {
       {
         id: 'projectile-a',
         ownerId: 'self',
+        ownerKind: 'player',
         weaponArchetypeId: 'rock-thrower',
         originX: 8,
         originY: -4,
         x: 8.8,
         y: -3.2,
         size: { width: 0.42, height: 0.42 },
+        state: 'flying',
+        visualState: {
+          angleRadians: Math.PI / 3,
+          spinRadians: 0,
+          pulsePhase: 0
+        },
+        explosionRadius: null,
+        detonateAtSimMs: null,
+        arcEnd: { x: 12, y: -6 },
         angleRadians: Math.PI / 3
       }
     ]

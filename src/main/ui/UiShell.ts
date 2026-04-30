@@ -13,6 +13,7 @@ import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type {
   PublicArenaInputIntent,
+  PublicArenaPresentationEvent,
   PublicArenaSnapshot,
   PublicArenaWorldBounds
 } from '../../shared/publicArenaProtocol';
@@ -893,7 +894,12 @@ export function createUiShell(init: UiShellInit): UiShell {
         ensurePublicArenaInput(snapshot.arena, visibleAreaCamera);
         publicArenaHud.update(snapshot, publicArenaPlayerCap);
       },
-      onPresentation() {},
+      onPresentation(event) {
+        if (!isCurrentPublicArenaConnection(connectionId)) {
+          return;
+        }
+        handlePublicArenaPresentationEvent(event);
+      },
       onClose(reason) {
         if (!finishPublicArenaConnection(connectionId)) {
           return;
@@ -921,6 +927,13 @@ export function createUiShell(init: UiShellInit): UiShell {
     publicArenaConnectionId += 1;
     publicArenaClient = null;
     return true;
+  }
+
+  function handlePublicArenaPresentationEvent(event: PublicArenaPresentationEvent): void {
+    const runtimeEvent = publicArenaPresentationToAudioEvent(event);
+    if (runtimeEvent !== null) {
+      audio.handleEvent(runtimeEvent);
+    }
   }
 
   function attachPublicArenaPresentation(playerCap: number): void {
@@ -1743,6 +1756,44 @@ function formatStartupError(error: unknown): string {
     return error;
   }
   return 'Unknown preload error';
+}
+
+function publicArenaPresentationToAudioEvent(
+  event: PublicArenaPresentationEvent
+): RuntimeEvent | null {
+  switch (event.kind) {
+    case 'fire':
+      return {
+        kind: 'fire',
+        simTime: event.simTimeMs,
+        shooterId: 0,
+        ownerKind: 'player',
+        weaponArchetypeId: event.weaponArchetypeId,
+        originX: event.originX,
+        originY: event.originY,
+        dirX: event.dirX,
+        dirY: event.dirY
+      };
+    case 'explosion':
+      return {
+        kind: 'explosion',
+        simTime: event.simTimeMs,
+        projectileId: 0,
+        ownerKind: 'player',
+        weaponArchetypeId: event.weaponArchetypeId,
+        damage: event.damage,
+        radius: event.radius,
+        x: event.x,
+        y: event.y
+      };
+    case 'hit':
+    case 'death':
+    case 'levelUp':
+    case 'spawn':
+      return null;
+    default:
+      return event satisfies never;
+  }
 }
 
 function publicArenaIntentFromInput(command: InputCommand): PublicArenaInputIntent | null {

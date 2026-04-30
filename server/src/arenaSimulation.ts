@@ -1,5 +1,6 @@
 import { SIM_STEP_MS } from '../../src/shared/timing.js';
 import * as GENERATED_BOSSES from '../../src/shared/content/bosses.generated.js';
+import { ENEMY_ARCHETYPE_LIST } from '../../src/shared/content/enemies.generated.js';
 import * as GENERATED_WEAPONS from '../../src/shared/content/weapons.generated.js';
 import { PUBLIC_ARENA_PLAYER } from '../../src/shared/content/publicArena.js';
 export {
@@ -43,7 +44,48 @@ type Vector = Readonly<{ x: number; y: number }>;
 type GeneratedWeaponArchetype =
   (typeof GENERATED_WEAPONS)[keyof typeof GENERATED_WEAPONS];
 type GeneratedBossArchetype = (typeof GENERATED_BOSSES)[keyof typeof GENERATED_BOSSES];
-type FirePattern = GeneratedWeaponArchetype['firePattern'];
+type GeneratedEnemyArchetype = (typeof ENEMY_ARCHETYPE_LIST)[number];
+type FirePattern =
+  | Readonly<{ kind: 'single'; spreadRadians: number; count: number }>
+  | Readonly<{ kind: 'multiDirection'; directions: ReadonlyArray<number> }>
+  | Readonly<{ kind: 'place' }>;
+type ProjectileMotion =
+  | Readonly<{ kind: 'linear'; speed: number }>
+  | Readonly<{ kind: 'arc'; speed: number; range: number; flightMs: number }>
+  | Readonly<{ kind: 'placed' }>;
+type DetonationTrigger =
+  | Readonly<{ kind: 'timer' }>
+  | Readonly<{ kind: 'proximity'; radius: number; armDelayMs: number }>
+  | Readonly<{ kind: 'timerOrProximity'; radius: number; armDelayMs: number }>
+  | null;
+type FragmentConfig = Readonly<{
+  weaponArchetypeId: string;
+  count: number;
+  spreadRadians: number;
+}>;
+type ExplosionConfig = Readonly<{
+  delayMs: number;
+  radius: number;
+  damage: number;
+  knockbackImpulse: number;
+  fragments: FragmentConfig | null;
+  fieldEffect: unknown;
+  effects: ReadonlyArray<unknown>;
+}> | null;
+type ProjectileConfig = Readonly<{
+  motion: ProjectileMotion;
+  size: Readonly<{ width: number; height: number }>;
+  hitRadius: number;
+  impactDamage: number;
+  knockbackImpulse: number;
+  pierceCount: number;
+  ttlMs: number;
+  groundOnImpact: boolean;
+  groundedLifetimeMs: number | null;
+  detonationTrigger: DetonationTrigger;
+  explosion: ExplosionConfig;
+}>;
+type PublicArenaProjectileOwnerKind = PublicArenaProjectileSnapshot['ownerKind'];
 
 type InterestRect = Readonly<{
   minX: number;
@@ -57,13 +99,15 @@ type ActorStats = Readonly<{
   radius: number;
   maxHp: number;
   maxSpeed: number;
+  knockbackVelocityScale: number;
+  knockbackDurationMs: number;
 }>;
 
 type WeaponConfig = Readonly<{
   weaponArchetypeId: string;
   cooldownMs: number;
   firePattern: FirePattern;
-  projectile: GeneratedWeaponArchetype['projectile'];
+  projectile: ProjectileConfig;
 }>;
 
 type RuntimePlayer = {
@@ -76,6 +120,11 @@ type RuntimePlayer = {
   maxHp: number;
   radius: number;
   maxSpeed: number;
+  knockbackVelocityScale: number;
+  knockbackDurationMs: number;
+  knockbackVx: number;
+  knockbackVy: number;
+  knockbackUntilSimMs: number;
   level: number;
   form: PublicArenaPlayerFormSnapshot;
   moveDir: Vector;
@@ -88,8 +137,9 @@ type RuntimePlayer = {
 type RuntimeProjectile = {
   id: PublicArenaProjectileId;
   ownerId: PublicArenaPlayerId;
+  ownerKind: PublicArenaProjectileOwnerKind;
   weaponArchetypeId: string;
-  motionKind: 'linear' | 'arc';
+  motionKind: 'linear' | 'arc' | 'placed';
   state: 'flying' | 'grounded';
   originX: number;
   originY: number;
@@ -104,12 +154,23 @@ type RuntimeProjectile = {
   size: Readonly<{ width: number; height: number }>;
   hitRadius: number;
   damage: number;
+  knockbackImpulse: number;
+  pierceRemaining: number;
+  hitPlayerIds: Set<PublicArenaPlayerId>;
   groundOnImpact: boolean;
   groundedLifetimeMs: number | null;
+  detonationTrigger: DetonationTrigger;
+  explosion: ExplosionConfig;
+  detonateAtSimMs: number | null;
   groundAtSimMs: number | null;
   expiresAtSimMs: number;
   angleRadians: number;
 };
+
+export type PublicArenaSimulationInit = Readonly<{
+  regularWeaponId?: string;
+  bossWeaponId?: string;
+}>;
 
 export type PublicArenaSimulation = Readonly<{
   simTimeMs(): number;
@@ -131,13 +192,20 @@ const BOSS_STATS: ActorStats = {
   form: { kind: 'boss', archetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID },
   radius: BOSS_ARCHETYPE.radius,
   maxHp: BOSS_ARCHETYPE.maxHp,
-  maxSpeed: BOSS_ARCHETYPE.maxSpeed
+  maxSpeed: BOSS_ARCHETYPE.maxSpeed,
+  knockbackVelocityScale: BOSS_ARCHETYPE.knockbackVelocityScale,
+  knockbackDurationMs: BOSS_ARCHETYPE.knockbackDurationMs
 };
 
-const REGULAR_WEAPON = weaponConfigFromArchetype(PUBLIC_ARENA_REGULAR_WEAPON_ID);
-const BOSS_WEAPON = weaponConfigFromArchetype(PUBLIC_ARENA_BOSS_WEAPON_ID);
-
-export function createPublicArenaSimulation(): PublicArenaSimulation {
+export function createPublicArenaSimulation(
+  init: PublicArenaSimulationInit = {}
+): PublicArenaSimulation {
+  const regularWeapon = weaponConfigFromArchetype(
+    init.regularWeaponId ?? PUBLIC_ARENA_REGULAR_WEAPON_ID
+  );
+  const bossWeapon = weaponConfigFromArchetype(
+    init.bossWeaponId ?? PUBLIC_ARENA_BOSS_WEAPON_ID
+  );
   const players = new Map<PublicArenaPlayerId, RuntimePlayer>();
   const projectiles = new Map<PublicArenaProjectileId, RuntimeProjectile>();
   const events: PublicArenaPresentationEvent[] = [];
@@ -160,6 +228,11 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
       maxHp: stats.maxHp,
       radius: stats.radius,
       maxSpeed: stats.maxSpeed,
+      knockbackVelocityScale: stats.knockbackVelocityScale,
+      knockbackDurationMs: stats.knockbackDurationMs,
+      knockbackVx: 0,
+      knockbackVy: 0,
+      knockbackUntilSimMs: 0,
       level: 1,
       form: stats.form,
       moveDir: { x: 0, y: 0 },
@@ -211,17 +284,20 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
     fireWeapons();
     moveProjectiles();
     resolveProjectileHits();
+    markProximityDetonations();
+    resolveProjectileExplosions();
     removeExpiredProjectiles();
   }
 
   function movePlayers(): void {
     const stepSeconds = SIM_STEP_MS / 1000;
     for (const player of players.values()) {
-      if (player.moveDir.x === 0 && player.moveDir.y === 0) {
+      const knockback = activeKnockback(player, simTimeMs);
+      if (player.moveDir.x === 0 && player.moveDir.y === 0 && knockback.x === 0 && knockback.y === 0) {
         continue;
       }
-      player.x += player.moveDir.x * player.maxSpeed * stepSeconds;
-      player.y += player.moveDir.y * player.maxSpeed * stepSeconds;
+      player.x += (player.moveDir.x * player.maxSpeed + knockback.x) * stepSeconds;
+      player.y += (player.moveDir.y * player.maxSpeed + knockback.y) * stepSeconds;
       clampPlayerPosition(player);
     }
   }
@@ -232,10 +308,26 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
         continue;
       }
 
-      const weapon = weaponForPlayer(player);
-      for (const direction of fireDirections(player, weapon)) {
+      const weapon = player.form.kind === 'boss' ? bossWeapon : regularWeapon;
+      const directions = fireDirections(player, weapon);
+      if (directions.length === 0) {
+        continue;
+      }
+      for (const direction of directions) {
         spawnProjectile(player, weapon, direction);
       }
+      const eventDirection = fireEventDirection(player, weapon, directions);
+      events.push({
+        kind: 'fire',
+        simTimeMs,
+        shooterId: player.id,
+        ownerKind: projectileOwnerKindForPlayer(player),
+        weaponArchetypeId: weapon.weaponArchetypeId,
+        originX: player.x,
+        originY: player.y,
+        dirX: eventDirection.x,
+        dirY: eventDirection.y
+      });
       player.nextFireAtSimMs = simTimeMs + weapon.cooldownMs;
     }
   }
@@ -245,6 +337,7 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
     const baseProjectile = {
       id: `projectile-${nextProjectileSeq}`,
       ownerId: player.id,
+      ownerKind: projectileOwnerKindForPlayer(player),
       weaponArchetypeId: weapon.weaponArchetypeId,
       originX: player.x,
       originY: player.y,
@@ -257,8 +350,14 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
       size: weapon.projectile.size,
       hitRadius: weapon.projectile.hitRadius,
       damage: weapon.projectile.impactDamage,
+      knockbackImpulse: weapon.projectile.knockbackImpulse,
+      pierceRemaining: weapon.projectile.pierceCount,
+      hitPlayerIds: new Set<PublicArenaPlayerId>(),
       groundOnImpact: weapon.projectile.groundOnImpact,
       groundedLifetimeMs: weapon.projectile.groundedLifetimeMs,
+      detonationTrigger: weapon.projectile.detonationTrigger,
+      explosion: weapon.projectile.explosion,
+      detonateAtSimMs: null,
       groundAtSimMs: null,
       expiresAtSimMs: simTimeMs + weapon.projectile.ttlMs,
       angleRadians: Math.atan2(normalized.y, normalized.x)
@@ -281,7 +380,20 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
         };
         break;
       case 'placed':
-        throw new Error(`Public Arena weapon ${weapon.weaponArchetypeId} uses unsupported placed motion.`);
+        projectile = {
+          ...baseProjectile,
+          motionKind: 'placed',
+          state: 'grounded',
+          vx: 0,
+          vy: 0,
+          groundAtSimMs: simTimeMs,
+          detonateAtSimMs: detonateAtSimMsForTrigger(
+            weapon.projectile.detonationTrigger,
+            weapon.projectile.explosion?.delayMs ?? 0,
+            simTimeMs
+          )
+        };
+        break;
       default:
         assertNever(weapon.projectile.motion);
     }
@@ -336,9 +448,13 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
         impactDirY: normalizeWithFallback({ x: projectile.vx, y: projectile.vy }, { x: 1, y: 0 }).y
       });
 
+      applyProjectileKnockback(projectile, target, simTimeMs);
       target.hp = Math.max(0, target.hp - projectile.damage);
+      projectile.hitPlayerIds.add(target.id);
       if (projectile.groundOnImpact) {
         groundProjectile(projectile, simTimeMs);
+      } else if (projectile.pierceRemaining > 0) {
+        projectile.pierceRemaining -= 1;
       } else {
         projectiles.delete(projectile.id);
       }
@@ -359,6 +475,7 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
     for (const player of players.values()) {
       if (
         player.id === projectile.ownerId ||
+        projectile.hitPlayerIds.has(player.id) ||
         defeatedThisTick.has(player.id) ||
         isSpawnProtected(player)
       ) {
@@ -379,6 +496,152 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
       }
     }
     return nearest;
+  }
+
+  function markProximityDetonations(): void {
+    for (const projectile of projectiles.values()) {
+      if (projectile.state !== 'grounded' || projectile.explosion === null) {
+        continue;
+      }
+      const trigger = projectile.detonationTrigger;
+      if (trigger === null || trigger.kind === 'timer' || projectile.groundAtSimMs === null) {
+        continue;
+      }
+      if (simTimeMs < projectile.groundAtSimMs + trigger.armDelayMs) {
+        continue;
+      }
+      if (projectile.detonateAtSimMs !== null && simTimeMs >= projectile.detonateAtSimMs) {
+        continue;
+      }
+      if (hasProximityTarget(projectile, trigger.radius)) {
+        projectile.detonateAtSimMs = simTimeMs;
+      }
+    }
+  }
+
+  function hasProximityTarget(projectile: RuntimeProjectile, radius: number): boolean {
+    for (const player of players.values()) {
+      if (player.id === projectile.ownerId || isSpawnProtected(player)) {
+        continue;
+      }
+      const reach = radius + player.radius;
+      if (distanceSquared(projectile, player) <= reach * reach) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function resolveProjectileExplosions(): void {
+    const defeatedThisTick = new Set<PublicArenaPlayerId>();
+
+    for (const projectile of [...projectiles.values()]) {
+      const explosion = projectile.explosion;
+      if (
+        projectile.state !== 'grounded' ||
+        explosion === null ||
+        projectile.detonateAtSimMs === null ||
+        simTimeMs < projectile.detonateAtSimMs
+      ) {
+        continue;
+      }
+
+      events.push({
+        kind: 'explosion',
+        simTimeMs,
+        projectileId: projectile.id,
+        ownerId: projectile.ownerId,
+        ownerKind: projectile.ownerKind,
+        weaponArchetypeId: projectile.weaponArchetypeId,
+        damage: explosion.damage,
+        radius: explosion.radius,
+        x: projectile.x,
+        y: projectile.y
+      });
+
+      for (const target of explosionTargets(projectile, explosion.radius, defeatedThisTick)) {
+        applyExplosionDamage(projectile, target, explosion.damage, defeatedThisTick);
+      }
+
+      spawnExplosionFragments(projectile);
+      projectiles.delete(projectile.id);
+    }
+  }
+
+  function explosionTargets(
+    projectile: RuntimeProjectile,
+    radius: number,
+    defeatedThisTick: ReadonlySet<PublicArenaPlayerId>
+  ): RuntimePlayer[] {
+    return [...players.values()]
+      .filter((player) => {
+        if (
+          player.id === projectile.ownerId ||
+          defeatedThisTick.has(player.id) ||
+          isSpawnProtected(player)
+        ) {
+          return false;
+        }
+        const reach = radius + player.radius;
+        return distanceSquared(projectile, player) <= reach * reach;
+      })
+      .sort((left, right) => left.id.localeCompare(right.id));
+  }
+
+  function applyExplosionDamage(
+    projectile: RuntimeProjectile,
+    target: RuntimePlayer,
+    damage: number,
+    defeatedThisTick: Set<PublicArenaPlayerId>
+  ): void {
+    const direction = normalizedExplosionDirection(projectile, target);
+    events.push({
+      kind: 'hit',
+      simTimeMs,
+      projectileId: projectile.id,
+      targetId: target.id,
+      weaponArchetypeId: projectile.weaponArchetypeId,
+      damage,
+      x: projectile.x,
+      y: projectile.y,
+      impactDirX: direction.x,
+      impactDirY: direction.y
+    });
+    applyKnockback(target, direction, projectile.explosion?.knockbackImpulse ?? 0, simTimeMs);
+    target.hp = Math.max(0, target.hp - damage);
+    if (target.hp === 0) {
+      defeatedThisTick.add(target.id);
+      killPlayer(target, projectile.ownerId, projectile.weaponArchetypeId);
+    }
+  }
+
+  function spawnExplosionFragments(projectile: RuntimeProjectile): void {
+    const fragment = projectile.explosion?.fragments ?? null;
+    if (fragment === null) {
+      return;
+    }
+    const weapon = weaponConfigFromArchetype(fragment.weaponArchetypeId);
+    for (const direction of fragmentDirections(fragment.count, fragment.spreadRadians)) {
+      spawnProjectileAt(projectile, weapon, direction);
+    }
+  }
+
+  function spawnProjectileAt(
+    source: RuntimeProjectile,
+    weapon: WeaponConfig,
+    direction: Vector
+  ): void {
+    const owner = players.get(source.ownerId);
+    if (owner === undefined) {
+      return;
+    }
+    const originalX = owner.x;
+    const originalY = owner.y;
+    owner.x = source.x;
+    owner.y = source.y;
+    spawnProjectile(owner, weapon, direction);
+    owner.x = originalX;
+    owner.y = originalY;
   }
 
   function killPlayer(victim: RuntimePlayer, killerId: PublicArenaPlayerId, weaponArchetypeId: string): void {
@@ -413,6 +676,7 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
     player.x = player.spawn.x;
     player.y = player.spawn.y;
     player.moveDir = { x: 0, y: 0 };
+    clearKnockback(player);
     player.aim = { x: player.spawn.x + 1, y: player.spawn.y };
     player.firing = false;
     player.spawnProtectionUntilSimMs = simTimeMs + PUBLIC_ARENA_SPAWN_PROTECTION_MS;
@@ -442,7 +706,9 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
       arena: PUBLIC_ARENA_WORLD_BOUNDS,
       population: players.size,
       players: [...players.values()].map(toPlayerSnapshot),
-      projectiles: [...projectiles.values()].map(toProjectileSnapshot)
+      projectiles: [...projectiles.values()].map((projectile) =>
+        toProjectileSnapshot(projectile, simTimeMs)
+      )
     };
   }
 
@@ -463,7 +729,7 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
         .map(toPlayerSnapshot),
       projectiles: [...projectiles.values()]
         .filter((projectile) => projectileIntersectsInterest(projectile, rect))
-        .map(toProjectileSnapshot)
+        .map((projectile) => toProjectileSnapshot(projectile, simTimeMs))
     };
   }
 
@@ -492,12 +758,25 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
 }
 
 function regularForm(archetypeId: string, radius: number, maxHp: number, maxSpeed: number): ActorStats {
+  const archetype = requireEnemyArchetype(archetypeId);
   return {
     form: { kind: 'slime', archetypeId },
     radius,
     maxHp,
-    maxSpeed
+    maxSpeed,
+    knockbackVelocityScale: archetype.knockbackVelocityScale,
+    knockbackDurationMs: archetype.knockbackDurationMs
   };
+}
+
+function requireEnemyArchetype(archetypeId: string): GeneratedEnemyArchetype {
+  const archetype = ENEMY_ARCHETYPE_LIST.find(
+    (candidate) => candidate.id === archetypeId
+  );
+  if (archetype === undefined) {
+    throw new Error(`Public Arena enemy archetype "${archetypeId}" is not generated.`);
+  }
+  return archetype;
 }
 
 function statsForLevel(level: number): ActorStats {
@@ -510,10 +789,6 @@ function statsForLevel(level: number): ActorStats {
     throw new Error(`public arena missing regular form stats for level ${level}`);
   }
   return stats;
-}
-
-function weaponForPlayer(player: RuntimePlayer): WeaponConfig {
-  return player.form.kind === 'boss' ? BOSS_WEAPON : REGULAR_WEAPON;
 }
 
 function fireDirections(player: RuntimePlayer, weapon: WeaponConfig): ReadonlyArray<Vector> {
@@ -530,10 +805,33 @@ function fireDirections(player: RuntimePlayer, weapon: WeaponConfig): ReadonlyAr
     case 'multiDirection':
       return aimedOffsetDirections(aimDx, aimDy, weapon.firePattern.directions);
     case 'place':
-      return [];
+      return [{ x: 0, y: 0 }];
     default:
       return assertNever(weapon.firePattern);
   }
+}
+
+function fireEventDirection(
+  player: RuntimePlayer,
+  weapon: WeaponConfig,
+  directions: ReadonlyArray<Vector>
+): Vector {
+  const aimDx = player.aim.x - player.x;
+  const aimDy = player.aim.y - player.y;
+  switch (weapon.firePattern.kind) {
+    case 'single':
+      return normalizeWithFallback({ x: aimDx, y: aimDy }, { x: 1, y: 0 });
+    case 'multiDirection':
+      return directions[0] ?? { x: 1, y: 0 };
+    case 'place':
+      return normalizeWithFallback({ x: aimDx, y: aimDy }, { x: 1, y: 0 });
+    default:
+      return assertNever(weapon.firePattern);
+  }
+}
+
+function projectileOwnerKindForPlayer(player: RuntimePlayer): PublicArenaProjectileOwnerKind {
+  return player.form.kind === 'boss' ? 'boss' : 'player';
 }
 
 function aimedSpreadDirections(
@@ -572,10 +870,23 @@ function aimedOffsetDirections(
   });
 }
 
+function fragmentDirections(count: number, spreadRadians: number): ReadonlyArray<Vector> {
+  if (count <= 0) return [];
+  if (count === 1) return [{ x: 1, y: 0 }];
+  const start = -spreadRadians / 2;
+  const step = spreadRadians / count;
+  const directions: Vector[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const angle = start + step * (index + 0.5);
+    directions.push({ x: Math.cos(angle), y: Math.sin(angle) });
+  }
+  return directions;
+}
+
 function arcProjectileMotion(
   player: RuntimePlayer,
   direction: Vector,
-  motion: Extract<GeneratedWeaponArchetype['projectile']['motion'], { kind: 'arc' }>,
+  motion: Extract<ProjectileConfig['motion'], { kind: 'arc' }>,
   simTimeMs: number
 ): Pick<
   RuntimeProjectile,
@@ -632,12 +943,29 @@ function groundProjectile(projectile: RuntimeProjectile, simTimeMs: number): voi
 
   projectile.state = 'grounded';
   projectile.groundAtSimMs = simTimeMs;
+  projectile.detonateAtSimMs =
+    projectile.explosion === null
+      ? null
+      : detonateAtSimMsForTrigger(
+          projectile.detonationTrigger,
+          projectile.explosion.delayMs,
+          simTimeMs
+        );
   if (projectile.groundedLifetimeMs !== null) {
     projectile.expiresAtSimMs = Math.min(
       projectile.expiresAtSimMs,
       simTimeMs + projectile.groundedLifetimeMs
     );
   }
+}
+
+function detonateAtSimMsForTrigger(
+  trigger: DetonationTrigger,
+  delayMs: number,
+  simTimeMs: number
+): number | null {
+  if (trigger?.kind === 'proximity') return null;
+  return simTimeMs + delayMs;
 }
 
 function isImpactEligible(projectile: RuntimeProjectile, simTimeMs: number): boolean {
@@ -654,14 +982,11 @@ function weaponConfigFromArchetype(weaponArchetypeId: string): WeaponConfig {
   if (archetype === undefined) {
     throw new Error(`Public Arena weapon archetype "${weaponArchetypeId}" is not generated.`);
   }
-  if (archetype.projectile.motion.kind === 'placed') {
-    throw new Error(`Public Arena weapon ${weaponArchetypeId} uses unsupported placed motion.`);
-  }
   return {
     weaponArchetypeId: archetype.id,
     cooldownMs: archetype.cooldownMs,
-    firePattern: archetype.firePattern,
-    projectile: archetype.projectile
+    firePattern: archetype.firePattern as FirePattern,
+    projectile: archetype.projectile as ProjectileConfig
   };
 }
 
@@ -681,10 +1006,50 @@ function applyStatsForCurrentLevel(player: RuntimePlayer, refillHp: boolean): vo
   player.radius = stats.radius;
   player.maxHp = stats.maxHp;
   player.maxSpeed = stats.maxSpeed;
+  player.knockbackVelocityScale = stats.knockbackVelocityScale;
+  player.knockbackDurationMs = stats.knockbackDurationMs;
   if (refillHp || player.hp > stats.maxHp) {
     player.hp = stats.maxHp;
   }
   clampPlayerPosition(player);
+}
+
+function activeKnockback(player: RuntimePlayer, simTimeMs: number): Vector {
+  if (player.knockbackUntilSimMs <= 0) {
+    return { x: 0, y: 0 };
+  }
+  if (simTimeMs >= player.knockbackUntilSimMs) {
+    clearKnockback(player);
+    return { x: 0, y: 0 };
+  }
+  return { x: player.knockbackVx, y: player.knockbackVy };
+}
+
+function applyProjectileKnockback(
+  projectile: RuntimeProjectile,
+  target: RuntimePlayer,
+  simTimeMs: number
+): void {
+  const direction = normalizeWithFallback({ x: projectile.vx, y: projectile.vy }, { x: 1, y: 0 });
+  applyKnockback(target, direction, projectile.knockbackImpulse, simTimeMs);
+}
+
+function applyKnockback(
+  target: RuntimePlayer,
+  direction: Vector,
+  impulse: number,
+  simTimeMs: number
+): void {
+  const impulseSpeed = impulse * target.knockbackVelocityScale;
+  target.knockbackVx = direction.x * impulseSpeed;
+  target.knockbackVy = direction.y * impulseSpeed;
+  target.knockbackUntilSimMs = simTimeMs + target.knockbackDurationMs;
+}
+
+function clearKnockback(player: RuntimePlayer): void {
+  player.knockbackVx = 0;
+  player.knockbackVy = 0;
+  player.knockbackUntilSimMs = 0;
 }
 
 function clampPlayerPosition(player: RuntimePlayer): void {
@@ -724,17 +1089,43 @@ function toPlayerSnapshot(player: RuntimePlayer): PublicArenaPlayerSnapshot {
   };
 }
 
-function toProjectileSnapshot(projectile: RuntimeProjectile): PublicArenaProjectileSnapshot {
+function toProjectileSnapshot(
+  projectile: RuntimeProjectile,
+  simTimeMs: number
+): PublicArenaProjectileSnapshot {
+  const visualState = projectileVisualState(projectile, simTimeMs);
   return {
     id: projectile.id,
     ownerId: projectile.ownerId,
+    ownerKind: projectile.ownerKind,
     weaponArchetypeId: projectile.weaponArchetypeId,
     originX: projectile.originX,
     originY: projectile.originY,
     x: projectile.x,
     y: projectile.y,
     size: projectile.size,
-    angleRadians: projectile.angleRadians
+    state: projectile.state,
+    visualState,
+    explosionRadius: projectile.explosion?.radius ?? null,
+    detonateAtSimMs: projectile.detonateAtSimMs,
+    arcEnd: projectile.state === 'flying' ? projectile.arcEnd : null,
+    angleRadians: visualState.angleRadians
+  };
+}
+
+function projectileVisualState(
+  projectile: RuntimeProjectile,
+  simTimeMs: number
+): PublicArenaProjectileSnapshot['visualState'] {
+  const archetype = Object.values(GENERATED_WEAPONS).find(
+    (candidate) => candidate.id === projectile.weaponArchetypeId
+  );
+  const speed = Math.hypot(projectile.vx, projectile.vy);
+  const angleRadians = speed === 0 ? 0 : Math.atan2(projectile.vy, projectile.vx);
+  return {
+    angleRadians,
+    spinRadians: ((archetype?.projectile.visual.spinRadiansPerSec ?? 0) * simTimeMs) / 1000,
+    pulsePhase: (((simTimeMs % 1000) + 1000) % 1000) / 1000
   };
 }
 
@@ -810,6 +1201,16 @@ function normalizeWithFallback(vector: Vector, fallback: Vector): Vector {
     x: x / length,
     y: y / length
   };
+}
+
+function normalizedExplosionDirection(
+  projectile: RuntimeProjectile,
+  target: RuntimePlayer
+): Vector {
+  return normalizeWithFallback(
+    { x: target.x - projectile.x, y: target.y - projectile.y },
+    normalizeWithFallback({ x: projectile.vx, y: projectile.vy }, { x: 1, y: 0 })
+  );
 }
 
 function distanceSquared(a: Vector, b: Vector): number {

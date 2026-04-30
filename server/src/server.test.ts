@@ -8,8 +8,29 @@ import {
   PUBLIC_ARENA_SERVER_SHUTDOWN_REASON,
   acceptPublicArenaInputIntent,
   createPublicArenaInputRateLimitState,
-  emitPublicArenaServerShutdownReason
+  emitPublicArenaServerShutdownReason,
+  publishPresentationEvents
 } from './server.js';
+
+function createPresentationIo() {
+  const socketA = { emit: vi.fn() };
+  const socketB = { emit: vi.fn() };
+  const socketC = { emit: vi.fn() };
+  return {
+    io: {
+      sockets: {
+        sockets: new Map([
+          ['socket-a', socketA],
+          ['socket-b', socketB],
+          ['socket-c', socketC]
+        ])
+      }
+    } as Parameters<typeof publishPresentationEvents>[0],
+    socketA,
+    socketB,
+    socketC
+  };
+}
 
 describe('PublicArenaServer hardening', () => {
   it('drops per-socket input intents after the configured window limit', () => {
@@ -40,5 +61,41 @@ describe('PublicArenaServer hardening', () => {
       PUBLIC_ARENA_EVENTS.closeReason,
       PUBLIC_ARENA_SERVER_SHUTDOWN_REASON
     );
+  });
+
+  it('routes presentation events only to the event recipients', () => {
+    const { io, socketA, socketB, socketC } = createPresentationIo();
+    const members = [
+      { socketId: 'socket-a', playerId: 'player-a', spawn: { x: 0, y: 0 }, level: 1 },
+      { socketId: 'socket-b', playerId: 'player-b', spawn: { x: 0, y: 0 }, level: 1 },
+      { socketId: 'socket-c', playerId: 'player-c', spawn: { x: 0, y: 0 }, level: 1 }
+    ];
+    const fireEvent = {
+      kind: 'fire' as const,
+      simTimeMs: 12,
+      shooterId: 'player-a',
+      ownerKind: 'player' as const,
+      weaponArchetypeId: 'rock-thrower',
+      originX: 0,
+      originY: 0,
+      dirX: 1,
+      dirY: 0
+    };
+    const deathEvent = {
+      kind: 'death' as const,
+      simTimeMs: 16,
+      playerId: 'player-b',
+      killerId: 'player-a',
+      weaponArchetypeId: 'rock-thrower',
+      x: 1,
+      y: 0
+    };
+
+    publishPresentationEvents(io, members, [fireEvent, deathEvent]);
+
+    expect(socketA.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, fireEvent);
+    expect(socketA.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, deathEvent);
+    expect(socketB.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, deathEvent);
+    expect(socketC.emit).not.toHaveBeenCalled();
   });
 });

@@ -53,7 +53,7 @@ The beauty of the mode is simplicity: join, spawn, throw rocks, kill, level up, 
 - Sees: killing a boss does not skip levels; the killer still advances by one level.
 - Sees: a minimal HUD with their current level and the current arena population.
 - Can do: open a minimal Public Arena menu and explicitly choose to leave the multiplayer arena.
-- Sees: the standard combat control affordances still exist in online play: movement hint, fire hint, one selected rock weapon slot, aim crosshair, and a self HP bar with the level label above it.
+- Sees: the standard combat control affordances still exist in online play: movement hint, fire hint, the generated portal loadout weapon slot bar, aim crosshair, and a self HP bar with the level label above it.
 
 ## Technical
 
@@ -69,9 +69,9 @@ Follow-up hardening before live verification: the server owns a simple per-socke
 
 Follow-up from playtest: the current `Level 1/6` presentation is too short because it uses a hand-picked five-slime chain. Public Arena progression should use the authored enemy slime roster from generated content so players can climb through all available slime forms before the boss level.
 
-Follow-up from playtest: online rendering should not feel like a stripped debug mode. Keep the simple deathmatch rules, but reuse the standard necessary combat UI affordances: desktop control hints, a single selected rock weapon slot, aim crosshair, self HP bar, readable online menu styling, and a better top HUD layout.
+Follow-up from playtest: online rendering should not feel like a stripped debug mode. Keep the simple deathmatch rules, but reuse the standard necessary combat UI affordances: desktop control hints, the generated `portal` loadout weapon slot, aim crosshair, self HP bar, readable online menu styling, and a better top HUD layout.
 
-Follow-up from review: Public Arena must not hardcode the regular rock weapon or regular player movement/health outside content. The generated `portal` session remains the source for arena bounds, background, regular player `playerId`, and regular player loadout. The server and UI derive the regular selected weapon from that loadout, and the server derives weapon timing/projectile parameters from `content/weapons.md`.
+Follow-up from review: Public Arena must not hardcode the regular rock weapon or regular player movement/health outside content. The generated `portal` session remains the source for arena bounds, background, regular player `playerId`, and regular player loadout. The server and UI derive the regular selected weapon from that loadout, and online weapon behavior, projectile presentation, arc affordances, and weapon fire audio must work from existing `content/weapons.md`/weapon mapping content when `portal.md` selects any existing weapon.
 
 Follow-up for spawn/camera semantics: spawn points are arena/world coordinates derived from the generated arena bounds, not viewport coordinates. The visible area/camera adapts to the spawned player. Spawn points must be inset far enough from arena edges that the player does not appear glued to the wall.
 
@@ -103,8 +103,8 @@ Follow-up for Vibe Jam portal semantics: return portal and exit portal positions
 - The player's level is visible above their slime.
 - Other players' levels are visible above their slimes.
 - The local player's self HP line is visible like in standard mode, and the level label is above that HP line.
-- Desktop online play shows the standard movement/fire affordances, a crosshair, and one selected rock weapon slot.
-- A level 1 player can throw rocks.
+- Desktop online play shows the standard movement/fire affordances, a crosshair, and the selected weapon slot from the generated `portal` loadout.
+- A level 1 player can fire the selected weapon from the generated `portal` loadout.
 - Killing another player increases the killer's level by exactly one.
 - After a level increase, the killer's slime form changes.
 - Killing a boss increases the killer's level by exactly one and does not skip forms.
@@ -145,7 +145,7 @@ Follow-up for Vibe Jam portal semantics: return portal and exit portal positions
 | T16 | [x] | Adjust the Public Arena HUD labels. | Added shared Public Arena progression config for the boss-level denominator. The HUD now shows `Online N` and `Level current/bossLevel`, clamping the displayed current level to the boss level while leaving authoritative snapshot levels unchanged. |
 | T17 | [x] | Address remaining code-review hardening before live verification. | Added the per-socket `publicArena:input` rate limit, the intentional shutdown `serverShutdown` close reason, and deterministic nearest-overlapping projectile target selection with player-id tie-break tests. |
 | T18 | [x] | Expand Public Arena progression to the full authored enemy slime roster. | Generated enemy content now exports `ENEMY_ARCHETYPE_LIST` in source order. Public Arena progression derives its slime chain and boss-level denominator from that list; server form lookup uses those generated entries and no longer falls back to the first slime. Added shared progression and final-slime-before-boss tests. |
-| T19 | [x] | Restore standard desktop combat affordances in online play. | Public Arena online now reuses the standard HUD movement/fire hints and weapon slot bar on desktop, fed by the generated `portal` loadout. Mobile online keeps mobile controls. The portal session now selects `rock-thrower`; regular player health/movement come from the generated portal player, and server weapon timing/projectile values come from generated weapon content. The online menu contrast was restyled and desktop/mobile visibility plus content-source tests cover the contract. |
+| T19 | [x] | Restore standard desktop combat affordances in online play. | Public Arena online now reuses the standard HUD movement/fire hints and weapon slot bar on desktop, fed by the generated `portal` loadout. Mobile online keeps mobile controls. The portal session now selects `rock-thrower`; regular player health/movement come from the generated portal player, and online weapon behavior/presentation/audio must follow generated weapon content instead of a custom rock path. The online menu contrast was restyled and desktop/mobile visibility plus content-source tests cover the contract. |
 | T20 | [x] | Add online aim crosshair and self HP/level stack. | `PublicArenaRenderer` now receives the current online aim from `UiShell`, reuses the shared crosshair helper from the standard renderer, and renders a self-only world-space HP line with the local level label above it. Other players keep level labels only. Renderer/UI tests cover crosshair visibility/position, self HP ratio, and label ordering. |
 | T21 | [x] | Tighten public arena spawn and camera semantics. | Public Arena corner spawns now use inset generated arena/world coordinates clamped by the level-1 regular form radius. Server tests cover spawn inset against generated bounds, and UI tests cover visible-area camera initialization from the authoritative self position rather than viewport-derived spawn data. |
 | T22 | [x] | Rework the online top HUD layout. | Online population stays in the left top HUD (`Online N`), while arena level progress now occupies the right-side/top progress slot using the full slime-chain denominator. The FPS overlay is demoted below that lane with lower visual priority, and `PublicArenaHud`/`FpsOverlay`/`UiShell` tests cover labels and placement. |

@@ -10,7 +10,9 @@ import {
   PUBLIC_ARENA_EVENTS,
   PUBLIC_ARENA_PROTOCOL_VERSION,
   type PublicArenaCloseReason,
-  type PublicArenaJoinRejected
+  type PublicArenaJoinRejected,
+  type PublicArenaPresentationEvent,
+  type PublicArenaPlayerId
 } from '../../src/shared/publicArenaProtocol.js';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../../src/shared/timing.js';
 import { createPublicArenaState, type PublicArenaMember } from './arenaState.js';
@@ -138,7 +140,7 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
           }
           if (snapshotTimer === null) {
             snapshotTimer = setInterval(() => {
-              simulation.drainEvents();
+              publishPresentationEvents(io, arena.members(), simulation.drainEvents());
               publishSnapshots(io, arena.members(), simulation);
             }, SNAPSHOT_INTERVAL_MS);
           }
@@ -236,6 +238,50 @@ function publishSnapshots(
       continue;
     }
     socket.volatile.emit(PUBLIC_ARENA_EVENTS.snapshot, snapshot);
+  }
+}
+
+export function publishPresentationEvents(
+  io: SocketIOServer<PublicArenaClientToServerEvents, PublicArenaServerToClientEvents>,
+  members: ReadonlyArray<PublicArenaMember>,
+  events: ReadonlyArray<PublicArenaPresentationEvent>
+): void {
+  const socketsByPlayerId = new Map<PublicArenaPlayerId, PublicArenaMember>();
+  for (const member of members) {
+    socketsByPlayerId.set(member.playerId, member);
+  }
+
+  for (const event of events) {
+    for (const playerId of publicArenaPresentationRecipients(event)) {
+      const member = socketsByPlayerId.get(playerId);
+      if (member === undefined) {
+        continue;
+      }
+      const socket = io.sockets.sockets.get(member.socketId);
+      socket?.emit(PUBLIC_ARENA_EVENTS.presentation, event);
+    }
+  }
+}
+
+function publicArenaPresentationRecipients(
+  event: PublicArenaPresentationEvent
+): ReadonlyArray<PublicArenaPlayerId> {
+  switch (event.kind) {
+    case 'fire':
+      return [event.shooterId];
+    case 'hit':
+      return [event.targetId];
+    case 'explosion':
+      return [event.ownerId];
+    case 'death':
+      return event.killerId === null || event.killerId === event.playerId
+        ? [event.playerId]
+        : [event.playerId, event.killerId];
+    case 'levelUp':
+    case 'spawn':
+      return [event.playerId];
+    default:
+      return event satisfies never;
   }
 }
 

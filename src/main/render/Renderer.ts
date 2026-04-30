@@ -49,6 +49,10 @@ import { PET_VISUALS } from './petVisuals';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
 import { PROJECTILE_VISUALS } from './projectileVisuals';
 import {
+  applyProjectilePresentation,
+  createProjectileRadiusIndicator
+} from './projectilePresentation';
+import {
   resolveRenderScale,
   type RenderScalePreset
 } from './renderScale';
@@ -120,9 +124,6 @@ const ARENA_TINT_OPACITY = 0.18;
 const BACKGROUND_Z = -2;
 const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
-const PROJECTILE_RADIUS_Z = -0.01;
-const PROJECTILE_RADIUS_INDICATOR_NAME = 'projectile-radius-indicator';
-const PROJECTILE_RADIUS_OUTLINE_NAME = 'projectile-radius-outline';
 const CARRIER_REWARD_MARKER_NAME = 'carrier-reward-marker';
 const STATUS_MARKER_NAME = 'status-effect-marker';
 const DROP_Z = 0.03;
@@ -154,7 +155,6 @@ const COMPANION_GHOST_COLOR = 0x9bd5ff;
 const COMPANION_RESCUE_COLOR = 0xa7f070;
 const DROP_PULSE_HZ = 1.6;
 const DROP_PULSE_AMPLITUDE = 0.15;
-const PROJECTILE_GROUNDED_PULSE_AMPLITUDE = 0.1;
 const PLAYER_BREATH_HZ = 0.72;
 const PLAYER_BREATH_AMPLITUDE = 0.028;
 const PLAYER_BREATH_VERTICAL_RATIO = 0.64;
@@ -866,32 +866,6 @@ function requirePetArchetype(petId: string): void {
   throw new Error(`pet archetype missing for id "${petId}"`);
 }
 
-function createProjectileRadiusIndicator(): THREE.Mesh {
-  const geometry = new THREE.CircleGeometry(1, 48);
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xffd166,
-    transparent: true,
-    opacity: 0.14,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = PROJECTILE_RADIUS_INDICATOR_NAME;
-  mesh.position.z = PROJECTILE_RADIUS_Z;
-  mesh.add(createRadiusOutlineMesh(1.01, 1.09, PROJECTILE_RADIUS_OUTLINE_NAME));
-  mesh.visible = false;
-  return mesh;
-}
-
-function createRadiusOutlineMesh(innerRadius: number, outerRadius: number, name: string): THREE.Mesh {
-  return createRadiusOutlineMeshWithColor(
-    innerRadius,
-    outerRadius,
-    name,
-    AIM_RING_OUTLINE_COLOR,
-    PROJECTILE_RADIUS_OUTLINE_OPACITY
-  );
-}
-
 function createRadiusOutlineMeshWithColor(
   innerRadius: number,
   outerRadius: number,
@@ -1471,75 +1445,6 @@ function applyFieldEffectPresentation(
   if (!Array.isArray(material) && material instanceof THREE.MeshBasicMaterial) {
     material.opacity = 0.13 + 0.07 * (0.5 + 0.5 * Math.sin(nowMs / 140 + snap.id));
   }
-}
-
-function applyProjectilePresentation(
-  mesh: THREE.Mesh,
-  snap: ProjectileSnapshot,
-  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
-  hideDistance: number
-): boolean {
-  const archetype = weaponRegistry[snap.weaponArchetypeId];
-  const visual = archetype?.projectile.visual;
-  const travelAngle = visual?.rotateWhileFlying === false ? 0 : snap.visualState.angleRadians;
-  mesh.rotation.z = travelAngle + snap.visualState.spinRadians;
-
-  const pulse =
-    snap.state === 'grounded' && visual?.pulseWhenGrounded === true
-      ? 1 +
-        PROJECTILE_GROUNDED_PULSE_AMPLITUDE *
-          Math.sin(snap.visualState.pulsePhase * Math.PI * 2)
-      : 1;
-  const baseVisual = requireVisualSpec(PROJECTILE_VISUALS, snap.weaponArchetypeId, 'projectile');
-  const sizeScaleX = snap.size.width / baseVisual.worldSize.width;
-  const sizeScaleY = snap.size.height / baseVisual.worldSize.height;
-  mesh.scale.set(
-    sizeScaleX * pulse,
-    sizeScaleY * pulse,
-    1
-  );
-
-  const material = mesh.material;
-  if (!Array.isArray(material) && material instanceof THREE.MeshBasicMaterial) {
-    material.opacity = snap.state === 'grounded' ? 0.86 : 0.95;
-  }
-
-  const shouldShow = shouldShowProjectile(snap, hideDistance);
-  const radiusIndicator = mesh.children.find(
-    (child): child is THREE.Mesh =>
-      child instanceof THREE.Mesh && child.name === PROJECTILE_RADIUS_INDICATOR_NAME
-  );
-  if (radiusIndicator === undefined) return shouldShow;
-  const showRadius =
-    shouldShow &&
-    snap.state === 'grounded' &&
-    snap.explosionRadius !== null &&
-    snap.explosionRadius > 0 &&
-    visual?.explosionRadiusIndicator === true;
-  radiusIndicator.visible = showRadius;
-  if (!showRadius || snap.explosionRadius === null) return shouldShow;
-  radiusIndicator.scale.set(
-    snap.explosionRadius / sizeScaleX,
-    snap.explosionRadius / sizeScaleY,
-    1
-  );
-  const radiusMaterial = radiusIndicator.material;
-  if (!Array.isArray(radiusMaterial) && radiusMaterial instanceof THREE.MeshBasicMaterial) {
-    const phase = 0.5 + 0.5 * Math.sin(snap.visualState.pulsePhase * Math.PI * 2);
-    radiusMaterial.opacity = 0.08 + 0.08 * phase;
-  }
-  return shouldShow;
-}
-
-function shouldShowProjectile(
-  snap: ProjectileSnapshot,
-  hideDistance: number
-): boolean {
-  if (snap.state !== 'flying') return true;
-  if (hideDistance <= 0) return true;
-  const dx = snap.x - snap.originX;
-  const dy = snap.y - snap.originY;
-  return dx * dx + dy * dy >= hideDistance * hideDistance;
 }
 
 function disposeObjectTree(root: THREE.Object3D): void {

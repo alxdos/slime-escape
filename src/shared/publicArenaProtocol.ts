@@ -1,6 +1,6 @@
 import type { InputCommand } from './input.js';
 
-export const PUBLIC_ARENA_PROTOCOL_VERSION = 1;
+export const PUBLIC_ARENA_PROTOCOL_VERSION = 2;
 export const PUBLIC_ARENA_FULL_MESSAGE = 'The online arena is full. Try again soon.';
 
 export const PUBLIC_ARENA_EVENTS = {
@@ -85,12 +85,22 @@ export type PublicArenaPlayerSnapshot = Readonly<{
 export type PublicArenaProjectileSnapshot = Readonly<{
   id: PublicArenaProjectileId;
   ownerId: PublicArenaPlayerId;
+  ownerKind: 'player' | 'boss';
   weaponArchetypeId: string;
   originX: number;
   originY: number;
   x: number;
   y: number;
   size: Readonly<{ width: number; height: number }>;
+  state: 'flying' | 'grounded';
+  visualState: Readonly<{
+    angleRadians: number;
+    spinRadians: number;
+    pulsePhase: number;
+  }>;
+  explosionRadius: number | null;
+  detonateAtSimMs: number | null;
+  arcEnd: Readonly<{ x: number; y: number }> | null;
   angleRadians: number;
 }>;
 
@@ -105,6 +115,17 @@ export type PublicArenaSnapshot = Readonly<{
 
 export type PublicArenaPresentationEvent =
   | Readonly<{
+      kind: 'fire';
+      simTimeMs: number;
+      shooterId: PublicArenaPlayerId;
+      ownerKind: 'player' | 'boss';
+      weaponArchetypeId: string;
+      originX: number;
+      originY: number;
+      dirX: number;
+      dirY: number;
+    }>
+  | Readonly<{
       kind: 'hit';
       simTimeMs: number;
       projectileId: PublicArenaProjectileId;
@@ -115,6 +136,18 @@ export type PublicArenaPresentationEvent =
       y: number;
       impactDirX: number;
       impactDirY: number;
+    }>
+  | Readonly<{
+      kind: 'explosion';
+      simTimeMs: number;
+      projectileId: PublicArenaProjectileId;
+      ownerId: PublicArenaPlayerId;
+      ownerKind: 'player' | 'boss';
+      weaponArchetypeId: string;
+      damage: number;
+      radius: number;
+      x: number;
+      y: number;
     }>
   | Readonly<{
       kind: 'death';

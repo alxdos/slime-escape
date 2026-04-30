@@ -115,7 +115,7 @@ function requireElement(element: FakeElement | null): FakeElement {
 }
 
 describe('PublicArenaCombatAffordances', () => {
-  it('reuses standard HUD affordances with one selected rock weapon slot', () => {
+  it('reuses standard HUD affordances with the generated portal loadout weapon slots', () => {
     withFakeDocument(() => {
       const parent = new FakeElement('div');
       const affordances = createPublicArenaCombatAffordances({

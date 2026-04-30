@@ -12,8 +12,10 @@ import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type {
   PublicArenaInputIntent,
+  PublicArenaPresentationEvent,
   PublicArenaSnapshot
 } from '../../shared/publicArenaProtocol';
+import { PUBLIC_ARENA_PROTOCOL_VERSION } from '../../shared/publicArenaProtocol';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
@@ -885,7 +887,7 @@ function createPublicArenaClientHarness() {
     },
     accept(): void {
       lastInit?.onAccepted({
-        protocolVersion: 1,
+        protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
         playerId: 'socket-a',
         arena: PUBLIC_ARENA_WORLD_BOUNDS,
         playerCap: 200,
@@ -896,7 +898,7 @@ function createPublicArenaClientHarness() {
     },
     reject(message: string): void {
       lastInit?.onRejected({
-        protocolVersion: 1,
+        protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
         reason: 'arenaFull',
         message,
         playerCap: 200,
@@ -908,6 +910,9 @@ function createPublicArenaClientHarness() {
         reason: 'serverError',
         message
       });
+    },
+    presentation(event: PublicArenaPresentationEvent): void {
+      lastInit?.onPresentation(event);
     },
     snapshot(): void {
       lastInit?.onSnapshot(makePublicArenaSnapshot());
@@ -2583,6 +2588,24 @@ describe('UiShell', () => {
     expect(publicArenaHud.level()).toBe(`Level 3/${PUBLIC_ARENA_BOSS_LEVEL}`);
     expect(publicArenaHud.population()).toBe('Online 7');
     expect(publicArenaRenderer.calls.render).toBe(1);
+
+    publicArenaClient.presentation({
+      kind: 'fire',
+      simTimeMs: 140,
+      shooterId: 'socket-a',
+      ownerKind: 'player',
+      weaponArchetypeId: 'rock-thrower',
+      originX: 1,
+      originY: 2,
+      dirX: 1,
+      dirY: 0
+    });
+
+    expect(audio.events.at(-1)).toMatchObject({
+      kind: 'fire',
+      weaponArchetypeId: 'rock-thrower',
+      ownerKind: 'player'
+    });
 
     input.lastInit()?.onCommand({ kind: 'move', dx: 1, dy: 0 });
     input.lastInit()?.onCommand({ kind: 'aim', x: 3, y: 4 });
