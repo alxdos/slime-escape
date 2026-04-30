@@ -5,6 +5,7 @@ import {
 } from '../settings/ClientSettingsStore';
 
 import { comicTextStyle } from './comicTextStyle';
+import { GAME_VIEWPORT_WIDTH } from './gameViewportCss';
 
 export type SettingsOverlayInit = Readonly<{
   parent: HTMLElement;
@@ -184,7 +185,7 @@ function cardStyle(): string {
     'gap:18px',
     'box-sizing:border-box',
     'padding:24px 28px 26px',
-    'width:min(520px, calc(100vw - 48px))',
+    `width:min(520px, calc(${GAME_VIEWPORT_WIDTH} - 48px))`,
     'background:#fffdf4',
     'border:4px solid #050505',
     'border-radius:8px',

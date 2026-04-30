@@ -1018,14 +1018,15 @@ function baseOverlayStyle(): string {
     'overflow:auto',
     'background:#050505',
     'z-index:100',
-    'cursor:default'
+    'cursor:default',
+    'container-type:size'
   ].join(';');
 }
 
 function stageStyle(background: string): string {
   return [
     'position:relative',
-    `width:min(100vw, ${MAIN_MENU_STAGE_WIDTH_VH.toFixed(3)}vh)`,
+    `width:min(100cqw, ${MAIN_MENU_STAGE_WIDTH_VH.toFixed(3)}cqh)`,
     `aspect-ratio:${MAIN_MENU_STAGE.width} / ${MAIN_MENU_STAGE.height}`,
     `background-image:url("${background}")`,
     'background-size:100% 100%',

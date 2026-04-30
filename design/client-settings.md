@@ -6,7 +6,7 @@
 
 ## Context
 
-[content-boundaries.md](content-boundaries.md) already split data into four levels and placed "volume", "quality/render-scale policy", and UI-level preferences in `client settings`, explicitly stating that they are **not** part of `SessionDefinition`, **do not** affect authoritative state, and do not change the outcome of a run with the same `seed`. [thread-model.md](thread-model.md) states that DOM/UI/audio/render live on the `main thread`. [audio.md](audio.md) already described master/per-bus gain as graph nodes and explicitly named 009 as the place that "turns and saves" these values, without defining its own volume contract. [arena-and-coordinates.md](arena-and-coordinates.md) defines the "no hardware advantage" invariant: window size, DPR, and render scale from 009 affect only pixel density, **not** visible arena, spawning, or balance.
+[content-boundaries.md](content-boundaries.md) already split data into four levels and placed "volume", "quality/render-scale policy", and UI-level preferences in `client settings`, explicitly stating that they are **not** part of `SessionDefinition`, **do not** affect authoritative state, and do not change the outcome of a run with the same `seed`. [thread-model.md](thread-model.md) states that DOM/UI/audio/render live on the `main thread`. [audio.md](audio.md) already described master/per-bus gain as graph nodes and explicitly named 009 as the place that "turns and saves" these values, without defining its own volume contract. [arena-and-coordinates.md](arena-and-coordinates.md) defines the "no hardware advantage" invariant: window size, DPR, and render scale from 009 affect only pixel density, **not** arena bounds, spawning, or balance; [camera-and-visible-area.md](camera-and-visible-area.md) owns presentation camera sizing separately.
 
 What is **not** defined yet:
 
@@ -154,6 +154,7 @@ Store **does not** use `window.addEventListener('storage', ...)`: cross-tab sync
 - [render-scale.md](render-scale.md)
 - [main-ui-shell.md](main-ui-shell.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
+- [camera-and-visible-area.md](camera-and-visible-area.md)
 - [thread-model.md](thread-model.md)
 - [web-stack.md](web-stack.md)
 - [logging.md](logging.md)

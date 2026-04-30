@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-26 (story 021: intro delay — `ZoneSystem` does not advance internal `elapsedMs` and does not move `margin` while the active encounter intro is active (`encounter.elapsedMs < encounter.introDurationMs`); full contract in [encounter-presentation.md](encounter-presentation.md). `zoneBehavior` shape and snapshot export do not change. Earlier: 2026-04-23.)
+- Updated: 2026-04-30 (story 031 follow-up: dark-zone geometry is explicitly arena/world-based, not viewport/camera-based; see [camera-and-visible-area.md](camera-and-visible-area.md). Earlier: 2026-04-26 story 021: intro delay — `ZoneSystem` does not advance internal `elapsedMs` and does not move `margin` while the active encounter intro is active (`encounter.elapsedMs < encounter.introDurationMs`); full contract in [encounter-presentation.md](encounter-presentation.md). `zoneBehavior` shape and snapshot export do not change. Earlier: 2026-04-23.)
 
 ## Context
 
@@ -14,6 +14,7 @@
 - the zone **does not deal damage**; its role is to limit visibility;
 - during a boss fight, the zone **is inactive**;
 - spawning "from arena edges" uses arena edges, not the current zone boundary.
+- story 031 splits camera visible area from arena/world size; the zone must remain based on arena/world dimensions, not viewport or camera bounds.
 
 Without an explicit contract, story 004 (waves and zone) will implicitly define the zone shape, its snapshot representation, and renderer dependency on gameplay shape. Story 006 (boss with zone disabled) and 007 (HUD) will reopen the same questions.
 
@@ -22,6 +23,7 @@ Without an explicit contract, story 004 (waves and zone) will implicitly define 
 ### Gameplay zone shape
 
 - The gameplay zone shape is **one scalar `margin`** (in world units, see [arena-and-coordinates.md](arena-and-coordinates.md)). `margin` is an inset from all sides: the arena safe area is a rectangle centered at `(0, 0)` with half-size `(arena.width / 2 − margin, arena.height / 2 − margin)`.
+- `margin` is always measured from the full arena bounds in `SessionDefinition.arena`. The current camera visible area from [camera-and-visible-area.md](camera-and-visible-area.md) does not change zone size, zone center, or zone interpolation.
 - `margin = 0` means "the zone is fully retracted and the safe area equals the arena." This is the neutral state; it is used both for encounters with `zoneBehavior: { kind: 'disabled' }` and for the boss fight in 006.
 - `margin` is clamped below by zero and above by the value where the safe area degenerates to a point. Concrete `fromMargin`/`toMargin` values are set in `EncounterDefinition.zoneBehavior` and validated by content/builder, not runtime.
 - **Per-side margins, circles, and asymmetric shapes do not exist in the gameplay contract.** If needed, they are added by a separate decision; for now this is intentionally one scalar.
@@ -79,6 +81,7 @@ Without an explicit contract, story 004 (waves and zone) will implicitly define 
 ### Visualization (outside gameplay contract)
 
 - Zone display geometry (rounded corners, soft edge gradient, color, blur) is a **render detail** on the `main thread` side ([thread-model.md](thread-model.md)) and not part of this decision. Numbers such as "corner radius = 0.25 × `arena.height`" or "gradient width" live in `Renderer`, not in `design/` or the `content library`.
+- The renderer draws the zone in world space from the full arena rectangle and the snapshot `margin`. The camera may show only part of that world-space zone; it must not recompute the zone from viewport or visible-area bounds.
 - This is intentional: visual shape does not affect gameplay (the zone does not deal damage, movement and shooting use the arena), and tying its parameters to `margin` through the snapshot is enough.
 - The "no hardware advantage" invariant from [arena-and-coordinates.md](arena-and-coordinates.md) is preserved automatically: gameplay sees the same `margin` regardless of render backend, resolution, or image quality.
 
@@ -97,6 +100,7 @@ Without an explicit contract, story 004 (waves and zone) will implicitly define 
 - [session-definition.md](session-definition.md)
 - [snapshot-shape.md](snapshot-shape.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
+- [camera-and-visible-area.md](camera-and-visible-area.md)
 - [simulation-timing.md](simulation-timing.md)
 - [thread-model.md](thread-model.md)
 - [content-boundaries.md](content-boundaries.md)

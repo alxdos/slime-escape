@@ -11,6 +11,7 @@ import type {
   ResultXpRewardViewModel
 } from './ResultViewModel';
 import { createSocialLinkRail } from './SocialLinkRail';
+import { GAME_VIEWPORT_HEIGHT, GAME_VIEWPORT_WIDTH } from './gameViewportCss';
 
 export type ResultOutcome = 'win' | 'loss';
 
@@ -700,8 +701,8 @@ function resultLayoutStyle(): string {
     'justify-content:center',
     'gap:18px',
     'box-sizing:border-box',
-    'width:min(920px, calc(100vw - 48px))',
-    'max-height:calc(100vh - 48px)',
+    `width:min(920px, calc(${GAME_VIEWPORT_WIDTH} - 48px))`,
+    `max-height:calc(${GAME_VIEWPORT_HEIGHT} - 48px)`,
     'min-height:0'
   ].join(';');
 }
@@ -714,7 +715,7 @@ function stageStyle(): string {
   return [
     'position:relative',
     'width:min(820px, 100%)',
-    'max-height:calc(100vh - 48px)',
+    `max-height:calc(${GAME_VIEWPORT_HEIGHT} - 48px)`,
     'overflow:visible',
     'min-width:0',
     'flex:1 1 0'
@@ -732,7 +733,7 @@ function cardStyle(): string {
     'box-sizing:border-box',
     'padding:26px 30px 30px',
     'width:100%',
-    'max-height:calc(100vh - 48px)',
+    `max-height:calc(${GAME_VIEWPORT_HEIGHT} - 48px)`,
     'overflow:auto',
     'background:#fffdf4',
     'border:4px solid #050505',
@@ -1412,12 +1413,12 @@ function resultOverlayCss(): string {
 
 @media (max-width: 560px) {
   .result-stage {
-    width: calc(100vw - 24px) !important;
-    max-height: calc(100vh - 24px) !important;
+    width: calc(${GAME_VIEWPORT_WIDTH} - 24px) !important;
+    max-height: calc(${GAME_VIEWPORT_HEIGHT} - 24px) !important;
   }
 
   .result-card {
-    max-height: calc(100vh - 24px) !important;
+    max-height: calc(${GAME_VIEWPORT_HEIGHT} - 24px) !important;
     padding: 18px 16px 20px !important;
     gap: 12px !important;
   }

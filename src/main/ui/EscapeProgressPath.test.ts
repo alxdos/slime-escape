@@ -73,7 +73,9 @@ describe('EscapeProgressPath', () => {
       const track = childAt(root, 2);
       const footer = childAt(root, 3);
       expect(style.textContent).toContain('prefers-reduced-motion');
-      expect(style.textContent).toContain('max-width: calc(100vw - 112px)');
+      expect(style.textContent).toContain(
+        'max-width: calc(var(--game-viewport-width, 100vw) - 112px)'
+      );
 
       path.update(
         snapshotPair(snapshot({ id: 'wave-1', type: 'wave', index: 0, elapsedMs: 200 })),

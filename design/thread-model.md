@@ -88,3 +88,4 @@ The game must run on the web without blocking UI or rendering, while still aimin
 - [input-commands.md](input-commands.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
 - [snapshot-shape.md](snapshot-shape.md)
+- [mobile-web-support.md](mobile-web-support.md)

@@ -8,6 +8,7 @@ import {
 } from '../../shared/content/sessions';
 import { PET_ECONOMY } from '../../shared/content/pets';
 import type { RuntimeEvent } from '../../shared/events';
+import type { InputCommand } from '../../shared/input';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type { SessionDefinition } from '../../shared/session';
@@ -15,6 +16,20 @@ import type { SessionResultOutcome, SessionResultSummary } from '../../shared/se
 import { createAudio, type Audio } from '../audio/Audio';
 import { applyAimAssist } from '../input/AimAssist';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
+import {
+  createMobileInputController,
+  type MobileInputControllerInit
+} from '../input/MobileInputController';
+import {
+  resolveEffectiveGameViewport,
+  type GameViewportProvider,
+  type MobileWebProfile
+} from '../mobileWebProfile';
+import {
+  createVisibleAreaCamera,
+  type VisibleAreaCamera,
+  type VisibleAreaProfile
+} from '../visibleArea';
 import {
   createClientProgressionStore,
   type ClientProgressionStore
@@ -60,6 +75,11 @@ import {
   type MenuOverlay,
   type MenuOverlayInit
 } from './MenuOverlay';
+import {
+  createMobileControlsOverlay,
+  type MobileControlsOverlay,
+  type MobileControlsOverlayInit
+} from './MobileControlsOverlay';
 import { buildMenuLabViewModel } from './MenuLabViewModel';
 import { buildMenuPetsViewModel } from './MenuPetsViewModel';
 import type { MenuSubscreenId } from './MenuOverlayLayout';
@@ -105,7 +125,8 @@ export type SessionResult = SessionResultOutcome;
 export type { UiShellPhase } from './UiShellPhase';
 export { STARTUP_SPRITE_SPECS } from './startupAssets';
 
-type WindowTarget = Pick<Window, 'addEventListener' | 'removeEventListener'>;
+type WindowTarget = Pick<Window, 'addEventListener' | 'removeEventListener'> &
+  Partial<Pick<Window, 'innerWidth' | 'innerHeight' | 'devicePixelRatio' | 'matchMedia'>>;
 type DocumentTarget = Pick<Document, 'addEventListener' | 'removeEventListener'> & {
   pointerLockElement: Element | null;
   exitPointerLock?: () => void;
@@ -129,7 +150,11 @@ type CreateStartupOverlayFn = (init: StartupOverlayInit) => StartupOverlay;
 type CreateStartupErrorOverlayFn = (init: StartupErrorOverlayInit) => StartupErrorOverlay;
 type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
+type CreateMobileInputControllerFn = (init: MobileInputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
+type CreateMobileControlsOverlayFn = (
+  init: MobileControlsOverlayInit
+) => MobileControlsOverlay;
 type CreateEscapeProgressPathFn = (init: EscapeProgressPathInit) => EscapeProgressPath;
 type CreateDungeonWaveCounterFn = (init: DungeonWaveCounterInit) => DungeonWaveCounter;
 type CreateTitleOverlayFn = (init: TitleOverlayInit) => TitleOverlay;
@@ -162,7 +187,9 @@ export type UiShellInit = Readonly<{
   createStartupErrorOverlay?: CreateStartupErrorOverlayFn;
   createRenderer?: CreateRendererFn;
   createInputController?: CreateInputControllerFn;
+  createMobileInputController?: CreateMobileInputControllerFn;
   createHud?: CreateHudFn;
+  createMobileControlsOverlay?: CreateMobileControlsOverlayFn;
   createEscapeProgressPath?: CreateEscapeProgressPathFn;
   createDungeonWaveCounter?: CreateDungeonWaveCounterFn;
   createTitleOverlay?: CreateTitleOverlayFn;
@@ -179,6 +206,8 @@ export type UiShellInit = Readonly<{
   portalStorage?: VibeJamPortalStorage | null;
   windowTarget?: WindowTarget;
   documentTarget?: DocumentTarget;
+  gameViewport?: GameViewportProvider;
+  mobileProfile?: MobileWebProfile;
 }>;
 
 export type UiShell = Readonly<{
@@ -222,7 +251,14 @@ export function createUiShell(init: UiShellInit): UiShell {
     (canMountStartupOverlays ? createStartupErrorOverlay : createNullStartupErrorOverlay);
   const rendererFactory = init.createRenderer ?? createRenderer;
   const inputFactory = init.createInputController ?? createInputController;
+  const mobileInputFactory = init.createMobileInputController ?? createMobileInputController;
   const hudFactory = init.createHud ?? createHud;
+  const canMountMobileControls =
+    typeof (init.parent as Partial<HTMLElement>).appendChild === 'function' &&
+    typeof document !== 'undefined';
+  const mobileControlsFactory =
+    init.createMobileControlsOverlay ??
+    (canMountMobileControls ? createMobileControlsOverlay : createNullMobileControlsOverlay);
   const escapeProgressPathFactory =
     init.createEscapeProgressPath ?? createEscapeProgressPath;
   const dungeonWaveCounterFactory =
@@ -242,6 +278,10 @@ export function createUiShell(init: UiShellInit): UiShell {
   const assignLocation = init.assignLocation ?? defaultAssignLocation;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
+  const gameViewport =
+    init.gameViewport ??
+    createWindowGameViewport(windowTarget, init.mobileProfile ?? { isMobile: false });
+  const rendererWindowTarget = createRendererWindowTarget(gameViewport);
   const autoStartPresetId = init.autoStartPresetId ?? null;
   const portalStorage =
     init.portalStorage === undefined ? createBrowserVibeJamPortalStorage() : init.portalStorage;
@@ -262,10 +302,14 @@ export function createUiShell(init: UiShellInit): UiShell {
   let transitionActive = false;
   let lastStartedPreset: ModePreset | null = null;
   let lastStartedSource: SessionStartSource | null = null;
-  const hud = hudFactory({ parent: init.parent });
+  const hud = hudFactory({ parent: init.parent, isMobile: isMobileInputMode() });
+  const mobileControls = mobileControlsFactory({ parent: init.parent });
   const escapeProgressPath = escapeProgressPathFactory({ parent: init.parent });
   const dungeonWaveCounter = dungeonWaveCounterFactory({ parent: init.parent });
-  const titleOverlay = titleOverlayFactory({ parent: init.parent });
+  const titleOverlay = titleOverlayFactory({
+    parent: init.parent,
+    isMobile: isMobileInputMode()
+  });
   const clientSettingsStore = clientSettingsStoreFactory();
   const dungeonBestWaveStore = dungeonBestWaveStoreFactory();
   const clientProgressionStore = clientProgressionStoreFactory();
@@ -459,6 +503,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         result.hide();
+        mobileControls.hide();
         syncSettingsVisibility();
         return;
       case 'menu':
@@ -467,6 +512,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.show();
         pause.hide();
         result.hide();
+        mobileControls.hide();
         syncSettingsVisibility();
         return;
       case 'running':
@@ -475,6 +521,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         result.hide();
+        if (isMobileInputMode()) {
+          mobileControls.show();
+        } else {
+          mobileControls.hide();
+        }
         syncSettingsVisibility();
         return;
       case 'paused':
@@ -483,6 +534,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.show();
         result.hide();
+        mobileControls.hide();
         syncSettingsVisibility();
         return;
       case 'result':
@@ -491,6 +543,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         result.show(phase.viewModel);
+        mobileControls.hide();
         syncSettingsVisibility();
         return;
       case 'error':
@@ -499,6 +552,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         pause.hide();
         result.hide();
         startupErrorOverlay.show(phase.message);
+        mobileControls.hide();
         syncSettingsVisibility();
         return;
       default:
@@ -641,7 +695,10 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (activeSession !== null) return;
 
     const selectedPetId = clientProgressionStore.get().selectedPetId;
-    const session = builder(preset, { seed: makeSeed(), selectedPetId });
+    const session = builder(preset, {
+      seed: makeSeed(),
+      selectedPetId
+    });
     const clientSettings = clientSettingsStore.get();
     const spriteTextures = preloadedTextures;
     if (spriteTextures === null) {
@@ -651,6 +708,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     let nextRenderer: Renderer | null = null;
     let nextInput: InputController | null = null;
     let nextUnsubscribeRendererSettings: (() => void) | null = null;
+    const visibleAreaCamera = createSessionVisibleAreaCamera(session);
     try {
       nextRenderer = rendererFactory({
         canvas: init.canvas,
@@ -659,9 +717,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         session,
         spriteTextures,
         selectedPetId: session.companion === null && options.source === 'campaign' ? selectedPetId : null,
+        visibleAreaCamera,
         getSnapshotPair: sim.snapshotPair,
         getPortalDescriptors: portalController.portals,
-        getAim: () => (input !== null && input.isActive() ? input.currentAim() : null)
+        getAim: () => (input !== null && input.isActive() ? input.currentAim() : null),
+        windowTarget: rendererWindowTarget
       });
       const activeRenderer = nextRenderer;
       let lastRendererPreset = clientSettings.renderScalePreset;
@@ -673,15 +733,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         activeRenderer.applyScalePolicy(settings.renderScalePreset);
       });
 
-      nextInput = inputFactory({
-        canvas: init.canvas,
-        arena: session.arena,
-        pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height,
-        initialAim: session.player.position,
-        onCommand(command) {
-          sim.sendInput(applyAimAssist(command, session.rules.aimAssist, sim.snapshotPair().curr));
-        }
-      });
+      nextInput = createSessionInputController(session, visibleAreaCamera);
     } catch (error: unknown) {
       nextUnsubscribeRendererSettings?.();
       nextRenderer?.dispose();
@@ -854,7 +906,9 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (!isRunningSessionActive()) return;
     const session = activeSession;
     if (session === null) return;
-    if (documentTarget.pointerLockElement !== null) {
+    if (isMobileInputMode()) {
+      input?.stop();
+    } else if (documentTarget.pointerLockElement !== null) {
       documentTarget.exitPointerLock?.();
     }
     if (!sim.isPaused()) {
@@ -869,7 +923,11 @@ export function createUiShell(init: UiShellInit): UiShell {
   function resumeOverlayPause(): void {
     if (activeSession === null) return;
     if (phase.kind !== 'paused') return;
-    input?.requestLock();
+    if (isMobileInputMode()) {
+      input?.start();
+    } else {
+      input?.requestLock();
+    }
     if (sim.isPaused()) {
       sim.resume();
     }
@@ -929,6 +987,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     windowTarget.addEventListener('pointerdown', unlockAudioFromGesture as EventListener);
     windowTarget.addEventListener('keydown', unlockAudioFromGesture as EventListener);
     windowTarget.addEventListener('resize', onResize);
+    windowTarget.addEventListener('orientationchange', onResize);
     windowTarget.addEventListener('keydown', onKeyDown as EventListener);
     documentTarget.addEventListener('pointerlockchange', onPointerLockChange);
   }
@@ -937,12 +996,70 @@ export function createUiShell(init: UiShellInit): UiShell {
     windowTarget.removeEventListener('pointerdown', unlockAudioFromGesture as EventListener);
     windowTarget.removeEventListener('keydown', unlockAudioFromGesture as EventListener);
     windowTarget.removeEventListener('resize', onResize);
+    windowTarget.removeEventListener('orientationchange', onResize);
     windowTarget.removeEventListener('keydown', onKeyDown as EventListener);
     documentTarget.removeEventListener('pointerlockchange', onPointerLockChange);
   }
 
   function fitToWindow(): void {
     renderer?.fitToWindow();
+  }
+
+  function createSessionInputController(
+    session: SessionDefinition,
+    visibleAreaCamera: VisibleAreaCamera
+  ): InputController {
+    const inputCommandSink = (command: InputCommand): void => {
+      sim.sendInput(applyAimAssist(command, session.rules.aimAssist, sim.snapshotPair().curr));
+    };
+    const sharedInput = {
+      arena: session.arena,
+      pixelsPerWorldUnit: () =>
+        pixelsPerWorldUnitFromVisibleArea(init.canvas, visibleAreaCamera),
+      initialAim: session.player.position,
+      onCommand: inputCommandSink
+    };
+    if (isMobileInputMode()) {
+      return mobileInputFactory({
+        ...sharedInput,
+        surface: init.parent,
+        pauseElement: () => mobileControls.pauseButtonElement(),
+        weaponSlotElements: () => queryWeaponSlotElements(init.parent),
+        onPause: enterOverlayPause
+      });
+    }
+    return inputFactory({
+      ...sharedInput,
+      canvas: init.canvas
+    });
+  }
+
+  function isMobileInputMode(): boolean {
+    return init.mobileProfile?.isMobile === true;
+  }
+
+  function createSessionVisibleAreaCamera(session: SessionDefinition): VisibleAreaCamera {
+    return createVisibleAreaCamera({
+      arena: session.arena,
+      profile: visibleAreaProfile(),
+      effectiveViewport: currentEffectiveViewport(),
+      playerPosition: session.player.position
+    });
+  }
+
+  function visibleAreaProfile(): VisibleAreaProfile {
+    return isMobileInputMode() ? 'mobile' : 'desktop';
+  }
+
+  function currentEffectiveViewport(): Readonly<{ width: number; height: number }> {
+    return gameViewport.current();
+  }
+
+  function pixelsPerWorldUnitFromVisibleArea(
+    canvas: HTMLCanvasElement,
+    visibleAreaCamera: VisibleAreaCamera
+  ): number {
+    return canvas.clientHeight / visibleAreaCamera.visibleArea().height;
   }
 
   function onStartupPreloadProgress(loaded: number, total: number): void {
@@ -1050,6 +1167,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       pause.dispose();
       result.dispose();
       settingsOverlay.dispose();
+      mobileControls.dispose();
       titleOverlay.dispose();
       dungeonWaveCounter.dispose();
       escapeProgressPath.dispose();
@@ -1086,6 +1204,63 @@ function defaultPortalHref(): string {
   return location.href;
 }
 
+function queryWeaponSlotElements(parent: HTMLElement): HTMLElement[] {
+  return [...parent.querySelectorAll<HTMLElement>('[data-weapon-slot]')];
+}
+
+function createWindowGameViewport(
+  windowTarget: WindowTarget,
+  profile: MobileWebProfile
+): GameViewportProvider {
+  const matchMedia = windowTarget.matchMedia;
+  return {
+    current(): Readonly<{ width: number; height: number }> {
+      const effectiveViewport = resolveEffectiveGameViewport(profile, {
+        width: safeViewportSide(windowTarget.innerWidth, 16),
+        height: safeViewportSide(windowTarget.innerHeight, 9)
+      });
+      return { width: effectiveViewport.width, height: effectiveViewport.height };
+    },
+    devicePixelRatio(): number {
+      return safeViewportSide(windowTarget.devicePixelRatio, 1);
+    },
+    ...(matchMedia === undefined
+      ? {}
+      : {
+          matchMedia(query: string): MediaQueryList {
+            return matchMedia.call(windowTarget, query);
+          }
+        })
+  };
+}
+
+function createRendererWindowTarget(gameViewport: GameViewportProvider): RendererInit['windowTarget'] {
+  const matchMedia = gameViewport.matchMedia;
+
+  return {
+    get innerWidth(): number {
+      return gameViewport.current().width;
+    },
+    get innerHeight(): number {
+      return gameViewport.current().height;
+    },
+    get devicePixelRatio(): number {
+      return gameViewport.devicePixelRatio();
+    },
+    ...(matchMedia === undefined
+      ? {}
+      : {
+          matchMedia(query: string): MediaQueryList {
+            return matchMedia.call(gameViewport, query);
+          }
+        })
+  };
+}
+
+function safeViewportSide(value: number | undefined, fallback: number): number {
+  return value !== undefined && Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 function formatStartupError(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -1119,6 +1294,23 @@ function createNullStartupErrorOverlay(
     hide(): void {},
     isVisible(): boolean {
       return false;
+    },
+    dispose(): void {}
+  };
+}
+
+function createNullMobileControlsOverlay(
+  _init: MobileControlsOverlayInit
+): MobileControlsOverlay {
+  const pauseButton = {} as HTMLElement;
+  return {
+    show(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
+    },
+    pauseButtonElement(): HTMLElement {
+      return pauseButton;
     },
     dispose(): void {}
   };

@@ -4,9 +4,11 @@ import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 import type { UiShellPhase } from './UiShellPhase';
 import { comicTextStyle } from './comicTextStyle';
+import { GAME_VIEWPORT_WIDTH } from './gameViewportCss';
 
 export type TitleOverlayInit = Readonly<{
   parent: HTMLElement;
+  isMobile?: boolean;
 }>;
 
 export type TitleOverlay = Readonly<{
@@ -39,11 +41,11 @@ export function createTitleOverlay(init: TitleOverlayInit): TitleOverlay {
   root.style.display = 'none';
 
   const titleLine = document.createElement('div');
-  titleLine.style.cssText = titleLineStyle();
+  titleLine.style.cssText = titleLineStyle(init.isMobile === true);
   root.appendChild(titleLine);
 
   const subtitleLine = document.createElement('div');
-  subtitleLine.style.cssText = subtitleLineStyle();
+  subtitleLine.style.cssText = subtitleLineStyle(init.isMobile === true);
   root.appendChild(subtitleLine);
 
   init.parent.appendChild(root);
@@ -224,14 +226,14 @@ function rootStyle(): string {
   ].join(';');
 }
 
-function titleLineStyle(): string {
+function titleLineStyle(isMobile: boolean): string {
   return [
     'box-sizing:border-box',
-    'max-width:min(936px, calc(100vw - 16px))',
+    `max-width:min(936px, calc(${GAME_VIEWPORT_WIDTH} - 16px))`,
     'padding:6px 8px 8px',
     'font-variant:small-caps',
     ...comicTextStyle({
-      fontSize: '28px',
+      fontSize: isMobile ? '22px' : '28px',
       fontWeight: 800,
       lineHeight: '1.1',
       color: '#f4fbff',
@@ -241,14 +243,14 @@ function titleLineStyle(): string {
   ].join(';');
 }
 
-function subtitleLineStyle(): string {
+function subtitleLineStyle(isMobile: boolean): string {
   return [
     'box-sizing:border-box',
-    'max-width:min(936px, calc(100vw - 16px))',
+    `max-width:min(936px, calc(${GAME_VIEWPORT_WIDTH} - 16px))`,
     'margin-top:2px',
     'padding:8px 10px 12px',
     ...comicTextStyle({
-      fontSize: '44px',
+      fontSize: isMobile ? '30px' : '44px',
       color: '#ffffff',
       lineHeight: '1.05',
       shadow: 'strong'

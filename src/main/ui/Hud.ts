@@ -16,6 +16,7 @@ import { COMIC_TEXT_FONT_FAMILY, comicTextStyle } from './comicTextStyle';
 
 export type HudInit = Readonly<{
   parent: HTMLElement;
+  isMobile?: boolean;
 }>;
 
 export type Hud = Readonly<{
@@ -99,7 +100,7 @@ export function createHud(init: HudInit): Hud {
   root.style.cssText = rootStyle();
   root.style.display = 'none';
 
-  const hudDom = createHudDom(root);
+  const hudDom = createHudDom(root, init.isMobile === true);
   const renderState = createHudRenderState();
 
   init.parent.appendChild(root);
@@ -261,7 +262,7 @@ function resetHudRenderState(state: HudRenderState): void {
   state.weaponBar.slots = [];
 }
 
-function createHudDom(root: HTMLElement): HudDom {
+function createHudDom(root: HTMLElement, isMobile: boolean): HudDom {
   const topLeft = document.createElement('section');
   topLeft.dataset['role'] = 'hud-run-status';
   topLeft.style.cssText = topLeftStatusStyle();
@@ -299,14 +300,14 @@ function createHudDom(root: HTMLElement): HudDom {
   bossStrip.appendChild(bossTrack);
   root.appendChild(bossStrip);
 
-  root.appendChild(createMovementHint());
+  root.appendChild(createMovementHint(isMobile));
 
   const weaponBar = document.createElement('section');
   weaponBar.dataset['role'] = 'hud-weapon-bar';
   weaponBar.style.cssText = weaponBarStyle();
   root.appendChild(weaponBar);
 
-  root.appendChild(createFireHint());
+  root.appendChild(createFireHint(isMobile));
 
   return { timer, hpText, hpFill, bossStrip, bossTitle, bossMeta, bossFill, weaponBar };
 }
@@ -610,10 +611,13 @@ function createBadgeImage(src: string): HTMLImageElement {
   return image;
 }
 
-function createMovementHint(): HTMLElement {
+function createMovementHint(isMobile: boolean): HTMLElement {
   const root = document.createElement('section');
   root.dataset['role'] = 'hud-movement-hint';
   root.style.cssText = movementHintStyle();
+  if (isMobile) {
+    root.style.display = 'none';
+  }
   for (const key of ['W', 'A', 'S', 'D']) {
     const keycap = document.createElement('span');
     keycap.textContent = key;
@@ -624,10 +628,13 @@ function createMovementHint(): HTMLElement {
   return root;
 }
 
-function createFireHint(): HTMLElement {
+function createFireHint(isMobile: boolean): HTMLElement {
   const root = document.createElement('section');
   root.dataset['role'] = 'hud-fire-hint';
   root.style.cssText = fireHintStyle();
+  if (isMobile) {
+    root.style.display = 'none';
+  }
   const mouse = document.createElement('span');
   mouse.setAttribute('aria-hidden', 'true');
   mouse.style.cssText = mouseIconStyle();
@@ -905,7 +912,7 @@ function bossStripStyle(): string {
     'grid-template-rows:auto 8px',
     'align-items:center',
     'gap:5px 12px',
-    'width:min(520px, 56vw)',
+    'width:min(520px, 56%)',
     'padding:8px 12px',
     'border:1px solid rgba(255,255,255,0.16)',
     'border-radius:8px',
@@ -1010,7 +1017,7 @@ function weaponBarStyle(): string {
     'align-items:end',
     'justify-content:center',
     'gap:8px',
-    'max-width:min(72vw, 620px)',
+    'max-width:min(72%, 620px)',
     'padding:8px',
     'overflow:visible'
   ].join(';');

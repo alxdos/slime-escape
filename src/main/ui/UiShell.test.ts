@@ -1,13 +1,18 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { BuildOptions } from '../../shared/content/buildSession';
 import { PET_01 } from '../../shared/content/pets';
-import { getPlayableModeCatalog, type ModePresetId } from '../../shared/content/sessions';
+import {
+  getPlayableModeCatalog,
+  type ModePresetId
+} from '../../shared/content/sessions';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
+import type { MobileInputControllerInit } from '../input/MobileInputController';
 import type {
   ClientProgression,
   ClientProgressionStore
@@ -40,6 +45,10 @@ import type { DungeonWaveCounter, DungeonWaveCounterInit } from './DungeonWaveCo
 import type { Hud, HudInit } from './Hud';
 import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
+import type {
+  MobileControlsOverlay,
+  MobileControlsOverlayInit
+} from './MobileControlsOverlay';
 import type { MenuLabViewModel } from './MenuLabViewModel';
 import type { MenuPetsViewModel } from './MenuPetsViewModel';
 import type { MenuScreenId, MenuSubscreenId } from './MenuOverlayLayout';
@@ -835,10 +844,12 @@ function createInputHarness() {
     stop: 0,
     requestLock: 0
   };
+  let lastInit: InputControllerInit | null = null;
 
   return {
-    factory(_init: InputControllerInit): InputController {
+    factory(init: InputControllerInit): InputController {
       calls.create += 1;
+      lastInit = init;
       return {
         start(): void {
           calls.start += 1;
@@ -857,7 +868,48 @@ function createInputHarness() {
         }
       };
     },
-    calls
+    calls,
+    lastInit(): InputControllerInit | null {
+      return lastInit;
+    }
+  };
+}
+
+function createMobileInputHarness() {
+  const calls = {
+    create: 0,
+    start: 0,
+    stop: 0,
+    requestLock: 0
+  };
+  let lastInit: MobileInputControllerInit | null = null;
+
+  return {
+    factory(init: MobileInputControllerInit): InputController {
+      calls.create += 1;
+      lastInit = init;
+      return {
+        start(): void {
+          calls.start += 1;
+        },
+        stop(): void {
+          calls.stop += 1;
+        },
+        isActive(): boolean {
+          return true;
+        },
+        currentAim() {
+          return { x: 0, y: 0 };
+        },
+        requestLock(): void {
+          calls.requestLock += 1;
+        }
+      };
+    },
+    calls,
+    lastInit(): MobileInputControllerInit | null {
+      return lastInit;
+    }
   };
 }
 
@@ -1020,9 +1072,11 @@ function createTitleOverlayHarness() {
     detach: 0,
     dispose: 0
   };
+  let lastInit: TitleOverlayInit | null = null;
 
   return {
-    factory(_init: TitleOverlayInit): TitleOverlay {
+    factory(init: TitleOverlayInit): TitleOverlay {
+      lastInit = init;
       return {
         attach(): void {
           calls.attach += 1;
@@ -1038,7 +1092,10 @@ function createTitleOverlayHarness() {
         }
       };
     },
-    calls
+    calls,
+    lastInit(): TitleOverlayInit | null {
+      return lastInit;
+    }
   };
 }
 
@@ -1078,6 +1135,54 @@ function createVibeJamPortalControllerHarness() {
     lastInit(): VibeJamPortalControllerInit | null {
       return lastInit;
     }
+  };
+}
+
+function createMobileControlsHarness() {
+  let visible = false;
+  let pauseButton = new FakeDomElement();
+  const calls = {
+    create: 0,
+    show: 0,
+    hide: 0,
+    dispose: 0
+  };
+
+  const overlay: MobileControlsOverlay = {
+    show(): void {
+      visible = true;
+      calls.show += 1;
+    },
+    hide(): void {
+      visible = false;
+      calls.hide += 1;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    pauseButtonElement(): HTMLElement {
+      return pauseButton as unknown as HTMLElement;
+    },
+    dispose(): void {
+      calls.dispose += 1;
+    }
+  };
+
+  return {
+    factory(init: MobileControlsOverlayInit): MobileControlsOverlay {
+      calls.create += 1;
+      pauseButton = new FakeDomElement();
+      pauseButton.dataset['role'] = 'mobile-pause-button';
+      appendHarnessRoot(init.parent, pauseButton);
+      return overlay;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    pauseButton(): FakeDomElement {
+      return pauseButton;
+    },
+    calls
   };
 }
 
@@ -1488,6 +1593,357 @@ describe('UiShell', () => {
     expect(menu.isVisible()).toBe(false);
     expect(pause.isVisible()).toBe(false);
     expect(result.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'running' });
+  });
+
+  it('passes the effective game viewport to renderer fitting', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const mobileInput = createMobileInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    let viewport = { width: 844, height: 390 };
+    let matchMediaReceiver: unknown = null;
+    const gameViewport = {
+      current: () => viewport,
+      devicePixelRatio: () => 3,
+      matchMedia(this: unknown, query: string): MediaQueryList {
+        matchMediaReceiver = this;
+        return { matches: query === '(test-query)' } as MediaQueryList;
+      }
+    };
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      autoStartPresetId: 'training',
+      buildSessionDefinition: () => makeSession('mobile-viewport-session'),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createMobileInputController: mobileInput.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget,
+      gameViewport
+    });
+
+    await flushUiShellStartup();
+
+    const rendererWindowTarget = renderer.lastInit()?.windowTarget;
+    expect(rendererWindowTarget?.innerWidth).toBe(844);
+    expect(rendererWindowTarget?.innerHeight).toBe(390);
+    expect(rendererWindowTarget?.devicePixelRatio).toBe(3);
+
+    viewport = { width: 932, height: 430 };
+    expect(rendererWindowTarget?.innerWidth).toBe(932);
+    expect(rendererWindowTarget?.innerHeight).toBe(430);
+    expect(rendererWindowTarget?.matchMedia?.('(test-query)').matches).toBe(true);
+    expect(matchMediaReceiver).toBe(gameViewport);
+
+    viewport = { width: 960, height: 540 };
+    windowTarget.dispatch('orientationchange', new Event('orientationchange'));
+    expect(renderer.calls.fitToWindow).toBe(1);
+    expect(rendererWindowTarget?.innerWidth).toBe(960);
+    expect(rendererWindowTarget?.innerHeight).toBe(540);
+  });
+
+  it('derives fallback renderer viewport from the mobile profile when no provider is injected', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const mobileInput = createMobileInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = Object.assign(new FakeEventTarget(), {
+      innerWidth: 390,
+      innerHeight: 844,
+      devicePixelRatio: 2
+    });
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      autoStartPresetId: 'training',
+      buildSessionDefinition: () =>
+        makeSession('mobile-fallback-viewport-session', {
+          arena: { width: 32, height: 18 }
+        }),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createMobileInputController: mobileInput.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget,
+      mobileProfile: { isMobile: true }
+    });
+
+    await flushUiShellStartup();
+
+    const rendererWindowTarget = renderer.lastInit()?.windowTarget;
+    expect(rendererWindowTarget?.innerWidth).toBe(844);
+    expect(rendererWindowTarget?.innerHeight).toBe(390);
+    expect(rendererWindowTarget?.devicePixelRatio).toBe(2);
+    expect(renderer.lastInit()?.visibleAreaCamera?.visibleArea().width).toBeCloseTo(
+      (844 / 390) * 12,
+      6
+    );
+
+    windowTarget.innerWidth = 430;
+    windowTarget.innerHeight = 932;
+    windowTarget.dispatch('orientationchange', new Event('orientationchange'));
+
+    expect(renderer.calls.fitToWindow).toBe(1);
+    expect(rendererWindowTarget?.innerWidth).toBe(932);
+    expect(rendererWindowTarget?.innerHeight).toBe(430);
+  });
+
+  it('keeps mobile session building on the content-authored arena', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const mobileInput = createMobileInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const titleOverlay = createTitleOverlayHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    const buildOptions: BuildOptions[] = [];
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      buildSessionDefinition: (preset, options) => {
+        buildOptions.push(options);
+        return makeSession(`${preset.id}-mobile-session`, {
+          arena: { width: 16, height: 9 }
+        });
+      },
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createMobileInputController: mobileInput.factory,
+      createHud: hud.factory,
+      createTitleOverlay: titleOverlay.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget,
+      mobileProfile: {
+        isMobile: true
+      }
+    });
+
+    await flushUiShellStartup();
+    menu.start('training');
+    await flushUiShellStartup();
+
+    expect('arenaOverride' in (buildOptions[0] ?? {})).toBe(false);
+    expect(sim.startSessions[0]?.arena).toEqual({ width: 16, height: 9 });
+    expect(titleOverlay.lastInit()?.isMobile).toBe(true);
+  });
+
+  it('maps desktop pointer-lock aim deltas through the desktop visible-area height', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      buildSessionDefinition: () =>
+        makeSession('desktop-visible-area-input-session', {
+          arena: { width: 32, height: 18 }
+        }),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.start('training');
+    await flushUiShellStartup();
+
+    expect(input.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(900 / 18, 6);
+  });
+
+  it('maps mobile aim-stick deltas through the smaller mobile visible-area height', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const desktopInput = createInputHarness();
+    const mobileInput = createMobileInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      buildSessionDefinition: () =>
+        makeSession('mobile-visible-area-input-session', {
+          arena: { width: 32, height: 18 }
+        }),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: desktopInput.factory,
+      createMobileInputController: mobileInput.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget,
+      mobileProfile: {
+        isMobile: true
+      }
+    });
+
+    await flushUiShellStartup();
+    menu.start('training');
+    await flushUiShellStartup();
+
+    expect(desktopInput.calls.create).toBe(0);
+    expect(mobileInput.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(390 / 12, 6);
+    expect(renderer.lastInit()?.visibleAreaCamera?.visibleArea().height).toBe(12);
+  });
+
+  it('uses the mobile input adapter in mobile mode and restarts it around overlay pause', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const desktopInput = createInputHarness();
+    const mobileInput = createMobileInputHarness();
+    const mobileControls = createMobileControlsHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, {
+      pointerLockElement: null,
+      exitPointerLock: vi.fn()
+    });
+    const preventDefault = vi.fn();
+    const weaponSlotElement = {} as HTMLElement;
+    const parent = {
+      querySelectorAll: vi.fn(() => [weaponSlotElement])
+    } as unknown as HTMLElement;
+
+    const shell = createUiShellForTest({
+      parent,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession('mobile-input-session'),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: desktopInput.factory,
+      createMobileInputController: mobileInput.factory,
+      createMobileControlsOverlay: mobileControls.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget,
+      mobileProfile: {
+        isMobile: true
+      }
+    });
+
+    await flushUiShellStartup();
+    menu.start('training');
+    await flushUiShellStartup();
+
+    expect(desktopInput.calls.create).toBe(0);
+    expect(mobileInput.calls.create).toBe(1);
+    expect(mobileInput.calls.start).toBe(1);
+    expect(mobileInput.lastInit()?.surface).toBeDefined();
+    expect(mobileInput.lastInit()?.pauseElement?.()).toBe(mobileControls.pauseButton());
+    expect(mobileInput.lastInit()?.weaponSlotElements?.()).toEqual([weaponSlotElement]);
+    expect(mobileControls.isVisible()).toBe(true);
+
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Space',
+        preventDefault,
+        repeat: false
+      } as unknown as Event
+    );
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(documentTarget.exitPointerLock).not.toHaveBeenCalled();
+    expect(mobileInput.calls.stop).toBe(1);
+    expect(sim.calls.pause).toBe(1);
+    expect(mobileControls.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'paused' });
+
+    pause.resume();
+
+    expect(mobileInput.calls.start).toBe(2);
+    expect(mobileInput.calls.requestLock).toBe(0);
+    expect(sim.calls.resume).toBe(1);
+    expect(mobileControls.isVisible()).toBe(true);
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
 

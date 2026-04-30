@@ -302,6 +302,12 @@ describe('buildSessionDefinition (training)', () => {
 });
 
 describe('buildSessionDefinition (campaign)', () => {
+  it('keeps the content-authored arena', () => {
+    const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
+
+    expect(session.arena).toEqual(SESSION_PRESET_TEMPLATES[CAMPAIGN_PRESET.id].arena);
+  });
+
   it('builds no companion when the selected pet is null', () => {
     const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
 

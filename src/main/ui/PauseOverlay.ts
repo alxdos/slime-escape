@@ -6,6 +6,7 @@ import type {
 } from './EscapeProgressPathViewModel';
 import { comicTextStyle } from './comicTextStyle';
 import { createSocialLinkRail } from './SocialLinkRail';
+import { GAME_VIEWPORT_HEIGHT, GAME_VIEWPORT_WIDTH } from './gameViewportCss';
 
 export type PauseOverlayInit = Readonly<{
   parent: HTMLElement;
@@ -285,8 +286,8 @@ function cardStyle(): string {
     'gap:16px',
     'box-sizing:border-box',
     'padding:26px 30px 30px',
-    'width:min(640px, calc(100vw - 120px))',
-    'max-height:calc(100vh - 48px)',
+    `width:min(640px, calc(${GAME_VIEWPORT_WIDTH} - 120px))`,
+    `max-height:calc(${GAME_VIEWPORT_HEIGHT} - 48px)`,
     'overflow:auto',
     'background:#fffdf4',
     'border:4px solid #050505',
@@ -473,8 +474,8 @@ function pauseOverlayCss(): string {
   }
 
   .pause-layout [data-role="pause-card"] {
-    width: min(640px, calc(100vw - 48px)) !important;
-    max-height: calc(100vh - 122px) !important;
+    width: min(640px, calc(${GAME_VIEWPORT_WIDTH} - 48px)) !important;
+    max-height: calc(${GAME_VIEWPORT_HEIGHT} - 122px) !important;
   }
 }
 

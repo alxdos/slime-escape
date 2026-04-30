@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-26
-- Updated: 2026-04-26
+- Updated: 2026-04-30 (story 031 prep: desktop control hints are hidden in mobile `running`; mobile sticks and bullet affordances belong to mobile web support.)
 
 ## Context
 
@@ -43,6 +43,7 @@ The combat HUD has five fixed viewport regions:
 - HUD regions use `position: fixed` viewport placement, not canvas-relative placement. Letterbox/pillarbox areas may sit behind HUD; this follows [main-ui-shell.md](main-ui-shell.md).
 - HUD uses `pointer-events: none`. It must never catch mouse input or affect Pointer Lock recovery.
 - Controls are visual hints only. They do not imply new input behavior and do not mention Pointer Lock, capture or mouse grabbing.
+- On mobile `running`, the desktop bottom-left `WASD` and bottom-right `LMB: Fire` hints are hidden. The mobile movement stick, aim stick, bullet silhouettes, and pause/menu button are defined in [mobile-web-support.md](mobile-web-support.md), not in the desktop HUD contract.
 - The old bottom block layout (`HP` / `Weapon` / `Encounter` / `Wave` / `Boss`) is removed. Encounter id/type, zone margin, wave dispatched/alive and other debug-like run internals are not reintroduced in the new bottom HUD.
 - Run timer uses `snapshot.simTimeMs`, not `snapshot.encounter.elapsedMs`, so it does not reset between encounters. The formatting helper stays pure: clamp at `0`, floor to whole seconds, render `MM:SS` with two-digit seconds.
 - Timer digits use a monospace font or tabular numerals so width is stable.
@@ -176,3 +177,4 @@ Story 022 implementation must include tests at the contract boundaries:
 - [web-stack.md](web-stack.md)
 - [testing.md](testing.md)
 - [../stories/022-combat-hud-redesign.md](../stories/022-combat-hud-redesign.md)
+- [mobile-web-support.md](mobile-web-support.md)

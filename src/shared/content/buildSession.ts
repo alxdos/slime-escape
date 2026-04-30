@@ -38,6 +38,7 @@ export function buildSessionDefinition(
   options: BuildOptions
 ): SessionDefinition {
   const template = SESSION_PRESET_TEMPLATES[preset.id];
+  const arena = template.arena;
   validateEnemyRegistry(ENEMY_ARCHETYPES, template.player.contactBox);
   validateEncounterBackgroundReferences(template);
   if (template.loadout !== null) {
@@ -48,7 +49,7 @@ export function buildSessionDefinition(
   return {
     id: options.id ?? `${template.presetId}-session`,
     seed: options.seed,
-    arena: template.arena,
+    arena,
     player: template.player,
     companion: resolveCompanionConfig(template, options.selectedPetId ?? null),
     loadout: template.loadout,
@@ -56,7 +57,7 @@ export function buildSessionDefinition(
     musicSampleId: template.musicSampleId,
     modifiers: [],
     rules: template.rules,
-    encounters: resolveEncounterTemplates(template),
+    encounters: resolveEncounterTemplates(template, arena),
     winCondition: template.winCondition,
     lossCondition: template.lossCondition,
     uiMeta: null
@@ -95,17 +96,19 @@ function validateEncounterBackgroundReferences(template: SessionPresetTemplate):
 }
 
 function resolveEncounterTemplates(
-  template: SessionPresetTemplate
+  template: SessionPresetTemplate,
+  arena: ArenaConfig
 ): ReadonlyArray<EncounterDefinition> {
   return template.encounters.map((encounter) => ({
     ...encounter,
-    spawnPlan: resolveSpawnPlanTemplate(encounter, template)
+    spawnPlan: resolveSpawnPlanTemplate(encounter, template, arena)
   }));
 }
 
 function resolveSpawnPlanTemplate(
   encounter: SessionPresetEncounterTemplate,
-  template: SessionPresetTemplate
+  template: SessionPresetTemplate,
+  arena: ArenaConfig
 ): SpawnPlan {
   const { spawnPlan } = encounter;
   switch (spawnPlan.kind) {
@@ -121,11 +124,11 @@ function resolveSpawnPlanTemplate(
         if (archetype === undefined) {
           throw new Error(`unknown enemy archetype: ${spawn.archetypeId}`);
         }
-        assertSpawnInsideArena(spawn.position, archetype.contactBox, template.arena);
+        assertSpawnInsideArena(spawn.position, archetype.contactBox, arena);
       }
       return spawnPlan;
     case 'boss':
-      return resolveBossSpawnPlan(spawnPlan, template);
+      return resolveBossSpawnPlan(spawnPlan, template, arena);
     default:
       return assertNever(spawnPlan);
   }
@@ -209,7 +212,8 @@ function assertLoadoutWeaponsResolve(
 
 function resolveBossSpawnPlan(
   spawnPlan: BossSpawnPlanTemplate,
-  template: SessionPresetTemplate
+  template: SessionPresetTemplate,
+  arena: ArenaConfig
 ): SpawnPlan {
   const boss = BOSS_ARCHETYPES[spawnPlan.bossArchetypeId];
   if (boss === undefined) {
@@ -217,11 +221,11 @@ function resolveBossSpawnPlan(
   }
   const position = resolveBossSpawnPosition(
     spawnPlan.position,
-    template.arena,
+    arena,
     boss.contactBox,
     spawnPlan.bossEdgeMargin
   );
-  assertSpawnInsideArena(position, boss.contactBox, template.arena);
+  assertSpawnInsideArena(position, boss.contactBox, arena);
   return {
     kind: 'boss',
     bossArchetypeId: spawnPlan.bossArchetypeId,

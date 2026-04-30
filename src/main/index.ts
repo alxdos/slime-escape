@@ -1,4 +1,9 @@
 import { detectFeatures } from './featureDetection';
+import {
+  createGameSurfaceController,
+  detectMobileWebProfile
+} from './mobileWebProfile';
+import { installPageInteractionBlockers } from './pageContextMenu';
 import { createFpsOverlay } from './render/FpsOverlay';
 import { createUiShell } from './ui/UiShell';
 import {
@@ -18,6 +23,14 @@ function requireCanvas(selector: string): HTMLCanvasElement {
   const el = document.querySelector<HTMLCanvasElement>(selector);
   if (!el) {
     throw new Error(`canvas not found by selector "${selector}"`);
+  }
+  return el;
+}
+
+function requireElement(selector: string): HTMLElement {
+  const el = document.querySelector<HTMLElement>(selector);
+  if (!el) {
+    throw new Error(`element not found by selector "${selector}"`);
   }
   return el;
 }
@@ -43,11 +56,24 @@ function resolveLoadingImageSrc(windowTarget: SlimeEscapeWindow): string | undef
 }
 
 detectFeatures();
+installPageInteractionBlockers(document);
+const gameRoot = requireElement('#app');
 const canvas = requireCanvas('#scene');
-const fps = createFpsOverlay(document.body);
+const gameSurface = createGameSurfaceController({
+  root: gameRoot,
+  profile: detectMobileWebProfile({
+    maxTouchPoints: navigator.maxTouchPoints,
+    screenWidth: screen.width,
+    screenHeight: screen.height
+  }),
+  windowTarget: window
+});
+const fps = createFpsOverlay(gameRoot);
 const uiShell = createUiShell({
-  parent: document.body,
+  parent: gameRoot,
   canvas,
+  gameViewport: gameSurface,
+  mobileProfile: gameSurface.profile,
   autoStartPresetId: resolveAutoStartPresetId(window as SlimeEscapeWindow),
   startupImageSrc: resolveLoadingImageSrc(window as SlimeEscapeWindow)
 });

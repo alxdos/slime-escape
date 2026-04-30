@@ -19,6 +19,7 @@ import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
 import { PROJECTILE_VISUALS } from './projectileVisuals';
 import { createRenderer } from './Renderer';
 import type { TextureMap } from './spritePreload';
+import { createVisibleAreaCamera } from '../visibleArea';
 
 const AIM_RING_OUTLINE_COLOR = 0xd97706;
 const PROJECTILE_RADIUS_OUTLINE_OPACITY = 0.54;
@@ -51,6 +52,7 @@ function createCanvasHarness(): HTMLCanvasElement {
 function createRendererBackendHarness() {
   const ops: FakeRendererOp[] = [];
   let lastScene: THREE.Scene | null = null;
+  let lastCamera: THREE.Camera | null = null;
 
   return {
     factory() {
@@ -61,8 +63,9 @@ function createRendererBackendHarness() {
         setSize(width: number, height: number, updateStyle = true): void {
           ops.push({ kind: 'size', width, height, updateStyle });
         },
-        render(scene: THREE.Scene): void {
+        render(scene: THREE.Scene, camera: THREE.Camera): void {
           lastScene = scene;
+          lastCamera = camera;
           ops.push({ kind: 'render' });
         },
         dispose(): void {
@@ -73,6 +76,9 @@ function createRendererBackendHarness() {
     ops,
     lastScene(): THREE.Scene | null {
       return lastScene;
+    },
+    lastCamera(): THREE.Camera | null {
+      return lastCamera;
     },
     reset(): void {
       ops.length = 0;
@@ -574,6 +580,88 @@ describe('createRenderer', () => {
       { kind: 'pixelRatio', value: 1 },
       { kind: 'size', width: 256, height: 144, updateStyle: false }
     ]);
+  });
+
+  it('fits the canvas to the active visible area instead of the full arena', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const windowTarget = {
+      innerWidth: 1200,
+      innerHeight: 600,
+      devicePixelRatio: 1
+    };
+    createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 32, height: 18 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      visibleAreaCamera: createVisibleAreaCamera({
+        arena: { width: 32, height: 18 },
+        profile: 'mobile',
+        effectiveViewport: { width: 1200, height: 600 },
+        playerPosition: { x: 0, y: 0 }
+      }),
+      getSnapshotPair: createEmptySnapshotPair,
+      windowTarget,
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    expect(canvas.style.width).toBe('1200px');
+    expect(canvas.style.height).toBe('600px');
+  });
+
+  it('renders through a visible-area camera that follows the player and stays inside arena bounds', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const visibleAreaCamera = createVisibleAreaCamera({
+      arena: { width: 32, height: 18 },
+      profile: 'mobile',
+      effectiveViewport: { width: 1200, height: 600 },
+      playerPosition: { x: 0, y: 0 }
+    });
+    let pair: SnapshotPair = {
+      prev: null,
+      curr: createSnapshot([{ id: 1, kind: 'player', x: 12, y: 0, hp: 5, maxHp: 5 }]),
+      currReceivedAtMs: 0,
+      nowMs: 0
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 32, height: 18 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures(),
+      visibleAreaCamera,
+      getSnapshotPair: () => pair,
+      windowTarget: {
+        innerWidth: 1200,
+        innerHeight: 600,
+        devicePixelRatio: 1
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+    pair = { ...pair, nowMs: 280 };
+    renderer.render();
+
+    const camera = backend.lastCamera();
+    expect(camera).toBeInstanceOf(THREE.OrthographicCamera);
+    const orthoCamera = camera as THREE.OrthographicCamera;
+    expect(orthoCamera.right - orthoCamera.left).toBeCloseTo(24, 6);
+    expect(orthoCamera.top - orthoCamera.bottom).toBeCloseTo(12, 6);
+    expect(orthoCamera.position.x).toBeGreaterThan(0);
+    expect(orthoCamera.position.x).toBeLessThanOrEqual(4);
+    expect(orthoCamera.position.y).toBe(0);
   });
 
   it('renders snapshots with sprite-backed enemy and boss entities from preloaded textures', () => {
@@ -2073,13 +2161,16 @@ describe('createRenderer', () => {
     const playerMesh = findMeshWithMaterialMap(scene, playerTexture);
     const enemyMesh = findMeshWithMaterialMap(scene, enemyTexture);
     const bossMesh = findMeshWithMaterialMap(scene, bossTexture);
+    const stepX = ((16 / 9) * 8) / 200;
+    const stepY = 8 / 113;
+    const snap = (value: number, step: number): number => Math.round(value / step) * step;
 
-    expect(playerMesh?.position.x).toBeCloseTo(0.08);
-    expect(playerMesh?.position.y).toBeCloseTo(-0.08);
-    expect(enemyMesh?.position.x).toBeCloseTo(1.2);
-    expect(enemyMesh?.position.y).toBeCloseTo(-1.2);
-    expect(bossMesh?.position.x).toBeCloseTo(-2.4);
-    expect(bossMesh?.position.y).toBeCloseTo(2.4);
+    expect(playerMesh?.position.x).toBeCloseTo(snap(0.11, stepX));
+    expect(playerMesh?.position.y).toBeCloseTo(snap(-0.11, stepY));
+    expect(enemyMesh?.position.x).toBeCloseTo(snap(1.23, stepX));
+    expect(enemyMesh?.position.y).toBeCloseTo(snap(-1.23, stepY));
+    expect(bossMesh?.position.x).toBeCloseTo(snap(-2.37, stepX));
+    expect(bossMesh?.position.y).toBeCloseTo(snap(2.37, stepY));
   });
 
   it('switches and tiles the arena background from the active encounter configuration', () => {
