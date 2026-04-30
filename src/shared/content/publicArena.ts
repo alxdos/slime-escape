@@ -1,4 +1,5 @@
-import type { PublicArenaWorldBounds } from './publicArenaProtocol.js';
+import { PUBLIC_ARENA_PRESENTATION_CONTENT } from './publicArena.generated.js';
+import type { PublicArenaWorldBounds } from '../publicArenaProtocol.js';
 
 export type PublicArenaArenaConfig = Readonly<{
   width: number;
@@ -16,26 +17,13 @@ export type PublicArenaPresentationConfig = Readonly<{
   activeBackgroundId: string;
 }>;
 
-export const PUBLIC_ARENA_ARENA = {
-  width: 40,
-  height: 40
-} as const satisfies PublicArenaArenaConfig;
+export const PUBLIC_ARENA_PRESENTATION_CONFIG =
+  PUBLIC_ARENA_PRESENTATION_CONTENT satisfies PublicArenaPresentationConfig;
 
-export const PUBLIC_ARENA_BACKGROUNDS = [
-  {
-    id: 'portal',
-    imageUrl: '/images/bg/bg-01.jpg'
-  }
-] as const satisfies ReadonlyArray<PublicArenaBackgroundConfig>;
-
-export const PUBLIC_ARENA_ACTIVE_BACKGROUND_ID = 'portal';
-
-export const PUBLIC_ARENA_PRESENTATION_CONFIG = {
-  arena: PUBLIC_ARENA_ARENA,
-  backgrounds: PUBLIC_ARENA_BACKGROUNDS,
-  activeBackgroundId: PUBLIC_ARENA_ACTIVE_BACKGROUND_ID
-} as const satisfies PublicArenaPresentationConfig;
-
+export const PUBLIC_ARENA_ARENA = PUBLIC_ARENA_PRESENTATION_CONFIG.arena;
+export const PUBLIC_ARENA_BACKGROUNDS = PUBLIC_ARENA_PRESENTATION_CONFIG.backgrounds;
+export const PUBLIC_ARENA_ACTIVE_BACKGROUND_ID =
+  PUBLIC_ARENA_PRESENTATION_CONFIG.activeBackgroundId;
 export const PUBLIC_ARENA_WORLD_BOUNDS = worldBoundsFromArena(PUBLIC_ARENA_ARENA);
 
 export function worldBoundsFromArena(arena: PublicArenaArenaConfig): PublicArenaWorldBounds {

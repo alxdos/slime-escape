@@ -30,7 +30,6 @@ import { getBuildSampleEntry } from '../util/sampleRegistry';
 import { type InlineImage, requireInlineImageCell } from '../util/inlineMedia';
 import {
   type ResolvedContentRef,
-  requireArenaRef,
   requireBossRef,
   requireDropRef,
   requireEnemyRef,
@@ -113,6 +112,11 @@ export type ParsedSessionBackground = Readonly<{
   image: InlineImage;
 }>;
 
+export type ParsedSessionArena = Readonly<{
+  width: number;
+  height: number;
+}>;
+
 export type ParsedSessionPreset = Readonly<{
   sourcePath: string;
   presetId: string;
@@ -120,7 +124,7 @@ export type ParsedSessionPreset = Readonly<{
   description: string;
   visibleInMenu: boolean;
   order: number;
-  arena: ParsedRef;
+  arena: ParsedSessionArena;
   player: ParsedRef;
   companion: ParsedCompanionConfig | null;
   loadout: ParsedLoadout | null;
@@ -240,7 +244,7 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
     description: sessionFields.read('description'),
     visibleInMenu: parseBooleanField(sessionFields, 'visibleInMenu'),
     order: sessionFields.readNumber('order'),
-    arena: parseArenaRef(sessionFields, 'arenaId'),
+    arena: parseArenaConfig(sessionFields),
     player: parsePlayerRef(sessionFields, 'playerId'),
     companion: parseCompanionSection(companionSection),
     loadout: parseLoadout(sessionFields),
@@ -1261,9 +1265,11 @@ function parseSessionRules(field: FieldReader): SessionRules {
   };
 }
 
-function parseArenaRef(field: FieldReader, fieldName: string): ParsedRef {
-  const cell = field.readCell(fieldName);
-  return requireArenaRef(field.section, cell.position, fieldName, cell.value);
+function parseArenaConfig(field: FieldReader): ParsedSessionArena {
+  return {
+    width: parsePositiveNumberField(field, 'arenaWidth'),
+    height: parsePositiveNumberField(field, 'arenaHeight')
+  };
 }
 
 function parsePlayerRef(field: FieldReader, fieldName: string): ParsedRef {

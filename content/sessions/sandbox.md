@@ -7,7 +7,8 @@
 | musicSampleId | none |
 | visibleInMenu | false |
 | order | 0 |
-| arenaId | sandbox |
+| arenaWidth | 32 |
+| arenaHeight | 18 |
 | playerId | hero-sandbox |
 | loadoutWeaponIds | none |
 | selectedWeaponIndex | none |

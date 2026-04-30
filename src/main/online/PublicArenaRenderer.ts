@@ -8,7 +8,7 @@ import type {
 import {
   PUBLIC_ARENA_PRESENTATION_CONFIG,
   type PublicArenaPresentationConfig
-} from '../../shared/publicArenaConfig';
+} from '../../shared/content/publicArena';
 import type { ArenaConfig } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import { BOSS_VISUALS } from '../render/bossVisuals';

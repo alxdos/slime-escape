@@ -9,7 +9,7 @@ import {
 import {
   PUBLIC_ARENA_ARENA as SHARED_PUBLIC_ARENA_ARENA,
   PUBLIC_ARENA_WORLD_BOUNDS as SHARED_PUBLIC_ARENA_WORLD_BOUNDS
-} from '../../src/shared/publicArenaConfig.js';
+} from '../../src/shared/content/publicArena.js';
 
 export const PUBLIC_ARENA_SPAWN_MARGIN_WU = 2;
 

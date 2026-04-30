@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/publicArenaConfig';
+import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/content/publicArena';
 
 import { createPublicArenaHud } from './PublicArenaHud';
 

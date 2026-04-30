@@ -6,7 +6,7 @@ import {
   getPlayableModeCatalog,
   type ModePresetId
 } from '../../shared/content/sessions';
-import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/publicArenaConfig';
+import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/content/publicArena';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type {

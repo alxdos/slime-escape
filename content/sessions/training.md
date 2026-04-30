@@ -7,7 +7,8 @@
 | musicSampleId | music/001-calm |
 | visibleInMenu | false |
 | order | 1 |
-| arenaId | sandbox |
+| arenaWidth | 32 |
+| arenaHeight | 18 |
 | playerId | hero-training |
 | loadoutWeaponIds | pistol, shotgun, smg |
 | selectedWeaponIndex | 0 |

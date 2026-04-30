@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import {
+  PUBLIC_ARENA_PRESENTATION_CONFIG,
+  worldBoundsFromArena
+} from '../../src/shared/content/publicArena.js';
 import { PUBLIC_ARENA_FULL_MESSAGE } from '../../src/shared/publicArenaProtocol.js';
 import {
   PUBLIC_ARENA_ARENA,
@@ -18,17 +22,12 @@ function createTestArena(playerCap = 200) {
 }
 
 describe('PublicArenaState membership', () => {
-  it('uses the fixed 40 x 40 wu world bounds', () => {
-    expect(PUBLIC_ARENA_ARENA).toEqual({ width: 40, height: 40 });
-    expect(PUBLIC_ARENA_WORLD_SIZE_WU).toBe(40);
-    expect(PUBLIC_ARENA_WORLD_BOUNDS).toEqual({
-      width: 40,
-      height: 40,
-      minX: -20,
-      maxX: 20,
-      minY: -20,
-      maxY: 20
-    });
+  it('uses the generated portal arena world bounds', () => {
+    expect(PUBLIC_ARENA_ARENA).toBe(PUBLIC_ARENA_PRESENTATION_CONFIG.arena);
+    expect(PUBLIC_ARENA_WORLD_SIZE_WU).toBe(PUBLIC_ARENA_PRESENTATION_CONFIG.arena.width);
+    expect(PUBLIC_ARENA_WORLD_BOUNDS).toEqual(
+      worldBoundsFromArena(PUBLIC_ARENA_PRESENTATION_CONFIG.arena)
+    );
   });
 
   it('accepts a socket-local player at level 1 and reports population', () => {

@@ -7,7 +7,7 @@ import {
   type PublicArenaClientToServerEvents,
   type PublicArenaServerToClientEvents
 } from '../../shared/publicArenaProtocol';
-import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/publicArenaConfig';
+import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/content/publicArena';
 
 import { createPublicArenaClient, type PublicArenaSocket } from './PublicArenaClient';
 

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   PUBLIC_ARENA_PRESENTATION_CONFIG,
   PUBLIC_ARENA_WORLD_BOUNDS
-} from '../../shared/publicArenaConfig';
+} from '../../shared/content/publicArena';
 import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
 import type { TextureMap } from '../render/spritePreload';
 
@@ -63,6 +63,7 @@ describe('PublicArenaRenderer', () => {
     const backend = createRendererBackendHarness();
     const textures = createSpriteTextures();
     const backgroundTexture = createBackgroundTexture();
+    const activeBackground = requireActivePublicArenaBackground();
     const renderer = createPublicArenaRenderer({
       canvas: makeCanvas(),
       arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
@@ -72,7 +73,7 @@ describe('PublicArenaRenderer', () => {
       windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
       createRendererBackend: backend.factory,
       loadBackgroundTexture(url, onLoad) {
-        expect(url).toBe('/images/bg/bg-01.jpg');
+        expect(url).toBe(activeBackground.imageUrl);
         onLoad?.(backgroundTexture);
         return backgroundTexture;
       }
@@ -93,7 +94,7 @@ describe('PublicArenaRenderer', () => {
       (ring) => ring.visible
     );
 
-    expect(background?.userData['backgroundId']).toBe('portal');
+    expect(background?.userData['backgroundId']).toBe(activeBackground.id);
     expect(materialMap(background ?? null)).toBe(backgroundTexture);
     expect(backgroundTexture.repeat.x).toBeGreaterThan(1);
     expect(backgroundTexture.repeat.y).toBeGreaterThan(1);
@@ -125,6 +126,16 @@ describe('PublicArenaRenderer', () => {
     expect(backend.disposeCalls()).toBe(1);
   });
 });
+
+function requireActivePublicArenaBackground() {
+  const background = PUBLIC_ARENA_PRESENTATION_CONFIG.backgrounds.find(
+    (entry) => entry.id === PUBLIC_ARENA_PRESENTATION_CONFIG.activeBackgroundId
+  );
+  if (background === undefined) {
+    throw new Error('expected public arena active background');
+  }
+  return background;
+}
 
 function makeSnapshot(): PublicArenaSnapshot {
   return {

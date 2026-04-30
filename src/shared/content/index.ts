@@ -5,5 +5,6 @@ export * from './drops';
 export * from './enemies';
 export * from './pets';
 export * from './players';
+export * from './publicArena';
 export * from './sessions';
 export * from './weapons';

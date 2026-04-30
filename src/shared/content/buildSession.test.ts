@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SANDBOX_ARENA } from './arenas';
 import { buildSessionDefinition } from './buildSession';
 import { BOSS_ARCHETYPES } from './bosses';
+import { PUBLIC_ARENA_PRESENTATION_CONFIG } from './publicArena';
 import {
   ENEMY_ARCHETYPES,
   SLIME_BUG,
@@ -450,34 +451,31 @@ describe('buildSessionDefinition (dungeon)', () => {
 });
 
 describe('buildSessionDefinition (portal)', () => {
-  it('uses normal completion with a transparent opening portal', () => {
+  it('builds the Public Arena presentation source without local combat flow', () => {
     const session = buildSessionDefinition(resolveModePreset('portal'), { seed: 26 });
     const openingEncounter = session.encounters.at(0);
-    const firstWave = session.encounters.at(1);
-    const finalEncounter = session.encounters.at(-1);
 
-    expect(session.winCondition).toEqual({ kind: 'allEncountersComplete' });
-    expect(session.lossCondition).toEqual({ kind: 'playerDeath' });
+    expect(session.arena).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.arena);
+    expect(session.backgrounds).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.backgrounds);
+    expect(session.musicSampleId).toBeNull();
+    expect(session.loadout).toBeNull();
+    expect(session.winCondition).toEqual({ kind: 'none' });
+    expect(session.lossCondition).toEqual({ kind: 'none' });
     expect(openingEncounter).toMatchObject({
       id: 'portal-opening',
       type: 'portal',
-      backgroundId: 'portal',
+      backgroundId: PUBLIC_ARENA_PRESENTATION_CONFIG.activeBackgroundId,
       introDurationMs: 0,
       name: null,
       text: null,
       spawnPlan: { kind: 'empty' },
       zoneBehavior: { kind: 'disabled' },
-      transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' }
+      transitionRules: { kind: 'never', next: 'sequential' }
     });
-    expect(firstWave?.id).toBe('portal-wave-1');
-    expect(finalEncounter?.id).toBe('portal-boss');
-    expect(finalEncounter?.type).toBe('boss');
-    expect(finalEncounter?.spawnPlan.kind).toBe('boss');
-    if (finalEncounter?.spawnPlan.kind !== 'boss') {
-      throw new Error('expected portal-boss to keep a boss spawn plan');
-    }
-    expect(finalEncounter.spawnPlan.bossArchetypeId).toBe('boss-gargoyle');
-    expect(session.encounters.some((encounter) => encounter.id === 'portal-exit')).toBe(false);
+    expect(session.encounters).toHaveLength(1);
+    expect(session.encounters.some((encounter) => encounter.type === 'wave')).toBe(false);
+    expect(session.encounters.some((encounter) => encounter.type === 'break')).toBe(false);
+    expect(session.encounters.some((encounter) => encounter.type === 'boss')).toBe(false);
   });
 });
 
