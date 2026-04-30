@@ -227,6 +227,7 @@ export type UiShellInit = Readonly<{
   parent: HTMLElement;
   canvas: HTMLCanvasElement;
   autoStartPresetId?: ModePresetId;
+  autoStartPublicArena?: boolean;
   startupImageSrc?: string;
   buildSessionDefinition?: BuildSessionDefinitionFn;
   createSimWorkerHost?: CreateSimWorkerHostFn;
@@ -366,6 +367,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     createWindowGameViewport(windowTarget, init.mobileProfile ?? { isMobile: false });
   const rendererWindowTarget = createRendererWindowTarget(gameViewport);
   const autoStartPresetId = init.autoStartPresetId ?? null;
+  const autoStartPublicArena = init.autoStartPublicArena === true;
   const portalStorage =
     init.portalStorage === undefined ? createBrowserVibeJamPortalStorage() : init.portalStorage;
   const portalController = portalControllerFactory({
@@ -1576,7 +1578,9 @@ export function createUiShell(init: UiShellInit): UiShell {
         preloadedTextures = textures;
         texturesOwnedByShell = true;
         setPhase(MENU_PHASE);
-        if (autoStartPresetId !== null) {
+        if (autoStartPublicArena) {
+          startPublicArena();
+        } else if (autoStartPresetId !== null) {
           startPreset(resolveModePreset(autoStartPresetId), {
             startInput: true,
             source: 'autoStart'

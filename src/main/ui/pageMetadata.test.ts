@@ -61,6 +61,13 @@ describe('static page metadata', () => {
       );
     }
   );
+
+  it('configures the portal page as the Public Arena online entrypoint', () => {
+    const html = readFileSync(join(process.cwd(), 'portal/index.html'), 'utf8');
+
+    expect(html).toContain('window.SLIME_ESCAPE_AUTO_START_PUBLIC_ARENA = true;');
+    expect(html).not.toContain('window.SLIME_ESCAPE_AUTO_START = "portal";');
+  });
 });
 
 function findTag(html: string, tagName: string, attrName: string, attrValue: string): string {

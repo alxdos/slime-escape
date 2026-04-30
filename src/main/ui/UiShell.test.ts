@@ -1866,7 +1866,7 @@ describe('UiShell', () => {
     expect(audio.calls.unlock).toBe(1);
   });
 
-  it('auto-starts the requested preset after startup preload', async () => {
+  it('auto-starts a local requested preset after startup preload', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -1892,8 +1892,8 @@ describe('UiShell', () => {
     const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      autoStartPresetId: 'portal',
-      startupImageSrc: '/images/slime-escape-portal.jpg',
+      autoStartPresetId: 'training',
+      startupImageSrc: '/images/slime-escape-training.jpg',
       buildSessionDefinition: buildSession,
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
@@ -1915,8 +1915,8 @@ describe('UiShell', () => {
     await flushUiShellStartup();
 
     expect(buildSession).toHaveBeenCalledTimes(1);
-    expect(builtPresetId).toBe('portal');
-    expect(startupOverlay.lastInit()?.imageSrc).toBe('/images/slime-escape-portal.jpg');
+    expect(builtPresetId).toBe('training');
+    expect(startupOverlay.lastInit()?.imageSrc).toBe('/images/slime-escape-training.jpg');
     expect(sim.startSessions).toHaveLength(1);
     expect(renderer.calls.create).toBe(1);
     expect(input.calls.create).toBe(1);
@@ -1929,6 +1929,77 @@ describe('UiShell', () => {
     expect(pause.isVisible()).toBe(false);
     expect(result.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'running' });
+  });
+
+  it('auto-starts the portal page into Public Arena online flow after startup preload', async () => {
+    const menu = createMenuHarness();
+    const status = createPublicArenaStatusHarness();
+    const publicArenaMenu = createPublicArenaMenuHarness();
+    const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const startupOverlay = createStartupOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const buildSession = vi.fn(() => makeSession('should-not-start'));
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      autoStartPublicArena: true,
+      startupImageSrc: '/images/slime-escape-portal.jpg',
+      buildSessionDefinition: buildSession,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createStartupOverlay: startupOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
+      createPublicArenaMenuOverlay: publicArenaMenu.factory,
+      createPublicArenaStatusOverlay: status.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(startupOverlay.lastInit()?.imageSrc).toBe('/images/slime-escape-portal.jpg');
+    expect(publicArenaClient.lastInit()?.serverUrl).toBe('https://arena.example.test');
+    expect(shell.phase()).toEqual({ kind: 'onlineConnecting' });
+    expect(status.message()).toBe('Joining Public Arena');
+    expect(menu.isVisible()).toBe(false);
+    expect(buildSession).not.toHaveBeenCalled();
+    expect(sim.startSessions).toHaveLength(0);
+    expect(renderer.calls.create).toBe(0);
+    expect(input.calls.create).toBe(0);
+    expect(hud.calls.attach).toBe(0);
+
+    publicArenaClient.accept();
+
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(status.isVisible()).toBe(false);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(publicArenaCombatAffordances.isVisible()).toBe(true);
+    expect(publicArenaRenderer.lastInit()).toBeNull();
+    expect(buildSession).not.toHaveBeenCalled();
+    expect(sim.startSessions).toHaveLength(0);
   });
 
   it('passes the effective game viewport to renderer fitting', async () => {
@@ -3730,7 +3801,7 @@ describe('UiShell', () => {
     const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      autoStartPresetId: 'portal',
+      autoStartPresetId: 'campaign-easy',
       buildSessionDefinition: (preset) => {
         builtPresetIds.push(preset.id);
         return makeSession(`${preset.id}-session`);
@@ -3750,7 +3821,7 @@ describe('UiShell', () => {
 
     await flushUiShellStartup();
 
-    expect(builtPresetIds).toEqual(['portal']);
+    expect(builtPresetIds).toEqual(['campaign-easy']);
     expect(shell.phase()).toEqual({ kind: 'running' });
 
     sim.emit(makeTerminalEvent('win', 123));
@@ -3760,7 +3831,7 @@ describe('UiShell', () => {
     menu.startTraining();
     await flushUiShellStartup();
 
-    expect(builtPresetIds).toEqual(['portal', 'portal']);
+    expect(builtPresetIds).toEqual(['campaign-easy', 'campaign-easy']);
     expect(sim.startSessions).toHaveLength(2);
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
