@@ -6,6 +6,8 @@ export type UiShellPhase =
   | Readonly<{ kind: 'loading' }>
   | Readonly<{ kind: 'menu' }>
   | Readonly<{ kind: 'running' }>
+  | Readonly<{ kind: 'onlineConnecting' }>
+  | Readonly<{ kind: 'online' }>
   | Readonly<{ kind: 'paused' }>
   | Readonly<{
       kind: 'result';

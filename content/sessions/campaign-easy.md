@@ -7,7 +7,8 @@
 | musicSampleId | music/007-nature |
 | visibleInMenu | true |
 | order | 0 |
-| arenaId | sandbox |
+| arenaWidth | 32 |
+| arenaHeight | 18 |
 | playerId | hero-training |
 | loadoutWeaponIds | pistol, shotgun, smg, sniper, rock-thrower, grenade-launcher, bomb-placer, fireball-staff |
 | selectedWeaponIndex | 1 |

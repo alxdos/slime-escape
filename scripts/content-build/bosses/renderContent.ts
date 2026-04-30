@@ -11,13 +11,9 @@ import {
 } from '../util/render';
 
 export function renderBossContent(area: ParsedBossesArea): string {
-  return `${renderHeader('content/bosses.md')}${renderImport()}${area.bosses
+  return `${renderHeader('content/bosses.md')}${area.bosses
     .map((boss) => renderBoss(area, boss))
     .join('\n\n')}\n`;
-}
-
-function renderImport(): string {
-  return "import type { BossArchetype } from './bosses';\n\n";
 }
 
 function renderBoss(area: ParsedBossesArea, boss: ParsedBoss): string {
@@ -26,8 +22,8 @@ function renderBoss(area: ParsedBossesArea, boss: ParsedBoss): string {
     rowId: boss.id,
     imagePath: boss.visual.image
   });
-  return `export const ${toConstName(boss.id)}: BossArchetype = {
-  id: '${escapeString(boss.id)}',
+  return `export const ${toConstName(boss.id)} = {
+  id: '${escapeString(boss.id)}' as string,
   displayName: '${escapeString(boss.displayName)}',
   radius: ${formatNumber(boss.radius)},
   contactBox: { width: ${formatNumber(worldSize.width)}, height: ${formatNumber(worldSize.height)} },
@@ -45,7 +41,7 @@ ${boss.phases.map(renderPhase).join(',\n')}
   attacks: {
 ${boss.attacks.map(renderAttack).join(',\n')}
   }
-};`;
+} as const;`;
 }
 
 function renderPhase(phase: ParsedBossPhase): string {

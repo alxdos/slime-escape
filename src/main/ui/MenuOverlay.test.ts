@@ -112,6 +112,7 @@ describe('MenuOverlay', () => {
       onOpenScreen() {},
       onBackToMainMenu() {},
       onTeaser() {},
+      onStartPublicArena() {},
       onStartDungeon() {},
       onPurchasePet() {
         return { ok: false, reason: 'insufficientXp', quality: 'green', price: 25, totalXp: 0 };
@@ -149,6 +150,53 @@ describe('MenuOverlay', () => {
     expect(socialLinks[1]?.getAttribute('target')).toBe('_blank');
   });
 
+  it('renders the Public Arena entry point and routes activation', () => {
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: new FakeDocument()
+    });
+
+    const onStartPublicArena = vi.fn();
+    const parent = document.createElement('div');
+    createMenuOverlay({
+      parent,
+      modes: [],
+      lab: makeLabViewModel(),
+      pets: makePetsViewModel(),
+      onStart() {},
+      onStartTraining() {},
+      onOpenSettings() {},
+      onToggleFullscreen() {},
+      onOpenScreen() {},
+      onBackToMainMenu() {},
+      onTeaser() {},
+      onStartPublicArena,
+      onStartDungeon() {},
+      onPurchasePet() {
+        return { ok: false, reason: 'insufficientXp', quality: 'green', price: 25, totalXp: 0 };
+      },
+      onSelectPet(petId) {
+        return { ok: false, reason: 'notOwned', selectedPetId: petId };
+      },
+      onClearSelectedPet() {},
+      onButtonHover() {},
+      onModeSwitch() {},
+      dungeonBestWave: 0
+    });
+
+    const root = findByRole(parent, 'menu-overlay');
+    const publicArena = findByRole(root, 'menu-public-arena-button');
+
+    expect(publicArena.textContent).toBe('ONLINE ARENA');
+    expect(publicArena.getAttribute('aria-label')).toBe('Join Online Arena');
+    expect(publicArena.style.cssText).toContain('left:38%');
+    expect(publicArena.style.cssText).toContain('top:6.8%');
+
+    click(publicArena);
+
+    expect(onStartPublicArena).toHaveBeenCalledTimes(1);
+  });
+
   it('starts Dungeon from the subscreen and renders the saved best number only', () => {
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
@@ -169,6 +217,7 @@ describe('MenuOverlay', () => {
       onOpenScreen() {},
       onBackToMainMenu() {},
       onTeaser() {},
+      onStartPublicArena() {},
       onStartDungeon,
       onPurchasePet() {
         return { ok: false, reason: 'insufficientXp', quality: 'green', price: 25, totalXp: 0 };
@@ -245,6 +294,7 @@ describe('MenuOverlay', () => {
       onOpenScreen() {},
       onBackToMainMenu() {},
       onTeaser() {},
+      onStartPublicArena() {},
       onStartDungeon() {},
       onPurchasePet,
       onSelectPet(petId) {
@@ -330,6 +380,7 @@ describe('MenuOverlay', () => {
       onOpenScreen() {},
       onBackToMainMenu() {},
       onTeaser() {},
+      onStartPublicArena() {},
       onStartDungeon() {},
       onPurchasePet() {
         return { ok: false, reason: 'insufficientXp', quality: 'green', price: 25, totalXp: 0 };

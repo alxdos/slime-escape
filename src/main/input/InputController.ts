@@ -1,13 +1,15 @@
 import type { InputCommand } from '../../shared/input';
 import { log } from '../../shared/log';
-import type { ArenaConfig } from '../../shared/session';
 
 import {
-  applyMouseDeltaToAim,
+  applyMouseDeltaToViewportAim,
   moveVectorFromKeys,
+  viewportAimFromWorldAim,
   weaponHotkeyCommandFromCode,
+  worldAimFromViewportAim,
   type MoveVector,
-  type Vec2
+  type Vec2,
+  type VisibleAreaLike
 } from './inputMath';
 
 const MOVEMENT_CODES = [
@@ -29,8 +31,8 @@ function isMovementCode(code: string): code is MovementCode {
 
 export type InputControllerInit = Readonly<{
   canvas: HTMLCanvasElement;
-  arena: ArenaConfig;
   pixelsPerWorldUnit(): number;
+  visibleArea(): VisibleAreaLike;
   initialAim: Vec2;
   onCommand(command: InputCommand): void;
 }>;
@@ -40,15 +42,17 @@ export type InputController = Readonly<{
   stop(): void;
   isActive(): boolean;
   currentAim(): Vec2;
+  syncAim(): void;
   requestLock(): void;
 }>;
 
 export function createInputController(init: InputControllerInit): InputController {
-  const { canvas, arena, pixelsPerWorldUnit, onCommand } = init;
+  const { canvas, pixelsPerWorldUnit, visibleArea, onCommand } = init;
 
   let active = false;
   const keys = { up: false, down: false, left: false, right: false };
-  let aim: Vec2 = init.initialAim;
+  let viewportAim: Vec2 = viewportAimFromWorldAim(init.initialAim, visibleArea());
+  let lastSentAim: Vec2 = currentWorldAim();
   let lastSentMove: MoveVector = { dx: 0, dy: 0 };
   let pendingAim = false;
   let aimRaf = 0;
@@ -86,13 +90,26 @@ export function createInputController(init: InputControllerInit): InputControlle
     aimRaf = 0;
     if (!pendingAim) return;
     pendingAim = false;
-    onCommand({ kind: 'aim', x: aim.x, y: aim.y });
+    sendAimIfChanged();
   }
 
   function scheduleAim(): void {
     pendingAim = true;
     if (aimRaf !== 0) return;
     aimRaf = requestAnimationFrame(flushAim);
+  }
+
+  function currentWorldAim(): Vec2 {
+    return worldAimFromViewportAim(viewportAim, visibleArea());
+  }
+
+  function sendAimIfChanged(): void {
+    const aim = currentWorldAim();
+    if (aim.x === lastSentAim.x && aim.y === lastSentAim.y) {
+      return;
+    }
+    lastSentAim = aim;
+    onCommand({ kind: 'aim', x: aim.x, y: aim.y });
   }
 
   function isLocked(): boolean {
@@ -146,7 +163,13 @@ export function createInputController(init: InputControllerInit): InputControlle
 
   function onMouseMove(event: MouseEvent): void {
     if (!isLocked()) return;
-    aim = applyMouseDeltaToAim(aim, event.movementX, event.movementY, pixelsPerWorldUnit(), arena);
+    viewportAim = applyMouseDeltaToViewportAim(
+      viewportAim,
+      event.movementX,
+      event.movementY,
+      pixelsPerWorldUnit(),
+      visibleArea()
+    );
     scheduleAim();
   }
 
@@ -156,6 +179,7 @@ export function createInputController(init: InputControllerInit): InputControlle
       if (requestPointerLockIfAvailable()) return;
     }
     if (fireActive) return;
+    sendAimIfChanged();
     fireActive = true;
     onCommand({ kind: 'fire', phase: 'start' });
   }
@@ -207,7 +231,8 @@ export function createInputController(init: InputControllerInit): InputControlle
     keys.left = false;
     keys.right = false;
     lastSentMove = { dx: 0, dy: 0 };
-    aim = init.initialAim;
+    viewportAim = viewportAimFromWorldAim(init.initialAim, visibleArea());
+    lastSentAim = currentWorldAim();
     fireActive = false;
   }
 
@@ -228,7 +253,11 @@ export function createInputController(init: InputControllerInit): InputControlle
       return active;
     },
     currentAim(): Vec2 {
-      return { x: aim.x, y: aim.y };
+      return currentWorldAim();
+    },
+    syncAim(): void {
+      if (!active) return;
+      sendAimIfChanged();
     },
     requestLock(): void {
       requestPointerLockIfAvailable();

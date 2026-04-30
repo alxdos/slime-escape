@@ -6,12 +6,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { runContentBuild, type ContentArea } from '../index';
 import { parseSessionsArea, validateUniqueSessionPresetIds } from './parse';
-import { renderSessionContent } from './renderContent';
+import { renderPublicArenaContent, renderSessionContent } from './renderContent';
 
 const SESSION_SOURCE_FILES = [
   'campaign-easy.md',
   'campaign-hard.md',
   'campaign-normal.md',
+  'combat-modifiers-demo.md',
   'dungeon.md',
   'portal.md',
   'sandbox.md',
@@ -28,6 +29,9 @@ describe('content-build sessions area', () => {
 
     await expect(readFile('src/shared/content/sessions.generated.ts', 'utf8')).resolves.toBe(
       renderSessionContent(area)
+    );
+    await expect(readFile('src/shared/content/publicArena.generated.ts', 'utf8')).resolves.toBe(
+      renderPublicArenaContent(area)
     );
   });
 
@@ -61,6 +65,7 @@ describe('content-build sessions area', () => {
     );
 
     expect(training?.musicSampleId).toBe('music/001-calm');
+    expect(training?.arena).toEqual({ width: 32, height: 18 });
     expect(sandbox?.musicSampleId).toBeNull();
     expect(firstWave).toMatchObject({
       introDurationMs: 2500,
@@ -92,16 +97,23 @@ describe('content-build sessions area', () => {
     expect(training?.companion).toBeNull();
   });
 
-  it('parses the portal preset as a normal-completion session with a transparent opening portal', async () => {
+  it('parses the portal preset as a Public Arena presentation source', async () => {
     const fixture = await copySessionsFixture();
     const area = await parseSessionsArea(fixture.sourceDirectory);
     const portal = area.presets.find((preset) => preset.presetId === 'portal');
     const openingEncounter = portal?.encounters.at(0);
-    const firstWave = portal?.encounters.at(1);
-    const finalEncounter = portal?.encounters.at(-1);
 
-    expect(portal?.winCondition).toEqual({ kind: 'allEncountersComplete' });
-    expect(portal?.lossCondition).toEqual({ kind: 'playerDeath' });
+    expect(portal?.arena).toEqual({ width: 35, height: 35 });
+    expect(portal?.musicSampleId).toBeNull();
+    expect(portal?.loadout).toEqual({
+      weapons: [
+        { id: 'rock-thrower', constName: 'ROCK_THROWER' },
+        { id: 'shotgun', constName: 'SHOTGUN' }
+      ],
+      selectedIndex: 0
+    });
+    expect(portal?.winCondition).toEqual({ kind: 'none' });
+    expect(portal?.lossCondition).toEqual({ kind: 'none' });
     expect(openingEncounter).toMatchObject({
       id: 'portal-opening',
       type: 'portal',
@@ -111,18 +123,33 @@ describe('content-build sessions area', () => {
       text: null,
       spawnPlan: { kind: 'empty' },
       zoneBehavior: { kind: 'disabled' },
-      transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' }
+      transitionRules: { kind: 'never', next: 'sequential' }
     });
-    expect(firstWave?.id).toBe('portal-wave-1');
-    expect(finalEncounter).toMatchObject({
-      id: 'portal-boss',
-      type: 'boss',
-      backgroundId: 'portal',
-      spawnPlan: { kind: 'boss', bossArchetype: { id: 'boss-gargoyle' } },
-      zoneBehavior: { kind: 'disabled' },
-      transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' }
-    });
+    expect(portal?.encounters).toHaveLength(1);
+    expect(portal?.encounters.some((encounter) => encounter.type === 'wave')).toBe(false);
+    expect(portal?.encounters.some((encounter) => encounter.type === 'break')).toBe(false);
+    expect(portal?.encounters.some((encounter) => encounter.type === 'boss')).toBe(false);
     expect(portal?.encounters.some((encounter) => encounter.id === 'portal-exit')).toBe(false);
+  });
+
+  it('rejects the Public Arena projection without a selected portal loadout weapon', async () => {
+    const fixture = await copySessionsFixture({
+      'portal.md': (source) =>
+        replaceExact(
+          replaceExact(
+            source,
+            '| loadoutWeaponIds | rock-thrower, shotgun |',
+            '| loadoutWeaponIds | none |'
+          ),
+          '| selectedWeaponIndex | 0 |',
+          '| selectedWeaponIndex | none |'
+        )
+    });
+    const area = await parseSessionsArea(fixture.sourceDirectory);
+
+    expect(() => renderPublicArenaContent(area)).toThrow(
+      /Public Arena source preset must define at least one loadout weapon/
+    );
   });
 
   it('parses the dungeon preset as an endless authored wave loop', async () => {
@@ -212,7 +239,7 @@ describe('content-build sessions area', () => {
         replaceInSection(
           source,
           'portal-opening',
-          '| transitionKind | allEnemiesCleared |\n| next | sequential |',
+          '| transitionKind | never |\n| next | sequential |',
           '| transitionKind | timer |\n| transitionDurationMs | 100 |\n| next | sequential |'
         ),
       pattern: /transitionKind.*expected never or allEnemiesCleared for encounter type "portal"/
@@ -225,10 +252,10 @@ describe('content-build sessions area', () => {
 
   for (const testCase of [
     {
-      name: 'arenaId',
+      name: 'arenaWidth',
       file: 'campaign-normal.md' as const,
-      mutate: (source: string) => replaceExact(source, '| arenaId | sandbox |', '| arenaId | sndbox |'),
-      pattern: /section "# Session": unknown arenaId "sndbox"/
+      mutate: (source: string) => replaceExact(source, '| arenaWidth | 32 |', '| arenaWidth | 0 |'),
+      pattern: /section "# Session" row "arenaWidth" column "value": expected > 0/
     },
     {
       name: 'playerId',

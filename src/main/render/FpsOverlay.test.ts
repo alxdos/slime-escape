@@ -35,7 +35,7 @@ class FakeDocument {
 }
 
 describe('FpsOverlay', () => {
-  it('sits below the escape path lane instead of overlapping the first row', () => {
+  it('is demoted below the top-right progress lane', () => {
     const originalDocument = globalThis.document;
     Object.defineProperty(globalThis, 'document', {
       configurable: true,
@@ -47,9 +47,10 @@ describe('FpsOverlay', () => {
       const fps = parent.children[0];
 
       expect(fps?.dataset['role']).toBe('fps');
-      expect(fps?.style.cssText).toContain('top:80px');
+      expect(fps?.style.cssText).toContain('top:108px');
       expect(fps?.style.cssText).toContain('right:56px');
-      expect(fps?.style.cssText).toContain('z-index:44');
+      expect(fps?.style.cssText).toContain('opacity:0.56');
+      expect(fps?.style.cssText).toContain('z-index:30');
 
       overlay.dispose();
       expect(parent.children).toHaveLength(0);

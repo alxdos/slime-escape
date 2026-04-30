@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-30 (story 031 follow-up: mobile visible area/camera does not replace `SessionDefinition.arena`; the final arena remains the content-authored full world. Earlier story 031 prep considered an `arenaOverride`, now superseded by [camera-and-visible-area.md](camera-and-visible-area.md). Earlier: 2026-04-29 story 030 prep: `SessionDefinition` gets `companion: CompanionSessionConfig | null`; selected pet identity and all companion combat tuning are explicit immutable session config. Earlier: 2026-04-28 story 028 prep: `winCondition` adds `dungeon`, an endless authored-encounter loop that never emits automatic `win`, increments a run-level wave ordinal across loop iterations, and ends through `lossCondition: playerDeath`; the player-facing Dungeon preset is recorded here. Earlier: 2026-04-27 story 026 prep: `EncounterDefinition.type` adds `portal` for Vibe Jam portal presentation encounters, and the hidden `portal` preset is recorded as a supported mode with a transparent opening portal before normal boss completion; full contract in [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: 2026-04-26 story 021: `SessionDefinition` gets a required `musicSampleId: string | null` field; `EncounterDefinition` gets required presentation fields `introDurationMs`/`name`/`text`; their shape, type-paired constraints, and intro delay contract are defined in [encounter-presentation.md](encounter-presentation.md); `musicSampleId` validation is in [audio.md](audio.md). Earlier: 2026-04-25 story 019: per-`seq` entries in `'static'`/`'wave'` `spawnPlan` carry optional `SpawnOverride`, with shape and semantics in [spawn-overrides.md](spawn-overrides.md); `EncounterDefinition` does not change structurally. Earlier: 2026-04-24 cleanup pass: legacy `{ primaryWeaponArchetypeId }` `loadout` no longer mentioned as a current shape; only the ordered form remains. 017 alignment: `loadout` becomes the ordered universal weapon loadout and `rules.damage.slimeFriendlyFire` is the session-owned friendly-fire toggle; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). Earlier: story 015 backgrounds/session MD, player contactBox, boss win condition, zone/transition rules, and player maxHp.)
+- Updated: 2026-04-30
 
 ## Context
 
@@ -44,7 +44,7 @@ The game runtime must run an externally defined session, not one hardcoded scena
 - Stable parts of the contract are the top-level field names, the general meaning of `EncounterDefinition`, and the `winCondition` / `lossCondition` models.
 - Internal structures such as `spawnPlan`, `rewardRules`, and `tuning` may evolve as long as they do not break the top-level session assembly model.
 - Minimal required field shape:
-  - `arena` — rectangle `{ width, height }` in world units (see [arena-and-coordinates.md](arena-and-coordinates.md)). Concrete values are defined in the `content library` ([content-boundaries.md](content-boundaries.md)).
+  - `arena` — rectangle `{ width, height }` in world units (see [arena-and-coordinates.md](arena-and-coordinates.md)). Concrete values are authored as `arenaWidth` and `arenaHeight` in each `content/sessions/<presetId>.md` file and generated into the preset template.
   - `player` is the initial player description as `{ position: { x, y }, radius, contactBox, maxSpeed, maxHp }`, where coordinates and sizes are in world units, speed is in world units per second, and `maxHp` is an integer > 0 (source of `HasHealth` from [health-and-death.md](health-and-death.md)). `contactBox` is the axis-aligned body footprint for body contact and player clamp per [body-contact-boxes.md](body-contact-boxes.md). For presets where the player is not damageable (sandbox without combat), `maxHp` is still set explicitly; omitting the field is forbidden by the same "no two ways to say no data" rule as other required fields. Additional fields (status effects, inventory) may be added by separate decisions without breaking the top-level model.
   - `companion` is either `null` or a `CompanionSessionConfig` from [companion-combat.md](companion-combat.md). It is the only simulation-visible way for selected pet progression to affect a run. The field is required: `null` means no runtime companion, while an object means the session starts one companion entity with session-owned HP, contact shape, movement tuning, weapon availability, boop, and rescue rules.
   - `seed` — integer value, the only source of RNG determinism in simulation; nondeterministic time/randomness sources outside `seed` are forbidden.
@@ -53,7 +53,7 @@ The game runtime must run an externally defined session, not one hardcoded scena
 - Minimal `loadout` shape:
   - `null` — the preset has no built-in weapon (sandbox without combat, pure exploratory bring-up);
   - `Loadout` — the preset has at least one weapon; `Loadout` shape is defined in [content-archetypes.md](content-archetypes.md) and [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md): `{ weapons: string[]; selectedIndex: number | null }`.
-- `rules` remains the session-owned place for gameplay switches. Story 017 requires:
+- `rules` remains the session-owned place for gameplay switches. Current rules include:
   ```ts
   type SessionRules = Readonly<{
     damage: {
@@ -98,7 +98,7 @@ The game runtime must run an externally defined session, not one hardcoded scena
   - `{ kind: 'timer'; durationMs: number }` — encounter ends when `simTime − encounterStartSimMs >= durationMs`. Used for `break` encounters.
   `transitionRules` also has a stable field `next: 'sequential' | { kind: 'byId'; id: string }`. By default, `'sequential'` means the next encounter is taken by index from `SessionDefinition.encounters`. If there is no next encounter, the encounter is treated as **last**, and `SessionFlowSystem` initiates run completion according to `winCondition` (see below).
   Optional "break between encounters" and "runtime events on transition" are intentionally not added to `transitionRules`: the first is expressed as a separate `break` encounter with `transitionRules: { kind: 'timer' }`, and the second is covered by the already defined lifecycle events `encounterStart`/`encounterEnd` ([runtime-systems.md](runtime-systems.md)).
-- `winCondition` and `lossCondition` are defined at the whole-session level, not by individual story implementations.
+- `winCondition` and `lossCondition` are defined at the whole-session level, not by individual feature implementations.
 - Minimal `winCondition` categories: `{ kind: 'allEncountersComplete' }`, `{ kind: 'bossDefeated' }`, `{ kind: 'dungeon' }`, `{ kind: 'scenarioCondition' }`, **`{ kind: 'none' }`** — the session has no automatic victory condition at all (sandbox, free-roam, dev modes).
 - Minimal `lossCondition` categories: `{ kind: 'playerDeath' }`, `{ kind: 'timerOrScenarioFail' }`, `{ kind: 'forced' }`, **`{ kind: 'none' }`** — the session has no automatic loss condition (sandbox; completion is possible only through `stopSession`).
 - `winCondition` and `lossCondition` remain required `SessionDefinition` fields. The `none` category is explicit to separate "forgot to set a condition" from "intentionally no condition". `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md)) must not generate the corresponding win/loss event automatically for `none`.
@@ -112,13 +112,13 @@ The game runtime must run an externally defined session, not one hardcoded scena
 - `ModePreset` is an external preset that prepares a default session but is not executed by itself.
 - Minimal preset modes:
   - `campaign` — 3 waves, breaks, final boss;
-  - `training` — a short training run without a boss. For the story 004 horizon, the minimal shape is exactly two wave encounters with a break encounter between them (`wave1 → break → wave2`), combat `loadout` in the current ordered shape, `winCondition: { kind: 'allEncountersComplete' }`, and `lossCondition: { kind: 'playerDeath' }`. Concrete numeric wave parameters (composition, pace, limit, break duration, `zoneBehavior` numbers) are `content library` content ([content-boundaries.md](content-boundaries.md)) and not part of this decision. Extending `training` to 3+ waves or another structure is allowed without editing this file if the preset id shape stays the same;
+  - `training` — a short training run without a boss. The minimal shape is exactly two wave encounters with a break encounter between them (`wave1 → break → wave2`), combat `loadout` in the current ordered shape, `winCondition: { kind: 'allEncountersComplete' }`, and `lossCondition: { kind: 'playerDeath' }`. Concrete numeric wave parameters (composition, pace, limit, break duration, `zoneBehavior` numbers) are `content library` content ([content-boundaries.md](content-boundaries.md)) and not part of this decision. Extending `training` to 3+ waves or another structure is allowed without editing this file if the preset id shape stays the same;
   - `pistolOnly` — starting loadout is limited to the pistol;
   - `sandbox` — one `sandbox` encounter without win/loss conditions and without built-in weapon (`loadout: null`), used for bring-up stories that do not require the combat stack;
-  - `sandbox-with-combat` — sandbox variant with an ordered `Loadout` and `spawnPlan: { kind: 'static' }` for bring-up combat entities (for example, the training target from [../stories/003-combat-foundation.md](../stories/003-combat-foundation.md)). It follows all sandbox-encounter rules below: `winCondition: none`, `lossCondition: none`, the only exit path is external `stopSession`.
-  - `portal` — hidden Vibe Jam entrypoint preset started by `/portal` through `UiShell.autoStartPresetId`; it opens a transparent `portal` encounter before the first wave, then runs authored waves and `boss-gargoyle`. It uses `winCondition: allEncountersComplete` and `lossCondition: playerDeath`, so the run can end with the normal result/menu path after the boss.
+  - `sandbox-with-combat` — sandbox variant with an ordered `Loadout` and `spawnPlan: { kind: 'static' }` for bring-up combat entities, such as a training target. It follows all sandbox-encounter rules below: `winCondition: none`, `lossCondition: none`, the only exit path is external `stopSession`.
+  - `portal` — hidden Vibe Jam/Public Arena entrypoint content source for `/portal`. It may provide presentation data such as arena dimensions and backgrounds through the normal session content pipeline, but the `/portal` entrypoint is not required to execute a local authored combat run.
   - `dungeon` — one player-facing endless-wave preset started from the existing Dungeon menu screen. It is an authored encounter loop, not procedural generation in the first version: the session must contain at least one `type === 'wave'` encounter, use `winCondition: dungeon`, and use `lossCondition: playerDeath`. Concrete wave composition, breaks, backgrounds, and scaling are content data.
-- The "Minimal preset modes" list grows as stories appear; new preset modes are recorded in this file and not introduced locally in `src/shared/content/**`. Removing an existing preset id is handled through `superseded`/updating this file.
+- The "Minimal preset modes" list grows as product modes appear; new preset modes are recorded in this file and not introduced locally in `src/shared/content/**`. Removing an existing preset id is handled through `superseded`/updating this file.
 - A `sandbox` encounter has the following minimal shape:
   - `spawnPlan` — `{ kind: 'empty' }` or `{ kind: 'static' }` (see [spawn-plan.md](spawn-plan.md)); other `kind` values (`'wave'`, `'boss'`, ...) are forbidden in sandbox encounters because they imply automatic transitions and completion, which sandbox semantics exclude.
   - `objectives` — empty list or equivalent "no objectives".
@@ -135,7 +135,7 @@ The game runtime must run an externally defined session, not one hardcoded scena
 - Training and challenges can run without forking runtime logic.
 - UI gets one entry point: the mode-selection screen builds a `SessionDefinition`, then passes it to runtime.
 - Difficulty and content control move into data and builder functions.
-- Stories must no longer define the run-completion model or transition structure on their own when the rule is stable at runtime level.
+- Feature work must no longer define the run-completion model or transition structure on its own when the rule is stable at runtime level.
 
 ## Related
 
@@ -156,13 +156,10 @@ The game runtime must run an externally defined session, not one hardcoded scena
 - [body-contact-boxes.md](body-contact-boxes.md)
 - [content-authoring.md](content-authoring.md)
 - [main-ui-shell.md](main-ui-shell.md)
-- [../stories/015-sessions-from-md.md](../stories/015-sessions-from-md.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [spawn-overrides.md](spawn-overrides.md)
 - [encounter-presentation.md](encounter-presentation.md)
 - [audio.md](audio.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
 - [companion-combat.md](companion-combat.md)
-- [../stories/028-dungeon-mode.md](../stories/028-dungeon-mode.md)
-- [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
 - [mobile-web-support.md](mobile-web-support.md)

@@ -28,6 +28,13 @@ import {
 import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
 
 import { BOSS_VISUALS } from './bossVisuals';
+import { createArcPreview, updateArcPreview } from './arcPreview';
+import {
+  createCrosshair,
+  disposeCrosshair,
+  updateCrosshair,
+  type AimAccessor
+} from './crosshair';
 import { DROP_VISUALS } from './dropVisuals';
 import { ENEMY_VISUALS } from './enemyVisuals';
 import { fitCanvasToViewport } from './fitToViewport';
@@ -42,13 +49,22 @@ import { PET_VISUALS } from './petVisuals';
 import { DEFAULT_PLAYER_VISUAL } from './playerVisuals';
 import { PROJECTILE_VISUALS } from './projectileVisuals';
 import {
+  applyProjectilePresentation,
+  createProjectileRadiusIndicator
+} from './projectilePresentation';
+import {
   resolveRenderScale,
   type RenderScalePreset
 } from './renderScale';
 import type { SpriteVisualSpec } from './SpriteVisualSpec';
 import type { TextureMap } from './spritePreload';
+import {
+  disposeVibeJamPortalMesh,
+  updateVibeJamPortalMeshes,
+  type VibeJamPortalMeshEntry
+} from './vibeJamPortalPresentation';
 
-export type AimAccessor = () => { x: number; y: number } | null;
+export type { AimAccessor } from './crosshair';
 
 type RendererWindowTarget = Pick<Window, 'innerWidth' | 'innerHeight' | 'devicePixelRatio'> &
   Partial<Pick<Window, 'matchMedia'>>;
@@ -103,19 +119,6 @@ export type Renderer = Readonly<{
 
 const ARENA_FLOOR_COLOR = 0x1b1f29;
 const ARENA_BORDER_COLOR = 0x2a3142;
-const CROSSHAIR_COLOR = 0xffe066;
-const CROSSHAIR_OPACITY = 0.78;
-const CROSSHAIR_OUTLINE_COLOR = 0x050505;
-const CROSSHAIR_OUTLINE_OPACITY = 1;
-const CROSSHAIR_OUTLINE_WIDTH_WU = 0.018;
-const CROSSHAIR_OUTLINE_NAME = 'crosshair-outline';
-const CROSSHAIR_OUTLINE_RENDER_ORDER = 20;
-const CROSSHAIR_RENDER_ORDER = 21;
-const AIM_RING_OUTLINE_COLOR = 0xd97706;
-const AIM_RING_OUTLINE_OPACITY = 0.72;
-const PROJECTILE_RADIUS_OUTLINE_OPACITY = 0.54;
-const CROSSHAIR_SIZE_WU = 0.6;
-const CROSSHAIR_THICKNESS_WU = 0.05;
 const SCENE_BG = 0x05060a;
 const ARENA_TINT_COLOR = 0x05060a;
 const ARENA_TINT_OPACITY = 0.18;
@@ -123,16 +126,11 @@ const ARENA_TINT_OPACITY = 0.18;
 const BACKGROUND_Z = -2;
 const ENEMY_Z = 0;
 const PROJECTILE_Z = 0.05;
-const PROJECTILE_RADIUS_Z = -0.01;
-const PROJECTILE_RADIUS_INDICATOR_NAME = 'projectile-radius-indicator';
-const PROJECTILE_RADIUS_OUTLINE_NAME = 'projectile-radius-outline';
 const CARRIER_REWARD_MARKER_NAME = 'carrier-reward-marker';
 const STATUS_MARKER_NAME = 'status-effect-marker';
 const DROP_Z = 0.03;
 const FIELD_EFFECT_Z = -0.03;
 const PICKUP_GHOST_Z = 0.12;
-const ARC_PREVIEW_Z = 0.04;
-const ARC_PREVIEW_RADIUS_WU = 0.18;
 const SLIME_STAIN_Z = -0.25;
 const SLIME_DROPLET_BASE_OPACITY = 0.82;
 const DEATH_GHOST_Z = 0.045;
@@ -157,7 +155,6 @@ const COMPANION_GHOST_COLOR = 0x9bd5ff;
 const COMPANION_RESCUE_COLOR = 0xa7f070;
 const DROP_PULSE_HZ = 1.6;
 const DROP_PULSE_AMPLITUDE = 0.15;
-const PROJECTILE_GROUNDED_PULSE_AMPLITUDE = 0.1;
 const PLAYER_BREATH_HZ = 0.72;
 const PLAYER_BREATH_AMPLITUDE = 0.028;
 const PLAYER_BREATH_VERTICAL_RATIO = 0.64;
@@ -177,25 +174,6 @@ const ZONE_OVERLAY_OPACITY = 0.86;
 const ZONE_CORNER_RADIUS_FACTOR = 0.25;
 const ZONE_FEATHER_WU = 1.5;
 const PICKUP_GHOST_TTL_MS = 280;
-const PORTAL_Z = 0.16;
-const PORTAL_GROUP_NAME = 'vibe-jam-portal';
-const PORTAL_INTERIOR_NAME = 'vibe-jam-portal-interior';
-const PORTAL_OUTLINE_NAME = 'vibe-jam-portal-outline';
-const PORTAL_RETURN_LABEL_NAME = 'vibe-jam-portal-return-label';
-const PORTAL_INTERIOR_COLOR = 0x000000;
-const PORTAL_PURPLE = 0x8b5cf6;
-const PORTAL_LIME = 0xa7f070;
-const PORTAL_CYAN = 0x5ee7ff;
-const PORTAL_PINK = 0xff6bd5;
-const PORTAL_OUTLINE_OPACITY = 0.94;
-const PORTAL_RENDER_ORDER = 18;
-const PORTAL_RETURN_LABEL_WIDTH = 1.24;
-const PORTAL_RETURN_LABEL_HEIGHT = 0.32;
-const PORTAL_RETURN_LABEL_Y = -0.86;
-const PORTAL_PURPLE_COLOR = new THREE.Color(PORTAL_PURPLE);
-const PORTAL_LIME_COLOR = new THREE.Color(PORTAL_LIME);
-const PORTAL_CYAN_COLOR = new THREE.Color(PORTAL_CYAN);
-const PORTAL_PINK_COLOR = new THREE.Color(PORTAL_PINK);
 const PORTAL_TRAVEL_MIN_PLAYER_SCALE = 0.08;
 
 type EntityMeshEntry = {
@@ -223,13 +201,6 @@ type CompanionEntry = EntityMeshEntry & {
 type CharacterSnapGrid = Readonly<{
   stepX: number;
   stepY: number;
-}>;
-
-type PortalMeshEntry = Readonly<{
-  group: THREE.Group;
-  interior: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
-  outline: THREE.Mesh<THREE.RingGeometry, THREE.MeshBasicMaterial>;
-  label: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
 }>;
 
 export function createRenderer(init: RendererInit): Renderer {
@@ -334,7 +305,7 @@ export function createRenderer(init: RendererInit): Renderer {
   const pickupGhostMeshes = new Map<number, PickupGhostEntry>();
   const slimeDropletMeshes = new Map<number, EntityMeshEntry>();
   const deathGhostMeshes = new Map<number, EntityMeshEntry>();
-  const portalMeshes = new Map<VibeJamPortalDescriptor['kind'], PortalMeshEntry>();
+  const portalMeshes = new Map<VibeJamPortalDescriptor['kind'], VibeJamPortalMeshEntry>();
 
   function applyResolvedScalePolicy(
     preset: RenderScalePreset,
@@ -622,9 +593,14 @@ export function createRenderer(init: RendererInit): Renderer {
       pulseDropMeshes(dropMeshes, pair.nowMs);
       updatePickupGhostMeshes(pickupGhostMeshes, pair.curr, pair.nowMs, disposeEntityMesh);
       updateCrosshair(crosshair, init.getAim);
-      updateArcPreview(arcPreview, pair.curr, init.getAim, weaponRegistry);
+      updateArcPreview(arcPreview, {
+        player: localPlayerPosition(pair.curr),
+        aim: init.getAim?.() ?? null,
+        weaponArchetypeId: selectedWeaponArchetypeId(pair.curr),
+        weaponRegistry
+      });
       updateZoneOverlay(zoneOverlay, pair, alpha);
-      updatePortalMeshes(
+      updateVibeJamPortalMeshes(
         portalDescriptors,
         portalMeshes,
         scene,
@@ -683,7 +659,7 @@ export function createRenderer(init: RendererInit): Renderer {
       slimeDropletMeshes.clear();
       for (const entry of deathGhostMeshes.values()) disposeEntityMesh(entry);
       deathGhostMeshes.clear();
-      for (const entry of portalMeshes.values()) disposePortalMesh(scene, entry);
+      for (const entry of portalMeshes.values()) disposeVibeJamPortalMesh(scene, entry);
       portalMeshes.clear();
       arenaGeometry.dispose();
       arenaMaterial.dispose();
@@ -869,52 +845,6 @@ function requirePetArchetype(petId: string): void {
   throw new Error(`pet archetype missing for id "${petId}"`);
 }
 
-function createProjectileRadiusIndicator(): THREE.Mesh {
-  const geometry = new THREE.CircleGeometry(1, 48);
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xffd166,
-    transparent: true,
-    opacity: 0.14,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = PROJECTILE_RADIUS_INDICATOR_NAME;
-  mesh.position.z = PROJECTILE_RADIUS_Z;
-  mesh.add(createRadiusOutlineMesh(1.01, 1.09, PROJECTILE_RADIUS_OUTLINE_NAME));
-  mesh.visible = false;
-  return mesh;
-}
-
-function createRadiusOutlineMesh(innerRadius: number, outerRadius: number, name: string): THREE.Mesh {
-  return createRadiusOutlineMeshWithColor(
-    innerRadius,
-    outerRadius,
-    name,
-    AIM_RING_OUTLINE_COLOR,
-    PROJECTILE_RADIUS_OUTLINE_OPACITY
-  );
-}
-
-function createRadiusOutlineMeshWithColor(
-  innerRadius: number,
-  outerRadius: number,
-  name: string,
-  color: number,
-  opacity: number
-): THREE.Mesh {
-  const geometry = new THREE.RingGeometry(innerRadius, outerRadius, 48);
-  const material = new THREE.MeshBasicMaterial({
-    color,
-    transparent: true,
-    opacity,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = name;
-  mesh.position.z = -0.002;
-  return mesh;
-}
-
 function createCarrierRewardMarker(enemyHeight: number): THREE.Mesh {
   const geometry = new THREE.CircleGeometry(0.13, 4);
   const material = new THREE.MeshBasicMaterial({
@@ -1057,162 +987,6 @@ function createCompanionRescueRing(worldSize: SpriteVisualSpec['worldSize']): TH
   return ring;
 }
 
-function createPortalMesh(): PortalMeshEntry {
-  const group = new THREE.Group();
-  group.name = PORTAL_GROUP_NAME;
-  group.position.z = PORTAL_Z;
-  group.renderOrder = PORTAL_RENDER_ORDER;
-
-  const interior = new THREE.Mesh(
-    new THREE.CircleGeometry(0.5, 64),
-    new THREE.MeshBasicMaterial({
-      color: PORTAL_INTERIOR_COLOR,
-      transparent: true,
-      opacity: 0.96,
-      depthWrite: false,
-      depthTest: false
-    })
-  );
-  interior.name = PORTAL_INTERIOR_NAME;
-  interior.renderOrder = PORTAL_RENDER_ORDER;
-  group.add(interior);
-
-  const outline = new THREE.Mesh(
-    new THREE.RingGeometry(0.52, 0.68, 64),
-    new THREE.MeshBasicMaterial({
-      color: PORTAL_PURPLE,
-      transparent: true,
-      opacity: PORTAL_OUTLINE_OPACITY,
-      depthWrite: false,
-      depthTest: false
-    })
-  );
-  outline.name = PORTAL_OUTLINE_NAME;
-  outline.position.z = 0.01;
-  outline.renderOrder = PORTAL_RENDER_ORDER + 1;
-  group.add(outline);
-
-  const label = createReturnPortalLabelMesh();
-  group.add(label);
-
-  return { group, interior, outline, label };
-}
-
-function createReturnPortalLabelMesh(): THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> {
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(PORTAL_RETURN_LABEL_WIDTH, PORTAL_RETURN_LABEL_HEIGHT),
-    createReturnPortalLabelMaterial()
-  );
-  mesh.name = PORTAL_RETURN_LABEL_NAME;
-  mesh.position.set(0, PORTAL_RETURN_LABEL_Y, 0.02);
-  mesh.renderOrder = PORTAL_RENDER_ORDER + 2;
-  mesh.visible = false;
-  return mesh;
-}
-
-function createReturnPortalLabelMaterial(): THREE.MeshBasicMaterial {
-  const texture = createReturnPortalLabelTexture();
-  return new THREE.MeshBasicMaterial({
-    map: texture,
-    color: texture === null ? 0xf7f2ff : 0xffffff,
-    transparent: true,
-    opacity: texture === null ? 0.72 : 0.98,
-    depthWrite: false,
-    depthTest: false
-  });
-}
-
-function createReturnPortalLabelTexture(): THREE.CanvasTexture | null {
-  if (typeof document === 'undefined') return null;
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 64;
-  const ctx = canvas.getContext('2d');
-  if (ctx === null) return null;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.font = '900 42px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.lineWidth = 7;
-  ctx.strokeStyle = 'rgba(5, 6, 10, 0.9)';
-  ctx.strokeText('RETURN', canvas.width / 2, canvas.height / 2 + 2);
-  ctx.fillStyle = 'rgba(247, 242, 255, 0.96)';
-  ctx.fillText('RETURN', canvas.width / 2, canvas.height / 2 + 2);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.needsUpdate = true;
-  return texture;
-}
-
-function updatePortalMeshes(
-  descriptors: ReadonlyArray<VibeJamPortalDescriptor>,
-  entries: Map<VibeJamPortalDescriptor['kind'], PortalMeshEntry>,
-  scene: THREE.Scene,
-  nowMs: number,
-  prefersReducedMotion: boolean
-): void {
-  const active = new Set<VibeJamPortalDescriptor['kind']>();
-  for (const descriptor of descriptors) {
-    active.add(descriptor.kind);
-    const entry = ensurePortalMesh(entries, scene, descriptor.kind);
-    entry.group.position.x = descriptor.x;
-    entry.group.position.y = descriptor.y;
-    entry.group.scale.set(descriptor.width, descriptor.height, 1);
-    applyPortalLabelPresentation(entry.label, descriptor);
-    applyPortalPresentation(entry, descriptor.kind, nowMs, prefersReducedMotion);
-  }
-
-  for (const [kind, entry] of entries) {
-    if (active.has(kind)) continue;
-    disposePortalMesh(scene, entry);
-    entries.delete(kind);
-  }
-}
-
-function ensurePortalMesh(
-  entries: Map<VibeJamPortalDescriptor['kind'], PortalMeshEntry>,
-  scene: THREE.Scene,
-  kind: VibeJamPortalDescriptor['kind']
-): PortalMeshEntry {
-  const existing = entries.get(kind);
-  if (existing !== undefined) return existing;
-  const entry = createPortalMesh();
-  scene.add(entry.group);
-  entries.set(kind, entry);
-  return entry;
-}
-
-function applyPortalLabelPresentation(
-  label: PortalMeshEntry['label'],
-  descriptor: VibeJamPortalDescriptor
-): void {
-  label.visible = descriptor.kind === 'return';
-  label.scale.set(
-    1 / Math.max(0.001, descriptor.width),
-    1 / Math.max(0.001, descriptor.height),
-    1
-  );
-}
-
-function applyPortalPresentation(
-  entry: PortalMeshEntry,
-  kind: VibeJamPortalDescriptor['kind'],
-  nowMs: number,
-  prefersReducedMotion: boolean
-): void {
-  const shimmer = prefersReducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(nowMs / 220);
-  const from = kind === 'exit' ? PORTAL_CYAN_COLOR : PORTAL_PURPLE_COLOR;
-  const to = kind === 'exit' ? PORTAL_PINK_COLOR : PORTAL_LIME_COLOR;
-  entry.outline.material.color
-    .copy(from)
-    .lerp(to, shimmer);
-  entry.outline.material.opacity = prefersReducedMotion
-    ? PORTAL_OUTLINE_OPACITY
-    : 0.82 + 0.16 * shimmer;
-}
-
 function applyPlayerPortalTravelPresentation(
   entry: EntityMeshEntry,
   pair: SnapshotPair,
@@ -1254,12 +1028,6 @@ function resolvePortalTravelProgress(
     progress = Math.max(progress ?? 0, nextProgress);
   }
   return progress;
-}
-
-function disposePortalMesh(scene: THREE.Scene, entry: PortalMeshEntry): void {
-  scene.remove(entry.group);
-  entry.label.material.map?.dispose();
-  disposeObjectTree(entry.group);
 }
 
 function applyEnemyPresentation(
@@ -1476,75 +1244,6 @@ function applyFieldEffectPresentation(
   }
 }
 
-function applyProjectilePresentation(
-  mesh: THREE.Mesh,
-  snap: ProjectileSnapshot,
-  weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
-  hideDistance: number
-): boolean {
-  const archetype = weaponRegistry[snap.weaponArchetypeId];
-  const visual = archetype?.projectile.visual;
-  const travelAngle = visual?.rotateWhileFlying === false ? 0 : snap.visualState.angleRadians;
-  mesh.rotation.z = travelAngle + snap.visualState.spinRadians;
-
-  const pulse =
-    snap.state === 'grounded' && visual?.pulseWhenGrounded === true
-      ? 1 +
-        PROJECTILE_GROUNDED_PULSE_AMPLITUDE *
-          Math.sin(snap.visualState.pulsePhase * Math.PI * 2)
-      : 1;
-  const baseVisual = requireVisualSpec(PROJECTILE_VISUALS, snap.weaponArchetypeId, 'projectile');
-  const sizeScaleX = snap.size.width / baseVisual.worldSize.width;
-  const sizeScaleY = snap.size.height / baseVisual.worldSize.height;
-  mesh.scale.set(
-    sizeScaleX * pulse,
-    sizeScaleY * pulse,
-    1
-  );
-
-  const material = mesh.material;
-  if (!Array.isArray(material) && material instanceof THREE.MeshBasicMaterial) {
-    material.opacity = snap.state === 'grounded' ? 0.86 : 0.95;
-  }
-
-  const shouldShow = shouldShowProjectile(snap, hideDistance);
-  const radiusIndicator = mesh.children.find(
-    (child): child is THREE.Mesh =>
-      child instanceof THREE.Mesh && child.name === PROJECTILE_RADIUS_INDICATOR_NAME
-  );
-  if (radiusIndicator === undefined) return shouldShow;
-  const showRadius =
-    shouldShow &&
-    snap.state === 'grounded' &&
-    snap.explosionRadius !== null &&
-    snap.explosionRadius > 0 &&
-    visual?.explosionRadiusIndicator === true;
-  radiusIndicator.visible = showRadius;
-  if (!showRadius || snap.explosionRadius === null) return shouldShow;
-  radiusIndicator.scale.set(
-    snap.explosionRadius / sizeScaleX,
-    snap.explosionRadius / sizeScaleY,
-    1
-  );
-  const radiusMaterial = radiusIndicator.material;
-  if (!Array.isArray(radiusMaterial) && radiusMaterial instanceof THREE.MeshBasicMaterial) {
-    const phase = 0.5 + 0.5 * Math.sin(snap.visualState.pulsePhase * Math.PI * 2);
-    radiusMaterial.opacity = 0.08 + 0.08 * phase;
-  }
-  return shouldShow;
-}
-
-function shouldShowProjectile(
-  snap: ProjectileSnapshot,
-  hideDistance: number
-): boolean {
-  if (snap.state !== 'flying') return true;
-  if (hideDistance <= 0) return true;
-  const dx = snap.x - snap.originX;
-  const dy = snap.y - snap.originY;
-  return dx * dx + dy * dy >= hideDistance * hideDistance;
-}
-
 function disposeObjectTree(root: THREE.Object3D): void {
   root.traverse((child) => {
     const maybeMesh = child as Partial<
@@ -1660,135 +1359,9 @@ function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
-function createCrosshair(): THREE.Group {
-  const material = new THREE.MeshBasicMaterial({
-    color: CROSSHAIR_COLOR,
-    transparent: true,
-    opacity: CROSSHAIR_OPACITY,
-    depthTest: false,
-    depthWrite: false
-  });
-  const horizontal = new THREE.Mesh(
-    new THREE.PlaneGeometry(CROSSHAIR_SIZE_WU, CROSSHAIR_THICKNESS_WU),
-    material
-  );
-  const vertical = new THREE.Mesh(
-    new THREE.PlaneGeometry(CROSSHAIR_THICKNESS_WU, CROSSHAIR_SIZE_WU),
-    material
-  );
-  const group = new THREE.Group();
-  group.add(createCrosshairOutline());
-  group.add(horizontal);
-  group.add(vertical);
-  group.position.z = 0.1;
-  group.renderOrder = CROSSHAIR_RENDER_ORDER;
-  horizontal.renderOrder = CROSSHAIR_RENDER_ORDER;
-  vertical.renderOrder = CROSSHAIR_RENDER_ORDER;
-  return group;
-}
-
-function createCrosshairOutline(): THREE.Mesh {
-  const halfSize = CROSSHAIR_SIZE_WU / 2;
-  const halfThickness = CROSSHAIR_THICKNESS_WU / 2;
-  const shape = createPlusShape(
-    halfSize + CROSSHAIR_OUTLINE_WIDTH_WU,
-    halfThickness + CROSSHAIR_OUTLINE_WIDTH_WU
-  );
-  shape.holes.push(createPlusPath(halfSize, halfThickness, true));
-  const geometry = new THREE.ShapeGeometry(shape);
-  const material = new THREE.MeshBasicMaterial({
-    color: CROSSHAIR_OUTLINE_COLOR,
-    transparent: true,
-    opacity: CROSSHAIR_OUTLINE_OPACITY,
-    depthTest: false,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = CROSSHAIR_OUTLINE_NAME;
-  mesh.position.z = -0.001;
-  mesh.renderOrder = CROSSHAIR_OUTLINE_RENDER_ORDER;
-  return mesh;
-}
-
-function createPlusShape(halfLength: number, halfThickness: number): THREE.Shape {
-  const shape = new THREE.Shape();
-  addPlusPathPoints(shape, halfLength, halfThickness, false);
-  return shape;
-}
-
-function createPlusPath(halfLength: number, halfThickness: number, reverse: boolean): THREE.Path {
-  const path = new THREE.Path();
-  addPlusPathPoints(path, halfLength, halfThickness, reverse);
-  return path;
-}
-
-function addPlusPathPoints(
-  path: THREE.Path,
-  halfLength: number,
-  halfThickness: number,
-  reverse: boolean
-): void {
-  const points: THREE.Vector2[] = [
-    new THREE.Vector2(-halfThickness, -halfLength),
-    new THREE.Vector2(halfThickness, -halfLength),
-    new THREE.Vector2(halfThickness, -halfThickness),
-    new THREE.Vector2(halfLength, -halfThickness),
-    new THREE.Vector2(halfLength, halfThickness),
-    new THREE.Vector2(halfThickness, halfThickness),
-    new THREE.Vector2(halfThickness, halfLength),
-    new THREE.Vector2(-halfThickness, halfLength),
-    new THREE.Vector2(-halfThickness, halfThickness),
-    new THREE.Vector2(-halfLength, halfThickness),
-    new THREE.Vector2(-halfLength, -halfThickness),
-    new THREE.Vector2(-halfThickness, -halfThickness)
-  ];
-  const contour = reverse ? points.reverse() : points;
-  path.moveTo(contour[0]!.x, contour[0]!.y);
-  for (const point of contour.slice(1)) path.lineTo(point.x, point.y);
-  path.closePath();
-}
-
-function createArcPreview(): THREE.Mesh {
-  const geometry = new THREE.RingGeometry(0.72, 1, 36);
-  const material = new THREE.MeshBasicMaterial({
-    color: CROSSHAIR_COLOR,
-    transparent: true,
-    opacity: 0.52,
-    depthWrite: false
-  });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.z = ARC_PREVIEW_Z;
-  mesh.add(
-    createRadiusOutlineMeshWithColor(
-      0.62,
-      1.1,
-      'arc-preview-outline',
-      AIM_RING_OUTLINE_COLOR,
-      AIM_RING_OUTLINE_OPACITY
-    )
-  );
-  mesh.scale.set(ARC_PREVIEW_RADIUS_WU, ARC_PREVIEW_RADIUS_WU, 1);
-  mesh.visible = false;
-  return mesh;
-}
-
 function disposeArcPreview(mesh: THREE.Mesh): void {
   mesh.removeFromParent();
   disposeObjectTree(mesh);
-}
-
-function disposeCrosshair(group: THREE.Group): void {
-  for (const child of group.children) {
-    if (child instanceof THREE.Mesh) {
-      child.geometry.dispose();
-      const material = child.material;
-      if (Array.isArray(material)) {
-        for (const m of material) m.dispose();
-      } else {
-        material.dispose();
-      }
-    }
-  }
 }
 
 function findById<S extends EntitySnapshot>(
@@ -2289,73 +1862,21 @@ function indexHitImpulses(
   return byTarget;
 }
 
-function updateCrosshair(group: THREE.Group, getAim: AimAccessor | undefined): void {
-  if (!getAim) {
-    group.visible = false;
-    return;
-  }
-  const aim = getAim();
-  if (!aim) {
-    group.visible = false;
-    return;
-  }
-  group.visible = true;
-  group.position.x = aim.x;
-  group.position.y = aim.y;
-}
-
-function updateArcPreview(
-  mesh: THREE.Mesh,
-  snapshot: Snapshot | null,
-  getAim: AimAccessor | undefined,
-  weaponRegistry: Readonly<Record<string, WeaponArchetype>>
-): void {
-  if (snapshot === null || getAim === undefined) {
-    mesh.visible = false;
-    return;
-  }
-  const aim = getAim();
-  const weaponHud = snapshot.weaponHud;
-  const player = snapshot.entities.find(
+function localPlayerPosition(snapshot: Snapshot | null): Readonly<{ x: number; y: number }> | null {
+  const player = snapshot?.entities.find(
     (entity): entity is PlayerSnapshot => entity.kind === 'player'
   );
-  if (
-    aim === null ||
-    weaponHud === null ||
-    player === undefined ||
-    weaponHud.selectedIndex === null
-  ) {
-    mesh.visible = false;
-    return;
+  return player === undefined ? null : { x: player.x, y: player.y };
+}
+
+function selectedWeaponArchetypeId(snapshot: Snapshot | null): string | null {
+  if (snapshot === null) {
+    return null;
   }
+  const weaponHud = snapshot.weaponHud;
+  if (weaponHud === null || weaponHud.selectedIndex === null) return null;
   const selected = weaponHud.weapons.find((weapon) => weapon.index === weaponHud.selectedIndex);
-  const archetype =
-    selected === undefined ? undefined : weaponRegistry[selected.weaponArchetypeId];
-  if (archetype === undefined) {
-    mesh.visible = false;
-    return;
-  }
-  const motion = archetype.projectile.motion;
-  if (motion?.kind !== 'arc') {
-    mesh.visible = false;
-    return;
-  }
-  const dx = aim.x - player.x;
-  const dy = aim.y - player.y;
-  const len = Math.hypot(dx, dy);
-  if (len === 0) {
-    mesh.visible = false;
-    return;
-  }
-  const travelDistance = Math.min(motion.range, len);
-  mesh.visible = true;
-  mesh.position.x = player.x + (dx / len) * travelDistance;
-  mesh.position.y = player.y + (dy / len) * travelDistance;
-  mesh.scale.set(
-    Math.max(ARC_PREVIEW_RADIUS_WU, archetype.projectile.hitRadius),
-    Math.max(ARC_PREVIEW_RADIUS_WU, archetype.projectile.hitRadius),
-    1
-  );
+  return selected?.weaponArchetypeId ?? null;
 }
 
 type ZoneOverlay = Readonly<{

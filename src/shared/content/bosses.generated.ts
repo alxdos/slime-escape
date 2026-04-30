@@ -1,9 +1,7 @@
 // AUTO-GENERATED from content/bosses.md by `npm run content:build`.
 // Do not edit by hand.
-import type { BossArchetype } from './bosses';
-
-export const BOSS_GARGOYLE: BossArchetype = {
-  id: 'boss-gargoyle',
+export const BOSS_GARGOYLE = {
+  id: 'boss-gargoyle' as string,
   displayName: 'Gargoyle Slime',
   radius: 1.15,
   contactBox: { width: 2.9125, height: 2.375 },
@@ -32,10 +30,10 @@ export const BOSS_GARGOYLE: BossArchetype = {
     spawnAdds: { pattern: 'spawnAdds', cooldownMs: 3500, damage: 0 },
     dashSlam: { pattern: 'dashSlam', cooldownMs: 1800, damage: 4 }
   }
-};
+} as const;
 
-export const BOSS_SAW_CYCLOPS: BossArchetype = {
-  id: 'boss-saw-cyclops',
+export const BOSS_SAW_CYCLOPS = {
+  id: 'boss-saw-cyclops' as string,
   displayName: 'Saw Cyclops',
   radius: 1.25,
   contactBox: { width: 1.8875, height: 2.2083333333333335 },
@@ -64,10 +62,10 @@ export const BOSS_SAW_CYCLOPS: BossArchetype = {
     spawnAdds: { pattern: 'spawnAdds', cooldownMs: 3500, damage: 0 },
     dashSlam: { pattern: 'dashSlam', cooldownMs: 1800, damage: 4 }
   }
-};
+} as const;
 
-export const BOSS_SCRAP_KING: BossArchetype = {
-  id: 'boss-scrap-king',
+export const BOSS_SCRAP_KING = {
+  id: 'boss-scrap-king' as string,
   displayName: 'Scrap King',
   radius: 1.35,
   contactBox: { width: 2.841666666666667, height: 3.279166666666667 },
@@ -96,10 +94,10 @@ export const BOSS_SCRAP_KING: BossArchetype = {
     spawnAdds: { pattern: 'spawnAdds', cooldownMs: 3500, damage: 0 },
     dashSlam: { pattern: 'dashSlam', cooldownMs: 1800, damage: 4 }
   }
-};
+} as const;
 
-export const BOSS_TOWER_SENTINEL: BossArchetype = {
-  id: 'boss-tower-sentinel',
+export const BOSS_TOWER_SENTINEL = {
+  id: 'boss-tower-sentinel' as string,
   displayName: 'Tower Sentinel',
   radius: 1.3,
   contactBox: { width: 1.8125, height: 2.95 },
@@ -128,10 +126,10 @@ export const BOSS_TOWER_SENTINEL: BossArchetype = {
     spawnAdds: { pattern: 'spawnAdds', cooldownMs: 3500, damage: 0 },
     dashSlam: { pattern: 'dashSlam', cooldownMs: 1800, damage: 4 }
   }
-};
+} as const;
 
-export const BOSS_BUBBLE_HOG: BossArchetype = {
-  id: 'boss-bubble-hog',
+export const BOSS_BUBBLE_HOG = {
+  id: 'boss-bubble-hog' as string,
   displayName: 'Bubble Hog',
   radius: 1.2,
   contactBox: { width: 2.220833333333333, height: 2.3916666666666666 },
@@ -160,4 +158,4 @@ export const BOSS_BUBBLE_HOG: BossArchetype = {
     spawnAdds: { pattern: 'spawnAdds', cooldownMs: 3500, damage: 0 },
     dashSlam: { pattern: 'dashSlam', cooldownMs: 1800, damage: 4 }
   }
-};
+} as const;

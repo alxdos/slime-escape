@@ -7,7 +7,8 @@
 | musicSampleId | music/100-waves |
 | visibleInMenu | true |
 | order | 2 |
-| arenaId | sandbox |
+| arenaWidth | 32 |
+| arenaHeight | 18 |
 | playerId | hero-training |
 | loadoutWeaponIds | pistol, smg, rock-thrower |
 | selectedWeaponIndex | 0 |

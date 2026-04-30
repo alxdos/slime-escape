@@ -54,8 +54,8 @@ describe('InputController weapon hotkeys', () => {
     }) as unknown as HTMLCanvasElement;
     const controller = createInputController({
       canvas,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command)
     });
@@ -96,8 +96,8 @@ describe('InputController cursor visibility', () => {
     }) as unknown as HTMLCanvasElement;
     const controller = createInputController({
       canvas,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: () => {}
     });
@@ -121,6 +121,36 @@ describe('InputController cursor visibility', () => {
 });
 
 describe('InputController pointer lock compatibility', () => {
+  it('resyncs world aim when the visible-area center moves under a stable viewport cursor', () => {
+    const windowTarget = new FakeEventTarget();
+    const documentTarget = Object.assign(new FakeEventTarget(), {
+      pointerLockElement: null as Element | null,
+      exitPointerLock: () => {}
+    });
+    installInputGlobals(windowTarget, documentTarget);
+
+    const commands: InputCommand[] = [];
+    let center = { x: 0, y: 0 };
+    const canvas = Object.assign(new FakeEventTarget(), {
+      requestPointerLock: () => {}
+    }) as unknown as HTMLCanvasElement;
+    const controller = createInputController({
+      canvas,
+      pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 12, height: 8, center }),
+      initialAim: { x: 0, y: 0 },
+      onCommand: (command) => commands.push(command)
+    });
+
+    controller.start();
+    center = { x: 3, y: 2 };
+    expect(controller.currentAim()).toEqual({ x: 3, y: 2 });
+
+    controller.syncAim();
+
+    expect(commands).toEqual([{ kind: 'aim', x: 3, y: 2 }]);
+  });
+
   it('keeps the desktop first click dedicated to requesting Pointer Lock', () => {
     const windowTarget = new FakeEventTarget();
     const documentTarget = Object.assign(new FakeEventTarget(), {
@@ -142,8 +172,8 @@ describe('InputController pointer lock compatibility', () => {
     const canvas = canvasTarget as unknown as HTMLCanvasElement;
     const controller = createInputController({
       canvas,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command)
     });
@@ -182,8 +212,8 @@ describe('InputController pointer lock compatibility', () => {
     const canvas = canvasTarget as unknown as HTMLCanvasElement;
     const controller = createInputController({
       canvas,
-      arena: { width: 32, height: 18 },
       pixelsPerWorldUnit: () => 10,
+      visibleArea: () => ({ width: 32, height: 18, center: { x: 0, y: 0 } }),
       initialAim: { x: 0, y: 0 },
       onCommand: (command) => commands.push(command)
     });

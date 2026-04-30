@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-23 (for story 011, explicitly recorded that build-time tools live outside `src/**`; permission for the root-level `scripts/` directory is covered by a separate decision, `content-authoring.md`)
+- Updated: 2026-04-30 (story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-23 for story 011, explicitly recorded that build-time tools live outside `src/**`; permission for the root-level `scripts/` directory is covered by a separate decision, `content-authoring.md`.)
 
 ## Context
 
@@ -59,3 +59,4 @@ The game runs in the browser and must keep both a `main thread` with DOM/UI/audi
 - [testing.md](testing.md)
 - [logging.md](logging.md)
 - [content-authoring.md](content-authoring.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)

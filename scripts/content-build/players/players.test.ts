@@ -23,15 +23,15 @@ describe('content-build players area', () => {
 
     const area = await parsePlayersArea(sourcePath);
 
-    expect(renderPlayerContent(area)).toContain("export const HERO_SANDBOX: PlayerArchetype");
-    expect(renderPlayerContent(area)).toContain("export const HERO_TRAINING: PlayerArchetype");
+    expect(renderPlayerContent(area)).toContain('export const HERO_SANDBOX = {');
+    expect(renderPlayerContent(area)).toContain('export const HERO_TRAINING = {');
     expect(renderPlayerContent(area)).toContain(
       'export const PLAYER_ARCHETYPE_SPECS = [HERO_SANDBOX, HERO_TRAINING]'
     );
     expect(renderPlayerContent(area)).toContain('radius: 1.1458333333333333');
     expect(renderPlayerContent(area)).toContain('maxHp: HERO_SANDBOX.maxHp');
     expect(renderPlayerContent(area)).toContain('contactBox: { width:');
-    expect(renderPlayerContent(area)).toContain("export const TRAINING_PLAYER: PlayerSpawn");
+    expect(renderPlayerContent(area)).toContain('export const TRAINING_PLAYER = {');
     expect(renderPlayerVisuals(area)).toContain("export const HERO_SANDBOX_VISUAL: SpriteVisualSpec");
     expect(renderPlayerVisuals(area)).toContain("export const HERO_TRAINING_VISUAL: SpriteVisualSpec");
     expect(renderPlayerVisuals(area)).toContain(

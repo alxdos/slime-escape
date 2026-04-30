@@ -38,7 +38,7 @@ export type EnemyArchetype = Readonly<{
 export * from './enemies.generated';
 
 export const ENEMY_ARCHETYPES: Readonly<Record<string, EnemyArchetype>> =
-  createEnemyRegistry(Object.values(generatedEnemies));
+  createEnemyRegistry(generatedEnemies.ENEMY_ARCHETYPE_LIST);
 
 function createEnemyRegistry(
   archetypes: ReadonlyArray<EnemyArchetype>

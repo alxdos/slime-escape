@@ -7,7 +7,8 @@
 | musicSampleId | none |
 | visibleInMenu | false |
 | order | 1 |
-| arenaId | sandbox |
+| arenaWidth | 32 |
+| arenaHeight | 18 |
 | playerId | hero-sandbox |
 | loadoutWeaponIds | demo-hazard-grenade, demo-proximity-mine, pistol |
 | selectedWeaponIndex | 0 |

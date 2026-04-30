@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-30
-- Updated: 2026-04-30
+- Updated: 2026-04-30 (story 032 follow-up: Public Arena may reuse mobile combat input in the `online` phase by sending the existing movement/aim/fire intent to the server; no new touch command kinds are added.)
 
 ## Context
 
@@ -58,7 +58,7 @@ Without a decision, the implementation could spread mobile rules across `index.t
 
 - Mobile combat controls are a `main thread` input adapter under `src/main/input/**` or an adjacent `src/main/**` module. They send the existing `InputCommand` union from [input-commands.md](input-commands.md).
 - Mobile input does not add new `InputCommand.kind` values.
-- Mobile input is active only in the `running` phase. In `menu`, `settings`, sub-screens, `paused`, `result`, `loading`, and `error('preload')`, normal UI pointer behavior owns the screen.
+- Mobile input is active only in combat phases that have an input sink: local `running` and Public Arena `online`. In `menu`, `settings`, sub-screens, `onlineConnecting`, `paused`, `result`, `loading`, and `error('preload')`, normal UI pointer behavior owns the screen.
 - Mobile input does not request Pointer Lock.
 - Mobile input supports simultaneous touches by tracking `pointerId` ownership:
   - at most one active movement pointer;
@@ -70,20 +70,20 @@ Without a decision, the implementation could spread mobile rules across `index.t
 - The lower-right quadrant is the aim zone. It moves the existing virtual aim point by relative drag deltas, converts CSS pixels to world units through the active visible-area mapping from [camera-and-visible-area.md](camera-and-visible-area.md), and clamps aim to `SessionDefinition.arena`.
 - Fire zone touches send `fire start` when the first active fire pointer begins and `fire stop` after the last active fire pointer ends.
 - A short tap in the fire zone must be observable by the simulation. The mobile input adapter keeps tap-fire active for at least one `SIM_STEP_MS` before sending `fire stop`, unless the touch is held longer.
-- Starting a pointer on the top-center pause/menu button opens pause through `UiShell` and must not send `fire start`.
+- Starting a pointer on the top-center pause/menu button routes to `UiShell` and must not send `fire start`. In local `running`, it opens pause. In Public Arena `online`, it exits the online arena and returns to `menu`.
 - Dragging an already active fire pointer over the pause/menu button does not open pause.
-- When mobile input stops because the phase changes or the session ends, it sends neutral state as needed: `move {0,0}` and `fire stop` if those states were active.
+- When mobile input stops because the phase changes, the local session ends, or the online socket exits, it sends neutral state as needed: `move {0,0}` and `fire stop` if those states were active.
 
 ### Mobile controls presentation
 
 - Mobile controls are presentation-only overlays owned by the main UI layer. They do not send simulation commands directly except through the mobile input adapter.
 - The active control zones are not colored or boxed in normal gameplay.
-- In mobile `running`, the player sees:
+- In mobile `running` and mobile `online`, the player sees:
   - subtle semi-transparent bullet silhouettes in the top-left and top-right fire areas;
   - a subtle semi-transparent movement stick in the lower-left area;
   - a subtle semi-transparent aim stick in the lower-right area;
   - a top-center pause/menu button.
-- The existing desktop `WASD` and `LMB: Fire` HUD hints are hidden in mobile `running`.
+- The existing desktop `WASD` and `LMB: Fire` HUD hints are hidden in mobile `running` and are not part of the Public Arena online HUD.
 - Weapon slots, HP, boss strip, title overlays, escape progress, result UI, menu sub-screens, settings, and pause overlays keep their existing ownership. Mobile controls add a layer; they do not move those features into the input module.
 
 ### Pause and overlays
@@ -127,3 +127,5 @@ Without a decision, the implementation could spread mobile rules across `index.t
 - [thread-model.md](thread-model.md)
 - [testing.md](testing.md)
 - [../stories/031-mobile-web-support.md](../stories/031-mobile-web-support.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)
+- [../stories/032-public-slime-arena.md](../stories/032-public-slime-arena.md)

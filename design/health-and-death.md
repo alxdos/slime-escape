@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-29 (story 030 prep: companion entities are damageable but use a downed ghost transition instead of the removable death path; projectile/explosion sources support `ownerKind: 'companion'`. Earlier: 2026-04-26 story 024: `RunSummaryTracker` becomes the explicit session-level stats/progression death hook consumer; see [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-24 017 alignment: projectile and explosion damage both flow through `DamageIntent`; 018 alignment: field/status damage sources are added for future `FieldEffectSystem`/`StatusEffectSystem`. Earlier: 016 impact direction, 006 boss, 005 drops.)
+- Updated: 2026-04-30 (story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-29 story 030 prep: companion entities are damageable but use a downed ghost transition instead of the removable death path; projectile/explosion sources support `ownerKind: 'companion'`. Earlier: 2026-04-26 story 024: `RunSummaryTracker` becomes the explicit session-level stats/progression death hook consumer; see [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-24 017 alignment: projectile and explosion damage both flow through `DamageIntent`; 018 alignment: field/status damage sources are added for future `FieldEffectSystem`/`StatusEffectSystem`. Earlier: 016 impact direction, 006 boss, 005 drops.)
 
 ## Context
 
@@ -151,3 +151,4 @@ Without this contract, story 003 will implicitly introduce "HP directly in `Enti
 - [session-result-summary.md](session-result-summary.md)
 - [companion-combat.md](companion-combat.md)
 - [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)

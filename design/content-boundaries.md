@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-29 (story 030 prep: selected pet can enter simulation only through explicit `SessionDefinition.companion` built for a companion-enabled run; combat numbers remain session configuration, not client progression. Earlier: 2026-04-28 story 029 prep: add `client progression` as a separate persistent browser data level for XP, owned pets, and selected companion; it is not `client settings` and does not enter simulation in the first pet story. Earlier: 2026-04-23 for story 011, added a back-reference to `content-authoring.md`: for areas governed by MD sources, `content library` literals are generated under the same layer-separation rules, without changing this document)
+- Updated: 2026-04-30 (story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-29 story 030 prep: selected pet can enter simulation only through explicit `SessionDefinition.companion` built for a companion-enabled run; combat numbers remain session configuration, not client progression. Earlier: 2026-04-28 story 029 prep: add `client progression` as a separate persistent browser data level for XP, owned pets, and selected companion; it is not `client settings` and does not enter simulation in the first pet story. Earlier: 2026-04-23 for story 011, added a back-reference to `content-authoring.md`: for areas governed by MD sources, `content library` literals are generated under the same layer-separation rules, without changing this document.)
 
 ## Context
 
@@ -84,3 +84,4 @@ Runtime code must be separated from game content so new modes, enemy sets, and l
 - [companion-combat.md](companion-combat.md)
 - [../stories/029-xp-and-pet-companions.md](../stories/029-xp-and-pet-companions.md)
 - [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)

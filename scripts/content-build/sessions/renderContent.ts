@@ -18,8 +18,11 @@ import {
   renderHeader,
   renderObjectKey
 } from '../util/render';
+import { ContentBuildError } from '../util/require';
 
-type ImportBucket = 'arenas' | 'bosses' | 'drops' | 'enemies' | 'players' | 'weapons';
+type ImportBucket = 'bosses' | 'drops' | 'enemies' | 'players' | 'weapons';
+
+const PUBLIC_ARENA_SOURCE_PRESET_ID = 'portal';
 
 export function renderSessionContent(area: ParsedSessionsArea): string {
   const imports = collectImports(area);
@@ -30,9 +33,25 @@ ${area.presets.map(renderPreset).join(',\n')}
 } as const satisfies Record<string, SessionPresetTemplate>;\n`;
 }
 
+export function renderPublicArenaContent(area: ParsedSessionsArea): string {
+  const preset = requirePublicArenaPreset(area);
+  const loadout = requirePublicArenaLoadout(preset);
+  const imports = collectPublicArenaImports(preset, loadout);
+  return `${renderHeader(`${area.sourceDirectory}/${PUBLIC_ARENA_SOURCE_PRESET_ID}.md`)}${renderPublicArenaImports(imports)}
+
+export const PUBLIC_ARENA_PRESENTATION_CONTENT = {
+  arena: ${renderArena(preset.arena)},
+  player: ${preset.player.constName},
+  loadout: ${renderLoadout(loadout)},
+  backgrounds: [
+${preset.backgrounds.map(renderPublicArenaBackground).join(',\n')}
+  ],
+  activeBackgroundId: '${escapeString(resolvePublicArenaActiveBackgroundId(preset))}'
+} as const;\n`;
+}
+
 function renderImports(imports: ReadonlyMap<ImportBucket, ReadonlySet<string>>): string {
   return [
-    renderImport(imports, 'arenas', './arenas'),
     renderImport(imports, 'bosses', './bosses.generated'),
     renderImport(imports, 'drops', './drops.generated'),
     renderImport(imports, 'enemies', './enemies.generated'),
@@ -57,6 +76,17 @@ function renderImport(
   return `import { ${names.join(', ')} } from '${source}';`;
 }
 
+function renderPublicArenaImports(
+  imports: ReadonlyMap<ImportBucket, ReadonlySet<string>>
+): string {
+  return [
+    renderImport(imports, 'players', './players.generated.js'),
+    renderImport(imports, 'weapons', './weapons.generated.js')
+  ]
+    .filter((line) => line.length > 0)
+    .join('\n');
+}
+
 function renderPreset(preset: ParsedSessionPreset): string {
   return `  ${renderObjectKey(preset.presetId)}: {
     presetId: '${escapeString(preset.presetId)}',
@@ -64,7 +94,7 @@ function renderPreset(preset: ParsedSessionPreset): string {
     description: '${escapeString(preset.description)}',
     visibleInMenu: ${preset.visibleInMenu ? 'true' : 'false'},
     order: ${formatNumber(preset.order)},
-    arena: ${preset.arena.constName},
+    arena: ${renderArena(preset.arena)},
     player: ${preset.player.constName},
     companion: ${renderCompanionConfig(preset.companion)},
     loadout: ${renderLoadout(preset.loadout)},
@@ -118,6 +148,19 @@ function renderBackground(background: ParsedSessionPreset['backgrounds'][number]
         id: '${escapeString(background.id)}',
         imageUrl: '${escapeString(background.image.url)}'
       }`;
+}
+
+function renderPublicArenaBackground(
+  background: ParsedSessionPreset['backgrounds'][number]
+): string {
+  return `    {
+      id: '${escapeString(background.id)}',
+      imageUrl: '${escapeString(background.image.url)}'
+    }`;
+}
+
+function renderArena(arena: ParsedSessionPreset['arena']): string {
+  return `{ width: ${formatNumber(arena.width)}, height: ${formatNumber(arena.height)} }`;
 }
 
 function renderSpawnPlan(spawnPlan: ParsedSpawnPlan): string {
@@ -272,7 +315,6 @@ function renderLossCondition(lossCondition: ParsedLossCondition): string {
 function collectImports(area: ParsedSessionsArea): ReadonlyMap<ImportBucket, ReadonlySet<string>> {
   const imports = new Map<ImportBucket, Set<string>>();
   for (const preset of area.presets) {
-    addImport(imports, 'arenas', preset.arena.constName);
     addImport(imports, 'players', preset.player.constName);
     if (preset.loadout !== null) {
       for (const weapon of preset.loadout.weapons) {
@@ -287,6 +329,57 @@ function collectImports(area: ParsedSessionsArea): ReadonlyMap<ImportBucket, Rea
     }
   }
   return imports;
+}
+
+function collectPublicArenaImports(
+  preset: ParsedSessionPreset,
+  loadout: ParsedLoadout
+): ReadonlyMap<ImportBucket, ReadonlySet<string>> {
+  const imports = new Map<ImportBucket, Set<string>>();
+  addImport(imports, 'players', preset.player.constName);
+  for (const weapon of loadout.weapons) {
+    addImport(imports, 'weapons', weapon.constName);
+  }
+  return imports;
+}
+
+function requirePublicArenaPreset(area: ParsedSessionsArea): ParsedSessionPreset {
+  const preset = area.presets.find((candidate) => candidate.presetId === PUBLIC_ARENA_SOURCE_PRESET_ID);
+  if (preset === undefined) {
+    throw new ContentBuildError(
+      `${area.sourceDirectory}: missing ${PUBLIC_ARENA_SOURCE_PRESET_ID}.md public arena source preset`
+    );
+  }
+  return preset;
+}
+
+function requirePublicArenaLoadout(preset: ParsedSessionPreset): ParsedLoadout {
+  if (preset.loadout === null || preset.loadout.weapons.length === 0) {
+    throw new ContentBuildError(
+      `${preset.sourcePath}: Public Arena source preset must define at least one loadout weapon`
+    );
+  }
+  if (preset.loadout.selectedIndex === null) {
+    throw new ContentBuildError(
+      `${preset.sourcePath}: Public Arena source preset must select a loadout weapon`
+    );
+  }
+  return preset.loadout;
+}
+
+function resolvePublicArenaActiveBackgroundId(preset: ParsedSessionPreset): string {
+  const encounterBackgroundId =
+    preset.encounters.find((encounter) => encounter.backgroundId !== null)?.backgroundId ?? null;
+  if (encounterBackgroundId !== null) {
+    return encounterBackgroundId;
+  }
+  const firstBackground = preset.backgrounds[0];
+  if (firstBackground === undefined) {
+    throw new ContentBuildError(
+      `${preset.sourcePath}: expected at least one background for Public Arena projection`
+    );
+  }
+  return firstBackground.id;
 }
 
 function collectSpawnImports(

@@ -499,6 +499,18 @@ export function createAudio(init: AudioInit = {}): Audio {
           if (sampleId !== null) {
             playSampleById(sampleId);
           }
+          return;
+        }
+        if (event.targetArchetypeId !== null) {
+          const sampleId =
+            event.targetKind === 'boss'
+              ? dependencies.audioMappings.resolveBossSample('hit', event.targetArchetypeId)
+              : event.targetKind === 'enemy'
+                ? dependencies.audioMappings.resolveEnemySample('hit', event.targetArchetypeId)
+                : null;
+          if (sampleId !== null) {
+            playSampleById(sampleId);
+          }
         }
         return;
       }

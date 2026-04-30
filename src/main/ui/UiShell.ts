@@ -11,6 +11,13 @@ import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
+import type {
+  PublicArenaInputIntent,
+  PublicArenaPlayerFormSnapshot,
+  PublicArenaPresentationEvent,
+  PublicArenaSnapshot,
+  PublicArenaWorldBounds
+} from '../../shared/publicArenaProtocol';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import { createAudio, type Audio } from '../audio/Audio';
@@ -50,13 +57,28 @@ import {
   type SimWorkerHostOptions
 } from '../sim/SimWorkerHost';
 import {
+  publicArenaClientConfig,
+  type PublicArenaClientConfig
+} from '../publicArenaConfig';
+import {
+  createPublicArenaClient,
+  type PublicArenaClient,
+  type PublicArenaClientInit
+} from '../online/PublicArenaClient';
+import {
+  createPublicArenaRenderer,
+  type PublicArenaRenderer,
+  type PublicArenaRendererInit
+} from '../online/PublicArenaRenderer';
+import {
   createBrowserVibeJamPortalStorage,
   type VibeJamPortalStorage
 } from '../VibeJamPortalContext';
 import {
   createVibeJamPortalController,
   type VibeJamPortalController,
-  type VibeJamPortalControllerInit
+  type VibeJamPortalControllerInit,
+  type VibeJamPortalPublicArenaSnapshot
 } from '../VibeJamPortalController';
 
 import {
@@ -90,6 +112,26 @@ import {
 } from './PhaseTransitionCurtain';
 import { createHud, type Hud, type HudInit } from './Hud';
 import { createPauseOverlay, type PauseOverlay, type PauseOverlayInit } from './PauseOverlay';
+import {
+  createPublicArenaHud,
+  type PublicArenaHud,
+  type PublicArenaHudInit
+} from './PublicArenaHud';
+import {
+  createPublicArenaCombatAffordances,
+  type PublicArenaCombatAffordances,
+  type PublicArenaCombatAffordancesInit
+} from './PublicArenaCombatAffordances';
+import {
+  createPublicArenaMenuOverlay,
+  type PublicArenaMenuOverlay,
+  type PublicArenaMenuOverlayInit
+} from './PublicArenaMenuOverlay';
+import {
+  createPublicArenaStatusOverlay,
+  type PublicArenaStatusOverlay,
+  type PublicArenaStatusOverlayInit
+} from './PublicArenaStatusOverlay';
 import {
   createResultOverlay,
   type ResultOverlay,
@@ -144,6 +186,16 @@ type CreatePhaseTransitionCurtainFn = (
   init: PhaseTransitionCurtainInit
 ) => PhaseTransitionCurtain;
 type CreatePauseOverlayFn = (init: PauseOverlayInit) => PauseOverlay;
+type CreatePublicArenaHudFn = (init: PublicArenaHudInit) => PublicArenaHud;
+type CreatePublicArenaCombatAffordancesFn = (
+  init: PublicArenaCombatAffordancesInit
+) => PublicArenaCombatAffordances;
+type CreatePublicArenaMenuOverlayFn = (
+  init: PublicArenaMenuOverlayInit
+) => PublicArenaMenuOverlay;
+type CreatePublicArenaStatusOverlayFn = (
+  init: PublicArenaStatusOverlayInit
+) => PublicArenaStatusOverlay;
 type CreateResultOverlayFn = (init: ResultOverlayInit) => ResultOverlay;
 type CreateSettingsOverlayFn = (init: SettingsOverlayInit) => SettingsOverlay;
 type CreateStartupOverlayFn = (init: StartupOverlayInit) => StartupOverlay;
@@ -162,6 +214,8 @@ type CreateVibeJamPortalControllerFn = (
   init: VibeJamPortalControllerInit
 ) => VibeJamPortalController;
 type CreateAudioFn = () => Audio;
+type CreatePublicArenaClientFn = (init: PublicArenaClientInit) => PublicArenaClient;
+type CreatePublicArenaRendererFn = (init: PublicArenaRendererInit) => PublicArenaRenderer;
 type CreateClientSettingsStoreFn = () => ClientSettingsStore;
 type CreateDungeonBestWaveStoreFn = () => DungeonBestWaveStore;
 type CreateClientProgressionStoreFn = () => ClientProgressionStore;
@@ -175,12 +229,16 @@ export type UiShellInit = Readonly<{
   parent: HTMLElement;
   canvas: HTMLCanvasElement;
   autoStartPresetId?: ModePresetId;
+  autoStartPublicArena?: boolean;
   startupImageSrc?: string;
   buildSessionDefinition?: BuildSessionDefinitionFn;
   createSimWorkerHost?: CreateSimWorkerHostFn;
   createMenuOverlay?: CreateMenuOverlayFn;
   createPhaseTransitionCurtain?: CreatePhaseTransitionCurtainFn;
   createPauseOverlay?: CreatePauseOverlayFn;
+  createPublicArenaHud?: CreatePublicArenaHudFn;
+  createPublicArenaCombatAffordances?: CreatePublicArenaCombatAffordancesFn;
+  createPublicArenaStatusOverlay?: CreatePublicArenaStatusOverlayFn;
   createResultOverlay?: CreateResultOverlayFn;
   createSettingsOverlay?: CreateSettingsOverlayFn;
   createStartupOverlay?: CreateStartupOverlayFn;
@@ -195,6 +253,9 @@ export type UiShellInit = Readonly<{
   createTitleOverlay?: CreateTitleOverlayFn;
   createVibeJamPortalController?: CreateVibeJamPortalControllerFn;
   createAudio?: CreateAudioFn;
+  createPublicArenaClient?: CreatePublicArenaClientFn;
+  createPublicArenaRenderer?: CreatePublicArenaRendererFn;
+  createPublicArenaMenuOverlay?: CreatePublicArenaMenuOverlayFn;
   createClientSettingsStore?: CreateClientSettingsStoreFn;
   createDungeonBestWaveStore?: CreateDungeonBestWaveStoreFn;
   createClientProgressionStore?: CreateClientProgressionStoreFn;
@@ -204,6 +265,7 @@ export type UiShellInit = Readonly<{
   makeSeed?: () => number;
   portalHref?: string;
   portalStorage?: VibeJamPortalStorage | null;
+  publicArenaConfig?: PublicArenaClientConfig;
   windowTarget?: WindowTarget;
   documentTarget?: DocumentTarget;
   gameViewport?: GameViewportProvider;
@@ -219,6 +281,8 @@ export type UiShell = Readonly<{
 const LOADING_PHASE: UiShellPhase = { kind: 'loading' };
 const MENU_PHASE: UiShellPhase = { kind: 'menu' };
 const RUNNING_PHASE: UiShellPhase = { kind: 'running' };
+const ONLINE_CONNECTING_PHASE: UiShellPhase = { kind: 'onlineConnecting' };
+const ONLINE_PHASE: UiShellPhase = { kind: 'online' };
 const PAUSED_PHASE: UiShellPhase = { kind: 'paused' };
 const ESCAPE_KEY_CODE = 'Escape';
 const SPACE_KEY_CODE = 'Space';
@@ -228,6 +292,8 @@ const CAMPAIGN_PRESET_IDS = new Set<ModePresetId>([
   'campaign-normal',
   'campaign-hard'
 ]);
+const PUBLIC_ARENA_CONNECTING_MESSAGE = 'Joining Public Arena';
+const PUBLIC_ARENA_NOT_CONFIGURED_MESSAGE = 'Public arena server is not configured.';
 
 type SessionStartSource = 'campaign' | 'nonCampaign' | 'autoStart';
 
@@ -243,6 +309,21 @@ export function createUiShell(init: UiShellInit): UiShell {
   const canMountStartupOverlays =
     typeof (init.parent as Partial<HTMLElement>).appendChild === 'function' &&
     typeof document !== 'undefined';
+  const publicArenaStatusFactory =
+    init.createPublicArenaStatusOverlay ??
+    (canMountStartupOverlays ? createPublicArenaStatusOverlay : createNullPublicArenaStatusOverlay);
+  const publicArenaMenuFactory =
+    init.createPublicArenaMenuOverlay ??
+    (canMountStartupOverlays ? createPublicArenaMenuOverlay : createNullPublicArenaMenuOverlay);
+  const publicArenaHudFactory =
+    init.createPublicArenaHud ??
+    (canMountStartupOverlays ? createPublicArenaHud : createNullPublicArenaHud);
+  const publicArenaCombatAffordancesFactory = isMobileInputMode()
+    ? createNullPublicArenaCombatAffordances
+    : (init.createPublicArenaCombatAffordances ??
+      (canMountStartupOverlays
+        ? createPublicArenaCombatAffordances
+        : createNullPublicArenaCombatAffordances));
   const startupOverlayFactory =
     init.createStartupOverlay ??
     (canMountStartupOverlays ? createStartupOverlay : createNullStartupOverlay);
@@ -267,6 +348,10 @@ export function createUiShell(init: UiShellInit): UiShell {
   const portalControllerFactory =
     init.createVibeJamPortalController ?? createVibeJamPortalController;
   const audioFactory = init.createAudio ?? createAudio;
+  const publicArenaClientFactory =
+    init.createPublicArenaClient ?? createPublicArenaClient;
+  const publicArenaRendererFactory =
+    init.createPublicArenaRenderer ?? createPublicArenaRenderer;
   const clientSettingsStoreFactory =
     init.createClientSettingsStore ?? createClientSettingsStore;
   const dungeonBestWaveStoreFactory =
@@ -276,6 +361,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const runStartupPreload = init.runStartupPreload ?? defaultRunStartupPreload;
   const reloadPage = init.reloadPage ?? defaultReloadPage;
   const assignLocation = init.assignLocation ?? defaultAssignLocation;
+  const resolvedPublicArenaConfig = init.publicArenaConfig ?? publicArenaClientConfig;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
   const gameViewport =
@@ -283,6 +369,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     createWindowGameViewport(windowTarget, init.mobileProfile ?? { isMobile: false });
   const rendererWindowTarget = createRendererWindowTarget(gameViewport);
   const autoStartPresetId = init.autoStartPresetId ?? null;
+  const autoStartPublicArena = init.autoStartPublicArena === true;
   const portalStorage =
     init.portalStorage === undefined ? createBrowserVibeJamPortalStorage() : init.portalStorage;
   const portalController = portalControllerFactory({
@@ -295,6 +382,14 @@ export function createUiShell(init: UiShellInit): UiShell {
   let preloadedTextures: TextureMap | null = null;
   let renderer: Renderer | null = null;
   let input: InputController | null = null;
+  let publicArenaClient: PublicArenaClient | null = null;
+  let publicArenaRenderer: PublicArenaRenderer | null = null;
+  let publicArenaInput: InputController | null = null;
+  let publicArenaVisibleAreaCamera: VisibleAreaCamera | null = null;
+  let publicArenaSnapshot: PublicArenaSnapshot | null = null;
+  let publicArenaPlayerCap: number | null = null;
+  let publicArenaMenuOpen = false;
+  let publicArenaConnectionId = 0;
   let unsubscribeRendererSettings: (() => void) | null = null;
   let settingsVisible = false;
   let phase: UiShellPhase = LOADING_PHASE;
@@ -396,6 +491,13 @@ export function createUiShell(init: UiShellInit): UiShell {
       audio.playUi('buttonClick');
       log.info('menu teaser selected', { controlId });
     },
+    onStartPublicArena() {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
+        return;
+      }
+      audio.playUi('buttonClick');
+      startPublicArena();
+    },
     onStartDungeon() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
@@ -452,6 +554,31 @@ export function createUiShell(init: UiShellInit): UiShell {
     }
   });
 
+  const publicArenaStatus = publicArenaStatusFactory({
+    parent: init.parent,
+    onBack() {
+      audio.playUi('buttonClick');
+      exitPublicArenaToMenu();
+    }
+  });
+  const publicArenaMenu = publicArenaMenuFactory({
+    parent: init.parent,
+    onResume() {
+      audio.playUi('buttonClick');
+      resumePublicArenaMenu();
+    },
+    onExit() {
+      audio.playUi('buttonClick');
+      exitPublicArenaToMenu();
+    }
+  });
+  const publicArenaHud = publicArenaHudFactory({
+    parent: init.parent
+  });
+  const publicArenaCombatAffordances = publicArenaCombatAffordancesFactory({
+    parent: init.parent
+  });
+
   const result = resultFactory({
     parent: init.parent,
     onBackToMenu() {
@@ -502,6 +629,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         startupErrorOverlay.hide();
         menu.hide();
         pause.hide();
+        publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
+        publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
         syncSettingsVisibility();
@@ -511,6 +643,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         startupErrorOverlay.hide();
         menu.show();
         pause.hide();
+        publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
+        publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
         syncSettingsVisibility();
@@ -520,6 +657,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         startupErrorOverlay.hide();
         menu.hide();
         pause.hide();
+        publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
+        publicArenaHud.hide();
         result.hide();
         if (isMobileInputMode()) {
           mobileControls.show();
@@ -528,11 +670,55 @@ export function createUiShell(init: UiShellInit): UiShell {
         }
         syncSettingsVisibility();
         return;
+      case 'onlineConnecting':
+        startupOverlay.hide();
+        startupErrorOverlay.hide();
+        menu.hide();
+        pause.hide();
+        result.hide();
+        mobileControls.hide();
+        publicArenaStatus.show(PUBLIC_ARENA_CONNECTING_MESSAGE);
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
+        publicArenaHud.hide();
+        syncSettingsVisibility();
+        return;
+      case 'online':
+        startupOverlay.hide();
+        startupErrorOverlay.hide();
+        menu.hide();
+        pause.hide();
+        result.hide();
+        if (isMobileInputMode() && !publicArenaMenuOpen) {
+          mobileControls.show();
+        } else {
+          mobileControls.hide();
+        }
+        publicArenaStatus.hide();
+        if (publicArenaMenuOpen) {
+          publicArenaMenu.show();
+        } else {
+          publicArenaMenu.hide();
+        }
+        if (!isMobileInputMode() && !publicArenaMenuOpen) {
+          publicArenaCombatAffordances.show();
+        } else {
+          publicArenaCombatAffordances.hide();
+        }
+        publicArenaHud.show();
+        syncSettingsVisibility();
+        return;
       case 'paused':
         startupOverlay.hide();
         startupErrorOverlay.hide();
         menu.hide();
         pause.show();
+        publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
+        publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
         syncSettingsVisibility();
@@ -542,6 +728,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         startupErrorOverlay.hide();
         menu.hide();
         pause.hide();
+        publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
+        publicArenaHud.hide();
         result.show(phase.viewModel);
         mobileControls.hide();
         syncSettingsVisibility();
@@ -550,6 +741,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         startupOverlay.hide();
         menu.hide();
         pause.hide();
+        publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
+        publicArenaHud.hide();
         result.hide();
         startupErrorOverlay.show(phase.message);
         mobileControls.hide();
@@ -657,6 +853,276 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (phase.kind !== 'menu' || isTransitionActive()) return;
     const preset = resolveModePreset(presetId);
     void startPresetWithTransition(preset, source);
+  }
+
+  function startPublicArena(): void {
+    if (phase.kind !== 'menu' || publicArenaClient !== null) {
+      return;
+    }
+    const serverUrl = resolvedPublicArenaConfig.serverUrl;
+    if (serverUrl === null) {
+      menu.showFeedback(PUBLIC_ARENA_NOT_CONFIGURED_MESSAGE);
+      return;
+    }
+
+    const connectionId = publicArenaConnectionId + 1;
+    publicArenaConnectionId = connectionId;
+    setPhase(ONLINE_CONNECTING_PHASE);
+    const nextPublicArenaClient = publicArenaClientFactory({
+      serverUrl,
+      onAccepted(message) {
+        if (!isCurrentPublicArenaConnection(connectionId)) {
+          return;
+        }
+        attachPublicArenaPresentation(message.playerCap);
+        log.info('public arena accepted', {
+          playerId: message.playerId,
+          population: message.population
+        });
+        setPhase(ONLINE_PHASE);
+      },
+      onRejected(message) {
+        if (!finishPublicArenaConnection(connectionId)) {
+          return;
+        }
+        tearDownPublicArenaPresentation();
+        setPhase(MENU_PHASE);
+        menu.showFeedback(message.message);
+      },
+      onSnapshot(snapshot) {
+        if (!isCurrentPublicArenaConnection(connectionId)) {
+          return;
+        }
+        publicArenaSnapshot = snapshot;
+        const visibleAreaCamera = ensurePublicArenaRenderer(snapshot.arena);
+        ensurePublicArenaInput(snapshot.arena, visibleAreaCamera);
+        publicArenaHud.update(snapshot, publicArenaPlayerCap);
+        publicArenaCombatAffordances.update(snapshot);
+      },
+      onPresentation(event) {
+        if (!isCurrentPublicArenaConnection(connectionId)) {
+          return;
+        }
+        handlePublicArenaPresentationEvent(event);
+      },
+      onClose(reason) {
+        if (!finishPublicArenaConnection(connectionId)) {
+          return;
+        }
+        tearDownPublicArenaPresentation();
+        setPhase(MENU_PHASE);
+        menu.showFeedback(reason.message);
+      }
+    });
+    if (!isCurrentPublicArenaConnection(connectionId)) {
+      nextPublicArenaClient.disconnect();
+      return;
+    }
+    publicArenaClient = nextPublicArenaClient;
+  }
+
+  function isCurrentPublicArenaConnection(connectionId: number): boolean {
+    return publicArenaConnectionId === connectionId;
+  }
+
+  function finishPublicArenaConnection(connectionId: number): boolean {
+    if (!isCurrentPublicArenaConnection(connectionId)) {
+      return false;
+    }
+    publicArenaConnectionId += 1;
+    publicArenaClient = null;
+    return true;
+  }
+
+  function handlePublicArenaPresentationEvent(event: PublicArenaPresentationEvent): void {
+    const runtimeEvent = publicArenaPresentationToAudioEvent(event);
+    if (runtimeEvent !== null) {
+      audio.handleEvent(runtimeEvent);
+    }
+  }
+
+  function attachPublicArenaPresentation(playerCap: number): void {
+    tearDownPublicArenaPresentation();
+    publicArenaSnapshot = null;
+    publicArenaPlayerCap = playerCap;
+    portalController.attachPublicArena();
+    publicArenaHud.update(null, playerCap);
+    publicArenaCombatAffordances.update(null);
+  }
+
+  function ensurePublicArenaRenderer(arena: PublicArenaWorldBounds): VisibleAreaCamera {
+    if (publicArenaRenderer !== null) {
+      if (publicArenaVisibleAreaCamera === null) {
+        throw new Error('Public arena renderer is missing its visible-area camera.');
+      }
+      return publicArenaVisibleAreaCamera;
+    }
+    if (preloadedTextures === null) {
+      throw new Error('Public arena renderer requires preloaded sprite textures.');
+    }
+    const visibleAreaCamera = createVisibleAreaCamera({
+      arena,
+      profile: visibleAreaProfile(),
+      effectiveViewport: currentEffectiveViewport(),
+      playerPosition: findPublicArenaSelfPosition()
+    });
+    const nextRenderer = publicArenaRendererFactory({
+      canvas: init.canvas,
+      renderScalePreset: clientSettingsStore.get().renderScalePreset,
+      arena,
+      spriteTextures: preloadedTextures,
+      visibleAreaCamera,
+      getSnapshot: () => publicArenaSnapshot,
+      getPortalDescriptors: portalController.portals,
+      getAim: () =>
+        publicArenaInput !== null && publicArenaInput.isActive()
+          ? publicArenaInput.currentAim()
+          : null,
+      windowTarget: rendererWindowTarget
+    });
+    unsubscribeRendererSettings?.();
+    unsubscribeRendererSettings = clientSettingsStore.subscribe((settings) => {
+      nextRenderer.applyScalePolicy(settings.renderScalePreset);
+    });
+    publicArenaRenderer = nextRenderer;
+    publicArenaVisibleAreaCamera = visibleAreaCamera;
+    return visibleAreaCamera;
+  }
+
+  function ensurePublicArenaInput(
+    arena: PublicArenaWorldBounds,
+    visibleAreaCamera: VisibleAreaCamera
+  ): void {
+    if (publicArenaInput !== null) {
+      return;
+    }
+    const activePublicArenaClient = publicArenaClient;
+    if (activePublicArenaClient === null || phase.kind !== 'online' || publicArenaMenuOpen) {
+      return;
+    }
+    const nextInput = createPublicArenaInputController(
+      arena,
+      visibleAreaCamera,
+      activePublicArenaClient
+    );
+    publicArenaInput = nextInput;
+    nextInput.start();
+  }
+
+  function createPublicArenaInputController(
+    arena: PublicArenaWorldBounds,
+    visibleAreaCamera: VisibleAreaCamera,
+    activePublicArenaClient: PublicArenaClient
+  ): InputController {
+    const inputCommandSink = (command: InputCommand): void => {
+      const intent = publicArenaIntentFromInput(command);
+      if (intent === null) {
+        return;
+      }
+      activePublicArenaClient.sendInput(intent);
+    };
+    const sharedInput = {
+      pixelsPerWorldUnit: () =>
+        pixelsPerWorldUnitFromVisibleArea(init.canvas, visibleAreaCamera),
+      visibleArea: () => visibleAreaCamera.visibleArea(),
+      initialAim: findPublicArenaSelfPosition(),
+      onCommand: inputCommandSink
+    };
+    if (isMobileInputMode()) {
+      return mobileInputFactory({
+        ...sharedInput,
+        surface: init.parent,
+        pauseElement: () => mobileControls.pauseButtonElement(),
+        weaponSlotElements: () => queryWeaponSlotElements(init.parent),
+        onPause: openPublicArenaMenu
+      });
+    }
+    return inputFactory({
+      ...sharedInput,
+      canvas: init.canvas
+    });
+  }
+
+  function openPublicArenaMenu(): void {
+    if (phase.kind !== 'online' || publicArenaMenuOpen) {
+      return;
+    }
+    publicArenaMenuOpen = true;
+    stopPublicArenaInputForMenu();
+    applyPhaseVisibility();
+  }
+
+  function resumePublicArenaMenu(): void {
+    if (phase.kind !== 'online' || !publicArenaMenuOpen) {
+      return;
+    }
+    publicArenaMenuOpen = false;
+    applyPhaseVisibility();
+    const snapshot = publicArenaSnapshot;
+    const visibleAreaCamera = publicArenaVisibleAreaCamera;
+    if (snapshot === null || visibleAreaCamera === null) {
+      return;
+    }
+    ensurePublicArenaInput(snapshot.arena, visibleAreaCamera);
+  }
+
+  function stopPublicArenaInputForMenu(): void {
+    const activePublicArenaClient = publicArenaClient;
+    activePublicArenaClient?.sendInput({ kind: 'move', dx: 0, dy: 0 });
+    activePublicArenaClient?.sendInput({ kind: 'fire', phase: 'stop' });
+    const previousInput = publicArenaInput;
+    publicArenaInput = null;
+    previousInput?.stop();
+  }
+
+  function findPublicArenaSelfPosition(): Readonly<{ x: number; y: number }> {
+    const snapshot = publicArenaSnapshot;
+    const self = snapshot?.players.find((player) => player.id === snapshot.selfId);
+    return self === undefined ? { x: 0, y: 0 } : { x: self.x, y: self.y };
+  }
+
+  function publicArenaPortalSnapshot(): VibeJamPortalPublicArenaSnapshot | null {
+    const snapshot = publicArenaSnapshot;
+    if (snapshot === null) {
+      return null;
+    }
+    const self = snapshot.players.find((player) => player.id === snapshot.selfId);
+    return {
+      simTimeMs: snapshot.simTimeMs,
+      player: self === undefined ? null : { x: self.x, y: self.y }
+    };
+  }
+
+  function tearDownPublicArenaPresentation(): void {
+    publicArenaMenuOpen = false;
+    publicArenaMenu.hide();
+    publicArenaCombatAffordances.hide();
+    if (
+      publicArenaRenderer === null &&
+      publicArenaInput === null &&
+      publicArenaVisibleAreaCamera === null &&
+      publicArenaSnapshot === null &&
+      publicArenaPlayerCap === null
+    ) {
+      publicArenaHud.hide();
+      publicArenaCombatAffordances.hide();
+      return;
+    }
+    const previousInput = publicArenaInput;
+    const previousRenderer = publicArenaRenderer;
+    const previousUnsubscribeRendererSettings = unsubscribeRendererSettings;
+    publicArenaInput = null;
+    publicArenaRenderer = null;
+    publicArenaVisibleAreaCamera = null;
+    publicArenaSnapshot = null;
+    publicArenaPlayerCap = null;
+    unsubscribeRendererSettings = null;
+    portalController.detachSession();
+    previousInput?.stop();
+    previousUnsubscribeRendererSettings?.();
+    previousRenderer?.dispose();
+    publicArenaHud.hide();
+    publicArenaCombatAffordances.hide();
   }
 
   async function startPresetWithTransition(
@@ -832,6 +1298,11 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function exitToMenu(): void {
     const previousPhase = phase;
+    if (previousPhase.kind === 'onlineConnecting' || previousPhase.kind === 'online') {
+      exitPublicArenaToMenu();
+      return;
+    }
+
     if (previousPhase.kind === 'running' || previousPhase.kind === 'paused') {
       tearDownClientSession();
       sim.stopSession();
@@ -843,6 +1314,18 @@ export function createUiShell(init: UiShellInit): UiShell {
       return;
     }
 
+    setPhase(MENU_PHASE);
+  }
+
+  function exitPublicArenaToMenu(): void {
+    if (phase.kind !== 'onlineConnecting' && phase.kind !== 'online') {
+      return;
+    }
+    const activePublicArenaClient = publicArenaClient;
+    publicArenaConnectionId += 1;
+    tearDownPublicArenaPresentation();
+    publicArenaClient = null;
+    activePublicArenaClient?.disconnect();
     setPhase(MENU_PHASE);
   }
 
@@ -953,13 +1436,25 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function onPointerLockChange(): void {
     // Browsers consume the Escape keydown that releases Pointer Lock, so
-    // lock loss is the reliable pause trigger for the player-facing overlay.
+    // lock loss is the reliable desktop trigger for pause or the online menu.
     if (documentTarget.pointerLockElement !== null) return;
+    if (phase.kind === 'online' && publicArenaInput !== null) {
+      openPublicArenaMenu();
+      return;
+    }
     if (activeSession === null) return;
     enterOverlayPause();
   }
 
   function onKeyDown(event: KeyboardEvent): void {
+    if (phase.kind === 'online') {
+      if (event.code === SPACE_KEY_CODE || event.code === ESCAPE_KEY_CODE) {
+        event.preventDefault();
+        openPublicArenaMenu();
+      }
+      return;
+    }
+
     if (event.code === SPACE_KEY_CODE) {
       if (!isRunningSessionActive()) return;
       event.preventDefault();
@@ -1003,6 +1498,7 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function fitToWindow(): void {
     renderer?.fitToWindow();
+    publicArenaRenderer?.fitToWindow();
   }
 
   function createSessionInputController(
@@ -1013,9 +1509,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       sim.sendInput(applyAimAssist(command, session.rules.aimAssist, sim.snapshotPair().curr));
     };
     const sharedInput = {
-      arena: session.arena,
       pixelsPerWorldUnit: () =>
         pixelsPerWorldUnitFromVisibleArea(init.canvas, visibleAreaCamera),
+      visibleArea: () => visibleAreaCamera.visibleArea(),
       initialAim: session.player.position,
       onCommand: inputCommandSink
     };
@@ -1101,7 +1597,9 @@ export function createUiShell(init: UiShellInit): UiShell {
         preloadedTextures = textures;
         texturesOwnedByShell = true;
         setPhase(MENU_PHASE);
-        if (autoStartPresetId !== null) {
+        if (autoStartPublicArena) {
+          startPublicArena();
+        } else if (autoStartPresetId !== null) {
           startPreset(resolveModePreset(autoStartPresetId), {
             startInput: true,
             source: 'autoStart'
@@ -1136,6 +1634,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       if (activeSession !== null) {
         portalController.update(snapshotPair.curr, phase);
       }
+      if (publicArenaClient !== null || publicArenaRenderer !== null) {
+        portalController.updatePublicArena(publicArenaPortalSnapshot(), phase);
+      }
       if (isRunningSessionActive()) {
         hud.update(snapshotPair);
       }
@@ -1151,6 +1652,11 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
       audio.update(snapshotPair, phase, snapshotPair.curr?.encounter ?? null);
       renderer?.render();
+      input?.syncAim();
+      if (phase.kind === 'online') {
+        publicArenaRenderer?.render();
+        publicArenaInput?.syncAim();
+      }
     },
     phase(): UiShellPhase {
       return phase;
@@ -1158,6 +1664,11 @@ export function createUiShell(init: UiShellInit): UiShell {
     dispose(): void {
       disposed = true;
       detach();
+      const activePublicArenaClient = publicArenaClient;
+      publicArenaConnectionId += 1;
+      tearDownPublicArenaPresentation();
+      publicArenaClient = null;
+      activePublicArenaClient?.disconnect();
       tearDownClientSession();
       releasePreloadedTextures();
       startupOverlay.dispose();
@@ -1165,6 +1676,10 @@ export function createUiShell(init: UiShellInit): UiShell {
       phaseTransitionCurtain.dispose();
       menu.dispose();
       pause.dispose();
+      publicArenaHud.dispose();
+      publicArenaCombatAffordances.dispose();
+      publicArenaMenu.dispose();
+      publicArenaStatus.dispose();
       result.dispose();
       settingsOverlay.dispose();
       mobileControls.dispose();
@@ -1271,6 +1786,97 @@ function formatStartupError(error: unknown): string {
   return 'Unknown preload error';
 }
 
+function publicArenaPresentationToAudioEvent(
+  event: PublicArenaPresentationEvent
+): RuntimeEvent | null {
+  switch (event.kind) {
+    case 'fire':
+      return {
+        kind: 'fire',
+        simTime: event.simTimeMs,
+        shooterId: 0,
+        ownerKind: 'player',
+        weaponArchetypeId: event.weaponArchetypeId,
+        originX: event.originX,
+        originY: event.originY,
+        dirX: event.dirX,
+        dirY: event.dirY
+      };
+    case 'explosion':
+      return {
+        kind: 'explosion',
+        simTime: event.simTimeMs,
+        projectileId: 0,
+        ownerKind: 'player',
+        weaponArchetypeId: event.weaponArchetypeId,
+        damage: event.damage,
+        radius: event.radius,
+        x: event.x,
+        y: event.y
+      };
+    case 'hit':
+      return {
+        kind: 'hit',
+        simTime: event.simTimeMs,
+        projectileId: 0,
+        targetId: 0,
+        targetKind: publicArenaFormToRuntimeEntityKind(event.targetForm),
+        targetArchetypeId: event.targetForm.archetypeId,
+        weaponArchetypeId: event.weaponArchetypeId,
+        damage: event.damage,
+        impactDirX: event.impactDirX,
+        impactDirY: event.impactDirY,
+        x: event.x,
+        y: event.y
+      };
+    case 'death':
+      return {
+        kind: 'death',
+        simTime: event.simTimeMs,
+        entityId: 0,
+        entityKind: publicArenaFormToRuntimeEntityKind(event.form),
+        archetypeId: event.form.archetypeId,
+        weaponArchetypeId: event.weaponArchetypeId,
+        impactDirX: null,
+        impactDirY: null,
+        x: event.x,
+        y: event.y
+      };
+    case 'levelUp':
+    case 'spawn':
+      return null;
+    default:
+      return event satisfies never;
+  }
+}
+
+function publicArenaFormToRuntimeEntityKind(
+  form: PublicArenaPlayerFormSnapshot
+): 'enemy' | 'boss' {
+  switch (form.kind) {
+    case 'slime':
+      return 'enemy';
+    case 'boss':
+      return 'boss';
+    default:
+      return form satisfies never;
+  }
+}
+
+function publicArenaIntentFromInput(command: InputCommand): PublicArenaInputIntent | null {
+  switch (command.kind) {
+    case 'move':
+    case 'aim':
+    case 'fire':
+    case 'selectWeaponSlot':
+      return command;
+    case 'holsterWeapon':
+      return null;
+    default:
+      assertNever(command);
+  }
+}
+
 function createNullStartupOverlay(_init: StartupOverlayInit): StartupOverlay {
   return {
     show(): void {},
@@ -1311,6 +1917,58 @@ function createNullMobileControlsOverlay(
     },
     pauseButtonElement(): HTMLElement {
       return pauseButton;
+    },
+    dispose(): void {}
+  };
+}
+
+function createNullPublicArenaHud(_init: PublicArenaHudInit): PublicArenaHud {
+  return {
+    show(): void {},
+    update(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
+    },
+    dispose(): void {}
+  };
+}
+
+function createNullPublicArenaCombatAffordances(
+  _init: PublicArenaCombatAffordancesInit
+): PublicArenaCombatAffordances {
+  return {
+    show(): void {},
+    update(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
+    },
+    dispose(): void {}
+  };
+}
+
+function createNullPublicArenaStatusOverlay(
+  _init: PublicArenaStatusOverlayInit
+): PublicArenaStatusOverlay {
+  return {
+    show(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
+    },
+    dispose(): void {}
+  };
+}
+
+function createNullPublicArenaMenuOverlay(
+  _init: PublicArenaMenuOverlayInit
+): PublicArenaMenuOverlay {
+  return {
+    show(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
     },
     dispose(): void {}
   };

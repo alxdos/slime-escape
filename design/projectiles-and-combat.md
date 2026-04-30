@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-29 (story 030 prep: `CombatSystem` accepts companion shooter state, companion target shapes, and friendly player/companion damage filtering; companion AI/boop/rescue remain in [companion-combat.md](companion-combat.md). Earlier: 2026-04-24 cleanup pass: legacy single-primary projectile shape no longer reproduced as a typed example; only the migration rule remains in one sentence. 017 alignment: data shapes live in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md); this file owns stable `CombatSystem` responsibilities, tick order, hit/damage pipeline and integration boundaries. 018 alignment: mines and field/status follow-ups are delegated to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
+- Updated: 2026-04-30 (story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-29 story 030 prep: `CombatSystem` accepts companion shooter state, companion target shapes, and friendly player/companion damage filtering; companion AI/boop/rescue remain in [companion-combat.md](companion-combat.md). Earlier: 2026-04-24 cleanup pass: legacy single-primary projectile shape no longer reproduced as a typed example; only the migration rule remains in one sentence. 017 alignment: data shapes live in [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md); this file owns stable `CombatSystem` responsibilities, tick order, hit/damage pipeline and integration boundaries. 018 alignment: mines and field/status follow-ups are delegated to [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md).)
 
 ## Context
 
@@ -137,3 +137,4 @@ The order is intentional: fragments spawned by an explosion do not hit in the sa
 - [companion-combat.md](companion-combat.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
 - [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)

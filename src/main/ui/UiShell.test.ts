@@ -6,13 +6,29 @@ import {
   getPlayableModeCatalog,
   type ModePresetId
 } from '../../shared/content/sessions';
+import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/content/publicArena';
+import { PUBLIC_ARENA_BOSS_LEVEL } from '../../shared/publicArenaProgression';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
+import type {
+  PublicArenaInputIntent,
+  PublicArenaPresentationEvent,
+  PublicArenaSnapshot
+} from '../../shared/publicArenaProtocol';
+import { PUBLIC_ARENA_PROTOCOL_VERSION } from '../../shared/publicArenaProtocol';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import type { MobileInputControllerInit } from '../input/MobileInputController';
+import type {
+  PublicArenaClient,
+  PublicArenaClientInit
+} from '../online/PublicArenaClient';
+import type {
+  PublicArenaRenderer,
+  PublicArenaRendererInit
+} from '../online/PublicArenaRenderer';
 import type {
   ClientProgression,
   ClientProgressionStore
@@ -58,6 +74,19 @@ import type {
   PhaseTransitionCurtainInit
 } from './PhaseTransitionCurtain';
 import type { PauseOverlay, PauseOverlayInit } from './PauseOverlay';
+import type { PublicArenaHud, PublicArenaHudInit } from './PublicArenaHud';
+import type {
+  PublicArenaCombatAffordances,
+  PublicArenaCombatAffordancesInit
+} from './PublicArenaCombatAffordances';
+import type {
+  PublicArenaMenuOverlay,
+  PublicArenaMenuOverlayInit
+} from './PublicArenaMenuOverlay';
+import type {
+  PublicArenaStatusOverlay,
+  PublicArenaStatusOverlayInit
+} from './PublicArenaStatusOverlay';
 import type { ResultOutcome, ResultOverlay, ResultOverlayInit } from './ResultOverlay';
 import type { ResultViewModel } from './ResultViewModel';
 import type { SettingsOverlay, SettingsOverlayInit } from './SettingsOverlay';
@@ -255,6 +284,7 @@ function createMenuHarness() {
   let onOpenScreen: ((screenId: MenuSubscreenId) => void) | null = null;
   let onBackToMainMenu: (() => void) | null = null;
   let onTeaser: ((controlId: TeaserControlId) => void) | null = null;
+  let onStartPublicArena: (() => void) | null = null;
   let onStartDungeon: (() => void) | null = null;
   let onPurchasePet: MenuOverlayInit['onPurchasePet'] | null = null;
   let onSelectPet: MenuOverlayInit['onSelectPet'] | null = null;
@@ -264,6 +294,7 @@ function createMenuHarness() {
   let modes: ReadonlyArray<{ presetId: ModePresetId }> = [];
   const labViewModels: MenuLabViewModel[] = [];
   const petsViewModels: MenuPetsViewModel[] = [];
+  const feedbackMessages: string[] = [];
   let activeScreen: MenuScreenId = 'main';
   let dungeonBestWave = 0;
   let root: FakeDomElement | null = null;
@@ -296,6 +327,9 @@ function createMenuHarness() {
     setPetsViewModel(viewModel): void {
       petsViewModels.push(viewModel);
     },
+    showFeedback(message): void {
+      feedbackMessages.push(message);
+    },
     isVisible(): boolean {
       return visible;
     },
@@ -312,6 +346,7 @@ function createMenuHarness() {
       onOpenScreen = init.onOpenScreen;
       onBackToMainMenu = init.onBackToMainMenu;
       onTeaser = init.onTeaser;
+      onStartPublicArena = init.onStartPublicArena;
       onStartDungeon = init.onStartDungeon;
       onPurchasePet = init.onPurchasePet;
       onSelectPet = init.onSelectPet;
@@ -358,6 +393,12 @@ function createMenuHarness() {
       }
       onTeaser?.(controlId);
     },
+    startPublicArena(): void {
+      if (!visible) {
+        return;
+      }
+      onStartPublicArena?.();
+    },
     startDungeon(): void {
       if (!visible) {
         return;
@@ -402,6 +443,9 @@ function createMenuHarness() {
     },
     latestPetsViewModel(): MenuPetsViewModel | null {
       return petsViewModels.at(-1) ?? null;
+    },
+    latestFeedback(): string | null {
+      return feedbackMessages.at(-1) ?? null;
     },
     hoverButton(): void {
       if (!visible) {
@@ -612,6 +656,310 @@ function createPauseHarness() {
     escapePaths(): ReadonlyArray<EscapeProgressPathViewModel> {
       return escapePaths;
     }
+  };
+}
+
+function createPublicArenaStatusHarness() {
+  let visible = false;
+  let message = '';
+  let onBack: (() => void) | null = null;
+  let root: FakeDomElement | null = null;
+
+  const overlay: PublicArenaStatusOverlay = {
+    show(nextMessage): void {
+      visible = true;
+      message = nextMessage;
+      if (root !== null) {
+        root.style.display = 'flex';
+      }
+    },
+    hide(): void {
+      visible = false;
+      if (root !== null) {
+        root.style.display = 'none';
+      }
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    dispose(): void {
+      root?.remove();
+      root = null;
+    }
+  };
+
+  return {
+    factory(init: PublicArenaStatusOverlayInit): PublicArenaStatusOverlay {
+      onBack = init.onBack;
+      root = new FakeDomElement();
+      root.dataset['role'] = 'public-arena-status-overlay';
+      root.style.zIndex = '95';
+      root.style.display = 'none';
+      appendHarnessRoot(init.parent, root);
+      return overlay;
+    },
+    back(): void {
+      onBack?.();
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    message(): string {
+      return message;
+    }
+  };
+}
+
+function createPublicArenaMenuHarness() {
+  let visible = false;
+  let onResume: (() => void) | null = null;
+  let onExit: (() => void) | null = null;
+  let root: FakeDomElement | null = null;
+
+  const overlay: PublicArenaMenuOverlay = {
+    show(): void {
+      visible = true;
+      if (root !== null) {
+        root.style.display = 'flex';
+      }
+    },
+    hide(): void {
+      visible = false;
+      if (root !== null) {
+        root.style.display = 'none';
+      }
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    dispose(): void {
+      root?.remove();
+      root = null;
+    }
+  };
+
+  return {
+    factory(init: PublicArenaMenuOverlayInit): PublicArenaMenuOverlay {
+      onResume = init.onResume;
+      onExit = init.onExit;
+      root = new FakeDomElement();
+      root.dataset['role'] = 'public-arena-menu-overlay';
+      root.style.zIndex = '88';
+      root.style.display = 'none';
+      appendHarnessRoot(init.parent, root);
+      return overlay;
+    },
+    resume(): void {
+      onResume?.();
+    },
+    exit(): void {
+      onExit?.();
+    },
+    isVisible(): boolean {
+      return visible;
+    }
+  };
+}
+
+function createPublicArenaHudHarness() {
+  let visible = false;
+  let lastLevel = '';
+  let lastPopulation = '';
+
+  const hud: PublicArenaHud = {
+    show(): void {
+      visible = true;
+    },
+    update(snapshot, _playerCap): void {
+      const self = snapshot?.players.find((player) => player.id === snapshot.selfId) ?? null;
+      lastLevel =
+        self === null
+          ? `Level --/${PUBLIC_ARENA_BOSS_LEVEL}`
+          : `Level ${Math.min(self.level, PUBLIC_ARENA_BOSS_LEVEL)}/${PUBLIC_ARENA_BOSS_LEVEL}`;
+      lastPopulation = snapshot === null ? 'Online --' : `Online ${snapshot.population}`;
+    },
+    hide(): void {
+      visible = false;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    dispose(): void {}
+  };
+
+  return {
+    factory(_init: PublicArenaHudInit): PublicArenaHud {
+      return hud;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    level(): string {
+      return lastLevel;
+    },
+    population(): string {
+      return lastPopulation;
+    }
+  };
+}
+
+function createPublicArenaCombatAffordancesHarness() {
+  let visible = false;
+  let createCount = 0;
+  let updateCount = 0;
+  let lastSnapshot: PublicArenaSnapshot | null | undefined;
+
+  const affordances: PublicArenaCombatAffordances = {
+    show(): void {
+      visible = true;
+    },
+    update(snapshot): void {
+      updateCount += 1;
+      lastSnapshot = snapshot;
+    },
+    hide(): void {
+      visible = false;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    dispose(): void {}
+  };
+
+  return {
+    factory(_init: PublicArenaCombatAffordancesInit): PublicArenaCombatAffordances {
+      createCount += 1;
+      return affordances;
+    },
+    createCount(): number {
+      return createCount;
+    },
+    updateCount(): number {
+      return updateCount;
+    },
+    lastSnapshot(): PublicArenaSnapshot | null | undefined {
+      return lastSnapshot;
+    },
+    isVisible(): boolean {
+      return visible;
+    }
+  };
+}
+
+function createPublicArenaRendererHarness() {
+  let lastInit: PublicArenaRendererInit | null = null;
+  const calls = {
+    render: 0,
+    fitToWindow: 0,
+    applyScalePolicy: 0,
+    dispose: 0
+  };
+
+  return {
+    factory(init: PublicArenaRendererInit): PublicArenaRenderer {
+      lastInit = init;
+      return {
+        render(): void {
+          calls.render += 1;
+        },
+        fitToWindow(): void {
+          calls.fitToWindow += 1;
+        },
+        applyScalePolicy(): void {
+          calls.applyScalePolicy += 1;
+        },
+        dispose(): void {
+          calls.dispose += 1;
+        }
+      };
+    },
+    lastInit(): PublicArenaRendererInit | null {
+      return lastInit;
+    },
+    calls
+  };
+}
+
+function createPublicArenaClientHarness() {
+  let lastInit: PublicArenaClientInit | null = null;
+  let disconnectCalls = 0;
+  const sentInputs: PublicArenaInputIntent[] = [];
+
+  return {
+    factory(init: PublicArenaClientInit): PublicArenaClient {
+      lastInit = init;
+      return {
+        sendInput(intent): void {
+          sentInputs.push(intent);
+        },
+        disconnect(): void {
+          disconnectCalls += 1;
+        }
+      };
+    },
+    accept(): void {
+      lastInit?.onAccepted({
+        protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
+        playerId: 'socket-a',
+        arena: PUBLIC_ARENA_WORLD_BOUNDS,
+        playerCap: 200,
+        population: 1,
+        tickHz: 60,
+        snapshotHz: 30
+      });
+    },
+    reject(message: string): void {
+      lastInit?.onRejected({
+        protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
+        reason: 'arenaFull',
+        message,
+        playerCap: 200,
+        population: 200
+      });
+    },
+    close(message: string): void {
+      lastInit?.onClose({
+        reason: 'serverError',
+        message
+      });
+    },
+    presentation(event: PublicArenaPresentationEvent): void {
+      lastInit?.onPresentation(event);
+    },
+    snapshot(): void {
+      lastInit?.onSnapshot(makePublicArenaSnapshot());
+    },
+    lastInit(): PublicArenaClientInit | null {
+      return lastInit;
+    },
+    disconnectCalls(): number {
+      return disconnectCalls;
+    },
+    sentInputs(): ReadonlyArray<PublicArenaInputIntent> {
+      return sentInputs;
+    }
+  };
+}
+
+function makePublicArenaSnapshot(): PublicArenaSnapshot {
+  return {
+    simTimeMs: 120,
+    selfId: 'socket-a',
+    arena: PUBLIC_ARENA_WORLD_BOUNDS,
+    population: 7,
+    players: [
+      {
+        id: 'socket-a',
+        x: 1,
+        y: 2,
+        hp: 20,
+        maxHp: 20,
+        level: 3,
+        form: { kind: 'slime', archetypeId: 'slime-hornling' },
+        selectedWeaponIndex: 0
+      }
+    ],
+    projectiles: []
   };
 }
 
@@ -842,6 +1190,7 @@ function createInputHarness() {
     create: 0,
     start: 0,
     stop: 0,
+    syncAim: 0,
     requestLock: 0
   };
   let lastInit: InputControllerInit | null = null;
@@ -863,6 +1212,9 @@ function createInputHarness() {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim(): void {
+          calls.syncAim += 1;
+        },
         requestLock(): void {
           calls.requestLock += 1;
         }
@@ -880,6 +1232,7 @@ function createMobileInputHarness() {
     create: 0,
     start: 0,
     stop: 0,
+    syncAim: 0,
     requestLock: 0
   };
   let lastInit: MobileInputControllerInit | null = null;
@@ -900,6 +1253,9 @@ function createMobileInputHarness() {
         },
         currentAim() {
           return { x: 0, y: 0 };
+        },
+        syncAim(): void {
+          calls.syncAim += 1;
         },
         requestLock(): void {
           calls.requestLock += 1;
@@ -1104,6 +1460,8 @@ function createVibeJamPortalControllerHarness() {
     create: 0,
     attachSession: 0,
     update: 0,
+    attachPublicArena: 0,
+    updatePublicArena: 0,
     detachSession: 0
   };
   let lastInit: VibeJamPortalControllerInit | null = null;
@@ -1118,6 +1476,13 @@ function createVibeJamPortalControllerHarness() {
         },
         update(): ReadonlyArray<never> {
           calls.update += 1;
+          return [];
+        },
+        attachPublicArena(): void {
+          calls.attachPublicArena += 1;
+        },
+        updatePublicArena(): ReadonlyArray<never> {
+          calls.updatePublicArena += 1;
           return [];
         },
         detachSession(): void {
@@ -1531,7 +1896,7 @@ describe('UiShell', () => {
     expect(audio.calls.unlock).toBe(1);
   });
 
-  it('auto-starts the requested preset after startup preload', async () => {
+  it('auto-starts a local requested preset after startup preload', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -1557,8 +1922,8 @@ describe('UiShell', () => {
     const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      autoStartPresetId: 'portal',
-      startupImageSrc: '/images/slime-escape-portal.jpg',
+      autoStartPresetId: 'training',
+      startupImageSrc: '/images/slime-escape-training.jpg',
       buildSessionDefinition: buildSession,
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
@@ -1580,8 +1945,8 @@ describe('UiShell', () => {
     await flushUiShellStartup();
 
     expect(buildSession).toHaveBeenCalledTimes(1);
-    expect(builtPresetId).toBe('portal');
-    expect(startupOverlay.lastInit()?.imageSrc).toBe('/images/slime-escape-portal.jpg');
+    expect(builtPresetId).toBe('training');
+    expect(startupOverlay.lastInit()?.imageSrc).toBe('/images/slime-escape-training.jpg');
     expect(sim.startSessions).toHaveLength(1);
     expect(renderer.calls.create).toBe(1);
     expect(input.calls.create).toBe(1);
@@ -1594,6 +1959,77 @@ describe('UiShell', () => {
     expect(pause.isVisible()).toBe(false);
     expect(result.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'running' });
+  });
+
+  it('auto-starts the portal page into Public Arena online flow after startup preload', async () => {
+    const menu = createMenuHarness();
+    const status = createPublicArenaStatusHarness();
+    const publicArenaMenu = createPublicArenaMenuHarness();
+    const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const startupOverlay = createStartupOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const buildSession = vi.fn(() => makeSession('should-not-start'));
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      autoStartPublicArena: true,
+      startupImageSrc: '/images/slime-escape-portal.jpg',
+      buildSessionDefinition: buildSession,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createStartupOverlay: startupOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
+      createPublicArenaMenuOverlay: publicArenaMenu.factory,
+      createPublicArenaStatusOverlay: status.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(startupOverlay.lastInit()?.imageSrc).toBe('/images/slime-escape-portal.jpg');
+    expect(publicArenaClient.lastInit()?.serverUrl).toBe('https://arena.example.test');
+    expect(shell.phase()).toEqual({ kind: 'onlineConnecting' });
+    expect(status.message()).toBe('Joining Public Arena');
+    expect(menu.isVisible()).toBe(false);
+    expect(buildSession).not.toHaveBeenCalled();
+    expect(sim.startSessions).toHaveLength(0);
+    expect(renderer.calls.create).toBe(0);
+    expect(input.calls.create).toBe(0);
+    expect(hud.calls.attach).toBe(0);
+
+    publicArenaClient.accept();
+
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(status.isVisible()).toBe(false);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(publicArenaCombatAffordances.isVisible()).toBe(true);
+    expect(publicArenaRenderer.lastInit()).toBeNull();
+    expect(buildSession).not.toHaveBeenCalled();
+    expect(sim.startSessions).toHaveLength(0);
   });
 
   it('passes the effective game viewport to renderer fitting', async () => {
@@ -2178,6 +2614,688 @@ describe('UiShell', () => {
     expect(dungeonWaveCounter.calls.update).toBe(1);
     expect(titleOverlay.calls.update).toBe(1);
     expect(audio.calls.update).toBe(1);
+  });
+
+  it('starts the public arena connection without starting a local session', async () => {
+    const menu = createMenuHarness();
+    const status = createPublicArenaStatusHarness();
+    const publicArenaMenu = createPublicArenaMenuHarness();
+    const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createHud: hud.factory,
+      createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
+      createPublicArenaMenuOverlay: publicArenaMenu.factory,
+      createPublicArenaStatusOverlay: status.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      createInputController: input.factory,
+      createAudio: audio.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.startPublicArena();
+
+    expect(publicArenaClient.lastInit()?.serverUrl).toBe('https://arena.example.test');
+    expect(shell.phase()).toEqual({ kind: 'onlineConnecting' });
+    expect(status.message()).toBe('Joining Public Arena');
+    expect(sim.startSessions).toHaveLength(0);
+
+    publicArenaClient.accept();
+
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(status.isVisible()).toBe(false);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(publicArenaCombatAffordances.isVisible()).toBe(true);
+    expect(publicArenaRenderer.lastInit()).toBeNull();
+
+    publicArenaClient.snapshot();
+    shell.onFrame();
+
+    expect(input.calls.create).toBe(1);
+    expect(input.calls.start).toBe(1);
+    expect(input.lastInit()?.initialAim).toEqual({ x: 1, y: 2 });
+    expect(input.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(900 / 18, 6);
+    expect(publicArenaRenderer.lastInit()?.arena).toEqual(PUBLIC_ARENA_WORLD_BOUNDS);
+    expect(publicArenaRenderer.lastInit()?.visibleAreaCamera?.visibleArea().center).toEqual({
+      x: 1,
+      y: 2
+    });
+    expect(publicArenaRenderer.lastInit()?.getAim?.()).toEqual({ x: 0, y: 0 });
+    expect(publicArenaHud.level()).toBe(`Level 3/${PUBLIC_ARENA_BOSS_LEVEL}`);
+    expect(publicArenaHud.population()).toBe('Online 7');
+    expect(publicArenaRenderer.calls.render).toBe(1);
+
+    publicArenaClient.presentation({
+      kind: 'fire',
+      simTimeMs: 140,
+      shooterId: 'socket-a',
+      ownerKind: 'player',
+      weaponArchetypeId: 'rock-thrower',
+      originX: 1,
+      originY: 2,
+      dirX: 1,
+      dirY: 0
+    });
+
+    expect(audio.events.at(-1)).toMatchObject({
+      kind: 'fire',
+      weaponArchetypeId: 'rock-thrower',
+      ownerKind: 'player'
+    });
+
+    publicArenaClient.presentation({
+      kind: 'hit',
+      simTimeMs: 150,
+      projectileId: 'projectile-a',
+      ownerId: 'socket-a',
+      ownerKind: 'player',
+      targetId: 'socket-b',
+      targetForm: { kind: 'slime', archetypeId: 'slime-one-eye' },
+      weaponArchetypeId: 'rock-thrower',
+      damage: 3,
+      x: 3,
+      y: 2,
+      impactDirX: 1,
+      impactDirY: 0
+    });
+
+    expect(audio.events.at(-1)).toMatchObject({
+      kind: 'hit',
+      targetKind: 'enemy',
+      targetArchetypeId: 'slime-one-eye',
+      weaponArchetypeId: 'rock-thrower'
+    });
+
+    publicArenaClient.presentation({
+      kind: 'hit',
+      simTimeMs: 151,
+      projectileId: 'projectile-b',
+      ownerId: 'socket-b',
+      ownerKind: 'player',
+      targetId: 'socket-a',
+      targetForm: { kind: 'slime', archetypeId: 'slime-hornling' },
+      weaponArchetypeId: 'rock-thrower',
+      damage: 3,
+      x: 1,
+      y: 2,
+      impactDirX: -1,
+      impactDirY: 0
+    });
+
+    expect(audio.events.at(-1)).toMatchObject({
+      kind: 'hit',
+      targetKind: 'enemy',
+      targetArchetypeId: 'slime-hornling',
+      weaponArchetypeId: 'rock-thrower'
+    });
+
+    publicArenaClient.presentation({
+      kind: 'death',
+      simTimeMs: 160,
+      playerId: 'socket-b',
+      killerId: 'socket-a',
+      form: { kind: 'boss', archetypeId: 'boss-tower-sentinel' },
+      weaponArchetypeId: 'rock-thrower',
+      x: 3,
+      y: 2
+    });
+
+    expect(audio.events.at(-1)).toMatchObject({
+      kind: 'death',
+      entityKind: 'boss',
+      archetypeId: 'boss-tower-sentinel',
+      weaponArchetypeId: 'rock-thrower'
+    });
+
+    input.lastInit()?.onCommand({ kind: 'move', dx: 1, dy: 0 });
+    input.lastInit()?.onCommand({ kind: 'aim', x: 3, y: 4 });
+    input.lastInit()?.onCommand({ kind: 'fire', phase: 'start' });
+    input.lastInit()?.onCommand({ kind: 'selectWeaponSlot', slotIndex: 1 });
+    input.lastInit()?.onCommand({ kind: 'holsterWeapon' });
+
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 1, dy: 0 },
+      { kind: 'aim', x: 3, y: 4 },
+      { kind: 'fire', phase: 'start' },
+      { kind: 'selectWeaponSlot', slotIndex: 1 }
+    ]);
+
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Escape',
+        preventDefault() {},
+        repeat: false
+      } as unknown as Event
+    );
+
+    expect(publicArenaMenu.isVisible()).toBe(true);
+    expect(publicArenaClient.disconnectCalls()).toBe(0);
+    expect(input.calls.stop).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(0);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(publicArenaCombatAffordances.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 1, dy: 0 },
+      { kind: 'aim', x: 3, y: 4 },
+      { kind: 'fire', phase: 'start' },
+      { kind: 'selectWeaponSlot', slotIndex: 1 },
+      { kind: 'move', dx: 0, dy: 0 },
+      { kind: 'fire', phase: 'stop' }
+    ]);
+
+    publicArenaMenu.exit();
+
+    expect(publicArenaClient.disconnectCalls()).toBe(1);
+    expect(input.calls.stop).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(1);
+    expect(publicArenaHud.isVisible()).toBe(false);
+    expect(publicArenaCombatAffordances.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+
+    publicArenaClient.close('Arena server is restarting.');
+
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+    expect(menu.latestFeedback()).toBeNull();
+  });
+
+  it('wires Vibe Jam portal descriptors into Public Arena presentation without server state', async () => {
+    const menu = createMenuHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const portalController = createVibeJamPortalControllerHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      portalHref: 'https://slimeescape.com/portal?portal=true&ref=https%3A%2F%2Fprevious.example',
+      portalStorage: null,
+      createSimWorkerHost: createSimHarness().factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createHud: createHudHarness().factory,
+      createPublicArenaHud: createPublicArenaHudHarness().factory,
+      createPublicArenaCombatAffordances: createPublicArenaCombatAffordancesHarness().factory,
+      createPublicArenaMenuOverlay: createPublicArenaMenuHarness().factory,
+      createPublicArenaStatusOverlay: createPublicArenaStatusHarness().factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      createInputController: createInputHarness().factory,
+      createVibeJamPortalController: portalController.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.startPublicArena();
+    publicArenaClient.accept();
+    publicArenaClient.snapshot();
+    shell.onFrame();
+
+    expect(portalController.calls.attachPublicArena).toBe(1);
+    expect(portalController.calls.updatePublicArena).toBe(1);
+    expect(publicArenaRenderer.lastInit()?.getPortalDescriptors?.()).toEqual([]);
+
+    shell.dispose();
+
+    expect(portalController.calls.detachSession).toBeGreaterThanOrEqual(1);
+  });
+
+  it.each(['Escape', 'Space'])(
+    'opens the Public Arena menu for desktop %s without leaving or pausing local sim',
+    async (code) => {
+      const menu = createMenuHarness();
+      const status = createPublicArenaStatusHarness();
+      const publicArenaMenu = createPublicArenaMenuHarness();
+      const publicArenaHud = createPublicArenaHudHarness();
+      const publicArenaClient = createPublicArenaClientHarness();
+      const publicArenaRenderer = createPublicArenaRendererHarness();
+      const input = createInputHarness();
+      const sim = createSimHarness();
+      const hud = createHudHarness();
+      const audio = createAudioHarness();
+      const windowTarget = new FakeEventTarget();
+      const documentEvents = new FakeEventTarget();
+      const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+      const preventDefault = vi.fn();
+
+      const shell = createUiShellForTest({
+        parent: {} as HTMLElement,
+        canvas: { clientHeight: 900 } as HTMLCanvasElement,
+        createSimWorkerHost: sim.factory,
+        createMenuOverlay: menu.factory,
+        createPauseOverlay: createPauseHarness().factory,
+        createResultOverlay: createResultHarness().factory,
+        createSettingsOverlay: createSettingsOverlayHarness().factory,
+        createHud: hud.factory,
+        createPublicArenaHud: publicArenaHud.factory,
+        createPublicArenaMenuOverlay: publicArenaMenu.factory,
+        createPublicArenaStatusOverlay: status.factory,
+        createPublicArenaClient: publicArenaClient.factory,
+        createPublicArenaRenderer: publicArenaRenderer.factory,
+        createInputController: input.factory,
+        createAudio: audio.factory,
+        publicArenaConfig: {
+          serverUrl: 'https://arena.example.test',
+          fullArenaMessage: 'The online arena is full. Try again soon.'
+        },
+        windowTarget,
+        documentTarget
+      });
+
+      await flushUiShellStartup();
+      menu.startPublicArena();
+      publicArenaClient.accept();
+      publicArenaClient.snapshot();
+
+      expect(shell.phase()).toEqual({ kind: 'online' });
+      expect(input.calls.start).toBe(1);
+
+      windowTarget.dispatch(
+        'keydown',
+        {
+          code,
+          preventDefault,
+          repeat: false
+        } as unknown as Event
+      );
+
+      expect(preventDefault).toHaveBeenCalledTimes(1);
+      expect(publicArenaMenu.isVisible()).toBe(true);
+      expect(publicArenaClient.disconnectCalls()).toBe(0);
+      expect(input.calls.stop).toBe(1);
+      expect(publicArenaRenderer.calls.dispose).toBe(0);
+      expect(publicArenaHud.isVisible()).toBe(true);
+      expect(publicArenaClient.sentInputs()).toEqual([
+        { kind: 'move', dx: 0, dy: 0 },
+        { kind: 'fire', phase: 'stop' }
+      ]);
+      expect(sim.calls.pause).toBe(0);
+      expect(sim.calls.stop).toBe(0);
+      expect(shell.phase()).toEqual({ kind: 'online' });
+
+      publicArenaMenu.exit();
+
+      expect(publicArenaClient.disconnectCalls()).toBe(1);
+      expect(publicArenaRenderer.calls.dispose).toBe(1);
+      expect(publicArenaHud.isVisible()).toBe(false);
+      expect(shell.phase()).toEqual({ kind: 'menu' });
+    }
+  );
+
+  it('resumes desktop public arena from the explicit menu without disconnecting', async () => {
+    const menu = createMenuHarness();
+    const status = createPublicArenaStatusHarness();
+    const publicArenaMenu = createPublicArenaMenuHarness();
+    const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createHud: hud.factory,
+      createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
+      createPublicArenaMenuOverlay: publicArenaMenu.factory,
+      createPublicArenaStatusOverlay: status.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      createInputController: input.factory,
+      createAudio: audio.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.startPublicArena();
+    publicArenaClient.accept();
+    publicArenaClient.snapshot();
+
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Escape',
+        preventDefault() {},
+        repeat: false
+      } as unknown as Event
+    );
+
+    expect(publicArenaMenu.isVisible()).toBe(true);
+    expect(input.calls.stop).toBe(1);
+
+    publicArenaMenu.resume();
+
+    expect(publicArenaMenu.isVisible()).toBe(false);
+    expect(publicArenaClient.disconnectCalls()).toBe(0);
+    expect(input.calls.create).toBe(2);
+    expect(input.calls.start).toBe(2);
+    expect(publicArenaRenderer.calls.dispose).toBe(0);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(sim.calls.pause).toBe(0);
+    expect(shell.phase()).toEqual({ kind: 'online' });
+
+    input.lastInit()?.onCommand({ kind: 'move', dx: -1, dy: 0 });
+
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 0, dy: 0 },
+      { kind: 'fire', phase: 'stop' },
+      { kind: 'move', dx: -1, dy: 0 }
+    ]);
+  });
+
+  it('opens the Public Arena menu on desktop Pointer Lock loss without leaving', async () => {
+    const menu = createMenuHarness();
+    const status = createPublicArenaStatusHarness();
+    const publicArenaMenu = createPublicArenaMenuHarness();
+    const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createHud: hud.factory,
+      createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
+      createPublicArenaMenuOverlay: publicArenaMenu.factory,
+      createPublicArenaStatusOverlay: status.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      createInputController: input.factory,
+      createAudio: audio.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.startPublicArena();
+    publicArenaClient.accept();
+    publicArenaClient.snapshot();
+
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(input.calls.start).toBe(1);
+
+    documentEvents.dispatch('pointerlockchange', new Event('pointerlockchange'));
+
+    expect(publicArenaMenu.isVisible()).toBe(true);
+    expect(publicArenaClient.disconnectCalls()).toBe(0);
+    expect(input.calls.stop).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(0);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 0, dy: 0 },
+      { kind: 'fire', phase: 'stop' }
+    ]);
+    expect(sim.calls.pause).toBe(0);
+    expect(sim.calls.stop).toBe(0);
+    expect(shell.phase()).toEqual({ kind: 'online' });
+
+    publicArenaMenu.exit();
+
+    expect(publicArenaClient.disconnectCalls()).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(1);
+    expect(publicArenaHud.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+  });
+
+  it('shows rejection feedback and leaves the player outside the public arena', async () => {
+    const menu = createMenuHarness();
+    const status = createPublicArenaStatusHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createHud: hud.factory,
+      createPublicArenaStatusOverlay: status.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createAudio: audio.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.startPublicArena();
+    publicArenaClient.reject('The online arena is full. Try again soon.');
+
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+    expect(status.isVisible()).toBe(false);
+    expect(menu.latestFeedback()).toBe('The online arena is full. Try again soon.');
+    expect(sim.startSessions).toHaveLength(0);
+  });
+
+  it('routes mobile public arena input through the online client', async () => {
+    const menu = createMenuHarness();
+    const status = createPublicArenaStatusHarness();
+    const publicArenaMenu = createPublicArenaMenuHarness();
+    const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const desktopInput = createInputHarness();
+    const mobileInput = createMobileInputHarness();
+    const mobileControls = createMobileControlsHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    const weaponSlotElement = {} as HTMLElement;
+    const parent = {
+      querySelectorAll: vi.fn(() => [weaponSlotElement])
+    } as unknown as HTMLElement;
+
+    const shell = createUiShellForTest({
+      parent,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createHud: hud.factory,
+      createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
+      createPublicArenaMenuOverlay: publicArenaMenu.factory,
+      createPublicArenaStatusOverlay: status.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      createInputController: desktopInput.factory,
+      createMobileInputController: mobileInput.factory,
+      createMobileControlsOverlay: mobileControls.factory,
+      createAudio: audio.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget,
+      mobileProfile: {
+        isMobile: true
+      }
+    });
+
+    await flushUiShellStartup();
+    menu.startPublicArena();
+    publicArenaClient.accept();
+
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(mobileControls.isVisible()).toBe(true);
+    expect(publicArenaCombatAffordances.createCount()).toBe(0);
+    expect(publicArenaCombatAffordances.isVisible()).toBe(false);
+    expect(mobileInput.calls.create).toBe(0);
+
+    publicArenaClient.snapshot();
+
+    expect(desktopInput.calls.create).toBe(0);
+    expect(mobileInput.calls.create).toBe(1);
+    expect(mobileInput.calls.start).toBe(1);
+    expect(mobileInput.lastInit()?.surface).toBe(parent);
+    expect(mobileInput.lastInit()?.pauseElement?.()).toBe(mobileControls.pauseButton());
+    expect(mobileInput.lastInit()?.weaponSlotElements?.()).toEqual([weaponSlotElement]);
+    expect(mobileInput.lastInit()?.initialAim).toEqual({ x: 1, y: 2 });
+    expect(mobileInput.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(390 / 12, 6);
+
+    mobileInput.lastInit()?.onCommand({ kind: 'move', dx: 0, dy: -1 });
+    mobileInput.lastInit()?.onCommand({ kind: 'aim', x: 5, y: 6 });
+    mobileInput.lastInit()?.onCommand({ kind: 'fire', phase: 'stop' });
+    mobileInput.lastInit()?.onCommand({ kind: 'selectWeaponSlot', slotIndex: 0 });
+
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 0, dy: -1 },
+      { kind: 'aim', x: 5, y: 6 },
+      { kind: 'fire', phase: 'stop' },
+      { kind: 'selectWeaponSlot', slotIndex: 0 }
+    ]);
+
+    mobileInput.lastInit()?.onPause();
+
+    expect(publicArenaMenu.isVisible()).toBe(true);
+    expect(publicArenaClient.disconnectCalls()).toBe(0);
+    expect(mobileInput.calls.stop).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(0);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(mobileControls.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 0, dy: -1 },
+      { kind: 'aim', x: 5, y: 6 },
+      { kind: 'fire', phase: 'stop' },
+      { kind: 'selectWeaponSlot', slotIndex: 0 },
+      { kind: 'move', dx: 0, dy: 0 },
+      { kind: 'fire', phase: 'stop' }
+    ]);
+    expect(sim.startSessions).toHaveLength(0);
+
+    publicArenaMenu.exit();
+
+    expect(publicArenaClient.disconnectCalls()).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(1);
+    expect(mobileControls.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+  });
+
+  it('keeps the public arena entry visible when no server URL is configured', async () => {
+    const menu = createMenuHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createHud: hud.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createAudio: audio.factory,
+      publicArenaConfig: {
+        serverUrl: null,
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.startPublicArena();
+
+    expect(shell.phase()).toEqual({ kind: 'menu' });
+    expect(publicArenaClient.lastInit()).toBeNull();
+    expect(menu.latestFeedback()).toBe('Public arena server is not configured.');
   });
 
   it('wires the Vibe Jam portal controller to session attach, frames, and teardown', async () => {
@@ -2832,7 +3950,7 @@ describe('UiShell', () => {
     const shell = createUiShellForTest({
       parent: {} as HTMLElement,
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
-      autoStartPresetId: 'portal',
+      autoStartPresetId: 'campaign-easy',
       buildSessionDefinition: (preset) => {
         builtPresetIds.push(preset.id);
         return makeSession(`${preset.id}-session`);
@@ -2852,7 +3970,7 @@ describe('UiShell', () => {
 
     await flushUiShellStartup();
 
-    expect(builtPresetIds).toEqual(['portal']);
+    expect(builtPresetIds).toEqual(['campaign-easy']);
     expect(shell.phase()).toEqual({ kind: 'running' });
 
     sim.emit(makeTerminalEvent('win', 123));
@@ -2862,7 +3980,7 @@ describe('UiShell', () => {
     menu.startTraining();
     await flushUiShellStartup();
 
-    expect(builtPresetIds).toEqual(['portal', 'portal']);
+    expect(builtPresetIds).toEqual(['campaign-easy', 'campaign-easy']);
     expect(sim.startSessions).toHaveLength(2);
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
@@ -2984,6 +4102,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,
@@ -3052,6 +4171,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,
@@ -3110,6 +4230,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,
@@ -3175,6 +4296,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,
@@ -3582,6 +4704,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,
@@ -3657,6 +4780,7 @@ describe('UiShell', () => {
         currentAim() {
           return { x: 0, y: 0 };
         },
+        syncAim() {},
         requestLock() {}
       }),
       createHud: hud.factory,

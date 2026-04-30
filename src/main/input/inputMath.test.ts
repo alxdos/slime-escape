@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  applyMouseDeltaToAim,
-  clampAimToArena,
+  applyMouseDeltaToViewportAim,
   moveVectorFromKeys,
-  weaponHotkeyCommandFromCode
+  viewportAimFromWorldAim,
+  weaponHotkeyCommandFromCode,
+  worldAimFromViewportAim
 } from './inputMath';
 
-const ARENA = { width: 32, height: 18 } as const;
 const ALL_OFF = { up: false, down: false, left: false, right: false } as const;
 
 describe('moveVectorFromKeys', () => {
@@ -38,32 +38,32 @@ describe('moveVectorFromKeys', () => {
   });
 });
 
-describe('clampAimToArena', () => {
-  it('leaves an aim inside the arena unchanged', () => {
-    expect(clampAimToArena({ x: 1, y: -2 }, ARENA)).toEqual({ x: 1, y: -2 });
+describe('viewport-relative aim', () => {
+  const visibleArea = { width: 12, height: 8, center: { x: 5, y: -2 } } as const;
+
+  it('converts between world aim and visible-area offset', () => {
+    const viewportAim = viewportAimFromWorldAim({ x: 7, y: 1 }, visibleArea);
+
+    expect(viewportAim).toEqual({ x: 2, y: 3 });
+    expect(worldAimFromViewportAim(viewportAim, visibleArea)).toEqual({ x: 7, y: 1 });
   });
 
-  it('clamps each axis independently to the half-width/height', () => {
-    expect(clampAimToArena({ x: 100, y: 100 }, ARENA)).toEqual({ x: 16, y: 9 });
-    expect(clampAimToArena({ x: -100, y: -100 }, ARENA)).toEqual({ x: -16, y: -9 });
-  });
-});
+  it('keeps the same viewport offset when the visible-area center moves', () => {
+    const viewportAim = { x: 2, y: 3 };
 
-describe('applyMouseDeltaToAim', () => {
-  it('maps positive movementX to +x and positive movementY to -y (Y up in world)', () => {
-    const next = applyMouseDeltaToAim({ x: 0, y: 0 }, 30, 60, 30, ARENA);
-    expect(next).toEqual({ x: 1, y: -2 });
-  });
-
-  it('returns the input aim when pixelsPerWorldUnit is non-positive', () => {
-    const aim = { x: 3, y: -1 };
-    expect(applyMouseDeltaToAim(aim, 100, 100, 0, ARENA)).toEqual(aim);
-    expect(applyMouseDeltaToAim(aim, 100, 100, -1, ARENA)).toEqual(aim);
+    expect(worldAimFromViewportAim(viewportAim, visibleArea)).toEqual({ x: 7, y: 1 });
+    expect(
+      worldAimFromViewportAim(viewportAim, {
+        ...visibleArea,
+        center: { x: 8, y: 4 }
+      })
+    ).toEqual({ x: 10, y: 7 });
   });
 
-  it('clamps the resulting aim to the arena bounds', () => {
-    const next = applyMouseDeltaToAim({ x: 15, y: 8 }, 1000, -1000, 30, ARENA);
-    expect(next).toEqual({ x: 16, y: 9 });
+  it('maps relative pointer deltas in visible-area coordinates and clamps to the viewport', () => {
+    const next = applyMouseDeltaToViewportAim({ x: 5.5, y: 3.5 }, 30, -30, 10, visibleArea);
+
+    expect(next).toEqual({ x: 6, y: 4 });
   });
 });
 

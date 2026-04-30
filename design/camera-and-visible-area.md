@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-30
-- Updated: 2026-04-30
+- Updated: 2026-04-30 (story 032 aim polish: combat input stores virtual aim relative to the active visible area/viewport and converts it through the current visible-area center, so camera movement carries the cursor in both local and online play.)
 
 ## Context
 
@@ -71,9 +71,9 @@ Without this decision:
 - On the current desktop arena this is equivalent to the existing `arena.width x arena.height` frustum because the resolved visible area equals the arena.
 - Whenever the visible area is smaller than the arena, the renderer positions the camera at `visibleArea.center` and draws only that subset of the arena.
 - Canvas CSS fitting uses the visible area's aspect ratio. It must not stretch the visible area.
-- Pointer and touch aim deltas convert pixels to world units through the active visible area height:
+- Pointer and touch aim deltas convert pixels to visible-area world units through the active visible area height:
   - `1 wu = canvas.clientHeight / visibleArea.height` CSS pixels.
-- Aim remains clamped to arena bounds, not visible-area bounds. The crosshair may approach the visible edge, but the world coordinate must stay inside `SessionDefinition.arena`.
+- The virtual aim position is stored as an offset inside the visible area and is clamped to the visible-area rectangle. Before rendering the crosshair or sending an `aim` command, `main` converts that offset to world coordinates by adding the current visible-area center. This keeps the cursor visually attached to the viewport while preserving the `InputCommand.aim` world-coordinate contract.
 - Simulation snapshots already include player position, so camera following does not require a new simulation protocol field.
 
 ## Consequences
@@ -96,3 +96,4 @@ Without this decision:
 - [thread-model.md](thread-model.md)
 - [testing.md](testing.md)
 - [../stories/031-mobile-web-support.md](../stories/031-mobile-web-support.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)

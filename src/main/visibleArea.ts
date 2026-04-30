@@ -29,8 +29,8 @@ export type VisibleAreaCamera = Readonly<{
 const DESKTOP_VISIBLE_SHORT_SIDE_WU = 18;
 const MOBILE_VISIBLE_SHORT_SIDE_WU = 12;
 const DESKTOP_VISIBLE_ASPECT = 16 / 9;
-const CAMERA_FREE_ZONE_FRACTION_X = 0.46;
-const CAMERA_FREE_ZONE_FRACTION_Y = 0.46;
+const CAMERA_FREE_ZONE_FRACTION_X = 0.32;
+const CAMERA_FREE_ZONE_FRACTION_Y = 0.32;
 const CAMERA_SMOOTHING_MS = 140;
 
 export function resolveVisibleAreaSize(input: VisibleAreaSizeInput): Omit<VisibleArea, 'center'> {

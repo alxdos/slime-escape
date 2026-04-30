@@ -8,6 +8,7 @@ import {
 } from './visibleArea';
 
 const ARENA = { width: 32, height: 18 };
+const PUBLIC_ARENA = { width: 35, height: 35 };
 
 describe('resolveVisibleAreaSize', () => {
   it('keeps the current desktop arena fully visible with the desktop anchor', () => {
@@ -95,6 +96,27 @@ describe('createVisibleAreaCamera', () => {
     camera.follow({ x: 1, y: 1 }, 240);
 
     expect(camera.visibleArea().center).toEqual(before);
+  });
+
+  it('starts following earlier in larger desktop arenas', () => {
+    const camera = createVisibleAreaCamera({
+      arena: PUBLIC_ARENA,
+      profile: 'desktop',
+      effectiveViewport: { width: 1920, height: 1080 },
+      playerPosition: { x: 0, y: 0 }
+    });
+
+    expect(camera.visibleArea()).toMatchObject({
+      width: 32,
+      height: 18,
+      center: { x: 0, y: 0 }
+    });
+
+    camera.follow({ x: 6, y: 3.25 }, 0);
+    camera.follow({ x: 6, y: 3.25 }, 140);
+
+    expect(camera.visibleArea().center.x).toBeGreaterThan(0);
+    expect(camera.visibleArea().center.y).toBeGreaterThan(0);
   });
 
   it('smoothly follows when the player leaves the free-movement zone', () => {

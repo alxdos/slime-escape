@@ -2,22 +2,23 @@
 
 - Status: accepted
 - Created: 2026-04-27
-- Updated: 2026-04-29
+- Updated: 2026-04-30 (story 032 T24 follow-up: return and exit portal coordinates are anchored to the arena center from generated Public Arena presentation bounds, not to player spawn, viewport, visible-area camera, or server state.)
 
 ## Context
 
 Vibe Jam 2026 defines an optional portal webring on top of the required widget. A game may expose an exit portal that sends the player to `https://vibej.am/portal/2026`. When the portal redirector sends a player into a game, it adds `portal=true`; if it also provides `ref`, the receiving game should provide a start/return portal so the player can go back.
 
-Slime Escape already has a separate `/portal` page entrypoint. That page configures `UiShell` with `SLIME_ESCAPE_AUTO_START = "portal"` and a portal-specific loading image. This decision records how that entrypoint, incoming portal context, return portals, and the exit portal fit the existing `main thread` / `simulation worker` architecture.
+Slime Escape has a separate `/portal` page entrypoint. That entrypoint enters the online Public Arena instead of auto-starting a local authored combat run. This decision records how the page entrypoint, incoming portal context, return portals, and portal presentation data fit the existing `main thread` / online arena architecture.
 
 ## Decision
 
 ### Entrypoint contract
 
-- `/portal` is a static page entrypoint that runs the normal main bundle and sets `window.SLIME_ESCAPE_AUTO_START = "portal"` before `/src/main/index.ts` is imported.
-- `src/main/index.ts` resolves `SLIME_ESCAPE_AUTO_START` only from page globals. URL query parameters must not start sessions directly.
-- If the page global is a valid `ModePresetId`, `UiShell` receives it as `autoStartPresetId`. After successful startup preload, `UiShell` may transition directly into that preset, using the same session-start path as `menu -> running`.
-- The normal root entrypoint remains menu-first. Auto-start is a page-entrypoint configuration, not a new generic menu behavior.
+- `/portal` is a static page entrypoint that runs the normal main bundle and enters the Public Arena flow.
+- The Vibe Jam portal presentation belongs to the `/portal` page entrypoint. Starting Public Arena from the normal root menu does not by itself open return or exit portals.
+- URL query parameters must not start local sessions directly.
+- The normal root entrypoint remains menu-first. `/portal` is a page-entrypoint configuration, not a new generic menu behavior.
+- `content/sessions/portal.md` is still the content-authored source for portal presentation data, but it no longer defines an authored local wave/break/boss run.
 
 ### Incoming portal context
 
@@ -31,13 +32,14 @@ Slime Escape already has a separate `/portal` page entrypoint. That page configu
 ### Return portal lifetime
 
 - A return portal is available only when an inbound portal context is active and the current session contains at least one `type: portal` encounter.
-- While the context is active, portal-capable sessions may show a return portal near the player spawn. Normal sessions without a `portal` encounter do not show or consume return portals.
+- While the context is active, portal-capable presentation flows may show a return portal in the arena. Normal local sessions without a `portal` encounter do not show or consume return portals.
 - The preferred return portal position is:
   ```text
-  x = session.player.position.x - 8 * session.player.contactBox.width
-  y = session.player.position.y
+  x = arenaCenter.x - 8 * player.contactBox.width
+  y = arenaCenter.y
   ```
-- The return portal must fit inside the arena. If the preferred position would place it outside the arena, main-side placement clamps or shifts it inside the arena without changing simulation state.
+- For the Public Arena online entrypoint, `arenaCenter` and the player contact box come from the generated Public Arena presentation config derived from `content/sessions/portal.md`. For legacy local portal-capable sessions, they come from `SessionDefinition`.
+- The return portal must fit inside the arena. If the preferred position would place it outside the arena, main-side placement clamps or shifts it inside the arena without changing simulation or server state.
 - The return portal collapses and the inbound context is consumed when a boss encounter starts in a portal-capable session. After this boss lock-in, no later session in the same tab shows the return portal.
 - Return portals are not shown during `boss` encounters. They may be shown alongside an early `portal` encounter before boss lock-in.
 
@@ -52,19 +54,15 @@ Slime Escape already has a separate `/portal` page entrypoint. That page configu
   - `name` is `null`;
   - `text` is `null`.
 - `portal` encounters are not objective encounters for result progress. They do not add wave count, boss count, or completion percent weight.
-- The special `/portal` session ends its authored combat chain as:
-  ```text
-  portal-opening -> waves -> boss-gargoyle
-  ```
-- The portal session uses the normal run completion path after the boss: `winCondition: allEncountersComplete` and `lossCondition: playerDeath`. The exit portal remains an optional forward route during the run, not the only way to finish the session.
+- The old local `/portal` authored combat chain is not part of the portal entrypoint. The portal entrypoint leads to the online Public Arena; waves, breaks, local boss encounters, and local run completion are not part of the portal content.
 
 ### Exit portal
 
-- An exit portal is opened by a `portal` encounter. Current content authors that encounter in the `/portal` session; once opened, it remains visible through later waves, breaks, and boss encounters.
-- The preferred exit portal position mirrors the return portal on the right:
+- An exit portal may be opened by portal-capable presentation flow. The portal entrypoint does not require local authored waves, breaks, or boss encounters to keep an exit portal alive.
+- The preferred exit portal position mirrors the return portal on the right of the arena center:
   ```text
-  x = session.player.position.x + 8 * session.player.contactBox.width
-  y = session.player.position.y
+  x = arenaCenter.x + 8 * player.contactBox.width
+  y = arenaCenter.y
   ```
 - If the player currently overlaps the preferred position, shift the exit portal right by safe increments based on the player contact box until it no longer overlaps the player and still fits inside the arena.
 - Before boss lock-in, an exit portal may be visible together with a return portal. After boss lock-in, only the exit portal remains.
@@ -81,13 +79,14 @@ Slime Escape already has a separate `/portal` page entrypoint. That page configu
 ### Main-thread ownership and simulation boundary
 
 - Portals are main-thread browser/world interactables, not simulation entities.
-- Do not add a `portal` `EntitySnapshot` kind and do not add portal runtime events for this story.
+- Do not add a `portal` `EntitySnapshot` kind and do not add portal runtime events for this decision.
 - A main-thread portal controller derives visible portals from:
   - current browser portal context;
-  - immutable `SessionDefinition`;
-  - current `SnapshotPair.curr`;
+  - immutable local `SessionDefinition` for legacy local portal-capable runs, or the generated Public Arena presentation config for the `/portal` online entrypoint;
+  - current local `SnapshotPair.curr`, or the current Public Arena snapshot's local player position for overlap checks;
   - current `UiShell` phase.
 - The controller checks player overlap from `PlayerSnapshot` and `SessionDefinition.player.contactBox`. Redirect is performed by the browser through a single `location.assign`-style operation.
+- In Public Arena, the overlap check uses only the local player's client snapshot coordinates plus the generated portal player contact box. The server does not receive portal positions, does not include portals in snapshots, and does not need Public Arena protocol fields for portals.
 - Portal redirects are one-shot. Once portal travel has started, repeated frames must not trigger more redirects.
 - Portal travel calls the target browser redirect immediately on overlap and also marks the portal travel timing so the local player zoom-out can appear as a best-effort frame while navigation is starting.
 - `Renderer` may receive main-owned portal descriptors to draw world-space portals. These descriptors are presentation inputs, not authoritative simulation state.
@@ -121,5 +120,4 @@ Slime Escape already has a separate `/portal` page entrypoint. That page configu
 - [runtime-systems.md](runtime-systems.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
 - [body-contact-boxes.md](body-contact-boxes.md)
-- [../stories/026-vibe-jam-portals.md](../stories/026-vibe-jam-portals.md)
 - [Vibe Jam 2026 portals](https://vibej.am/2026/#rules)

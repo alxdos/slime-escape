@@ -7,7 +7,8 @@
 | musicSampleId | music/005-forest |
 | visibleInMenu | true |
 | order | 1 |
-| arenaId | sandbox |
+| arenaWidth | 32 |
+| arenaHeight | 18 |
 | playerId | hero-training |
 | loadoutWeaponIds | pistol, shotgun, smg, sniper, grenade-launcher, bomb-placer |
 | selectedWeaponIndex | 0 |

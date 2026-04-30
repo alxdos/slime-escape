@@ -1,10 +1,11 @@
 import { parseSessionsArea } from './parse';
-import { renderSessionContent } from './renderContent';
+import { renderPublicArenaContent, renderSessionContent } from './renderContent';
 
 import type { GeneratedFile } from '../util/atomicWrite';
 
 const SOURCE_DIRECTORY = 'content/sessions';
 const CONTENT_TARGET_PATH = 'src/shared/content/sessions.generated.ts';
+const PUBLIC_ARENA_TARGET_PATH = 'src/shared/content/publicArena.generated.ts';
 
 export const SESSIONS_AREA = {
   name: 'sessions',
@@ -14,6 +15,10 @@ export const SESSIONS_AREA = {
       {
         path: CONTENT_TARGET_PATH,
         contents: renderSessionContent(sessionsArea)
+      },
+      {
+        path: PUBLIC_ARENA_TARGET_PATH,
+        contents: renderPublicArenaContent(sessionsArea)
       }
     ];
   }

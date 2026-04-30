@@ -1,9 +1,7 @@
 // AUTO-GENERATED from content/weapons.md by `npm run content:build`.
 // Do not edit by hand.
-import type { WeaponArchetype } from './weapons';
-
-export const PISTOL: WeaponArchetype = {
-  id: 'pistol',
+export const PISTOL = {
+  id: 'pistol' as string,
   displayName: 'Pistol',
   cooldownMs: 250,
   firePattern: { kind: 'single', spreadRadians: 0, count: 1 },
@@ -21,10 +19,10 @@ export const PISTOL: WeaponArchetype = {
     explosion: null,
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
-};
+} as const;
 
-export const SHOTGUN: WeaponArchetype = {
-  id: 'shotgun',
+export const SHOTGUN = {
+  id: 'shotgun' as string,
   displayName: 'Shotgun',
   cooldownMs: 900,
   firePattern: { kind: 'single', spreadRadians: 0.55, count: 5 },
@@ -42,10 +40,10 @@ export const SHOTGUN: WeaponArchetype = {
     explosion: null,
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
-};
+} as const;
 
-export const SMG: WeaponArchetype = {
-  id: 'smg',
+export const SMG = {
+  id: 'smg' as string,
   displayName: 'SMG',
   cooldownMs: 150,
   firePattern: { kind: 'single', spreadRadians: 0, count: 1 },
@@ -63,10 +61,10 @@ export const SMG: WeaponArchetype = {
     explosion: null,
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
-};
+} as const;
 
-export const SNIPER: WeaponArchetype = {
-  id: 'sniper',
+export const SNIPER = {
+  id: 'sniper' as string,
   displayName: 'Sniper',
   cooldownMs: 1200,
   firePattern: { kind: 'single', spreadRadians: 0, count: 1 },
@@ -84,10 +82,10 @@ export const SNIPER: WeaponArchetype = {
     explosion: null,
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
-};
+} as const;
 
-export const LASER: WeaponArchetype = {
-  id: 'laser',
+export const LASER = {
+  id: 'laser' as string,
   displayName: 'Laser',
   cooldownMs: 140,
   firePattern: { kind: 'single', spreadRadians: 0, count: 1 },
@@ -105,10 +103,10 @@ export const LASER: WeaponArchetype = {
     explosion: null,
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
-};
+} as const;
 
-export const ROCK_THROWER: WeaponArchetype = {
-  id: 'rock-thrower',
+export const ROCK_THROWER = {
+  id: 'rock-thrower' as string,
   displayName: 'Rock Thrower',
   cooldownMs: 700,
   firePattern: { kind: 'single', spreadRadians: 0, count: 1 },
@@ -126,10 +124,10 @@ export const ROCK_THROWER: WeaponArchetype = {
     explosion: null,
     visual: { spinRadiansPerSec: 8, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
-};
+} as const;
 
-export const GRENADE_LAUNCHER: WeaponArchetype = {
-  id: 'grenade-launcher',
+export const GRENADE_LAUNCHER = {
+  id: 'grenade-launcher' as string,
   displayName: 'Grenade Launcher',
   cooldownMs: 1100,
   firePattern: { kind: 'single', spreadRadians: 0, count: 1 },
@@ -155,10 +153,10 @@ export const GRENADE_LAUNCHER: WeaponArchetype = {
     },
     visual: { spinRadiansPerSec: 6, rotateWhileFlying: true, pulseWhenGrounded: true, explosionRadiusIndicator: true }
   }
-};
+} as const;
 
-export const BOMB_PLACER: WeaponArchetype = {
-  id: 'bomb-placer',
+export const BOMB_PLACER = {
+  id: 'bomb-placer' as string,
   displayName: 'Bomb Placer',
   cooldownMs: 1600,
   firePattern: { kind: 'place' },
@@ -184,10 +182,10 @@ export const BOMB_PLACER: WeaponArchetype = {
     },
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: false, pulseWhenGrounded: true, explosionRadiusIndicator: true }
   }
-};
+} as const;
 
-export const FIREBALL_STAFF: WeaponArchetype = {
-  id: 'fireball-staff',
+export const FIREBALL_STAFF = {
+  id: 'fireball-staff' as string,
   displayName: 'Fireball Staff',
   cooldownMs: 850,
   firePattern: { kind: 'multiDirection', directions: [0, 1.5707963268, 3.1415926536, 4.7123889804] },
@@ -205,10 +203,10 @@ export const FIREBALL_STAFF: WeaponArchetype = {
     explosion: null,
     visual: { spinRadiansPerSec: 4, rotateWhileFlying: true, pulseWhenGrounded: false, explosionRadiusIndicator: false }
   }
-};
+} as const;
 
-export const DEMO_HAZARD_GRENADE: WeaponArchetype = {
-  id: 'demo-hazard-grenade',
+export const DEMO_HAZARD_GRENADE = {
+  id: 'demo-hazard-grenade' as string,
   displayName: 'Demo Hazard Grenade',
   cooldownMs: 650,
   firePattern: { kind: 'single', spreadRadians: 0, count: 1 },
@@ -234,10 +232,10 @@ export const DEMO_HAZARD_GRENADE: WeaponArchetype = {
     },
     visual: { spinRadiansPerSec: 6, rotateWhileFlying: true, pulseWhenGrounded: true, explosionRadiusIndicator: true }
   }
-};
+} as const;
 
-export const DEMO_PROXIMITY_MINE: WeaponArchetype = {
-  id: 'demo-proximity-mine',
+export const DEMO_PROXIMITY_MINE = {
+  id: 'demo-proximity-mine' as string,
   displayName: 'Demo Proximity Mine',
   cooldownMs: 700,
   firePattern: { kind: 'place' },
@@ -263,4 +261,4 @@ export const DEMO_PROXIMITY_MINE: WeaponArchetype = {
     },
     visual: { spinRadiansPerSec: 0, rotateWhileFlying: false, pulseWhenGrounded: true, explosionRadiusIndicator: true }
   }
-};
+} as const;

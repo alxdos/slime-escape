@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-30 (story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-19.)
 
 ## Context
 
@@ -76,3 +76,4 @@ The runner is a dev/runtime dependency and a shared tool for future stories (003
 - [impact-feedback.md](impact-feedback.md)
 - [mobile-web-support.md](mobile-web-support.md)
 - [camera-and-visible-area.md](camera-and-visible-area.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-26 (story 024: boss defeat/result HP is summarized for Result UI by [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-20.)
+- Updated: 2026-04-30 (story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-26 story 024: boss defeat/result HP is summarized for Result UI by [session-result-summary.md](session-result-summary.md). Earlier: 2026-04-20.)
 
 ## Context
 
@@ -62,3 +62,4 @@ Product constraints are in [../docs/BOSS.md](../docs/BOSS.md).
 - [projectiles-and-combat.md](projectiles-and-combat.md)
 - [../stories/006-boss-encounter.md](../stories/006-boss-encounter.md)
 - [session-result-summary.md](session-result-summary.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)

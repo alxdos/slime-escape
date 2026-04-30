@@ -48,6 +48,7 @@ export type MenuOverlayInit = Readonly<{
   onOpenScreen(screenId: MenuSubscreenId): void;
   onBackToMainMenu(): void;
   onTeaser(controlId: TeaserControlId): void;
+  onStartPublicArena(): void;
   onStartDungeon(): void;
   onPurchasePet(quality: PetQuality): MenuLabPurchaseResult;
   onSelectPet(petId: string): MenuPetsSelectionResult;
@@ -65,6 +66,7 @@ export type MenuOverlay = Readonly<{
   setDungeonBestWave(bestWave: number): void;
   setLabViewModel(viewModel: MenuLabViewModel): void;
   setPetsViewModel(viewModel: MenuPetsViewModel): void;
+  showFeedback(message: string): void;
   isVisible(): boolean;
   dispose(): void;
 }>;
@@ -126,6 +128,7 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     }
     mainStage.appendChild(button);
   }
+  mainStage.appendChild(createPublicArenaButton(init.onStartPublicArena, init.onButtonHover));
   mainStage.appendChild(teaserFeedback);
 
   const socialLinks = createSocialLinkRail();
@@ -174,6 +177,9 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
       petsViewModel = viewModel;
       renderPets();
     },
+    showFeedback(message): void {
+      showMenuFeedback(message);
+    },
     isVisible(): boolean {
       return visible;
     },
@@ -219,7 +225,7 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
         init.onOpenScreen(action.screenId);
         return;
       case 'teaser':
-        showTeaserFeedback();
+        showMenuFeedback('Coming Soon');
         init.onTeaser(action.controlId);
         return;
     }
@@ -318,9 +324,9 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     }
   }
 
-  function showTeaserFeedback(): void {
+  function showMenuFeedback(message: string): void {
     activeStage().appendChild(teaserFeedback);
-    teaserFeedback.textContent = 'Coming Soon';
+    teaserFeedback.textContent = message;
     teaserFeedback.style.opacity = '1';
     if (feedbackTimeout !== null) {
       clearMenuTimeout(feedbackTimeout);
@@ -507,6 +513,19 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     root.appendChild(stage);
     return stage;
   }
+}
+
+function createPublicArenaButton(onClick: () => void, onHover: () => void): HTMLButtonElement {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'menu-public-arena-button';
+  button.dataset['role'] = 'menu-public-arena-button';
+  button.setAttribute('aria-label', 'Join Online Arena');
+  button.textContent = 'ONLINE ARENA';
+  button.style.cssText = publicArenaButtonStyle();
+  button.addEventListener('click', onClick);
+  button.addEventListener('pointerenter', onHover);
+  return button;
 }
 
 function createDungeonBestWaveElement(): HTMLDivElement {
@@ -1099,6 +1118,36 @@ function teaserFeedbackStyle(): string {
   ].join(';');
 }
 
+function publicArenaButtonStyle(): string {
+  return [
+    'appearance:none',
+    'position:absolute',
+    'left:38%',
+    'top:6.8%',
+    'width:24%',
+    'min-height:8.8%',
+    'z-index:28',
+    'box-sizing:border-box',
+    'padding:7px 13px 9px',
+    'border:4px solid #050505',
+    'border-radius:8px',
+    'background:#d9fbff',
+    'box-shadow:none',
+    'cursor:pointer',
+    'touch-action:manipulation',
+    'letter-spacing:0',
+    ...comicTextStyle({
+      fontSize: '24px',
+      color: '#ffffff',
+      lineHeight: '0.95',
+      textAlign: 'center'
+    }),
+    'font-size:min(3.2cqw, 4.7cqh, 27px)',
+    'overflow-wrap:anywhere',
+    'white-space:normal'
+  ].join(';');
+}
+
 function menuSocialLinkRailStyle(): string {
   return [
     'position:absolute',
@@ -1325,6 +1374,18 @@ function menuOverlayCss(): string {
 .menu-image-button[data-soon="true"]:hover img,
 .menu-image-button[data-soon="true"]:focus-visible img {
   filter: saturate(1) brightness(1.06) drop-shadow(5px 5px 0 #000000);
+}
+
+.menu-public-arena-button {
+  outline: none;
+  transform: rotate(-1deg);
+  transition: filter 140ms ease, transform 140ms ease;
+}
+
+.menu-public-arena-button:hover,
+.menu-public-arena-button:focus-visible {
+  filter: brightness(1.1) saturate(1.04) drop-shadow(6px 6px 0 #000000);
+  transform: translate(-1px, -1px) rotate(-1deg) scale(1.015);
 }
 
 @media (max-width: 560px) {

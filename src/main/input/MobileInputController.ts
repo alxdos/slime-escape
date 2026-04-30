@@ -1,8 +1,14 @@
 import type { InputCommand } from '../../shared/input';
-import type { ArenaConfig } from '../../shared/session';
 import { SIM_STEP_MS } from '../../shared/timing';
 
-import { applyMouseDeltaToAim, clampAimToArena, type MoveVector, type Vec2 } from './inputMath';
+import {
+  applyMouseDeltaToViewportAim,
+  viewportAimFromWorldAim,
+  worldAimFromViewportAim,
+  type MoveVector,
+  type Vec2,
+  type VisibleAreaLike
+} from './inputMath';
 import type { InputController } from './InputController';
 
 type EventTargetLike = Pick<EventTarget, 'addEventListener' | 'removeEventListener'>;
@@ -25,8 +31,8 @@ type TimerId = ReturnType<typeof setTimeout>;
 
 export type MobileInputControllerInit = Readonly<{
   surface: MobileSurface;
-  arena: ArenaConfig;
   pixelsPerWorldUnit(): number;
+  visibleArea(): VisibleAreaLike;
   initialAim: Vec2;
   onCommand(command: InputCommand): void;
   onPause(): void;
@@ -72,7 +78,8 @@ export function createMobileInputController(init: MobileInputControllerInit): In
     init.clearTimeoutFn ?? ((timerId) => clearTimeout(timerId));
 
   let active = false;
-  let aim = clampAimToArena(init.initialAim, init.arena);
+  let viewportAim = viewportAimFromWorldAim(init.initialAim, init.visibleArea());
+  let lastSentAim = currentWorldAim();
   let movementPointer: MovementPointer | null = null;
   let aimPointer: AimPointer | null = null;
   let lastSentMove: MoveVector = { dx: 0, dy: 0 };
@@ -132,8 +139,14 @@ export function createMobileInputController(init: MobileInputControllerInit): In
       const dx = point.x - aimPointer.last.x;
       const dy = point.y - aimPointer.last.y;
       aimPointer = { pointerId: event.pointerId, last: point };
-      aim = applyMouseDeltaToAim(aim, dx, dy, init.pixelsPerWorldUnit(), init.arena);
-      init.onCommand({ kind: 'aim', x: aim.x, y: aim.y });
+      viewportAim = applyMouseDeltaToViewportAim(
+        viewportAim,
+        dx,
+        dy,
+        init.pixelsPerWorldUnit(),
+        init.visibleArea()
+      );
+      sendAimIfChanged();
     }
   }
 
@@ -262,11 +275,26 @@ export function createMobileInputController(init: MobileInputControllerInit): In
     init.onCommand({ kind: 'move', dx: next.dx, dy: next.dy });
   }
 
+  function currentWorldAim(): Vec2 {
+    return worldAimFromViewportAim(viewportAim, init.visibleArea());
+  }
+
+  function sendAimIfChanged(): void {
+    const aim = currentWorldAim();
+    if (aim.x === lastSentAim.x && aim.y === lastSentAim.y) {
+      return;
+    }
+    lastSentAim = aim;
+    init.onCommand({ kind: 'aim', x: aim.x, y: aim.y });
+  }
+
   function resetTransientState(): void {
     movementPointer = null;
     aimPointer = null;
     firePointers.clear();
     lastSentMove = { dx: 0, dy: 0 };
+    viewportAim = viewportAimFromWorldAim(init.initialAim, init.visibleArea());
+    lastSentAim = currentWorldAim();
     fireActive = false;
     fireStartedAtMs = 0;
     if (fireStopTimer !== null) {
@@ -329,7 +357,11 @@ export function createMobileInputController(init: MobileInputControllerInit): In
       return active;
     },
     currentAim(): Vec2 {
-      return { x: aim.x, y: aim.y };
+      return currentWorldAim();
+    },
+    syncAim(): void {
+      if (!active) return;
+      sendAimIfChanged();
     },
     requestLock(): void {}
   };
