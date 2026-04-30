@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-30 (story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-19.)
+- Updated: 2026-04-30 (story 034 prep: recorded the split between core stepping and host wall-clock pumping, while preserving every existing rule below. Earlier: 2026-04-30 story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-19.)
 
 ## Context
 
@@ -31,6 +31,10 @@
 - All runtime systems use `SIM_STEP_MS` as the only time step; any `dt` field in system code equals `SIM_STEP_MS`, and variable steps are not allowed.
 - Numeric constants (`SIM_HZ`, `SIM_STEP_MS`, `SNAPSHOT_HZ`, `SNAPSHOT_INTERVAL_MS`) live in `src/shared/**` (see [web-stack.md](web-stack.md)) and are reused by both main and worker.
 - Changing `SIM_HZ` or `SNAPSHOT_HZ` is a change to this design decision, not a local edit; such changes require updating this file and bumping `Updated`.
+- The clock is split between the shared simulation core and its host:
+  - the core owns the stepping logic — the catch-up `while` loop, `simTime` accumulation, the `idle` / `running` mode, and `pause` / `resume` state. This is host-agnostic code and lives in `src/shared/sim/**` per [web-stack.md](web-stack.md).
+  - the host owns the wall-clock pump — the `setInterval` (or equivalent) loop that fires roughly every `SIM_STEP_MS` and reads wall-clock time (e.g. `performance.now()`). The host calls into the core's `pump(nowMs)` method on each fire; the method name and the interface boundary are recorded in [sim-core-interface.md](sim-core-interface.md).
+  - this split is purely about who does which step; it changes nothing in the rules above. In particular: simulation time still advances strictly through completed core ticks, never from wall-clock; `pause` / `resume` still does not catch up wall-clock time; `SIM_STEP_MS` is still the only time step inside systems; and `pump` while the core is idle is a no-op except for stabilizing the internal accumulator, exactly as the previous in-worker clock behaved.
 
 ## Consequences
 
@@ -45,5 +49,7 @@
 - [thread-model.md](thread-model.md)
 - [runtime-systems.md](runtime-systems.md)
 - [web-stack.md](web-stack.md)
+- [simulation-runtime.md](simulation-runtime.md)
+- [sim-core-interface.md](sim-core-interface.md)
 - [session-definition.md](session-definition.md)
 - [public-multiplayer-arena.md](public-multiplayer-arena.md)

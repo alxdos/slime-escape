@@ -101,6 +101,7 @@ Main principle:
 | [vibe-jam-portals.md](vibe-jam-portals.md) | accepted | Vibe Jam portal entrypoint, inbound return context, opening exit portal, normal post-boss completion, and redirect contracts |
 | [public-multiplayer-arena.md](public-multiplayer-arena.md) | accepted | First-slice Socket.IO server package and compact in-memory public arena; provisional, scheduled for removal when the Node host (story 036) replaces it with a focused `online-arena-hosting.md` |
 | [simulation-runtime.md](simulation-runtime.md) | accepted | Single shared simulation core, browser worker host for local play and Node arena host for online modes; online modes are multi-actor sessions of the shared core, not a separate runtime |
+| [sim-core-interface.md](sim-core-interface.md) | accepted | Host interface to the shared simulation core: factory, input methods, output ports, lifecycle, `pump(nowMs)` boundary, and what stays internal |
 | [_template.md](_template.md) | template | Minimal template for a new decision |
 
 ---

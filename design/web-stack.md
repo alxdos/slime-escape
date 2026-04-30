@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-30 (story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-23 for story 011, explicitly recorded that build-time tools live outside `src/**`; permission for the root-level `scripts/` directory is covered by a separate decision, `content-authoring.md`.)
+- Updated: 2026-04-30 (story 034 prep: redefined `src/sim/**` as the browser worker entry plumbing only, reserved `src/shared/sim/**` for the shared simulation core, and added the host-agnostic rule for the core. Earlier: 2026-04-30 story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-23 for story 011, explicitly recorded that build-time tools live outside `src/**`; permission for the root-level `scripts/` directory is covered by a separate decision, `content-authoring.md`.)
 
 ## Context
 
@@ -23,19 +23,21 @@ The game runs in the browser and must keep both a `main thread` with DOM/UI/audi
   - The lockfile is `package-lock.json` and is committed to the repository.
   - Migration to `pnpm` or `yarn` remains possible later without changing source code.
 - Source layout is by layer, not by feature:
-  - `src/main/**` — everything that lives on the `main thread`: bootstrap, render, DOM/HUD, audio, feature detection, and worker host wrappers.
-  - `src/sim/**` — the `simulation worker`: clock, runtime systems, world, and worker entry point.
-  - `src/shared/**` — types and pure utilities allowed in both contexts: message protocol, snapshot types, shared constants, and math.
-- Inside `src/shared/**`, two named subfolders are reserved with fixed roles:
+  - `src/main/**` — everything that lives on the `main thread`: bootstrap, render, DOM/HUD, audio, feature detection, and worker host wrappers (including the main-side connector for the simulation worker in `src/main/sim/**`).
+  - `src/sim/**` — the **browser simulation worker entry**: thin host port plumbing over the shared simulation core (the file referenced from `new Worker(new URL(...))`). After story 034 it owns only `self.postMessage`/`self.addEventListener` wiring and the wall-clock pump; no system implementations and no tick orchestration live here. Architectural role recorded in [simulation-runtime.md](simulation-runtime.md) and [sim-core-interface.md](sim-core-interface.md).
+  - `src/shared/**` — types and pure utilities allowed in both contexts: message protocol, snapshot types, shared constants, math, the content library, and the shared simulation core.
+- Inside `src/shared/**`, three named subfolders are reserved with fixed roles:
   - `src/shared/content/**` — the `content library` ([content-boundaries.md](content-boundaries.md)): enemy and weapon archetypes, boss profiles, arena parameters, drop tables, standard `ModePreset` values, and builder functions for `ModePreset + options → SessionDefinition`. It contains only data and pure functions, with no runtime state and no DOM/three.js.
-  - Other `src/shared/**` modules (protocol, snapshot, shared constants, math) may sit next to `content/`.
+  - `src/shared/sim/**` — the **shared simulation core** ([simulation-runtime.md](simulation-runtime.md), [sim-core-interface.md](sim-core-interface.md)): runtime systems, tick orchestration, host-agnostic clock stepping, the public façade returned by `createSimulationCore`, and their tests. It must not reference `self`, `postMessage`, `Worker`, browser globals, Node globals, `setInterval`, `setTimeout`, `performance.now`, Socket.IO, or any other host-specific API or package; it must not import host-specific Node packages (e.g. `node:*`, `socket.io`). Reuse from a host (browser worker, Node arena server) is through the public façade only.
+  - Other `src/shared/**` modules (protocol, snapshot, shared constants, math, log, RNG) may sit next to `content/` and `sim/`.
 - Import rules between layers:
   - `src/sim/**` must not import from `src/main/**`.
-  - `src/shared/**` must not import from `src/main/**` or `src/sim/**`.
-  - `src/main/**` may import from `src/shared/**`; `src/sim/**` may import from `src/shared/**`.
-  - This gives one invariant: the `simulation worker` stays headless, the shared contract does not pull in DOM/three.js, and any code in `src/shared/**` (including `src/shared/content/**`) is safe in any context.
-- The `content library` physically lives in `src/shared/content/**` because both `main` (for building `SessionDefinition` in UI and configuring camera/rendering for the arena) and `sim` (for executing `spawnPlan`, reading arena parameters, and so on) need to read it. Putting it in `src/main/**` or `src/sim/**` would require duplication or would violate import direction rules.
-- The worker entry point is the single file `src/sim/worker.ts`. Main connects to it as follows:
+  - `src/shared/**` (including `src/shared/sim/**`) must not import from `src/main/**` or `src/sim/**`.
+  - `src/shared/sim/**` must additionally satisfy the host-agnostic rule above (no host-specific globals or packages).
+  - `src/main/**` may import from `src/shared/**`; `src/sim/**` may import from `src/shared/**` (in particular, the worker entry imports the public façade from `src/shared/sim/**`).
+  - This gives one invariant: the simulation worker stays headless, the shared contract does not pull in DOM/three.js, and any code in `src/shared/**` (including `src/shared/content/**` and `src/shared/sim/**`) is safe in any host context.
+- The `content library` physically lives in `src/shared/content/**` because both `main` (for building `SessionDefinition` in UI and configuring camera/rendering for the arena) and the shared simulation core (for executing `spawnPlan`, reading arena parameters, and so on) need to read it. Putting it in `src/main/**` or `src/sim/**` would require duplication or would violate import direction rules.
+- The browser worker entry point is the single file `src/sim/worker.ts`; after story 034 it is a thin host wrapper over the shared core ([sim-core-interface.md](sim-core-interface.md)). Main connects to it as follows:
   ```ts
   new Worker(new URL('../../sim/worker.ts', import.meta.url), { type: 'module' })
   ```
@@ -55,6 +57,8 @@ The game runs in the browser and must keep both a `main thread` with DOM/UI/audi
 - [thread-model.md](thread-model.md)
 - [content-boundaries.md](content-boundaries.md)
 - [simulation-timing.md](simulation-timing.md)
+- [simulation-runtime.md](simulation-runtime.md)
+- [sim-core-interface.md](sim-core-interface.md)
 - [session-definition.md](session-definition.md)
 - [testing.md](testing.md)
 - [logging.md](logging.md)
