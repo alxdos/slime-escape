@@ -1,6 +1,6 @@
 # Public Arena Full Snapshot
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-30
 - Updated: 2026-04-30
 
@@ -45,7 +45,7 @@ Updates [public-multiplayer-arena.md](../design/public-multiplayer-arena.md) twi
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [ ] | Update [public-multiplayer-arena.md](../design/public-multiplayer-arena.md): replace the "Interest snapshots" section with the no-filter decision and the trigger for reintroducing it; record in "Authority and state" / "Socket.IO contract" that the authoritative snapshot carries only changing state, with `arena` and the recipient player id delivered once via `joinAccepted`. Update `Consequences`. | Architectural PR, no code. |
+| T1 | [x] | Update [public-multiplayer-arena.md](../design/public-multiplayer-arena.md): replace the "Interest snapshots" section with the no-filter decision and the trigger for reintroducing it; record in "Authority and state" / "Socket.IO contract" that the authoritative snapshot carries only changing state, with `arena` and the recipient player id delivered once via `joinAccepted`. Update `Consequences`. | Recorded in [public-multiplayer-arena.md](../design/public-multiplayer-arena.md); architectural PR, no code. |
 | T2 | [ ] | Update `src/shared/publicArenaProtocol.ts`: drop `selfId` and `arena` from `PublicArenaSnapshot`, bump `PUBLIC_ARENA_PROTOCOL_VERSION`, update `publicArenaProtocol.test.ts`. | Depends on T1. |
 | T3 | [ ] | Server: drop interest filtering from `server/src/arenaSimulation.ts` (`InterestRect`, `interestRectFor`, `playerIntersectsInterest`, `projectileIntersectsInterest`, `circleIntersectsRect`, `interestSnapshotFor`, `PUBLIC_ARENA_INTEREST_*`); simplify `snapshotFor` to no longer include `selfId`/`arena`; switch `server/src/server.ts` to the simplified `snapshotFor` per socket. | Depends on T2. |
 | T4 | [ ] | Update `server/src/arenaSimulation.test.ts`: remove the interest-filter test; add a test that snapshots delivered to two distant sockets are equal in `players`/`projectiles` and contain no `selfId`/`arena`. | Depends on T3. |
