@@ -50,6 +50,15 @@ import {
   type SimWorkerHostOptions
 } from '../sim/SimWorkerHost';
 import {
+  publicArenaClientConfig,
+  type PublicArenaClientConfig
+} from '../publicArenaConfig';
+import {
+  createPublicArenaClient,
+  type PublicArenaClient,
+  type PublicArenaClientInit
+} from '../online/PublicArenaClient';
+import {
   createBrowserVibeJamPortalStorage,
   type VibeJamPortalStorage
 } from '../VibeJamPortalContext';
@@ -90,6 +99,11 @@ import {
 } from './PhaseTransitionCurtain';
 import { createHud, type Hud, type HudInit } from './Hud';
 import { createPauseOverlay, type PauseOverlay, type PauseOverlayInit } from './PauseOverlay';
+import {
+  createPublicArenaStatusOverlay,
+  type PublicArenaStatusOverlay,
+  type PublicArenaStatusOverlayInit
+} from './PublicArenaStatusOverlay';
 import {
   createResultOverlay,
   type ResultOverlay,
@@ -144,6 +158,9 @@ type CreatePhaseTransitionCurtainFn = (
   init: PhaseTransitionCurtainInit
 ) => PhaseTransitionCurtain;
 type CreatePauseOverlayFn = (init: PauseOverlayInit) => PauseOverlay;
+type CreatePublicArenaStatusOverlayFn = (
+  init: PublicArenaStatusOverlayInit
+) => PublicArenaStatusOverlay;
 type CreateResultOverlayFn = (init: ResultOverlayInit) => ResultOverlay;
 type CreateSettingsOverlayFn = (init: SettingsOverlayInit) => SettingsOverlay;
 type CreateStartupOverlayFn = (init: StartupOverlayInit) => StartupOverlay;
@@ -162,6 +179,7 @@ type CreateVibeJamPortalControllerFn = (
   init: VibeJamPortalControllerInit
 ) => VibeJamPortalController;
 type CreateAudioFn = () => Audio;
+type CreatePublicArenaClientFn = (init: PublicArenaClientInit) => PublicArenaClient;
 type CreateClientSettingsStoreFn = () => ClientSettingsStore;
 type CreateDungeonBestWaveStoreFn = () => DungeonBestWaveStore;
 type CreateClientProgressionStoreFn = () => ClientProgressionStore;
@@ -181,6 +199,7 @@ export type UiShellInit = Readonly<{
   createMenuOverlay?: CreateMenuOverlayFn;
   createPhaseTransitionCurtain?: CreatePhaseTransitionCurtainFn;
   createPauseOverlay?: CreatePauseOverlayFn;
+  createPublicArenaStatusOverlay?: CreatePublicArenaStatusOverlayFn;
   createResultOverlay?: CreateResultOverlayFn;
   createSettingsOverlay?: CreateSettingsOverlayFn;
   createStartupOverlay?: CreateStartupOverlayFn;
@@ -195,6 +214,7 @@ export type UiShellInit = Readonly<{
   createTitleOverlay?: CreateTitleOverlayFn;
   createVibeJamPortalController?: CreateVibeJamPortalControllerFn;
   createAudio?: CreateAudioFn;
+  createPublicArenaClient?: CreatePublicArenaClientFn;
   createClientSettingsStore?: CreateClientSettingsStoreFn;
   createDungeonBestWaveStore?: CreateDungeonBestWaveStoreFn;
   createClientProgressionStore?: CreateClientProgressionStoreFn;
@@ -204,6 +224,7 @@ export type UiShellInit = Readonly<{
   makeSeed?: () => number;
   portalHref?: string;
   portalStorage?: VibeJamPortalStorage | null;
+  publicArenaConfig?: PublicArenaClientConfig;
   windowTarget?: WindowTarget;
   documentTarget?: DocumentTarget;
   gameViewport?: GameViewportProvider;
@@ -219,6 +240,8 @@ export type UiShell = Readonly<{
 const LOADING_PHASE: UiShellPhase = { kind: 'loading' };
 const MENU_PHASE: UiShellPhase = { kind: 'menu' };
 const RUNNING_PHASE: UiShellPhase = { kind: 'running' };
+const ONLINE_CONNECTING_PHASE: UiShellPhase = { kind: 'onlineConnecting' };
+const ONLINE_PHASE: UiShellPhase = { kind: 'online' };
 const PAUSED_PHASE: UiShellPhase = { kind: 'paused' };
 const ESCAPE_KEY_CODE = 'Escape';
 const SPACE_KEY_CODE = 'Space';
@@ -228,6 +251,9 @@ const CAMPAIGN_PRESET_IDS = new Set<ModePresetId>([
   'campaign-normal',
   'campaign-hard'
 ]);
+const PUBLIC_ARENA_CONNECTING_MESSAGE = 'Joining Public Arena';
+const PUBLIC_ARENA_CONNECTED_MESSAGE = 'Connected to Public Arena';
+const PUBLIC_ARENA_NOT_CONFIGURED_MESSAGE = 'Public arena server is not configured.';
 
 type SessionStartSource = 'campaign' | 'nonCampaign' | 'autoStart';
 
@@ -243,6 +269,9 @@ export function createUiShell(init: UiShellInit): UiShell {
   const canMountStartupOverlays =
     typeof (init.parent as Partial<HTMLElement>).appendChild === 'function' &&
     typeof document !== 'undefined';
+  const publicArenaStatusFactory =
+    init.createPublicArenaStatusOverlay ??
+    (canMountStartupOverlays ? createPublicArenaStatusOverlay : createNullPublicArenaStatusOverlay);
   const startupOverlayFactory =
     init.createStartupOverlay ??
     (canMountStartupOverlays ? createStartupOverlay : createNullStartupOverlay);
@@ -267,6 +296,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   const portalControllerFactory =
     init.createVibeJamPortalController ?? createVibeJamPortalController;
   const audioFactory = init.createAudio ?? createAudio;
+  const publicArenaClientFactory =
+    init.createPublicArenaClient ?? createPublicArenaClient;
   const clientSettingsStoreFactory =
     init.createClientSettingsStore ?? createClientSettingsStore;
   const dungeonBestWaveStoreFactory =
@@ -276,6 +307,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const runStartupPreload = init.runStartupPreload ?? defaultRunStartupPreload;
   const reloadPage = init.reloadPage ?? defaultReloadPage;
   const assignLocation = init.assignLocation ?? defaultAssignLocation;
+  const resolvedPublicArenaConfig = init.publicArenaConfig ?? publicArenaClientConfig;
   const windowTarget = init.windowTarget ?? window;
   const documentTarget = init.documentTarget ?? document;
   const gameViewport =
@@ -295,6 +327,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   let preloadedTextures: TextureMap | null = null;
   let renderer: Renderer | null = null;
   let input: InputController | null = null;
+  let publicArenaClient: PublicArenaClient | null = null;
+  let publicArenaConnectionId = 0;
   let unsubscribeRendererSettings: (() => void) | null = null;
   let settingsVisible = false;
   let phase: UiShellPhase = LOADING_PHASE;
@@ -396,6 +430,13 @@ export function createUiShell(init: UiShellInit): UiShell {
       audio.playUi('buttonClick');
       log.info('menu teaser selected', { controlId });
     },
+    onStartPublicArena() {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
+        return;
+      }
+      audio.playUi('buttonClick');
+      startPublicArena();
+    },
     onStartDungeon() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
         return;
@@ -452,6 +493,14 @@ export function createUiShell(init: UiShellInit): UiShell {
     }
   });
 
+  const publicArenaStatus = publicArenaStatusFactory({
+    parent: init.parent,
+    onBack() {
+      audio.playUi('buttonClick');
+      exitPublicArenaToMenu();
+    }
+  });
+
   const result = resultFactory({
     parent: init.parent,
     onBackToMenu() {
@@ -502,6 +551,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         startupErrorOverlay.hide();
         menu.hide();
         pause.hide();
+        publicArenaStatus.hide();
         result.hide();
         mobileControls.hide();
         syncSettingsVisibility();
@@ -511,6 +561,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         startupErrorOverlay.hide();
         menu.show();
         pause.hide();
+        publicArenaStatus.hide();
         result.hide();
         mobileControls.hide();
         syncSettingsVisibility();
@@ -520,6 +571,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         startupErrorOverlay.hide();
         menu.hide();
         pause.hide();
+        publicArenaStatus.hide();
         result.hide();
         if (isMobileInputMode()) {
           mobileControls.show();
@@ -528,11 +580,32 @@ export function createUiShell(init: UiShellInit): UiShell {
         }
         syncSettingsVisibility();
         return;
+      case 'onlineConnecting':
+        startupOverlay.hide();
+        startupErrorOverlay.hide();
+        menu.hide();
+        pause.hide();
+        result.hide();
+        mobileControls.hide();
+        publicArenaStatus.show(PUBLIC_ARENA_CONNECTING_MESSAGE);
+        syncSettingsVisibility();
+        return;
+      case 'online':
+        startupOverlay.hide();
+        startupErrorOverlay.hide();
+        menu.hide();
+        pause.hide();
+        result.hide();
+        mobileControls.hide();
+        publicArenaStatus.show(PUBLIC_ARENA_CONNECTED_MESSAGE);
+        syncSettingsVisibility();
+        return;
       case 'paused':
         startupOverlay.hide();
         startupErrorOverlay.hide();
         menu.hide();
         pause.show();
+        publicArenaStatus.hide();
         result.hide();
         mobileControls.hide();
         syncSettingsVisibility();
@@ -542,6 +615,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         startupErrorOverlay.hide();
         menu.hide();
         pause.hide();
+        publicArenaStatus.hide();
         result.show(phase.viewModel);
         mobileControls.hide();
         syncSettingsVisibility();
@@ -550,6 +624,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         startupOverlay.hide();
         menu.hide();
         pause.hide();
+        publicArenaStatus.hide();
         result.hide();
         startupErrorOverlay.show(phase.message);
         mobileControls.hide();
@@ -657,6 +732,68 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (phase.kind !== 'menu' || isTransitionActive()) return;
     const preset = resolveModePreset(presetId);
     void startPresetWithTransition(preset, source);
+  }
+
+  function startPublicArena(): void {
+    if (phase.kind !== 'menu' || publicArenaClient !== null) {
+      return;
+    }
+    const serverUrl = resolvedPublicArenaConfig.serverUrl;
+    if (serverUrl === null) {
+      menu.showFeedback(PUBLIC_ARENA_NOT_CONFIGURED_MESSAGE);
+      return;
+    }
+
+    const connectionId = publicArenaConnectionId + 1;
+    publicArenaConnectionId = connectionId;
+    setPhase(ONLINE_CONNECTING_PHASE);
+    const nextPublicArenaClient = publicArenaClientFactory({
+      serverUrl,
+      onAccepted(message) {
+        if (!isCurrentPublicArenaConnection(connectionId)) {
+          return;
+        }
+        log.info('public arena accepted', {
+          playerId: message.playerId,
+          population: message.population
+        });
+        setPhase(ONLINE_PHASE);
+      },
+      onRejected(message) {
+        if (!finishPublicArenaConnection(connectionId)) {
+          return;
+        }
+        setPhase(MENU_PHASE);
+        menu.showFeedback(message.message);
+      },
+      onSnapshot() {},
+      onPresentation() {},
+      onClose(reason) {
+        if (!finishPublicArenaConnection(connectionId)) {
+          return;
+        }
+        setPhase(MENU_PHASE);
+        menu.showFeedback(reason.message);
+      }
+    });
+    if (!isCurrentPublicArenaConnection(connectionId)) {
+      nextPublicArenaClient.disconnect();
+      return;
+    }
+    publicArenaClient = nextPublicArenaClient;
+  }
+
+  function isCurrentPublicArenaConnection(connectionId: number): boolean {
+    return publicArenaConnectionId === connectionId;
+  }
+
+  function finishPublicArenaConnection(connectionId: number): boolean {
+    if (!isCurrentPublicArenaConnection(connectionId)) {
+      return false;
+    }
+    publicArenaConnectionId += 1;
+    publicArenaClient = null;
+    return true;
   }
 
   async function startPresetWithTransition(
@@ -832,6 +969,11 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function exitToMenu(): void {
     const previousPhase = phase;
+    if (previousPhase.kind === 'onlineConnecting' || previousPhase.kind === 'online') {
+      exitPublicArenaToMenu();
+      return;
+    }
+
     if (previousPhase.kind === 'running' || previousPhase.kind === 'paused') {
       tearDownClientSession();
       sim.stopSession();
@@ -843,6 +985,17 @@ export function createUiShell(init: UiShellInit): UiShell {
       return;
     }
 
+    setPhase(MENU_PHASE);
+  }
+
+  function exitPublicArenaToMenu(): void {
+    if (phase.kind !== 'onlineConnecting' && phase.kind !== 'online') {
+      return;
+    }
+    const activePublicArenaClient = publicArenaClient;
+    publicArenaConnectionId += 1;
+    publicArenaClient = null;
+    activePublicArenaClient?.disconnect();
     setPhase(MENU_PHASE);
   }
 
@@ -1158,6 +1311,10 @@ export function createUiShell(init: UiShellInit): UiShell {
     dispose(): void {
       disposed = true;
       detach();
+      const activePublicArenaClient = publicArenaClient;
+      publicArenaConnectionId += 1;
+      publicArenaClient = null;
+      activePublicArenaClient?.disconnect();
       tearDownClientSession();
       releasePreloadedTextures();
       startupOverlay.dispose();
@@ -1165,6 +1322,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       phaseTransitionCurtain.dispose();
       menu.dispose();
       pause.dispose();
+      publicArenaStatus.dispose();
       result.dispose();
       settingsOverlay.dispose();
       mobileControls.dispose();
@@ -1311,6 +1469,19 @@ function createNullMobileControlsOverlay(
     },
     pauseButtonElement(): HTMLElement {
       return pauseButton;
+    },
+    dispose(): void {}
+  };
+}
+
+function createNullPublicArenaStatusOverlay(
+  _init: PublicArenaStatusOverlayInit
+): PublicArenaStatusOverlay {
+  return {
+    show(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
     },
     dispose(): void {}
   };
