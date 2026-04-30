@@ -3,7 +3,7 @@ import {
   createGameSurfaceController,
   detectMobileWebProfile
 } from './mobileWebProfile';
-import { installPageContextMenuBlocker } from './pageContextMenu';
+import { installPageInteractionBlockers } from './pageContextMenu';
 import { createFpsOverlay } from './render/FpsOverlay';
 import { createUiShell } from './ui/UiShell';
 import {
@@ -56,7 +56,7 @@ function resolveLoadingImageSrc(windowTarget: SlimeEscapeWindow): string | undef
 }
 
 detectFeatures();
-installPageContextMenuBlocker(document);
+installPageInteractionBlockers(document);
 const gameRoot = requireElement('#app');
 const canvas = requireCanvas('#scene');
 const gameSurface = createGameSurfaceController({
