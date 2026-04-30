@@ -30,9 +30,10 @@ This decision defines stable rules for the layer. Exact fields for a specific ar
   - `bosses` -> `src/shared/content/bosses.generated.ts` + `src/main/audio/bossAudio.generated.ts` + `src/main/render/bossVisuals.generated.ts`;
   - `players` -> `src/shared/content/players.generated.ts` + `src/main/render/playerVisuals.generated.ts`;
   - `pets` -> `src/shared/content/pets.generated.ts` + `src/main/render/petVisuals.generated.ts`;
-  - `sessions` -> `src/shared/content/sessions.generated.ts`.
+  - `sessions` -> `src/shared/content/sessions.generated.ts` + `src/shared/content/publicArena.generated.ts`.
 - A single MD file may produce **one or more** generated `.ts` files, placed **in the layer that consumes the data**, not in a dumping-ground `generated` directory. For `enemies`, balance/content fields go to `src/shared/content/enemies.generated.ts`, while audio mapping goes to `src/main/audio/enemyAudio.generated.ts`.
 - This split is mandatory and preserves [content-boundaries.md](content-boundaries.md): audio is presentation, not part of the `content library`. One MD file remains the single authoring source, and the generator owns routing fields to the correct target file.
+- For `sessions`, `sessions.generated.ts` is the full local-session preset projection. `publicArena.generated.ts` is a narrow generated projection derived from `content/sessions/portal.md` for the online Public Arena presentation config: arena dimensions, backgrounds, and active background id only. It must not duplicate authored values by hand and must not pull local session flow, waves, or boss encounters into the online server.
 
 ### Layer alignment
 
