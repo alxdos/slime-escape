@@ -258,6 +258,7 @@ Without an explicit contract, 007 would lock in divergence along two axes:
 - [render-scale.md](render-scale.md)
 - [sprite-assets.md](sprite-assets.md)
 - [companion-combat.md](companion-combat.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)
 - [web-stack.md](web-stack.md)
 - [boss-encounter.md](boss-encounter.md)
 - [zone.md](zone.md)

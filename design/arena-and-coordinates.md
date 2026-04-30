@@ -86,3 +86,4 @@ Gameplay is built around a single arena ([../docs/GDD_CORE.md](../docs/GDD_CORE.
 - [web-stack.md](web-stack.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
 - [mobile-web-support.md](mobile-web-support.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)

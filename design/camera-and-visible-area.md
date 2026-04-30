@@ -96,3 +96,4 @@ Without this decision:
 - [thread-model.md](thread-model.md)
 - [testing.md](testing.md)
 - [../stories/031-mobile-web-support.md](../stories/031-mobile-web-support.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)

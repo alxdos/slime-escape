@@ -1,6 +1,6 @@
 # Public Slime Arena
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-30
 - Updated: 2026-04-30
 
@@ -52,6 +52,10 @@ The beauty of the mode is simplicity: join, spawn, throw rocks, kill, level up, 
 - Sees: killing a boss does not skip levels; the killer still advances by one level.
 - Sees: a minimal HUD with their current level and the current arena population.
 
+## Technical
+
+Public Slime Arena is built on [public-multiplayer-arena.md](../design/public-multiplayer-arena.md): one separate stateful Node/TypeScript server package, Socket.IO `4.x`, one authoritative in-memory `40 x 40 wu` arena, socket-local player identity, server-owned HP/kills/levels/boss transforms, and per-socket interest snapshots based on visible area plus margin. The static client gets the arena server URL at build time through a `VITE_` environment variable. The first slice reuses shared content ids, world units, timing constants, input intent shape, and sprite registries, but it does not run the existing local one-player `src/sim` session runtime on the server.
+
 ## Out of scope
 
 - Matchmaking, ranked queues, private rooms, parties, invites, or friend joining.
@@ -90,3 +94,38 @@ The beauty of the mode is simplicity: join, spawn, throw rocks, kill, level up, 
 - Disconnecting and rejoining starts the player back at level 1.
 - The mode does not add campaign XP, pet progress, or permanent rewards after play.
 - Demo scenario: join the public arena, spawn as level 1, throw rocks, kill one player, see the level label and slime form change, die and return to level 1, then observe a high-level player become the tower boss and fight them without any separate boss phase starting.
+
+## Tasks
+
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [x] | Record the architecture decision for the public online arena runtime and link the story to it. | Added [public-multiplayer-arena.md](../design/public-multiplayer-arena.md). |
+| T2 | [ ] | Scaffold the `public-arena-server/` package as a separate stateful Node/TypeScript deployable with npm scripts, tests, Socket.IO server dependency, and runtime config. | It may import `../src/shared/**`; it must not import `../src/main/**` or `../src/sim/**`. |
+| T3 | [ ] | Define the first online protocol and client configuration path: build-time `VITE_` arena server URL, join accepted/rejected, input intent, authoritative snapshot, presentation events, disconnect/leave, and full-arena message. | Share protocol types only where both client and server need them. |
+| T4 | [ ] | Implement server arena membership: one in-memory public arena, `200` player cap, socket-local player ids, corner spawn areas, disconnect removal, and restart-reset semantics. | Cover join/full/disconnect/spawn behavior with server-side tests. |
+| T5 | [ ] | Implement the compact authoritative arena simulation: fixed tick, player movement clamped to `40 x 40 wu`, rock throwing, boss fire, projectile hits, HP, death reset to level 1, kill `+1` level, slime form changes, tower boss transform, and boss-versus-boss damage. | Keep this runtime deathmatch-only; no waves, zone, drops, campaign result, pets, or local session flow. |
+| T6 | [ ] | Implement Socket.IO delivery: reliable join/reject lifecycle, volatile per-socket snapshots at the snapshot cadence, and interest filtering by visible area plus margin. | One arena, smart payloads; interest filtering must not affect gameplay authority. |
+| T7 | [ ] | Add the Public Arena client entry point and connection flow in the existing web app. | Shows full-arena rejection, connects when accepted, and keeps campaign/training/dungeon flows unchanged. |
+| T8 | [ ] | Render online snapshots with existing slime, boss, projectile, level-label, and HUD presentation. | Show current level and arena population; use `boss-tower-sentinel` / `boss-04.png` for boss players. |
+| T9 | [ ] | Route desktop and mobile online input to the server as movement, aim, and fire intent using the existing visible-area/camera mapping. | The server remains authoritative; mobile support sends no new simulation-visible touch command kinds. |
+| T10 | [ ] | Run automated checks and request live online verification from the user. | Include server unit tests, protocol/client tests, build/content checks, and a manual two-client arena check per pipeline. |
+
+## Related
+
+- [public-multiplayer-arena.md](../design/public-multiplayer-arena.md)
+- [web-stack.md](../design/web-stack.md)
+- [content-boundaries.md](../design/content-boundaries.md)
+- [arena-and-coordinates.md](../design/arena-and-coordinates.md)
+- [camera-and-visible-area.md](../design/camera-and-visible-area.md)
+- [input-commands.md](../design/input-commands.md)
+- [simulation-timing.md](../design/simulation-timing.md)
+- [snapshot-shape.md](../design/snapshot-shape.md)
+- [content-archetypes.md](../design/content-archetypes.md)
+- [universal-weapons-and-projectiles.md](../design/universal-weapons-and-projectiles.md)
+- [projectiles-and-combat.md](../design/projectiles-and-combat.md)
+- [health-and-death.md](../design/health-and-death.md)
+- [boss-encounter.md](../design/boss-encounter.md)
+- [sprite-assets.md](../design/sprite-assets.md)
+- [main-ui-shell.md](../design/main-ui-shell.md)
+- [mobile-web-support.md](../design/mobile-web-support.md)
+- [testing.md](../design/testing.md)

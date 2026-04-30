@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-19
+- Updated: 2026-04-30 (story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-19.)
 
 ## Context
 
@@ -46,3 +46,4 @@
 - [runtime-systems.md](runtime-systems.md)
 - [web-stack.md](web-stack.md)
 - [session-definition.md](session-definition.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)

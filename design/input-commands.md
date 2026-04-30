@@ -142,3 +142,4 @@ There are also product requirements:
 - [../docs/GDD_CORE.md](../docs/GDD_CORE.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [mobile-web-support.md](mobile-web-support.md)
+- [public-multiplayer-arena.md](public-multiplayer-arena.md)
