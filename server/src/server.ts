@@ -6,7 +6,16 @@ import type {
   PublicArenaClientToServerEvents,
   PublicArenaServerToClientEvents
 } from '../../src/shared/publicArenaProtocol.js';
+import {
+  PUBLIC_ARENA_EVENTS,
+  PUBLIC_ARENA_PROTOCOL_VERSION,
+  type PublicArenaJoinRejected
+} from '../../src/shared/publicArenaProtocol.js';
+import { createPublicArenaState } from './arenaState.js';
 import type { PublicArenaServerConfig } from './config.js';
+
+const PUBLIC_ARENA_ROOM = 'public-arena';
+const PUBLIC_ARENA_PROTOCOL_MISMATCH_MESSAGE = 'The online arena connection is out of date. Please refresh.';
 
 export type PublicArenaServer = Readonly<{
   httpServer: HttpServer;
@@ -25,6 +34,12 @@ function writeJson(res: ServerResponse, body: unknown): void {
 }
 
 export function createPublicArenaServer(config: PublicArenaServerConfig): PublicArenaServer {
+  const arena = createPublicArenaState({
+    playerCap: config.playerCap,
+    tickHz: config.tickHz,
+    snapshotHz: config.snapshotHz
+  });
+
   const httpServer = createServer((req, res) => {
     if (req.url === '/healthz') {
       writeJson(res, {
@@ -49,8 +64,31 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
     }
   );
 
-  io.on('connection', () => {
-    // Membership and gameplay handlers are introduced by T4/T6.
+  io.on('connection', (socket) => {
+    socket.on(PUBLIC_ARENA_EVENTS.join, (request) => {
+      if (request.protocolVersion !== PUBLIC_ARENA_PROTOCOL_VERSION) {
+        socket.emit(PUBLIC_ARENA_EVENTS.joinRejected, protocolMismatchRejection(arena.population(), config.playerCap));
+        return;
+      }
+
+      const result = arena.join(socket.id);
+      if (result.kind === 'accepted') {
+        void socket.join(PUBLIC_ARENA_ROOM);
+        socket.emit(PUBLIC_ARENA_EVENTS.joinAccepted, result.message);
+        return;
+      }
+
+      socket.emit(PUBLIC_ARENA_EVENTS.joinRejected, result.message);
+    });
+
+    socket.on(PUBLIC_ARENA_EVENTS.leave, () => {
+      arena.leave(socket.id);
+      void socket.leave(PUBLIC_ARENA_ROOM);
+    });
+
+    socket.on('disconnect', () => {
+      arena.leave(socket.id);
+    });
   });
 
   return {
@@ -88,5 +126,15 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
         });
       });
     }
+  };
+}
+
+function protocolMismatchRejection(population: number, playerCap: number): PublicArenaJoinRejected {
+  return {
+    protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
+    reason: 'protocolMismatch',
+    message: PUBLIC_ARENA_PROTOCOL_MISMATCH_MESSAGE,
+    playerCap,
+    population
   };
 }
