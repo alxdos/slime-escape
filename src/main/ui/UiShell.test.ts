@@ -8,6 +8,7 @@ import {
 } from '../../shared/content/sessions';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
+import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
@@ -17,6 +18,10 @@ import type {
   PublicArenaClient,
   PublicArenaClientInit
 } from '../online/PublicArenaClient';
+import type {
+  PublicArenaRenderer,
+  PublicArenaRendererInit
+} from '../online/PublicArenaRenderer';
 import type {
   ClientProgression,
   ClientProgressionStore
@@ -62,6 +67,7 @@ import type {
   PhaseTransitionCurtainInit
 } from './PhaseTransitionCurtain';
 import type { PauseOverlay, PauseOverlayInit } from './PauseOverlay';
+import type { PublicArenaHud, PublicArenaHudInit } from './PublicArenaHud';
 import type {
   PublicArenaStatusOverlay,
   PublicArenaStatusOverlayInit
@@ -689,6 +695,84 @@ function createPublicArenaStatusHarness() {
   };
 }
 
+function createPublicArenaHudHarness() {
+  let visible = false;
+  let lastLevel = '';
+  let lastPopulation = '';
+
+  const hud: PublicArenaHud = {
+    show(): void {
+      visible = true;
+    },
+    update(snapshot, playerCap): void {
+      const self = snapshot?.players.find((player) => player.id === snapshot.selfId) ?? null;
+      lastLevel = self === null ? 'Level --' : `Level ${self.level}`;
+      lastPopulation =
+        snapshot === null
+          ? 'Players --'
+          : playerCap === null
+            ? `Players ${snapshot.population}`
+            : `Players ${snapshot.population}/${playerCap}`;
+    },
+    hide(): void {
+      visible = false;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    dispose(): void {}
+  };
+
+  return {
+    factory(_init: PublicArenaHudInit): PublicArenaHud {
+      return hud;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    level(): string {
+      return lastLevel;
+    },
+    population(): string {
+      return lastPopulation;
+    }
+  };
+}
+
+function createPublicArenaRendererHarness() {
+  let lastInit: PublicArenaRendererInit | null = null;
+  const calls = {
+    render: 0,
+    fitToWindow: 0,
+    applyScalePolicy: 0,
+    dispose: 0
+  };
+
+  return {
+    factory(init: PublicArenaRendererInit): PublicArenaRenderer {
+      lastInit = init;
+      return {
+        render(): void {
+          calls.render += 1;
+        },
+        fitToWindow(): void {
+          calls.fitToWindow += 1;
+        },
+        applyScalePolicy(): void {
+          calls.applyScalePolicy += 1;
+        },
+        dispose(): void {
+          calls.dispose += 1;
+        }
+      };
+    },
+    lastInit(): PublicArenaRendererInit | null {
+      return lastInit;
+    },
+    calls
+  };
+}
+
 function createPublicArenaClientHarness() {
   let lastInit: PublicArenaClientInit | null = null;
   let disconnectCalls = 0;
@@ -729,12 +813,36 @@ function createPublicArenaClientHarness() {
         message
       });
     },
+    snapshot(): void {
+      lastInit?.onSnapshot(makePublicArenaSnapshot());
+    },
     lastInit(): PublicArenaClientInit | null {
       return lastInit;
     },
     disconnectCalls(): number {
       return disconnectCalls;
     }
+  };
+}
+
+function makePublicArenaSnapshot(): PublicArenaSnapshot {
+  return {
+    simTimeMs: 120,
+    selfId: 'socket-a',
+    arena: { width: 40, height: 40, minX: -20, maxX: 20, minY: -20, maxY: 20 },
+    population: 7,
+    players: [
+      {
+        id: 'socket-a',
+        x: 1,
+        y: 2,
+        hp: 20,
+        maxHp: 20,
+        level: 3,
+        form: { kind: 'slime', archetypeId: 'slime-hornling' }
+      }
+    ],
+    projectiles: []
   };
 }
 
@@ -2306,7 +2414,9 @@ describe('UiShell', () => {
   it('starts the public arena connection without starting a local session', async () => {
     const menu = createMenuHarness();
     const status = createPublicArenaStatusHarness();
+    const publicArenaHud = createPublicArenaHudHarness();
     const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
     const audio = createAudioHarness();
@@ -2323,8 +2433,10 @@ describe('UiShell', () => {
       createResultOverlay: createResultHarness().factory,
       createSettingsOverlay: createSettingsOverlayHarness().factory,
       createHud: hud.factory,
+      createPublicArenaHud: publicArenaHud.factory,
       createPublicArenaStatusOverlay: status.factory,
       createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
       createAudio: audio.factory,
       publicArenaConfig: {
         serverUrl: 'https://arena.example.test',
@@ -2345,11 +2457,30 @@ describe('UiShell', () => {
     publicArenaClient.accept();
 
     expect(shell.phase()).toEqual({ kind: 'online' });
-    expect(status.message()).toBe('Connected to Public Arena');
+    expect(status.isVisible()).toBe(false);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(publicArenaRenderer.lastInit()).toBeNull();
+
+    publicArenaClient.snapshot();
+    shell.onFrame();
+
+    expect(publicArenaRenderer.lastInit()?.arena).toEqual({
+      width: 40,
+      height: 40,
+      minX: -20,
+      maxX: 20,
+      minY: -20,
+      maxY: 20
+    });
+    expect(publicArenaHud.level()).toBe('Level 3');
+    expect(publicArenaHud.population()).toBe('Players 7/200');
+    expect(publicArenaRenderer.calls.render).toBe(1);
 
     status.back();
 
     expect(publicArenaClient.disconnectCalls()).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(1);
+    expect(publicArenaHud.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'menu' });
 
     publicArenaClient.close('Arena server is restarting.');

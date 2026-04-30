@@ -11,6 +11,10 @@ import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
+import type {
+  PublicArenaSnapshot,
+  PublicArenaWorldBounds
+} from '../../shared/publicArenaProtocol';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import { createAudio, type Audio } from '../audio/Audio';
@@ -59,6 +63,11 @@ import {
   type PublicArenaClientInit
 } from '../online/PublicArenaClient';
 import {
+  createPublicArenaRenderer,
+  type PublicArenaRenderer,
+  type PublicArenaRendererInit
+} from '../online/PublicArenaRenderer';
+import {
   createBrowserVibeJamPortalStorage,
   type VibeJamPortalStorage
 } from '../VibeJamPortalContext';
@@ -99,6 +108,11 @@ import {
 } from './PhaseTransitionCurtain';
 import { createHud, type Hud, type HudInit } from './Hud';
 import { createPauseOverlay, type PauseOverlay, type PauseOverlayInit } from './PauseOverlay';
+import {
+  createPublicArenaHud,
+  type PublicArenaHud,
+  type PublicArenaHudInit
+} from './PublicArenaHud';
 import {
   createPublicArenaStatusOverlay,
   type PublicArenaStatusOverlay,
@@ -158,6 +172,7 @@ type CreatePhaseTransitionCurtainFn = (
   init: PhaseTransitionCurtainInit
 ) => PhaseTransitionCurtain;
 type CreatePauseOverlayFn = (init: PauseOverlayInit) => PauseOverlay;
+type CreatePublicArenaHudFn = (init: PublicArenaHudInit) => PublicArenaHud;
 type CreatePublicArenaStatusOverlayFn = (
   init: PublicArenaStatusOverlayInit
 ) => PublicArenaStatusOverlay;
@@ -180,6 +195,7 @@ type CreateVibeJamPortalControllerFn = (
 ) => VibeJamPortalController;
 type CreateAudioFn = () => Audio;
 type CreatePublicArenaClientFn = (init: PublicArenaClientInit) => PublicArenaClient;
+type CreatePublicArenaRendererFn = (init: PublicArenaRendererInit) => PublicArenaRenderer;
 type CreateClientSettingsStoreFn = () => ClientSettingsStore;
 type CreateDungeonBestWaveStoreFn = () => DungeonBestWaveStore;
 type CreateClientProgressionStoreFn = () => ClientProgressionStore;
@@ -199,6 +215,7 @@ export type UiShellInit = Readonly<{
   createMenuOverlay?: CreateMenuOverlayFn;
   createPhaseTransitionCurtain?: CreatePhaseTransitionCurtainFn;
   createPauseOverlay?: CreatePauseOverlayFn;
+  createPublicArenaHud?: CreatePublicArenaHudFn;
   createPublicArenaStatusOverlay?: CreatePublicArenaStatusOverlayFn;
   createResultOverlay?: CreateResultOverlayFn;
   createSettingsOverlay?: CreateSettingsOverlayFn;
@@ -215,6 +232,7 @@ export type UiShellInit = Readonly<{
   createVibeJamPortalController?: CreateVibeJamPortalControllerFn;
   createAudio?: CreateAudioFn;
   createPublicArenaClient?: CreatePublicArenaClientFn;
+  createPublicArenaRenderer?: CreatePublicArenaRendererFn;
   createClientSettingsStore?: CreateClientSettingsStoreFn;
   createDungeonBestWaveStore?: CreateDungeonBestWaveStoreFn;
   createClientProgressionStore?: CreateClientProgressionStoreFn;
@@ -252,7 +270,6 @@ const CAMPAIGN_PRESET_IDS = new Set<ModePresetId>([
   'campaign-hard'
 ]);
 const PUBLIC_ARENA_CONNECTING_MESSAGE = 'Joining Public Arena';
-const PUBLIC_ARENA_CONNECTED_MESSAGE = 'Connected to Public Arena';
 const PUBLIC_ARENA_NOT_CONFIGURED_MESSAGE = 'Public arena server is not configured.';
 
 type SessionStartSource = 'campaign' | 'nonCampaign' | 'autoStart';
@@ -272,6 +289,9 @@ export function createUiShell(init: UiShellInit): UiShell {
   const publicArenaStatusFactory =
     init.createPublicArenaStatusOverlay ??
     (canMountStartupOverlays ? createPublicArenaStatusOverlay : createNullPublicArenaStatusOverlay);
+  const publicArenaHudFactory =
+    init.createPublicArenaHud ??
+    (canMountStartupOverlays ? createPublicArenaHud : createNullPublicArenaHud);
   const startupOverlayFactory =
     init.createStartupOverlay ??
     (canMountStartupOverlays ? createStartupOverlay : createNullStartupOverlay);
@@ -298,6 +318,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   const audioFactory = init.createAudio ?? createAudio;
   const publicArenaClientFactory =
     init.createPublicArenaClient ?? createPublicArenaClient;
+  const publicArenaRendererFactory =
+    init.createPublicArenaRenderer ?? createPublicArenaRenderer;
   const clientSettingsStoreFactory =
     init.createClientSettingsStore ?? createClientSettingsStore;
   const dungeonBestWaveStoreFactory =
@@ -328,6 +350,9 @@ export function createUiShell(init: UiShellInit): UiShell {
   let renderer: Renderer | null = null;
   let input: InputController | null = null;
   let publicArenaClient: PublicArenaClient | null = null;
+  let publicArenaRenderer: PublicArenaRenderer | null = null;
+  let publicArenaSnapshot: PublicArenaSnapshot | null = null;
+  let publicArenaPlayerCap: number | null = null;
   let publicArenaConnectionId = 0;
   let unsubscribeRendererSettings: (() => void) | null = null;
   let settingsVisible = false;
@@ -500,6 +525,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       exitPublicArenaToMenu();
     }
   });
+  const publicArenaHud = publicArenaHudFactory({
+    parent: init.parent
+  });
 
   const result = resultFactory({
     parent: init.parent,
@@ -552,6 +580,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         publicArenaStatus.hide();
+        publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
         syncSettingsVisibility();
@@ -562,6 +591,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.show();
         pause.hide();
         publicArenaStatus.hide();
+        publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
         syncSettingsVisibility();
@@ -572,6 +602,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         publicArenaStatus.hide();
+        publicArenaHud.hide();
         result.hide();
         if (isMobileInputMode()) {
           mobileControls.show();
@@ -588,6 +619,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         result.hide();
         mobileControls.hide();
         publicArenaStatus.show(PUBLIC_ARENA_CONNECTING_MESSAGE);
+        publicArenaHud.hide();
         syncSettingsVisibility();
         return;
       case 'online':
@@ -597,7 +629,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         pause.hide();
         result.hide();
         mobileControls.hide();
-        publicArenaStatus.show(PUBLIC_ARENA_CONNECTED_MESSAGE);
+        publicArenaStatus.hide();
+        publicArenaHud.show();
         syncSettingsVisibility();
         return;
       case 'paused':
@@ -606,6 +639,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.show();
         publicArenaStatus.hide();
+        publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
         syncSettingsVisibility();
@@ -616,6 +650,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         publicArenaStatus.hide();
+        publicArenaHud.hide();
         result.show(phase.viewModel);
         mobileControls.hide();
         syncSettingsVisibility();
@@ -625,6 +660,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         publicArenaStatus.hide();
+        publicArenaHud.hide();
         result.hide();
         startupErrorOverlay.show(phase.message);
         mobileControls.hide();
@@ -753,6 +789,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         if (!isCurrentPublicArenaConnection(connectionId)) {
           return;
         }
+        attachPublicArenaPresentation(message.playerCap);
         log.info('public arena accepted', {
           playerId: message.playerId,
           population: message.population
@@ -763,15 +800,24 @@ export function createUiShell(init: UiShellInit): UiShell {
         if (!finishPublicArenaConnection(connectionId)) {
           return;
         }
+        tearDownPublicArenaPresentation();
         setPhase(MENU_PHASE);
         menu.showFeedback(message.message);
       },
-      onSnapshot() {},
+      onSnapshot(snapshot) {
+        if (!isCurrentPublicArenaConnection(connectionId)) {
+          return;
+        }
+        publicArenaSnapshot = snapshot;
+        ensurePublicArenaRenderer(snapshot.arena);
+        publicArenaHud.update(snapshot, publicArenaPlayerCap);
+      },
       onPresentation() {},
       onClose(reason) {
         if (!finishPublicArenaConnection(connectionId)) {
           return;
         }
+        tearDownPublicArenaPresentation();
         setPhase(MENU_PHASE);
         menu.showFeedback(reason.message);
       }
@@ -794,6 +840,68 @@ export function createUiShell(init: UiShellInit): UiShell {
     publicArenaConnectionId += 1;
     publicArenaClient = null;
     return true;
+  }
+
+  function attachPublicArenaPresentation(playerCap: number): void {
+    tearDownPublicArenaPresentation();
+    publicArenaSnapshot = null;
+    publicArenaPlayerCap = playerCap;
+    publicArenaHud.update(null, playerCap);
+  }
+
+  function ensurePublicArenaRenderer(arena: PublicArenaWorldBounds): void {
+    if (publicArenaRenderer !== null) {
+      return;
+    }
+    if (preloadedTextures === null) {
+      throw new Error('Public arena renderer requires preloaded sprite textures.');
+    }
+    const visibleAreaCamera = createVisibleAreaCamera({
+      arena,
+      profile: visibleAreaProfile(),
+      effectiveViewport: currentEffectiveViewport(),
+      playerPosition: findPublicArenaSelfPosition()
+    });
+    const nextRenderer = publicArenaRendererFactory({
+      canvas: init.canvas,
+      renderScalePreset: clientSettingsStore.get().renderScalePreset,
+      arena,
+      spriteTextures: preloadedTextures,
+      visibleAreaCamera,
+      getSnapshot: () => publicArenaSnapshot,
+      windowTarget: rendererWindowTarget
+    });
+    unsubscribeRendererSettings?.();
+    unsubscribeRendererSettings = clientSettingsStore.subscribe((settings) => {
+      nextRenderer.applyScalePolicy(settings.renderScalePreset);
+    });
+    publicArenaRenderer = nextRenderer;
+  }
+
+  function findPublicArenaSelfPosition(): Readonly<{ x: number; y: number }> {
+    const snapshot = publicArenaSnapshot;
+    const self = snapshot?.players.find((player) => player.id === snapshot.selfId);
+    return self === undefined ? { x: 0, y: 0 } : { x: self.x, y: self.y };
+  }
+
+  function tearDownPublicArenaPresentation(): void {
+    if (
+      publicArenaRenderer === null &&
+      publicArenaSnapshot === null &&
+      publicArenaPlayerCap === null
+    ) {
+      publicArenaHud.hide();
+      return;
+    }
+    const previousRenderer = publicArenaRenderer;
+    const previousUnsubscribeRendererSettings = unsubscribeRendererSettings;
+    publicArenaRenderer = null;
+    publicArenaSnapshot = null;
+    publicArenaPlayerCap = null;
+    unsubscribeRendererSettings = null;
+    previousUnsubscribeRendererSettings?.();
+    previousRenderer?.dispose();
+    publicArenaHud.hide();
   }
 
   async function startPresetWithTransition(
@@ -995,6 +1103,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     const activePublicArenaClient = publicArenaClient;
     publicArenaConnectionId += 1;
     publicArenaClient = null;
+    tearDownPublicArenaPresentation();
     activePublicArenaClient?.disconnect();
     setPhase(MENU_PHASE);
   }
@@ -1156,6 +1265,7 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function fitToWindow(): void {
     renderer?.fitToWindow();
+    publicArenaRenderer?.fitToWindow();
   }
 
   function createSessionInputController(
@@ -1304,6 +1414,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
       audio.update(snapshotPair, phase, snapshotPair.curr?.encounter ?? null);
       renderer?.render();
+      if (phase.kind === 'online') {
+        publicArenaRenderer?.render();
+      }
     },
     phase(): UiShellPhase {
       return phase;
@@ -1315,6 +1428,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       publicArenaConnectionId += 1;
       publicArenaClient = null;
       activePublicArenaClient?.disconnect();
+      tearDownPublicArenaPresentation();
       tearDownClientSession();
       releasePreloadedTextures();
       startupOverlay.dispose();
@@ -1322,6 +1436,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       phaseTransitionCurtain.dispose();
       menu.dispose();
       pause.dispose();
+      publicArenaHud.dispose();
       publicArenaStatus.dispose();
       result.dispose();
       settingsOverlay.dispose();
@@ -1469,6 +1584,18 @@ function createNullMobileControlsOverlay(
     },
     pauseButtonElement(): HTMLElement {
       return pauseButton;
+    },
+    dispose(): void {}
+  };
+}
+
+function createNullPublicArenaHud(_init: PublicArenaHudInit): PublicArenaHud {
+  return {
+    show(): void {},
+    update(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
     },
     dispose(): void {}
   };
