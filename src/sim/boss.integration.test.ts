@@ -6,6 +6,7 @@ import { TRAINING_PLAYER } from '../shared/content/players';
 import { PISTOL } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import type { EncounterDefinition, SessionDefinition } from '../shared/session';
+import { type SimulationClock } from '../shared/sim/SimulationClock';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import { createBossPhaseSystem } from './BossPhaseSystem';
@@ -15,7 +16,6 @@ import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createRunSummaryTracker } from './RunSummaryTracker';
 import { createSessionFlowSystem } from './SessionFlowSystem';
-import { type SimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
@@ -27,8 +27,7 @@ function fakeClock(): SimulationClock & {
   const state = { running: false, paused: false, simTime: 0 };
   return {
     state,
-    start: () => {},
-    stop: () => {},
+    pump: () => {},
     pause: () => {
       state.paused = true;
     },

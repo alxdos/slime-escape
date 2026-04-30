@@ -10,6 +10,7 @@ import type {
   TransitionRules
 } from '../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../shared/sessionResult';
+import type { SimulationClock } from '../shared/sim/SimulationClock';
 import type { WaveProgressSnapshot } from '../shared/snapshot';
 
 import {
@@ -17,7 +18,6 @@ import {
   resetRuntimeInputState,
   type RuntimeInputState
 } from './RuntimeInputState';
-import type { SimulationClock } from './SimulationClock';
 import type { EntityId } from './EntityStore';
 
 export type EncounterContext = Readonly<{

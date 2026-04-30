@@ -4,6 +4,7 @@ import { buildSessionDefinition } from '../shared/content/buildSession';
 import { HEAL_ORB } from '../shared/content/drops';
 import { TRAINING_PRESET } from '../shared/content/sessions';
 import type { RuntimeEvent } from '../shared/events';
+import type { SimulationClock } from '../shared/sim/SimulationClock';
 import { SIM_STEP_MS } from '../shared/timing';
 
 import { createCombatSystem } from './CombatSystem';
@@ -13,7 +14,6 @@ import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createRunSummaryTracker } from './RunSummaryTracker';
 import { createSessionFlowSystem } from './SessionFlowSystem';
-import type { SimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
@@ -25,8 +25,7 @@ function fakeClock(): SimulationClock & {
   const state = { running: false, paused: false, simTime: 0 };
   return {
     state,
-    start: () => {},
-    stop: () => {},
+    pump: () => {},
     pause: () => {
       state.paused = true;
     },

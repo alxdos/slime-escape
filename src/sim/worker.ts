@@ -1,6 +1,7 @@
 import type { RuntimeEvent } from '../shared/events';
 import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
+import { createSimulationClock } from '../shared/sim/SimulationClock';
 
 import { createBossPhaseSystem } from './BossPhaseSystem';
 import { createCompanionSystem } from './CompanionSystem';
@@ -11,7 +12,7 @@ import { createFieldEffectSystem } from './FieldEffectSystem';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createSessionFlowSystem } from './SessionFlowSystem';
-import { createSimulationClock } from './SimulationClock';
+import { createSimulationClockHost } from './SimulationClockHost';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
 import { createSpawnSystem } from './SpawnSystem';
@@ -125,6 +126,7 @@ const clock = createSimulationClock((_dtMs, simTimeMs) => {
     postToMain({ kind: 'snapshot', snapshot });
   }
 });
+const clockHost = createSimulationClockHost(clock);
 
 const sessionFlow = createSessionFlowSystem({
   clock,
@@ -240,4 +242,4 @@ self.addEventListener('message', (event: MessageEvent<MainToSim>) => {
   }
 });
 
-clock.start();
+clockHost.start();

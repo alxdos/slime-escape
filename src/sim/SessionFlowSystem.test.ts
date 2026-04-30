@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildSessionDefinition } from '../shared/content/buildSession';
 import { SANDBOX_PRESET } from '../shared/content/sessions';
 import type { RuntimeEvent } from '../shared/events';
+import type { SimulationClock } from '../shared/sim/SimulationClock';
 import type { EntityId } from './EntityStore';
-import type { SimulationClock } from './SimulationClock';
 import {
   createSessionFlowSystem as createRawSessionFlowSystem,
   type SessionFlowDeps
@@ -15,8 +15,7 @@ function createFakeClock(): SimulationClock & { _state: { running: boolean; paus
   const state = { running: false, paused: false, simTime: 0 };
   return {
     _state: state,
-    start: () => {},
-    stop: () => {},
+    pump: () => {},
     pause: () => {
       state.paused = true;
     },
