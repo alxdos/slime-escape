@@ -2,11 +2,11 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-30 (story 031 prep: render fitting uses the effective game viewport from mobile web support, not always raw `window.innerWidth` / `window.innerHeight`.)
+- Updated: 2026-04-30 (story 031 follow-up: render scale preserves the active visible area from [camera-and-visible-area.md](camera-and-visible-area.md); story 031 prep also made fitting use the effective game viewport from mobile web support, not always raw `window.innerWidth` / `window.innerHeight`.)
 
 ## Context
 
-[arena-and-coordinates.md](arena-and-coordinates.md) defines the "no hardware advantage" invariant: the visible arena area, FOV, spawning, dark-zone radius, and movement speed **do not depend** on window size, DPR, or render scale from 009. Window size and DPR affect only image pixel density. Arena fitting to the viewport is already defined there as well (letterbox/pillarbox through CSS, canvas container uses arena aspect ratio, black bars are empty page body). [thread-model.md](thread-model.md) defines rendering as a separate `main thread` layer that supports two backend modes (main-thread and offscreen render worker), and says changing backend must not change the `simulation worker` contract. [client-settings.md](client-settings.md) introduced `renderScalePreset: 'low' | 'medium' | 'high'` in client settings and the subscriber model; this decision defines what each preset **does** to the canvas.
+[arena-and-coordinates.md](arena-and-coordinates.md) defines the "no hardware advantage" invariant for arena bounds and simulation, while [camera-and-visible-area.md](camera-and-visible-area.md) defines the active visible area that the camera shows. Render scale must not change either concept: window size and DPR affect only image pixel density. Visible-area fitting to the viewport is defined there as well (letterbox/pillarbox through CSS, canvas container uses visible-area aspect ratio, black bars are empty page body). [thread-model.md](thread-model.md) defines rendering as a separate `main thread` layer that supports two backend modes (main-thread and offscreen render worker), and says changing backend must not change the `simulation worker` contract. [client-settings.md](client-settings.md) introduced `renderScalePreset: 'low' | 'medium' | 'high'` in client settings and the subscriber model; this decision defines what each preset **does** to the canvas.
 
 What is **not** defined yet:
 
@@ -30,7 +30,7 @@ This decision treats render scale policy as a separate concept between client se
 
 ### Preset semantics
 
-Presets define **only** image pixel density. Logical canvas size, CSS size on both axes, and aspect ratio are defined by [arena-and-coordinates.md](arena-and-coordinates.md) and `fitCanvasToViewport`; the preset affects:
+Presets define **only** image pixel density. Logical canvas size, CSS size on both axes, and aspect ratio are defined by the active visible area from [camera-and-visible-area.md](camera-and-visible-area.md), [arena-and-coordinates.md](arena-and-coordinates.md), and `fitCanvasToViewport`; the preset affects:
 
 - `pixelRatio`, passed into `WebGLRenderer.setPixelRatio` (the actual number of backing pixels per CSS pixel);
 - the CSS `image-rendering` value on the `<canvas>` itself.
@@ -69,7 +69,7 @@ Concrete thresholds (`/4` for `low`, `min(devicePixelRatio, 2)` for `high`) live
 
 ### Invariants shared by all presets
 
-- The visible arena area **does not change** between presets. The camera is orthographic and its frustum is `arena.width × arena.height` ([arena-and-coordinates.md](arena-and-coordinates.md)); no preset changes the frustum.
+- The active visible area **does not change** between presets. The camera is orthographic and its frustum is the current visible area from [camera-and-visible-area.md](camera-and-visible-area.md); no preset changes the frustum, visible-area size, or camera center.
 - Canvas CSS size, aspect ratio, and letterbox/pillarbox bars **do not change** between presets. The preset affects only backing pixels and `image-rendering`.
 - Pointer-to-world mapping uses canvas CSS size (`clientHeight`/`clientWidth`), not backing pixels. Today this is visible as `pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height` in `UiShell`. Any attempt to read `canvas.width`/`canvas.height` for aim calculation violates this decision.
 - `fitCanvasToViewport` remains the only source of canvas CSS size; render scale runs "after" it and does not recalculate aspect/letterbox. Mobile support may change the effective viewport passed into that function, but render scale still does not read raw orientation state itself.
@@ -127,13 +127,13 @@ Concrete thresholds (`/4` for `low`, `min(devicePixelRatio, 2)` for `high`) live
   - `canvas.style.imageRendering = 'pixelated'` for `low`, `'auto'`/empty for the others;
   - repeated `applyScalePolicy(samePreset)` gives the same visual result (idempotence);
   - `fitToWindow` after resize applies the current preset (calls `setPixelRatio`/`setSize` in the correct order).
-- Tests do not introduce regressions for [arena-and-coordinates.md](arena-and-coordinates.md): visible arena area and `fitCanvasToViewport` do not change.
+- Tests do not introduce regressions for [arena-and-coordinates.md](arena-and-coordinates.md) or [camera-and-visible-area.md](camera-and-visible-area.md): active visible area and `fitCanvasToViewport` do not change between render-scale presets.
 
 ## Consequences
 
 - 009 gets a compact contract: the settings overlay changes `renderScalePreset` in the store; `Renderer` accepts the preset through `applyScalePolicy`; `resolveRenderScale` is the single source of truth for numeric values.
 - 010 (offscreen render worker) reuses the same `applyScalePolicy` and `resolveRenderScale`, without opening a parallel contract.
-- The "no hardware advantage" invariant now has a place where tests can check it: no preset changes camera frustum, canvas CSS size, or aim mapping.
+- The render-scale part of the "no hardware advantage" invariant has a place where tests can check it: no preset changes camera frustum, visible-area state, canvas CSS size, or aim mapping.
 - `Renderer` gets explicit API `applyScalePolicy` instead of an implicit dependency on `pixelRatio` in init. The old `pixelRatio: number` in `RendererInit` is either replaced with `renderScalePreset: RenderScalePreset` or becomes an initial value after which the real source of truth is `applyScalePolicy`. The exact implementation step is a detail; the contract is that `applyScalePolicy` is the only legitimate way to change preset.
 - Cost: one function (`resolveRenderScale`) and one method on `Renderer` (`applyScalePolicy`). Extending the preset list or changing their semantics requires editing this decision and `resolveRenderScale`, not local edits in the settings overlay.
 - This decision explicitly rejects splitting presets into separate axes ("fxaa", "msaa", "postprocessing"). Those are extensions of this file, not silent additions inside `Renderer`.
@@ -141,6 +141,7 @@ Concrete thresholds (`/4` for `low`, `min(devicePixelRatio, 2)` for `high`) live
 ## Related
 
 - [arena-and-coordinates.md](arena-and-coordinates.md)
+- [camera-and-visible-area.md](camera-and-visible-area.md)
 - [thread-model.md](thread-model.md)
 - [main-ui-shell.md](main-ui-shell.md)
 - [client-settings.md](client-settings.md)

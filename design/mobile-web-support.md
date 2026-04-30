@@ -10,7 +10,7 @@ The MVP is desktop-first, but [../docs/GDD_CORE.md](../docs/GDD_CORE.md) and [..
 
 - mobile detection must not trigger just because a desktop browser window is narrow;
 - the game must behave as one landscape surface on a phone, including canvas and DOM UI;
-- the mobile arena should match the physical phone screen ratio instead of always using the desktop `32 × 18` shape;
+- mobile combat should show a smaller visible area whose aspect matches the physical phone screen ratio, without changing the full arena world;
 - touch controls should reuse the existing `InputCommand` contract instead of adding simulation-visible touch messages;
 - mobile controls must coexist with `UiShell` pause/menu ownership.
 
@@ -39,18 +39,17 @@ Without a decision, the implementation could spread mobile rules across `index.t
 - Rendering and CSS fitting use an effective game viewport, not raw `window.innerWidth` / `window.innerHeight`:
   - desktop effective viewport equals the browser viewport;
   - mobile effective viewport is always `longSide × shortSide` for the current page viewport.
-- `fitCanvasToViewport` still preserves arena aspect and shows the whole arena. Mobile support changes the viewport and, for mobile sessions, the arena aspect; it does not allow cropping or stretching.
+- `fitCanvasToViewport` still preserves the active visible area's aspect. Mobile support changes the effective viewport and, during combat, the visible area from [camera-and-visible-area.md](camera-and-visible-area.md); it does not stretch the image.
 
-### Mobile arena shape
+### Mobile visible area and camera
 
-- Desktop and non-mobile sessions keep the content-authored arena unchanged.
-- In mobile mode, `UiShell` derives the run arena from the content-authored arena height and the physical screen's landscape aspect:
-  - `landscapeAspect = max(screen.width, screen.height) / min(screen.width, screen.height)`;
-  - `mobileArena.height = baseArena.height`;
-  - `mobileArena.width = baseArena.height * landscapeAspect`.
-- The derived arena is passed into session building before runtime validation, spawn-position resolution, and renderer/input creation.
-- The final `SessionDefinition.arena` remains the single source of truth for simulation, rendering, HUD, aim clamping, spawning, zone bounds, and result derivation.
-- No system in `src/sim/**` receives a mobile flag or reads screen dimensions. From the simulation worker's point of view, a mobile run is just a run with a different immutable arena rectangle.
+- Desktop, non-mobile, and mobile sessions keep the content-authored arena unchanged. `SessionDefinition.arena` remains the full playable world and the single source of truth for simulation bounds, spawning, zone bounds, projectile despawn, and aim clamping.
+- In mobile `running`, the renderer uses a smaller visible area inside the arena as defined by [camera-and-visible-area.md](camera-and-visible-area.md).
+- The mobile visible area aspect follows the physical screen's landscape aspect:
+  - `landscapeAspect = max(screen.width, screen.height) / min(screen.width, screen.height)`.
+- The mobile visible area's smaller side is `12 wu` by the story 031 camera contract. This is main-thread camera tuning, not a `SessionDefinition` field and not a content-authored arena replacement.
+- The mobile camera follows the player through the free-movement-zone rule from [camera-and-visible-area.md](camera-and-visible-area.md), then clamps the visible area inside the arena.
+- No system in `src/sim/**` receives a mobile flag, reads screen dimensions, or receives visible-area/camera state. From the simulation worker's point of view, a mobile run uses the same immutable arena as the selected preset.
 
 ### Mobile input mapping
 
@@ -65,7 +64,7 @@ Without a decision, the implementation could spread mobile rules across `index.t
   - the pause/menu button owns its own pointer start and is not treated as fire.
 - The top half of the game surface is the fire zone, except for the top-center pause/menu button hit area and its padding.
 - The lower-left quadrant is the movement zone. It maps drag displacement from its touch origin to a normalized `move` command with the same vector semantics as keyboard movement.
-- The lower-right quadrant is the aim zone. It moves the existing virtual aim point by relative drag deltas, converts CSS pixels to world units through the same canvas-height mapping as desktop aim, and clamps aim to `SessionDefinition.arena`.
+- The lower-right quadrant is the aim zone. It moves the existing virtual aim point by relative drag deltas, converts CSS pixels to world units through the active visible-area mapping from [camera-and-visible-area.md](camera-and-visible-area.md), and clamps aim to `SessionDefinition.arena`.
 - Fire zone touches send `fire start` when the first active fire pointer begins and `fire stop` after the last active fire pointer ends.
 - A short tap in the fire zone must be observable by the simulation. The mobile input adapter keeps tap-fire active for at least one `SIM_STEP_MS` before sending `fire stop`, unless the touch is held longer.
 - Starting a pointer on the top-center pause/menu button opens pause through `UiShell` and must not send `fire start`.
@@ -95,7 +94,8 @@ Without a decision, the implementation could spread mobile rules across `index.t
 
 - Mobile profile detection is tested as a pure function with touch/non-touch and portrait/landscape screen samples.
 - Effective viewport/orientation state is tested without real browser rotation by injecting screen and viewport sizes.
-- Mobile arena derivation is tested through session building: desktop keeps the content arena, mobile applies `baseHeight × physicalLandscapeAspect`, and all consumers receive the final `SessionDefinition.arena`.
+- Mobile visible-area derivation is tested as main-thread camera state: current desktop `32 x 18` resolves to the full arena, mobile uses a smaller visible area with physical landscape aspect, and the visible area clamps inside `SessionDefinition.arena`.
+- Mobile camera following is tested with player positions inside the free-movement zone, beyond its boundary, and near arena edges.
 - Mobile input mapping is tested with synthetic pointer streams: movement normalization, relative aim, fire hold, tap minimum pulse, multi-touch movement+aim+fire, pause-button priority, and cleanup on stop.
 - HUD/presentation tests cover hiding desktop hints in mobile running and not hiding them on desktop.
 - Live verification is required on a real or emulated touch phone viewport for portrait startup, rotate to landscape, rotate back, menu/sub-screen tapping, running controls, pause button priority, and no colored zone overlays.
@@ -104,7 +104,7 @@ Without a decision, the implementation could spread mobile rules across `index.t
 
 - Mobile web support stays main-thread presentation/input work. The simulation worker remains headless and receives no mobile-specific commands.
 - The existing `InputCommand` shape survives mobile support. The cost is a more capable main-thread input adapter that can coordinate multiple pointer ids and a minimum fire pulse.
-- The arena "no hardware advantage" invariant now has a scoped mobile exception: non-mobile runs stay content-authored; mobile runs deliberately adapt the final session arena to physical screen aspect before the run starts.
+- The arena "no hardware advantage" invariant no longer needs a mobile arena exception: mobile support changes main-thread camera/visible-area presentation, not `SessionDefinition.arena`.
 - Renderer fitting must stop assuming raw `window.innerWidth` / `window.innerHeight` are always the game viewport.
 - UI mounting becomes stricter: game UI belongs under the game root so the rotated mobile surface behaves as one screen.
 - Full mobile balance and tablet-specific tuning remain outside this decision.
@@ -114,6 +114,8 @@ Without a decision, the implementation could spread mobile rules across `index.t
 - [../docs/GDD_CORE.md](../docs/GDD_CORE.md)
 - [../docs/SCOPE.md](../docs/SCOPE.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
+- [camera-and-visible-area.md](camera-and-visible-area.md)
+- [zone.md](zone.md)
 - [session-definition.md](session-definition.md)
 - [input-commands.md](input-commands.md)
 - [main-ui-shell.md](main-ui-shell.md)

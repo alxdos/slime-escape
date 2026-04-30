@@ -15,8 +15,10 @@ The first mobile web support slice should make Slime Escape feel like one cohere
 - On a mobile device, the game surface is landscape-first even when the phone is held upright.
 - The game surface includes every player-facing layer: startup, menu, menu sub-screens, settings, combat scene, HUD, title overlays, pause, and result.
 - The arena remains the full playable world. Mobile support changes the visible area and camera behavior, not the arena's world bounds.
-- On desktop and non-mobile devices, the visible area equals the full arena, preserving the current desktop feel.
-- On a mobile device, the visible area is smaller than the arena and follows the physical screen ratio after turning it into landscape: longer screen side divided by shorter screen side.
+- The dark zone remains based on arena/world dimensions, not the current viewport or camera visible area.
+- Desktop and non-mobile visible area is anchored by `18 wu` on the smaller side. With the current `32 x 18` arena this still equals the full arena, preserving the current desktop feel.
+- Mobile visible area is anchored by `12 wu` on the smaller side and follows the physical screen ratio after turning it into landscape: longer screen side divided by shorter screen side.
+- If a future arena is larger than the desktop visible area, the same camera-following model may scroll on desktop too.
 - On a mobile device, the camera has a central free-movement zone: movement inside it does not scroll the visible area.
 - When the player tries to move beyond the free-movement zone, the visible area smoothly follows through the arena while there is arena space left.
 - When the visible area reaches the arena edge, the camera stops there and the player can still move up to the arena boundary.
@@ -52,7 +54,7 @@ The first mobile web support slice should make Slime Escape feel like one cohere
 
 ## Technical
 
-Mobile support is main-thread presentation and input work based on [mobile-web-support.md](../design/mobile-web-support.md). The simulation protocol does not get mobile-specific commands: touch movement, aim, and fire map to the existing `InputCommand` union from [input-commands.md](../design/input-commands.md). `UiShell` mounts player-facing layers under the game root, chooses desktop or mobile input, and routes the mobile top-center pause/menu button through the existing pause phase. Mobile runs may pass an `arenaOverride` into session building so the final immutable `SessionDefinition.arena` matches the physical screen landscape aspect.
+Mobile support is main-thread presentation and input work based on [mobile-web-support.md](../design/mobile-web-support.md) and [camera-and-visible-area.md](../design/camera-and-visible-area.md). The simulation protocol does not get mobile-specific commands: touch movement, aim, and fire map to the existing `InputCommand` union from [input-commands.md](../design/input-commands.md). `UiShell` mounts player-facing layers under the game root, chooses desktop or mobile input, and routes the mobile top-center pause/menu button through the existing pause phase. The follow-up camera contract keeps `SessionDefinition.arena` as the full content-authored world, derives visible area on main (`18 wu` smaller-side anchor for desktop/non-mobile, `12 wu` for mobile), and keeps the dark zone world/arena-based per [zone.md](../design/zone.md).
 
 ## Out of scope
 
@@ -79,6 +81,7 @@ Mobile support is main-thread presentation and input work based on [mobile-web-s
 - During a mobile run, moving inside the camera's free-movement zone does not scroll the visible area.
 - During a mobile run, trying to move beyond the free-movement zone scrolls the visible area smoothly while there is arena space in that direction.
 - During a mobile run, when the visible area reaches the arena edge, the camera stays clamped and does not show outside the arena while the player can still reach the arena boundary.
+- During a mobile run with a shrinking dark zone, the dark zone remains based on the arena/world dimensions rather than shrinking from the current camera rectangle.
 - During a mobile run, the desktop `WASD` and mouse-control hints are not shown.
 - During a mobile run, the player sees semi-transparent movement and aim sticks plus subtle bullet silhouettes, but no colored zone blocks.
 - Holding in the lower-left area moves the player.
@@ -100,18 +103,25 @@ Mobile support is main-thread presentation and input work based on [mobile-web-s
 | T3 | [x] | Apply mobile arena shape during session build: derive `arenaOverride` from base arena height and physical landscape screen aspect, pass it through `UiShell`, use it before spawn/boss validation, and cover desktop/mobile builder cases. | The final `SessionDefinition.arena` is the only runtime source of truth. |
 | T4 | [x] | Implement the mobile input adapter: lower-left movement stick, lower-right relative aim stick, top fire zone, multi-touch tracking, minimum tap-fire pulse, pause-button priority, and cleanup on stop/phase change. | It sends only existing `move`/`aim`/`fire` commands and does not request Pointer Lock. |
 | T5 | [x] | Implement mobile controls presentation and HUD variant: hide desktop `WASD`/mouse hints in mobile running, show subtle sticks, bullet silhouettes, and top-center pause/menu button only during running. | No colored debug zone blocks in normal gameplay. |
-| T6 | [ ] | Run focused automated checks and request live mobile verification from the user. | Include profile/viewport, builder, mobile input, HUD/UI tests, then ask for phone/emulated-phone checks per pipeline. |
+| T6 | [ ] | Run focused automated checks and request live mobile verification from the user. | Include profile/viewport, visible-area/camera, world-space dark zone, mobile input, HUD/UI tests, then ask for phone/emulated-phone checks per pipeline. |
+| T7 | [x] | Record follow-up architecture for arena vs visible area, desktop/mobile smaller-side anchors, camera following, active visible-area input mapping, and world-based dark zone wording. | Added [camera-and-visible-area.md](../design/camera-and-visible-area.md) and aligned adjacent decisions/docs. |
+| T8 | [ ] | Replace the implemented mobile `arenaOverride` path with main-thread visible-area camera state: keep `SessionDefinition.arena` content-authored, remove mobile arena replacement from session building, and preserve current desktop behavior for `32 x 18`. | Desktop/non-mobile anchor is `18 wu`; mobile anchor is `12 wu`; mobile aspect follows physical landscape screen ratio. |
+| T9 | [ ] | Update renderer/camera fitting: render the active visible area, follow the player through the free-movement zone when the arena is larger than the visible area, clamp camera to arena bounds, and draw the dark zone from world/arena `margin` rather than viewport bounds. | Current desktop arena should still look unchanged; future larger arenas can scroll on desktop. |
+| T10 | [ ] | Update input mapping to the active visible area: convert desktop Pointer Lock and mobile aim deltas through `visibleArea.height`, account for camera center, and keep aim clamped to arena bounds. | No new `InputCommand` kinds; simulation stays headless. |
 
 ## Related
 
 - [mobile-web-support.md](../design/mobile-web-support.md)
 - [arena-and-coordinates.md](../design/arena-and-coordinates.md)
+- [camera-and-visible-area.md](../design/camera-and-visible-area.md)
 - [session-definition.md](../design/session-definition.md)
 - [input-commands.md](../design/input-commands.md)
 - [main-ui-shell.md](../design/main-ui-shell.md)
 - [hud-presentation.md](../design/hud-presentation.md)
 - [render-scale.md](../design/render-scale.md)
+- [zone.md](../design/zone.md)
 - [thread-model.md](../design/thread-model.md)
 - [testing.md](../design/testing.md)
 - [GDD_CORE.md](../docs/GDD_CORE.md)
+- [WAVES_AND_SCALING.md](../docs/WAVES_AND_SCALING.md)
 - [SCOPE.md](../docs/SCOPE.md)

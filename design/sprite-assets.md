@@ -6,7 +6,7 @@
 
 ## Context
 
-[arena-and-coordinates.md](arena-and-coordinates.md) defines the world in world units (wu), forbids gameplay systems from operating in pixels, and preserves the "no hardware advantage" invariant: visible arena area, FOV, spawn, and speeds do not depend on window size, DPR, or render scale from 009. [render-scale.md](render-scale.md) separates backing-pixel policy from logical/css canvas size, so the preset affects only pixel density. [content-archetypes.md](content-archetypes.md) defines `EnemyArchetype.color`/`BossArchetype.color` as a content placeholder for rendering, not a renderer decision, while [body-contact-boxes.md](body-contact-boxes.md) separates the visual sprite plane from gameplay body contact for `player` / `enemy` / `boss`. [content-boundaries.md](content-boundaries.md) separates `content library` and presentation. [main-ui-shell.md](main-ui-shell.md) defines that `Renderer` is created by `UiShell` on `menu -> running` and owns canvas pixels. [content-authoring.md](content-authoring.md) defines the adjacent `<area>.ts <-> <area>.generated.ts` pairs and atomic generation.
+[arena-and-coordinates.md](arena-and-coordinates.md) defines the world in world units (wu), forbids gameplay systems from operating in pixels, and preserves the "no hardware advantage" invariant: arena bounds, spawning, and speeds do not depend on window size, DPR, or render scale from 009. [camera-and-visible-area.md](camera-and-visible-area.md) defines the presentation camera window separately from the arena. [render-scale.md](render-scale.md) separates backing-pixel policy from logical/css canvas size, so the preset affects only pixel density. [content-archetypes.md](content-archetypes.md) defines `EnemyArchetype.color`/`BossArchetype.color` as a content placeholder for rendering, not a renderer decision, while [body-contact-boxes.md](body-contact-boxes.md) separates the visual sprite plane from gameplay body contact for `player` / `enemy` / `boss`. [content-boundaries.md](content-boundaries.md) separates `content library` and presentation. [main-ui-shell.md](main-ui-shell.md) defines that `Renderer` is created by `UiShell` on `menu -> running` and owns canvas pixels. [content-authoring.md](content-authoring.md) defines the adjacent `<area>.ts <-> <area>.generated.ts` pairs and atomic generation.
 
 Today [src/main/render/Renderer.ts](../src/main/render/Renderer.ts) draws `player`/`enemy`/`boss` as colored `THREE.CircleGeometry`, using color from `EnemyArchetype.color`/`BossArchetype.color` and radius from the matching archetype. Adding PNG assets under `public/assets/**` in story 013 introduces all of the following at once:
 
@@ -165,6 +165,7 @@ This decision defines the stable presentation contract for sprite assets for pla
 ## Related
 
 - [arena-and-coordinates.md](arena-and-coordinates.md)
+- [camera-and-visible-area.md](camera-and-visible-area.md)
 - [render-scale.md](render-scale.md)
 - [content-archetypes.md](content-archetypes.md)
 - [content-authoring.md](content-authoring.md)

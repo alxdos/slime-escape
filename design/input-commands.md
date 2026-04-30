@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-30 (story 031 prep: mobile touch controls map to the existing `move`/`aim`/`fire` commands without adding a new protocol kind; see [mobile-web-support.md](mobile-web-support.md). Earlier: 2026-04-26 story 023 pause hotkey fix: player-facing pause overlay is `Esc` or `Space`; dev pause moves to physical `KeyP` through `UiShell`, independent of locale/CapsLock. Earlier: 017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 007 finalized pause routing through `UiShell`.)
+- Updated: 2026-04-30 (story 031 follow-up: aim pixel-to-world mapping uses the active visible area from [camera-and-visible-area.md](camera-and-visible-area.md), while mobile touch controls still map to existing `move`/`aim`/`fire` commands; see [mobile-web-support.md](mobile-web-support.md). Earlier: 2026-04-26 story 023 pause hotkey fix: player-facing pause overlay is `Esc` or `Space`; dev pause moves to physical `KeyP` through `UiShell`, independent of locale/CapsLock. Earlier: 017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 007 finalized pause routing through `UiShell`.)
 
 ## Context
 
@@ -55,7 +55,7 @@ There are also product requirements:
   - the system cursor is hidden;
   - the game maintains a **virtual aim position** in world coordinates, updating it from `movementX/Y` on `mousemove` events;
   - the virtual aim is strictly clamped to arena bounds ([arena-and-coordinates.md](arena-and-coordinates.md)); aim cannot leave the arena.
-  - `movementX/Y` (in canvas pixels) is converted to world units with the same mapping as rendering: `1 wu ≡ canvas.height / arena.height` pixels. This gives the same aim sensitivity at any window size and the same perceived aim on 4K and FullHD.
+  - `movementX/Y` (in canvas pixels) is converted to world units with the same mapping as rendering: `1 wu ≡ canvas.height / visibleArea.height` pixels (see [camera-and-visible-area.md](camera-and-visible-area.md)). With the current `32 x 18` desktop arena, `visibleArea.height === arena.height`, preserving the existing feel. This gives the same aim sensitivity at any window size and the same perceived aim on 4K and FullHD.
   - aim sensitivity is not introduced by this decision; until settings exist ([../stories/009-settings.md](../stories/009-settings.md)), it is `1.0` of the mapping above.
 - If Pointer Lock is not currently active (the browser just released it on Esc, the lock has not yet been requested again, and so on), aim stays at the last known world position, and mouse movement does not move it. This prevents aim jumps when lock is lost and restored.
 - The main channel for "aim in `sim`" is the `aim` field in input commands (see below), in world coordinates. No screen coordinates are sent to `sim`.
@@ -73,7 +73,7 @@ There are also product requirements:
 
 - Mobile touch controls are a main-thread input mapping defined by [mobile-web-support.md](mobile-web-support.md). They reuse the existing `InputCommand` union and do not add new `kind` values.
 - Mobile movement sends the same normalized `move` command as keyboard movement.
-- Mobile aim maintains the same virtual aim position as desktop Pointer Lock aiming, using relative drag deltas and clamping to arena bounds.
+- Mobile aim maintains the same virtual aim position as desktop Pointer Lock aiming, using relative drag deltas, the active visible-area pixel-to-world mapping, and clamping to arena bounds.
 - Mobile fire sends the same `fire start` / `fire stop` commands as left mouse button.
 - A mobile fire tap must remain active for at least one simulation step before the input layer sends `fire stop`; this keeps short taps observable without changing simulation semantics.
 - Mobile input does not request Pointer Lock. Desktop Pointer Lock behavior remains unchanged.
@@ -125,7 +125,7 @@ There are also product requirements:
 
 - In `src/shared/protocol.ts`, `InputCommand` stops being `unknown` and becomes a concrete discriminated union; this is a **contract change** to `MainToSim` and is implemented immediately.
 - `sim` stays headless: no `KeyboardEvent`, `MouseEvent`, `clientX`, or `viewport` inside `src/sim/**`.
-- Aim and movement feel the same at any resolution and window aspect ratio (see invariant in [arena-and-coordinates.md](arena-and-coordinates.md)): one formula maps mouse delta to world.
+- Aim and movement feel the same at any resolution and window aspect ratio (see invariant in [arena-and-coordinates.md](arena-and-coordinates.md)): one formula maps pointer delta to world through the active visible area.
 - Esc/Space + Pointer Lock + pause overlay form a coherent UX: entering overlay pause opens the menu and provides a system cursor for clicks.
 - `fire` exists in the contract already in 002 and is ignored at the gameplay level; 003 enables `CombatSystem` without extending the protocol.
 - Sensitivity settings (009) become a multiplier on the single mouse-delta-to-world mapping and do not require revisiting this decision.
@@ -135,6 +135,7 @@ There are also product requirements:
 
 - [thread-model.md](thread-model.md)
 - [arena-and-coordinates.md](arena-and-coordinates.md)
+- [camera-and-visible-area.md](camera-and-visible-area.md)
 - [runtime-systems.md](runtime-systems.md)
 - [content-boundaries.md](content-boundaries.md)
 - [main-ui-shell.md](main-ui-shell.md)
