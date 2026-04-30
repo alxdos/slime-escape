@@ -70,7 +70,7 @@ Gameplay is built around a single arena ([../docs/GDD_CORE.md](../docs/GDD_CORE.
 - Story 002 defines one concrete `{ width, height }` value for sandbox mode in the `content library`; future stories add new arenas through data, not by editing systems.
 - Dark zone (004) and spawning (003) can rely on arena bounds as the only source of "edge", with no dependency on window size.
 - Support for unusual non-mobile aspect ratios (ultrawide, portrait windows) is reduced to correct CSS fitting; gameplay does not change.
-- Mobile web support deliberately adapts the main-thread visible area to the physical screen aspect, while leaving the final session arena untouched.
+- Mobile web support deliberately adapts the main-thread visible area to the effective landscape game viewport aspect, while leaving the final session arena untouched.
 - This decision explicitly forbids stretching the visible area to the viewport. Showing a smaller camera window inside the arena is allowed only through [camera-and-visible-area.md](camera-and-visible-area.md), where camera clamp and input mapping are defined.
 
 ## Related

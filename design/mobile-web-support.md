@@ -10,7 +10,7 @@ The MVP is desktop-first, but [../docs/GDD_CORE.md](../docs/GDD_CORE.md) and [..
 
 - mobile detection must not trigger just because a desktop browser window is narrow;
 - the game must behave as one landscape surface on a phone, including canvas and DOM UI;
-- mobile combat should show a smaller visible area whose aspect matches the physical phone screen ratio, without changing the full arena world;
+- mobile combat should show a smaller visible area whose aspect matches the effective landscape game viewport, without changing the full arena world;
 - touch controls should reuse the existing `InputCommand` contract instead of adding simulation-visible touch messages;
 - mobile controls must coexist with `UiShell` pause/menu ownership.
 
@@ -39,14 +39,17 @@ Without a decision, the implementation could spread mobile rules across `index.t
 - Rendering and CSS fitting use an effective game viewport, not raw `window.innerWidth` / `window.innerHeight`:
   - desktop effective viewport equals the browser viewport;
   - mobile effective viewport is always `longSide × shortSide` for the current page viewport.
+- The app entrypoint or `UiShell` provides the effective game viewport to renderer fitting and visible-area camera sizing explicitly. Mobile renderer/camera code must not infer the game viewport from raw `window.innerWidth` / `window.innerHeight`.
+- The same effective-viewport update path that updates the game root transform and dimensions must trigger renderer/camera refit. A resize-only listener is not sufficient if a browser can report orientation changes through a separate event path.
 - `fitCanvasToViewport` still preserves the active visible area's aspect. Mobile support changes the effective viewport and, during combat, the visible area from [camera-and-visible-area.md](camera-and-visible-area.md); it does not stretch the image.
 
 ### Mobile visible area and camera
 
 - Desktop, non-mobile, and mobile sessions keep the content-authored arena unchanged. `SessionDefinition.arena` remains the full playable world and the single source of truth for simulation bounds, spawning, zone bounds, projectile despawn, and aim clamping.
 - In mobile `running`, the renderer uses a smaller visible area inside the arena as defined by [camera-and-visible-area.md](camera-and-visible-area.md).
-- The mobile visible area aspect follows the physical screen's landscape aspect:
-  - `landscapeAspect = max(screen.width, screen.height) / min(screen.width, screen.height)`.
+- The mobile visible area aspect follows the effective landscape game viewport from the game root/effective viewport contract above:
+  - `visibleAspect = effectiveViewportWidth / effectiveViewportHeight`.
+- Startup physical screen dimensions are used only for stable mobile classification. They are not a separate camera aspect source after [camera-and-visible-area.md](camera-and-visible-area.md) became the active camera contract.
 - The mobile visible area's smaller side is `12 wu` by the story 031 camera contract. This is main-thread camera tuning, not a `SessionDefinition` field and not a content-authored arena replacement.
 - The mobile camera follows the player through the free-movement-zone rule from [camera-and-visible-area.md](camera-and-visible-area.md), then clamps the visible area inside the arena.
 - No system in `src/sim/**` receives a mobile flag, reads screen dimensions, or receives visible-area/camera state. From the simulation worker's point of view, a mobile run uses the same immutable arena as the selected preset.
@@ -94,7 +97,7 @@ Without a decision, the implementation could spread mobile rules across `index.t
 
 - Mobile profile detection is tested as a pure function with touch/non-touch and portrait/landscape screen samples.
 - Effective viewport/orientation state is tested without real browser rotation by injecting screen and viewport sizes.
-- Mobile visible-area derivation is tested as main-thread camera state: current desktop `32 x 18` resolves to the full arena, mobile uses a smaller visible area with physical landscape aspect, and the visible area clamps inside `SessionDefinition.arena`.
+- Mobile visible-area derivation is tested as main-thread camera state: current desktop `32 x 18` resolves to the full arena, mobile uses a smaller visible area with effective landscape viewport aspect, and the visible area clamps inside `SessionDefinition.arena`.
 - Mobile camera following is tested with player positions inside the free-movement zone, beyond its boundary, and near arena edges.
 - Mobile input mapping is tested with synthetic pointer streams: movement normalization, relative aim, fire hold, tap minimum pulse, multi-touch movement+aim+fire, pause-button priority, and cleanup on stop.
 - HUD/presentation tests cover hiding desktop hints in mobile running and not hiding them on desktop.
