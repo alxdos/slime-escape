@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-30
-- Updated: 2026-04-30 (story 032 T18 follow-up: Public Arena regular progression uses the full authored enemy slime roster in content order and the server must not silently fall back for missing level stats. Story 032 T17 follow-up: public input rate limiting, shutdown close reason, and deterministic overlapping projectile target selection are recorded. Story 032 T16 follow-up: online progression ids and boss level live in shared headless config so server authority and client HUD labels use the same boss-level denominator.)
+- Updated: 2026-04-30 (story 032 T19 review follow-up: Public Arena regular player health/movement and regular weapon loadout come from the generated `portal` session player/loadout, while weapon timing/projectile parameters come from `WeaponArchetype` content. Earlier story 032 T18 follow-up: Public Arena regular progression uses the full authored enemy slime roster in content order and the server must not silently fall back for missing form entries. Story 032 T17 follow-up: public input rate limiting, shutdown close reason, and deterministic overlapping projectile target selection are recorded. Story 032 T16 follow-up: online progression ids and boss level live in shared headless config so server authority and client HUD labels use the same boss-level denominator.)
 
 ## Context
 
@@ -64,14 +64,15 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 
 - Regular player forms use existing slime content and sprite ids from the shared content library.
 - The level chain uses every authored enemy slime from `content/enemies.md` in source order. This is content progression for the online mode, not account progression. The generated enemy content must expose a content-order list so the server and client do not depend on module namespace key order.
-- Online progression configuration lives in shared, headless code under `src/shared/**`, not in browser UI and not only inside `server/`. It derives the ordered slime form chain from the generated enemy list, includes the regular and boss weapon ids plus the tower boss archetype id, and derives the boss level as `slime form chain length + 1`. Both the server runtime and main-thread Public Arena presentation may import this shared config.
-- Server regular-form stats for Public Arena levels are derived from the matching `EnemyArchetype` entries: `radius`, `maxHp`, and `maxSpeed`. If a level points at an enemy id without stats, that is a content/configuration error and must throw during setup or tests; falling back to the first slime is forbidden.
+- Online progression configuration lives in shared, headless code under `src/shared/**`, not in browser UI and not only inside `server/`. It derives the ordered slime form chain from the generated enemy list, derives the regular weapon id from the generated `portal` session loadout, includes the boss weapon id plus the tower boss archetype id, and derives the boss level as `slime form chain length + 1`. Both the server runtime and main-thread Public Arena presentation may import this shared config.
+- Regular Public Arena form progression uses the generated enemy list for slime form identity and form radius. Movement speed and max HP for regular players come from the generated `portal` session `playerId`; they are not copied from the enemy roster. If a level points at an enemy id without a form entry, that is a content/configuration error and must throw during setup or tests; falling back to the first slime is forbidden.
 - The final level transforms the player into the tower boss form:
   - boss archetype id: `boss-tower-sentinel`;
   - visual source: `public/assets/boss-04.png` through the existing boss visual registry.
-- The first online slice uses existing weapon content ids instead of creating a new combat data model:
-  - regular slime attack: `rock-thrower`;
+- The first online slice uses existing weapon content instead of creating a new combat data model:
+  - regular slime attack comes from the generated `portal` session loadout. Current content sets that loadout to the single selected `rock-thrower` weapon.
   - boss attack: `fireball-staff` or a compact fireball variant built from the same content shape.
+- The server must derive weapon cooldown, fire pattern, projectile motion, projectile size, hit radius, impact damage, and ttl from `WeaponArchetype` content. Hand-written Public Arena copies of rock/fireball weapon numbers are forbidden.
 - The server runtime may implement only the projectile behavior needed by those online weapons. It does not need to implement the whole local `CombatSystem` feature set before the arena can ship.
 - Damage is permissive for online arena combat: every projectile or boss fire attack can damage any other damageable player, including boss versus boss, except its owner.
 - If a projectile overlaps multiple eligible players on the same server tick, the server chooses the hit target deterministically: nearest target by squared distance from projectile center to player center, with player id lexicographic order as the tie-breaker. `Map` insertion order must not decide combat outcomes.
