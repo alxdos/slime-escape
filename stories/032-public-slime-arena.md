@@ -59,6 +59,8 @@ Public Slime Arena is built on [public-multiplayer-arena.md](../design/public-mu
 
 Follow-up from online testing: the online arena must not render over an empty background. The Vibe Jam `/portal` entrypoint now leads to the online Public Arena, not to the old local authored portal run. Use `content/sessions/portal.md` as the content-authored source for the online arena's presentation config: arena size, background list, and active background. Remove the old authored waves/break/boss chain from that file. Do not introduce a hand-written `publicArenaConfig` copy of the same `portal` id, arena numbers, or background path; browser and server code must read the generated shared content projection instead.
 
+Follow-up for HUD labels: online progression ids and the final boss level are shared headless Public Arena config. Server gameplay and main-thread HUD labels must import the same boss-level denominator, while authoritative snapshots can keep reporting the server-owned raw level.
+
 ## Out of scope
 
 - Matchmaking, ranked queues, private rooms, parties, invites, or friend joining.

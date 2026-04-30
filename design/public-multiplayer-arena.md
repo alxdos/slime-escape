@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-30
-- Updated: 2026-04-30
+- Updated: 2026-04-30 (story 032 T16 follow-up: online progression ids and boss level live in shared headless config so server authority and client HUD labels use the same boss-level denominator.)
 
 ## Context
 
@@ -64,6 +64,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 
 - Regular player forms use existing slime content and sprite ids from the shared content library.
 - The level chain is an ordered list of slime archetype ids chosen for the online mode. The exact list is online-mode configuration, not account progression.
+- Online progression configuration lives in shared, headless code under `src/shared/**`, not in browser UI and not only inside `server/`. It includes the ordered slime form chain, the regular and boss weapon ids, the tower boss archetype id, and the derived boss level (`slime form chain length + 1`). Both the server runtime and main-thread Public Arena presentation may import this shared config.
 - The final level transforms the player into the tower boss form:
   - boss archetype id: `boss-tower-sentinel`;
   - visual source: `public/assets/boss-04.png` through the existing boss visual registry.
@@ -77,6 +78,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
   - killing a boss still gives exactly `+1` level;
   - death resets the dead player to level 1;
   - no boss-kill bonus, level skip, campaign XP, pet progress, or permanent unlock is awarded.
+- Authoritative snapshots may expose the server-owned raw level even after a player is already a boss. Player-facing progress labels clamp the displayed current level to the shared boss level, for example `Level 6/6`, so the HUD communicates progress to boss form without hiding server authority.
 
 ### Runtime timing
 
