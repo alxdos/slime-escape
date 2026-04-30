@@ -22,6 +22,11 @@ import {
 } from '../input/MobileInputController';
 import type { GameViewportProvider, MobileWebProfile } from '../mobileWebProfile';
 import {
+  createVisibleAreaCamera,
+  type VisibleAreaCamera,
+  type VisibleAreaProfile
+} from '../visibleArea';
+import {
   createClientProgressionStore,
   type ClientProgressionStore
 } from '../progression/ClientProgressionStore';
@@ -693,6 +698,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     let nextRenderer: Renderer | null = null;
     let nextInput: InputController | null = null;
     let nextUnsubscribeRendererSettings: (() => void) | null = null;
+    const visibleAreaCamera = createSessionVisibleAreaCamera(session);
     try {
       nextRenderer = rendererFactory({
         canvas: init.canvas,
@@ -701,6 +707,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         session,
         spriteTextures,
         selectedPetId: session.companion === null && options.source === 'campaign' ? selectedPetId : null,
+        visibleAreaCamera,
         getSnapshotPair: sim.snapshotPair,
         getPortalDescriptors: portalController.portals,
         getAim: () => (input !== null && input.isActive() ? input.currentAim() : null),
@@ -1013,6 +1020,32 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function isMobileInputMode(): boolean {
     return init.mobileProfile?.isMobile === true;
+  }
+
+  function createSessionVisibleAreaCamera(session: SessionDefinition): VisibleAreaCamera {
+    return createVisibleAreaCamera({
+      arena: session.arena,
+      profile: visibleAreaProfile(),
+      effectiveViewport: currentEffectiveViewport(),
+      playerPosition: session.player.position
+    });
+  }
+
+  function visibleAreaProfile(): VisibleAreaProfile {
+    return isMobileInputMode() ? 'mobile' : 'desktop';
+  }
+
+  function currentEffectiveViewport(): Readonly<{ width: number; height: number }> {
+    if (init.gameViewport !== undefined) {
+      return init.gameViewport.current();
+    }
+    if (init.mobileProfile?.isMobile === true) {
+      return {
+        width: init.mobileProfile.screenLandscapeAspect,
+        height: 1
+      };
+    }
+    return { width: 16, height: 9 };
   }
 
   function onStartupPreloadProgress(loaded: number, total: number): void {

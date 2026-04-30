@@ -20,9 +20,18 @@ export type InitialVisibleAreaInput = VisibleAreaSizeInput &
     playerPosition: Vec2;
   }>;
 
+export type VisibleAreaCamera = Readonly<{
+  visibleArea(): VisibleArea;
+  resize(effectiveViewport: ViewportSize): void;
+  follow(playerPosition: Vec2, nowMs: number): void;
+}>;
+
 const DESKTOP_VISIBLE_SHORT_SIDE_WU = 18;
 const MOBILE_VISIBLE_SHORT_SIDE_WU = 12;
 const DESKTOP_VISIBLE_ASPECT = 16 / 9;
+const CAMERA_FREE_ZONE_FRACTION_X = 0.46;
+const CAMERA_FREE_ZONE_FRACTION_Y = 0.46;
+const CAMERA_SMOOTHING_MS = 140;
 
 export function resolveVisibleAreaSize(input: VisibleAreaSizeInput): Omit<VisibleArea, 'center'> {
   assertPositiveArena(input.arena);
@@ -76,6 +85,84 @@ export function clampVisibleAreaCenter(
     x: clampAxisCenter(center.x, arena.width, size.width),
     y: clampAxisCenter(center.y, arena.height, size.height)
   };
+}
+
+export function createVisibleAreaCamera(input: InitialVisibleAreaInput): VisibleAreaCamera {
+  let effectiveViewport = input.effectiveViewport;
+  let visibleArea = resolveInitialVisibleArea(input);
+  let lastFollowNowMs: number | null = null;
+
+  function resize(nextEffectiveViewport: ViewportSize): void {
+    effectiveViewport = nextEffectiveViewport;
+    const size = resolveVisibleAreaSize({
+      arena: input.arena,
+      profile: input.profile,
+      effectiveViewport
+    });
+    visibleArea = {
+      ...size,
+      center: clampVisibleAreaCenter(input.arena, size, visibleArea.center)
+    };
+  }
+
+  function follow(playerPosition: Vec2, nowMs: number): void {
+    const targetCenter = clampVisibleAreaCenter(input.arena, visibleArea, {
+      x: targetAxisCenter(
+        visibleArea.center.x,
+        playerPosition.x,
+        visibleArea.width,
+        CAMERA_FREE_ZONE_FRACTION_X
+      ),
+      y: targetAxisCenter(
+        visibleArea.center.y,
+        playerPosition.y,
+        visibleArea.height,
+        CAMERA_FREE_ZONE_FRACTION_Y
+      )
+    });
+    const elapsedMs =
+      lastFollowNowMs === null ? 0 : Math.max(0, nowMs - lastFollowNowMs);
+    lastFollowNowMs = nowMs;
+    const followAmount =
+      elapsedMs <= 0 ? 0 : 1 - Math.exp(-elapsedMs / CAMERA_SMOOTHING_MS);
+    visibleArea = {
+      ...visibleArea,
+      center: clampVisibleAreaCenter(input.arena, visibleArea, {
+        x: lerp(visibleArea.center.x, targetCenter.x, followAmount),
+        y: lerp(visibleArea.center.y, targetCenter.y, followAmount)
+      })
+    };
+  }
+
+  return {
+    visibleArea(): VisibleArea {
+      return visibleArea;
+    },
+    resize,
+    follow
+  };
+}
+
+function targetAxisCenter(
+  cameraCenter: number,
+  playerPosition: number,
+  visibleSide: number,
+  freeZoneFraction: number
+): number {
+  const freeHalf = (visibleSide * freeZoneFraction) / 2;
+  const min = cameraCenter - freeHalf;
+  const max = cameraCenter + freeHalf;
+  if (playerPosition < min) {
+    return cameraCenter - (min - playerPosition);
+  }
+  if (playerPosition > max) {
+    return cameraCenter + (playerPosition - max);
+  }
+  return cameraCenter;
+}
+
+function lerp(from: number, to: number, amount: number): number {
+  return from + (to - from) * Math.min(1, Math.max(0, amount));
 }
 
 function clampAxisCenter(value: number, arenaSide: number, visibleSide: number): number {

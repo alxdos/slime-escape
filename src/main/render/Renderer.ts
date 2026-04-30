@@ -20,6 +20,11 @@ import type {
 } from '../../shared/snapshot';
 import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
+import {
+  createVisibleAreaCamera,
+  type VisibleArea,
+  type VisibleAreaCamera
+} from '../visibleArea';
 import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
 
 import { BOSS_VISUALS } from './bossVisuals';
@@ -76,6 +81,7 @@ export type RendererInit = Readonly<{
   session: Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player' | 'companion'>;
   spriteTextures: TextureMap;
   selectedPetId?: string | null;
+  visibleAreaCamera?: VisibleAreaCamera;
   getSnapshotPair: () => SnapshotPair;
   getPortalDescriptors?: () => ReadonlyArray<VibeJamPortalDescriptor>;
   getAim?: AimAccessor;
@@ -237,12 +243,19 @@ export function createRenderer(init: RendererInit): Renderer {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(SCENE_BG);
 
-  const halfW = init.arena.width / 2;
-  const halfH = init.arena.height / 2;
+  const visibleAreaCamera =
+    init.visibleAreaCamera ??
+    createVisibleAreaCamera({
+      arena: init.arena,
+      profile: 'desktop',
+      effectiveViewport: readRendererViewport(windowTarget),
+      playerPosition: init.session.player.position
+    });
 
-  const camera = new THREE.OrthographicCamera(-halfW, halfW, halfH, -halfH, 0.1, 10);
+  const camera = new THREE.OrthographicCamera(0, 0, 0, 0, 0.1, 10);
   camera.position.set(0, 0, 5);
   camera.lookAt(0, 0, 0);
+  applyCameraVisibleArea(camera, visibleAreaCamera.visibleArea());
 
   const arenaBackground = createArenaBackground({
     arena: init.arena,
@@ -335,7 +348,7 @@ export function createRenderer(init: RendererInit): Renderer {
     characterSnapGrid =
       preset === 'low'
         ? createCharacterSnapGrid(
-            init.arena,
+            visibleAreaCamera.visibleArea(),
             resolution.backingWidthPx,
             resolution.backingHeightPx
           )
@@ -351,14 +364,17 @@ export function createRenderer(init: RendererInit): Renderer {
   }
 
   function fitToWindow(): void {
+    visibleAreaCamera.resize(readRendererViewport(windowTarget));
+    const visibleArea = visibleAreaCamera.visibleArea();
     const fit = fitCanvasToViewport({
       viewportWidth: windowTarget.innerWidth,
       viewportHeight: windowTarget.innerHeight,
-      arenaAspect: init.arena.width / init.arena.height
+      visibleAspect: visibleArea.width / visibleArea.height
     });
     if (fit.width <= 0 || fit.height <= 0) return;
     init.canvas.style.width = `${fit.width}px`;
     init.canvas.style.height = `${fit.height}px`;
+    applyCameraVisibleArea(camera, visibleArea);
     applyResolvedScalePolicy(currentRenderScalePreset, fit.width, fit.height);
   }
 
@@ -498,6 +514,11 @@ export function createRenderer(init: RendererInit): Renderer {
       const portalDescriptors = init.getPortalDescriptors?.() ?? [];
       const hasRuntimeCompanion =
         pair.curr?.entities.some((entity) => entity.kind === 'companion') === true;
+      visibleAreaCamera.follow(
+        findInterpolatedPlayerPosition(pair, alpha) ?? init.session.player.position,
+        pair.nowMs
+      );
+      applyCameraVisibleArea(camera, visibleAreaCamera.visibleArea());
       updatePlayer(playerMesh, pair, alpha, characterSnapGrid);
       applyPlayerPortalTravelPresentation(playerEntry, pair, portalDescriptors);
       updateCompanion(
@@ -1558,14 +1579,37 @@ function readCanvasCssSize(canvas: HTMLCanvasElement): Readonly<{
 }
 
 function createCharacterSnapGrid(
-  arena: ArenaConfig,
+  visibleArea: Pick<VisibleArea, 'width' | 'height'>,
   backingWidthPx: number,
   backingHeightPx: number
 ): CharacterSnapGrid {
   return {
-    stepX: arena.width / backingWidthPx,
-    stepY: arena.height / backingHeightPx
+    stepX: visibleArea.width / backingWidthPx,
+    stepY: visibleArea.height / backingHeightPx
   };
+}
+
+function readRendererViewport(windowTarget: RendererWindowTarget): Readonly<{
+  width: number;
+  height: number;
+}> {
+  return {
+    width: windowTarget.innerWidth,
+    height: windowTarget.innerHeight
+  };
+}
+
+function applyCameraVisibleArea(
+  camera: THREE.OrthographicCamera,
+  visibleArea: VisibleArea
+): void {
+  camera.left = -visibleArea.width / 2;
+  camera.right = visibleArea.width / 2;
+  camera.top = visibleArea.height / 2;
+  camera.bottom = -visibleArea.height / 2;
+  camera.position.x = visibleArea.center.x;
+  camera.position.y = visibleArea.center.y;
+  camera.updateProjectionMatrix();
 }
 
 function parseCssPixels(value: string): number {

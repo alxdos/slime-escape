@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   clampVisibleAreaCenter,
+  createVisibleAreaCamera,
   resolveInitialVisibleArea,
   resolveVisibleAreaSize
 } from './visibleArea';
@@ -77,5 +78,70 @@ describe('clampVisibleAreaCenter', () => {
         { x: 5, y: -2 }
       )
     ).toEqual({ x: 0, y: -2 });
+  });
+});
+
+describe('createVisibleAreaCamera', () => {
+  it('keeps the camera still while the player stays inside the free-movement zone', () => {
+    const camera = createVisibleAreaCamera({
+      arena: ARENA,
+      profile: 'mobile',
+      effectiveViewport: { width: 844, height: 390 },
+      playerPosition: { x: 0, y: 0 }
+    });
+    const before = camera.visibleArea().center;
+
+    camera.follow({ x: 1, y: 1 }, 100);
+    camera.follow({ x: 1, y: 1 }, 240);
+
+    expect(camera.visibleArea().center).toEqual(before);
+  });
+
+  it('smoothly follows when the player leaves the free-movement zone', () => {
+    const camera = createVisibleAreaCamera({
+      arena: ARENA,
+      profile: 'mobile',
+      effectiveViewport: { width: 844, height: 390 },
+      playerPosition: { x: 0, y: 0 }
+    });
+
+    camera.follow({ x: 9, y: 0 }, 0);
+    camera.follow({ x: 9, y: 0 }, 140);
+
+    expect(camera.visibleArea().center.x).toBeGreaterThan(0);
+    expect(camera.visibleArea().center.x).toBeLessThan(9);
+    expect(camera.visibleArea().center.y).toBe(0);
+  });
+
+  it('clamps following at the arena edge', () => {
+    const camera = createVisibleAreaCamera({
+      arena: ARENA,
+      profile: 'mobile',
+      effectiveViewport: { width: 844, height: 390 },
+      playerPosition: { x: 0, y: 0 }
+    });
+
+    camera.follow({ x: 100, y: 100 }, 0);
+    camera.follow({ x: 100, y: 100 }, 10_000);
+
+    const visibleArea = camera.visibleArea();
+    expect(visibleArea.center.x).toBeCloseTo((ARENA.width - visibleArea.width) / 2, 6);
+    expect(visibleArea.center.y).toBeCloseTo((ARENA.height - visibleArea.height) / 2, 6);
+  });
+
+  it('keeps the current center clamped when the visible area is resized', () => {
+    const camera = createVisibleAreaCamera({
+      arena: ARENA,
+      profile: 'mobile',
+      effectiveViewport: { width: 844, height: 390 },
+      playerPosition: { x: 4, y: 2 }
+    });
+
+    camera.resize({ width: 3000, height: 1000 });
+
+    const visibleArea = camera.visibleArea();
+    expect(visibleArea.width).toBe(32);
+    expect(visibleArea.center.x).toBe(0);
+    expect(visibleArea.center.y).toBe(2);
   });
 });
