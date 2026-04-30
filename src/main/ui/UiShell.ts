@@ -1,6 +1,5 @@
 import { buildSessionDefinition } from '../../shared/content/buildSession';
 import {
-  SESSION_PRESET_TEMPLATES,
   getPlayableModeCatalog,
   DUNGEON_PRESET,
   resolveModePreset,
@@ -12,7 +11,7 @@ import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
-import type { ArenaConfig, SessionDefinition } from '../../shared/session';
+import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import { createAudio, type Audio } from '../audio/Audio';
 import { applyAimAssist } from '../input/AimAssist';
@@ -683,8 +682,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     const selectedPetId = clientProgressionStore.get().selectedPetId;
     const session = builder(preset, {
       seed: makeSeed(),
-      selectedPetId,
-      arenaOverride: deriveMobileArenaOverride(preset, init.mobileProfile ?? null)
+      selectedPetId
     });
     const clientSettings = clientSettingsStore.get();
     const spriteTextures = preloadedTextures;
@@ -1183,20 +1181,6 @@ function createRendererWindowTarget(gameViewport: GameViewportProvider): Rendere
             return matchMedia.call(gameViewport, query);
           }
         })
-  };
-}
-
-function deriveMobileArenaOverride(
-  preset: ModePreset,
-  mobileProfile: MobileWebProfile | null
-): ArenaConfig | undefined {
-  if (mobileProfile === null || !mobileProfile.isMobile) {
-    return undefined;
-  }
-  const baseArena = SESSION_PRESET_TEMPLATES[preset.id].arena;
-  return {
-    width: baseArena.height * mobileProfile.screenLandscapeAspect,
-    height: baseArena.height
   };
 }
 

@@ -31,7 +31,6 @@ export type BuildOptions = Readonly<{
   seed: number;
   id?: string;
   selectedPetId?: string | null;
-  arenaOverride?: ArenaConfig;
 }>;
 
 export function buildSessionDefinition(
@@ -39,7 +38,7 @@ export function buildSessionDefinition(
   options: BuildOptions
 ): SessionDefinition {
   const template = SESSION_PRESET_TEMPLATES[preset.id];
-  const arena = options.arenaOverride ?? template.arena;
+  const arena = template.arena;
   validateEnemyRegistry(ENEMY_ARCHETYPES, template.player.contactBox);
   validateEncounterBackgroundReferences(template);
   if (template.loadout !== null) {

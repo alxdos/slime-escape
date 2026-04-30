@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { BuildOptions } from '../../shared/content/buildSession';
 import { PET_01 } from '../../shared/content/pets';
 import {
-  SESSION_PRESET_TEMPLATES,
   getPlayableModeCatalog,
   type ModePresetId
 } from '../../shared/content/sessions';
@@ -1645,7 +1645,7 @@ describe('UiShell', () => {
     expect(matchMediaReceiver).toBe(gameViewport);
   });
 
-  it('passes a mobile arena override to the session builder', async () => {
+  it('keeps mobile session building on the content-authored arena', async () => {
     const menu = createMenuHarness();
     const pause = createPauseHarness();
     const result = createResultHarness();
@@ -1659,7 +1659,7 @@ describe('UiShell', () => {
     const windowTarget = new FakeEventTarget();
     const documentEvents = new FakeEventTarget();
     const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
-    const buildOptions: Array<Readonly<{ arenaOverride?: { width: number; height: number } }>> = [];
+    const buildOptions: BuildOptions[] = [];
 
     createUiShellForTest({
       parent: {} as HTMLElement,
@@ -1667,7 +1667,7 @@ describe('UiShell', () => {
       buildSessionDefinition: (preset, options) => {
         buildOptions.push(options);
         return makeSession(`${preset.id}-mobile-session`, {
-          arena: options.arenaOverride ?? { width: 16, height: 9 }
+          arena: { width: 16, height: 9 }
         });
       },
       createSimWorkerHost: sim.factory,
@@ -1692,12 +1692,8 @@ describe('UiShell', () => {
     menu.start('training');
     await flushUiShellStartup();
 
-    const baseArena = SESSION_PRESET_TEMPLATES.training.arena;
-    expect(buildOptions[0]?.arenaOverride).toEqual({
-      width: baseArena.height * (844 / 390),
-      height: baseArena.height
-    });
-    expect(sim.startSessions[0]?.arena).toEqual(buildOptions[0]?.arenaOverride);
+    expect('arenaOverride' in (buildOptions[0] ?? {})).toBe(false);
+    expect(sim.startSessions[0]?.arena).toEqual({ width: 16, height: 9 });
   });
 
   it('uses the mobile input adapter in mobile mode and restarts it around overlay pause', async () => {
