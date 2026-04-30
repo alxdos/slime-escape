@@ -61,6 +61,8 @@ Follow-up from online testing: the online arena must not render over an empty ba
 
 Follow-up for HUD labels: online progression ids and the final boss level are shared headless Public Arena config. Server gameplay and main-thread HUD labels must import the same boss-level denominator, while authoritative snapshots can keep reporting the server-owned raw level.
 
+Follow-up hardening before live verification: the server owns a simple per-socket input rate limit, sends an explicit `serverShutdown` close reason before intentional shutdown, and resolves overlapping projectile hits by deterministic nearest-target selection.
+
 ## Out of scope
 
 - Matchmaking, ranked queues, private rooms, parties, invites, or friend joining.

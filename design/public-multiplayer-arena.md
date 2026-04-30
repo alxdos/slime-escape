@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-30
-- Updated: 2026-04-30 (story 032 T16 follow-up: online progression ids and boss level live in shared headless config so server authority and client HUD labels use the same boss-level denominator.)
+- Updated: 2026-04-30 (story 032 T17 follow-up: public input rate limiting, shutdown close reason, and deterministic overlapping projectile target selection are recorded. Story 032 T16 follow-up: online progression ids and boss level live in shared headless config so server authority and client HUD labels use the same boss-level denominator.)
 
 ## Context
 
@@ -73,6 +73,7 @@ The product rule is intentionally simple: there is one public arena, no matchmak
   - boss attack: `fireball-staff` or a compact fireball variant built from the same content shape.
 - The server runtime may implement only the projectile behavior needed by those online weapons. It does not need to implement the whole local `CombatSystem` feature set before the arena can ship.
 - Damage is permissive for online arena combat: every projectile or boss fire attack can damage any other damageable player, including boss versus boss, except its owner.
+- If a projectile overlaps multiple eligible players on the same server tick, the server chooses the hit target deterministically: nearest target by squared distance from projectile center to player center, with player id lexicographic order as the tie-breaker. `Map` insertion order must not decide combat outcomes.
 - The server owns level progression:
   - killing any player gives exactly `+1` level;
   - killing a boss still gives exactly `+1` level;
@@ -100,6 +101,8 @@ The product rule is intentionally simple: there is one public arena, no matchmak
   - client -> server: join request, input intent, disconnect/leave;
   - server -> client: accepted/rejected, authoritative snapshot, presentation events, server error/close reason.
 - Network protocol types live in the server package or in `src/shared/**` only if both the static client and the server import them. They must not be hidden in browser UI modules.
+- The server rate-limits `publicArena:input` per socket as a protective boundary around the authoritative simulation. The first slice accepts up to `240` input intents per socket per `1000 ms` server-time window. Excess input intents are dropped, not queued, and do not disconnect the socket. This limit is intentionally above normal desktop/mobile input cadence, including high-refresh pointer movement, and can be revisited only after measurement.
+- Before an intentional server shutdown through `PublicArenaServer.close()`, connected sockets receive `publicArena:closeReason` with `reason: 'serverShutdown'` and the message `Arena server is restarting.`. Unplanned socket loss may still surface as `serverError` on the client.
 
 ### Interest snapshots
 
