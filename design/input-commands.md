@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-30 (story 032 follow-up: `online` Public Arena maps desktop `Esc`/`Space`/Pointer Lock loss and the mobile menu button to the Public Arena menu from [main-ui-shell.md](main-ui-shell.md), not to local pause or immediate socket close. Earlier story 031 follow-up: aim pixel-to-world mapping uses the active visible area from [camera-and-visible-area.md](camera-and-visible-area.md), while mobile touch controls still map to existing `move`/`aim`/`fire` commands; see [mobile-web-support.md](mobile-web-support.md). Earlier: 2026-04-26 story 023 pause hotkey fix: player-facing pause overlay is `Esc` or `Space`; dev pause moves to physical `KeyP` through `UiShell`, independent of locale/CapsLock. Earlier: 017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 007 finalized pause routing through `UiShell`.)
+- Updated: 2026-04-30 (story 032 aim polish: desktop and mobile virtual aim is stored relative to the active visible area/viewport and converted to world coordinates from the current camera before sending `aim` or drawing the crosshair, so the cursor follows the viewport in local and online play. Earlier story 032 follow-up: `online` Public Arena maps desktop `Esc`/`Space`/Pointer Lock loss and the mobile menu button to the Public Arena menu from [main-ui-shell.md](main-ui-shell.md), not to local pause or immediate socket close. Earlier story 031 follow-up: aim pixel-to-world mapping uses the active visible area from [camera-and-visible-area.md](camera-and-visible-area.md), while mobile touch controls still map to existing `move`/`aim`/`fire` commands; see [mobile-web-support.md](mobile-web-support.md). Earlier: 2026-04-26 story 023 pause hotkey fix: player-facing pause overlay is `Esc` or `Space`; dev pause moves to physical `KeyP` through `UiShell`, independent of locale/CapsLock. Earlier: 017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 007 finalized pause routing through `UiShell`.)
 
 ## Context
 
@@ -53,11 +53,12 @@ There are also product requirements:
 
 - During an active session, `main` requests Pointer Lock on the canvas. While Pointer Lock is active:
   - the system cursor is hidden;
-  - the game maintains a **virtual aim position** in world coordinates, updating it from `movementX/Y` on `mousemove` events;
-  - the virtual aim is strictly clamped to arena bounds ([arena-and-coordinates.md](arena-and-coordinates.md)); aim cannot leave the arena.
+  - the game maintains a **virtual aim position** as an offset inside the current visible area/viewport, updating it from `movementX/Y` on `mousemove` events;
+  - before drawing the crosshair or sending an `aim` command, `main` converts that visible-area offset into world coordinates using the current visible-area center;
+  - the virtual aim offset is clamped to the visible-area bounds. Because the visible area itself is clamped inside arena bounds, the resulting world aim cannot leave the arena.
   - `movementX/Y` (in canvas pixels) is converted to world units with the same mapping as rendering: `1 wu ≡ canvas.height / visibleArea.height` pixels (see [camera-and-visible-area.md](camera-and-visible-area.md)). With the current `32 x 18` desktop arena, `visibleArea.height === arena.height`, preserving the existing feel. This gives the same aim sensitivity at any window size and the same perceived aim on 4K and FullHD.
   - aim sensitivity is not introduced by this decision; until settings exist ([../stories/009-settings.md](../stories/009-settings.md)), it is `1.0` of the mapping above.
-- If Pointer Lock is not currently active (the browser just released it on Esc, the lock has not yet been requested again, and so on), aim stays at the last known world position, and mouse movement does not move it. This prevents aim jumps when lock is lost and restored.
+- If Pointer Lock is not currently active (the browser just released it on Esc, the lock has not yet been requested again, and so on), aim stays at the last known visible-area offset, and mouse movement does not move it. This prevents aim jumps when lock is lost and restored.
 - The main channel for "aim in `sim`" is the `aim` field in input commands (see below), in world coordinates. No screen coordinates are sent to `sim`.
 
 ### Shooting (left mouse button)
@@ -73,7 +74,7 @@ There are also product requirements:
 
 - Mobile touch controls are a main-thread input mapping defined by [mobile-web-support.md](mobile-web-support.md). They reuse the existing `InputCommand` union and do not add new `kind` values.
 - Mobile movement sends the same normalized `move` command as keyboard movement.
-- Mobile aim maintains the same virtual aim position as desktop Pointer Lock aiming, using relative drag deltas, the active visible-area pixel-to-world mapping, and clamping to arena bounds.
+- Mobile aim maintains the same visible-area-relative virtual aim position as desktop Pointer Lock aiming, using relative drag deltas, the active visible-area pixel-to-world mapping, and clamping to visible-area bounds.
 - Mobile fire sends the same `fire start` / `fire stop` commands as left mouse button.
 - A mobile fire tap must remain active for at least one simulation step before the input layer sends `fire stop`; this keeps short taps observable without changing simulation semantics.
 - Mobile input does not request Pointer Lock. Desktop Pointer Lock behavior remains unchanged.
@@ -110,6 +111,7 @@ There are also product requirements:
 ### Send frequency
 
 - `move` and `aim` are sent **when the value changes**, not every frame. If nothing changed, `main` stays silent.
+- Because virtual aim is stored relative to the visible area, camera movement can change the current world aim even when the player does not move the mouse or aim stick. In that case `main` sends the changed world `aim` value from its normal frame loop. The sim/server still receive only world coordinates.
 - `aim` is additionally limited: during a `mousemove` stream, `main` batches events for one `requestAnimationFrame` and sends at most one `aim` command per frame.
 - `fire` is sent by event and is not throttled on the `main` side.
 - There is no guarantee that a command reaches a specific tick: `main → sim` communication is asynchronous by [thread-model.md](thread-model.md). `sim` applies the latest received state on the nearest tick.
