@@ -9,6 +9,7 @@ import type {
 import {
   PUBLIC_ARENA_EVENTS,
   PUBLIC_ARENA_PROTOCOL_VERSION,
+  type PublicArenaCloseReason,
   type PublicArenaJoinRejected
 } from '../../src/shared/publicArenaProtocol.js';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../../src/shared/timing.js';
@@ -18,6 +19,17 @@ import type { PublicArenaServerConfig } from './config.js';
 
 const PUBLIC_ARENA_ROOM = 'public-arena';
 const PUBLIC_ARENA_PROTOCOL_MISMATCH_MESSAGE = 'The online arena connection is out of date. Please refresh.';
+export const PUBLIC_ARENA_INPUT_RATE_LIMIT_MAX = 240;
+export const PUBLIC_ARENA_INPUT_RATE_LIMIT_WINDOW_MS = 1000;
+export const PUBLIC_ARENA_SERVER_SHUTDOWN_REASON: PublicArenaCloseReason = {
+  reason: 'serverShutdown',
+  message: 'Arena server is restarting.'
+};
+
+export type PublicArenaInputRateLimitState = {
+  windowStartedAtMs: number;
+  acceptedInWindow: number;
+};
 
 export type PublicArenaServer = Readonly<{
   httpServer: HttpServer;
@@ -70,6 +82,8 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
   );
 
   io.on('connection', (socket) => {
+    const inputRateLimit = createPublicArenaInputRateLimitState(Date.now());
+
     socket.on(PUBLIC_ARENA_EVENTS.join, (request) => {
       if (request.protocolVersion !== PUBLIC_ARENA_PROTOCOL_VERSION) {
         socket.emit(
@@ -97,6 +111,9 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
     });
 
     socket.on(PUBLIC_ARENA_EVENTS.input, (intent) => {
+      if (!acceptPublicArenaInputIntent(inputRateLimit, Date.now())) {
+        return;
+      }
       simulation.applyInput(socket.id, intent);
     });
 
@@ -139,6 +156,8 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
         snapshotTimer = null;
       }
 
+      emitPublicArenaServerShutdownReason(io);
+
       return new Promise((resolve, reject) => {
         io.close((ioError) => {
           if (ioError !== undefined) {
@@ -162,6 +181,44 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
       });
     }
   };
+}
+
+export function createPublicArenaInputRateLimitState(
+  nowMs: number
+): PublicArenaInputRateLimitState {
+  return {
+    windowStartedAtMs: nowMs,
+    acceptedInWindow: 0
+  };
+}
+
+export function acceptPublicArenaInputIntent(
+  state: PublicArenaInputRateLimitState,
+  nowMs: number
+): boolean {
+  if (
+    nowMs < state.windowStartedAtMs ||
+    nowMs - state.windowStartedAtMs >= PUBLIC_ARENA_INPUT_RATE_LIMIT_WINDOW_MS
+  ) {
+    state.windowStartedAtMs = nowMs;
+    state.acceptedInWindow = 0;
+  }
+
+  if (state.acceptedInWindow >= PUBLIC_ARENA_INPUT_RATE_LIMIT_MAX) {
+    return false;
+  }
+
+  state.acceptedInWindow += 1;
+  return true;
+}
+
+export function emitPublicArenaServerShutdownReason(
+  io: Pick<
+    SocketIOServer<PublicArenaClientToServerEvents, PublicArenaServerToClientEvents>,
+    'emit'
+  >
+): void {
+  io.emit(PUBLIC_ARENA_EVENTS.closeReason, PUBLIC_ARENA_SERVER_SHUTDOWN_REASON);
 }
 
 function publishSnapshots(

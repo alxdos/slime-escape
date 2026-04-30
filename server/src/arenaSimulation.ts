@@ -289,7 +289,7 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
     const defeatedThisTick = new Set<PublicArenaPlayerId>();
 
     for (const projectile of [...projectiles.values()]) {
-      const target = firstProjectileTarget(projectile, defeatedThisTick);
+      const target = projectileTarget(projectile, defeatedThisTick);
       if (target === null) {
         continue;
       }
@@ -316,10 +316,13 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
     }
   }
 
-  function firstProjectileTarget(
+  function projectileTarget(
     projectile: RuntimeProjectile,
     defeatedThisTick: ReadonlySet<PublicArenaPlayerId>
   ): RuntimePlayer | null {
+    let nearest: RuntimePlayer | null = null;
+    let nearestDistanceSquared = Number.POSITIVE_INFINITY;
+
     for (const player of players.values()) {
       if (
         player.id === projectile.ownerId ||
@@ -329,11 +332,20 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
         continue;
       }
       const reach = projectile.hitRadius + player.radius;
-      if (distanceSquared(projectile, player) <= reach * reach) {
-        return player;
+      const candidateDistanceSquared = distanceSquared(projectile, player);
+      if (candidateDistanceSquared > reach * reach) {
+        continue;
+      }
+      if (
+        nearest === null ||
+        candidateDistanceSquared < nearestDistanceSquared ||
+        (candidateDistanceSquared === nearestDistanceSquared && player.id < nearest.id)
+      ) {
+        nearest = player;
+        nearestDistanceSquared = candidateDistanceSquared;
       }
     }
-    return null;
+    return nearest;
   }
 
   function killPlayer(victim: RuntimePlayer, killerId: PublicArenaPlayerId, weaponArchetypeId: string): void {

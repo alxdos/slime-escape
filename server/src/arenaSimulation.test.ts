@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { SIM_STEP_MS } from '../../src/shared/timing.js';
-import type { PublicArenaPlayerId } from '../../src/shared/publicArenaProtocol.js';
+import type {
+  PublicArenaPlayerId,
+  PublicArenaPresentationEvent
+} from '../../src/shared/publicArenaProtocol.js';
 
 import {
   PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
@@ -83,6 +86,28 @@ function tickUntilProjectile(
     }
   }
   throw new Error(`no ${weaponArchetypeId} projectile was fired`);
+}
+
+function tickUntilHit(
+  simulation: ReturnType<typeof createPublicArenaSimulation>
+): Extract<PublicArenaPresentationEvent, { kind: 'hit' }> {
+  for (let i = 0; i < 120; i += 1) {
+    simulation.tick();
+    const hit = simulation.drainEvents().find((event) => event.kind === 'hit');
+    if (hit !== undefined) {
+      return hit;
+    }
+  }
+  throw new Error('no projectile hit was emitted');
+}
+
+function expireSpawnProtection(
+  simulation: ReturnType<typeof createPublicArenaSimulation>
+): void {
+  while (simulation.simTimeMs() < PUBLIC_ARENA_SPAWN_PROTECTION_MS) {
+    simulation.tick();
+    simulation.drainEvents();
+  }
 }
 
 describe('PublicArenaSimulation', () => {
@@ -243,6 +268,34 @@ describe('PublicArenaSimulation', () => {
     tickUntilDeath(simulation, 'killer', 'boss-victim');
 
     expect(playerSnapshot(simulation, 'killer').level).toBe(levelBefore + 1);
+  });
+
+  it('chooses the nearest overlapping projectile target instead of insertion order', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('shooter', 0, 0));
+    simulation.addPlayer(member('far-target', 0.56, 0));
+    simulation.addPlayer(member('near-target', 0.46, 0));
+    simulation.drainEvents();
+    expireSpawnProtection(simulation);
+
+    simulation.applyInput('shooter', { kind: 'aim', x: 1, y: 0 });
+    simulation.applyInput('shooter', { kind: 'fire', phase: 'start' });
+
+    expect(tickUntilHit(simulation).targetId).toBe('near-target');
+  });
+
+  it('breaks equal-distance projectile target ties by player id', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('shooter', 0, 0));
+    simulation.addPlayer(member('z-target', 0.5, 0));
+    simulation.addPlayer(member('a-target', 0.5, 0));
+    simulation.drainEvents();
+    expireSpawnProtection(simulation);
+
+    simulation.applyInput('shooter', { kind: 'aim', x: 1, y: 0 });
+    simulation.applyInput('shooter', { kind: 'fire', phase: 'start' });
+
+    expect(tickUntilHit(simulation).targetId).toBe('a-target');
   });
 
   it('filters interest snapshots without changing the authoritative arena snapshot', () => {
