@@ -540,6 +540,8 @@ describe('Hud view model', () => {
 
       hud.update(makeSnapshotPair(firstSnapshot));
 
+      const runStatus = requireElement(findByDataset(parent, 'role', 'hud-run-status'));
+      expect(runStatus.style.cssText).toContain('display:none');
       const weaponBar = requireElement(findByDataset(parent, 'role', 'hud-weapon-bar'));
       const shotgunSlot = requireElement(findByDataset(weaponBar, 'weaponSlot', '1'));
       const frame = childAt(shotgunSlot, 1);

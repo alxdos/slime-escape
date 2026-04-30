@@ -140,14 +140,16 @@ const COMPANION_Z = -0.02;
 const COMPANION_HP_TRACK_NAME = 'companion-hp-track';
 const COMPANION_HP_FILL_NAME = 'companion-hp-fill';
 const COMPANION_HP_RESCUE_FILL_NAME = 'companion-hp-rescue-fill';
+const PLAYER_HP_TRACK_NAME = 'player-hp-track';
+const PLAYER_HP_FILL_NAME = 'player-hp-fill';
 const COMPANION_WARNING_MARKER_NAME = 'companion-warning-marker';
 const COMPANION_GHOST_AURA_NAME = 'companion-ghost-aura';
 const COMPANION_RESCUE_RING_NAME = 'companion-rescue-ring';
-const COMPANION_HP_BAR_WIDTH_WU = 0.74;
-const COMPANION_HP_BAR_HEIGHT_WU = 0.07;
-const COMPANION_HP_BAR_OFFSET_WU = 0.22;
-const COMPANION_HP_TRACK_COLOR = 0x161b22;
-const COMPANION_HP_FILL_COLOR = 0x7ee7c8;
+const CHARACTER_HP_BAR_WIDTH_WU = 0.74;
+const CHARACTER_HP_BAR_HEIGHT_WU = 0.07;
+const CHARACTER_HP_BAR_OFFSET_WU = 0.22;
+const CHARACTER_HP_TRACK_COLOR = 0x161b22;
+const CHARACTER_HP_FILL_COLOR = 0x7ee7c8;
 const COMPANION_HP_GHOST_FILL_COLOR = 0x9bd5ff;
 const COMPANION_HP_RESCUE_FILL_COLOR = 0xffe066;
 const COMPANION_WARNING_COLOR = 0xffe066;
@@ -288,6 +290,7 @@ export function createRenderer(init: RendererInit): Renderer {
     ENEMY_Z
   );
   const playerMesh = playerEntry.mesh;
+  playerMesh.add(createPlayerHpBar(DEFAULT_PLAYER_VISUAL.worldSize.height));
   playerMesh.add(createStatusMarker(DEFAULT_PLAYER_VISUAL.worldSize.height));
   playerMesh.visible = false;
   scene.add(playerMesh);
@@ -946,49 +949,57 @@ function createStatusMarker(entityHeight: number): THREE.Mesh {
 }
 
 function createCompanionHpBar(entityHeight: number): THREE.Group {
-  const group = new THREE.Group();
-  group.position.y = entityHeight / 2 + COMPANION_HP_BAR_OFFSET_WU;
-  group.position.z = 0.07;
-
-  const track = new THREE.Mesh(
-    new THREE.PlaneGeometry(COMPANION_HP_BAR_WIDTH_WU, COMPANION_HP_BAR_HEIGHT_WU),
-    new THREE.MeshBasicMaterial({
-      color: COMPANION_HP_TRACK_COLOR,
-      transparent: true,
-      opacity: 0.82,
-      depthWrite: false
-    })
+  const group = createHpBarGroup(entityHeight, {
+    trackName: COMPANION_HP_TRACK_NAME,
+    fillName: COMPANION_HP_FILL_NAME
+  });
+  const rescueFill = createHpBarMesh(
+    COMPANION_HP_RESCUE_FILL_NAME,
+    COMPANION_HP_RESCUE_FILL_COLOR,
+    0.94
   );
-  track.name = COMPANION_HP_TRACK_NAME;
-  group.add(track);
-
-  const fill = new THREE.Mesh(
-    new THREE.PlaneGeometry(COMPANION_HP_BAR_WIDTH_WU, COMPANION_HP_BAR_HEIGHT_WU),
-    new THREE.MeshBasicMaterial({
-      color: COMPANION_HP_FILL_COLOR,
-      transparent: true,
-      opacity: 0.95,
-      depthWrite: false
-    })
-  );
-  fill.name = COMPANION_HP_FILL_NAME;
-  fill.position.z = 0.01;
-  group.add(fill);
-
-  const rescueFill = new THREE.Mesh(
-    new THREE.PlaneGeometry(COMPANION_HP_BAR_WIDTH_WU, COMPANION_HP_BAR_HEIGHT_WU),
-    new THREE.MeshBasicMaterial({
-      color: COMPANION_HP_RESCUE_FILL_COLOR,
-      transparent: true,
-      opacity: 0.94,
-      depthWrite: false
-    })
-  );
-  rescueFill.name = COMPANION_HP_RESCUE_FILL_NAME;
   rescueFill.position.z = 0.02;
   rescueFill.visible = false;
   group.add(rescueFill);
   return group;
+}
+
+function createPlayerHpBar(entityHeight: number): THREE.Group {
+  return createHpBarGroup(entityHeight, {
+    trackName: PLAYER_HP_TRACK_NAME,
+    fillName: PLAYER_HP_FILL_NAME
+  });
+}
+
+function createHpBarGroup(
+  entityHeight: number,
+  names: Readonly<{
+    trackName: string;
+    fillName: string;
+  }>
+): THREE.Group {
+  const group = new THREE.Group();
+  group.position.y = entityHeight / 2 + CHARACTER_HP_BAR_OFFSET_WU;
+  group.position.z = 0.07;
+  group.add(createHpBarMesh(names.trackName, CHARACTER_HP_TRACK_COLOR, 0.82));
+  const fill = createHpBarMesh(names.fillName, CHARACTER_HP_FILL_COLOR, 0.95);
+  fill.position.z = 0.01;
+  group.add(fill);
+  return group;
+}
+
+function createHpBarMesh(name: string, color: number, opacity: number): THREE.Mesh {
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(CHARACTER_HP_BAR_WIDTH_WU, CHARACTER_HP_BAR_HEIGHT_WU),
+    new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity,
+      depthWrite: false
+    })
+  );
+  mesh.name = name;
+  return mesh;
 }
 
 function createCompanionWarningMarker(entityHeight: number): THREE.Mesh {
@@ -1323,7 +1334,7 @@ function applyCompanionHpBar(
   if (!visible) return;
   const ratio = clamp01(entity.hp / entity.maxHp);
   fill.scale.x = ratio;
-  fill.position.x = (-COMPANION_HP_BAR_WIDTH_WU * (1 - ratio)) / 2;
+  fill.position.x = (-CHARACTER_HP_BAR_WIDTH_WU * (1 - ratio)) / 2;
   if (companionConfig !== null && rescueProgress !== null) {
     const reviveHp = Math.max(
       1,
@@ -1332,15 +1343,28 @@ function applyCompanionHpBar(
     const targetRatio = clamp01(reviveHp / entity.maxHp);
     const progressRatio = ratio + (targetRatio - ratio) * rescueProgress;
     rescueFill.scale.x = clamp01(progressRatio);
-    rescueFill.position.x = (-COMPANION_HP_BAR_WIDTH_WU * (1 - rescueFill.scale.x)) / 2;
+    rescueFill.position.x = (-CHARACTER_HP_BAR_WIDTH_WU * (1 - rescueFill.scale.x)) / 2;
   }
   const fillMaterial = fill.material;
   if (!Array.isArray(fillMaterial) && fillMaterial instanceof THREE.MeshBasicMaterial) {
     fillMaterial.color.setHex(
-      entity.state === 'ghost' ? COMPANION_HP_GHOST_FILL_COLOR : COMPANION_HP_FILL_COLOR
+      entity.state === 'ghost' ? COMPANION_HP_GHOST_FILL_COLOR : CHARACTER_HP_FILL_COLOR
     );
     fillMaterial.opacity = entity.state === 'ghost' ? 0.48 : 0.95;
   }
+}
+
+function applyPlayerHpBar(mesh: THREE.Mesh, player: PlayerSnapshot): void {
+  const track = findChildMesh(mesh, PLAYER_HP_TRACK_NAME);
+  const fill = findChildMesh(mesh, PLAYER_HP_FILL_NAME);
+  if (track === null || fill === null) return;
+  const visible = player.maxHp > 0;
+  track.visible = visible;
+  fill.visible = visible;
+  if (!visible) return;
+  const ratio = clamp01(player.hp / player.maxHp);
+  fill.scale.x = ratio;
+  fill.position.x = (-CHARACTER_HP_BAR_WIDTH_WU * (1 - ratio)) / 2;
 }
 
 function applyCompanionWarningMarker(
@@ -1800,6 +1824,7 @@ function updatePlayer(
     mesh.visible = true;
     setSnappedMeshPosition(mesh, player.x, player.y, 0, snapGrid);
     applyPlayerPresentation(mesh, pair.nowMs, { dx: 0, dy: 0, strength: 0 });
+    applyPlayerHpBar(mesh, player);
     applyStatusMarker(mesh, player.statusEffects ?? [], pair.nowMs);
     return;
   }
@@ -1812,6 +1837,7 @@ function updatePlayer(
     pair.nowMs,
     playerPresentationMotion(prevPlayer, player, prev, curr)
   );
+  applyPlayerHpBar(mesh, player);
   applyStatusMarker(mesh, player.statusEffects ?? [], pair.nowMs);
 }
 

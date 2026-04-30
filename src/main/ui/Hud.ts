@@ -835,7 +835,7 @@ function topLeftStatusStyle(): string {
     'position:fixed',
     'top:42px',
     'left:56px',
-    'display:grid',
+    'display:none',
     'gap:6px',
     'min-width:118px',
     'padding:8px 10px',

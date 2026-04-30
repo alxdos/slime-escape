@@ -719,6 +719,48 @@ describe('createRenderer', () => {
     expect(backend.ops).toEqual([{ kind: 'render' }]);
   });
 
+  it('renders player HP above the player sprite in companion bar style', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const playerTexture = new THREE.Texture();
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({
+        [DEFAULT_PLAYER_VISUAL.archetypeId]: playerTexture
+      }),
+      getSnapshotPair: () =>
+        createSnapshotPairWithEntities([
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 3, maxHp: 5 }
+        ]),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const playerMesh = findMeshWithMaterialMap(backend.lastScene(), playerTexture);
+    const hpTrack = findChildMeshByName(playerMesh, 'player-hp-track');
+    const hpFill = findChildMeshByName(playerMesh, 'player-hp-fill');
+    const fillMaterial = hpFill?.material;
+    expect(hpTrack?.visible).toBe(true);
+    expect(hpTrack?.parent?.position.y).toBeGreaterThan(DEFAULT_PLAYER_VISUAL.worldSize.height / 2);
+    expect(hpFill?.visible).toBe(true);
+    expect(hpFill?.scale.x).toBeCloseTo(0.6);
+    expect(fillMaterial).toBeInstanceOf(THREE.MeshBasicMaterial);
+    expect((fillMaterial as THREE.MeshBasicMaterial).color.getHex()).toBe(0x7ee7c8);
+  });
+
   it('renders a selected companion at two player radii and keeps it still while close', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();
