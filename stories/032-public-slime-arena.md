@@ -107,7 +107,7 @@ Public Slime Arena is built on [public-multiplayer-arena.md](../design/public-mu
 | T6 | [x] | Implement Socket.IO delivery: reliable join/reject lifecycle, volatile per-socket snapshots at the snapshot cadence, and interest filtering by visible area plus margin. | Added volatile per-socket interest snapshots, presentation-event delivery, and interest filtering tests. |
 | T7 | [x] | Add the Public Arena client entry point and connection flow in the existing web app. | Added the menu entry, Socket.IO client flow, accepted/rejected status handling, and tests that keep campaign/training/dungeon session start paths unchanged. |
 | T8 | [x] | Render online snapshots with existing slime, boss, projectile, level-label, and HUD presentation. | Added online snapshot rendering, level labels, current level/population HUD, and tower boss/projectile visual registry coverage. |
-| T9 | [ ] | Route desktop and mobile online input to the server as movement, aim, and fire intent using the existing visible-area/camera mapping. | The server remains authoritative; mobile support sends no new simulation-visible touch command kinds. |
+| T9 | [x] | Route desktop and mobile online input to the server as movement, aim, and fire intent using the existing visible-area/camera mapping. | Reused desktop/mobile input adapters for online movement, aim, and fire intents while filtering non-online input commands. |
 | T10 | [ ] | Run automated checks and request live online verification from the user. | Include server unit tests, protocol/client tests, build/content checks, and a manual two-client arena check per pipeline. |
 
 ## Related

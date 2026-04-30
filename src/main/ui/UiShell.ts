@@ -12,6 +12,7 @@ import type { InputCommand } from '../../shared/input';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type {
+  PublicArenaInputIntent,
   PublicArenaSnapshot,
   PublicArenaWorldBounds
 } from '../../shared/publicArenaProtocol';
@@ -351,6 +352,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   let input: InputController | null = null;
   let publicArenaClient: PublicArenaClient | null = null;
   let publicArenaRenderer: PublicArenaRenderer | null = null;
+  let publicArenaInput: InputController | null = null;
+  let publicArenaVisibleAreaCamera: VisibleAreaCamera | null = null;
   let publicArenaSnapshot: PublicArenaSnapshot | null = null;
   let publicArenaPlayerCap: number | null = null;
   let publicArenaConnectionId = 0;
@@ -628,7 +631,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         result.hide();
-        mobileControls.hide();
+        if (isMobileInputMode()) {
+          mobileControls.show();
+        } else {
+          mobileControls.hide();
+        }
         publicArenaStatus.hide();
         publicArenaHud.show();
         syncSettingsVisibility();
@@ -809,7 +816,8 @@ export function createUiShell(init: UiShellInit): UiShell {
           return;
         }
         publicArenaSnapshot = snapshot;
-        ensurePublicArenaRenderer(snapshot.arena);
+        const visibleAreaCamera = ensurePublicArenaRenderer(snapshot.arena);
+        ensurePublicArenaInput(snapshot.arena, visibleAreaCamera);
         publicArenaHud.update(snapshot, publicArenaPlayerCap);
       },
       onPresentation() {},
@@ -849,9 +857,12 @@ export function createUiShell(init: UiShellInit): UiShell {
     publicArenaHud.update(null, playerCap);
   }
 
-  function ensurePublicArenaRenderer(arena: PublicArenaWorldBounds): void {
+  function ensurePublicArenaRenderer(arena: PublicArenaWorldBounds): VisibleAreaCamera {
     if (publicArenaRenderer !== null) {
-      return;
+      if (publicArenaVisibleAreaCamera === null) {
+        throw new Error('Public arena renderer is missing its visible-area camera.');
+      }
+      return publicArenaVisibleAreaCamera;
     }
     if (preloadedTextures === null) {
       throw new Error('Public arena renderer requires preloaded sprite textures.');
@@ -876,6 +887,62 @@ export function createUiShell(init: UiShellInit): UiShell {
       nextRenderer.applyScalePolicy(settings.renderScalePreset);
     });
     publicArenaRenderer = nextRenderer;
+    publicArenaVisibleAreaCamera = visibleAreaCamera;
+    return visibleAreaCamera;
+  }
+
+  function ensurePublicArenaInput(
+    arena: PublicArenaWorldBounds,
+    visibleAreaCamera: VisibleAreaCamera
+  ): void {
+    if (publicArenaInput !== null) {
+      return;
+    }
+    const activePublicArenaClient = publicArenaClient;
+    if (activePublicArenaClient === null || phase.kind !== 'online') {
+      return;
+    }
+    const nextInput = createPublicArenaInputController(
+      arena,
+      visibleAreaCamera,
+      activePublicArenaClient
+    );
+    publicArenaInput = nextInput;
+    nextInput.start();
+  }
+
+  function createPublicArenaInputController(
+    arena: PublicArenaWorldBounds,
+    visibleAreaCamera: VisibleAreaCamera,
+    activePublicArenaClient: PublicArenaClient
+  ): InputController {
+    const inputCommandSink = (command: InputCommand): void => {
+      const intent = publicArenaIntentFromInput(command);
+      if (intent === null) {
+        return;
+      }
+      activePublicArenaClient.sendInput(intent);
+    };
+    const sharedInput = {
+      arena,
+      pixelsPerWorldUnit: () =>
+        pixelsPerWorldUnitFromVisibleArea(init.canvas, visibleAreaCamera),
+      initialAim: findPublicArenaSelfPosition(),
+      onCommand: inputCommandSink
+    };
+    if (isMobileInputMode()) {
+      return mobileInputFactory({
+        ...sharedInput,
+        surface: init.parent,
+        pauseElement: () => mobileControls.pauseButtonElement(),
+        weaponSlotElements: () => queryWeaponSlotElements(init.parent),
+        onPause: exitPublicArenaToMenu
+      });
+    }
+    return inputFactory({
+      ...sharedInput,
+      canvas: init.canvas
+    });
   }
 
   function findPublicArenaSelfPosition(): Readonly<{ x: number; y: number }> {
@@ -887,18 +954,24 @@ export function createUiShell(init: UiShellInit): UiShell {
   function tearDownPublicArenaPresentation(): void {
     if (
       publicArenaRenderer === null &&
+      publicArenaInput === null &&
+      publicArenaVisibleAreaCamera === null &&
       publicArenaSnapshot === null &&
       publicArenaPlayerCap === null
     ) {
       publicArenaHud.hide();
       return;
     }
+    const previousInput = publicArenaInput;
     const previousRenderer = publicArenaRenderer;
     const previousUnsubscribeRendererSettings = unsubscribeRendererSettings;
+    publicArenaInput = null;
     publicArenaRenderer = null;
+    publicArenaVisibleAreaCamera = null;
     publicArenaSnapshot = null;
     publicArenaPlayerCap = null;
     unsubscribeRendererSettings = null;
+    previousInput?.stop();
     previousUnsubscribeRendererSettings?.();
     previousRenderer?.dispose();
     publicArenaHud.hide();
@@ -1102,8 +1175,8 @@ export function createUiShell(init: UiShellInit): UiShell {
     }
     const activePublicArenaClient = publicArenaClient;
     publicArenaConnectionId += 1;
-    publicArenaClient = null;
     tearDownPublicArenaPresentation();
+    publicArenaClient = null;
     activePublicArenaClient?.disconnect();
     setPhase(MENU_PHASE);
   }
@@ -1426,9 +1499,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       detach();
       const activePublicArenaClient = publicArenaClient;
       publicArenaConnectionId += 1;
+      tearDownPublicArenaPresentation();
       publicArenaClient = null;
       activePublicArenaClient?.disconnect();
-      tearDownPublicArenaPresentation();
       tearDownClientSession();
       releasePreloadedTextures();
       startupOverlay.dispose();
@@ -1542,6 +1615,20 @@ function formatStartupError(error: unknown): string {
     return error;
   }
   return 'Unknown preload error';
+}
+
+function publicArenaIntentFromInput(command: InputCommand): PublicArenaInputIntent | null {
+  switch (command.kind) {
+    case 'move':
+    case 'aim':
+    case 'fire':
+      return command;
+    case 'selectWeaponSlot':
+    case 'holsterWeapon':
+      return null;
+    default:
+      assertNever(command);
+  }
 }
 
 function createNullStartupOverlay(_init: StartupOverlayInit): StartupOverlay {

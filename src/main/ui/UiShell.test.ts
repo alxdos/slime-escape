@@ -8,7 +8,10 @@ import {
 } from '../../shared/content/sessions';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
-import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
+import type {
+  PublicArenaInputIntent,
+  PublicArenaSnapshot
+} from '../../shared/publicArenaProtocol';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
@@ -776,12 +779,15 @@ function createPublicArenaRendererHarness() {
 function createPublicArenaClientHarness() {
   let lastInit: PublicArenaClientInit | null = null;
   let disconnectCalls = 0;
+  const sentInputs: PublicArenaInputIntent[] = [];
 
   return {
     factory(init: PublicArenaClientInit): PublicArenaClient {
       lastInit = init;
       return {
-        sendInput(): void {},
+        sendInput(intent): void {
+          sentInputs.push(intent);
+        },
         disconnect(): void {
           disconnectCalls += 1;
         }
@@ -821,6 +827,9 @@ function createPublicArenaClientHarness() {
     },
     disconnectCalls(): number {
       return disconnectCalls;
+    },
+    sentInputs(): ReadonlyArray<PublicArenaInputIntent> {
+      return sentInputs;
     }
   };
 }
@@ -2417,6 +2426,7 @@ describe('UiShell', () => {
     const publicArenaHud = createPublicArenaHudHarness();
     const publicArenaClient = createPublicArenaClientHarness();
     const publicArenaRenderer = createPublicArenaRendererHarness();
+    const input = createInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
     const audio = createAudioHarness();
@@ -2437,6 +2447,7 @@ describe('UiShell', () => {
       createPublicArenaStatusOverlay: status.factory,
       createPublicArenaClient: publicArenaClient.factory,
       createPublicArenaRenderer: publicArenaRenderer.factory,
+      createInputController: input.factory,
       createAudio: audio.factory,
       publicArenaConfig: {
         serverUrl: 'https://arena.example.test',
@@ -2464,6 +2475,10 @@ describe('UiShell', () => {
     publicArenaClient.snapshot();
     shell.onFrame();
 
+    expect(input.calls.create).toBe(1);
+    expect(input.calls.start).toBe(1);
+    expect(input.lastInit()?.initialAim).toEqual({ x: 1, y: 2 });
+    expect(input.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(900 / 18, 6);
     expect(publicArenaRenderer.lastInit()?.arena).toEqual({
       width: 40,
       height: 40,
@@ -2476,9 +2491,22 @@ describe('UiShell', () => {
     expect(publicArenaHud.population()).toBe('Players 7/200');
     expect(publicArenaRenderer.calls.render).toBe(1);
 
+    input.lastInit()?.onCommand({ kind: 'move', dx: 1, dy: 0 });
+    input.lastInit()?.onCommand({ kind: 'aim', x: 3, y: 4 });
+    input.lastInit()?.onCommand({ kind: 'fire', phase: 'start' });
+    input.lastInit()?.onCommand({ kind: 'selectWeaponSlot', slotIndex: 1 });
+    input.lastInit()?.onCommand({ kind: 'holsterWeapon' });
+
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 1, dy: 0 },
+      { kind: 'aim', x: 3, y: 4 },
+      { kind: 'fire', phase: 'start' }
+    ]);
+
     status.back();
 
     expect(publicArenaClient.disconnectCalls()).toBe(1);
+    expect(input.calls.stop).toBe(1);
     expect(publicArenaRenderer.calls.dispose).toBe(1);
     expect(publicArenaHud.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'menu' });
@@ -2527,6 +2555,94 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'menu' });
     expect(status.isVisible()).toBe(false);
     expect(menu.latestFeedback()).toBe('The online arena is full. Try again soon.');
+    expect(sim.startSessions).toHaveLength(0);
+  });
+
+  it('routes mobile public arena input through the online client', async () => {
+    const menu = createMenuHarness();
+    const status = createPublicArenaStatusHarness();
+    const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const desktopInput = createInputHarness();
+    const mobileInput = createMobileInputHarness();
+    const mobileControls = createMobileControlsHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    const weaponSlotElement = {} as HTMLElement;
+    const parent = {
+      querySelectorAll: vi.fn(() => [weaponSlotElement])
+    } as unknown as HTMLElement;
+
+    const shell = createUiShellForTest({
+      parent,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createHud: hud.factory,
+      createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaStatusOverlay: status.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      createInputController: desktopInput.factory,
+      createMobileInputController: mobileInput.factory,
+      createMobileControlsOverlay: mobileControls.factory,
+      createAudio: audio.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget,
+      mobileProfile: {
+        isMobile: true
+      }
+    });
+
+    await flushUiShellStartup();
+    menu.startPublicArena();
+    publicArenaClient.accept();
+
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(mobileControls.isVisible()).toBe(true);
+    expect(mobileInput.calls.create).toBe(0);
+
+    publicArenaClient.snapshot();
+
+    expect(desktopInput.calls.create).toBe(0);
+    expect(mobileInput.calls.create).toBe(1);
+    expect(mobileInput.calls.start).toBe(1);
+    expect(mobileInput.lastInit()?.surface).toBe(parent);
+    expect(mobileInput.lastInit()?.pauseElement?.()).toBe(mobileControls.pauseButton());
+    expect(mobileInput.lastInit()?.weaponSlotElements?.()).toEqual([weaponSlotElement]);
+    expect(mobileInput.lastInit()?.initialAim).toEqual({ x: 1, y: 2 });
+    expect(mobileInput.lastInit()?.pixelsPerWorldUnit()).toBeCloseTo(390 / 12, 6);
+
+    mobileInput.lastInit()?.onCommand({ kind: 'move', dx: 0, dy: -1 });
+    mobileInput.lastInit()?.onCommand({ kind: 'aim', x: 5, y: 6 });
+    mobileInput.lastInit()?.onCommand({ kind: 'fire', phase: 'stop' });
+    mobileInput.lastInit()?.onCommand({ kind: 'selectWeaponSlot', slotIndex: 0 });
+
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 0, dy: -1 },
+      { kind: 'aim', x: 5, y: 6 },
+      { kind: 'fire', phase: 'stop' }
+    ]);
+
+    mobileInput.lastInit()?.onPause();
+
+    expect(publicArenaClient.disconnectCalls()).toBe(1);
+    expect(mobileInput.calls.stop).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(1);
+    expect(mobileControls.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'menu' });
     expect(sim.startSessions).toHaveLength(0);
   });
 
