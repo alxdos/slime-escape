@@ -2,11 +2,15 @@ import { createServer, type Server as HttpServer, type ServerResponse } from 'no
 
 import { Server as SocketIOServer } from 'socket.io';
 
+import type {
+  PublicArenaClientToServerEvents,
+  PublicArenaServerToClientEvents
+} from '../../src/shared/publicArenaProtocol.js';
 import type { PublicArenaServerConfig } from './config.js';
 
 export type PublicArenaServer = Readonly<{
   httpServer: HttpServer;
-  io: SocketIOServer;
+  io: SocketIOServer<PublicArenaClientToServerEvents, PublicArenaServerToClientEvents>;
   start(): Promise<void>;
   close(): Promise<void>;
 }>;
@@ -36,14 +40,17 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
     res.end('Not found');
   });
 
-  const io = new SocketIOServer(httpServer, {
-    cors: {
-      origin: config.corsOrigin
+  const io = new SocketIOServer<PublicArenaClientToServerEvents, PublicArenaServerToClientEvents>(
+    httpServer,
+    {
+      cors: {
+        origin: config.corsOrigin
+      }
     }
-  });
+  );
 
   io.on('connection', () => {
-    // Protocol events are introduced by T3; T2 only proves the deployable socket host.
+    // Membership and gameplay handlers are introduced by T4/T6.
   });
 
   return {
