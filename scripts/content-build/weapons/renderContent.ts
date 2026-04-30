@@ -15,21 +15,17 @@ import type { ParsedWeapon, ParsedWeaponsArea } from './parse';
 import { escapeString, formatNumber, renderHeader, toConstName } from '../util/render';
 
 export function renderWeaponContent(area: ParsedWeaponsArea): string {
-  return `${renderHeader(area.sourcePath)}${renderImport()}${area.weapons.map(renderWeapon).join('\n\n')}\n`;
-}
-
-function renderImport(): string {
-  return "import type { WeaponArchetype } from './weapons';\n\n";
+  return `${renderHeader(area.sourcePath)}${area.weapons.map(renderWeapon).join('\n\n')}\n`;
 }
 
 function renderWeapon(weapon: ParsedWeapon): string {
-  return `export const ${toConstName(weapon.id)}: WeaponArchetype = {
-  id: '${escapeString(weapon.id)}',
+  return `export const ${toConstName(weapon.id)} = {
+  id: '${escapeString(weapon.id)}' as string,
   displayName: '${escapeString(weapon.displayName)}',
   cooldownMs: ${formatNumber(weapon.cooldownMs)},
   firePattern: ${renderFirePattern(weapon.firePattern)},
   projectile: ${renderProjectile(weapon.projectile)}
-};`;
+} as const;`;
 }
 
 function renderFirePattern(pattern: FirePattern): string {

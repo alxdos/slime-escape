@@ -1,7 +1,12 @@
 // AUTO-GENERATED from content/sessions/portal.md by `npm run content:build`.
 // Do not edit by hand.
+import { TRAINING_PLAYER } from './players.generated.js';
+import { ROCK_THROWER } from './weapons.generated.js';
+
 export const PUBLIC_ARENA_PRESENTATION_CONTENT = {
   arena: { width: 40, height: 40 },
+  player: TRAINING_PLAYER,
+  loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 },
   backgrounds: [
     {
       id: 'portal',

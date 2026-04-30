@@ -10,7 +10,7 @@ import {
 export function renderPlayerContent(area: ParsedPlayersArea): string {
   const sandboxHero = requirePlayer(area, 'hero-sandbox');
   const trainingHero = requirePlayer(area, 'hero-training');
-  return `${renderHeader(area.sourcePath)}${renderImport()}${area.players
+  return `${renderHeader(area.sourcePath)}${area.players
     .map(renderPlayer)
     .join('\n\n')}\n\n${renderPlayerArchetypeSpecs(area.players)}\n\n${renderPlayerSpawn(
     'SANDBOX_PLAYER',
@@ -18,36 +18,32 @@ export function renderPlayerContent(area: ParsedPlayersArea): string {
   )}\n\n${renderPlayerSpawn('TRAINING_PLAYER', trainingHero)}\n`;
 }
 
-function renderImport(): string {
-  return "import type { PlayerSpawn } from '../session';\nimport type { PlayerArchetype } from './players';\n\n";
-}
-
 function renderPlayer(player: ParsedPlayer): string {
   const { worldSize } = player.visual.metrics;
-  return `export const ${toConstName(player.id)}: PlayerArchetype = {
-  id: '${escapeString(player.id)}',
+  return `export const ${toConstName(player.id)} = {
+  id: '${escapeString(player.id)}' as string,
   displayName: '${escapeString(player.displayName)}',
   radius: ${formatNumber(player.radius)},
   contactBox: { width: ${formatNumber(worldSize.width)}, height: ${formatNumber(worldSize.height)} },
   maxSpeed: ${formatNumber(player.maxSpeed)},
   maxHp: ${formatNumber(player.maxHp)}
-};`;
+} as const;`;
 }
 
 function renderPlayerArchetypeSpecs(players: ReadonlyArray<ParsedPlayer>): string {
   const constNames = players.map((player) => toConstName(player.id));
-  return `export const PLAYER_ARCHETYPE_SPECS = [${constNames.join(', ')}] as const satisfies ReadonlyArray<PlayerArchetype>;`;
+  return `export const PLAYER_ARCHETYPE_SPECS = [${constNames.join(', ')}] as const;`;
 }
 
 function renderPlayerSpawn(constName: string, player: ParsedPlayer): string {
   const sourceConstName = toConstName(player.id);
-  return `export const ${constName}: PlayerSpawn = {
+  return `export const ${constName} = {
   position: { x: 0, y: 0 },
   radius: ${sourceConstName}.radius,
   contactBox: ${sourceConstName}.contactBox,
   maxSpeed: ${sourceConstName}.maxSpeed,
   maxHp: ${sourceConstName}.maxHp
-};`;
+} as const;`;
 }
 
 function requirePlayer(area: ParsedPlayersArea, playerId: string): ParsedPlayer {

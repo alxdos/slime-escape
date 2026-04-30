@@ -115,6 +115,11 @@ import {
   type PublicArenaHudInit
 } from './PublicArenaHud';
 import {
+  createPublicArenaCombatAffordances,
+  type PublicArenaCombatAffordances,
+  type PublicArenaCombatAffordancesInit
+} from './PublicArenaCombatAffordances';
+import {
   createPublicArenaMenuOverlay,
   type PublicArenaMenuOverlay,
   type PublicArenaMenuOverlayInit
@@ -179,6 +184,9 @@ type CreatePhaseTransitionCurtainFn = (
 ) => PhaseTransitionCurtain;
 type CreatePauseOverlayFn = (init: PauseOverlayInit) => PauseOverlay;
 type CreatePublicArenaHudFn = (init: PublicArenaHudInit) => PublicArenaHud;
+type CreatePublicArenaCombatAffordancesFn = (
+  init: PublicArenaCombatAffordancesInit
+) => PublicArenaCombatAffordances;
 type CreatePublicArenaMenuOverlayFn = (
   init: PublicArenaMenuOverlayInit
 ) => PublicArenaMenuOverlay;
@@ -225,6 +233,7 @@ export type UiShellInit = Readonly<{
   createPhaseTransitionCurtain?: CreatePhaseTransitionCurtainFn;
   createPauseOverlay?: CreatePauseOverlayFn;
   createPublicArenaHud?: CreatePublicArenaHudFn;
+  createPublicArenaCombatAffordances?: CreatePublicArenaCombatAffordancesFn;
   createPublicArenaStatusOverlay?: CreatePublicArenaStatusOverlayFn;
   createResultOverlay?: CreateResultOverlayFn;
   createSettingsOverlay?: CreateSettingsOverlayFn;
@@ -305,6 +314,12 @@ export function createUiShell(init: UiShellInit): UiShell {
   const publicArenaHudFactory =
     init.createPublicArenaHud ??
     (canMountStartupOverlays ? createPublicArenaHud : createNullPublicArenaHud);
+  const publicArenaCombatAffordancesFactory = isMobileInputMode()
+    ? createNullPublicArenaCombatAffordances
+    : (init.createPublicArenaCombatAffordances ??
+      (canMountStartupOverlays
+        ? createPublicArenaCombatAffordances
+        : createNullPublicArenaCombatAffordances));
   const startupOverlayFactory =
     init.createStartupOverlay ??
     (canMountStartupOverlays ? createStartupOverlay : createNullStartupOverlay);
@@ -555,6 +570,9 @@ export function createUiShell(init: UiShellInit): UiShell {
   const publicArenaHud = publicArenaHudFactory({
     parent: init.parent
   });
+  const publicArenaCombatAffordances = publicArenaCombatAffordancesFactory({
+    parent: init.parent
+  });
 
   const result = resultFactory({
     parent: init.parent,
@@ -609,6 +627,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         publicArenaStatus.hide();
         publicArenaMenuOpen = false;
         publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
         publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
@@ -622,6 +641,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         publicArenaStatus.hide();
         publicArenaMenuOpen = false;
         publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
         publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
@@ -635,6 +655,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         publicArenaStatus.hide();
         publicArenaMenuOpen = false;
         publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
         publicArenaHud.hide();
         result.hide();
         if (isMobileInputMode()) {
@@ -654,6 +675,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         publicArenaStatus.show(PUBLIC_ARENA_CONNECTING_MESSAGE);
         publicArenaMenuOpen = false;
         publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
         publicArenaHud.hide();
         syncSettingsVisibility();
         return;
@@ -674,6 +696,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         } else {
           publicArenaMenu.hide();
         }
+        if (!isMobileInputMode() && !publicArenaMenuOpen) {
+          publicArenaCombatAffordances.show();
+        } else {
+          publicArenaCombatAffordances.hide();
+        }
         publicArenaHud.show();
         syncSettingsVisibility();
         return;
@@ -685,6 +712,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         publicArenaStatus.hide();
         publicArenaMenuOpen = false;
         publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
         publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
@@ -698,6 +726,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         publicArenaStatus.hide();
         publicArenaMenuOpen = false;
         publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
         publicArenaHud.hide();
         result.show(phase.viewModel);
         mobileControls.hide();
@@ -710,6 +739,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         publicArenaStatus.hide();
         publicArenaMenuOpen = false;
         publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
         publicArenaHud.hide();
         result.hide();
         startupErrorOverlay.show(phase.message);
@@ -1029,6 +1059,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   function tearDownPublicArenaPresentation(): void {
     publicArenaMenuOpen = false;
     publicArenaMenu.hide();
+    publicArenaCombatAffordances.hide();
     if (
       publicArenaRenderer === null &&
       publicArenaInput === null &&
@@ -1037,6 +1068,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       publicArenaPlayerCap === null
     ) {
       publicArenaHud.hide();
+      publicArenaCombatAffordances.hide();
       return;
     }
     const previousInput = publicArenaInput;
@@ -1052,6 +1084,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     previousUnsubscribeRendererSettings?.();
     previousRenderer?.dispose();
     publicArenaHud.hide();
+    publicArenaCombatAffordances.hide();
   }
 
   async function startPresetWithTransition(
@@ -1599,6 +1632,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       menu.dispose();
       pause.dispose();
       publicArenaHud.dispose();
+      publicArenaCombatAffordances.dispose();
       publicArenaMenu.dispose();
       publicArenaStatus.dispose();
       result.dispose();
@@ -1770,6 +1804,19 @@ function createNullPublicArenaHud(_init: PublicArenaHudInit): PublicArenaHud {
   return {
     show(): void {},
     update(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
+    },
+    dispose(): void {}
+  };
+}
+
+function createNullPublicArenaCombatAffordances(
+  _init: PublicArenaCombatAffordancesInit
+): PublicArenaCombatAffordances {
+  return {
+    show(): void {},
     hide(): void {},
     isVisible(): boolean {
       return false;

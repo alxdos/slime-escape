@@ -2472,7 +2472,7 @@ export const SESSION_PRESET_TEMPLATES = {
     arena: { width: 40, height: 40 },
     player: TRAINING_PLAYER,
     companion: null,
-    loadout: null,
+    loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'portal',

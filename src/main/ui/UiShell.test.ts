@@ -74,6 +74,10 @@ import type {
 import type { PauseOverlay, PauseOverlayInit } from './PauseOverlay';
 import type { PublicArenaHud, PublicArenaHudInit } from './PublicArenaHud';
 import type {
+  PublicArenaCombatAffordances,
+  PublicArenaCombatAffordancesInit
+} from './PublicArenaCombatAffordances';
+import type {
   PublicArenaMenuOverlay,
   PublicArenaMenuOverlayInit
 } from './PublicArenaMenuOverlay';
@@ -793,6 +797,37 @@ function createPublicArenaHudHarness() {
     },
     population(): string {
       return lastPopulation;
+    }
+  };
+}
+
+function createPublicArenaCombatAffordancesHarness() {
+  let visible = false;
+  let createCount = 0;
+
+  const affordances: PublicArenaCombatAffordances = {
+    show(): void {
+      visible = true;
+    },
+    hide(): void {
+      visible = false;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    dispose(): void {}
+  };
+
+  return {
+    factory(_init: PublicArenaCombatAffordancesInit): PublicArenaCombatAffordances {
+      createCount += 1;
+      return affordances;
+    },
+    createCount(): number {
+      return createCount;
+    },
+    isVisible(): boolean {
+      return visible;
     }
   };
 }
@@ -2480,6 +2515,7 @@ describe('UiShell', () => {
     const status = createPublicArenaStatusHarness();
     const publicArenaMenu = createPublicArenaMenuHarness();
     const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
     const publicArenaClient = createPublicArenaClientHarness();
     const publicArenaRenderer = createPublicArenaRendererHarness();
     const input = createInputHarness();
@@ -2500,6 +2536,7 @@ describe('UiShell', () => {
       createSettingsOverlay: createSettingsOverlayHarness().factory,
       createHud: hud.factory,
       createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
       createPublicArenaMenuOverlay: publicArenaMenu.factory,
       createPublicArenaStatusOverlay: status.factory,
       createPublicArenaClient: publicArenaClient.factory,
@@ -2527,6 +2564,7 @@ describe('UiShell', () => {
     expect(shell.phase()).toEqual({ kind: 'online' });
     expect(status.isVisible()).toBe(false);
     expect(publicArenaHud.isVisible()).toBe(true);
+    expect(publicArenaCombatAffordances.isVisible()).toBe(true);
     expect(publicArenaRenderer.lastInit()).toBeNull();
 
     publicArenaClient.snapshot();
@@ -2567,6 +2605,7 @@ describe('UiShell', () => {
     expect(input.calls.stop).toBe(1);
     expect(publicArenaRenderer.calls.dispose).toBe(0);
     expect(publicArenaHud.isVisible()).toBe(true);
+    expect(publicArenaCombatAffordances.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'online' });
     expect(publicArenaClient.sentInputs()).toEqual([
       { kind: 'move', dx: 1, dy: 0 },
@@ -2582,6 +2621,7 @@ describe('UiShell', () => {
     expect(input.calls.stop).toBe(1);
     expect(publicArenaRenderer.calls.dispose).toBe(1);
     expect(publicArenaHud.isVisible()).toBe(false);
+    expect(publicArenaCombatAffordances.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'menu' });
 
     publicArenaClient.close('Arena server is restarting.');
@@ -2677,6 +2717,7 @@ describe('UiShell', () => {
     const status = createPublicArenaStatusHarness();
     const publicArenaMenu = createPublicArenaMenuHarness();
     const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
     const publicArenaClient = createPublicArenaClientHarness();
     const publicArenaRenderer = createPublicArenaRendererHarness();
     const input = createInputHarness();
@@ -2697,6 +2738,7 @@ describe('UiShell', () => {
       createSettingsOverlay: createSettingsOverlayHarness().factory,
       createHud: hud.factory,
       createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
       createPublicArenaMenuOverlay: publicArenaMenu.factory,
       createPublicArenaStatusOverlay: status.factory,
       createPublicArenaClient: publicArenaClient.factory,
@@ -2753,6 +2795,7 @@ describe('UiShell', () => {
     const status = createPublicArenaStatusHarness();
     const publicArenaMenu = createPublicArenaMenuHarness();
     const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
     const publicArenaClient = createPublicArenaClientHarness();
     const publicArenaRenderer = createPublicArenaRendererHarness();
     const input = createInputHarness();
@@ -2773,6 +2816,7 @@ describe('UiShell', () => {
       createSettingsOverlay: createSettingsOverlayHarness().factory,
       createHud: hud.factory,
       createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
       createPublicArenaMenuOverlay: publicArenaMenu.factory,
       createPublicArenaStatusOverlay: status.factory,
       createPublicArenaClient: publicArenaClient.factory,
@@ -2864,6 +2908,7 @@ describe('UiShell', () => {
     const status = createPublicArenaStatusHarness();
     const publicArenaMenu = createPublicArenaMenuHarness();
     const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
     const publicArenaClient = createPublicArenaClientHarness();
     const publicArenaRenderer = createPublicArenaRendererHarness();
     const desktopInput = createInputHarness();
@@ -2890,6 +2935,7 @@ describe('UiShell', () => {
       createSettingsOverlay: createSettingsOverlayHarness().factory,
       createHud: hud.factory,
       createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
       createPublicArenaMenuOverlay: publicArenaMenu.factory,
       createPublicArenaStatusOverlay: status.factory,
       createPublicArenaClient: publicArenaClient.factory,
@@ -2915,6 +2961,8 @@ describe('UiShell', () => {
 
     expect(shell.phase()).toEqual({ kind: 'online' });
     expect(mobileControls.isVisible()).toBe(true);
+    expect(publicArenaCombatAffordances.createCount()).toBe(0);
+    expect(publicArenaCombatAffordances.isVisible()).toBe(false);
     expect(mobileInput.calls.create).toBe(0);
 
     publicArenaClient.snapshot();

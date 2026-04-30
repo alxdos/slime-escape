@@ -35,8 +35,14 @@ ${area.presets.map(renderPreset).join(',\n')}
 
 export function renderPublicArenaContent(area: ParsedSessionsArea): string {
   const preset = requirePublicArenaPreset(area);
-  return `${renderHeader(`${area.sourceDirectory}/${PUBLIC_ARENA_SOURCE_PRESET_ID}.md`)}export const PUBLIC_ARENA_PRESENTATION_CONTENT = {
+  const loadout = requirePublicArenaLoadout(preset);
+  const imports = collectPublicArenaImports(preset, loadout);
+  return `${renderHeader(`${area.sourceDirectory}/${PUBLIC_ARENA_SOURCE_PRESET_ID}.md`)}${renderPublicArenaImports(imports)}
+
+export const PUBLIC_ARENA_PRESENTATION_CONTENT = {
   arena: ${renderArena(preset.arena)},
+  player: ${preset.player.constName},
+  loadout: ${renderLoadout(loadout)},
   backgrounds: [
 ${preset.backgrounds.map(renderPublicArenaBackground).join(',\n')}
   ],
@@ -68,6 +74,17 @@ function renderImport(
     return '';
   }
   return `import { ${names.join(', ')} } from '${source}';`;
+}
+
+function renderPublicArenaImports(
+  imports: ReadonlyMap<ImportBucket, ReadonlySet<string>>
+): string {
+  return [
+    renderImport(imports, 'players', './players.generated.js'),
+    renderImport(imports, 'weapons', './weapons.generated.js')
+  ]
+    .filter((line) => line.length > 0)
+    .join('\n');
 }
 
 function renderPreset(preset: ParsedSessionPreset): string {
@@ -314,6 +331,18 @@ function collectImports(area: ParsedSessionsArea): ReadonlyMap<ImportBucket, Rea
   return imports;
 }
 
+function collectPublicArenaImports(
+  preset: ParsedSessionPreset,
+  loadout: ParsedLoadout
+): ReadonlyMap<ImportBucket, ReadonlySet<string>> {
+  const imports = new Map<ImportBucket, Set<string>>();
+  addImport(imports, 'players', preset.player.constName);
+  for (const weapon of loadout.weapons) {
+    addImport(imports, 'weapons', weapon.constName);
+  }
+  return imports;
+}
+
 function requirePublicArenaPreset(area: ParsedSessionsArea): ParsedSessionPreset {
   const preset = area.presets.find((candidate) => candidate.presetId === PUBLIC_ARENA_SOURCE_PRESET_ID);
   if (preset === undefined) {
@@ -322,6 +351,20 @@ function requirePublicArenaPreset(area: ParsedSessionsArea): ParsedSessionPreset
     );
   }
   return preset;
+}
+
+function requirePublicArenaLoadout(preset: ParsedSessionPreset): ParsedLoadout {
+  if (preset.loadout === null || preset.loadout.weapons.length === 0) {
+    throw new ContentBuildError(
+      `${preset.sourcePath}: Public Arena source preset must define at least one loadout weapon`
+    );
+  }
+  if (preset.loadout.selectedIndex === null) {
+    throw new ContentBuildError(
+      `${preset.sourcePath}: Public Arena source preset must select a loadout weapon`
+    );
+  }
+  return preset.loadout;
 }
 
 function resolvePublicArenaActiveBackgroundId(preset: ParsedSessionPreset): string {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { SIM_STEP_MS } from '../../src/shared/timing.js';
+import { PUBLIC_ARENA_PLAYER } from '../../src/shared/content/publicArena.js';
+import { ROCK_THROWER } from '../../src/shared/content/weapons.generated.js';
 import type {
   PublicArenaPlayerId,
   PublicArenaPresentationEvent
@@ -44,7 +46,13 @@ function tickUntilDeath(
   killerId: PublicArenaPlayerId,
   victimId: PublicArenaPlayerId
 ) {
-  simulation.applyInput(killerId, { kind: 'aim', x: 0.5, y: 0 });
+  const shooter = playerSnapshot(simulation, killerId);
+  const victim = playerSnapshot(simulation, victimId);
+  const aim =
+    shooter.x === victim.x && shooter.y === victim.y
+      ? { x: victim.x + 1, y: victim.y }
+      : { x: victim.x, y: victim.y };
+  simulation.applyInput(killerId, { kind: 'aim', x: aim.x, y: aim.y });
   simulation.applyInput(killerId, { kind: 'fire', phase: 'start' });
 
   for (let i = 0; i < 3000; i += 1) {
@@ -131,8 +139,8 @@ describe('PublicArenaSimulation', () => {
       x: -1,
       y: 2,
       level: 1,
-      hp: 2,
-      maxHp: 2,
+      hp: PUBLIC_ARENA_PLAYER.maxHp,
+      maxHp: PUBLIC_ARENA_PLAYER.maxHp,
       form: { kind: 'slime', archetypeId: PUBLIC_ARENA_SLIME_FORM_CHAIN[0] }
     });
   });
@@ -149,6 +157,42 @@ describe('PublicArenaSimulation', () => {
     const player = playerSnapshot(simulation, 'player-a');
     expect(player.x).toBeGreaterThanOrEqual(PUBLIC_ARENA_WORLD_BOUNDS.minX + 0.4);
     expect(player.y).toBeGreaterThanOrEqual(PUBLIC_ARENA_WORLD_BOUNDS.minY + 0.4);
+  });
+
+  it('uses the generated portal player movement speed', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('player-a', 0, 0));
+    simulation.applyInput('player-a', { kind: 'move', dx: 1, dy: 0 });
+
+    simulation.tick();
+
+    expect(playerSnapshot(simulation, 'player-a').x).toBeCloseTo(
+      (PUBLIC_ARENA_PLAYER.maxSpeed * SIM_STEP_MS) / 1000
+    );
+  });
+
+  it('uses the generated rock thrower projectile size and damage', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('killer', 0, 0));
+    simulation.addPlayer(member('victim', 0.5, 0));
+    simulation.drainEvents();
+    expireSpawnProtection(simulation);
+    const hpBefore = playerSnapshot(simulation, 'victim').hp;
+
+    simulation.applyInput('killer', { kind: 'aim', x: 0.5, y: 0 });
+    simulation.applyInput('killer', { kind: 'fire', phase: 'start' });
+    const projectiles = tickUntilProjectile(
+      simulation,
+      'killer',
+      PUBLIC_ARENA_REGULAR_WEAPON_ID
+    );
+    const hit = tickUntilHit(simulation);
+
+    expect(projectiles[0]?.size).toEqual(ROCK_THROWER.projectile.size);
+    expect(hit.damage).toBe(ROCK_THROWER.projectile.impactDamage);
+    expect(hpBefore - playerSnapshot(simulation, 'victim').hp).toBe(
+      ROCK_THROWER.projectile.impactDamage
+    );
   });
 
   it('throws rocks, kills a player, gives the killer exactly one level, and resets the victim', () => {
@@ -233,16 +277,19 @@ describe('PublicArenaSimulation', () => {
   it('does not let overlapping burst projectiles kill a respawned player again in the same tick', () => {
     const simulation = createPublicArenaSimulation();
     simulation.addPlayer(member('boss', 0, 0));
-    simulation.addPlayer(member('victim', 0.5, 0));
+    simulation.addPlayer(member('victim', 0.1, 0.1));
     simulation.drainEvents();
 
     promoteToBoss(simulation, 'boss', 'victim');
+    expireSpawnProtection(simulation);
     simulation.applyInput('boss', { kind: 'fire', phase: 'start' });
 
-    for (let i = 0; i < 120; i += 1) {
+    for (let i = 0; i < 900; i += 1) {
       simulation.tick();
       const events = simulation.drainEvents();
-      const deathCount = events.filter((event) => event.kind === 'death' && event.playerId === 'victim').length;
+      const deathCount = events.filter(
+        (event) => event.kind === 'death' && event.playerId === 'victim'
+      ).length;
       if (deathCount > 0) {
         expect(deathCount).toBe(1);
         return;
@@ -255,14 +302,15 @@ describe('PublicArenaSimulation', () => {
   it('keeps a respawned player safe from later boss bursts during spawn protection', () => {
     const simulation = createPublicArenaSimulation();
     simulation.addPlayer(member('boss', 0, 0));
-    simulation.addPlayer(member('victim', 0.5, 0));
+    simulation.addPlayer(member('victim', 0.1, 0.1));
     simulation.drainEvents();
 
     promoteToBoss(simulation, 'boss', 'victim');
+    expireSpawnProtection(simulation);
     simulation.applyInput('boss', { kind: 'fire', phase: 'start' });
 
     let respawnedAtSimMs: number | null = null;
-    for (let i = 0; i < 240; i += 1) {
+    for (let i = 0; i < 900; i += 1) {
       simulation.tick();
       const events = simulation.drainEvents();
       const death = events.find((event) => event.kind === 'death' && event.playerId === 'victim');
@@ -292,7 +340,7 @@ describe('PublicArenaSimulation', () => {
     const simulation = createPublicArenaSimulation();
     simulation.addPlayer(member('killer', 0, 0));
     simulation.addPlayer(member('boss-victim', 0.5, 0));
-    simulation.addPlayer(member('fodder', 0.5, 0));
+    simulation.addPlayer(member('fodder', 1, 0));
     simulation.drainEvents();
 
     promoteToBoss(simulation, 'boss-victim', 'fodder');

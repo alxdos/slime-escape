@@ -166,7 +166,7 @@ function render(viewModel: HudViewModel, dom: HudDom, state: HudRenderState): vo
     state
   );
   renderBossStrip(viewModel.boss, dom, state);
-  renderWeaponSlots(viewModel.weaponSlots, dom.weaponBar, state.weaponBar);
+  renderHudWeaponSlots(viewModel.weaponSlots, dom.weaponBar, state.weaponBar);
 }
 
 type HudDom = Readonly<{
@@ -188,13 +188,13 @@ type HudRenderState = {
   bossTitle: string | null;
   bossMeta: string | null;
   bossFillWidth: string | null;
-  weaponBar: WeaponBarRenderState;
+  weaponBar: HudWeaponBarRenderState;
 };
 
 type HudTextStateKey = 'timerText' | 'hpText' | 'bossTitle' | 'bossMeta';
 type HudWidthStateKey = 'hpFillWidth' | 'bossFillWidth';
 
-type WeaponBarRenderState = {
+export type HudWeaponBarRenderState = {
   signature: string | null;
   display: string | null;
   slots: WeaponSlotDom[];
@@ -241,11 +241,7 @@ function createHudRenderState(): HudRenderState {
     bossTitle: null,
     bossMeta: null,
     bossFillWidth: null,
-    weaponBar: {
-      signature: null,
-      display: null,
-      slots: []
-    }
+    weaponBar: createHudWeaponBarRenderState()
   };
 }
 
@@ -300,14 +296,12 @@ function createHudDom(root: HTMLElement, isMobile: boolean): HudDom {
   bossStrip.appendChild(bossTrack);
   root.appendChild(bossStrip);
 
-  root.appendChild(createMovementHint(isMobile));
+  root.appendChild(createHudMovementHint(isMobile));
 
-  const weaponBar = document.createElement('section');
-  weaponBar.dataset['role'] = 'hud-weapon-bar';
-  weaponBar.style.cssText = weaponBarStyle();
+  const weaponBar = createHudWeaponBarElement();
   root.appendChild(weaponBar);
 
-  root.appendChild(createFireHint(isMobile));
+  root.appendChild(createHudFireHint(isMobile));
 
   return { timer, hpText, hpFill, bossStrip, bossTitle, bossMeta, bossFill, weaponBar };
 }
@@ -362,10 +356,10 @@ function setStyleWidth(
   state[key] = value;
 }
 
-function renderWeaponSlots(
+export function renderHudWeaponSlots(
   slots: ReadonlyArray<WeaponSlotViewModel>,
   weaponBar: HTMLElement,
-  state: WeaponBarRenderState
+  state: HudWeaponBarRenderState
 ): void {
   const signature = weaponSlotsSignature(slots);
   if (state.signature !== signature) {
@@ -611,7 +605,22 @@ function createBadgeImage(src: string): HTMLImageElement {
   return image;
 }
 
-function createMovementHint(isMobile: boolean): HTMLElement {
+export function createHudWeaponBarRenderState(): HudWeaponBarRenderState {
+  return {
+    signature: null,
+    display: null,
+    slots: []
+  };
+}
+
+export function createHudWeaponBarElement(): HTMLElement {
+  const weaponBar = document.createElement('section');
+  weaponBar.dataset['role'] = 'hud-weapon-bar';
+  weaponBar.style.cssText = weaponBarStyle();
+  return weaponBar;
+}
+
+export function createHudMovementHint(isMobile: boolean): HTMLElement {
   const root = document.createElement('section');
   root.dataset['role'] = 'hud-movement-hint';
   root.style.cssText = movementHintStyle();
@@ -628,7 +637,7 @@ function createMovementHint(isMobile: boolean): HTMLElement {
   return root;
 }
 
-function createFireHint(isMobile: boolean): HTMLElement {
+export function createHudFireHint(isMobile: boolean): HTMLElement {
   const root = document.createElement('section');
   root.dataset['role'] = 'hud-fire-hint';
   root.style.cssText = fireHintStyle();

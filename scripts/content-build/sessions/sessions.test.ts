@@ -105,7 +105,10 @@ describe('content-build sessions area', () => {
 
     expect(portal?.arena).toEqual({ width: 40, height: 40 });
     expect(portal?.musicSampleId).toBeNull();
-    expect(portal?.loadout).toBeNull();
+    expect(portal?.loadout).toEqual({
+      weapons: [{ id: 'rock-thrower', constName: 'ROCK_THROWER' }],
+      selectedIndex: 0
+    });
     expect(portal?.winCondition).toEqual({ kind: 'none' });
     expect(portal?.lossCondition).toEqual({ kind: 'none' });
     expect(openingEncounter).toMatchObject({
@@ -124,6 +127,22 @@ describe('content-build sessions area', () => {
     expect(portal?.encounters.some((encounter) => encounter.type === 'break')).toBe(false);
     expect(portal?.encounters.some((encounter) => encounter.type === 'boss')).toBe(false);
     expect(portal?.encounters.some((encounter) => encounter.id === 'portal-exit')).toBe(false);
+  });
+
+  it('rejects the Public Arena projection without a selected portal loadout weapon', async () => {
+    const fixture = await copySessionsFixture({
+      'portal.md': (source) =>
+        replaceExact(
+          replaceExact(source, '| loadoutWeaponIds | rock-thrower |', '| loadoutWeaponIds | none |'),
+          '| selectedWeaponIndex | 0 |',
+          '| selectedWeaponIndex | none |'
+        )
+    });
+    const area = await parseSessionsArea(fixture.sourceDirectory);
+
+    expect(() => renderPublicArenaContent(area)).toThrow(
+      /Public Arena source preset must define at least one loadout weapon/
+    );
   });
 
   it('parses the dungeon preset as an endless authored wave loop', async () => {

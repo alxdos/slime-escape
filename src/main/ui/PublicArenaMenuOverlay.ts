@@ -79,18 +79,20 @@ function rootStyle(): string {
     'justify-content:center',
     'box-sizing:border-box',
     'padding:24px',
-    'background:rgba(4, 5, 8, 0.74)',
+    'background:rgba(255,255,255,0.34)',
     'pointer-events:auto'
   ].join(';');
 }
 
 function cardStyle(): string {
   return [
-    'display:grid',
+    'display:flex',
+    'flex-direction:column',
+    'align-items:center',
     'gap:16px',
-    'min-width:min(320px, 88vw)',
+    'width:min(420px, calc(100vw - 48px))',
     'box-sizing:border-box',
-    'padding:22px',
+    'padding:26px 30px 30px',
     'border:4px solid #050505',
     'border-radius:8px',
     'background:#fffdf4',
@@ -102,35 +104,39 @@ function titleStyle(): string {
   return [
     'margin:0 0 2px',
     ...comicTextStyle({
-      fontSize: '32px',
-      color: '#111111',
+      fontSize: '26px',
+      color: '#fff38b',
       lineHeight: '1',
-      textAlign: 'center'
+      textAlign: 'center',
+      shadow: 'strong'
     })
   ].join(';');
 }
 
 function primaryButtonStyle(): string {
-  return buttonStyle('#72f2ff');
+  return buttonStyle('#7cf58f');
 }
 
 function secondaryButtonStyle(): string {
-  return buttonStyle('#ffd166');
+  return buttonStyle('#b8f1ff');
 }
 
 function buttonStyle(background: string): string {
   return [
     'appearance:none',
     'box-sizing:border-box',
-    'padding:10px 16px 12px',
-    'border:4px solid #050505',
-    'border-radius:8px',
+    'padding:11px 24px 12px',
+    'border:3px solid #050505',
+    'border-radius:7px',
     `background:${background}`,
     'box-shadow:4px 4px 0 #000000',
     'cursor:pointer',
+    'width:100%',
+    'max-width:380px',
+    'min-height:46px',
     ...comicTextStyle({
-      fontSize: '22px',
-      color: '#111111',
+      fontSize: '18px',
+      color: '#ffffff',
       lineHeight: '1',
       textAlign: 'center'
     })

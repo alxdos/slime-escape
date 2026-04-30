@@ -10,8 +10,8 @@
 | arenaWidth | 40 |
 | arenaHeight | 40 |
 | playerId | hero-training |
-| loadoutWeaponIds | none |
-| selectedWeaponIndex | none |
+| loadoutWeaponIds | rock-thrower |
+| selectedWeaponIndex | 0 |
 | slimeFriendlyFire | true |
 | aimAssistEnabled | false |
 | aimAssistMaxAngleRadians | 0 |

@@ -456,9 +456,10 @@ describe('buildSessionDefinition (portal)', () => {
     const openingEncounter = session.encounters.at(0);
 
     expect(session.arena).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.arena);
+    expect(session.player).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.player);
+    expect(session.loadout).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.loadout);
     expect(session.backgrounds).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.backgrounds);
     expect(session.musicSampleId).toBeNull();
-    expect(session.loadout).toBeNull();
     expect(session.winCondition).toEqual({ kind: 'none' });
     expect(session.lossCondition).toEqual({ kind: 'none' });
     expect(openingEncounter).toMatchObject({

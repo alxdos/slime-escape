@@ -13336,7 +13336,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
   ],
   "id": "portal-session",
-  "loadout": null,
+  "loadout": {
+    "selectedIndex": 0,
+    "weapons": [
+      "rock-thrower",
+    ],
+  },
   "lossCondition": {
     "kind": "none",
   },
@@ -13411,7 +13416,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
   ],
   "id": "portal-session",
-  "loadout": null,
+  "loadout": {
+    "selectedIndex": 0,
+    "weapons": [
+      "rock-thrower",
+    ],
+  },
   "lossCondition": {
     "kind": "none",
   },
@@ -13486,7 +13496,12 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
   ],
   "id": "portal-session",
-  "loadout": null,
+  "loadout": {
+    "selectedIndex": 0,
+    "weapons": [
+      "rock-thrower",
+    ],
+  },
   "lossCondition": {
     "kind": "none",
   },
