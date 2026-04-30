@@ -115,6 +115,11 @@ import {
   type PublicArenaHudInit
 } from './PublicArenaHud';
 import {
+  createPublicArenaMenuOverlay,
+  type PublicArenaMenuOverlay,
+  type PublicArenaMenuOverlayInit
+} from './PublicArenaMenuOverlay';
+import {
   createPublicArenaStatusOverlay,
   type PublicArenaStatusOverlay,
   type PublicArenaStatusOverlayInit
@@ -174,6 +179,9 @@ type CreatePhaseTransitionCurtainFn = (
 ) => PhaseTransitionCurtain;
 type CreatePauseOverlayFn = (init: PauseOverlayInit) => PauseOverlay;
 type CreatePublicArenaHudFn = (init: PublicArenaHudInit) => PublicArenaHud;
+type CreatePublicArenaMenuOverlayFn = (
+  init: PublicArenaMenuOverlayInit
+) => PublicArenaMenuOverlay;
 type CreatePublicArenaStatusOverlayFn = (
   init: PublicArenaStatusOverlayInit
 ) => PublicArenaStatusOverlay;
@@ -234,6 +242,7 @@ export type UiShellInit = Readonly<{
   createAudio?: CreateAudioFn;
   createPublicArenaClient?: CreatePublicArenaClientFn;
   createPublicArenaRenderer?: CreatePublicArenaRendererFn;
+  createPublicArenaMenuOverlay?: CreatePublicArenaMenuOverlayFn;
   createClientSettingsStore?: CreateClientSettingsStoreFn;
   createDungeonBestWaveStore?: CreateDungeonBestWaveStoreFn;
   createClientProgressionStore?: CreateClientProgressionStoreFn;
@@ -290,6 +299,9 @@ export function createUiShell(init: UiShellInit): UiShell {
   const publicArenaStatusFactory =
     init.createPublicArenaStatusOverlay ??
     (canMountStartupOverlays ? createPublicArenaStatusOverlay : createNullPublicArenaStatusOverlay);
+  const publicArenaMenuFactory =
+    init.createPublicArenaMenuOverlay ??
+    (canMountStartupOverlays ? createPublicArenaMenuOverlay : createNullPublicArenaMenuOverlay);
   const publicArenaHudFactory =
     init.createPublicArenaHud ??
     (canMountStartupOverlays ? createPublicArenaHud : createNullPublicArenaHud);
@@ -356,6 +368,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let publicArenaVisibleAreaCamera: VisibleAreaCamera | null = null;
   let publicArenaSnapshot: PublicArenaSnapshot | null = null;
   let publicArenaPlayerCap: number | null = null;
+  let publicArenaMenuOpen = false;
   let publicArenaConnectionId = 0;
   let unsubscribeRendererSettings: (() => void) | null = null;
   let settingsVisible = false;
@@ -528,6 +541,17 @@ export function createUiShell(init: UiShellInit): UiShell {
       exitPublicArenaToMenu();
     }
   });
+  const publicArenaMenu = publicArenaMenuFactory({
+    parent: init.parent,
+    onResume() {
+      audio.playUi('buttonClick');
+      resumePublicArenaMenu();
+    },
+    onExit() {
+      audio.playUi('buttonClick');
+      exitPublicArenaToMenu();
+    }
+  });
   const publicArenaHud = publicArenaHudFactory({
     parent: init.parent
   });
@@ -583,6 +607,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
         publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
@@ -594,6 +620,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.show();
         pause.hide();
         publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
         publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
@@ -605,6 +633,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
         publicArenaHud.hide();
         result.hide();
         if (isMobileInputMode()) {
@@ -622,6 +652,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         result.hide();
         mobileControls.hide();
         publicArenaStatus.show(PUBLIC_ARENA_CONNECTING_MESSAGE);
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
         publicArenaHud.hide();
         syncSettingsVisibility();
         return;
@@ -631,12 +663,17 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         result.hide();
-        if (isMobileInputMode()) {
+        if (isMobileInputMode() && !publicArenaMenuOpen) {
           mobileControls.show();
         } else {
           mobileControls.hide();
         }
         publicArenaStatus.hide();
+        if (publicArenaMenuOpen) {
+          publicArenaMenu.show();
+        } else {
+          publicArenaMenu.hide();
+        }
         publicArenaHud.show();
         syncSettingsVisibility();
         return;
@@ -646,6 +683,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.show();
         publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
         publicArenaHud.hide();
         result.hide();
         mobileControls.hide();
@@ -657,6 +696,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
         publicArenaHud.hide();
         result.show(phase.viewModel);
         mobileControls.hide();
@@ -667,6 +708,8 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         publicArenaStatus.hide();
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
         publicArenaHud.hide();
         result.hide();
         startupErrorOverlay.show(phase.message);
@@ -899,7 +942,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       return;
     }
     const activePublicArenaClient = publicArenaClient;
-    if (activePublicArenaClient === null || phase.kind !== 'online') {
+    if (activePublicArenaClient === null || phase.kind !== 'online' || publicArenaMenuOpen) {
       return;
     }
     const nextInput = createPublicArenaInputController(
@@ -936,13 +979,45 @@ export function createUiShell(init: UiShellInit): UiShell {
         surface: init.parent,
         pauseElement: () => mobileControls.pauseButtonElement(),
         weaponSlotElements: () => queryWeaponSlotElements(init.parent),
-        onPause: exitPublicArenaToMenu
+        onPause: openPublicArenaMenu
       });
     }
     return inputFactory({
       ...sharedInput,
       canvas: init.canvas
     });
+  }
+
+  function openPublicArenaMenu(): void {
+    if (phase.kind !== 'online' || publicArenaMenuOpen) {
+      return;
+    }
+    publicArenaMenuOpen = true;
+    stopPublicArenaInputForMenu();
+    applyPhaseVisibility();
+  }
+
+  function resumePublicArenaMenu(): void {
+    if (phase.kind !== 'online' || !publicArenaMenuOpen) {
+      return;
+    }
+    publicArenaMenuOpen = false;
+    applyPhaseVisibility();
+    const snapshot = publicArenaSnapshot;
+    const visibleAreaCamera = publicArenaVisibleAreaCamera;
+    if (snapshot === null || visibleAreaCamera === null) {
+      return;
+    }
+    ensurePublicArenaInput(snapshot.arena, visibleAreaCamera);
+  }
+
+  function stopPublicArenaInputForMenu(): void {
+    const activePublicArenaClient = publicArenaClient;
+    activePublicArenaClient?.sendInput({ kind: 'move', dx: 0, dy: 0 });
+    activePublicArenaClient?.sendInput({ kind: 'fire', phase: 'stop' });
+    const previousInput = publicArenaInput;
+    publicArenaInput = null;
+    previousInput?.stop();
   }
 
   function findPublicArenaSelfPosition(): Readonly<{ x: number; y: number }> {
@@ -952,6 +1027,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function tearDownPublicArenaPresentation(): void {
+    publicArenaMenuOpen = false;
+    publicArenaMenu.hide();
     if (
       publicArenaRenderer === null &&
       publicArenaInput === null &&
@@ -1288,10 +1365,10 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function onPointerLockChange(): void {
     // Browsers consume the Escape keydown that releases Pointer Lock, so
-    // lock loss is the reliable desktop trigger for pause or online exit.
+    // lock loss is the reliable desktop trigger for pause or the online menu.
     if (documentTarget.pointerLockElement !== null) return;
     if (phase.kind === 'online' && publicArenaInput !== null) {
-      exitPublicArenaToMenu();
+      openPublicArenaMenu();
       return;
     }
     if (activeSession === null) return;
@@ -1302,7 +1379,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (phase.kind === 'online') {
       if (event.code === SPACE_KEY_CODE || event.code === ESCAPE_KEY_CODE) {
         event.preventDefault();
-        exitPublicArenaToMenu();
+        openPublicArenaMenu();
       }
       return;
     }
@@ -1522,6 +1599,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       menu.dispose();
       pause.dispose();
       publicArenaHud.dispose();
+      publicArenaMenu.dispose();
       publicArenaStatus.dispose();
       result.dispose();
       settingsOverlay.dispose();
@@ -1703,6 +1781,19 @@ function createNullPublicArenaHud(_init: PublicArenaHudInit): PublicArenaHud {
 function createNullPublicArenaStatusOverlay(
   _init: PublicArenaStatusOverlayInit
 ): PublicArenaStatusOverlay {
+  return {
+    show(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
+    },
+    dispose(): void {}
+  };
+}
+
+function createNullPublicArenaMenuOverlay(
+  _init: PublicArenaMenuOverlayInit
+): PublicArenaMenuOverlay {
   return {
     show(): void {},
     hide(): void {},

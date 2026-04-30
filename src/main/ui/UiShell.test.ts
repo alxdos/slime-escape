@@ -73,6 +73,10 @@ import type {
 import type { PauseOverlay, PauseOverlayInit } from './PauseOverlay';
 import type { PublicArenaHud, PublicArenaHudInit } from './PublicArenaHud';
 import type {
+  PublicArenaMenuOverlay,
+  PublicArenaMenuOverlayInit
+} from './PublicArenaMenuOverlay';
+import type {
   PublicArenaStatusOverlay,
   PublicArenaStatusOverlayInit
 } from './PublicArenaStatusOverlay';
@@ -695,6 +699,57 @@ function createPublicArenaStatusHarness() {
     },
     message(): string {
       return message;
+    }
+  };
+}
+
+function createPublicArenaMenuHarness() {
+  let visible = false;
+  let onResume: (() => void) | null = null;
+  let onExit: (() => void) | null = null;
+  let root: FakeDomElement | null = null;
+
+  const overlay: PublicArenaMenuOverlay = {
+    show(): void {
+      visible = true;
+      if (root !== null) {
+        root.style.display = 'flex';
+      }
+    },
+    hide(): void {
+      visible = false;
+      if (root !== null) {
+        root.style.display = 'none';
+      }
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    dispose(): void {
+      root?.remove();
+      root = null;
+    }
+  };
+
+  return {
+    factory(init: PublicArenaMenuOverlayInit): PublicArenaMenuOverlay {
+      onResume = init.onResume;
+      onExit = init.onExit;
+      root = new FakeDomElement();
+      root.dataset['role'] = 'public-arena-menu-overlay';
+      root.style.zIndex = '88';
+      root.style.display = 'none';
+      appendHarnessRoot(init.parent, root);
+      return overlay;
+    },
+    resume(): void {
+      onResume?.();
+    },
+    exit(): void {
+      onExit?.();
+    },
+    isVisible(): boolean {
+      return visible;
     }
   };
 }
@@ -2424,6 +2479,7 @@ describe('UiShell', () => {
   it('starts the public arena connection without starting a local session', async () => {
     const menu = createMenuHarness();
     const status = createPublicArenaStatusHarness();
+    const publicArenaMenu = createPublicArenaMenuHarness();
     const publicArenaHud = createPublicArenaHudHarness();
     const publicArenaClient = createPublicArenaClientHarness();
     const publicArenaRenderer = createPublicArenaRendererHarness();
@@ -2445,6 +2501,7 @@ describe('UiShell', () => {
       createSettingsOverlay: createSettingsOverlayHarness().factory,
       createHud: hud.factory,
       createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaMenuOverlay: publicArenaMenu.factory,
       createPublicArenaStatusOverlay: status.factory,
       createPublicArenaClient: publicArenaClient.factory,
       createPublicArenaRenderer: publicArenaRenderer.factory,
@@ -2497,7 +2554,30 @@ describe('UiShell', () => {
       { kind: 'fire', phase: 'start' }
     ]);
 
-    status.back();
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Escape',
+        preventDefault() {},
+        repeat: false
+      } as unknown as Event
+    );
+
+    expect(publicArenaMenu.isVisible()).toBe(true);
+    expect(publicArenaClient.disconnectCalls()).toBe(0);
+    expect(input.calls.stop).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(0);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 1, dy: 0 },
+      { kind: 'aim', x: 3, y: 4 },
+      { kind: 'fire', phase: 'start' },
+      { kind: 'move', dx: 0, dy: 0 },
+      { kind: 'fire', phase: 'stop' }
+    ]);
+
+    publicArenaMenu.exit();
 
     expect(publicArenaClient.disconnectCalls()).toBe(1);
     expect(input.calls.stop).toBe(1);
@@ -2512,10 +2592,11 @@ describe('UiShell', () => {
   });
 
   it.each(['Escape', 'Space'])(
-    'routes desktop %s out of the public arena without pausing local sim',
+    'opens the Public Arena menu for desktop %s without leaving or pausing local sim',
     async (code) => {
       const menu = createMenuHarness();
       const status = createPublicArenaStatusHarness();
+      const publicArenaMenu = createPublicArenaMenuHarness();
       const publicArenaHud = createPublicArenaHudHarness();
       const publicArenaClient = createPublicArenaClientHarness();
       const publicArenaRenderer = createPublicArenaRendererHarness();
@@ -2538,6 +2619,7 @@ describe('UiShell', () => {
         createSettingsOverlay: createSettingsOverlayHarness().factory,
         createHud: hud.factory,
         createPublicArenaHud: publicArenaHud.factory,
+        createPublicArenaMenuOverlay: publicArenaMenu.factory,
         createPublicArenaStatusOverlay: status.factory,
         createPublicArenaClient: publicArenaClient.factory,
         createPublicArenaRenderer: publicArenaRenderer.factory,
@@ -2569,19 +2651,32 @@ describe('UiShell', () => {
       );
 
       expect(preventDefault).toHaveBeenCalledTimes(1);
-      expect(publicArenaClient.disconnectCalls()).toBe(1);
+      expect(publicArenaMenu.isVisible()).toBe(true);
+      expect(publicArenaClient.disconnectCalls()).toBe(0);
       expect(input.calls.stop).toBe(1);
-      expect(publicArenaRenderer.calls.dispose).toBe(1);
-      expect(publicArenaHud.isVisible()).toBe(false);
+      expect(publicArenaRenderer.calls.dispose).toBe(0);
+      expect(publicArenaHud.isVisible()).toBe(true);
+      expect(publicArenaClient.sentInputs()).toEqual([
+        { kind: 'move', dx: 0, dy: 0 },
+        { kind: 'fire', phase: 'stop' }
+      ]);
       expect(sim.calls.pause).toBe(0);
       expect(sim.calls.stop).toBe(0);
+      expect(shell.phase()).toEqual({ kind: 'online' });
+
+      publicArenaMenu.exit();
+
+      expect(publicArenaClient.disconnectCalls()).toBe(1);
+      expect(publicArenaRenderer.calls.dispose).toBe(1);
+      expect(publicArenaHud.isVisible()).toBe(false);
       expect(shell.phase()).toEqual({ kind: 'menu' });
     }
   );
 
-  it('routes desktop public arena Pointer Lock loss back to menu', async () => {
+  it('resumes desktop public arena from the explicit menu without disconnecting', async () => {
     const menu = createMenuHarness();
     const status = createPublicArenaStatusHarness();
+    const publicArenaMenu = createPublicArenaMenuHarness();
     const publicArenaHud = createPublicArenaHudHarness();
     const publicArenaClient = createPublicArenaClientHarness();
     const publicArenaRenderer = createPublicArenaRendererHarness();
@@ -2603,6 +2698,83 @@ describe('UiShell', () => {
       createSettingsOverlay: createSettingsOverlayHarness().factory,
       createHud: hud.factory,
       createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaMenuOverlay: publicArenaMenu.factory,
+      createPublicArenaStatusOverlay: status.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      createInputController: input.factory,
+      createAudio: audio.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+    menu.startPublicArena();
+    publicArenaClient.accept();
+    publicArenaClient.snapshot();
+
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Escape',
+        preventDefault() {},
+        repeat: false
+      } as unknown as Event
+    );
+
+    expect(publicArenaMenu.isVisible()).toBe(true);
+    expect(input.calls.stop).toBe(1);
+
+    publicArenaMenu.resume();
+
+    expect(publicArenaMenu.isVisible()).toBe(false);
+    expect(publicArenaClient.disconnectCalls()).toBe(0);
+    expect(input.calls.create).toBe(2);
+    expect(input.calls.start).toBe(2);
+    expect(publicArenaRenderer.calls.dispose).toBe(0);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(sim.calls.pause).toBe(0);
+    expect(shell.phase()).toEqual({ kind: 'online' });
+
+    input.lastInit()?.onCommand({ kind: 'move', dx: -1, dy: 0 });
+
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 0, dy: 0 },
+      { kind: 'fire', phase: 'stop' },
+      { kind: 'move', dx: -1, dy: 0 }
+    ]);
+  });
+
+  it('opens the Public Arena menu on desktop Pointer Lock loss without leaving', async () => {
+    const menu = createMenuHarness();
+    const status = createPublicArenaStatusHarness();
+    const publicArenaMenu = createPublicArenaMenuHarness();
+    const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: createResultHarness().factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createHud: hud.factory,
+      createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaMenuOverlay: publicArenaMenu.factory,
       createPublicArenaStatusOverlay: status.factory,
       createPublicArenaClient: publicArenaClient.factory,
       createPublicArenaRenderer: publicArenaRenderer.factory,
@@ -2626,12 +2798,24 @@ describe('UiShell', () => {
 
     documentEvents.dispatch('pointerlockchange', new Event('pointerlockchange'));
 
-    expect(publicArenaClient.disconnectCalls()).toBe(1);
+    expect(publicArenaMenu.isVisible()).toBe(true);
+    expect(publicArenaClient.disconnectCalls()).toBe(0);
     expect(input.calls.stop).toBe(1);
-    expect(publicArenaRenderer.calls.dispose).toBe(1);
-    expect(publicArenaHud.isVisible()).toBe(false);
+    expect(publicArenaRenderer.calls.dispose).toBe(0);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 0, dy: 0 },
+      { kind: 'fire', phase: 'stop' }
+    ]);
     expect(sim.calls.pause).toBe(0);
     expect(sim.calls.stop).toBe(0);
+    expect(shell.phase()).toEqual({ kind: 'online' });
+
+    publicArenaMenu.exit();
+
+    expect(publicArenaClient.disconnectCalls()).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(1);
+    expect(publicArenaHud.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'menu' });
   });
 
@@ -2679,6 +2863,7 @@ describe('UiShell', () => {
   it('routes mobile public arena input through the online client', async () => {
     const menu = createMenuHarness();
     const status = createPublicArenaStatusHarness();
+    const publicArenaMenu = createPublicArenaMenuHarness();
     const publicArenaHud = createPublicArenaHudHarness();
     const publicArenaClient = createPublicArenaClientHarness();
     const publicArenaRenderer = createPublicArenaRendererHarness();
@@ -2706,6 +2891,7 @@ describe('UiShell', () => {
       createSettingsOverlay: createSettingsOverlayHarness().factory,
       createHud: hud.factory,
       createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaMenuOverlay: publicArenaMenu.factory,
       createPublicArenaStatusOverlay: status.factory,
       createPublicArenaClient: publicArenaClient.factory,
       createPublicArenaRenderer: publicArenaRenderer.factory,
@@ -2756,12 +2942,28 @@ describe('UiShell', () => {
 
     mobileInput.lastInit()?.onPause();
 
-    expect(publicArenaClient.disconnectCalls()).toBe(1);
+    expect(publicArenaMenu.isVisible()).toBe(true);
+    expect(publicArenaClient.disconnectCalls()).toBe(0);
     expect(mobileInput.calls.stop).toBe(1);
+    expect(publicArenaRenderer.calls.dispose).toBe(0);
+    expect(publicArenaHud.isVisible()).toBe(true);
+    expect(mobileControls.isVisible()).toBe(false);
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'move', dx: 0, dy: -1 },
+      { kind: 'aim', x: 5, y: 6 },
+      { kind: 'fire', phase: 'stop' },
+      { kind: 'move', dx: 0, dy: 0 },
+      { kind: 'fire', phase: 'stop' }
+    ]);
+    expect(sim.startSessions).toHaveLength(0);
+
+    publicArenaMenu.exit();
+
+    expect(publicArenaClient.disconnectCalls()).toBe(1);
     expect(publicArenaRenderer.calls.dispose).toBe(1);
     expect(mobileControls.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'menu' });
-    expect(sim.startSessions).toHaveLength(0);
   });
 
   it('keeps the public arena entry visible when no server URL is configured', async () => {
