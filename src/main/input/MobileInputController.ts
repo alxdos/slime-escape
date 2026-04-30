@@ -12,7 +12,7 @@ type MobileSurface = EventTargetLike &
   Partial<Pick<HTMLElement, 'setPointerCapture' | 'releasePointerCapture'>>;
 
 type PauseElement = Readonly<{
-  contains(node: EventTarget): boolean;
+  contains(node: Node | null): boolean;
   getBoundingClientRect(): DOMRect;
 }>;
 
@@ -164,7 +164,7 @@ export function createMobileInputController(init: MobileInputControllerInit): In
     if (pauseElement === null) {
       return false;
     }
-    if (event.target !== null && pauseElement.contains(event.target)) {
+    if (pauseElement.contains(event.target as Node | null)) {
       return true;
     }
     const surfaceRect = init.surface.getBoundingClientRect();

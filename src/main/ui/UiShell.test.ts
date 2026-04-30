@@ -45,6 +45,10 @@ import type { DungeonWaveCounter, DungeonWaveCounterInit } from './DungeonWaveCo
 import type { Hud, HudInit } from './Hud';
 import { createUiShell, STARTUP_SPRITE_SPECS, type UiShellInit } from './UiShell';
 import type { MenuOverlay, MenuOverlayInit } from './MenuOverlay';
+import type {
+  MobileControlsOverlay,
+  MobileControlsOverlayInit
+} from './MobileControlsOverlay';
 import type { MenuLabViewModel } from './MenuLabViewModel';
 import type { MenuPetsViewModel } from './MenuPetsViewModel';
 import type { MenuScreenId, MenuSubscreenId } from './MenuOverlayLayout';
@@ -1124,6 +1128,54 @@ function createVibeJamPortalControllerHarness() {
   };
 }
 
+function createMobileControlsHarness() {
+  let visible = false;
+  let pauseButton = new FakeDomElement();
+  const calls = {
+    create: 0,
+    show: 0,
+    hide: 0,
+    dispose: 0
+  };
+
+  const overlay: MobileControlsOverlay = {
+    show(): void {
+      visible = true;
+      calls.show += 1;
+    },
+    hide(): void {
+      visible = false;
+      calls.hide += 1;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    pauseButtonElement(): HTMLElement {
+      return pauseButton as unknown as HTMLElement;
+    },
+    dispose(): void {
+      calls.dispose += 1;
+    }
+  };
+
+  return {
+    factory(init: MobileControlsOverlayInit): MobileControlsOverlay {
+      calls.create += 1;
+      pauseButton = new FakeDomElement();
+      pauseButton.dataset['role'] = 'mobile-pause-button';
+      appendHarnessRoot(init.parent, pauseButton);
+      return overlay;
+    },
+    isVisible(): boolean {
+      return visible;
+    },
+    pauseButton(): FakeDomElement {
+      return pauseButton;
+    },
+    calls
+  };
+}
+
 function createAudioHarness() {
   const events: RuntimeEvent[] = [];
   const uiEvents: AudioUiEventId[] = [];
@@ -1647,6 +1699,7 @@ describe('UiShell', () => {
     const settingsOverlay = createSettingsOverlayHarness();
     const desktopInput = createInputHarness();
     const mobileInput = createMobileInputHarness();
+    const mobileControls = createMobileControlsHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
     const audio = createAudioHarness();
@@ -1670,6 +1723,7 @@ describe('UiShell', () => {
       createRenderer: createRendererHarness().factory,
       createInputController: desktopInput.factory,
       createMobileInputController: mobileInput.factory,
+      createMobileControlsOverlay: mobileControls.factory,
       createHud: hud.factory,
       createAudio: audio.factory,
       windowTarget,
@@ -1688,6 +1742,8 @@ describe('UiShell', () => {
     expect(mobileInput.calls.create).toBe(1);
     expect(mobileInput.calls.start).toBe(1);
     expect(mobileInput.lastInit()?.surface).toBeDefined();
+    expect(mobileInput.lastInit()?.pauseElement?.()).toBe(mobileControls.pauseButton());
+    expect(mobileControls.isVisible()).toBe(true);
 
     windowTarget.dispatch(
       'keydown',
@@ -1702,6 +1758,7 @@ describe('UiShell', () => {
     expect(documentTarget.exitPointerLock).not.toHaveBeenCalled();
     expect(mobileInput.calls.stop).toBe(1);
     expect(sim.calls.pause).toBe(1);
+    expect(mobileControls.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'paused' });
 
     pause.resume();
@@ -1709,6 +1766,7 @@ describe('UiShell', () => {
     expect(mobileInput.calls.start).toBe(2);
     expect(mobileInput.calls.requestLock).toBe(0);
     expect(sim.calls.resume).toBe(1);
+    expect(mobileControls.isVisible()).toBe(true);
     expect(shell.phase()).toEqual({ kind: 'running' });
   });
 

@@ -67,6 +67,11 @@ import {
   type MenuOverlay,
   type MenuOverlayInit
 } from './MenuOverlay';
+import {
+  createMobileControlsOverlay,
+  type MobileControlsOverlay,
+  type MobileControlsOverlayInit
+} from './MobileControlsOverlay';
 import { buildMenuLabViewModel } from './MenuLabViewModel';
 import { buildMenuPetsViewModel } from './MenuPetsViewModel';
 import type { MenuSubscreenId } from './MenuOverlayLayout';
@@ -138,6 +143,9 @@ type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
 type CreateMobileInputControllerFn = (init: MobileInputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
+type CreateMobileControlsOverlayFn = (
+  init: MobileControlsOverlayInit
+) => MobileControlsOverlay;
 type CreateEscapeProgressPathFn = (init: EscapeProgressPathInit) => EscapeProgressPath;
 type CreateDungeonWaveCounterFn = (init: DungeonWaveCounterInit) => DungeonWaveCounter;
 type CreateTitleOverlayFn = (init: TitleOverlayInit) => TitleOverlay;
@@ -172,6 +180,7 @@ export type UiShellInit = Readonly<{
   createInputController?: CreateInputControllerFn;
   createMobileInputController?: CreateMobileInputControllerFn;
   createHud?: CreateHudFn;
+  createMobileControlsOverlay?: CreateMobileControlsOverlayFn;
   createEscapeProgressPath?: CreateEscapeProgressPathFn;
   createDungeonWaveCounter?: CreateDungeonWaveCounterFn;
   createTitleOverlay?: CreateTitleOverlayFn;
@@ -235,6 +244,12 @@ export function createUiShell(init: UiShellInit): UiShell {
   const inputFactory = init.createInputController ?? createInputController;
   const mobileInputFactory = init.createMobileInputController ?? createMobileInputController;
   const hudFactory = init.createHud ?? createHud;
+  const canMountMobileControls =
+    typeof (init.parent as Partial<HTMLElement>).appendChild === 'function' &&
+    typeof document !== 'undefined';
+  const mobileControlsFactory =
+    init.createMobileControlsOverlay ??
+    (canMountMobileControls ? createMobileControlsOverlay : createNullMobileControlsOverlay);
   const escapeProgressPathFactory =
     init.createEscapeProgressPath ?? createEscapeProgressPath;
   const dungeonWaveCounterFactory =
@@ -276,7 +291,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   let transitionActive = false;
   let lastStartedPreset: ModePreset | null = null;
   let lastStartedSource: SessionStartSource | null = null;
-  const hud = hudFactory({ parent: init.parent });
+  const hud = hudFactory({ parent: init.parent, isMobile: isMobileInputMode() });
+  const mobileControls = mobileControlsFactory({ parent: init.parent });
   const escapeProgressPath = escapeProgressPathFactory({ parent: init.parent });
   const dungeonWaveCounter = dungeonWaveCounterFactory({ parent: init.parent });
   const titleOverlay = titleOverlayFactory({ parent: init.parent });
@@ -473,6 +489,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         result.hide();
+        mobileControls.hide();
         syncSettingsVisibility();
         return;
       case 'menu':
@@ -481,6 +498,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.show();
         pause.hide();
         result.hide();
+        mobileControls.hide();
         syncSettingsVisibility();
         return;
       case 'running':
@@ -489,6 +507,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         result.hide();
+        if (isMobileInputMode()) {
+          mobileControls.show();
+        } else {
+          mobileControls.hide();
+        }
         syncSettingsVisibility();
         return;
       case 'paused':
@@ -497,6 +520,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.show();
         result.hide();
+        mobileControls.hide();
         syncSettingsVisibility();
         return;
       case 'result':
@@ -505,6 +529,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         menu.hide();
         pause.hide();
         result.show(phase.viewModel);
+        mobileControls.hide();
         syncSettingsVisibility();
         return;
       case 'error':
@@ -513,6 +538,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         pause.hide();
         result.hide();
         startupErrorOverlay.show(phase.message);
+        mobileControls.hide();
         syncSettingsVisibility();
         return;
       default:
@@ -976,6 +1002,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       return mobileInputFactory({
         ...sharedInput,
         surface: init.parent,
+        pauseElement: () => mobileControls.pauseButtonElement(),
         onPause: enterOverlayPause
       });
     }
@@ -1094,6 +1121,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       pause.dispose();
       result.dispose();
       settingsOverlay.dispose();
+      mobileControls.dispose();
       titleOverlay.dispose();
       dungeonWaveCounter.dispose();
       escapeProgressPath.dispose();
@@ -1192,6 +1220,23 @@ function createNullStartupErrorOverlay(
     hide(): void {},
     isVisible(): boolean {
       return false;
+    },
+    dispose(): void {}
+  };
+}
+
+function createNullMobileControlsOverlay(
+  _init: MobileControlsOverlayInit
+): MobileControlsOverlay {
+  const pauseButton = {} as HTMLElement;
+  return {
+    show(): void {},
+    hide(): void {},
+    isVisible(): boolean {
+      return false;
+    },
+    pauseButtonElement(): HTMLElement {
+      return pauseButton;
     },
     dispose(): void {}
   };

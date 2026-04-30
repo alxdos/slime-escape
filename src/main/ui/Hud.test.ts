@@ -686,6 +686,21 @@ describe('Hud view model', () => {
     expect(view.weaponSlots[0]?.isSelected).toBe(false);
   });
 
+  it('hides desktop control hints for mobile HUD instances', () => {
+    withFakeDocument(() => {
+      const parent = new FakeElement('main');
+      const hud = createHud({ parent: asHtmlElement(parent), isMobile: true });
+      hud.attach(makeSession());
+
+      expect(requireElement(findByDataset(parent, 'role', 'hud-movement-hint')).style.display).toBe(
+        'none'
+      );
+      expect(requireElement(findByDataset(parent, 'role', 'hud-fire-hint')).style.display).toBe(
+        'none'
+      );
+    });
+  });
+
   it('shows boss block only when bossHud is present and resolves phase through archetype data', () => {
     const bossView = deriveHudViewModel(makeSession(), makeBossSnapshot());
 

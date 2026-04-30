@@ -48,7 +48,7 @@ class FakeElement extends FakeEventTarget {
     this.children.push(child);
   }
 
-  contains(node: EventTarget): boolean {
+  contains(node: Node | null): boolean {
     return node === (this as unknown as EventTarget) || this.children.some((child) => child.contains(node));
   }
 
