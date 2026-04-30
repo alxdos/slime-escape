@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-30
-- Updated: 2026-04-30 (story 032 T17 follow-up: public input rate limiting, shutdown close reason, and deterministic overlapping projectile target selection are recorded. Story 032 T16 follow-up: online progression ids and boss level live in shared headless config so server authority and client HUD labels use the same boss-level denominator.)
+- Updated: 2026-04-30 (story 032 T18 follow-up: Public Arena regular progression uses the full authored enemy slime roster in content order and the server must not silently fall back for missing level stats. Story 032 T17 follow-up: public input rate limiting, shutdown close reason, and deterministic overlapping projectile target selection are recorded. Story 032 T16 follow-up: online progression ids and boss level live in shared headless config so server authority and client HUD labels use the same boss-level denominator.)
 
 ## Context
 
@@ -63,8 +63,9 @@ The product rule is intentionally simple: there is one public arena, no matchmak
 ### Content and combat shape
 
 - Regular player forms use existing slime content and sprite ids from the shared content library.
-- The level chain is an ordered list of slime archetype ids chosen for the online mode. The exact list is online-mode configuration, not account progression.
-- Online progression configuration lives in shared, headless code under `src/shared/**`, not in browser UI and not only inside `server/`. It includes the ordered slime form chain, the regular and boss weapon ids, the tower boss archetype id, and the derived boss level (`slime form chain length + 1`). Both the server runtime and main-thread Public Arena presentation may import this shared config.
+- The level chain uses every authored enemy slime from `content/enemies.md` in source order. This is content progression for the online mode, not account progression. The generated enemy content must expose a content-order list so the server and client do not depend on module namespace key order.
+- Online progression configuration lives in shared, headless code under `src/shared/**`, not in browser UI and not only inside `server/`. It derives the ordered slime form chain from the generated enemy list, includes the regular and boss weapon ids plus the tower boss archetype id, and derives the boss level as `slime form chain length + 1`. Both the server runtime and main-thread Public Arena presentation may import this shared config.
+- Server regular-form stats for Public Arena levels are derived from the matching `EnemyArchetype` entries: `radius`, `maxHp`, and `maxSpeed`. If a level points at an enemy id without stats, that is a content/configuration error and must throw during setup or tests; falling back to the first slime is forbidden.
 - The final level transforms the player into the tower boss form:
   - boss archetype id: `boss-tower-sentinel`;
   - visual source: `public/assets/boss-04.png` through the existing boss visual registry.
