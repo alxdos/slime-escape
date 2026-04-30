@@ -9,6 +9,7 @@ import {
 } from '../../shared/content/sessions';
 import { PET_ECONOMY } from '../../shared/content/pets';
 import type { RuntimeEvent } from '../../shared/events';
+import type { InputCommand } from '../../shared/input';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type { ArenaConfig, SessionDefinition } from '../../shared/session';
@@ -16,6 +17,10 @@ import type { SessionResultOutcome, SessionResultSummary } from '../../shared/se
 import { createAudio, type Audio } from '../audio/Audio';
 import { applyAimAssist } from '../input/AimAssist';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
+import {
+  createMobileInputController,
+  type MobileInputControllerInit
+} from '../input/MobileInputController';
 import type { GameViewportProvider, MobileWebProfile } from '../mobileWebProfile';
 import {
   createClientProgressionStore,
@@ -131,6 +136,7 @@ type CreateStartupOverlayFn = (init: StartupOverlayInit) => StartupOverlay;
 type CreateStartupErrorOverlayFn = (init: StartupErrorOverlayInit) => StartupErrorOverlay;
 type CreateRendererFn = (init: RendererInit) => Renderer;
 type CreateInputControllerFn = (init: InputControllerInit) => InputController;
+type CreateMobileInputControllerFn = (init: MobileInputControllerInit) => InputController;
 type CreateHudFn = (init: HudInit) => Hud;
 type CreateEscapeProgressPathFn = (init: EscapeProgressPathInit) => EscapeProgressPath;
 type CreateDungeonWaveCounterFn = (init: DungeonWaveCounterInit) => DungeonWaveCounter;
@@ -164,6 +170,7 @@ export type UiShellInit = Readonly<{
   createStartupErrorOverlay?: CreateStartupErrorOverlayFn;
   createRenderer?: CreateRendererFn;
   createInputController?: CreateInputControllerFn;
+  createMobileInputController?: CreateMobileInputControllerFn;
   createHud?: CreateHudFn;
   createEscapeProgressPath?: CreateEscapeProgressPathFn;
   createDungeonWaveCounter?: CreateDungeonWaveCounterFn;
@@ -226,6 +233,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     (canMountStartupOverlays ? createStartupErrorOverlay : createNullStartupErrorOverlay);
   const rendererFactory = init.createRenderer ?? createRenderer;
   const inputFactory = init.createInputController ?? createInputController;
+  const mobileInputFactory = init.createMobileInputController ?? createMobileInputController;
   const hudFactory = init.createHud ?? createHud;
   const escapeProgressPathFactory =
     init.createEscapeProgressPath ?? createEscapeProgressPath;
@@ -684,15 +692,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         activeRenderer.applyScalePolicy(settings.renderScalePreset);
       });
 
-      nextInput = inputFactory({
-        canvas: init.canvas,
-        arena: session.arena,
-        pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height,
-        initialAim: session.player.position,
-        onCommand(command) {
-          sim.sendInput(applyAimAssist(command, session.rules.aimAssist, sim.snapshotPair().curr));
-        }
-      });
+      nextInput = createSessionInputController(session);
     } catch (error: unknown) {
       nextUnsubscribeRendererSettings?.();
       nextRenderer?.dispose();
@@ -865,7 +865,9 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (!isRunningSessionActive()) return;
     const session = activeSession;
     if (session === null) return;
-    if (documentTarget.pointerLockElement !== null) {
+    if (isMobileInputMode()) {
+      input?.stop();
+    } else if (documentTarget.pointerLockElement !== null) {
       documentTarget.exitPointerLock?.();
     }
     if (!sim.isPaused()) {
@@ -880,7 +882,11 @@ export function createUiShell(init: UiShellInit): UiShell {
   function resumeOverlayPause(): void {
     if (activeSession === null) return;
     if (phase.kind !== 'paused') return;
-    input?.requestLock();
+    if (isMobileInputMode()) {
+      input?.start();
+    } else {
+      input?.requestLock();
+    }
     if (sim.isPaused()) {
       sim.resume();
     }
@@ -954,6 +960,33 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function fitToWindow(): void {
     renderer?.fitToWindow();
+  }
+
+  function createSessionInputController(session: SessionDefinition): InputController {
+    const inputCommandSink = (command: InputCommand): void => {
+      sim.sendInput(applyAimAssist(command, session.rules.aimAssist, sim.snapshotPair().curr));
+    };
+    const sharedInput = {
+      arena: session.arena,
+      pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height,
+      initialAim: session.player.position,
+      onCommand: inputCommandSink
+    };
+    if (isMobileInputMode()) {
+      return mobileInputFactory({
+        ...sharedInput,
+        surface: init.parent,
+        onPause: enterOverlayPause
+      });
+    }
+    return inputFactory({
+      ...sharedInput,
+      canvas: init.canvas
+    });
+  }
+
+  function isMobileInputMode(): boolean {
+    return init.mobileProfile?.isMobile === true;
   }
 
   function onStartupPreloadProgress(loaded: number, total: number): void {

@@ -12,6 +12,7 @@ import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
+import type { MobileInputControllerInit } from '../input/MobileInputController';
 import type {
   ClientProgression,
   ClientProgressionStore
@@ -865,6 +866,44 @@ function createInputHarness() {
   };
 }
 
+function createMobileInputHarness() {
+  const calls = {
+    create: 0,
+    start: 0,
+    stop: 0,
+    requestLock: 0
+  };
+  let lastInit: MobileInputControllerInit | null = null;
+
+  return {
+    factory(init: MobileInputControllerInit): InputController {
+      calls.create += 1;
+      lastInit = init;
+      return {
+        start(): void {
+          calls.start += 1;
+        },
+        stop(): void {
+          calls.stop += 1;
+        },
+        isActive(): boolean {
+          return true;
+        },
+        currentAim() {
+          return { x: 0, y: 0 };
+        },
+        requestLock(): void {
+          calls.requestLock += 1;
+        }
+      };
+    },
+    calls,
+    lastInit(): MobileInputControllerInit | null {
+      return lastInit;
+    }
+  };
+}
+
 function createSimHarness() {
   const emptyPair: SnapshotPair = {
     prev: null,
@@ -1502,6 +1541,7 @@ describe('UiShell', () => {
     const settingsOverlay = createSettingsOverlayHarness();
     const renderer = createRendererHarness();
     const input = createInputHarness();
+    const mobileInput = createMobileInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
     const audio = createAudioHarness();
@@ -1522,6 +1562,7 @@ describe('UiShell', () => {
       createSettingsOverlay: settingsOverlay.factory,
       createRenderer: renderer.factory,
       createInputController: input.factory,
+      createMobileInputController: mobileInput.factory,
       createHud: hud.factory,
       createAudio: audio.factory,
       windowTarget,
@@ -1551,6 +1592,7 @@ describe('UiShell', () => {
     const settingsOverlay = createSettingsOverlayHarness();
     const renderer = createRendererHarness();
     const input = createInputHarness();
+    const mobileInput = createMobileInputHarness();
     const sim = createSimHarness();
     const hud = createHudHarness();
     const audio = createAudioHarness();
@@ -1575,6 +1617,7 @@ describe('UiShell', () => {
       createSettingsOverlay: settingsOverlay.factory,
       createRenderer: renderer.factory,
       createInputController: input.factory,
+      createMobileInputController: mobileInput.factory,
       createHud: hud.factory,
       createAudio: audio.factory,
       windowTarget,
@@ -1595,6 +1638,78 @@ describe('UiShell', () => {
       height: baseArena.height
     });
     expect(sim.startSessions[0]?.arena).toEqual(buildOptions[0]?.arenaOverride);
+  });
+
+  it('uses the mobile input adapter in mobile mode and restarts it around overlay pause', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const desktopInput = createInputHarness();
+    const mobileInput = createMobileInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, {
+      pointerLockElement: null,
+      exitPointerLock: vi.fn()
+    });
+    const preventDefault = vi.fn();
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      buildSessionDefinition: () => makeSession('mobile-input-session'),
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: createRendererHarness().factory,
+      createInputController: desktopInput.factory,
+      createMobileInputController: mobileInput.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget,
+      mobileProfile: {
+        isMobile: true,
+        screenLandscapeAspect: 844 / 390
+      }
+    });
+
+    await flushUiShellStartup();
+    menu.start('training');
+    await flushUiShellStartup();
+
+    expect(desktopInput.calls.create).toBe(0);
+    expect(mobileInput.calls.create).toBe(1);
+    expect(mobileInput.calls.start).toBe(1);
+    expect(mobileInput.lastInit()?.surface).toBeDefined();
+
+    windowTarget.dispatch(
+      'keydown',
+      {
+        code: 'Space',
+        preventDefault,
+        repeat: false
+      } as unknown as Event
+    );
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(documentTarget.exitPointerLock).not.toHaveBeenCalled();
+    expect(mobileInput.calls.stop).toBe(1);
+    expect(sim.calls.pause).toBe(1);
+    expect(shell.phase()).toEqual({ kind: 'paused' });
+
+    pause.resume();
+
+    expect(mobileInput.calls.start).toBe(2);
+    expect(mobileInput.calls.requestLock).toBe(0);
+    expect(sim.calls.resume).toBe(1);
+    expect(shell.phase()).toEqual({ kind: 'running' });
   });
 
   it('keeps the startup overlay visible while the post-load ritual runs', async () => {
