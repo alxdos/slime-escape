@@ -4,7 +4,6 @@ import { Server as SocketIOServer } from 'socket.io';
 
 import type {
   PublicArenaClientToServerEvents,
-  PublicArenaPresentationEvent,
   PublicArenaServerToClientEvents
 } from '../../src/shared/publicArenaProtocol.js';
 import {
@@ -122,7 +121,7 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
           }
           if (snapshotTimer === null) {
             snapshotTimer = setInterval(() => {
-              publishPresentationEvents(io, simulation.drainEvents());
+              simulation.drainEvents();
               publishSnapshots(io, arena.members(), simulation);
             }, SNAPSHOT_INTERVAL_MS);
           }
@@ -180,15 +179,6 @@ function publishSnapshots(
       continue;
     }
     socket.volatile.emit(PUBLIC_ARENA_EVENTS.snapshot, snapshot);
-  }
-}
-
-function publishPresentationEvents(
-  io: SocketIOServer<PublicArenaClientToServerEvents, PublicArenaServerToClientEvents>,
-  events: ReadonlyArray<PublicArenaPresentationEvent>
-): void {
-  for (const event of events) {
-    io.to(PUBLIC_ARENA_ROOM).volatile.emit(PUBLIC_ARENA_EVENTS.presentation, event);
   }
 }
 

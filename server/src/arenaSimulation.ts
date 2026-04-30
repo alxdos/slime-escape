@@ -21,6 +21,7 @@ export const PUBLIC_ARENA_BOSS_WEAPON_ID = 'fireball-staff';
 export const PUBLIC_ARENA_BOSS_ARCHETYPE_ID = 'boss-tower-sentinel';
 export const PUBLIC_ARENA_INTEREST_WIDTH_WU = 40;
 export const PUBLIC_ARENA_INTEREST_HEIGHT_WU = 26;
+export const PUBLIC_ARENA_SPAWN_PROTECTION_MS = 900;
 export const PUBLIC_ARENA_SLIME_FORM_CHAIN = [
   'slime-one-eye',
   'slime-hornling',
@@ -73,6 +74,7 @@ type RuntimePlayer = {
   aim: Vector;
   firing: boolean;
   nextFireAtSimMs: number;
+  spawnProtectionUntilSimMs: number;
 };
 
 type RuntimeProjectile = {
@@ -175,7 +177,8 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
       moveDir: { x: 0, y: 0 },
       aim: { x: member.spawn.x + 1, y: member.spawn.y },
       firing: false,
-      nextFireAtSimMs: 0
+      nextFireAtSimMs: 0,
+      spawnProtectionUntilSimMs: simTimeMs + PUBLIC_ARENA_SPAWN_PROTECTION_MS
     };
     players.set(player.id, player);
     events.push(spawnEvent(player, simTimeMs));
@@ -315,7 +318,11 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
     defeatedThisTick: ReadonlySet<PublicArenaPlayerId>
   ): RuntimePlayer | null {
     for (const player of players.values()) {
-      if (player.id === projectile.ownerId || defeatedThisTick.has(player.id)) {
+      if (
+        player.id === projectile.ownerId ||
+        defeatedThisTick.has(player.id) ||
+        isSpawnProtected(player)
+      ) {
         continue;
       }
       const reach = projectile.hitRadius + player.radius;
@@ -360,6 +367,7 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
     player.moveDir = { x: 0, y: 0 };
     player.aim = { x: player.spawn.x + 1, y: player.spawn.y };
     player.firing = false;
+    player.spawnProtectionUntilSimMs = simTimeMs + PUBLIC_ARENA_SPAWN_PROTECTION_MS;
     applyStatsForCurrentLevel(player, true);
     events.push(spawnEvent(player, simTimeMs));
   }
@@ -412,6 +420,10 @@ export function createPublicArenaSimulation(): PublicArenaSimulation {
     const drained = [...events];
     events.length = 0;
     return drained;
+  }
+
+  function isSpawnProtected(player: RuntimePlayer): boolean {
+    return simTimeMs < player.spawnProtectionUntilSimMs;
   }
 
   return {

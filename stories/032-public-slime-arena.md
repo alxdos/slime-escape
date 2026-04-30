@@ -54,7 +54,9 @@ The beauty of the mode is simplicity: join, spawn, throw rocks, kill, level up, 
 
 ## Technical
 
-Public Slime Arena is built on [public-multiplayer-arena.md](../design/public-multiplayer-arena.md): one separate stateful Node/TypeScript server package, Socket.IO `4.x`, one authoritative in-memory `40 x 40 wu` arena, socket-local player identity, server-owned HP/kills/levels/boss transforms, and per-socket interest snapshots based on visible area plus margin. The static client gets the arena server URL at build time through a `VITE_` environment variable. The existing web shell uses the online phase branch recorded in [main-ui-shell.md](../design/main-ui-shell.md), with Public Arena as an explicit side-mode entry point rather than a `ModePreset`. Desktop and mobile online input reuse the visible-area camera mapping and the existing movement/aim/fire intent shape from [input-commands.md](../design/input-commands.md) and [mobile-web-support.md](../design/mobile-web-support.md). The first slice reuses shared content ids, world units, timing constants, input intent shape, and sprite registries, but it does not run the existing local one-player `src/sim` session runtime on the server.
+Public Slime Arena is built on [public-multiplayer-arena.md](../design/public-multiplayer-arena.md): one separate stateful Node/TypeScript server package, Socket.IO `4.x`, one authoritative in-memory `40 x 40 wu` arena, socket-local player identity, server-owned HP/kills/levels/boss transforms, and per-socket interest snapshots based on visible area plus margin. The static client gets the arena server URL at build time through a `VITE_` environment variable. The existing web shell uses the online phase branch recorded in [main-ui-shell.md](../design/main-ui-shell.md), with Public Arena as an explicit side-mode entry point rather than a local `ModePreset` run. Desktop and mobile online input reuse the visible-area camera mapping and the existing movement/aim/fire intent shape from [input-commands.md](../design/input-commands.md) and [mobile-web-support.md](../design/mobile-web-support.md). The first slice reuses shared content ids, world units, timing constants, input intent shape, and sprite registries, but it does not run the existing local one-player `src/sim` session runtime on the server.
+
+Follow-up from online testing: the online arena must not render over an empty background. Add a small Public Arena presentation/config source that follows the existing session config terminology from [session-definition.md](../design/session-definition.md): arena `{ width: 40, height: 40 }`, backgrounds, and an active background id. It should reuse the Vibe Jam `portal` session visual background convention, but it must not start or mutate the hidden `portal` preset and must not include authored waves, boss encounters, portal redirects, zone behavior, rewards, win/loss conditions, or local session transitions.
 
 ## Out of scope
 
@@ -108,15 +110,24 @@ Public Slime Arena is built on [public-multiplayer-arena.md](../design/public-mu
 | T7 | [x] | Add the Public Arena client entry point and connection flow in the existing web app. | Added the menu entry, Socket.IO client flow, accepted/rejected status handling, and tests that keep campaign/training/dungeon session start paths unchanged. |
 | T8 | [x] | Render online snapshots with existing slime, boss, projectile, level-label, and HUD presentation. | Added online snapshot rendering, level labels, current level/population HUD, and tower boss/projectile visual registry coverage. |
 | T9 | [x] | Route desktop and mobile online input to the server as movement, aim, and fire intent using the existing visible-area/camera mapping. | Reused desktop/mobile input adapters for online movement, aim, and fire intents while filtering non-online input commands. |
-| T10 | [ ] | Run automated checks and request live online verification from the user. | Include server unit tests, protocol/client tests, build/content checks, and a manual two-client arena check per pipeline. |
+| T10 | [ ] | Fix desktop online exit and update the shell contract. | Add a desktop-visible way to leave `online`: either an explicit `Exit Arena` affordance that remains visible during online play, or Esc/Space plus Pointer Lock loss routing that calls `exitPublicArenaToMenu`. Keep mobile pause exit working. Update [main-ui-shell.md](../design/main-ui-shell.md) visibility/hotkey wording and cover with `UiShell` tests. |
+| T11 | [x] | Add server-owned respawn protection after death. | Added `spawnProtectionUntilSimMs` on the server so newly spawned and respawned players are skipped by projectile hit targeting during the protection window. Hits during protection do not reduce HP or create hit/death/level-up effects. Covered same-tick and later-tick boss burst cases. |
+| T12 | [x] | Stop room-wide presentation event fanout before live verification. | Stopped emitting presentation events to the whole room in the first slice. The server still drains simulation events so the queue does not grow, and snapshots remain authoritative. |
+| T13 | [ ] | Add Public Arena background/config reuse from the portal visual setup. | Introduce a small shared online arena presentation/config source with `arena: { width: 40, height: 40 }`, background list, and active background id. Reuse the existing portal background image/convention for the look, but exclude portal waves, boss encounter data, redirects, zone behavior, rewards, and local session flow. Use this config for online renderer background and for the server/client arena dimensions instead of duplicating the `40 x 40` number in unrelated places. |
+| T14 | [ ] | Adjust the Public Arena HUD labels. | Show online population as a simple online count without `/200` (for example, `Online 37`). Show the player's progress as current level out of the final boss level (for example, `Level 3/6`, capped at the boss level if internal kills keep increasing after boss). Update `PublicArenaHud` and `UiShell` tests/harnesses. |
+| T15 | [ ] | Address remaining code-review hardening before live verification. | Add a simple per-socket input rate limit for `publicArena:input`, send `closeReason: serverShutdown` before intentional server close, and make projectile hit selection deterministic by choosing the nearest overlapping target instead of `Map` insertion order. Keep this task narrow: no auth, moderation, spatial grid, texture-cache refactor, or broader performance work in this slice. |
+| T16 | [ ] | Run automated checks and request live online verification from the user. | Include server unit tests, protocol/client tests, renderer/HUD/UI shell tests, build/content checks, and a manual two-client arena check per pipeline. Confirm desktop exit, respawn protection, visible arena background, online count, level progress text, review hardening, and graceful server-close messaging. |
 
 ## Related
 
 - [public-multiplayer-arena.md](../design/public-multiplayer-arena.md)
 - [web-stack.md](../design/web-stack.md)
 - [content-boundaries.md](../design/content-boundaries.md)
+- [content-authoring.md](../design/content-authoring.md)
 - [arena-and-coordinates.md](../design/arena-and-coordinates.md)
 - [camera-and-visible-area.md](../design/camera-and-visible-area.md)
+- [session-definition.md](../design/session-definition.md)
+- [encounter-presentation.md](../design/encounter-presentation.md)
 - [input-commands.md](../design/input-commands.md)
 - [simulation-timing.md](../design/simulation-timing.md)
 - [snapshot-shape.md](../design/snapshot-shape.md)
@@ -128,4 +139,5 @@ Public Slime Arena is built on [public-multiplayer-arena.md](../design/public-mu
 - [sprite-assets.md](../design/sprite-assets.md)
 - [main-ui-shell.md](../design/main-ui-shell.md)
 - [mobile-web-support.md](../design/mobile-web-support.md)
+- [vibe-jam-portals.md](../design/vibe-jam-portals.md)
 - [testing.md](../design/testing.md)

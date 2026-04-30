@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { SIM_STEP_MS } from '../../src/shared/timing.js';
 import type { PublicArenaPlayerId } from '../../src/shared/publicArenaProtocol.js';
 
 import {
@@ -8,6 +9,7 @@ import {
   PUBLIC_ARENA_BOSS_WEAPON_ID,
   PUBLIC_ARENA_INTEREST_HEIGHT_WU,
   PUBLIC_ARENA_REGULAR_WEAPON_ID,
+  PUBLIC_ARENA_SPAWN_PROTECTION_MS,
   PUBLIC_ARENA_SLIME_FORM_CHAIN,
   createPublicArenaSimulation
 } from './arenaSimulation.js';
@@ -190,6 +192,42 @@ describe('PublicArenaSimulation', () => {
     }
 
     throw new Error('boss burst did not kill the victim');
+  });
+
+  it('keeps a respawned player safe from later boss bursts during spawn protection', () => {
+    const simulation = createPublicArenaSimulation();
+    simulation.addPlayer(member('boss', 0, 0));
+    simulation.addPlayer(member('victim', 0.5, 0));
+    simulation.drainEvents();
+
+    promoteToBoss(simulation, 'boss', 'victim');
+    simulation.applyInput('boss', { kind: 'fire', phase: 'start' });
+
+    let respawnedAtSimMs: number | null = null;
+    for (let i = 0; i < 240; i += 1) {
+      simulation.tick();
+      const events = simulation.drainEvents();
+      const death = events.find((event) => event.kind === 'death' && event.playerId === 'victim');
+      if (death !== undefined) {
+        respawnedAtSimMs = simulation.simTimeMs();
+        break;
+      }
+    }
+    if (respawnedAtSimMs === null) {
+      throw new Error('boss burst did not kill the victim');
+    }
+
+    const protectedUntilSimMs = respawnedAtSimMs + PUBLIC_ARENA_SPAWN_PROTECTION_MS;
+    while (simulation.simTimeMs() + SIM_STEP_MS < protectedUntilSimMs) {
+      simulation.tick();
+      const events = simulation.drainEvents();
+      expect(events.some((event) => event.kind === 'hit' && event.targetId === 'victim')).toBe(false);
+      expect(events.some((event) => event.kind === 'death' && event.playerId === 'victim')).toBe(false);
+    }
+
+    const victim = playerSnapshot(simulation, 'victim');
+    expect(victim.hp).toBe(victim.maxHp);
+    expect(victim.level).toBe(1);
   });
 
   it('killing a boss advances the killer by exactly one level', () => {
