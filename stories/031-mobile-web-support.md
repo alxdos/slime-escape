@@ -1,6 +1,6 @@
 # Mobile Web Support
 
-- Status: planned
+- Status: in-progress
 - Created: 2026-04-30
 - Updated: 2026-04-30
 
@@ -43,6 +43,10 @@ The first mobile web support slice should make Slime Escape feel like one cohere
 - Can do: tap the top-center pause/menu button to pause without firing.
 - Sees: on desktop, including a tall narrow desktop browser window, the game keeps the current desktop presentation.
 
+## Technical
+
+Mobile support is main-thread presentation and input work based on [mobile-web-support.md](../design/mobile-web-support.md). The simulation protocol does not get mobile-specific commands: touch movement, aim, and fire map to the existing `InputCommand` union from [input-commands.md](../design/input-commands.md). `UiShell` mounts player-facing layers under the game root, chooses desktop or mobile input, and routes the mobile top-center pause/menu button through the existing pause phase. Mobile runs may pass an `arenaOverride` into session building so the final immutable `SessionDefinition.arena` matches the physical screen landscape aspect.
+
 ## Out of scope
 
 - Gyroscope, accelerometer, tilt, or rotation-based combat controls.
@@ -74,3 +78,28 @@ The first mobile web support slice should make Slime Escape feel like one cohere
 - On desktop, resizing the browser window to a tall portrait shape does not trigger the phone presentation.
 - Existing desktop menu and gameplay presentation remain visually unchanged.
 - Demo scenario: open the game on a touch phone in portrait, navigate from the main menu to Settings and back, open one menu sub-screen and back, start a run, move with the lower-left stick, aim with the lower-right stick, fire from the top zone, pause from the top-center button, rotate the phone sideways and upright again, then end or leave the run and confirm every visible layer remains part of one landscape game surface.
+
+## Tasks
+
+| ID | Status | Task | Note |
+|----|--------|------|------|
+| T1 | [x] | Record architecture decisions for mobile profile, game root, effective viewport, mobile arena override, touch input zones, HUD/control presentation, pause routing, and verification. | Added [mobile-web-support.md](../design/mobile-web-support.md) and aligned adjacent decisions. |
+| T2 | [ ] | Add mobile profile and game-surface orientation on main: detect touch portrait-screen startup, keep the mobile flag stable, rotate the game root in portrait, unrotate in landscape, and expose an effective landscape viewport to renderer fitting. | All player-facing game layers must mount under the game root, not uncoordinated `document.body` children. |
+| T3 | [ ] | Apply mobile arena shape during session build: derive `arenaOverride` from base arena height and physical landscape screen aspect, pass it through `UiShell`, use it before spawn/boss validation, and cover desktop/mobile builder cases. | The final `SessionDefinition.arena` is the only runtime source of truth. |
+| T4 | [ ] | Implement the mobile input adapter: lower-left movement stick, lower-right relative aim stick, top fire zone, multi-touch tracking, minimum tap-fire pulse, pause-button priority, and cleanup on stop/phase change. | It sends only existing `move`/`aim`/`fire` commands and does not request Pointer Lock. |
+| T5 | [ ] | Implement mobile controls presentation and HUD variant: hide desktop `WASD`/mouse hints in mobile running, show subtle sticks, bullet silhouettes, and top-center pause/menu button only during running. | No colored debug zone blocks in normal gameplay. |
+| T6 | [ ] | Run focused automated checks and request live mobile verification from the user. | Include profile/viewport, builder, mobile input, HUD/UI tests, then ask for phone/emulated-phone checks per pipeline. |
+
+## Related
+
+- [mobile-web-support.md](../design/mobile-web-support.md)
+- [arena-and-coordinates.md](../design/arena-and-coordinates.md)
+- [session-definition.md](../design/session-definition.md)
+- [input-commands.md](../design/input-commands.md)
+- [main-ui-shell.md](../design/main-ui-shell.md)
+- [hud-presentation.md](../design/hud-presentation.md)
+- [render-scale.md](../design/render-scale.md)
+- [thread-model.md](../design/thread-model.md)
+- [testing.md](../design/testing.md)
+- [GDD_CORE.md](../docs/GDD_CORE.md)
+- [SCOPE.md](../docs/SCOPE.md)

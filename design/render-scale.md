@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-20
-- Updated: 2026-04-20
+- Updated: 2026-04-30 (story 031 prep: render fitting uses the effective game viewport from mobile web support, not always raw `window.innerWidth` / `window.innerHeight`.)
 
 ## Context
 
@@ -35,7 +35,7 @@ Presets define **only** image pixel density. Logical canvas size, CSS size on bo
 - `pixelRatio`, passed into `WebGLRenderer.setPixelRatio` (the actual number of backing pixels per CSS pixel);
 - the CSS `image-rendering` value on the `<canvas>` itself.
 
-Let `cssWidthPx` and `cssHeightPx` be the canvas size in CSS pixels, already fitted to the viewport through `fitCanvasToViewport` (see [arena-and-coordinates.md](arena-and-coordinates.md)); `dpr` is `window.devicePixelRatio` capped at `2`, as currently in `src/main/index.ts`.
+Let `cssWidthPx` and `cssHeightPx` be the canvas size in CSS pixels, already fitted to the effective game viewport through `fitCanvasToViewport` (see [arena-and-coordinates.md](arena-and-coordinates.md) and [mobile-web-support.md](mobile-web-support.md)); `dpr` is `window.devicePixelRatio` capped at `2`, as currently in `src/main/index.ts`.
 
 | Preset | Backing-pixels canvas | CSS canvas size | `image-rendering` | Meaning |
 |--------|------------------------|-------------------|--------------------|-----------|
@@ -72,7 +72,7 @@ Concrete thresholds (`/4` for `low`, `min(devicePixelRatio, 2)` for `high`) live
 - The visible arena area **does not change** between presets. The camera is orthographic and its frustum is `arena.width × arena.height` ([arena-and-coordinates.md](arena-and-coordinates.md)); no preset changes the frustum.
 - Canvas CSS size, aspect ratio, and letterbox/pillarbox bars **do not change** between presets. The preset affects only backing pixels and `image-rendering`.
 - Pointer-to-world mapping uses canvas CSS size (`clientHeight`/`clientWidth`), not backing pixels. Today this is visible as `pixelsPerWorldUnit: () => init.canvas.clientHeight / session.arena.height` in `UiShell`. Any attempt to read `canvas.width`/`canvas.height` for aim calculation violates this decision.
-- `fitCanvasToViewport` remains the only source of canvas CSS size; render scale runs "after" it and does not recalculate aspect/letterbox.
+- `fitCanvasToViewport` remains the only source of canvas CSS size; render scale runs "after" it and does not recalculate aspect/letterbox. Mobile support may change the effective viewport passed into that function, but render scale still does not read raw orientation state itself.
 - No gameplay system in `src/sim/**` or `src/shared/content/**` may read `canvas.width`/`canvas.height`/`devicePixelRatio`/`renderScalePreset`. Render scale is purely a presentation setting.
 - Changing the preset **must not** change the outcome of a run with the same `seed` (same invariant as all client settings; see [client-settings.md](client-settings.md), [content-boundaries.md](content-boundaries.md)).
 
@@ -148,3 +148,4 @@ Concrete thresholds (`/4` for `low`, `min(devicePixelRatio, 2)` for `high`) live
 - [testing.md](testing.md)
 - [../stories/009-settings.md](../stories/009-settings.md)
 - [../stories/010-render-pipeline-offscreen.md](../stories/010-render-pipeline-offscreen.md)
+- [mobile-web-support.md](mobile-web-support.md)

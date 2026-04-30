@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-26 (023 pause hotkey fix: player-facing pause overlay is `Esc` or `Space`; dev pause moves to physical `KeyP` through `UiShell`, independent of locale/CapsLock. Earlier: 017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 007 finalized pause routing through `UiShell`.)
+- Updated: 2026-04-30 (story 031 prep: mobile touch controls map to the existing `move`/`aim`/`fire` commands without adding a new protocol kind; see [mobile-web-support.md](mobile-web-support.md). Earlier: 2026-04-26 story 023 pause hotkey fix: player-facing pause overlay is `Esc` or `Space`; dev pause moves to physical `KeyP` through `UiShell`, independent of locale/CapsLock. Earlier: 017 alignment: weapon slot selection and holster commands are added for ordered loadouts; `Digit0` is the dedicated holster hotkey; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 007 finalized pause routing through `UiShell`.)
 
 ## Context
 
@@ -69,6 +69,16 @@ There are also product requirements:
   - holding LMB must not generate a stream of repeated commands; firing rate is the responsibility of `CombatSystem` ([runtime-systems.md](runtime-systems.md)) and weapon parameters.
 - In stories where `CombatSystem` does not exist yet (002), `sim` accepts `fire` as a valid command but ignores its gameplay effect. Silently dropping unknown commands is forbidden, otherwise protocol errors become invisible.
 
+### Mobile touch controls
+
+- Mobile touch controls are a main-thread input mapping defined by [mobile-web-support.md](mobile-web-support.md). They reuse the existing `InputCommand` union and do not add new `kind` values.
+- Mobile movement sends the same normalized `move` command as keyboard movement.
+- Mobile aim maintains the same virtual aim position as desktop Pointer Lock aiming, using relative drag deltas and clamping to arena bounds.
+- Mobile fire sends the same `fire start` / `fire stop` commands as left mouse button.
+- A mobile fire tap must remain active for at least one simulation step before the input layer sends `fire stop`; this keeps short taps observable without changing simulation semantics.
+- Mobile input does not request Pointer Lock. Desktop Pointer Lock behavior remains unchanged.
+- The mobile pause/menu button is not an input command. It routes to `UiShell` pause behavior and takes priority over the fire zone.
+
 ### Esc, pause, and Pointer Lock
 
 - `Esc` always means "open pause overlay"; the "Exit to menu" button inside the overlay calls `stopSession`.
@@ -119,7 +129,7 @@ There are also product requirements:
 - Esc/Space + Pointer Lock + pause overlay form a coherent UX: entering overlay pause opens the menu and provides a system cursor for clicks.
 - `fire` exists in the contract already in 002 and is ignored at the gameplay level; 003 enables `CombatSystem` without extending the protocol.
 - Sensitivity settings (009) become a multiplier on the single mouse-delta-to-world mapping and do not require revisiting this decision.
-- Future key changes (remap, gamepad, touch) extend mapping in `src/main/input/**` without changing `InputCommand` shape. If a new `kind` is required, that is a contract change and this file must be updated.
+- Future key changes (remap, gamepad, touch extensions) extend mapping in `src/main/input/**` without changing `InputCommand` shape. If a new `kind` is required, that is a contract change and this file must be updated.
 
 ## Related
 
@@ -130,3 +140,4 @@ There are also product requirements:
 - [main-ui-shell.md](main-ui-shell.md)
 - [../docs/GDD_CORE.md](../docs/GDD_CORE.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
+- [mobile-web-support.md](mobile-web-support.md)

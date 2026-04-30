@@ -63,6 +63,7 @@ Main principle:
 | [companion-combat.md](companion-combat.md) | accepted | Runtime companion contract: session-owned pet config, companion system, weapon/boop/rescue behavior, ghost state, and snapshots |
 | [arena-and-coordinates.md](arena-and-coordinates.md) | accepted | World coordinate system, arena shape, and fit-to-viewport rule |
 | [input-commands.md](input-commands.md) | accepted | `InputCommand` shape, WASD, Pointer Lock, aiming, left mouse button, and Esc pause |
+| [mobile-web-support.md](mobile-web-support.md) | accepted | Mobile device profile, rotated game root, mobile arena aspect, touch zones, and mobile HUD/control presentation |
 | [web-stack.md](web-stack.md) | accepted | Bundler, language, package manager, and the `src/main`, `src/sim`, `src/shared` layout |
 | [simulation-timing.md](simulation-timing.md) | accepted | `SimulationClock` and snapshot frequencies, interpolation rules, and pause/resume |
 | [logging.md](logging.md) | accepted | Shared `src/shared/log.ts` module, log levels, and the ban on direct `console.*` calls |
