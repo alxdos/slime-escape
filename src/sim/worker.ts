@@ -1,8 +1,7 @@
 import { log } from '../shared/log';
 import { assertNever, type MainToSim, type SimToMain } from '../shared/protocol';
 import { createSimulationCore } from '../shared/sim/SimulationCore';
-
-import { createSimulationClockHost } from './SimulationClockHost';
+import { SIM_STEP_MS } from '../shared/timing';
 
 function postToMain(msg: SimToMain): void {
   self.postMessage(msg);
@@ -16,7 +15,6 @@ const core = createSimulationCore({
     postToMain({ kind: 'event', event });
   }
 });
-const clockHost = createSimulationClockHost(core);
 
 self.addEventListener('message', (event: MessageEvent<MainToSim>) => {
   const msg = event.data;
@@ -44,4 +42,4 @@ self.addEventListener('message', (event: MessageEvent<MainToSim>) => {
   }
 });
 
-clockHost.start();
+setInterval(() => core.pump(performance.now()), SIM_STEP_MS);
