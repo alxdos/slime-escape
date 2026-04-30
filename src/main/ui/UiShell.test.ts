@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { PET_01 } from '../../shared/content/pets';
-import { getPlayableModeCatalog, type ModePresetId } from '../../shared/content/sessions';
+import {
+  SESSION_PRESET_TEMPLATES,
+  getPlayableModeCatalog,
+  type ModePresetId
+} from '../../shared/content/sessions';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type { SessionDefinition } from '../../shared/session';
@@ -1538,6 +1542,59 @@ describe('UiShell', () => {
     viewport = { width: 932, height: 430 };
     expect(rendererWindowTarget?.innerWidth).toBe(932);
     expect(rendererWindowTarget?.innerHeight).toBe(430);
+  });
+
+  it('passes a mobile arena override to the session builder', async () => {
+    const menu = createMenuHarness();
+    const pause = createPauseHarness();
+    const result = createResultHarness();
+    const settingsOverlay = createSettingsOverlayHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const audio = createAudioHarness();
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+    const buildOptions: Array<Readonly<{ arenaOverride?: { width: number; height: number } }>> = [];
+
+    createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 390 } as HTMLCanvasElement,
+      buildSessionDefinition: (preset, options) => {
+        buildOptions.push(options);
+        return makeSession(`${preset.id}-mobile-session`, {
+          arena: options.arenaOverride ?? { width: 16, height: 9 }
+        });
+      },
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: pause.factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: settingsOverlay.factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createAudio: audio.factory,
+      windowTarget,
+      documentTarget,
+      mobileProfile: {
+        isMobile: true,
+        screenLandscapeAspect: 844 / 390
+      }
+    });
+
+    await flushUiShellStartup();
+    menu.start('training');
+    await flushUiShellStartup();
+
+    const baseArena = SESSION_PRESET_TEMPLATES.training.arena;
+    expect(buildOptions[0]?.arenaOverride).toEqual({
+      width: baseArena.height * (844 / 390),
+      height: baseArena.height
+    });
+    expect(sim.startSessions[0]?.arena).toEqual(buildOptions[0]?.arenaOverride);
   });
 
   it('keeps the startup overlay visible while the post-load ritual runs', async () => {

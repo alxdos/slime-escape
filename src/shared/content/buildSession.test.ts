@@ -302,6 +302,33 @@ describe('buildSessionDefinition (training)', () => {
 });
 
 describe('buildSessionDefinition (campaign)', () => {
+  it('keeps the content arena when no arena override is supplied', () => {
+    const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
+
+    expect(session.arena).toEqual(SESSION_PRESET_TEMPLATES[CAMPAIGN_PRESET.id].arena);
+  });
+
+  it('applies arena override before derived boss spawn positions are resolved', () => {
+    const defaultSession = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
+    const session = buildSessionDefinition(CAMPAIGN_PRESET, {
+      seed: 2,
+      arenaOverride: { width: 40, height: 20 }
+    });
+
+    expect(session.arena).toEqual({ width: 40, height: 20 });
+    expect(firstBossSpawnY(session)).not.toBe(firstBossSpawnY(defaultSession));
+    expect(firstBossSpawnY(session)).toBeLessThan(session.arena.height / 2);
+  });
+
+  it('validates authored static spawns against arena overrides', () => {
+    expect(() =>
+      buildSessionDefinition(SANDBOX_WITH_COMBAT_PRESET, {
+        seed: 7,
+        arenaOverride: { width: 1, height: 1 }
+      })
+    ).toThrow(/does not fit into arena 1x1/);
+  });
+
   it('builds no companion when the selected pet is null', () => {
     const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
 
@@ -683,6 +710,15 @@ function spawnEntries(session: SessionDefinition): SpawnEntry[] {
     }
   }
   return entries;
+}
+
+function firstBossSpawnY(session: SessionDefinition): number {
+  for (const encounter of session.encounters) {
+    if (encounter.spawnPlan.kind === 'boss') {
+      return encounter.spawnPlan.position.y;
+    }
+  }
+  throw new Error('expected a boss encounter');
 }
 
 function loadoutsForSet(

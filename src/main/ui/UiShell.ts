@@ -1,5 +1,6 @@
 import { buildSessionDefinition } from '../../shared/content/buildSession';
 import {
+  SESSION_PRESET_TEMPLATES,
   getPlayableModeCatalog,
   DUNGEON_PRESET,
   resolveModePreset,
@@ -10,7 +11,7 @@ import { PET_ECONOMY } from '../../shared/content/pets';
 import type { RuntimeEvent } from '../../shared/events';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
-import type { SessionDefinition } from '../../shared/session';
+import type { ArenaConfig, SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import { createAudio, type Audio } from '../audio/Audio';
 import { applyAimAssist } from '../input/AimAssist';
@@ -646,7 +647,11 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (activeSession !== null) return;
 
     const selectedPetId = clientProgressionStore.get().selectedPetId;
-    const session = builder(preset, { seed: makeSeed(), selectedPetId });
+    const session = builder(preset, {
+      seed: makeSeed(),
+      selectedPetId,
+      arenaOverride: deriveMobileArenaOverride(preset, init.mobileProfile ?? null)
+    });
     const clientSettings = clientSettingsStore.get();
     const spriteTextures = preloadedTextures;
     if (spriteTextures === null) {
@@ -1104,6 +1109,20 @@ function createRendererWindowTarget(gameViewport: GameViewportProvider): Rendere
       return gameViewport.devicePixelRatio();
     },
     matchMedia: gameViewport.matchMedia
+  };
+}
+
+function deriveMobileArenaOverride(
+  preset: ModePreset,
+  mobileProfile: MobileWebProfile | null
+): ArenaConfig | undefined {
+  if (mobileProfile === null || !mobileProfile.isMobile) {
+    return undefined;
+  }
+  const baseArena = SESSION_PRESET_TEMPLATES[preset.id].arena;
+  return {
+    width: baseArena.height * mobileProfile.screenLandscapeAspect,
+    height: baseArena.height
   };
 }
 
