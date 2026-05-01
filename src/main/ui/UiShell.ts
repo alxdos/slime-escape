@@ -1129,7 +1129,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     arena: PublicArenaWorldBounds,
     snapshot: Snapshot
   ): VisibleAreaCamera {
-    if (isCampaignShapeOnlineSnapshot(snapshot)) {
+    if (activeOnlineSessionId !== 'public-arena' && isCampaignShapeOnlineSnapshot(snapshot)) {
       attachOnlineCampaignHud();
       return ensureOnlineCampaignRenderer(arena);
     }

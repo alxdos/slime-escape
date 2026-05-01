@@ -54,6 +54,37 @@ describe('OnlineSessionHost room registry', () => {
     expect(clock.intervals[0]?.intervalMs).toBe(SIM_STEP_MS);
   });
 
+  it('publishes Public Arena actors as slime forms in the first authoritative snapshot', () => {
+    const sink = createSinkHarness();
+    const clock = createClockHarness();
+    const host = createOnlineSessionHost({
+      playerCap: 4,
+      tickHz: 60,
+      snapshotHz: 30,
+      sink: sink.sink,
+      clock: clock.clock,
+      roomIdFactory: (index) => `room-${index}`
+    });
+
+    expect(host.join('socket-a', { requestedSessionId: 'public-arena' })).toMatchObject({
+      kind: 'accepted',
+      roomState: 'running'
+    });
+
+    clock.now = 0;
+    clock.intervals[0]?.handler();
+    clock.now = SIM_STEP_MS;
+    clock.intervals[0]?.handler();
+
+    const snapshot = sink.snapshots.at(-1)?.snapshot;
+    const player = snapshot?.entities.find((entity) => entity.kind === 'player');
+    expect(player).toMatchObject({
+      kind: 'player',
+      playerId: 'socket-a',
+      formArchetypeId: 'slime-one-eye'
+    });
+  });
+
   it('holds co-op sessions in lobby until the host starts and then adds joined actors', () => {
     const core = createCoreHarness();
     const sink = createSinkHarness();
@@ -286,12 +317,20 @@ function createClockHarness(now = 0): {
   return harness;
 }
 
-function createSinkHarness(): { sink: ArenaHostSink; events: Array<{ actorId: string; event: ArenaHostEvent }> } {
+function createSinkHarness(): {
+  sink: ArenaHostSink;
+  events: Array<{ actorId: string; event: ArenaHostEvent }>;
+  snapshots: Array<{ actorId: string; snapshot: Snapshot }>;
+} {
   const events: Array<{ actorId: string; event: ArenaHostEvent }> = [];
+  const snapshots: Array<{ actorId: string; snapshot: Snapshot }> = [];
   return {
     events,
+    snapshots,
     sink: {
-      emitSnapshot: vi.fn(),
+      emitSnapshot(actorId, snapshot): void {
+        snapshots.push({ actorId, snapshot });
+      },
       emitEvent(actorId, event): void {
         events.push({ actorId, event });
       },

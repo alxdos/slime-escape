@@ -1048,7 +1048,13 @@ function makePublicArenaSnapshot(): Snapshot {
         weaponHud: null
       }))
     ],
-    encounter: null,
+    encounter: {
+      id: 'public-arena',
+      index: 0,
+      type: 'sandbox',
+      elapsedMs: 0,
+      waveOrdinal: null
+    },
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null

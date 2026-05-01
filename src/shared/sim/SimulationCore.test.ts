@@ -207,6 +207,37 @@ describe('SimulationCore', () => {
     expect(player.weaponHud).toBeNull();
   });
 
+  it('applies addPlayer and setPlayerForm together before the first dynamic-roster snapshot', () => {
+    const snapshots: Snapshot[] = [];
+    const core = createSimulationCore({
+      onSnapshot: (snapshot) => snapshots.push(snapshot),
+      onEvent: () => {}
+    });
+
+    core.start(makeDynamicRosterSession());
+    core.addPlayer(dynamicPlayer('alpha'));
+    core.setPlayerForm(
+      'alpha',
+      {
+        formArchetypeId: 'slime-one-eye',
+        maxHp: 10,
+        radius: 0.8,
+        contactBox: { width: 1.6, height: 1.6 },
+        maxSpeed: 3,
+        loadout: null
+      },
+      { refillHp: true }
+    );
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
+
+    const player = lastPlayerSnapshot(snapshots);
+    expect(player.playerId).toBe('alpha');
+    expect(player.formArchetypeId).toBe('slime-one-eye');
+    expect(player.hp).toBe(10);
+    expect(player.weaponHud).toBeNull();
+  });
+
   it('removePlayer drops the actor, input slot, and owned projectiles without death events', () => {
     const snapshots: Snapshot[] = [];
     const events: RuntimeEvent[] = [];
