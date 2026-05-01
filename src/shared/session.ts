@@ -112,8 +112,15 @@ export type CompanionSessionConfig = Readonly<{
   rescue: CompanionRescueConfig;
 }>;
 
+export type PlayerCoopReviveConfig = Readonly<{
+  radius: number;
+  durationMs: number;
+  reviveHpFraction: number;
+}>;
+
 export type DamageRules = Readonly<{
   slimeFriendlyFire: boolean;
+  playerVsPlayerDamage: boolean;
 }>;
 
 export type AimAssistRule = Readonly<{
@@ -200,6 +207,7 @@ export type BaseSessionDefinition = Readonly<{
   encounters: ReadonlyArray<EncounterDefinition>;
   winCondition: WinCondition;
   lossCondition: LossCondition;
+  playerCoopRevive: PlayerCoopReviveConfig | null;
   uiMeta: null;
 }>;
 

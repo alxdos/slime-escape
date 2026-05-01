@@ -130,7 +130,8 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       entities,
       sessionFlow.activeEncounter()?.encounter ?? null,
       simTimeMs,
-      emitEvent
+      emitEvent,
+      session.playerCoopRevive
     );
     const combatIntents = combat.tick(
       inputState,
@@ -189,11 +190,13 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
         store: entities
       }),
     waveProgress: () => spawn.waveProgress(),
+    livePlayerCount: () => livePlayerCount(entities),
     onSessionStart(session, rng) {
       entities.clear();
       exporter.reset();
       combat.clear();
       healthDeath.clear();
+      companion.clear();
       fieldEffects.clear();
       statusEffects.clear();
       drops.clear();
@@ -242,6 +245,7 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       exporter.reset();
       combat.clear();
       healthDeath.clear();
+      companion.clear();
       fieldEffects.clear();
       statusEffects.clear();
       drops.clear();
@@ -423,6 +427,14 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
     return null;
   }
 
+  function livePlayerCount(store: typeof entities): number {
+    let count = 0;
+    for (const player of store.players()) {
+      if (player.state === 'alive' && player.hp > 0) count += 1;
+    }
+    return count;
+  }
+
   function removeProjectilesOwnedBy(ownerId: EntityId): void {
     const removals: EntityId[] = [];
     for (const projectile of entities.projectiles()) {
@@ -433,7 +445,10 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
     }
   }
 
-  function canSubmitInputForPlayerState(playerId: string, commandKind: InputCommand['kind']): boolean {
+  function canSubmitInputForPlayerState(
+    playerId: string,
+    commandKind: InputCommand['kind']
+  ): boolean {
     const player = playerByStableId(playerId);
     if (player === null) return true;
     if (player.state === 'alive') return true;

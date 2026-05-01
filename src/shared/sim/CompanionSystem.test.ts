@@ -245,6 +245,86 @@ describe('CompanionSystem heal drop seeking', () => {
 });
 
 describe('CompanionSystem ghost and rescue', () => {
+  it('revives ghost players with playerCoopRevive and emits playerRevived', () => {
+    const store = createEntityStore();
+    const ghost = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'ghost',
+      position: { x: 0, y: 0 },
+      maxHp: 10
+    });
+    const rescuer = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'rescuer',
+      position: { x: 1, y: 0 }
+    });
+    ghost.state = 'ghost';
+    ghost.hp = 0;
+    const system = createCompanionSystem();
+    const events: RuntimeEvent[] = [];
+    const reviveConfig = {
+      radius: 1.5,
+      durationMs: SIM_STEP_MS * 2,
+      reviveHpFraction: 0.5
+    };
+
+    system.tick(ARENA, store, ACTIVE_WAVE, 0, (event) => events.push(event), reviveConfig);
+    expect(ghost.state).toBe('reviving');
+    expect(ghost.hp).toBe(0);
+
+    system.tick(
+      ARENA,
+      store,
+      ACTIVE_WAVE,
+      SIM_STEP_MS,
+      (event) => events.push(event),
+      reviveConfig
+    );
+
+    expect(ghost.state).toBe('alive');
+    expect(ghost.hp).toBe(5);
+    const revived = events.find((event) => event.kind === 'playerRevived');
+    if (revived?.kind !== 'playerRevived') throw new Error('expected playerRevived');
+    expect(revived.entityId).toBe(ghost.id);
+    expect(revived.playerId).toBe('ghost');
+    expect(revived.rescuerEntityId).toBe(rescuer.id);
+    expect(revived.rescuerPlayerId).toBe('rescuer');
+  });
+
+  it('resets player revive progress when the rescuer leaves range', () => {
+    const store = createEntityStore();
+    const ghost = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'ghost',
+      position: { x: 0, y: 0 }
+    });
+    const rescuer = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'rescuer',
+      position: { x: 1, y: 0 }
+    });
+    ghost.state = 'ghost';
+    ghost.hp = 0;
+    const system = createCompanionSystem();
+    const reviveConfig = {
+      radius: 1.5,
+      durationMs: SIM_STEP_MS * 2,
+      reviveHpFraction: 0.5
+    };
+
+    system.tick(ARENA, store, ACTIVE_WAVE, 0, undefined, reviveConfig);
+    expect(ghost.state).toBe('reviving');
+
+    rescuer.position.x = 5;
+    system.tick(ARENA, store, ACTIVE_WAVE, SIM_STEP_MS, undefined, reviveConfig);
+    expect(ghost.state).toBe('ghost');
+
+    rescuer.position.x = 1;
+    system.tick(ARENA, store, ACTIVE_WAVE, SIM_STEP_MS * 2, undefined, reviveConfig);
+    expect(ghost.state).toBe('reviving');
+    expect(ghost.hp).toBe(0);
+  });
+
   it('lets any living player rescue a ghost companion while the owner remains a ghost', () => {
     const store = createEntityStore();
     const owner = store.spawnPlayer({

@@ -131,6 +131,58 @@ describe('RunSummaryTracker', () => {
     });
   });
 
+  it('uses the latest ghost transition after a revive as allPlayersDead defeat candidate', () => {
+    const tracker = createRunSummaryTracker();
+    const store = createEntityStore();
+    const alpha = store.spawnPlayer(playerSpec('alpha'));
+    const bravo = store.spawnPlayer(playerSpec('bravo'));
+    alpha.state = 'ghost';
+    alpha.hp = 0;
+
+    tracker.onDeath(
+      {
+        ...playerDeath({ kind: 'environment', tag: 'first-fall' }),
+        entityId: alpha.id
+      },
+      store
+    );
+
+    expect(
+      tracker.buildSummary('win', 450, {
+        session: makeSession([encounter('wave-1', 'wave')], {
+          loss: { kind: 'allPlayersDead' }
+        }),
+        activeEncounter: null,
+        waveProgress: null,
+        store
+      }).defeat
+    ).toBeNull();
+
+    alpha.state = 'alive';
+    alpha.hp = alpha.maxHp;
+    bravo.state = 'ghost';
+    bravo.hp = 0;
+
+    tracker.onDeath(
+      {
+        ...playerDeath({ kind: 'environment', tag: 'last-fall' }),
+        entityId: bravo.id
+      },
+      store
+    );
+
+    const summary = tracker.buildSummary('loss', 900, {
+      session: makeSession([encounter('wave-1', 'wave')], {
+        loss: { kind: 'allPlayersDead' }
+      }),
+      activeEncounter: null,
+      waveProgress: null,
+      store
+    });
+
+    expect(summary.defeat).toEqual({ cause: { kind: 'environment', tag: 'last-fall' } });
+  });
+
   it('keeps sandbox/no-objective progress percent null', () => {
     const tracker = createRunSummaryTracker();
     const store = createEntityStore();
@@ -263,12 +315,13 @@ function makeSession(
     musicSampleId: null,
     modifiers: [],
     rules: {
-      damage: { slimeFriendlyFire: false },
+      damage: { slimeFriendlyFire: false, playerVsPlayerDamage: false },
       aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 }
     },
     encounters,
     winCondition: options.win ?? { kind: 'allEncountersComplete' },
     lossCondition: options.loss ?? { kind: 'playerDeath' },
+    playerCoopRevive: null,
     uiMeta: null
   };
 }
@@ -289,6 +342,17 @@ function spawnEnemy(store: ReturnType<typeof createEntityStore>, archetypeId: st
     knockbackDurationMs: 100,
     color: 0x00ff00
   });
+}
+
+function playerSpec(id: string) {
+  return {
+    id,
+    position: { x: 0, y: 0 },
+    radius: 0.5,
+    contactBox: { width: 1, height: 1 },
+    maxSpeed: 6,
+    maxHp: 5
+  };
 }
 
 function spawnBoss(store: ReturnType<typeof createEntityStore>, archetypeId: string): Boss {

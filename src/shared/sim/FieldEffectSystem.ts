@@ -2,7 +2,12 @@ import type { ActorEffectApplication } from '../content/weapons.js';
 import type { DamageRules } from '../session.js';
 
 import type { DamageIntent } from './CombatSystem.js';
-import { canDamageTarget, DEFAULT_DAMAGE_RULES, type DamageableEntity } from './DamageRules.js';
+import {
+  canDamageTarget,
+  DEFAULT_DAMAGE_RULES,
+  type DamageOwner,
+  type DamageableEntity
+} from './DamageRules.js';
 import type { EntityId, EntityStore, FieldEffect } from './EntityStore.js';
 import type { IndexedEntity, SpatialIndex } from './SpatialIndex.js';
 
@@ -39,7 +44,10 @@ export function createFieldEffectSystem(): FieldEffectSystem {
   let damageRules: DamageRules = DEFAULT_DAMAGE_RULES;
   return {
     setDamageRules(rules): void {
-      damageRules = { slimeFriendlyFire: rules.slimeFriendlyFire };
+      damageRules = {
+        slimeFriendlyFire: rules.slimeFriendlyFire,
+        playerVsPlayerDamage: rules.playerVsPlayerDamage
+      };
     },
     tick(simTimeMs, store, index): FieldEffectTickResult {
       const removals = new Set<EntityId>();
@@ -55,6 +63,7 @@ export function createFieldEffectSystem(): FieldEffectSystem {
         applyFieldEffect(
           fieldEffect,
           index,
+          store,
           maxTargetBoundsRadius,
           damageRules,
           damageIntents,
@@ -74,6 +83,7 @@ export function createFieldEffectSystem(): FieldEffectSystem {
 function applyFieldEffect(
   fieldEffect: FieldEffect,
   index: SpatialIndex,
+  store: EntityStore,
   maxTargetBoundsRadius: number,
   damageRules: DamageRules,
   damageIntents: DamageIntent[],
@@ -85,7 +95,7 @@ function applyFieldEffect(
     fieldEffect.radius + maxTargetBoundsRadius
   );
   for (const candidate of candidates) {
-    const target = asFieldEffectTarget(candidate, fieldEffect, damageRules);
+    const target = asFieldEffectTarget(candidate, fieldEffect, store, damageRules);
     if (target === null) continue;
     if (!circleOverlapsBox(fieldEffect, target)) continue;
     for (const effect of fieldEffect.effects) {
@@ -109,12 +119,13 @@ function contactBoundsRadius(entity: { contactBox: { width: number; height: numb
 function asFieldEffectTarget(
   entity: IndexedEntity,
   fieldEffect: FieldEffect,
+  store: EntityStore,
   damageRules: DamageRules
 ): DamageableEntity | null {
   if (entity.kind !== 'player' && entity.kind !== 'enemy' && entity.kind !== 'boss') return null;
   if (
     !canDamageTarget(
-      { ownerId: fieldEffect.ownerId, ownerKind: fieldEffect.ownerKind },
+      damageOwnerForFieldEffect(fieldEffect, store),
       entity,
       damageRules
     )
@@ -122,6 +133,27 @@ function asFieldEffectTarget(
     return null;
   }
   return entity;
+}
+
+function damageOwnerForFieldEffect(fieldEffect: FieldEffect, store: EntityStore): DamageOwner {
+  return {
+    ownerId: fieldEffect.ownerId,
+    ownerKind: fieldEffect.ownerKind,
+    ownerTeamPlayerId:
+      fieldEffect.ownerTeamPlayerId ??
+      ownerTeamPlayerId(fieldEffect.ownerId, fieldEffect.ownerKind, store)
+  };
+}
+
+function ownerTeamPlayerId(
+  ownerId: EntityId | null,
+  ownerKind: DamageOwner['ownerKind'],
+  store: EntityStore
+): string | null {
+  if (ownerId === null) return null;
+  if (ownerKind === 'player') return store.playerById(ownerId)?.playerId ?? null;
+  if (ownerKind === 'companion') return store.companionById(ownerId)?.ownerPlayerId ?? null;
+  return null;
 }
 
 function applyActorEffect(

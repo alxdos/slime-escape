@@ -172,6 +172,7 @@ export type Projectile = {
   readonly weaponArchetypeId: string;
   readonly ownerId: EntityId;
   readonly ownerKind: CombatOwnerKind;
+  readonly ownerTeamPlayerId: string | null;
   readonly motionKind: 'linear' | 'arc' | 'placed';
   readonly arcStart: Vec2 | null;
   readonly arcEnd: Vec2 | null;
@@ -213,6 +214,7 @@ export type FieldEffect = {
   readonly archetypeId: string;
   readonly ownerId: EntityId | null;
   readonly ownerKind: CombatOwnerKind | null;
+  readonly ownerTeamPlayerId: string | null;
   readonly position: { x: number; y: number };
   readonly radius: number;
   readonly applyEveryMs: number;
@@ -244,6 +246,7 @@ export type ProjectileSpawnSpec = Readonly<{
   weaponArchetypeId: string;
   ownerId: EntityId;
   ownerKind: CombatOwnerKind;
+  ownerTeamPlayerId?: string | null;
   motionKind: 'linear' | 'arc' | 'placed';
   arcStart?: Vec2 | null;
   arcEnd?: Vec2 | null;
@@ -281,6 +284,7 @@ export type FieldEffectSpawnSpec = Readonly<{
   archetypeId: string;
   ownerId: EntityId | null;
   ownerKind: CombatOwnerKind | null;
+  ownerTeamPlayerId?: string | null;
   position: Vec2;
   radius: number;
   applyEveryMs: number;
@@ -544,6 +548,7 @@ export function createEntityStore(): EntityStore {
         weaponArchetypeId: spec.weaponArchetypeId,
         ownerId: spec.ownerId,
         ownerKind: spec.ownerKind,
+        ownerTeamPlayerId: spec.ownerTeamPlayerId ?? null,
         motionKind: spec.motionKind,
         arcStart:
           spec.arcStart === undefined || spec.arcStart === null
@@ -607,6 +612,7 @@ export function createEntityStore(): EntityStore {
         archetypeId: spec.archetypeId,
         ownerId: spec.ownerId,
         ownerKind: spec.ownerKind,
+        ownerTeamPlayerId: spec.ownerTeamPlayerId ?? null,
         position: { x: spec.position.x, y: spec.position.y },
         radius: spec.radius,
         applyEveryMs: spec.applyEveryMs,

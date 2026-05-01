@@ -259,12 +259,56 @@ describe('CombatSystem', () => {
     expect(store.projectileCount()).toBe(1 + SHOTGUN.firePattern.count);
   });
 
-  it('lets two player-owned projectile streams damage each other when slime friendly fire is enabled', () => {
+  it('blocks cross-player projectile damage when playerVsPlayerDamage is false', () => {
     const store = createEntityStore();
     const index = createSpatialIndex();
     const combat = createCombatSystem();
     const healthDeath = createHealthDeathSystem();
-    combat.setDamageRules({ slimeFriendlyFire: true });
+    combat.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: false });
+    const alpha = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'alpha',
+      position: { x: -1, y: 0 },
+      maxHp: 2
+    });
+    const bravo = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'bravo',
+      position: { x: 1, y: 0 },
+      maxHp: 2
+    });
+    combat.setPlayerLoadout(alpha.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+    combat.setPlayerLoadout(bravo.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+    const input = makeMultiInput([
+      ['alpha', { aimWorld: { x: 4, y: 0 }, firing: true }],
+      ['bravo', { aimWorld: { x: -4, y: 0 }, firing: true }]
+    ]);
+    const damages: DamageContext[] = [];
+    healthDeath.registerDamageHook((ctx) => damages.push(ctx));
+
+    let simTime = 0;
+    let intents = combat.tick(input, store, index, simTime, ARENA, () => {});
+    healthDeath.tick(intents, store, simTime, () => {});
+    for (const playerInput of input.players.values()) playerInput.firing = false;
+    for (let step = 1; step <= 12; step += 1) {
+      simTime = step * SIM_STEP_MS;
+      intents = combat.tick(input, store, index, simTime, ARENA, () => {});
+      healthDeath.tick(intents, store, simTime, () => {});
+      const damagedIds = new Set(damages.map((damage) => damage.targetId));
+      if (damagedIds.has(alpha.id) && damagedIds.has(bravo.id)) break;
+    }
+
+    expect(damages).toHaveLength(0);
+    expect(alpha.hp).toBe(2);
+    expect(bravo.hp).toBe(2);
+  });
+
+  it('allows cross-player projectile damage when playerVsPlayerDamage is true', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const healthDeath = createHealthDeathSystem();
+    combat.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: true });
     const alpha = store.spawnPlayer({
       ...PLAYER_SPEC,
       id: 'alpha',
@@ -314,6 +358,76 @@ describe('CombatSystem', () => {
     );
     expect(alpha.hp).toBe(1);
     expect(bravo.hp).toBe(1);
+  });
+
+  it('applies playerVsPlayerDamage to companion teams', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const alpha = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'alpha',
+      position: { x: -4, y: 0 }
+    });
+    store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'bravo',
+      position: { x: 4, y: 0 }
+    });
+    const companion = store.spawnCompanion({
+      ...COMPANION_SPEC,
+      ownerPlayerId: 'bravo',
+      position: { x: 0, y: 0 }
+    });
+    store.spawnProjectile(
+      pistolProjectileSpawnSpec({
+        ownerId: alpha.id,
+        ownerKind: 'player',
+        position: { x: companion.position.x, y: companion.position.y }
+      })
+    );
+
+    combat.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: false });
+    expect(combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, () => {})).toHaveLength(0);
+
+    combat.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: true });
+    const intents = combat.tick(makeInput(), store, index, SIM_STEP_MS * 2, ARENA, () => {});
+    expect(intents).toHaveLength(1);
+    expect(intents[0]?.targetId).toBe(companion.id);
+  });
+
+  it('keeps player team damage rules after the projectile owner is removed', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const owner = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'alpha',
+      position: { x: -4, y: 0 }
+    });
+    const target = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'bravo',
+      position: { x: 0, y: 0 }
+    });
+    store.spawnProjectile(
+      pistolProjectileSpawnSpec({
+        ownerId: owner.id,
+        ownerKind: 'player',
+        ownerTeamPlayerId: owner.playerId,
+        position: { x: target.position.x, y: target.position.y }
+      })
+    );
+    store.removePlayer(owner.id);
+
+    combat.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: false });
+    expect(combat.tick(makeInput(), store, index, SIM_STEP_MS, ARENA, () => {})).toHaveLength(0);
+
+    combat.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: true });
+    const enabled = combat.tick(makeInput(), store, index, SIM_STEP_MS * 2, ARENA, () => {});
+
+    expect(enabled).toHaveLength(1);
+    expect(enabled[0]?.targetId).toBe(target.id);
   });
 
   it('spawns a projectile and emits fire event when firing with valid aim', () => {
@@ -951,7 +1065,7 @@ describe('CombatSystem', () => {
 
   it('uses session damage rules to allow enemy projectiles to hit another enemy', () => {
     const { store, index, combat } = setupCombat();
-    combat.setDamageRules({ slimeFriendlyFire: true });
+    combat.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: false });
     const owner = store.spawnEnemy(stationaryEnemySpec({ x: -3, y: 0 }));
     const target = store.spawnEnemy(stationaryEnemySpec({ x: 3, y: 0 }));
     store.spawnProjectile(
@@ -1009,7 +1123,7 @@ describe('CombatSystem', () => {
 
   it('uses session damage rules to allow enemy explosions to hit another enemy', () => {
     const { store, index, combat } = setupCombat();
-    combat.setDamageRules({ slimeFriendlyFire: true });
+    combat.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: false });
     const owner = store.spawnEnemy(stationaryEnemySpec({ x: -4, y: 0 }));
     const target = store.spawnEnemy(stationaryEnemySpec({ x: 4, y: 0 }));
     store.spawnProjectile(
@@ -1036,7 +1150,7 @@ describe('CombatSystem', () => {
 
   it('prevents enemy explosions from damaging their owner', () => {
     const { store, index, combat } = setupCombat();
-    combat.setDamageRules({ slimeFriendlyFire: true });
+    combat.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: false });
     const owner = store.spawnEnemy(stationaryEnemySpec({ x: 4, y: 0 }));
     store.spawnProjectile(
       bombProjectileSpawnSpec({

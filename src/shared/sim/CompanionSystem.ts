@@ -1,5 +1,5 @@
 import type { RuntimeEvent } from '../events.js';
-import type { ArenaConfig, EncounterDefinition, Vec2 } from '../session.js';
+import type { ArenaConfig, EncounterDefinition, PlayerCoopReviveConfig, Vec2 } from '../session.js';
 import { SIM_STEP_MS } from '../timing.js';
 
 import type { Boss, Companion, Drop, Enemy, EntityId, EntityStore, Player } from './EntityStore.js';
@@ -16,18 +16,32 @@ const ARRIVAL_EPSILON = 0.02;
 type Hostile = Enemy | Boss;
 
 export type CompanionSystem = Readonly<{
+  clear(): void;
   tick(
     arena: ArenaConfig,
     store: EntityStore,
     encounter: EncounterDefinition | null,
     simTimeMs: number,
-    emit?: (event: RuntimeEvent) => void
+    emit?: (event: RuntimeEvent) => void,
+    playerCoopRevive?: PlayerCoopReviveConfig | null
   ): void;
 }>;
 
 export function createCompanionSystem(): CompanionSystem {
+  const playerRescueProgressMs = new Map<string, number>();
+
   return {
-    tick(arena, store, encounter, simTimeMs, emit): void {
+    clear(): void {
+      playerRescueProgressMs.clear();
+    },
+    tick(arena, store, encounter, simTimeMs, emit, playerCoopRevive = null): void {
+      tickPlayerRescues(
+        store,
+        playerCoopRevive,
+        playerRescueProgressMs,
+        simTimeMs,
+        emit
+      );
       for (const companion of companionsInOwnerOrder(store)) {
         const player = playerByStableId(store, companion.ownerPlayerId);
         if (player === null) {
@@ -45,6 +59,108 @@ export function createCompanionSystem(): CompanionSystem {
       }
     }
   };
+}
+
+function tickPlayerRescues(
+  store: EntityStore,
+  config: PlayerCoopReviveConfig | null,
+  progressByPair: Map<string, number>,
+  simTimeMs: number,
+  emit: ((event: RuntimeEvent) => void) | undefined
+): void {
+  if (config === null) {
+    clearPlayerRescueStates(store);
+    progressByPair.clear();
+    return;
+  }
+
+  const activePairs = new Set<string>();
+  for (const ghost of ghostPlayersInStableOrder(store)) {
+    let hasActiveRescuer = false;
+    for (const rescuer of livingPlayersInStableOrder(store)) {
+      if (rescuer.id === ghost.id) continue;
+      if (!isPlayerRescueInRange(ghost, rescuer, config.radius)) continue;
+      hasActiveRescuer = true;
+      const key = rescuePairKey(ghost.id, rescuer.id);
+      activePairs.add(key);
+      const progress = (progressByPair.get(key) ?? 0) + SIM_STEP_MS;
+      if (progress >= config.durationMs) {
+        revivePlayer(ghost, rescuer, config, simTimeMs, emit);
+        clearRescueProgressForTarget(progressByPair, ghost.id);
+        break;
+      }
+      progressByPair.set(key, progress);
+    }
+    if (ghost.state === 'alive') continue;
+    ghost.state = hasActiveRescuer ? 'reviving' : 'ghost';
+  }
+
+  for (const key of progressByPair.keys()) {
+    if (!activePairs.has(key)) progressByPair.delete(key);
+  }
+}
+
+function clearPlayerRescueStates(store: EntityStore): void {
+  for (const player of store.players()) {
+    if (player.state === 'reviving') player.state = 'ghost';
+  }
+}
+
+function ghostPlayersInStableOrder(store: EntityStore): ReadonlyArray<Player> {
+  return [...store.players()]
+    .filter((player) => player.state === 'ghost' || player.state === 'reviving')
+    .sort((left, right) => left.playerId.localeCompare(right.playerId));
+}
+
+function livingPlayersInStableOrder(store: EntityStore): ReadonlyArray<Player> {
+  return [...store.players()]
+    .filter((player) => player.state === 'alive' && player.hp > 0)
+    .sort((left, right) => left.playerId.localeCompare(right.playerId));
+}
+
+function isPlayerRescueInRange(
+  ghost: Player,
+  rescuer: Player,
+  radius: number
+): boolean {
+  return circleOverlapsBox({ position: ghost.position, radius }, rescuer);
+}
+
+function revivePlayer(
+  ghost: Player,
+  rescuer: Player,
+  config: PlayerCoopReviveConfig,
+  simTimeMs: number,
+  emit: ((event: RuntimeEvent) => void) | undefined
+): void {
+  ghost.state = 'alive';
+  ghost.hp = Math.max(1, Math.floor(ghost.maxHp * config.reviveHpFraction));
+  emit?.({
+    kind: 'playerRevived',
+    simTime: simTimeMs,
+    entityId: ghost.id,
+    playerId: ghost.playerId,
+    rescuerEntityId: rescuer.id,
+    rescuerPlayerId: rescuer.playerId,
+    hp: ghost.hp,
+    maxHp: ghost.maxHp,
+    x: ghost.position.x,
+    y: ghost.position.y
+  });
+}
+
+function clearRescueProgressForTarget(
+  progressByPair: Map<string, number>,
+  targetId: EntityId
+): void {
+  const prefix = `${targetId}:`;
+  for (const key of progressByPair.keys()) {
+    if (key.startsWith(prefix)) progressByPair.delete(key);
+  }
+}
+
+function rescuePairKey(targetId: EntityId, rescuerId: EntityId): string {
+  return `${targetId}:${rescuerId}`;
 }
 
 function companionsInOwnerOrder(store: EntityStore): ReadonlyArray<Companion> {
@@ -418,6 +534,19 @@ function normalizeOrFallback(dx: number, dy: number, fallback: Vec2): Vec2 {
 
 function distance(left: Vec2, right: Vec2): number {
   return Math.hypot(left.x - right.x, left.y - right.y);
+}
+
+function circleOverlapsBox(
+  circle: { position: Vec2; radius: number },
+  box: { position: Vec2; contactBox: { width: number; height: number } }
+): boolean {
+  const halfWidth = box.contactBox.width / 2;
+  const halfHeight = box.contactBox.height / 2;
+  const closestX = clamp(circle.position.x, box.position.x - halfWidth, box.position.x + halfWidth);
+  const closestY = clamp(circle.position.y, box.position.y - halfHeight, box.position.y + halfHeight);
+  const dx = circle.position.x - closestX;
+  const dy = circle.position.y - closestY;
+  return dx * dx + dy * dy <= circle.radius * circle.radius;
 }
 
 function clamp(value: number, min: number, max: number): number {

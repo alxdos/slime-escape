@@ -26,7 +26,7 @@ import type {
   Player,
   Projectile
 } from './EntityStore.js';
-import { canDamageTarget, DEFAULT_DAMAGE_RULES } from './DamageRules.js';
+import { canDamageTarget, DEFAULT_DAMAGE_RULES, type DamageOwner } from './DamageRules.js';
 import type { ActorEffectIntent } from './FieldEffectSystem.js';
 import { resolveNearestLivingPlayer } from './PlayerTargeting.js';
 import {
@@ -128,7 +128,10 @@ export function createCombatSystem(
 
   return {
     setDamageRules(rules): void {
-      damageRules = { slimeFriendlyFire: rules.slimeFriendlyFire };
+      damageRules = {
+        slimeFriendlyFire: rules.slimeFriendlyFire,
+        playerVsPlayerDamage: rules.playerVsPlayerDamage
+      };
     },
     setPlayerLoadout(playerId, loadout, simTimeMs): void {
       shooterWeapons.set(
@@ -818,12 +821,14 @@ function spawnProjectileForDirection(
   aimDistance: number | null
 ): void {
   const expireAtSimMs = simTimeMs + projectile.ttlMs;
+  const ownerTeam = ownerTeamPlayerId(ownerId, ownerKind, store);
   switch (projectile.motion.kind) {
     case 'linear':
       store.spawnProjectile({
         weaponArchetypeId,
         ownerId,
         ownerKind,
+        ownerTeamPlayerId: ownerTeam,
         motionKind: 'linear',
         origin,
         position: origin,
@@ -858,6 +863,7 @@ function spawnProjectileForDirection(
         weaponArchetypeId,
         ownerId,
         ownerKind,
+        ownerTeamPlayerId: ownerTeam,
         motionKind: 'arc',
         origin,
         arcStart: origin,
@@ -896,6 +902,7 @@ function spawnProjectileForDirection(
         weaponArchetypeId,
         ownerId,
         ownerKind,
+        ownerTeamPlayerId: ownerTeam,
         motionKind: 'placed',
         origin,
         position: origin,
@@ -1016,6 +1023,7 @@ function markProximityDetonations(
       hasProximityTarget(
         projectile,
         trigger.radius,
+        store,
         index,
         maxProjectileTargetBoundsRadius,
         damageRules
@@ -1029,6 +1037,7 @@ function markProximityDetonations(
 function hasProximityTarget(
   projectile: Projectile,
   radius: number,
+  store: EntityStore,
   index: SpatialIndex,
   maxProjectileTargetBoundsRadius: number,
   damageRules: DamageRules
@@ -1039,7 +1048,7 @@ function hasProximityTarget(
     radius + maxProjectileTargetBoundsRadius
   );
   for (const candidate of candidates) {
-    const target = asExplosionTarget(candidate, projectile, damageRules);
+    const target = asExplosionTarget(candidate, projectile, store, damageRules);
     if (target === null) continue;
     if (circleOverlapsBox({ position: projectile.position, radius }, target)) return true;
   }
@@ -1151,7 +1160,13 @@ function runHitDetection(
   for (const projectile of store.projectiles()) {
     if (projectileRemovals.has(projectile.id)) continue;
     if (!isImpactEligible(projectile, simTimeMs)) continue;
-    const target = findFirstHit(projectile, index, maxProjectileTargetBoundsRadius, damageRules);
+    const target = findFirstHit(
+      projectile,
+      store,
+      index,
+      maxProjectileTargetBoundsRadius,
+      damageRules
+    );
     if (target === null) continue;
     const impactDir = normalizedProjectileDirection(projectile);
     if (target.kind === 'enemy' || target.kind === 'boss') {
@@ -1245,6 +1260,7 @@ function applyProjectileKnockback(
 
 function findFirstHit(
   projectile: Projectile,
+  store: EntityStore,
   index: SpatialIndex,
   maxProjectileTargetBoundsRadius: number,
   damageRules: DamageRules
@@ -1255,7 +1271,7 @@ function findFirstHit(
     projectile.hitRadius + maxProjectileTargetBoundsRadius
   );
   for (const candidate of candidates) {
-    const target = asValidTarget(candidate, projectile, damageRules);
+    const target = asValidTarget(candidate, projectile, store, damageRules);
     if (target === null) continue;
     if (circleOverlapsBox({ position: projectile.position, radius: projectile.hitRadius }, target)) {
       return target;
@@ -1267,6 +1283,7 @@ function findFirstHit(
 function asValidTarget(
   entity: IndexedEntity,
   projectile: Projectile,
+  store: EntityStore,
   damageRules: DamageRules
 ): DamageableTarget | null {
   if (
@@ -1278,20 +1295,38 @@ function asValidTarget(
     return null;
   }
   if (projectile.hitEntityIds.has(entity.id)) return null;
-  if (!canProjectileDamage(projectile, entity, damageRules)) return null;
+  if (!canProjectileDamage(projectile, entity, store, damageRules)) return null;
   return entity;
 }
 
 function canProjectileDamage(
   projectile: Projectile,
   target: DamageableTarget,
+  store: EntityStore,
   damageRules: DamageRules
 ): boolean {
-  return canDamageTarget(
-    { ownerId: projectile.ownerId, ownerKind: projectile.ownerKind },
-    target,
-    damageRules
-  );
+  return canDamageTarget(damageOwnerForProjectile(projectile, store), target, damageRules);
+}
+
+function damageOwnerForProjectile(projectile: Projectile, store: EntityStore): DamageOwner {
+  return {
+    ownerId: projectile.ownerId,
+    ownerKind: projectile.ownerKind,
+    ownerTeamPlayerId:
+      projectile.ownerTeamPlayerId ??
+      ownerTeamPlayerId(projectile.ownerId, projectile.ownerKind, store)
+  };
+}
+
+function ownerTeamPlayerId(
+  ownerId: EntityId | null,
+  ownerKind: DamageOwner['ownerKind'],
+  store: EntityStore
+): string | null {
+  if (ownerId === null) return null;
+  if (ownerKind === 'player') return store.playerById(ownerId)?.playerId ?? null;
+  if (ownerKind === 'companion') return store.companionById(ownerId)?.ownerPlayerId ?? null;
+  return null;
 }
 
 function groundProjectile(projectile: Projectile, simTimeMs: number): void {
@@ -1354,6 +1389,7 @@ function runGroundedDetonations(
     });
     addExplosionIntents(
       projectile,
+      store,
       index,
       simTimeMs,
       maxProjectileTargetBoundsRadius,
@@ -1370,6 +1406,7 @@ function runGroundedDetonations(
 
 function addExplosionIntents(
   projectile: Projectile,
+  store: EntityStore,
   index: SpatialIndex,
   simTimeMs: number,
   maxProjectileTargetBoundsRadius: number,
@@ -1385,7 +1422,7 @@ function addExplosionIntents(
     explosion.radius + maxProjectileTargetBoundsRadius
   );
   for (const candidate of candidates) {
-    const target = asExplosionTarget(candidate, projectile, damageRules);
+    const target = asExplosionTarget(candidate, projectile, store, damageRules);
     if (target === null) continue;
     if (!circleOverlapsBox({ position: projectile.position, radius: explosion.radius }, target)) {
       continue;
@@ -1449,6 +1486,7 @@ function applyExplosionActorEffect(
 function asExplosionTarget(
   entity: IndexedEntity,
   projectile: Projectile,
+  store: EntityStore,
   damageRules: DamageRules
 ): DamageableTarget | null {
   if (
@@ -1459,7 +1497,7 @@ function asExplosionTarget(
   ) {
     return null;
   }
-  if (!canProjectileDamage(projectile, entity, damageRules)) return null;
+  if (!canProjectileDamage(projectile, entity, store, damageRules)) return null;
   return entity;
 }
 
@@ -1491,6 +1529,7 @@ function spawnExplosionFieldEffect(
     archetypeId: fieldEffect.archetypeId,
     ownerId: projectile.ownerId,
     ownerKind: projectile.ownerKind,
+    ownerTeamPlayerId: projectile.ownerTeamPlayerId,
     position: projectile.position,
     radius: fieldEffect.radius,
     applyEveryMs: fieldEffect.applyEveryMs,

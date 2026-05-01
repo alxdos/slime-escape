@@ -40,7 +40,7 @@ export function buildSessionDefinition(
   preset: ModePreset,
   options: BuildOptions
 ): SessionDefinition {
-  const template = SESSION_PRESET_TEMPLATES[preset.id];
+  const template: SessionPresetTemplate = SESSION_PRESET_TEMPLATES[preset.id];
   const arena = template.arena;
   for (const player of template.players) {
     validateEnemyRegistry(ENEMY_ARCHETYPES, player.contactBox);
@@ -58,10 +58,11 @@ export function buildSessionDefinition(
     backgrounds: template.backgrounds,
     musicSampleId: template.musicSampleId,
     modifiers: [],
-    rules: template.rules,
+    rules: resolveRules(template.rules),
     encounters: resolveEncounterTemplates(template, arena),
     winCondition: template.winCondition,
     lossCondition: template.lossCondition,
+    playerCoopRevive: template.playerCoopRevive ?? null,
     uiMeta: null
   };
   return template.dynamicRoster
@@ -75,6 +76,16 @@ export function buildSessionDefinition(
         players: resolveStaticPlayers(template, options.selectedPetId ?? null),
         dynamicRoster: false
       };
+}
+
+function resolveRules(templateRules: SessionPresetTemplate['rules']): SessionDefinition['rules'] {
+  return {
+    ...templateRules,
+    damage: {
+      slimeFriendlyFire: templateRules.damage.slimeFriendlyFire,
+      playerVsPlayerDamage: templateRules.damage.playerVsPlayerDamage ?? false
+    }
+  };
 }
 
 function resolvePlayers(

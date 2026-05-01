@@ -5,6 +5,7 @@ import type {
   Loadout,
   NonEmptyReadonlyArray,
   PlayerSpawn,
+  PlayerCoopReviveConfig,
   SessionBackground,
   SessionRules,
   StaticSpawnPlan,
@@ -47,6 +48,14 @@ export type SessionPresetPlayerTemplate = PlayerSpawn &
     loadout: Loadout | null;
   }>;
 
+export type SessionPresetRulesTemplate = Omit<SessionRules, 'damage'> &
+  Readonly<{
+    damage: Readonly<{
+      slimeFriendlyFire: boolean;
+      playerVsPlayerDamage?: boolean;
+    }>;
+  }>;
+
 export type BaseSessionPresetTemplate = Readonly<{
   presetId: string;
   displayName: string;
@@ -57,9 +66,10 @@ export type BaseSessionPresetTemplate = Readonly<{
   companion: SessionPresetCompanionTemplate | null;
   backgrounds: ReadonlyArray<SessionBackground>;
   musicSampleId: string | null;
-  rules: SessionRules;
+  rules: SessionPresetRulesTemplate;
   winCondition: WinCondition;
   lossCondition: LossCondition;
+  playerCoopRevive?: PlayerCoopReviveConfig | null;
   encounters: ReadonlyArray<SessionPresetEncounterTemplate>;
 }>;
 

@@ -380,12 +380,13 @@ function makeSession(overrides: Partial<Omit<SessionDefinition, 'players' | 'dyn
     musicSampleId: null,
     modifiers: [],
     rules: {
-      damage: { slimeFriendlyFire: false },
+      damage: { slimeFriendlyFire: false, playerVsPlayerDamage: false },
       aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 }
     },
     encounters: [],
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
+    playerCoopRevive: null,
     uiMeta: null,
     ...overrides
   };

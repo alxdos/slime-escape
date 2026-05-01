@@ -73,6 +73,29 @@ describe('SimulationCore', () => {
     expect(ghostAfterMove.x).toBeGreaterThan(ghostBeforeMove.x);
   });
 
+  it('revives a ghost player while another player is alive without ending allPlayersDead runs', () => {
+    const snapshots: Snapshot[] = [];
+    const events: RuntimeEvent[] = [];
+    const core = createSimulationCore({
+      onSnapshot: (snapshot) => snapshots.push(snapshot),
+      onEvent: (event) => events.push(event)
+    });
+
+    core.start(makeAllPlayersDeadReviveSession());
+    for (let step = 0; step < 8; step += 1) {
+      core.pump(step * SIM_STEP_MS);
+      if (events.some((event) => event.kind === 'playerRevived')) break;
+    }
+
+    expect(events.some((event) => event.kind === 'playerDowned')).toBe(true);
+    expect(events.some((event) => event.kind === 'playerRevived')).toBe(true);
+    expect(events.some((event) => event.kind === 'loss')).toBe(false);
+    const revived = events.find((event) => event.kind === 'playerRevived');
+    if (revived?.kind !== 'playerRevived') throw new Error('expected playerRevived');
+    expect(revived.playerId).toBe('alpha');
+    expect(revived.hp).toBe(1);
+  });
+
   it('runs lifecycle, input, snapshots, and stop through the public facade', () => {
     const snapshots: Snapshot[] = [];
     const events: RuntimeEvent[] = [];
@@ -268,7 +291,7 @@ function makeMultiActorSession(): SessionDefinition {
     musicSampleId: null,
     modifiers: [],
     rules: {
-      damage: { slimeFriendlyFire: true },
+      damage: { slimeFriendlyFire: true, playerVsPlayerDamage: false },
       aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 }
     },
     encounters: [
@@ -289,6 +312,7 @@ function makeMultiActorSession(): SessionDefinition {
     ],
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'playerDeath' },
+    playerCoopRevive: null,
     uiMeta: null
   };
 }
@@ -304,7 +328,7 @@ function makeDynamicRosterSession(): SessionDefinition {
     musicSampleId: null,
     modifiers: [],
     rules: {
-      damage: { slimeFriendlyFire: true },
+      damage: { slimeFriendlyFire: true, playerVsPlayerDamage: false },
       aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 }
     },
     encounters: [
@@ -325,6 +349,7 @@ function makeDynamicRosterSession(): SessionDefinition {
     ],
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'respawnOnDeath' },
+    playerCoopRevive: null,
     uiMeta: null
   };
 }
@@ -358,13 +383,23 @@ function makeAllPlayersDeadContactSession(): SessionDefinition {
         maxHp: 1,
         loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
         companion: null
+      },
+      {
+        id: 'backup',
+        position: { x: 5, y: 0 },
+        radius: 0.5,
+        contactBox: { width: 1, height: 1 },
+        maxSpeed: 6,
+        maxHp: 3,
+        loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+        companion: null
       }
     ],
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],
     rules: {
-      damage: { slimeFriendlyFire: true },
+      damage: { slimeFriendlyFire: true, playerVsPlayerDamage: false },
       aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 }
     },
     encounters: [
@@ -388,6 +423,72 @@ function makeAllPlayersDeadContactSession(): SessionDefinition {
     ],
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'allPlayersDead' },
+    playerCoopRevive: null,
+    uiMeta: null
+  };
+}
+
+function makeAllPlayersDeadReviveSession(): SessionDefinition {
+  return {
+    id: 'revive-core-test',
+    seed: 1,
+    arena: { width: 32, height: 18 },
+    dynamicRoster: false,
+    players: [
+      {
+        id: 'alpha',
+        position: { x: 0, y: 0 },
+        radius: 0.5,
+        contactBox: { width: 1, height: 1 },
+        maxSpeed: 6,
+        maxHp: 1,
+        loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+        companion: null
+      },
+      {
+        id: 'bravo',
+        position: { x: 2.5, y: 0 },
+        radius: 0.5,
+        contactBox: { width: 1, height: 1 },
+        maxSpeed: 6,
+        maxHp: 3,
+        loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+        companion: null
+      }
+    ],
+    backgrounds: [],
+    musicSampleId: null,
+    modifiers: [],
+    rules: {
+      damage: { slimeFriendlyFire: true, playerVsPlayerDamage: false },
+      aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 }
+    },
+    encounters: [
+      {
+        id: 'contact',
+        type: 'sandbox',
+        backgroundId: null,
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'static',
+          spawns: [{ archetypeId: 'slime-one-eye', position: { x: 0, y: 0 } }]
+        },
+        zoneBehavior: { kind: 'disabled' },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'never', next: 'sequential' },
+        tuning: null
+      }
+    ],
+    winCondition: { kind: 'none' },
+    lossCondition: { kind: 'allPlayersDead' },
+    playerCoopRevive: {
+      radius: 3,
+      durationMs: SIM_STEP_MS,
+      reviveHpFraction: 1
+    },
     uiMeta: null
   };
 }

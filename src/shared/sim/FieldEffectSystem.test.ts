@@ -161,12 +161,51 @@ describe('FieldEffectSystem', () => {
     expect(noFriendlyFire.damageIntents.map((intent) => intent.targetId)).toEqual([player.id]);
 
     fieldEffect.nextApplySimMs = 500;
-    system.setDamageRules({ slimeFriendlyFire: true });
+    system.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: false });
     const friendlyFire = system.tick(500, store, index);
 
     expect(friendlyFire.damageIntents.map((intent) => intent.targetId)).toEqual([
       player.id,
       nearbyEnemy.id
     ]);
+  });
+
+  it('keeps player team damage rules after the field-effect owner is removed', () => {
+    const store = createEntityStore();
+    const owner = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'alpha',
+      position: { x: -4, y: 0 }
+    });
+    const target = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'bravo',
+      position: { x: 0, y: 0 }
+    });
+    const fieldEffect = store.spawnFieldEffect({
+      archetypeId: 'player-puddle',
+      ownerId: owner.id,
+      ownerKind: 'player',
+      ownerTeamPlayerId: owner.playerId,
+      position: { x: 0, y: 0 },
+      radius: 1,
+      applyEveryMs: 500,
+      nextApplySimMs: 0,
+      expireAtSimMs: 1000,
+      effects: [{ kind: 'damage', amount: 1 }]
+    });
+    store.removePlayer(owner.id);
+    const index = createSpatialIndex();
+    index.rebuild(store);
+    const system = createFieldEffectSystem();
+
+    system.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: false });
+    expect(system.tick(0, store, index).damageIntents).toEqual([]);
+
+    fieldEffect.nextApplySimMs = 500;
+    system.setDamageRules({ slimeFriendlyFire: true, playerVsPlayerDamage: true });
+    const enabled = system.tick(500, store, index);
+
+    expect(enabled.damageIntents.map((intent) => intent.targetId)).toEqual([target.id]);
   });
 });

@@ -49,6 +49,7 @@ export type SessionFlowDeps = Readonly<{
   clock: SimulationClock;
   emitEvent(event: RuntimeEvent): void;
   waveProgress?: () => WaveProgressSnapshot | null;
+  livePlayerCount?: () => number;
   onSessionStart?(session: SessionDefinition, rng: Rng): void;
   onSessionStop?(): void;
   onEncounterStart?(encounter: EncounterDefinition): void;
@@ -245,8 +246,17 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
 
   function onPlayerDeath(_entityId: EntityId): void {
     if (active === null) return;
+    if (active.def.lossCondition.kind === 'allPlayersDead') {
+      if ((deps.livePlayerCount?.() ?? 1) > 0) return;
+      finalizeLoss(clock.simTimeMs());
+      return;
+    }
     if (active.def.lossCondition.kind !== 'playerDeath') return;
-    const simTime = clock.simTimeMs();
+    finalizeLoss(clock.simTimeMs());
+  }
+
+  function finalizeLoss(simTime: number): void {
+    if (active === null) return;
     const currentEncounter = active.def.encounters[active.encounterIndex];
     if (currentEncounter !== undefined) {
       emitEvent({ kind: 'encounterEnd', simTime });

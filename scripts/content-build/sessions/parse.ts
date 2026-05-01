@@ -1318,7 +1318,8 @@ function parseSessionRules(field: FieldReader): SessionRules {
   }
   return {
     damage: {
-      slimeFriendlyFire: parseBooleanField(field, 'slimeFriendlyFire')
+      slimeFriendlyFire: parseBooleanField(field, 'slimeFriendlyFire'),
+      playerVsPlayerDamage: false
     },
     aimAssist: {
       enabled: aimAssistEnabled,

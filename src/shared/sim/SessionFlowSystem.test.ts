@@ -393,12 +393,13 @@ function makeSession(
     musicSampleId: null,
     modifiers: [],
     rules: {
-      damage: { slimeFriendlyFire: false },
+      damage: { slimeFriendlyFire: false, playerVsPlayerDamage: false },
       aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 }
     },
     encounters,
     winCondition: options?.win ?? { kind: 'allEncountersComplete' },
     lossCondition: options?.loss ?? { kind: 'playerDeath' },
+    playerCoopRevive: null,
     uiMeta: null
   };
 }
@@ -880,6 +881,52 @@ describe('SessionFlowSystem player death', () => {
     expect(events).toHaveLength(0);
     expect(flow.isActive()).toBe(true);
     expect(clock.isRunning()).toBe(true);
+  });
+
+  it("keeps allPlayersDead sessions running while another player is still alive", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    let livePlayers = 1;
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: (e) => events.push(e),
+      livePlayerCount: () => livePlayers
+    });
+    const session = makeSession(
+      [emptyEncounter('only', { kind: 'never', next: 'sequential' })],
+      { loss: { kind: 'allPlayersDead' } }
+    );
+
+    flow.start(session);
+    events.length = 0;
+    flow.onPlayerDeath(1 as EntityId);
+
+    expect(events).toHaveLength(0);
+    expect(flow.isActive()).toBe(true);
+    expect(clock.isRunning()).toBe(true);
+  });
+
+  it("publishes loss for allPlayersDead only when no live players remain", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    let livePlayers = 0;
+    const flow = createSessionFlowSystem({
+      clock,
+      emitEvent: (e) => events.push(e),
+      livePlayerCount: () => livePlayers
+    });
+    const session = makeSession(
+      [emptyEncounter('only', { kind: 'never', next: 'sequential' })],
+      { loss: { kind: 'allPlayersDead' } }
+    );
+
+    flow.start(session);
+    events.length = 0;
+    flow.onPlayerDeath(1 as EntityId);
+
+    expect(events.map((event) => event.kind)).toEqual(['encounterEnd', 'loss', 'sessionStop']);
+    expect(flow.isActive()).toBe(false);
+    expect(clock.isRunning()).toBe(false);
   });
 
   it("repeated onPlayerDeath after run end is a no-op", () => {
