@@ -659,7 +659,7 @@ export function createHudFireHint(isMobile: boolean): HTMLElement {
 }
 
 function derivePlayerHp(session: SessionDefinition, player: PlayerSnapshot | null): PlayerHpViewModel {
-  const max = player?.maxHp ?? session.player.maxHp;
+  const max = player?.maxHp ?? session.players[0].maxHp;
   const current = player === null ? null : clampHp(player.hp);
   return {
     text: current === null ? `-- / ${max}` : `${current} / ${max}`,

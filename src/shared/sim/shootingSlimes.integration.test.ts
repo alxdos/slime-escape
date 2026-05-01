@@ -27,6 +27,7 @@ import { createEntityStore, type EntityId, type Projectile } from './EntityStore
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createRunSummaryTracker } from './RunSummaryTracker';
+import { firstRuntimeInput } from './RuntimeInputState';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
@@ -179,9 +180,10 @@ function setupSimWorld(session: SessionDefinition) {
       spawn.setRng(rng);
       drops.setRng(rng);
       combat.setDamageRules(startedSession.rules.damage);
-      const player = entities.spawnPlayer(startedSession.player);
-      if (startedSession.loadout !== null) {
-        combat.setPlayerLoadout(player.id, startedSession.loadout, clock.simTimeMs());
+      const primaryPlayer = startedSession.players[0];
+      const player = entities.spawnPlayer(primaryPlayer);
+      if (primaryPlayer.loadout !== null) {
+        combat.setPlayerLoadout(player.id, primaryPlayer.loadout, clock.simTimeMs());
       }
     },
     onSessionStop() {
@@ -249,9 +251,10 @@ function setupSimWorld(session: SessionDefinition) {
 
   function tickSystems(simTimeMs: number, extraIntents: ReadonlyArray<DamageIntent>): void {
     spawn.onTick(simTimeMs, entities);
-    movement.tick(session.arena, entities, sessionFlow.inputState(), simTimeMs);
+    const primaryInput = firstRuntimeInput(sessionFlow.inputState());
+    movement.tick(session.arena, entities, primaryInput, simTimeMs);
     const combatIntents = combat.tick(
-      sessionFlow.inputState(),
+      primaryInput,
       entities,
       spatialIndex,
       simTimeMs,

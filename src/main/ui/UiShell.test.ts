@@ -156,14 +156,17 @@ function makeSession(
     id,
     seed: 7,
     arena: { width: 16, height: 9 },
-    player: {
-      position: { x: 0, y: 0 },
-      radius: 0.5,
-      contactBox: { width: 1, height: 1 },
-      maxSpeed: 5,
-      maxHp: 5
-    },
-    loadout: { weapons: ['pistol'], selectedIndex: 0 },
+    players: [
+      {
+        id: 'ui-shell-player',
+        position: { x: 0, y: 0 },
+        radius: 0.5,
+        contactBox: { width: 1, height: 1 },
+        maxSpeed: 5,
+        maxHp: 5,
+        loadout: { weapons: ['pistol'], selectedIndex: 0 }
+      }
+    ],
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],

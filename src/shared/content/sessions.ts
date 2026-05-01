@@ -2,8 +2,8 @@ import type {
   ArenaConfig,
   CompanionSessionConfig,
   EncounterDefinition,
-  Loadout,
-  PlayerSpawn,
+  NonEmptyReadonlyArray,
+  PlayerConfig,
   SessionBackground,
   SessionRules,
   StaticSpawnPlan,
@@ -47,9 +47,8 @@ export type SessionPresetTemplate = Readonly<{
   visibleInMenu: boolean;
   order: number;
   arena: ArenaConfig;
-  player: PlayerSpawn;
+  players: NonEmptyReadonlyArray<PlayerConfig>;
   companion: SessionPresetCompanionTemplate | null;
-  loadout: Loadout | null;
   backgrounds: ReadonlyArray<SessionBackground>;
   musicSampleId: string | null;
   rules: SessionRules;

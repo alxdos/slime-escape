@@ -94,7 +94,7 @@ export type RendererInit = Readonly<{
   canvas: HTMLCanvasElement;
   renderScalePreset: RenderScalePreset;
   arena: ArenaConfig;
-  session: Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player' | 'companion'>;
+  session: Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'players' | 'companion'>;
   spriteTextures: TextureMap;
   selectedPetId?: string | null;
   visibleAreaCamera?: VisibleAreaCamera;
@@ -207,6 +207,7 @@ export function createRenderer(init: RendererInit): Renderer {
   const weaponRegistry = init.weaponRegistry ?? WEAPON_ARCHETYPES;
   const windowTarget = init.windowTarget ?? window;
   const prefersReducedMotion = init.prefersReducedMotion ?? prefersReducedMotionFromWindow(windowTarget);
+  const primaryPlayer = init.session.players[0];
 
   const renderer =
     (init.createRendererBackend ?? createThreeRendererBackend)({
@@ -222,7 +223,7 @@ export function createRenderer(init: RendererInit): Renderer {
       arena: init.arena,
       profile: 'desktop',
       effectiveViewport: readRendererViewport(windowTarget),
-      playerPosition: init.session.player.position
+      playerPosition: primaryPlayer.position
     });
 
   const camera = new THREE.OrthographicCamera(0, 0, 0, 0, 0.1, 10);
@@ -489,7 +490,7 @@ export function createRenderer(init: RendererInit): Renderer {
       const hasRuntimeCompanion =
         pair.curr?.entities.some((entity) => entity.kind === 'companion') === true;
       visibleAreaCamera.follow(
-        findInterpolatedPlayerPosition(pair, alpha) ?? init.session.player.position,
+        findInterpolatedPlayerPosition(pair, alpha) ?? primaryPlayer.position,
         pair.nowMs
       );
       applyCameraVisibleArea(camera, visibleAreaCamera.visibleArea());
@@ -499,7 +500,7 @@ export function createRenderer(init: RendererInit): Renderer {
         companionEntry,
         pair,
         alpha,
-        init.session.player,
+        primaryPlayer,
         characterSnapGrid,
         hasRuntimeCompanion
       );

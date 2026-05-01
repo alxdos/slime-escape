@@ -13,19 +13,19 @@ import type { RuntimeEvent } from '../events';
 
 import { createCombatSystem } from './CombatSystem';
 import { createEntityStore } from './EntityStore';
-import { createRuntimeInputState } from './RuntimeInputState';
+import { createRuntimeActorInputState } from './RuntimeInputState';
 import { createSpatialIndex } from './SpatialIndex';
 
 describe('universal weapons demo session integration', () => {
   it('fires every sandbox-with-combat demo weapon from the authored ordered loadout', () => {
     const session = buildSessionDefinition(SANDBOX_WITH_COMBAT_PRESET, { seed: 17 });
-    if (session.loadout === null) throw new Error('expected sandbox-with-combat loadout');
+    if (session.players[0].loadout === null) throw new Error('expected sandbox-with-combat loadout');
 
     const store = createEntityStore();
     const index = createSpatialIndex();
     const combat = createCombatSystem();
-    const player = store.spawnPlayer(session.player);
-    combat.setPlayerLoadout(player.id, session.loadout, 0);
+    const player = store.spawnPlayer(session.players[0]);
+    combat.setPlayerLoadout(player.id, session.players[0].loadout, 0);
     const events: RuntimeEvent[] = [];
     const expectedWeaponIds = [
       PISTOL.id,
@@ -35,13 +35,13 @@ describe('universal weapons demo session integration', () => {
       FIREBALL_STAFF.id
     ];
 
-    expect(session.loadout.weapons).toEqual(expectedWeaponIds);
+    expect(session.players[0].loadout.weapons).toEqual(expectedWeaponIds);
 
     for (let selectedIndex = 0; selectedIndex < expectedWeaponIds.length; selectedIndex += 1) {
-      const input = createRuntimeInputState();
+      const input = createRuntimeActorInputState();
       input.firing = true;
       input.aimWorld = { x: player.position.x + 5, y: player.position.y };
-      input.loadout = { weapons: session.loadout.weapons, selectedIndex };
+      input.loadout = { weapons: session.players[0].loadout.weapons, selectedIndex };
       combat.tick(input, store, index, selectedIndex, session.arena, (event) =>
         events.push(event)
       );

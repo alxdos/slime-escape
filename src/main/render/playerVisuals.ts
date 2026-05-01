@@ -7,8 +7,8 @@ export { PLAYER_VISUAL_SPECS } from './playerVisuals.generated';
 export const PLAYER_VISUALS: Readonly<Record<string, SpriteVisualSpec>> =
   createPlayerVisualRegistry(PLAYER_VISUAL_SPECS);
 
-// SessionDefinition.player does not carry a player archetype id yet, so the runtime
-// player renderer uses the shared hero sprite that all current player archetypes point to.
+// PlayerSnapshot does not carry a player archetype id yet, so the runtime
+// renderer uses the shared hero sprite that all current player archetypes point to.
 export const DEFAULT_PLAYER_VISUAL = requireDefaultPlayerVisual(PLAYER_VISUAL_SPECS);
 
 export function validatePlayerVisuals(

@@ -350,37 +350,40 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "id": "campaign-easy-session",
-  "loadout": {
-    "selectedIndex": 1,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-      "sniper",
-      "rock-thrower",
-      "grenade-launcher",
-      "bomb-placer",
-      "fireball-staff",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/007-nature",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 1,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+          "sniper",
+          "rock-thrower",
+          "grenade-launcher",
+          "bomb-placer",
+          "fireball-staff",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": true,
@@ -750,37 +753,40 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "id": "campaign-easy-session",
-  "loadout": {
-    "selectedIndex": 1,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-      "sniper",
-      "rock-thrower",
-      "grenade-launcher",
-      "bomb-placer",
-      "fireball-staff",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/007-nature",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 1,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+          "sniper",
+          "rock-thrower",
+          "grenade-launcher",
+          "bomb-placer",
+          "fireball-staff",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": true,
@@ -1150,37 +1156,40 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "id": "campaign-easy-session",
-  "loadout": {
-    "selectedIndex": 1,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-      "sniper",
-      "rock-thrower",
-      "grenade-launcher",
-      "bomb-placer",
-      "fireball-staff",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/007-nature",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 1,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+          "sniper",
+          "rock-thrower",
+          "grenade-launcher",
+          "bomb-placer",
+          "fireball-staff",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": true,
@@ -3000,32 +3009,35 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "id": "campaign-hard-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "smg",
-      "rock-thrower",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/100-waves",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "smg",
+          "rock-thrower",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -4845,32 +4857,35 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "id": "campaign-hard-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "smg",
-      "rock-thrower",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/100-waves",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "smg",
+          "rock-thrower",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -6690,32 +6705,35 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "id": "campaign-hard-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "smg",
-      "rock-thrower",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/100-waves",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "smg",
+          "rock-thrower",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -8376,35 +8394,38 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "id": "campaign-normal-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-      "sniper",
-      "grenade-launcher",
-      "bomb-placer",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/005-forest",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+          "sniper",
+          "grenade-launcher",
+          "bomb-placer",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -10065,35 +10086,38 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "id": "campaign-normal-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-      "sniper",
-      "grenade-launcher",
-      "bomb-placer",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/005-forest",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+          "sniper",
+          "grenade-launcher",
+          "bomb-placer",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -11754,35 +11778,38 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "id": "campaign-normal-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-      "sniper",
-      "grenade-launcher",
-      "bomb-placer",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/005-forest",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+          "sniper",
+          "grenade-launcher",
+          "bomb-placer",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -11900,32 +11927,35 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     },
   ],
   "id": "combat-modifiers-demo-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "demo-hazard-grenade",
-      "demo-proximity-mine",
-      "pistol",
-    ],
-  },
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-sandbox",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "demo-hazard-grenade",
+          "demo-proximity-mine",
+          "pistol",
+        ],
+      },
+      "maxHp": 1,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 1,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": true,
@@ -12043,32 +12073,35 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     },
   ],
   "id": "combat-modifiers-demo-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "demo-hazard-grenade",
-      "demo-proximity-mine",
-      "pistol",
-    ],
-  },
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-sandbox",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "demo-hazard-grenade",
+          "demo-proximity-mine",
+          "pistol",
+        ],
+      },
+      "maxHp": 1,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 1,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": true,
@@ -12186,32 +12219,35 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     },
   ],
   "id": "combat-modifiers-demo-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "demo-hazard-grenade",
-      "demo-proximity-mine",
-      "pistol",
-    ],
-  },
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-sandbox",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "demo-hazard-grenade",
+          "demo-proximity-mine",
+          "pistol",
+        ],
+      },
+      "maxHp": 1,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 1,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": true,
@@ -12539,35 +12575,38 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
     },
   ],
   "id": "dungeon-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-      "sniper",
-      "grenade-launcher",
-      "bomb-placer",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/100-waves",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+          "sniper",
+          "grenade-launcher",
+          "bomb-placer",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -12895,35 +12934,38 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
     },
   ],
   "id": "dungeon-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-      "sniper",
-      "grenade-launcher",
-      "bomb-placer",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/100-waves",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+          "sniper",
+          "grenade-launcher",
+          "bomb-placer",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -13251,35 +13293,38 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
     },
   ],
   "id": "dungeon-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-      "sniper",
-      "grenade-launcher",
-      "bomb-placer",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/100-waves",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+          "sniper",
+          "grenade-launcher",
+          "bomb-placer",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -13336,31 +13381,34 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
   ],
   "id": "portal-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "rock-thrower",
-      "shotgun",
-    ],
-  },
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "rock-thrower",
+          "shotgun",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -13417,31 +13465,34 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
   ],
   "id": "portal-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "rock-thrower",
-      "shotgun",
-    ],
-  },
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "rock-thrower",
+          "shotgun",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -13498,31 +13549,34 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
   ],
   "id": "portal-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "rock-thrower",
-      "shotgun",
-    ],
-  },
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "rock-thrower",
+          "shotgun",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -13579,25 +13633,28 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     },
   ],
   "id": "sandbox-session",
-  "loadout": null,
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-sandbox",
+      "loadout": null,
+      "maxHp": 1,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 1,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -13654,25 +13711,28 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     },
   ],
   "id": "sandbox-session",
-  "loadout": null,
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-sandbox",
+      "loadout": null,
+      "maxHp": 1,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 1,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -13729,25 +13789,28 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     },
   ],
   "id": "sandbox-session",
-  "loadout": null,
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-sandbox",
+      "loadout": null,
+      "maxHp": 1,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 1,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -13813,34 +13876,37 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     },
   ],
   "id": "sandbox-with-combat-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "rock-thrower",
-      "grenade-launcher",
-      "bomb-placer",
-      "fireball-staff",
-    ],
-  },
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-sandbox",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "rock-thrower",
+          "grenade-launcher",
+          "bomb-placer",
+          "fireball-staff",
+        ],
+      },
+      "maxHp": 1,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 1,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -13906,34 +13972,37 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     },
   ],
   "id": "sandbox-with-combat-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "rock-thrower",
-      "grenade-launcher",
-      "bomb-placer",
-      "fireball-staff",
-    ],
-  },
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-sandbox",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "rock-thrower",
+          "grenade-launcher",
+          "bomb-placer",
+          "fireball-staff",
+        ],
+      },
+      "maxHp": 1,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 1,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -13999,34 +14068,37 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     },
   ],
   "id": "sandbox-with-combat-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "rock-thrower",
-      "grenade-launcher",
-      "bomb-placer",
-      "fireball-staff",
-    ],
-  },
   "lossCondition": {
     "kind": "none",
   },
   "modifiers": [],
   "musicSampleId": null,
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-sandbox",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "rock-thrower",
+          "grenade-launcher",
+          "bomb-placer",
+          "fireball-staff",
+        ],
+      },
+      "maxHp": 1,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 1,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": false,
@@ -14536,32 +14608,35 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     },
   ],
   "id": "training-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/001-calm",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": true,
@@ -15071,32 +15146,35 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     },
   ],
   "id": "training-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/001-calm",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": true,
@@ -15606,32 +15684,35 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     },
   ],
   "id": "training-session",
-  "loadout": {
-    "selectedIndex": 0,
-    "weapons": [
-      "pistol",
-      "shotgun",
-      "smg",
-    ],
-  },
   "lossCondition": {
     "kind": "playerDeath",
   },
   "modifiers": [],
   "musicSampleId": "music/001-calm",
-  "player": {
-    "contactBox": {
-      "height": 2.2916666666666665,
-      "width": 1.225,
+  "players": [
+    {
+      "contactBox": {
+        "height": 2.2916666666666665,
+        "width": 1.225,
+      },
+      "id": "hero-training",
+      "loadout": {
+        "selectedIndex": 0,
+        "weapons": [
+          "pistol",
+          "shotgun",
+          "smg",
+        ],
+      },
+      "maxHp": 20,
+      "maxSpeed": 6,
+      "position": {
+        "x": 0,
+        "y": 0,
+      },
+      "radius": 1.1458333333333333,
     },
-    "maxHp": 20,
-    "maxSpeed": 6,
-    "position": {
-      "x": 0,
-      "y": 0,
-    },
-    "radius": 1.1458333333333333,
-  },
+  ],
   "rules": {
     "aimAssist": {
       "enabled": true,

@@ -21,6 +21,7 @@ describe('Public Arena content projection', () => {
     if (activeBackgroundId === undefined) {
       throw new Error('expected portal content to select an active background');
     }
+    const portalPlayer = portal.players[0];
 
     expect(Object.keys(PUBLIC_ARENA_PRESENTATION_CONFIG)).toEqual([
       'arena',
@@ -30,14 +31,20 @@ describe('Public Arena content projection', () => {
       'activeBackgroundId'
     ]);
     expect(PUBLIC_ARENA_ARENA).toEqual(portal.arena);
-    expect(PUBLIC_ARENA_PLAYER).toEqual(portal.player);
-    expect(PUBLIC_ARENA_LOADOUT).toEqual(portal.loadout);
+    expect(PUBLIC_ARENA_PLAYER).toEqual({
+      position: portalPlayer.position,
+      radius: portalPlayer.radius,
+      contactBox: portalPlayer.contactBox,
+      maxSpeed: portalPlayer.maxSpeed,
+      maxHp: portalPlayer.maxHp
+    });
+    expect(PUBLIC_ARENA_LOADOUT).toEqual(portalPlayer.loadout);
     expect(PUBLIC_ARENA_BACKGROUNDS).toEqual(portal.backgrounds);
     expect(PUBLIC_ARENA_ACTIVE_BACKGROUND_ID).toBe(activeBackgroundId);
     expect(PUBLIC_ARENA_PRESENTATION_CONFIG).toEqual({
       arena: portal.arena,
-      player: portal.player,
-      loadout: portal.loadout,
+      player: PUBLIC_ARENA_PLAYER,
+      loadout: portalPlayer.loadout,
       backgrounds: portal.backgrounds,
       activeBackgroundId
     });

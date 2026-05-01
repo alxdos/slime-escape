@@ -20,6 +20,19 @@ export type PlayerSpawn = Readonly<{
   maxHp: number;
 }>;
 
+export type Loadout = Readonly<{
+  weapons: ReadonlyArray<string>;
+  selectedIndex: number | null;
+}>;
+
+export type PlayerConfig = PlayerSpawn &
+  Readonly<{
+    id: string;
+    loadout: Loadout | null;
+  }>;
+
+export type NonEmptyReadonlyArray<T> = readonly [T, ...T[]];
+
 export type EncounterType = 'wave' | 'break' | 'boss' | 'survivalTimer' | 'sandbox' | 'portal';
 
 export type EmptySpawnPlan = Readonly<{ kind: 'empty' }>;
@@ -62,11 +75,6 @@ export type BossSpawnPlan = Readonly<{
 }>;
 
 export type SpawnPlan = EmptySpawnPlan | StaticSpawnPlan | WaveSpawnPlan | BossSpawnPlan;
-
-export type Loadout = Readonly<{
-  weapons: ReadonlyArray<string>;
-  selectedIndex: number | null;
-}>;
 
 export type CompanionMovementConfig = Readonly<{
   maxSpeed: number;
@@ -173,6 +181,8 @@ export type WinCondition =
 export type LossCondition =
   | { kind: 'none' }
   | { kind: 'playerDeath' }
+  | { kind: 'allPlayersDead' }
+  | { kind: 'respawnOnDeath' }
   | { kind: 'timerOrScenarioFail' }
   | { kind: 'forced' };
 
@@ -182,9 +192,8 @@ export type SessionDefinition = Readonly<{
   id: string;
   seed: number;
   arena: ArenaConfig;
-  player: PlayerSpawn;
+  players: NonEmptyReadonlyArray<PlayerConfig>;
   companion: CompanionSessionConfig | null;
-  loadout: Loadout | null;
   backgrounds: ReadonlyArray<SessionBackground>;
   musicSampleId: string | null;
   modifiers: ReadonlyArray<Modifier>;

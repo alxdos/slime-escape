@@ -1,42 +1,72 @@
-import type { Loadout } from '../session';
+import type { Loadout, PlayerConfig } from '../session';
 
 export type RuntimeLoadoutState = {
   weapons: ReadonlyArray<string>;
   selectedIndex: number | null;
 };
 
-export type RuntimeInputState = {
+export type RuntimeActorInputState = {
   moveDir: { dx: number; dy: number };
   aimWorld: { x: number; y: number };
   firing: boolean;
   loadout: RuntimeLoadoutState | null;
 };
 
+export type RuntimeInputState = {
+  players: Map<string, RuntimeActorInputState>;
+};
+
 export function createRuntimeInputState(): RuntimeInputState {
   return {
+    players: new Map()
+  };
+}
+
+export function createRuntimeActorInputState(
+  aimX = 0,
+  aimY = 0,
+  loadout: Loadout | null = null
+): RuntimeActorInputState {
+  return {
     moveDir: { dx: 0, dy: 0 },
-    aimWorld: { x: 0, y: 0 },
+    aimWorld: { x: aimX, y: aimY },
     firing: false,
-    loadout: null
+    loadout: copyLoadout(loadout)
   };
 }
 
 export function resetRuntimeInputState(
   state: RuntimeInputState,
-  aimX: number,
-  aimY: number,
-  loadout: Loadout | null = null
+  players: ReadonlyArray<PlayerConfig>
 ): void {
-  state.moveDir.dx = 0;
-  state.moveDir.dy = 0;
-  state.aimWorld.x = aimX;
-  state.aimWorld.y = aimY;
-  state.firing = false;
-  state.loadout =
-    loadout === null
-      ? null
-      : {
-          weapons: [...loadout.weapons],
-          selectedIndex: loadout.selectedIndex
-        };
+  state.players.clear();
+  for (const player of players) {
+    state.players.set(
+      player.id,
+      createRuntimeActorInputState(player.position.x, player.position.y, player.loadout)
+    );
+  }
+}
+
+export function runtimeInputForPlayer(
+  state: RuntimeInputState,
+  playerId: string
+): RuntimeActorInputState | null {
+  return state.players.get(playerId) ?? null;
+}
+
+export function firstRuntimeInput(state: RuntimeInputState): RuntimeActorInputState | null {
+  for (const input of state.players.values()) {
+    return input;
+  }
+  return null;
+}
+
+function copyLoadout(loadout: Loadout | null): RuntimeLoadoutState | null {
+  return loadout === null
+    ? null
+    : {
+        weapons: [...loadout.weapons],
+        selectedIndex: loadout.selectedIndex
+      };
 }

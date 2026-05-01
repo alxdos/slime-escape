@@ -106,16 +106,16 @@ describe('buildSessionDefinition (sandbox)', () => {
 
     expect(session.arena.width).toBeGreaterThan(0);
     expect(session.arena.height).toBeGreaterThan(0);
-    expect(session.player.position).toEqual({ x: 0, y: 0 });
-    expect(session.player.contactBox.width).toBeGreaterThan(0);
-    expect(session.player.contactBox.height).toBeGreaterThan(0);
-    expect(session.player.maxSpeed).toBeGreaterThan(0);
+    expect(session.players[0].position).toEqual({ x: 0, y: 0 });
+    expect(session.players[0].contactBox.width).toBeGreaterThan(0);
+    expect(session.players[0].contactBox.height).toBeGreaterThan(0);
+    expect(session.players[0].maxSpeed).toBeGreaterThan(0);
   });
 
   it('sandbox keeps loadout null and an empty spawn plan', () => {
     const session = buildSessionDefinition(SANDBOX_PRESET, { seed: 0 });
 
-    expect(session.loadout).toBeNull();
+    expect(session.players[0].loadout).toBeNull();
     expect(session.encounters[0]?.spawnPlan.kind).toBe('empty');
   });
 });
@@ -131,7 +131,7 @@ describe('buildSessionDefinition (sandbox-with-combat)', () => {
   it('exposes an ordered Loadout with the first slot selected', () => {
     const session = buildSessionDefinition(SANDBOX_WITH_COMBAT_PRESET, { seed: 7 });
 
-    expect(session.loadout).toEqual({
+    expect(session.players[0].loadout).toEqual({
       weapons: [PISTOL.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id],
       selectedIndex: 0
     });
@@ -295,10 +295,10 @@ describe('buildSessionDefinition (training)', () => {
   it('exposes ordered loadout and a damageable training player', () => {
     const session = buildSessionDefinition(TRAINING_PRESET, { seed: 1 });
 
-    expect(session.loadout).toEqual({ weapons: [PISTOL.id, SHOTGUN.id, SMG.id], selectedIndex: 0 });
+    expect(session.players[0].loadout).toEqual({ weapons: [PISTOL.id, SHOTGUN.id, SMG.id], selectedIndex: 0 });
     expect(session.rules.damage.slimeFriendlyFire).toBe(true);
     expect(session.rules.aimAssist.enabled).toBe(true);
-    expect(session.player.maxHp).toBeGreaterThan(0);
+    expect(session.players[0].maxHp).toBeGreaterThan(0);
   });
 });
 
@@ -456,8 +456,12 @@ describe('buildSessionDefinition (portal)', () => {
     const openingEncounter = session.encounters.at(0);
 
     expect(session.arena).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.arena);
-    expect(session.player).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.player);
-    expect(session.loadout).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.loadout);
+    expect(session.players[0]).toEqual({
+      id: 'hero-training',
+      ...PUBLIC_ARENA_PRESENTATION_CONFIG.player,
+      loadout: PUBLIC_ARENA_PRESENTATION_CONFIG.loadout
+    });
+    expect(session.players[0].loadout).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.loadout);
     expect(session.backgrounds).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.backgrounds);
     expect(session.musicSampleId).toBeNull();
     expect(session.winCondition).toEqual({ kind: 'none' });
@@ -496,7 +500,7 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
     expect(session.rules.aimAssist.enabled).toBe(true);
     expect(session.rules.aimAssist.maxAngleRadians).toBeGreaterThanOrEqual(0.3);
     expect(session.rules.aimAssist.strength).toBeGreaterThan(0);
-    expect(session.loadout?.weapons).toEqual([
+    expect(session.players[0].loadout?.weapons).toEqual([
       PISTOL.id,
       SHOTGUN.id,
       SMG.id,
@@ -506,7 +510,7 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
       BOMB_PLACER.id,
       FIREBALL_STAFF.id
     ]);
-    expect(session.loadout?.selectedIndex).toBe(1);
+    expect(session.players[0].loadout?.selectedIndex).toBe(1);
     expect(hazardEntries.some((entry) => entry.setIndex === 1)).toBe(false);
     expect(hazardEntries.map((entry) => entry.archetypeId)).toEqual([
       SLIME_STAR.id,
@@ -542,7 +546,7 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
 
     expect(session.rules.damage.slimeFriendlyFire).toBe(true);
     expect(session.rules.aimAssist.enabled).toBe(false);
-    expect(session.loadout).toEqual({
+    expect(session.players[0].loadout).toEqual({
       weapons: [
         PISTOL.id,
         SHOTGUN.id,
@@ -576,7 +580,7 @@ describe('buildSessionDefinition shooting slime difficulty pillars', () => {
 
     expect(session.rules.damage.slimeFriendlyFire).toBe(false);
     expect(session.rules.aimAssist.enabled).toBe(false);
-    expect(session.loadout).toEqual({
+    expect(session.players[0].loadout).toEqual({
       weapons: [PISTOL.id, SMG.id, ROCK_THROWER.id],
       selectedIndex: 0
     });

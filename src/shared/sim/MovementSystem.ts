@@ -3,7 +3,7 @@ import type { ArenaConfig } from '../session';
 import { SIM_STEP_MS } from '../timing';
 
 import type { Boss, Enemy, EntityStore, Player } from './EntityStore';
-import type { RuntimeInputState } from './RuntimeInputState';
+import type { RuntimeActorInputState } from './RuntimeInputState';
 import { resolveMovementSpeedMultiplier } from './StatusEffectSystem';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
@@ -12,7 +12,7 @@ export type MovementSystem = Readonly<{
   tick(
     arena: ArenaConfig,
     store: EntityStore,
-    input: RuntimeInputState,
+    input: RuntimeActorInputState | null,
     simTimeMs: number
   ): void;
 }>;
@@ -21,14 +21,14 @@ export function createMovementSystem(): MovementSystem {
   return {
     tick(arena, store, input, simTimeMs): void {
       const player = store.player();
-      if (player !== null) tickPlayer(arena, player, input);
+      if (player !== null && input !== null) tickPlayer(arena, player, input);
       tickEnemies(store, player, simTimeMs);
       tickBosses(store, player, simTimeMs);
     }
   };
 }
 
-function tickPlayer(arena: ArenaConfig, player: Player, input: RuntimeInputState): void {
+function tickPlayer(arena: ArenaConfig, player: Player, input: RuntimeActorInputState): void {
   const { dx, dy } = input.moveDir;
   const speedMultiplier = resolveMovementSpeedMultiplier(player);
   const vx = dx * player.maxSpeed * speedMultiplier;

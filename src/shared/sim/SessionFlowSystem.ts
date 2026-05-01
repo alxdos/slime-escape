@@ -16,6 +16,8 @@ import type { WaveProgressSnapshot } from '../snapshot';
 import {
   createRuntimeInputState,
   resetRuntimeInputState,
+  runtimeInputForPlayer,
+  type RuntimeActorInputState,
   type RuntimeInputState
 } from './RuntimeInputState';
 import type { EntityId } from './EntityStore';
@@ -32,7 +34,7 @@ export type SessionFlowSystem = Readonly<{
   stop(): void;
   pause(): void;
   resume(): void;
-  handleInput(command: InputCommand): void;
+  handleInput(playerId: string, command: InputCommand): void;
   checkTransitions(simTimeMs: number): void;
   onPlayerDeath(): void;
   onBossDeath(entityId: EntityId): void;
@@ -78,7 +80,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
       return;
     }
     sessionRng = createRng(next.seed);
-    resetRuntimeInputState(input, next.player.position.x, next.player.position.y, next.loadout);
+    resetRuntimeInputState(input, next.players);
     deps.onSessionStart?.(next, sessionRng);
     clock.toRunning();
     const simTime = clock.simTimeMs();
@@ -131,52 +133,61 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     emitEvent({ kind: 'resume', simTime: clock.simTimeMs() });
   }
 
-  function handleInput(command: InputCommand): void {
+  function handleInput(playerId: string, command: InputCommand): void {
     if (active === null) {
       log.warn('input command ignored: no active session');
       return;
     }
+    const playerInput = runtimeInputForPlayer(input, playerId);
+    if (playerInput === null) {
+      log.warn('input command ignored: unknown playerId', { playerId });
+      return;
+    }
     switch (command.kind) {
       case 'move':
-        input.moveDir.dx = command.dx;
-        input.moveDir.dy = command.dy;
+        playerInput.moveDir.dx = command.dx;
+        playerInput.moveDir.dy = command.dy;
         return;
       case 'aim':
-        input.aimWorld.x = command.x;
-        input.aimWorld.y = command.y;
+        playerInput.aimWorld.x = command.x;
+        playerInput.aimWorld.y = command.y;
         return;
       case 'fire':
-        input.firing = command.phase === 'start';
+        playerInput.firing = command.phase === 'start';
         return;
       case 'selectWeaponSlot':
-        selectWeaponSlot(command.slotIndex);
+        selectWeaponSlot(playerInput, command.slotIndex);
         return;
       case 'holsterWeapon':
-        holsterWeapon();
+        holsterWeapon(playerInput);
         return;
       default:
         assertNever(command);
     }
   }
 
-  function selectWeaponSlot(slotIndex: number): void {
-    if (input.loadout === null) {
+  function selectWeaponSlot(playerInput: RuntimeActorInputState, slotIndex: number): void {
+    if (playerInput.loadout === null) {
       log.warn('selectWeaponSlot ignored: no active player loadout', { slotIndex });
       return;
     }
-    if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= input.loadout.weapons.length) {
+    if (
+      !Number.isInteger(slotIndex) ||
+      slotIndex < 0 ||
+      slotIndex >= playerInput.loadout.weapons.length
+    ) {
       log.warn('selectWeaponSlot ignored: slot index outside player loadout', {
         slotIndex,
-        weaponCount: input.loadout.weapons.length
+        weaponCount: playerInput.loadout.weapons.length
       });
       return;
     }
-    input.loadout.selectedIndex = slotIndex;
+    playerInput.loadout.selectedIndex = slotIndex;
   }
 
-  function holsterWeapon(): void {
-    if (input.loadout === null) return;
-    input.loadout.selectedIndex = null;
+  function holsterWeapon(playerInput: RuntimeActorInputState): void {
+    if (playerInput.loadout === null) return;
+    playerInput.loadout.selectedIndex = null;
   }
 
   function checkTransitions(simTimeMs: number): void {
@@ -275,7 +286,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
   function tearDown(): void {
     clock.toIdle();
     deps.onSessionStop?.();
-    resetRuntimeInputState(input, 0, 0);
+    resetRuntimeInputState(input, []);
     active = null;
     sessionRng = null;
   }

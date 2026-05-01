@@ -5,7 +5,7 @@ import { SIM_STEP_MS } from '../timing';
 
 import { createEntityStore, type EnemySpawnSpec, type EntityId } from './EntityStore';
 import { createMovementSystem } from './MovementSystem';
-import { createRuntimeInputState } from './RuntimeInputState';
+import { createRuntimeActorInputState } from './RuntimeInputState';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
 const PLAYER: PlayerSpawn = {
@@ -49,7 +49,7 @@ function setup(spec: PlayerSpawn = PLAYER) {
   const store = createEntityStore();
   store.spawnPlayer(spec);
   const movement = createMovementSystem();
-  const input = createRuntimeInputState();
+  const input = createRuntimeActorInputState();
   return { store, movement, input };
 }
 
@@ -177,7 +177,7 @@ describe('MovementSystem player', () => {
   it('is a no-op when no player is spawned', () => {
     const store = createEntityStore();
     const movement = createMovementSystem();
-    const input = createRuntimeInputState();
+    const input = createRuntimeActorInputState();
     input.moveDir.dx = 1;
     expect(() => movement.tick(ARENA, store, input, 0)).not.toThrow();
     expect(store.player()).toBeNull();
@@ -286,7 +286,7 @@ describe('MovementSystem enemies', () => {
     const store = createEntityStore();
     const enemy = store.spawnEnemy(slimeFastAt(3, 0));
     const movement = createMovementSystem();
-    const input = createRuntimeInputState();
+    const input = createRuntimeActorInputState();
     movement.tick(ARENA, store, input, 0);
     expect(enemy.position).toEqual({ x: 3, y: 0 });
     expect(enemy.velocity).toEqual({ vx: 0, vy: 0 });

@@ -321,7 +321,7 @@ function createExitPortalDescriptor(
 function placementSourceFromSession(session: SessionDefinition): PortalPlacementSource {
   return {
     arena: session.arena,
-    playerContactBox: session.player.contactBox
+    playerContactBox: session.players[0].contactBox
   };
 }
 

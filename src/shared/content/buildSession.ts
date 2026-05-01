@@ -39,10 +39,12 @@ export function buildSessionDefinition(
 ): SessionDefinition {
   const template = SESSION_PRESET_TEMPLATES[preset.id];
   const arena = template.arena;
-  validateEnemyRegistry(ENEMY_ARCHETYPES, template.player.contactBox);
+  for (const player of template.players) {
+    validateEnemyRegistry(ENEMY_ARCHETYPES, player.contactBox);
+  }
   validateEncounterBackgroundReferences(template);
-  if (template.loadout !== null) {
-    for (const weaponId of template.loadout.weapons) {
+  for (const player of template.players) {
+    for (const weaponId of player.loadout?.weapons ?? []) {
       warnIfWeaponMayTunnel(weaponId);
     }
   }
@@ -50,9 +52,8 @@ export function buildSessionDefinition(
     id: options.id ?? `${template.presetId}-session`,
     seed: options.seed,
     arena,
-    player: template.player,
+    players: template.players,
     companion: resolveCompanionConfig(template, options.selectedPetId ?? null),
-    loadout: template.loadout,
     backgrounds: template.backgrounds,
     musicSampleId: template.musicSampleId,
     modifiers: [],

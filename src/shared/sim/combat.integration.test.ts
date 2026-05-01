@@ -7,7 +7,7 @@ import type { ArenaConfig } from '../session';
 import { createCombatSystem } from './CombatSystem';
 import { createEntityStore } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
-import { createRuntimeInputState } from './RuntimeInputState';
+import { createRuntimeActorInputState } from './RuntimeInputState';
 import { createSpatialIndex } from './SpatialIndex';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
@@ -60,7 +60,7 @@ describe('combat integration (CombatSystem + HealthDeathSystem)', () => {
       color: STATIONARY_TEST_ENEMY.color
     });
 
-    const input = createRuntimeInputState();
+    const input = createRuntimeActorInputState();
     input.aimWorld.x = 5;
     input.aimWorld.y = 0;
     input.firing = true;

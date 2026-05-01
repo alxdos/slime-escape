@@ -12,6 +12,7 @@ import { createEntityStore } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createRunSummaryTracker } from './RunSummaryTracker';
+import { firstRuntimeInput } from './RuntimeInputState';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
@@ -148,9 +149,9 @@ function setupCampaignRegressionWorld() {
       drops.setRng(rng);
       seenEnemyIds.clear();
       combat.setDamageRules(session.rules.damage);
-      const player = entities.spawnPlayer(session.player);
-      if (session.loadout !== null) {
-        combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
+      const player = entities.spawnPlayer(session.players[0]);
+      if (session.players[0].loadout !== null) {
+        combat.setPlayerLoadout(player.id, session.players[0].loadout, clock.simTimeMs());
       }
     },
     onSessionStop() {
@@ -193,9 +194,10 @@ function setupCampaignRegressionWorld() {
     if (session === null) return;
     spawn.onTick(simTimeMs, entities);
     recordNewEnemySpawns(simTimeMs);
-    movement.tick(session.arena, entities, sessionFlow.inputState(), simTimeMs);
+    const primaryInput = firstRuntimeInput(sessionFlow.inputState());
+    movement.tick(session.arena, entities, primaryInput, simTimeMs);
     const intents = combat.tick(
-      sessionFlow.inputState(),
+      primaryInput,
       entities,
       spatialIndex,
       simTimeMs,

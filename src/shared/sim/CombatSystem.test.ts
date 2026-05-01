@@ -27,7 +27,7 @@ import {
   type EntityId,
   type ProjectileSpawnSpec
 } from './EntityStore';
-import { createRuntimeInputState, type RuntimeInputState } from './RuntimeInputState';
+import { createRuntimeActorInputState, type RuntimeActorInputState } from './RuntimeInputState';
 import { createSpatialIndex } from './SpatialIndex';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
@@ -176,8 +176,8 @@ function setupCombat() {
   return { store, index, combat, player };
 }
 
-function makeInput(overrides: Partial<RuntimeInputState> = {}): RuntimeInputState {
-  const state = createRuntimeInputState();
+function makeInput(overrides: Partial<RuntimeActorInputState> = {}): RuntimeActorInputState {
+  const state = createRuntimeActorInputState();
   if (overrides.moveDir) state.moveDir = overrides.moveDir;
   if (overrides.aimWorld) state.aimWorld = overrides.aimWorld;
   if (overrides.firing !== undefined) state.firing = overrides.firing;

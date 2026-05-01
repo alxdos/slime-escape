@@ -95,9 +95,14 @@ function renderPreset(preset: ParsedSessionPreset): string {
     visibleInMenu: ${preset.visibleInMenu ? 'true' : 'false'},
     order: ${formatNumber(preset.order)},
     arena: ${renderArena(preset.arena)},
-    player: ${preset.player.constName},
+    players: [
+      {
+        id: '${escapeString(preset.player.id)}',
+        ...${preset.player.constName},
+        loadout: ${renderLoadout(preset.loadout)}
+      }
+    ],
     companion: ${renderCompanionConfig(preset.companion)},
-    loadout: ${renderLoadout(preset.loadout)},
     backgrounds: [
 ${preset.backgrounds.map(renderBackground).join(',\n')}
     ],

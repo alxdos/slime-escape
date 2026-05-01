@@ -9,6 +9,7 @@ import {
   createSessionFlowSystem as createRawSessionFlowSystem,
   type SessionFlowDeps
 } from './SessionFlowSystem';
+import { runtimeInputForPlayer } from './RuntimeInputState';
 import { makeTestResultSummary } from './testSessionResultSummary';
 
 function createFakeClock(): SimulationClock & { _state: { running: boolean; paused: boolean; simTime: number } } {
@@ -82,7 +83,7 @@ describe('SessionFlowSystem', () => {
     flow.stop();
     flow.pause();
     flow.resume();
-    flow.handleInput({ kind: 'fire', phase: 'start' });
+    flow.handleInput('missing-player', { kind: 'fire', phase: 'start' });
 
     expect(events).toHaveLength(0);
     expect(clock.isRunning()).toBe(false);
@@ -112,7 +113,7 @@ describe('SessionFlowSystem', () => {
 
     flow.start(session);
 
-    expect(flow.inputState().loadout).toEqual({
+    expect(runtimeInputForPlayer(flow.inputState(), session.players[0].id)?.loadout).toEqual({
       weapons: ['pistol', 'shotgun', 'smg'],
       selectedIndex: 1
     });
@@ -126,11 +127,11 @@ describe('SessionFlowSystem', () => {
     });
 
     flow.start(session);
-    flow.handleInput({ kind: 'selectWeaponSlot', slotIndex: 2 });
-    expect(flow.inputState().loadout?.selectedIndex).toBe(2);
+    flow.handleInput(session.players[0].id, { kind: 'selectWeaponSlot', slotIndex: 2 });
+    expect(runtimeInputForPlayer(flow.inputState(), session.players[0].id)?.loadout?.selectedIndex).toBe(2);
 
-    flow.handleInput({ kind: 'holsterWeapon' });
-    expect(flow.inputState().loadout?.selectedIndex).toBeNull();
+    flow.handleInput(session.players[0].id, { kind: 'holsterWeapon' });
+    expect(runtimeInputForPlayer(flow.inputState(), session.players[0].id)?.loadout?.selectedIndex).toBeNull();
   });
 
   it('warns and keeps current selection for invalid weapon slots', () => {
@@ -143,11 +144,11 @@ describe('SessionFlowSystem', () => {
     flow.start(session);
     warnSpy.mockClear();
 
-    flow.handleInput({ kind: 'selectWeaponSlot', slotIndex: 2 });
-    flow.handleInput({ kind: 'selectWeaponSlot', slotIndex: -1 });
-    flow.handleInput({ kind: 'selectWeaponSlot', slotIndex: 0.5 });
+    flow.handleInput(session.players[0].id, { kind: 'selectWeaponSlot', slotIndex: 2 });
+    flow.handleInput(session.players[0].id, { kind: 'selectWeaponSlot', slotIndex: -1 });
+    flow.handleInput(session.players[0].id, { kind: 'selectWeaponSlot', slotIndex: 0.5 });
 
-    expect(flow.inputState().loadout?.selectedIndex).toBe(1);
+    expect(runtimeInputForPlayer(flow.inputState(), session.players[0].id)?.loadout?.selectedIndex).toBe(1);
     expect(warnSpy).toHaveBeenCalledTimes(3);
   });
 
@@ -159,10 +160,10 @@ describe('SessionFlowSystem', () => {
     flow.start(session);
     warnSpy.mockClear();
 
-    flow.handleInput({ kind: 'selectWeaponSlot', slotIndex: 0 });
-    flow.handleInput({ kind: 'holsterWeapon' });
+    flow.handleInput(session.players[0].id, { kind: 'selectWeaponSlot', slotIndex: 0 });
+    flow.handleInput(session.players[0].id, { kind: 'holsterWeapon' });
 
-    expect(flow.inputState().loadout).toBeNull();
+    expect(runtimeInputForPlayer(flow.inputState(), session.players[0].id)?.loadout).toBeNull();
     expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -305,7 +306,7 @@ function breakEncounter(id: string, transitionRules: EncounterDefinition['transi
 function makeSession(
   encounters: ReadonlyArray<EncounterDefinition>,
   options?: {
-    loadout?: SessionDefinition['loadout'];
+    loadout?: SessionDefinition['players'][number]['loadout'];
     win?: SessionDefinition['winCondition'];
     loss?: SessionDefinition['lossCondition'];
   }
@@ -314,15 +315,18 @@ function makeSession(
     id: 'flow-test',
     seed: 1,
     arena: { width: 32, height: 18 },
-    player: {
-      position: { x: 0, y: 0 },
-      radius: 0.5,
-      contactBox: { width: 1, height: 1 },
-      maxSpeed: 6,
-      maxHp: 1
-    },
+    players: [
+      {
+        id: 'flow-player',
+        position: { x: 0, y: 0 },
+        radius: 0.5,
+        contactBox: { width: 1, height: 1 },
+        maxSpeed: 6,
+        maxHp: 1,
+        loadout: options?.loadout ?? null
+      }
+    ],
     companion: null,
-    loadout: options?.loadout ?? null,
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],
@@ -842,7 +846,7 @@ describe('SessionFlowSystem player death', () => {
       localWarn.mockClear();
       flow.pause();
       flow.resume();
-      flow.handleInput({ kind: 'fire', phase: 'start' });
+      flow.handleInput(session.players[0].id, { kind: 'fire', phase: 'start' });
       expect(localWarn).toHaveBeenCalledTimes(3);
     } finally {
       localWarn.mockRestore();

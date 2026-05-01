@@ -13,6 +13,7 @@ import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createRetaliationSystem } from './RetaliationSystem';
 import { createRunSummaryTracker } from './RunSummaryTracker';
+import { firstRuntimeInput } from './RuntimeInputState';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
@@ -31,7 +32,7 @@ export type SimulationCore = Readonly<{
   stop(): void;
   pause(): void;
   resume(): void;
-  submitInput(command: InputCommand): void;
+  submitInput(playerId: string, command: InputCommand): void;
   pump(nowMs: number): void;
 }>;
 
@@ -82,9 +83,10 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
   const clock = createSimulationClock((_dtMs, simTimeMs) => {
     const session = sessionFlow.activeSession();
     if (session === null) return;
+    const primaryInput = firstRuntimeInput(sessionFlow.inputState());
     spawn.onTick(simTimeMs, entities);
     const bossIntents = bossPhase.tick(entities, session.arena, simTimeMs, emitEvent);
-    movement.tick(session.arena, entities, sessionFlow.inputState(), simTimeMs);
+    movement.tick(session.arena, entities, primaryInput, simTimeMs);
     companion.tick(
       session.arena,
       entities,
@@ -93,7 +95,7 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       emitEvent
     );
     const combatIntents = combat.tick(
-      sessionFlow.inputState(),
+      primaryInput,
       entities,
       spatialIndex,
       simTimeMs,
@@ -164,7 +166,8 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       drops.setRng(rng);
       combat.setDamageRules(session.rules.damage);
       fieldEffects.setDamageRules(session.rules.damage);
-      const player = entities.spawnPlayer(session.player);
+      const primaryPlayer = session.players[0];
+      const player = entities.spawnPlayer(primaryPlayer);
       if (session.companion !== null) {
         const offset = session.companion.movement.orbitRadius * 0.75;
         const spawnedCompanion = entities.spawnCompanion({
@@ -182,8 +185,8 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
           );
         }
       }
-      if (session.loadout !== null) {
-        combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
+      if (primaryPlayer.loadout !== null) {
+        combat.setPlayerLoadout(player.id, primaryPlayer.loadout, clock.simTimeMs());
       }
     },
     onSessionStop() {
@@ -239,8 +242,8 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
     resume(): void {
       sessionFlow.resume();
     },
-    submitInput(command): void {
-      sessionFlow.handleInput(command);
+    submitInput(playerId, command): void {
+      sessionFlow.handleInput(playerId, command);
     },
     pump(nowMs): void {
       clock.pump(nowMs);

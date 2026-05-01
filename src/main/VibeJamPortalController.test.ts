@@ -497,15 +497,18 @@ function makeSession(
     id: 'test-session',
     seed: 1,
     arena: { width: options.arenaWidth ?? 24, height: options.arenaHeight ?? 9 },
-    player: {
-      position: { x: options.playerX ?? 0, y: options.playerY ?? 0 },
-      radius: 0.5,
-      contactBox: { width: 1, height: 1 },
-      maxSpeed: 5,
-      maxHp: 5
-    },
+    players: [
+      {
+        id: 'portal-controller-player',
+        position: { x: options.playerX ?? 0, y: options.playerY ?? 0 },
+        radius: 0.5,
+        contactBox: { width: 1, height: 1 },
+        maxSpeed: 5,
+        maxHp: 5,
+        loadout: null
+      }
+    ],
     companion: null,
-    loadout: null,
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],

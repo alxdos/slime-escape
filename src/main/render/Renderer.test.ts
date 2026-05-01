@@ -141,13 +141,13 @@ function createTextureEntries(
 
 function createRenderSession(
   overrides: Partial<
-    Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player' | 'companion'>
+    Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'players' | 'companion'>
   > = {}
-): Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'player' | 'companion'> {
+): Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'players' | 'companion'> {
   return {
     backgrounds: [],
     encounters: [],
-    player: TRAINING_PLAYER,
+    players: [{ id: 'hero-training', ...TRAINING_PLAYER, loadout: null }],
     companion: null,
     ...overrides
   };
@@ -781,7 +781,7 @@ describe('createRenderer', () => {
       canvas,
       renderScalePreset: 'medium',
       arena: { width: 16, height: 9 },
-      session: createRenderSession({ player }),
+      session: createRenderSession({ players: [{ id: 'hero-training', ...player, loadout: null }] }),
       spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
       selectedPetId: PET_01.id,
       getSnapshotPair: () => pair,
@@ -837,7 +837,7 @@ describe('createRenderer', () => {
       canvas,
       renderScalePreset: 'medium',
       arena: { width: 16, height: 9 },
-      session: createRenderSession({ player }),
+      session: createRenderSession({ players: [{ id: 'hero-training', ...player, loadout: null }] }),
       spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
       selectedPetId: PET_01.id,
       getSnapshotPair: () => pair,

@@ -15,6 +15,7 @@ import { createEntityStore } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createRunSummaryTracker } from './RunSummaryTracker';
+import { firstRuntimeInput } from './RuntimeInputState';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
@@ -76,9 +77,8 @@ function bossOnlySession(seed: number): SessionDefinition {
     id: 'boss-session',
     seed,
     arena: SANDBOX_ARENA,
-    player: TRAINING_PLAYER,
+    players: [{ id: 'hero-training', ...TRAINING_PLAYER, loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }],
     companion: null,
-    loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],
@@ -126,9 +126,9 @@ function setupBossWorld() {
       runSummary.reset();
       zone.reset();
       spawn.setRng(rng);
-      const player = entities.spawnPlayer(session.player);
-      if (session.loadout !== null) {
-        combat.setPlayerLoadout(player.id, session.loadout, clock.simTimeMs());
+      const player = entities.spawnPlayer(session.players[0]);
+      if (session.players[0].loadout !== null) {
+        combat.setPlayerLoadout(player.id, session.players[0].loadout, clock.simTimeMs());
       }
     },
     onSessionStop() {
@@ -167,9 +167,10 @@ function setupBossWorld() {
     if (session === null) return;
     spawn.onTick(simTimeMs, entities);
     bossPhase.tick(entities, session.arena, simTimeMs, emitEvent);
-    movement.tick(session.arena, entities, sessionFlow.inputState(), simTimeMs);
+    const primaryInput = firstRuntimeInput(sessionFlow.inputState());
+    movement.tick(session.arena, entities, primaryInput, simTimeMs);
     const intents = combat.tick(
-      sessionFlow.inputState(),
+      primaryInput,
       entities,
       spatialIndex,
       simTimeMs,

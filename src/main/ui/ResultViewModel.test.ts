@@ -363,14 +363,17 @@ function makeSession(overrides: Partial<SessionDefinition> = {}): SessionDefinit
     id: 'result-test',
     seed: 1,
     arena: { width: 32, height: 18 },
-    player: {
-      position: { x: 0, y: 0 },
-      radius: 0.5,
-      contactBox: { width: 1, height: 1 },
-      maxSpeed: 6,
-      maxHp: 5
-    },
-    loadout: null,
+    players: [
+      {
+        id: 'result-player',
+        position: { x: 0, y: 0 },
+        radius: 0.5,
+        contactBox: { width: 1, height: 1 },
+        maxSpeed: 6,
+        maxHp: 5,
+        loadout: null
+      }
+    ],
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],

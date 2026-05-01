@@ -28,7 +28,7 @@ import type {
 } from './EntityStore';
 import { canDamageTarget, DEFAULT_DAMAGE_RULES } from './DamageRules';
 import type { ActorEffectIntent } from './FieldEffectSystem';
-import type { RuntimeInputState } from './RuntimeInputState';
+import type { RuntimeActorInputState } from './RuntimeInputState';
 import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
@@ -105,7 +105,7 @@ export type CombatSystem = Readonly<{
   drainActorEffectIntents(): ReadonlyArray<ActorEffectIntent>;
   clear(): void;
   tick(
-    input: RuntimeInputState,
+    input: RuntimeActorInputState | null,
     store: EntityStore,
     index: SpatialIndex,
     simTimeMs: number,
@@ -244,12 +244,13 @@ export function createCombatSystem(
 }
 
 function syncPlayerSelectedIndex(
-  input: RuntimeInputState,
+  input: RuntimeActorInputState | null,
   store: EntityStore,
   shooterWeapons: Map<EntityId, ShooterWeapons>
 ): void {
   const player = store.player();
   if (player === null) return;
+  if (input === null) return;
   if (input.loadout === null) return;
   const weapons = shooterWeapons.get(player.id);
   if (weapons === undefined) return;
@@ -257,7 +258,7 @@ function syncPlayerSelectedIndex(
 }
 
 function runPlayerFiringDecisions(
-  input: RuntimeInputState,
+  input: RuntimeActorInputState | null,
   store: EntityStore,
   simTimeMs: number,
   shooterWeapons: Map<EntityId, ShooterWeapons>,
@@ -266,6 +267,7 @@ function runPlayerFiringDecisions(
 ): void {
   const player = store.player();
   if (player === null) return;
+  if (input === null) return;
   if (!input.firing) return;
 
   const weapons = shooterWeapons.get(player.id);

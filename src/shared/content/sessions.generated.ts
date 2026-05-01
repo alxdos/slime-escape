@@ -15,7 +15,13 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: true,
     order: 0,
     arena: { width: 32, height: 18 },
-    player: TRAINING_PLAYER,
+    players: [
+      {
+        id: 'hero-training',
+        ...TRAINING_PLAYER,
+        loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 1 }
+      }
+    ],
     companion: {
       maxHp: 4,
       contactBox: { width: 0.55, height: 0.55 },
@@ -25,7 +31,6 @@ export const SESSION_PRESET_TEMPLATES = {
       boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
       rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
     },
-    loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 1 },
     backgrounds: [
       {
         id: 'set-1',
@@ -235,7 +240,13 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: true,
     order: 2,
     arena: { width: 32, height: 18 },
-    player: TRAINING_PLAYER,
+    players: [
+      {
+        id: 'hero-training',
+        ...TRAINING_PLAYER,
+        loadout: { weapons: [PISTOL.id, SMG.id, ROCK_THROWER.id], selectedIndex: 0 }
+      }
+    ],
     companion: {
       maxHp: 4,
       contactBox: { width: 0.55, height: 0.55 },
@@ -245,7 +256,6 @@ export const SESSION_PRESET_TEMPLATES = {
       boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
       rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
     },
-    loadout: { weapons: [PISTOL.id, SMG.id, ROCK_THROWER.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'set-1',
@@ -1354,7 +1364,13 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: true,
     order: 1,
     arena: { width: 32, height: 18 },
-    player: TRAINING_PLAYER,
+    players: [
+      {
+        id: 'hero-training',
+        ...TRAINING_PLAYER,
+        loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id], selectedIndex: 0 }
+      }
+    ],
     companion: {
       maxHp: 4,
       contactBox: { width: 0.55, height: 0.55 },
@@ -1364,7 +1380,6 @@ export const SESSION_PRESET_TEMPLATES = {
       boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
       rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
     },
-    loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'set-1',
@@ -2232,9 +2247,14 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 1,
     arena: { width: 32, height: 18 },
-    player: SANDBOX_PLAYER,
+    players: [
+      {
+        id: 'hero-sandbox',
+        ...SANDBOX_PLAYER,
+        loadout: { weapons: [DEMO_HAZARD_GRENADE.id, DEMO_PROXIMITY_MINE.id, PISTOL.id], selectedIndex: 0 }
+      }
+    ],
     companion: null,
-    loadout: { weapons: [DEMO_HAZARD_GRENADE.id, DEMO_PROXIMITY_MINE.id, PISTOL.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'sandbox',
@@ -2292,9 +2312,14 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 1,
     arena: { width: 32, height: 18 },
-    player: TRAINING_PLAYER,
+    players: [
+      {
+        id: 'hero-training',
+        ...TRAINING_PLAYER,
+        loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id], selectedIndex: 0 }
+      }
+    ],
     companion: null,
-    loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'cellar',
@@ -2470,9 +2495,14 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 90,
     arena: { width: 35, height: 35 },
-    player: TRAINING_PLAYER,
+    players: [
+      {
+        id: 'hero-training',
+        ...TRAINING_PLAYER,
+        loadout: { weapons: [ROCK_THROWER.id, SHOTGUN.id], selectedIndex: 0 }
+      }
+    ],
     companion: null,
-    loadout: { weapons: [ROCK_THROWER.id, SHOTGUN.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'portal',
@@ -2507,9 +2537,14 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 0,
     arena: { width: 32, height: 18 },
-    player: SANDBOX_PLAYER,
+    players: [
+      {
+        id: 'hero-sandbox',
+        ...SANDBOX_PLAYER,
+        loadout: null
+      }
+    ],
     companion: null,
-    loadout: null,
     backgrounds: [
       {
         id: 'sandbox',
@@ -2544,9 +2579,14 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 0,
     arena: { width: 32, height: 18 },
-    player: SANDBOX_PLAYER,
+    players: [
+      {
+        id: 'hero-sandbox',
+        ...SANDBOX_PLAYER,
+        loadout: { weapons: [PISTOL.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 0 }
+      }
+    ],
     companion: null,
-    loadout: { weapons: [PISTOL.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'sandbox',
@@ -2589,9 +2629,14 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 1,
     arena: { width: 32, height: 18 },
-    player: TRAINING_PLAYER,
+    players: [
+      {
+        id: 'hero-training',
+        ...TRAINING_PLAYER,
+        loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id], selectedIndex: 0 }
+      }
+    ],
     companion: null,
-    loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id], selectedIndex: 0 },
     backgrounds: [
       {
         id: 'range',

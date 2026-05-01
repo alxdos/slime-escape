@@ -24,14 +24,14 @@ describe('SimulationCore', () => {
     expect(snapshots).toHaveLength(0);
 
     core.start(session);
-    core.submitInput({ kind: 'move', dx: 1, dy: 0 });
+    core.submitInput(session.players[0].id, { kind: 'move', dx: 1, dy: 0 });
     core.pump(0);
     core.pump(SIM_STEP_MS);
 
     expect(events.map((event) => event.kind)).toEqual(['sessionStart', 'encounterStart']);
     expect(snapshots).toHaveLength(1);
     const player = snapshots[0]?.entities.find((entity) => entity.kind === 'player');
-    expect(player?.x).toBeGreaterThan(session.player.position.x);
+    expect(player?.x).toBeGreaterThan(session.players[0].position.x);
 
     core.stop();
     expect(events.map((event) => event.kind)).toEqual([

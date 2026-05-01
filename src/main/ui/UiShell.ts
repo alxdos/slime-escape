@@ -1545,6 +1545,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     session: SessionDefinition,
     visibleAreaCamera: VisibleAreaCamera
   ): InputController {
+    const primaryPlayer = session.players[0];
     const inputCommandSink = (command: InputCommand): void => {
       sim.sendInput(applyAimAssist(command, session.rules.aimAssist, sim.snapshotPair().curr));
     };
@@ -1552,7 +1553,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       pixelsPerWorldUnit: () =>
         pixelsPerWorldUnitFromVisibleArea(init.canvas, visibleAreaCamera),
       visibleArea: () => visibleAreaCamera.visibleArea(),
-      initialAim: session.player.position,
+      initialAim: primaryPlayer.position,
       onCommand: inputCommandSink
     };
     if (isMobileInputMode()) {
@@ -1579,7 +1580,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       arena: session.arena,
       profile: visibleAreaProfile(),
       effectiveViewport: currentEffectiveViewport(),
-      playerPosition: session.player.position
+      playerPosition: session.players[0].position
     });
   }
 
