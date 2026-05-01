@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { SessionDefinition } from '../../shared/session';
-import type { Snapshot } from '../../shared/snapshot';
+import type { PlayerSnapshot, Snapshot, WeaponHudSnapshot } from '../../shared/snapshot';
 import { DROP_VISUALS } from '../render/dropVisuals';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
@@ -159,6 +159,7 @@ function makeSession(): SessionDefinition {
     id: 'hud-session',
     seed: 1,
     arena: { width: 16, height: 9 },
+    dynamicRoster: false,
     players: [
       {
         id: 'hud-player',
@@ -232,37 +233,68 @@ type TestEncounterSnapshot =
   Omit<NonNullable<Snapshot['encounter']>, 'waveOrdinal'> &
     Partial<Pick<NonNullable<Snapshot['encounter']>, 'waveOrdinal'>>;
 
+type TestPlayerSnapshot = Omit<PlayerSnapshot, 'playerId' | 'formArchetypeId' | 'weaponHud'> &
+  Partial<Pick<PlayerSnapshot, 'playerId' | 'formArchetypeId' | 'weaponHud'>>;
+type TestEntitySnapshot = Snapshot['entities'][number] | TestPlayerSnapshot;
 type TestSnapshotOverrides =
-  Partial<Omit<Snapshot, 'encounter'>> &
-    Readonly<{ encounter?: TestEncounterSnapshot | null }>;
+  Partial<Omit<Snapshot, 'encounter' | 'entities'>> &
+    Readonly<{
+      encounter?: TestEncounterSnapshot | null;
+      entities?: ReadonlyArray<TestEntitySnapshot>;
+      weaponHud?: WeaponHudSnapshot | null;
+    }>;
 
 function makeSnapshot(overrides: TestSnapshotOverrides = {}): Snapshot {
-  const { encounter: encounterOverride, ...otherOverrides } = overrides;
+  const {
+    encounter: encounterOverride,
+    entities: entityOverrides,
+    weaponHud: weaponHudOverride,
+    ...otherOverrides
+  } = overrides;
   const encounter = overrides.encounter ?? {
     id: 'wave-2',
     type: 'wave' as const,
     index: 2,
     elapsedMs: 65000
   };
-  return {
-    simTimeMs: 0,
-    entities: [
+  const entities = normalizeEntities(
+    entityOverrides ?? [
       {
         id: 1,
         kind: 'player',
         x: 0,
         y: 0,
         hp: 4,
-        maxHp: 5
+        maxHp: 5,
+        weaponHud: weaponHudOverride ?? null
       }
     ],
+    weaponHudOverride
+  );
+  return {
+    simTimeMs: 0,
+    entities,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: { dispatched: 3, total: 7, alive: 2 },
     bossHud: null,
-    weaponHud: null,
     ...otherOverrides,
     encounter: normalizeEncounterSnapshot(encounterOverride === undefined ? encounter : encounterOverride)
   };
+}
+
+function normalizeEntities(
+  entities: ReadonlyArray<TestEntitySnapshot>,
+  weaponHudOverride: WeaponHudSnapshot | null | undefined
+): Snapshot['entities'] {
+  return entities.map((entity) => {
+    if (entity.kind !== 'player') return entity;
+    return {
+      ...entity,
+      playerId: entity.playerId ?? 'player',
+      formArchetypeId: entity.formArchetypeId ?? null,
+      weaponHud: entity.weaponHud ?? weaponHudOverride ?? null
+    };
+  });
 }
 
 function normalizeEncounterSnapshot(
@@ -351,6 +383,9 @@ function makeBossSnapshot(): Snapshot {
       {
         id: 1,
         kind: 'player',
+        playerId: 'player',
+        formArchetypeId: null,
+        weaponHud: null,
         x: 0,
         y: 0,
         hp: 4,
@@ -498,6 +533,41 @@ describe('Hud view model', () => {
         ]
       }
     ]);
+  });
+
+  it('reads local weapon HUD from the player snapshot', () => {
+    const view = deriveHudViewModel(
+      makeSession(),
+      makeSnapshot({
+        entities: [
+          {
+            id: 1,
+            kind: 'player',
+            x: 0,
+            y: 0,
+            hp: 4,
+            maxHp: 5,
+            weaponHud: {
+              selectedIndex: 0,
+              weapons: [
+                {
+                  index: 0,
+                  weaponArchetypeId: 'pistol',
+                  cooldownStartedAtSimMs: 0,
+                  cooldownReadyAtSimMs: 0,
+                  modifiers: [],
+                  timedEffects: []
+                }
+              ]
+            }
+          }
+        ]
+      })
+    );
+
+    expect(view.selectedWeaponIndex).toBe(0);
+    expect(view.weaponSlots).toHaveLength(1);
+    expect(view.weaponSlots[0]?.weaponArchetypeId).toBe('pistol');
   });
 
   it('reuses weapon slot DOM while updating live cooldown and timed fills', () => {
@@ -724,6 +794,9 @@ describe('Hud view model', () => {
           {
             id: 1,
             kind: 'player',
+            playerId: 'player',
+            formArchetypeId: null,
+            weaponHud: null,
             x: 0,
             y: 0,
             hp: 4,
@@ -764,6 +837,9 @@ describe('Hud view model', () => {
           {
             id: 1,
             kind: 'player',
+            playerId: 'player',
+            formArchetypeId: null,
+            weaponHud: null,
             x: 0,
             y: 0,
             hp: 4,

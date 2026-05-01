@@ -48,6 +48,7 @@ export type SessionPresetTemplate = Readonly<{
   order: number;
   arena: ArenaConfig;
   players: NonEmptyReadonlyArray<PlayerConfig>;
+  dynamicRoster: false;
   companion: SessionPresetCompanionTemplate | null;
   backgrounds: ReadonlyArray<SessionBackground>;
   musicSampleId: string | null;

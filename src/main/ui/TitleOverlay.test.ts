@@ -8,12 +8,13 @@ import { createTitleOverlay, deriveTitleOverlayViewModel } from './TitleOverlay'
 
 function makeSession(
   encounters: ReadonlyArray<EncounterDefinition>,
-  overrides: Partial<SessionDefinition> = {}
+  overrides: Partial<Omit<SessionDefinition, 'players' | 'dynamicRoster'>> = {}
 ): SessionDefinition {
   return {
     id: 'title-overlay-session',
     seed: 1,
     arena: { width: 16, height: 9 },
+    dynamicRoster: false,
     players: [
       {
         id: 'title-overlay-player',
@@ -112,7 +113,6 @@ function snapshot(
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null,
-    weaponHud: null
   };
 }
 

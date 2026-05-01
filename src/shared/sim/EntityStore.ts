@@ -15,6 +15,7 @@ import type {
   PlayerSpawn,
   Vec2
 } from '../session';
+import type { RuntimeEvent } from '../events';
 
 export type EntityId = number & { readonly __brand: 'EntityId' };
 export type CombatOwnerKind = 'player' | 'companion' | 'enemy' | 'boss';
@@ -23,10 +24,12 @@ export type Player = {
   readonly id: EntityId;
   readonly playerId: string;
   readonly kind: 'player';
-  readonly radius: number;
-  readonly contactBox: ContactBox;
-  readonly maxSpeed: number;
-  readonly maxHp: number;
+  radius: number;
+  contactBox: ContactBox;
+  maxSpeed: number;
+  maxHp: number;
+  formArchetypeId: string | null;
+  invulnerableUntilSimMs: number | null;
   position: { x: number; y: number };
   velocity: { vx: number; vy: number };
   hp: number;
@@ -318,10 +321,17 @@ export type CompanionSpawnSpec = Readonly<{
 export type PlayerEntitySpawnSpec = PlayerSpawn &
   Readonly<{
     id: string;
+    formArchetypeId?: string | null;
+    invulnerableUntilSimMs?: number | null;
   }>;
 
+export type PlayerSpawnEventSink = Readonly<{
+  simTimeMs: number;
+  emit(event: RuntimeEvent): void;
+}>;
+
 export type EntityStore = Readonly<{
-  spawnPlayer(spec: PlayerEntitySpawnSpec): Player;
+  spawnPlayer(spec: PlayerEntitySpawnSpec, eventSink?: PlayerSpawnEventSink): Player;
   spawnCompanion(spec: CompanionSpawnSpec): Companion;
   spawnEnemy(spec: EnemySpawnSpec): Enemy;
   spawnBoss(spec: BossSpawnSpec): Boss;
@@ -375,7 +385,7 @@ export function createEntityStore(): EntityStore {
   }
 
   return {
-    spawnPlayer(spec): Player {
+    spawnPlayer(spec, eventSink): Player {
       const id = makeId();
       const next: Player = {
         id,
@@ -385,12 +395,23 @@ export function createEntityStore(): EntityStore {
         contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
         maxSpeed: spec.maxSpeed,
         maxHp: spec.maxHp,
+        formArchetypeId: spec.formArchetypeId ?? null,
+        invulnerableUntilSimMs: spec.invulnerableUntilSimMs ?? null,
         position: { x: spec.position.x, y: spec.position.y },
         velocity: { vx: 0, vy: 0 },
         hp: spec.maxHp,
         statusEffects: []
       };
       players.set(next.id, next);
+      eventSink?.emit({
+        kind: 'playerSpawn',
+        simTime: eventSink.simTimeMs,
+        entityId: next.id,
+        playerId: next.playerId,
+        x: next.position.x,
+        y: next.position.y,
+        formArchetypeId: next.formArchetypeId
+      });
       return next;
     },
     spawnCompanion(spec): Companion {

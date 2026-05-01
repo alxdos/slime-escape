@@ -144,7 +144,7 @@ export function deriveHudViewModel(
     runTimerText: formatElapsedMs(snapshot?.simTimeMs ?? 0),
     playerHp: derivePlayerHp(session, player),
     weaponSlots: deriveWeaponSlots(snapshot, visualRegistries),
-    selectedWeaponIndex: snapshot?.weaponHud?.selectedIndex ?? null,
+    selectedWeaponIndex: player?.weaponHud?.selectedIndex ?? null,
     boss: deriveBossSummary(snapshot)
   };
 }
@@ -691,7 +691,8 @@ function deriveWeaponSlots(
   snapshot: Snapshot | null,
   visualRegistries: HudVisualRegistries
 ): ReadonlyArray<WeaponSlotViewModel> {
-  const weaponHud = snapshot?.weaponHud ?? null;
+  const player = snapshot === null ? null : findPlayerSnapshot(snapshot);
+  const weaponHud = player?.weaponHud ?? null;
   if (weaponHud === null) return [];
   const simTimeMs = snapshot?.simTimeMs ?? 0;
   return [...weaponHud.weapons]

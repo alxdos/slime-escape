@@ -19,7 +19,7 @@ import type {
   PublicArenaSnapshot,
   PublicArenaWorldBounds
 } from '../../shared/publicArenaProtocol';
-import type { SessionDefinition } from '../../shared/session';
+import type { PlayerConfig, SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import { createAudio, type Audio } from '../audio/Audio';
 import { applyAimAssist } from '../input/AimAssist';
@@ -180,7 +180,10 @@ type DocumentTarget = Pick<Document, 'addEventListener' | 'removeEventListener'>
   exitFullscreen?: () => Promise<void>;
 };
 
-type BuildSessionDefinitionFn = typeof buildSessionDefinition;
+type BuildSessionDefinitionFn = (
+  preset: Parameters<typeof buildSessionDefinition>[0],
+  options: Parameters<typeof buildSessionDefinition>[1]
+) => SessionDefinition;
 type CreateSimWorkerHostFn = (options?: SimWorkerHostOptions) => SimWorkerHost;
 type CreateMenuOverlayFn = (init: MenuOverlayInit) => MenuOverlay;
 type CreatePhaseTransitionCurtainFn = (
@@ -1545,7 +1548,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     session: SessionDefinition,
     visibleAreaCamera: VisibleAreaCamera
   ): InputController {
-    const primaryPlayer = session.players[0];
+    const primaryPlayer = requirePrimaryPlayer(session);
     const inputCommandSink = (command: InputCommand): void => {
       sim.sendInput(applyAimAssist(command, session.rules.aimAssist, sim.snapshotPair().curr));
     };
@@ -1580,8 +1583,16 @@ export function createUiShell(init: UiShellInit): UiShell {
       arena: session.arena,
       profile: visibleAreaProfile(),
       effectiveViewport: currentEffectiveViewport(),
-      playerPosition: session.players[0].position
+      playerPosition: requirePrimaryPlayer(session).position
     });
+  }
+
+  function requirePrimaryPlayer(session: SessionDefinition): PlayerConfig {
+    const player = session.players[0];
+    if (player === undefined) {
+      throw new Error(`session "${session.id}" has no primary player`);
+    }
+    return player;
   }
 
   function visibleAreaProfile(): VisibleAreaProfile {
@@ -1880,6 +1891,7 @@ function publicArenaPresentationToAudioEvent(
         weaponArchetypeId: event.weaponArchetypeId,
         impactDirX: null,
         impactDirY: null,
+        killerId: null,
         x: event.x,
         y: event.y
       };

@@ -102,6 +102,7 @@ function renderPreset(preset: ParsedSessionPreset): string {
         loadout: ${renderLoadout(preset.loadout)}
       }
     ],
+    dynamicRoster: false,
     companion: ${renderCompanionConfig(preset.companion)},
     backgrounds: [
 ${preset.backgrounds.map(renderBackground).join(',\n')}

@@ -85,6 +85,7 @@ export function createHealthDeathSystem(): HealthDeathSystem {
           weaponArchetypeId: weaponArchetypeIdForDamageSource(death.cause),
           impactDirX: death.cause.kind === 'projectile' ? death.cause.impactDirX : null,
           impactDirY: death.cause.kind === 'projectile' ? death.cause.impactDirY : null,
+          killerId: killerIdForDamageSource(death.cause, death.entityId),
           x: death.position.x,
           y: death.position.y
         });
@@ -119,6 +120,7 @@ function applyDamage(
     if (intent.amount <= 0) continue;
     const target = resolveTarget(intent.targetId, store);
     if (target === null) continue;
+    if (isInvulnerable(target, simTimeMs)) continue;
     if (target.hp === 0) continue;
     target.hp = Math.max(0, target.hp - intent.amount);
     damages.push(makeDamageContext(target, intent, simTimeMs));
@@ -206,4 +208,40 @@ function weaponArchetypeIdForDamageSource(source: DamageSource): string | null {
   return source.kind === 'projectile' || source.kind === 'explosion'
     ? source.weaponArchetypeId
     : null;
+}
+
+function isInvulnerable(target: Enemy | Boss | Player | Companion, simTimeMs: number): boolean {
+  return (
+    target.kind === 'player' &&
+    target.invulnerableUntilSimMs !== null &&
+    target.invulnerableUntilSimMs > simTimeMs
+  );
+}
+
+function killerIdForDamageSource(source: DamageSource, targetId: EntityId): EntityId | null {
+  const candidate = killerCandidateForDamageSource(source);
+  if (candidate === null || candidate === targetId) return null;
+  return candidate;
+}
+
+function killerCandidateForDamageSource(source: DamageSource): EntityId | null {
+  switch (source.kind) {
+    case 'projectile':
+    case 'explosion':
+      return source.ownerId ?? null;
+    case 'enemyContact':
+      return source.enemyId;
+    case 'boss':
+      return source.bossId;
+    case 'fieldEffect':
+    case 'statusEffect':
+    case 'environment':
+      return null;
+    default:
+      return assertNever(source);
+  }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`unhandled damage source: ${String(value)}`);
 }

@@ -21,6 +21,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -424,6 +425,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -827,6 +829,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -1238,6 +1241,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -3086,6 +3090,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -4934,6 +4939,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -6782,6 +6788,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -8474,6 +8481,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -10166,6 +10174,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "set-1",
@@ -11842,6 +11851,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -11988,6 +11998,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -12134,6 +12145,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -12288,6 +12300,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "cellar",
@@ -12647,6 +12660,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "cellar",
@@ -13006,6 +13020,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "cellar",
@@ -13357,6 +13372,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "portal",
@@ -13441,6 +13457,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "portal",
@@ -13525,6 +13542,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "portal",
@@ -13609,6 +13627,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -13687,6 +13706,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -13765,6 +13785,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -13843,6 +13864,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -13939,6 +13961,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -14035,6 +14058,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "sandbox",
@@ -14139,6 +14163,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "range",
@@ -14677,6 +14702,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "range",
@@ -15215,6 +15241,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
     },
   ],
   "companion": null,
+  "dynamicRoster": false,
   "encounters": [
     {
       "backgroundId": "range",

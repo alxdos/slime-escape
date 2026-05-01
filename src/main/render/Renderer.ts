@@ -1874,7 +1874,8 @@ function selectedWeaponArchetypeId(snapshot: Snapshot | null): string | null {
   if (snapshot === null) {
     return null;
   }
-  const weaponHud = snapshot.weaponHud;
+  const player = findPlayerSnapshot(snapshot);
+  const weaponHud = player?.weaponHud ?? null;
   if (weaponHud === null || weaponHud.selectedIndex === null) return null;
   const selected = weaponHud.weapons.find((weapon) => weapon.index === weaponHud.selectedIndex);
   return selected?.weaponArchetypeId ?? null;

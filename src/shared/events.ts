@@ -52,8 +52,18 @@ export type RuntimeEvent =
       weaponArchetypeId: string | null;
       impactDirX: number | null;
       impactDirY: number | null;
+      killerId: number | null;
       x: number;
       y: number;
+    }
+  | {
+      kind: 'playerSpawn';
+      simTime: number;
+      entityId: number;
+      playerId: string;
+      x: number;
+      y: number;
+      formArchetypeId: string | null;
     }
   | {
       kind: 'companionDowned';

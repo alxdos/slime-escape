@@ -148,17 +148,82 @@ describe('HealthDeathSystem', () => {
 
   it('copies projectile weapon and impact direction into death events', () => {
     const store = createEntityStore();
+    const shooter = store.spawnPlayer({
+      id: 'shooter',
+      position: { x: -1, y: 0 },
+      radius: 0.5,
+      contactBox: squareContactBox(0.5),
+      maxSpeed: 6,
+      maxHp: 3
+    });
     const enemy = spawnTarget(store, 1);
     const sys = createHealthDeathSystem();
     const events: RuntimeEvent[] = [];
 
-    sys.tick([makeIntent(enemy.id, 1)], store, 0, (e) => events.push(e));
+    sys.tick(
+      [
+        {
+          ...makeIntent(enemy.id, 1),
+          source: {
+            kind: 'projectile',
+            projectileId: 0 as EntityId,
+            ownerId: shooter.id,
+            ownerKind: 'player',
+            weaponArchetypeId: PISTOL.id,
+            impactDirX: 1,
+            impactDirY: 0
+          }
+        }
+      ],
+      store,
+      0,
+      (e) => events.push(e)
+    );
 
     const death = events.find((e) => e.kind === 'death');
     if (death?.kind !== 'death') throw new Error('expected death event');
     expect(death.weaponArchetypeId).toBe(PISTOL.id);
     expect(death.impactDirX).toBe(1);
     expect(death.impactDirY).toBe(0);
+    expect(death.killerId).toBe(shooter.id);
+  });
+
+  it('sets killerId to null for self-owned projectile deaths', () => {
+    const store = createEntityStore();
+    const player = store.spawnPlayer({
+      id: 'player',
+      position: { x: 0, y: 0 },
+      radius: 0.5,
+      contactBox: squareContactBox(0.5),
+      maxSpeed: 6,
+      maxHp: 1
+    });
+    const sys = createHealthDeathSystem();
+    const events: RuntimeEvent[] = [];
+
+    sys.tick(
+      [
+        {
+          ...makeIntent(player.id, 1),
+          source: {
+            kind: 'projectile',
+            projectileId: 0 as EntityId,
+            ownerId: player.id,
+            ownerKind: 'player',
+            weaponArchetypeId: PISTOL.id,
+            impactDirX: 1,
+            impactDirY: 0
+          }
+        }
+      ],
+      store,
+      0,
+      (e) => events.push(e)
+    );
+
+    const death = events.find((e) => e.kind === 'death');
+    if (death?.kind !== 'death') throw new Error('expected death event');
+    expect(death.killerId).toBeNull();
   });
 
   it('runs damage hooks before death hooks and before entity removal', () => {
@@ -272,6 +337,39 @@ describe('HealthDeathSystem player damage', () => {
     const sys = createHealthDeathSystem();
 
     sys.tick([makeContactIntent(enemy.id, player.id, 2)], store, 0, () => {});
+
+    expect(player.hp).toBe(3);
+  });
+
+  it('drops damage intents against an invulnerable player before hooks and events', () => {
+    const store = createEntityStore();
+    const player = store.spawnPlayer({
+      id: 'player',
+      position: { x: 0, y: 0 },
+      radius: 0.5,
+      contactBox: squareContactBox(0.5),
+      maxSpeed: 6,
+      maxHp: 5,
+      invulnerableUntilSimMs: 200
+    });
+    const enemy = spawnTarget(store, 1);
+    const sys = createHealthDeathSystem();
+    const damageHook = vi.fn();
+    const deathHook = vi.fn();
+    const events: RuntimeEvent[] = [];
+    sys.registerDamageHook(damageHook);
+    sys.registerHook(deathHook);
+
+    sys.tick([makeContactIntent(enemy.id, player.id, 5)], store, 100, (event) =>
+      events.push(event)
+    );
+
+    expect(player.hp).toBe(5);
+    expect(damageHook).not.toHaveBeenCalled();
+    expect(deathHook).not.toHaveBeenCalled();
+    expect(events).toHaveLength(0);
+
+    sys.tick([makeContactIntent(enemy.id, player.id, 2)], store, 200, () => {});
 
     expect(player.hp).toBe(3);
   });

@@ -12,6 +12,7 @@ import { BOMB_PLACER, GRENADE_LAUNCHER, PISTOL, ROCK_THROWER } from '../../share
 import type { SessionDefinition } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import type { CompanionSnapshot } from '../../shared/snapshot';
+import type { WeaponHudSnapshot } from '../../shared/snapshot';
 import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
 import { ARC_PREVIEW_OUTLINE_NAME } from './arcPreview';
 import { DROP_VISUALS } from './dropVisuals';
@@ -96,21 +97,43 @@ function createEmptySnapshotPair(): SnapshotPair {
   };
 }
 
-type SnapshotEntities = NonNullable<SnapshotPair['curr']>['entities'];
+type SnapshotEntity = NonNullable<SnapshotPair['curr']>['entities'][number];
+type TestPlayerSnapshot = Omit<
+  Extract<SnapshotEntity, { kind: 'player' }>,
+  'playerId' | 'formArchetypeId' | 'weaponHud'
+> &
+  Partial<
+    Pick<Extract<SnapshotEntity, { kind: 'player' }>, 'playerId' | 'formArchetypeId' | 'weaponHud'>
+  >;
+type SnapshotEntities = ReadonlyArray<SnapshotEntity | TestPlayerSnapshot>;
 
 function createSnapshot(
   entities: SnapshotEntities,
-  overrides: Readonly<{ simTimeMs?: number }> = {}
+  overrides: Readonly<{ simTimeMs?: number; weaponHud?: WeaponHudSnapshot | null }> = {}
 ): NonNullable<SnapshotPair['curr']> {
   return {
     simTimeMs: overrides.simTimeMs ?? 0,
-    entities,
+    entities: normalizeSnapshotEntities(entities, overrides.weaponHud),
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null,
-    weaponHud: null
+    bossHud: null
   };
+}
+
+function normalizeSnapshotEntities(
+  entities: SnapshotEntities,
+  weaponHudOverride: WeaponHudSnapshot | null | undefined
+): NonNullable<SnapshotPair['curr']>['entities'] {
+  return entities.map((entity) => {
+    if (entity.kind !== 'player') return entity;
+    return {
+      ...entity,
+      playerId: entity.playerId ?? 'player',
+      formArchetypeId: entity.formArchetypeId ?? null,
+      weaponHud: entity.weaponHud ?? weaponHudOverride ?? null
+    };
+  });
 }
 
 function createSnapshotPairWithEntities(entities: SnapshotEntities): SnapshotPair {
@@ -523,6 +546,7 @@ describe('createRenderer', () => {
       weaponArchetypeId: 'pistol',
       impactDirX: 1,
       impactDirY: 0,
+      killerId: null,
       x: 2,
       y: 3
     });
@@ -1913,8 +1937,7 @@ describe('createRenderer', () => {
       spriteTextures: createSpriteTextures(),
       getSnapshotPair: () => ({
         prev: null,
-        curr: {
-          ...createSnapshot([{ id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 }]),
+        curr: createSnapshot([{ id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 }], {
           weaponHud: {
             selectedIndex: 0,
             weapons: [
@@ -1928,7 +1951,7 @@ describe('createRenderer', () => {
               }
             ]
           }
-        },
+        }),
         currReceivedAtMs: 0,
         nowMs: 0
       }),
@@ -2238,8 +2261,7 @@ describe('createRenderer', () => {
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
-        bossHud: null,
-        weaponHud: null
+        bossHud: null
       },
       currReceivedAtMs: 0,
       nowMs: 0

@@ -150,12 +150,13 @@ function findHarnessRoot(parent: FakeDomElement, role: string): FakeDomElement |
 
 function makeSession(
   id = 'test-session',
-  overrides: Partial<SessionDefinition> = {}
+  overrides: Partial<Omit<SessionDefinition, 'players' | 'dynamicRoster'>> = {}
 ): SessionDefinition {
   return {
     id,
     seed: 7,
     arena: { width: 16, height: 9 },
+    dynamicRoster: false,
     players: [
       {
         id: 'ui-shell-player',

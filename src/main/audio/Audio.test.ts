@@ -215,17 +215,21 @@ function makeResultSummary(
   };
 }
 
-type SnapshotInput =
-  | (Omit<Snapshot, 'weaponHud'> & Partial<Pick<Snapshot, 'weaponHud'>>)
-  | null;
+type SnapshotInput = (Snapshot & Readonly<{ weaponHud?: unknown }>) | null;
 
 function makeSnapshotPair(curr: SnapshotInput = null, nowMs = 0): SnapshotPair {
+  const normalizedCurr = curr === null ? null : stripLegacyWeaponHud(curr);
   return {
     prev: null,
-    curr: curr === null ? null : { weaponHud: null, ...curr },
+    curr: normalizedCurr,
     currReceivedAtMs: 0,
     nowMs
   };
+}
+
+function stripLegacyWeaponHud(snapshot: Snapshot & Readonly<{ weaponHud?: unknown }>): Snapshot {
+  const { weaponHud: _legacyWeaponHud, ...rest } = snapshot;
+  return rest;
 }
 
 function makeBossSession(
@@ -237,6 +241,7 @@ function makeBossSession(
     id: 'boss-session',
     seed: 1,
     arena: { width: 16, height: 9 },
+    dynamicRoster: false,
     players: [
       {
         id: 'audio-test-player',
@@ -582,6 +587,7 @@ describe('createAudio', () => {
       weaponArchetypeId: 'pistol',
       impactDirX: 1,
       impactDirY: 0,
+      killerId: null,
       x: 0,
       y: 0
     });
@@ -725,6 +731,7 @@ describe('createAudio', () => {
       weaponArchetypeId: 'pistol',
       impactDirX: 1,
       impactDirY: 0,
+      killerId: null,
       x: 0,
       y: 0
     });
@@ -774,6 +781,7 @@ describe('createAudio', () => {
       weaponArchetypeId: null,
       impactDirX: null,
       impactDirY: null,
+      killerId: null,
       x: 0,
       y: 0
     });
@@ -786,6 +794,7 @@ describe('createAudio', () => {
       weaponArchetypeId: null,
       impactDirX: null,
       impactDirY: null,
+      killerId: null,
       x: 0,
       y: 0
     });
@@ -939,8 +948,7 @@ describe('createAudio', () => {
       encounter: null,
       zone: { mode: 'disabled', margin: 0 },
       waveProgress: null,
-      bossHud: null,
-      weaponHud: null
+      bossHud: null
     };
 
     audio.update(makeSnapshotPair(rescueSnapshot, 1000), { kind: 'running' }, null);
@@ -1265,8 +1273,7 @@ describe('createAudio', () => {
       },
       zone: { mode: 'disabled', margin: 0 },
       waveProgress: null,
-      bossHud: null,
-      weaponHud: null
+      bossHud: null
     };
 
     audio.update(makeSnapshotPair(slimeSnapshot), { kind: 'running' }, null);

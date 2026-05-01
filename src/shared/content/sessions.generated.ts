@@ -22,6 +22,7 @@ export const SESSION_PRESET_TEMPLATES = {
         loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 1 }
       }
     ],
+    dynamicRoster: false,
     companion: {
       maxHp: 4,
       contactBox: { width: 0.55, height: 0.55 },
@@ -247,6 +248,7 @@ export const SESSION_PRESET_TEMPLATES = {
         loadout: { weapons: [PISTOL.id, SMG.id, ROCK_THROWER.id], selectedIndex: 0 }
       }
     ],
+    dynamicRoster: false,
     companion: {
       maxHp: 4,
       contactBox: { width: 0.55, height: 0.55 },
@@ -1371,6 +1373,7 @@ export const SESSION_PRESET_TEMPLATES = {
         loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id], selectedIndex: 0 }
       }
     ],
+    dynamicRoster: false,
     companion: {
       maxHp: 4,
       contactBox: { width: 0.55, height: 0.55 },
@@ -2254,6 +2257,7 @@ export const SESSION_PRESET_TEMPLATES = {
         loadout: { weapons: [DEMO_HAZARD_GRENADE.id, DEMO_PROXIMITY_MINE.id, PISTOL.id], selectedIndex: 0 }
       }
     ],
+    dynamicRoster: false,
     companion: null,
     backgrounds: [
       {
@@ -2319,6 +2323,7 @@ export const SESSION_PRESET_TEMPLATES = {
         loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id], selectedIndex: 0 }
       }
     ],
+    dynamicRoster: false,
     companion: null,
     backgrounds: [
       {
@@ -2502,6 +2507,7 @@ export const SESSION_PRESET_TEMPLATES = {
         loadout: { weapons: [ROCK_THROWER.id, SHOTGUN.id], selectedIndex: 0 }
       }
     ],
+    dynamicRoster: false,
     companion: null,
     backgrounds: [
       {
@@ -2544,6 +2550,7 @@ export const SESSION_PRESET_TEMPLATES = {
         loadout: null
       }
     ],
+    dynamicRoster: false,
     companion: null,
     backgrounds: [
       {
@@ -2586,6 +2593,7 @@ export const SESSION_PRESET_TEMPLATES = {
         loadout: { weapons: [PISTOL.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 0 }
       }
     ],
+    dynamicRoster: false,
     companion: null,
     backgrounds: [
       {
@@ -2636,6 +2644,7 @@ export const SESSION_PRESET_TEMPLATES = {
         loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id], selectedIndex: 0 }
       }
     ],
+    dynamicRoster: false,
     companion: null,
     backgrounds: [
       {

@@ -453,6 +453,9 @@ function snapshot(
       {
         id: 1,
         kind: 'player',
+        playerId: 'player',
+        formArchetypeId: null,
+        weaponHud: null,
         x: options.playerX ?? 100,
         y: options.playerY ?? 100,
         hp: 5,
@@ -462,8 +465,7 @@ function snapshot(
     encounter: { id, type, index, elapsedMs: 0, waveOrdinal: type === 'wave' ? index + 1 : null },
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null,
-    weaponHud: null
+    bossHud: null
   };
 }
 
@@ -497,6 +499,7 @@ function makeSession(
     id: 'test-session',
     seed: 1,
     arena: { width: options.arenaWidth ?? 24, height: options.arenaHeight ?? 9 },
+    dynamicRoster: false,
     players: [
       {
         id: 'portal-controller-player',

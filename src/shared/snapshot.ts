@@ -4,10 +4,13 @@ import type { EncounterType } from './session';
 export type PlayerSnapshot = Readonly<{
   id: number;
   kind: 'player';
+  playerId: string;
   x: number;
   y: number;
   hp: number;
   maxHp: number;
+  formArchetypeId: string | null;
+  weaponHud: WeaponHudSnapshot | null;
   statusEffects?: ReadonlyArray<StatusEffectSnapshot>;
 }>;
 
@@ -165,5 +168,4 @@ export type Snapshot = Readonly<{
   zone: ZoneSnapshot;
   waveProgress: WaveProgressSnapshot | null;
   bossHud: BossHudSnapshot | null;
-  weaponHud: WeaponHudSnapshot | null;
 }>;

@@ -12,7 +12,7 @@ import { WEAPON_ARCHETYPES, type WeaponModifier } from '../content/weapons';
 import { assertNever } from '../protocol';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../timing';
 
-import type { EntityStore } from './EntityStore';
+import type { EntityId, EntityStore } from './EntityStore';
 import type { EncounterContext } from './SessionFlowSystem';
 
 const TICKS_PER_SNAPSHOT = Math.round(SNAPSHOT_INTERVAL_MS / SIM_STEP_MS);
@@ -21,7 +21,7 @@ export type SnapshotSources = Readonly<{
   encounter: EncounterContext | null;
   zone: ZoneSnapshot;
   waveProgress: WaveProgressSnapshot | null;
-  weaponHud: WeaponHudSnapshot | null;
+  weaponHudFor(playerId: EntityId): WeaponHudSnapshot | null;
 }>;
 
 export type SnapshotExportSystem = Readonly<{
@@ -37,15 +37,17 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
       tickCount += 1;
       if (!shouldEmit) return null;
       const entities: EntitySnapshot[] = [];
-      const player = store.player();
-      if (player !== null) {
+      for (const player of store.players()) {
         entities.push({
           id: player.id,
           kind: 'player',
+          playerId: player.playerId,
           x: player.position.x,
           y: player.position.y,
           hp: player.hp,
           maxHp: player.maxHp,
+          formArchetypeId: player.formArchetypeId,
+          weaponHud: copyWeaponHud(sources.weaponHudFor(player.id)),
           statusEffects: player.statusEffects.map((effect) => ({
             kind: effect.kind,
             expiresAtSimMs: effect.expireAtSimMs
@@ -167,21 +169,7 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
                 total: sources.waveProgress.total,
                 alive: sources.waveProgress.alive
               },
-        bossHud,
-        weaponHud:
-          sources.weaponHud === null
-            ? null
-            : {
-                selectedIndex: sources.weaponHud.selectedIndex,
-                weapons: sources.weaponHud.weapons.map((weapon) => ({
-                  index: weapon.index,
-                  weaponArchetypeId: weapon.weaponArchetypeId,
-                  cooldownStartedAtSimMs: weapon.cooldownStartedAtSimMs,
-                  cooldownReadyAtSimMs: weapon.cooldownReadyAtSimMs,
-                  modifiers: weapon.modifiers.map(copyWeaponModifier),
-                  timedEffects: weapon.timedEffects.map(copyTimedWeaponEffect)
-                }))
-              }
+        bossHud
       };
     },
     reset(): void {
@@ -210,6 +198,21 @@ function copyWeaponModifier(modifier: WeaponModifier): WeaponModifier {
     default:
       return assertNever(modifier);
   }
+}
+
+function copyWeaponHud(source: WeaponHudSnapshot | null): WeaponHudSnapshot | null {
+  if (source === null) return null;
+  return {
+    selectedIndex: source.selectedIndex,
+    weapons: source.weapons.map((weapon) => ({
+      index: weapon.index,
+      weaponArchetypeId: weapon.weaponArchetypeId,
+      cooldownStartedAtSimMs: weapon.cooldownStartedAtSimMs,
+      cooldownReadyAtSimMs: weapon.cooldownReadyAtSimMs,
+      modifiers: weapon.modifiers.map(copyWeaponModifier),
+      timedEffects: weapon.timedEffects.map(copyTimedWeaponEffect)
+    }))
+  };
 }
 
 function copyTimedWeaponEffect(

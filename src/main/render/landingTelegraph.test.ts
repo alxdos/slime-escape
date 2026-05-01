@@ -155,8 +155,7 @@ function snapshot(projectiles: ReadonlyArray<ProjectileSnapshot>): Snapshot {
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null,
-    weaponHud: null
+    bossHud: null
   };
 }
 

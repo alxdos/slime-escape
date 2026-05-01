@@ -79,9 +79,11 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
       });
       return;
     }
+    if (!isValidRoster(next)) {
+      return;
+    }
     sessionRng = createRng(next.seed);
     resetRuntimeInputState(input, next.players);
-    deps.onSessionStart?.(next, sessionRng);
     clock.toRunning();
     const simTime = clock.simTimeMs();
     active = {
@@ -92,10 +94,32 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
       dungeonWaveOrdinal: 0
     };
     emitEvent({ kind: 'sessionStart', simTime });
+    deps.onSessionStart?.(next, sessionRng);
     const firstEncounter = next.encounters[0];
     if (firstEncounter !== undefined) {
       activateEncounter(0, simTime);
     }
+  }
+
+  function isValidRoster(session: SessionDefinition): boolean {
+    if (!session.dynamicRoster && session.players.length === 0) {
+      log.warn('startSession ignored: fixed roster session has no players', {
+        sessionId: session.id
+      });
+      return false;
+    }
+    const seen = new Set<string>();
+    for (const player of session.players) {
+      if (seen.has(player.id)) {
+        log.warn('startSession ignored: duplicate playerId in session roster', {
+          sessionId: session.id,
+          playerId: player.id
+        });
+        return false;
+      }
+      seen.add(player.id);
+    }
+    return true;
   }
 
   function stop(): void {

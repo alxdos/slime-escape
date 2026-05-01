@@ -335,7 +335,7 @@ function setupSimWorld(session: SessionDefinition) {
       encounter: sessionFlow.activeEncounter(),
       zone: zone.zone(),
       waveProgress: spawn.waveProgress(),
-      weaponHud: null
+      weaponHudFor: () => null
     });
     return snapshot?.entities.find(
       (entity): entity is ProjectileSnapshot =>

@@ -1,17 +1,24 @@
 import type { RuntimeEvent } from '../events';
 import type { InputCommand } from '../input';
-import type { SessionDefinition } from '../session';
+import { log } from '../log';
+import type { ContactBox, Loadout, PlayerConfig, SessionDefinition } from '../session';
 import type { Snapshot } from '../snapshot';
 
 import { createBossPhaseSystem } from './BossPhaseSystem';
 import { createCompanionSystem } from './CompanionSystem';
 import { createCombatSystem } from './CombatSystem';
 import { createDropSystem } from './DropSystem';
-import { createEntityStore } from './EntityStore';
+import { createEntityStore, type EntityId, type Player } from './EntityStore';
 import { createFieldEffectSystem } from './FieldEffectSystem';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createRetaliationSystem } from './RetaliationSystem';
+import {
+  addRuntimeInputPlayer,
+  removeRuntimeInputPlayer,
+  runtimeInputForPlayer,
+  setRuntimeInputPlayerLoadout
+} from './RuntimeInputState';
 import { createRunSummaryTracker } from './RunSummaryTracker';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSimulationClock } from './SimulationClock';
@@ -26,14 +33,44 @@ export type SimulationCoreOptions = Readonly<{
   onEvent(event: RuntimeEvent): void;
 }>;
 
+export type PlayerFormUpdate = Readonly<{
+  radius?: number;
+  contactBox?: ContactBox;
+  maxSpeed?: number;
+  maxHp?: number;
+  loadout?: Loadout | null;
+  formArchetypeId?: string | null;
+}>;
+
 export type SimulationCore = Readonly<{
   start(session: SessionDefinition): void;
   stop(): void;
   pause(): void;
   resume(): void;
   submitInput(playerId: string, command: InputCommand): void;
+  addPlayer(playerConfig: PlayerConfig, opts?: { invulnerableUntilSimMs?: number }): void;
+  removePlayer(playerId: string): void;
+  setPlayerForm(
+    playerId: string,
+    formUpdate: PlayerFormUpdate,
+    opts?: { refillHp?: boolean }
+  ): void;
   pump(nowMs: number): void;
 }>;
+
+type PendingDynamicRosterOp =
+  | Readonly<{
+      kind: 'addPlayer';
+      playerConfig: PlayerConfig;
+      invulnerableUntilSimMs: number | null;
+    }>
+  | Readonly<{ kind: 'removePlayer'; playerId: string }>
+  | Readonly<{
+      kind: 'setPlayerForm';
+      playerId: string;
+      formUpdate: PlayerFormUpdate;
+      refillHp: boolean;
+    }>;
 
 export function createSimulationCore(options: SimulationCoreOptions): SimulationCore {
   const entities = createEntityStore();
@@ -56,6 +93,7 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
   const runSummary = createRunSummaryTracker();
   let pendingFieldDamageIntents: ReturnType<typeof fieldEffects.tick>['damageIntents'] = [];
   let pendingStatusDamageIntents: ReturnType<typeof statusEffects.tick> = [];
+  let pendingDynamicRosterOps: PendingDynamicRosterOp[] = [];
   const drops = createDropSystem(
     undefined,
     undefined,
@@ -82,6 +120,7 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
   const clock = createSimulationClock((_dtMs, simTimeMs) => {
     const session = sessionFlow.activeSession();
     if (session === null) return;
+    applyPendingDynamicRosterOps(simTimeMs);
     const inputState = sessionFlow.inputState();
     spawn.onTick(simTimeMs, entities);
     const bossIntents = bossPhase.tick(entities, session.arena, simTimeMs, emitEvent);
@@ -132,7 +171,7 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       encounter: encounterCtx,
       zone: zone.zone(),
       waveProgress: waveSnap,
-      weaponHud: combat.weaponHudFor(entities.player()?.id ?? null, simTimeMs)
+      weaponHudFor: (playerId) => combat.weaponHudFor(playerId, simTimeMs)
     });
     if (snapshot !== null) {
       options.onSnapshot(snapshot);
@@ -161,12 +200,16 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       zone.reset();
       pendingFieldDamageIntents = [];
       pendingStatusDamageIntents = [];
+      pendingDynamicRosterOps = [];
       spawn.setRng(rng);
       drops.setRng(rng);
       combat.setDamageRules(session.rules.damage);
       fieldEffects.setDamageRules(session.rules.damage);
       for (const playerConfig of session.players) {
-        const player = entities.spawnPlayer(playerConfig);
+        const player = entities.spawnPlayer(playerConfig, {
+          simTimeMs: clock.simTimeMs(),
+          emit: emitEvent
+        });
         if (playerConfig.loadout !== null) {
           combat.setPlayerLoadout(player.id, playerConfig.loadout, clock.simTimeMs());
         }
@@ -201,6 +244,7 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       zone.reset();
       pendingFieldDamageIntents = [];
       pendingStatusDamageIntents = [];
+      pendingDynamicRosterOps = [];
       spawn.setRng(null);
     },
     onEncounterStart(encounter) {
@@ -226,10 +270,156 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
     if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
-    if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath(ctx.entityId);
+    if (ctx.entityKind === 'player') {
+      const player = entities.playerById(ctx.entityId);
+      if (player !== null) {
+        removeRuntimeInputPlayer(sessionFlow.inputState(), player.playerId);
+      }
+      sessionFlow.onPlayerDeath(ctx.entityId);
+    }
   });
 
   healthDeath.registerDamageHook((ctx) => retaliation.onDamage(ctx, entities));
+
+  function applyPendingDynamicRosterOps(simTimeMs: number): void {
+    if (pendingDynamicRosterOps.length === 0) return;
+    const ops = pendingDynamicRosterOps;
+    pendingDynamicRosterOps = [];
+    for (const op of ops) {
+      switch (op.kind) {
+        case 'addPlayer':
+          applyAddPlayer(op.playerConfig, op.invulnerableUntilSimMs, simTimeMs);
+          break;
+        case 'removePlayer':
+          applyRemovePlayer(op.playerId);
+          break;
+        case 'setPlayerForm':
+          applySetPlayerForm(op.playerId, op.formUpdate, op.refillHp, simTimeMs);
+          break;
+        default:
+          assertNeverDynamicRosterOp(op);
+      }
+    }
+  }
+
+  function applyAddPlayer(
+    playerConfig: PlayerConfig,
+    invulnerableUntilSimMs: number | null,
+    simTimeMs: number
+  ): void {
+    if (!canApplyDynamicRosterOp('addPlayer')) return;
+    if (runtimeInputForPlayer(sessionFlow.inputState(), playerConfig.id) !== null) {
+      log.warn('addPlayer ignored: playerId already exists', { playerId: playerConfig.id });
+      return;
+    }
+    const player = entities.spawnPlayer(
+      {
+        ...playerConfig,
+        invulnerableUntilSimMs
+      },
+      { simTimeMs, emit: emitEvent }
+    );
+    addRuntimeInputPlayer(sessionFlow.inputState(), playerConfig);
+    if (playerConfig.loadout !== null) {
+      combat.setPlayerLoadout(player.id, playerConfig.loadout, simTimeMs);
+    }
+  }
+
+  function applyRemovePlayer(playerId: string): void {
+    if (!canApplyDynamicRosterOp('removePlayer')) return;
+    const player = playerByStableId(playerId);
+    if (player === null) {
+      log.warn('removePlayer ignored: unknown playerId', { playerId });
+      return;
+    }
+    removeRuntimeInputPlayer(sessionFlow.inputState(), playerId);
+    combat.removeShooter(player.id);
+    removeProjectilesOwnedBy(player.id);
+    entities.removePlayer(player.id);
+  }
+
+  function applySetPlayerForm(
+    playerId: string,
+    formUpdate: PlayerFormUpdate,
+    refillHp: boolean,
+    simTimeMs: number
+  ): void {
+    if (!canApplyDynamicRosterOp('setPlayerForm')) return;
+    const player = playerByStableId(playerId);
+    if (player === null) {
+      log.warn('setPlayerForm ignored: unknown playerId', { playerId });
+      return;
+    }
+    if (formUpdate.radius !== undefined) player.radius = formUpdate.radius;
+    if (formUpdate.contactBox !== undefined) {
+      player.contactBox = {
+        width: formUpdate.contactBox.width,
+        height: formUpdate.contactBox.height
+      };
+    }
+    if (formUpdate.maxSpeed !== undefined) player.maxSpeed = formUpdate.maxSpeed;
+    if (formUpdate.maxHp !== undefined) player.maxHp = formUpdate.maxHp;
+    if ('formArchetypeId' in formUpdate) {
+      player.formArchetypeId = formUpdate.formArchetypeId ?? null;
+    }
+    if ('loadout' in formUpdate) {
+      const loadout = formUpdate.loadout ?? null;
+      setRuntimeInputPlayerLoadout(sessionFlow.inputState(), playerId, loadout);
+      if (loadout === null) {
+        combat.removeShooter(player.id);
+      } else {
+        combat.setPlayerLoadout(player.id, loadout, simTimeMs);
+      }
+    }
+    player.hp = refillHp ? player.maxHp : Math.min(player.hp, player.maxHp);
+  }
+
+  function canApplyDynamicRosterOp(opName: string): boolean {
+    const session = sessionFlow.activeSession();
+    if (session === null) {
+      log.warn(`${opName} ignored: no active session`);
+      return false;
+    }
+    if (!session.dynamicRoster) {
+      log.warn(`${opName} ignored: active session has fixed roster`, {
+        sessionId: session.id
+      });
+      return false;
+    }
+    return true;
+  }
+
+  function playerByStableId(playerId: string): Player | null {
+    for (const player of entities.players()) {
+      if (player.playerId === playerId) return player;
+    }
+    return null;
+  }
+
+  function removeProjectilesOwnedBy(ownerId: EntityId): void {
+    const removals: EntityId[] = [];
+    for (const projectile of entities.projectiles()) {
+      if (projectile.ownerId === ownerId) removals.push(projectile.id);
+    }
+    for (const projectileId of removals) {
+      entities.removeProjectile(projectileId);
+    }
+  }
+
+  function enqueueDynamicRosterOp(op: PendingDynamicRosterOp): void {
+    const session = sessionFlow.activeSession();
+    if (session === null) {
+      log.warn(`${op.kind} ignored: no active session`);
+      return;
+    }
+    if (!session.dynamicRoster) {
+      log.warn(`${op.kind} ignored: active session has fixed roster`, {
+        sessionId: session.id
+      });
+      return;
+    }
+    pendingDynamicRosterOps.push(op);
+  }
 
   return {
     start(session): void {
@@ -247,8 +437,30 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
     submitInput(playerId, command): void {
       sessionFlow.handleInput(playerId, command);
     },
+    addPlayer(playerConfig, opts): void {
+      enqueueDynamicRosterOp({
+        kind: 'addPlayer',
+        playerConfig,
+        invulnerableUntilSimMs: opts?.invulnerableUntilSimMs ?? null
+      });
+    },
+    removePlayer(playerId): void {
+      enqueueDynamicRosterOp({ kind: 'removePlayer', playerId });
+    },
+    setPlayerForm(playerId, formUpdate, opts): void {
+      enqueueDynamicRosterOp({
+        kind: 'setPlayerForm',
+        playerId,
+        formUpdate,
+        refillHp: opts?.refillHp ?? false
+      });
+    },
     pump(nowMs): void {
       clock.pump(nowMs);
     }
   };
+}
+
+function assertNeverDynamicRosterOp(value: never): never {
+  throw new Error(`unhandled dynamic roster op: ${String(value)}`);
 }

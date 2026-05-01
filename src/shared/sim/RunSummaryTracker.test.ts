@@ -246,6 +246,7 @@ function makeSession(
     id: 'summary-test',
     seed: 1,
     arena: { width: 32, height: 18 },
+    dynamicRoster: false,
     players: [
       {
         id: 'summary-player',

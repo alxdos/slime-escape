@@ -247,12 +247,13 @@ function pointStates(
 
 function makeSession(
   encounters: ReadonlyArray<EncounterDefinition>,
-  overrides: Partial<SessionDefinition> = {}
+  overrides: Partial<Omit<SessionDefinition, 'players' | 'dynamicRoster'>> = {}
 ): SessionDefinition {
   return {
     id: 'escape-progress-test',
     seed: 1,
     arena: { width: 16, height: 9 },
+    dynamicRoster: false,
     players: [
       {
         id: 'escape-progress-player',
@@ -346,7 +347,6 @@ function snapshot(encounter: TestEncounterSnapshot): Snapshot {
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null,
-    weaponHud: null
   };
 }
 

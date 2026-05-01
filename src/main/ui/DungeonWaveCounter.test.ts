@@ -166,11 +166,12 @@ function childAt(root: FakeElement, index: number): FakeElement {
   return child;
 }
 
-function makeSession(overrides: Partial<SessionDefinition> = {}): SessionDefinition {
+function makeSession(overrides: Partial<Omit<SessionDefinition, 'players' | 'dynamicRoster'>> = {}): SessionDefinition {
   return {
     id: 'dungeon-wave-counter-test',
     seed: 1,
     arena: { width: 16, height: 9 },
+    dynamicRoster: false,
     players: [
       {
         id: 'dungeon-wave-counter-player',
@@ -223,7 +224,6 @@ function snapshot(encounter: NonNullable<Snapshot['encounter']>): Snapshot {
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null,
-    weaponHud: null
   };
 }
 

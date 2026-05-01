@@ -1,5 +1,5 @@
 import { PUBLIC_ARENA_ARENA, PUBLIC_ARENA_PLAYER } from '../shared/content/publicArena';
-import type { ContactBox, SessionDefinition } from '../shared/session';
+import type { ContactBox, PlayerConfig, SessionDefinition } from '../shared/session';
 import type { EncounterSnapshot, PlayerSnapshot, Snapshot } from '../shared/snapshot';
 import type { UiShellPhase } from './ui/UiShellPhase';
 import {
@@ -319,10 +319,19 @@ function createExitPortalDescriptor(
 }
 
 function placementSourceFromSession(session: SessionDefinition): PortalPlacementSource {
+  const player = requirePrimaryPlayer(session);
   return {
     arena: session.arena,
-    playerContactBox: session.players[0].contactBox
+    playerContactBox: player.contactBox
   };
+}
+
+function requirePrimaryPlayer(session: SessionDefinition): PlayerConfig {
+  const player = session.players[0];
+  if (player === undefined) {
+    throw new Error(`session "${session.id}" has no primary player`);
+  }
+  return player;
 }
 
 function publicArenaPlacementSource(): PortalPlacementSource {

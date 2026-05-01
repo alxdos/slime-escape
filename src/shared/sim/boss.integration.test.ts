@@ -76,6 +76,7 @@ function bossOnlySession(seed: number): SessionDefinition {
     id: 'boss-session',
     seed,
     arena: SANDBOX_ARENA,
+    dynamicRoster: false,
     players: [{ id: 'hero-training', ...TRAINING_PLAYER, loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }],
     companion: null,
     backgrounds: [],
@@ -188,7 +189,7 @@ function setupBossWorld() {
         encCtx !== null && encCtx.encounter.spawnPlan.kind === 'wave'
           ? spawn.waveProgress()
           : null,
-      weaponHud: null
+      weaponHudFor: () => null
     });
   }
 

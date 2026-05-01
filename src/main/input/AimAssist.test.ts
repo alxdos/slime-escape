@@ -19,7 +19,20 @@ function snapshot(entities: Snapshot['entities']): Snapshot {
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null,
+    bossHud: null
+  };
+}
+
+function player(x: number, y: number): Snapshot['entities'][number] {
+  return {
+    id: 1,
+    kind: 'player',
+    playerId: 'player',
+    x,
+    y,
+    hp: 5,
+    maxHp: 5,
+    formArchetypeId: null,
     weaponHud: null
   };
 }
@@ -36,7 +49,7 @@ describe('applyAimAssist', () => {
       { kind: 'aim', x: 5, y: 0 },
       RULE,
       snapshot([
-        { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+        player(0, 0),
         {
           id: 3,
           kind: 'enemy',
@@ -60,7 +73,7 @@ describe('applyAimAssist', () => {
       { kind: 'aim', x: 5, y: 0 },
       RULE,
       snapshot([
-        { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+        player(0, 0),
         {
           id: 8,
           kind: 'enemy',
@@ -90,7 +103,7 @@ describe('applyAimAssist', () => {
 
   it('does not correct disabled rules or targets outside the assist cone', () => {
     const snap = snapshot([
-      { id: 1, kind: 'player', x: 0, y: 0, hp: 5, maxHp: 5 },
+      player(0, 0),
       {
         id: 2,
         kind: 'enemy',

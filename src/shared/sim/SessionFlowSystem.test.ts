@@ -104,6 +104,67 @@ describe('SessionFlowSystem', () => {
     expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('starts dynamic roster sessions with an empty initial roster', () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const base = makeSession([emptyEncounter('only', { kind: 'never', next: 'sequential' })]);
+    const session: SessionDefinition = {
+      ...base,
+      dynamicRoster: true,
+      players: []
+    };
+
+    flow.start(session);
+
+    expect(flow.isActive()).toBe(true);
+    expect(clock.isRunning()).toBe(true);
+    expect(events.map((event) => event.kind)).toEqual(['sessionStart', 'encounterStart']);
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('rejects fixed roster sessions with an empty roster at runtime', () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const base = makeSession([emptyEncounter('only', { kind: 'never', next: 'sequential' })]);
+    const session = {
+      ...base,
+      players: []
+    } as unknown as SessionDefinition;
+
+    flow.start(session);
+
+    expect(flow.isActive()).toBe(false);
+    expect(clock.isRunning()).toBe(false);
+    expect(events).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects duplicate player ids before starting the session', () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const base = makeSession([emptyEncounter('only', { kind: 'never', next: 'sequential' })]);
+    const session: SessionDefinition = {
+      ...base,
+      players: [
+        base.players[0],
+        {
+          ...base.players[0],
+          position: { x: 1, y: 0 }
+        }
+      ]
+    };
+
+    flow.start(session);
+
+    expect(flow.isActive()).toBe(false);
+    expect(clock.isRunning()).toBe(false);
+    expect(events).toHaveLength(0);
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('initializes runtime loadout selection from the session loadout', () => {
     const clock = createFakeClock();
     const flow = createSessionFlowSystem({ clock, emitEvent: () => {} });
@@ -315,6 +376,7 @@ function makeSession(
     id: 'flow-test',
     seed: 1,
     arena: { width: 32, height: 18 },
+    dynamicRoster: false,
     players: [
       {
         id: 'flow-player',
@@ -800,6 +862,24 @@ describe('SessionFlowSystem player death', () => {
     flow.onPlayerDeath(1 as EntityId);
     expect(events).toHaveLength(0);
     expect(flow.isActive()).toBe(true);
+  });
+
+  it("does not publish 'loss' when lossCondition is respawnOnDeath", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const session = makeSession(
+      [emptyEncounter('only', { kind: 'never', next: 'sequential' })],
+      { win: { kind: 'none' }, loss: { kind: 'respawnOnDeath' } }
+    );
+
+    flow.start(session);
+    events.length = 0;
+    flow.onPlayerDeath(1 as EntityId);
+
+    expect(events).toHaveLength(0);
+    expect(flow.isActive()).toBe(true);
+    expect(clock.isRunning()).toBe(true);
   });
 
   it("repeated onPlayerDeath after run end is a no-op", () => {

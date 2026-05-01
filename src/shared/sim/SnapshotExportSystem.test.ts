@@ -18,7 +18,7 @@ const NO_SOURCES: SnapshotSources = {
   encounter: null,
   zone: IDLE_ZONE,
   waveProgress: null,
-  weaponHud: null
+  weaponHudFor: () => null
 };
 const STATIONARY_TEST_ENEMY = {
   archetypeId: 'test-stationary-enemy',
@@ -64,8 +64,12 @@ describe('SnapshotExportSystem', () => {
     expect(snapshot?.entities).toHaveLength(1);
     const entity = snapshot?.entities[0];
     expect(entity?.kind).toBe('player');
+    if (entity?.kind !== 'player') throw new Error('expected player snapshot');
+    expect(entity.playerId).toBe('player');
     expect(entity?.x).toBe(3);
     expect(entity?.y).toBe(-2);
+    expect(entity.formArchetypeId).toBeNull();
+    expect(entity.weaponHud).toBeNull();
     expect(snapshot?.simTimeMs).toBe(0);
     expect(snapshot?.bossHud).toBeNull();
   });
@@ -298,7 +302,7 @@ describe('SnapshotExportSystem top-level fields', () => {
 
   it('encounter is null without a session and reflects context.elapsedMs otherwise', () => {
     const store = createEntityStore();
-    spawnPlayerAt(store);
+    const player = spawnPlayerAt(store);
     const exporter = createSnapshotExportSystem();
 
     expect(exporter.onTick(0, store, NO_SOURCES)?.encounter).toBeNull();
@@ -327,7 +331,7 @@ describe('SnapshotExportSystem top-level fields', () => {
       encounter: ctx,
       zone: IDLE_ZONE,
       waveProgress: null,
-      weaponHud: null
+      weaponHudFor: () => null
     });
     expect(snap?.encounter).toEqual({
       id: 'wave-1',
@@ -346,7 +350,7 @@ describe('SnapshotExportSystem top-level fields', () => {
       encounter: null,
       zone: { mode: 'shrink', margin: 2.5 },
       waveProgress: null,
-      weaponHud: null
+      weaponHudFor: () => null
     });
     expect(snap?.zone).toEqual({ mode: 'shrink', margin: 2.5 });
   });
@@ -364,14 +368,14 @@ describe('SnapshotExportSystem top-level fields', () => {
       encounter: null,
       zone: IDLE_ZONE,
       waveProgress: { dispatched: 3, total: 5, alive: 2 },
-      weaponHud: null
+      weaponHudFor: () => null
     });
     expect(snapWithWave?.waveProgress).toEqual({ dispatched: 3, total: 5, alive: 2 });
   });
 
   it('copies weaponHud into the snapshot when supplied by combat', () => {
     const store = createEntityStore();
-    spawnPlayerAt(store);
+    const player = spawnPlayerAt(store);
     const exporter = createSnapshotExportSystem();
     const sourceModifier = { kind: 'pierceBonus' as const, amount: 1 };
     const sourceTimedEffect = {
@@ -387,34 +391,39 @@ describe('SnapshotExportSystem top-level fields', () => {
       encounter: null,
       zone: IDLE_ZONE,
       waveProgress: null,
-      weaponHud: {
-        selectedIndex: 1,
-        weapons: [
-          {
-            index: 0,
-            weaponArchetypeId: 'pistol',
-            cooldownStartedAtSimMs: 0,
-            cooldownReadyAtSimMs: 0,
-            modifiers: [],
-            timedEffects: []
-          },
-          {
-            index: 1,
-            weaponArchetypeId: 'shotgun',
-            cooldownStartedAtSimMs: 200,
-            cooldownReadyAtSimMs: 900,
-            modifiers,
-            timedEffects
-          }
-        ]
-      }
+      weaponHudFor: (playerId) =>
+        playerId === player.id
+          ? {
+              selectedIndex: 1,
+              weapons: [
+                {
+                  index: 0,
+                  weaponArchetypeId: 'pistol',
+                  cooldownStartedAtSimMs: 0,
+                  cooldownReadyAtSimMs: 0,
+                  modifiers: [],
+                  timedEffects: []
+                },
+                {
+                  index: 1,
+                  weaponArchetypeId: 'shotgun',
+                  cooldownStartedAtSimMs: 200,
+                  cooldownReadyAtSimMs: 900,
+                  modifiers,
+                  timedEffects
+                }
+              ]
+            }
+          : null
     });
     sourceModifier.amount = 3;
     sourceTimedEffect.expiresAtSimMs = 2400;
     modifiers.push({ kind: 'projectileSpeedMultiplier', multiplier: 2 });
     timedEffects.length = 0;
 
-    expect(snap?.weaponHud).toEqual({
+    const playerSnap = snap?.entities.find((entity) => entity.kind === 'player');
+    if (playerSnap?.kind !== 'player') throw new Error('expected player snapshot');
+    expect(playerSnap.weaponHud).toEqual({
       selectedIndex: 1,
       weapons: [
         {

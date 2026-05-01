@@ -358,11 +358,12 @@ function bossEncounter(id: string): EncounterDefinition {
   };
 }
 
-function makeSession(overrides: Partial<SessionDefinition> = {}): SessionDefinition {
+function makeSession(overrides: Partial<Omit<SessionDefinition, 'players' | 'dynamicRoster'>> = {}): SessionDefinition {
   return {
     id: 'result-test',
     seed: 1,
     arena: { width: 32, height: 18 },
+    dynamicRoster: false,
     players: [
       {
         id: 'result-player',

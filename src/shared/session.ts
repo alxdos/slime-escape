@@ -188,11 +188,10 @@ export type LossCondition =
 
 export type Modifier = never;
 
-export type SessionDefinition = Readonly<{
+export type BaseSessionDefinition = Readonly<{
   id: string;
   seed: number;
   arena: ArenaConfig;
-  players: NonEmptyReadonlyArray<PlayerConfig>;
   companion: CompanionSessionConfig | null;
   backgrounds: ReadonlyArray<SessionBackground>;
   musicSampleId: string | null;
@@ -203,3 +202,17 @@ export type SessionDefinition = Readonly<{
   lossCondition: LossCondition;
   uiMeta: null;
 }>;
+
+export type StaticSessionDefinition = BaseSessionDefinition &
+  Readonly<{
+    players: NonEmptyReadonlyArray<PlayerConfig>;
+    dynamicRoster: false;
+  }>;
+
+export type DynamicSessionDefinition = BaseSessionDefinition &
+  Readonly<{
+    players: ReadonlyArray<PlayerConfig>;
+    dynamicRoster: true;
+  }>;
+
+export type SessionDefinition = StaticSessionDefinition | DynamicSessionDefinition;

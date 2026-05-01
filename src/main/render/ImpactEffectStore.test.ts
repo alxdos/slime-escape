@@ -126,6 +126,7 @@ describe('ImpactEffectStore', () => {
         weaponArchetypeId: 'shotgun',
         impactDirX: 1,
         impactDirY: 0,
+        killerId: null,
         x: -2,
         y: 1
       },
@@ -159,6 +160,7 @@ describe('ImpactEffectStore', () => {
         weaponArchetypeId: 'pistol',
         impactDirX: 1,
         impactDirY: 0,
+        killerId: null,
         x: 0,
         y: 0
       },
@@ -187,6 +189,7 @@ describe('ImpactEffectStore', () => {
         weaponArchetypeId: 'pistol',
         impactDirX: null,
         impactDirY: null,
+        killerId: null,
         x: 0,
         y: 0
       },
@@ -239,6 +242,7 @@ describe('ImpactEffectStore', () => {
         weaponArchetypeId: 'pistol',
         impactDirX: 1,
         impactDirY: 0,
+        killerId: null,
         x: 1,
         y: 2
       },
@@ -303,6 +307,7 @@ describe('ImpactEffectStore', () => {
           weaponArchetypeId: 'shotgun',
           impactDirX: 1,
           impactDirY: 0,
+          killerId: null,
           x: 0,
           y: 0
         },

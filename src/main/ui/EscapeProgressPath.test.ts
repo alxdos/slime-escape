@@ -190,6 +190,7 @@ function makeSession(encounters: ReadonlyArray<EncounterDefinition>): SessionDef
     id: 'escape-progress-live-test',
     seed: 1,
     arena: { width: 16, height: 9 },
+    dynamicRoster: false,
     players: [
       {
         id: 'escape-progress-live-player',
@@ -265,7 +266,6 @@ function snapshot(encounter: TestEncounterSnapshot): Snapshot {
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null,
-    weaponHud: null
   };
 }
 

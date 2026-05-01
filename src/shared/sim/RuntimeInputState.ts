@@ -41,10 +41,7 @@ export function resetRuntimeInputState(
 ): void {
   state.players.clear();
   for (const player of players) {
-    state.players.set(
-      player.id,
-      createRuntimeActorInputState(player.position.x, player.position.y, player.loadout)
-    );
+    addRuntimeInputPlayer(state, player);
   }
 }
 
@@ -53,6 +50,28 @@ export function runtimeInputForPlayer(
   playerId: string
 ): RuntimeActorInputState | null {
   return state.players.get(playerId) ?? null;
+}
+
+export function addRuntimeInputPlayer(state: RuntimeInputState, player: PlayerConfig): void {
+  state.players.set(
+    player.id,
+    createRuntimeActorInputState(player.position.x, player.position.y, player.loadout)
+  );
+}
+
+export function removeRuntimeInputPlayer(state: RuntimeInputState, playerId: string): boolean {
+  return state.players.delete(playerId);
+}
+
+export function setRuntimeInputPlayerLoadout(
+  state: RuntimeInputState,
+  playerId: string,
+  loadout: Loadout | null
+): boolean {
+  const playerInput = runtimeInputForPlayer(state, playerId);
+  if (playerInput === null) return false;
+  playerInput.loadout = copyLoadout(loadout);
+  return true;
 }
 
 function copyLoadout(loadout: Loadout | null): RuntimeLoadoutState | null {
