@@ -776,7 +776,7 @@ describe('createRenderer', () => {
       }),
       getSnapshotPair: () =>
         createSnapshotPairWithEntities([
-          { id: 1, kind: 'player', x: 0, y: 0, hp: 3, maxHp: 5 }
+          { id: 1, kind: 'player', x: 0, y: 0, hp: 3, maxHp: 5, statusEffects: [] }
         ]),
       windowTarget: {
         innerWidth: 800,
@@ -795,11 +795,13 @@ describe('createRenderer', () => {
     const playerMesh = findMeshWithMaterialMap(backend.lastScene(), playerTexture);
     const hpTrack = findChildMeshByName(playerMesh, 'player-hp-track');
     const hpFill = findChildMeshByName(playerMesh, 'player-hp-fill');
+    const statusMarker = playerMesh?.children.find((child) => child.name === 'status-effect-marker');
     const fillMaterial = hpFill?.material;
     expect(hpTrack?.visible).toBe(true);
     expect(hpTrack?.parent?.position.y).toBeGreaterThan(DEFAULT_PLAYER_VISUAL.worldSize.height / 2);
     expect(hpFill?.visible).toBe(true);
     expect(hpFill?.scale.x).toBeCloseTo(0.6);
+    expect(statusMarker?.visible).toBe(false);
     expect(fillMaterial).toBeInstanceOf(THREE.MeshBasicMaterial);
     expect((fillMaterial as THREE.MeshBasicMaterial).color.getHex()).toBe(0x7ee7c8);
   });

@@ -457,7 +457,12 @@ function playerConfigFromSnapshot(
 ): PlayerConfig | null {
   const baseConfig =
     session.players.find((player) => player.id === snapshot.playerId) ?? session.players[0];
-  if (baseConfig === undefined) return null;
+  if (baseConfig === undefined) {
+    log.warn('online predictor cannot resolve self PlayerConfig; will retry on next snapshot', {
+      playerId: snapshot.playerId
+    });
+    return null;
+  }
   const formConfig = formPlayerConfigFields(snapshot.formArchetypeId, baseConfig);
   return {
     id: snapshot.playerId,

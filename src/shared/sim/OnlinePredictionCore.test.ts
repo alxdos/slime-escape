@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { PISTOL } from '../content/weapons';
 import type { InputCommand } from '../input';
+import { log } from '../log';
 import type { PlayerConfig, SessionDefinition } from '../session';
 import type { PlayerSnapshot, ProjectileSnapshot, Snapshot } from '../snapshot';
 import { SIM_STEP_MS } from '../timing';
@@ -55,6 +56,31 @@ describe('OnlinePredictionCore', () => {
     expect(player.y).toBeCloseTo((6 * SIM_STEP_MS) / 1000, 6);
   });
 
+  it('snaps back to the authoritative position when the server rejects a predicted movement advantage', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+
+    core.start(makeSession(), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot());
+    core.submitInput({ kind: 'move', dx: 1, dy: 0 }, 1);
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
+
+    expect(selfPlayer(lastSnapshot(predictions)).x).toBeGreaterThan(0);
+
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: 150,
+        entities: [makePlayer({ x: -2, y: 0 })],
+        lastInputSequence: { self: 1 }
+      })
+    );
+
+    expect(selfPlayer(lastSnapshot(predictions)).x).toBe(-2);
+  });
+
   it('keeps movement-affecting status effects in the local replay', () => {
     const predicted = runPrediction(
       makeSnapshot({
@@ -93,6 +119,27 @@ describe('OnlinePredictionCore', () => {
     );
 
     expect(projectiles(lastSnapshot(predictions))).toEqual([]);
+  });
+
+  it('warns and waits for a later snapshot when no session player config can seed prediction', () => {
+    const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined);
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+
+    try {
+      core.start({ ...makeSession(), dynamicRoster: true, players: [] }, 'self');
+      core.receiveAuthoritativeSnapshot(makeSnapshot());
+
+      expect(predictions).toEqual([]);
+      expect(warn).toHaveBeenCalledWith(
+        'online predictor cannot resolve self PlayerConfig; will retry on next snapshot',
+        { playerId: 'self' }
+      );
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
 

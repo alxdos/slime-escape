@@ -3233,7 +3233,7 @@ describe('UiShell', () => {
 
       input.lastInit()?.onCommand({ kind: 'fire', phase: 'start' });
 
-      nowSpy.mockReturnValue(SNAPSHOT_INTERVAL_MS - 1);
+      nowSpy.mockReturnValue(SNAPSHOT_INTERVAL_MS * 3);
       publicArenaClient.snapshot(
         makePublicArenaSnapshotWithSelf(
           {},
@@ -3246,7 +3246,7 @@ describe('UiShell', () => {
 
       expect(snapSerial()).toBe(0);
 
-      nowSpy.mockReturnValue(SNAPSHOT_INTERVAL_MS);
+      nowSpy.mockReturnValue(SNAPSHOT_INTERVAL_MS * 5 - 1);
       publicArenaClient.snapshot(
         makePublicArenaSnapshotWithSelf(
           {},
@@ -3256,6 +3256,9 @@ describe('UiShell', () => {
           }
         )
       );
+      expect(snapSerial()).toBe(0);
+
+      nowSpy.mockReturnValue(SNAPSHOT_INTERVAL_MS * 5);
       publicArenaClient.snapshot(
         makePublicArenaSnapshotWithSelf(
           {},

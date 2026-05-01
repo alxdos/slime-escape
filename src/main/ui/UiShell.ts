@@ -319,6 +319,7 @@ const CAMPAIGN_PRESET_IDS = new Set<ModePresetId>([
 const PUBLIC_ARENA_CONNECTING_MESSAGE = 'Joining Public Arena';
 const PUBLIC_ARENA_NOT_CONFIGURED_MESSAGE = 'Public arena server is not configured.';
 const ONLINE_SESSION_NOT_CONFIGURED_MESSAGE = 'Online session server is not configured.';
+const ONLINE_PREDICTION_RTT_ESTIMATE_ALPHA = 0.25;
 
 type SessionStartSource = 'campaign' | 'nonCampaign' | 'autoStart';
 
@@ -426,6 +427,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let onlinePredictionActive = false;
   let onlinePredictionInputBuffer: OnlinePredictionBufferedInput[] = [];
   let onlinePredictionPendingFireAcks: OnlinePredictionPendingFireAck[] = [];
+  let onlinePredictionRttEstimateMs: number | null = null;
   let onlinePredictionLastSelfForm: string | null | undefined = undefined;
   let onlinePredictionSnapSerial = 0;
   let onlineCampaignHudAttached = false;
@@ -1121,6 +1123,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlineLobbyState = event;
     activeOnlineSessionId = event.sessionConfigId;
     if (!onlineCampaignHudAttached && onlineRenderer === null) {
+      // Dynamic-roster online sessions are built lazily from the latest lobby roster.
       activeOnlineSession = null;
     }
     if (event.state === 'open') {
@@ -1380,6 +1383,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlinePredictionActive = true;
     onlinePredictionInputBuffer = [];
     onlinePredictionPendingFireAcks = [];
+    onlinePredictionRttEstimateMs = null;
     onlinePredictionLastSelfForm = undefined;
     onlinePredictionSnapSerial = 0;
   }
@@ -1389,6 +1393,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlinePredictionActive = false;
     onlinePredictionInputBuffer = [];
     onlinePredictionPendingFireAcks = [];
+    onlinePredictionRttEstimateMs = null;
     onlinePredictionLastSelfForm = undefined;
     onlinePredictionSnapSerial = 0;
     sim.stopSession();
@@ -1431,6 +1436,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
     }
     const nowMs = currentUiTimeMs();
+    updateOnlinePredictionRttEstimate(acknowledged, nowMs);
     for (const entry of onlinePredictionInputBuffer) {
       if (
         entry.inputSequence <= acknowledged &&
@@ -1447,11 +1453,12 @@ export function createUiShell(init: UiShellInit): UiShell {
         });
       }
     }
+    const rejectionWindowMs = predictedFireRejectedWindowMs();
     let shouldSnap = false;
     onlinePredictionPendingFireAcks = onlinePredictionPendingFireAcks.filter((entry) => {
       if (entry.inputSequence > acknowledged) return true;
       if (ownProjectileSequences.has(entry.inputSequence)) return false;
-      if (nowMs - entry.sentAtMs >= SNAPSHOT_INTERVAL_MS) {
+      if (nowMs - entry.sentAtMs >= rejectionWindowMs) {
         shouldSnap = true;
         return false;
       }
@@ -1460,6 +1467,23 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (shouldSnap) {
       onlinePredictionSnapSerial += 1;
     }
+  }
+
+  function updateOnlinePredictionRttEstimate(acknowledged: number, nowMs: number): void {
+    for (const entry of onlinePredictionInputBuffer) {
+      if (entry.inputSequence > acknowledged) continue;
+      const sampleMs = Math.max(0, nowMs - entry.sentAtMs - SNAPSHOT_INTERVAL_MS);
+      onlinePredictionRttEstimateMs =
+        onlinePredictionRttEstimateMs === null
+          ? sampleMs
+          : onlinePredictionRttEstimateMs +
+            (sampleMs - onlinePredictionRttEstimateMs) * ONLINE_PREDICTION_RTT_ESTIMATE_ALPHA;
+    }
+  }
+
+  function predictedFireRejectedWindowMs(): number {
+    const rttEstimateMs = onlinePredictionRttEstimateMs ?? SNAPSHOT_INTERVAL_MS;
+    return rttEstimateMs * 2 + SNAPSHOT_INTERVAL_MS;
   }
 
   function trimOnlinePredictionInputBuffer(snapshot: Snapshot): void {

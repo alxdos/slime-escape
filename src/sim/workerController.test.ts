@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { BOMB_PLACER } from '../shared/content/weapons';
 import type { RuntimeEvent } from '../shared/events';
 import type { SimToMain } from '../shared/protocol';
 import type { PlayerConfig, SessionDefinition } from '../shared/session';
@@ -115,6 +116,11 @@ describe('simulation worker controller modes', () => {
       command: { kind: 'fire', phase: 'start' },
       inputSequence: 2
     });
+    controller.handleMessage({
+      kind: 'input',
+      command: { kind: 'fire', phase: 'stop' },
+      inputSequence: 3
+    });
     controller.handleMessage({ kind: 'authoritativeSnapshot', snapshot: makeSnapshot() });
     controller.pump(0);
     controller.pump(SIM_STEP_MS);
@@ -128,6 +134,59 @@ describe('simulation worker controller modes', () => {
     expect(
       eventMessages.filter((msg) => FORBIDDEN_PREDICTOR_EVENT_KINDS.includes(msg.event.kind))
     ).toEqual([]);
+  });
+
+  it('suppresses explosive projectile events from the online predictor output stream', () => {
+    const posted: SimToMain[] = [];
+    const controller = createSimulationWorkerController({
+      postToMain: (msg) => posted.push(msg)
+    });
+    const session = makeSession(BOMB_PLACER.id);
+
+    controller.handleMessage({
+      kind: 'startSession',
+      session,
+      mode: 'online-predictor',
+      selfPlayerId: 'self'
+    });
+    controller.handleMessage({
+      kind: 'input',
+      command: { kind: 'aim', x: 0, y: 1 },
+      inputSequence: 1
+    });
+    controller.handleMessage({
+      kind: 'input',
+      command: { kind: 'fire', phase: 'start' },
+      inputSequence: 2
+    });
+    controller.handleMessage({
+      kind: 'input',
+      command: { kind: 'fire', phase: 'stop' },
+      inputSequence: 3
+    });
+    controller.handleMessage({
+      kind: 'authoritativeSnapshot',
+      snapshot: makeSnapshot({}, BOMB_PLACER.id)
+    });
+    for (let step = 0; step < 170; step += 1) {
+      controller.pump(step * SIM_STEP_MS);
+    }
+
+    const predictedSnapshots = posted.filter(
+      (msg): msg is Extract<SimToMain, { kind: 'predictedSnapshot' }> =>
+        msg.kind === 'predictedSnapshot'
+    );
+    const latestPrediction = predictedSnapshots.at(-1)?.snapshot;
+
+    expect(predictedSnapshots.length).toBeGreaterThan(0);
+    expect(
+      predictedSnapshots.some((msg) =>
+        msg.snapshot.entities.some((entity) => entity.kind === 'projectile')
+      )
+    ).toBe(true);
+    expect(latestPrediction?.simTimeMs).toBeGreaterThan(2200);
+    expect(latestPrediction?.entities.some((entity) => entity.kind === 'projectile')).toBe(false);
+    expect(posted.every((msg) => msg.kind === 'predictedSnapshot')).toBe(true);
   });
 });
 
@@ -185,7 +244,7 @@ function createFakePredictionCore(options: OnlinePredictionCoreOptions): FakePre
   };
 }
 
-function makeSession(): SessionDefinition {
+function makeSession(weaponArchetypeId = 'pistol'): SessionDefinition {
   const player: PlayerConfig = {
     id: 'self',
     position: { x: 0, y: 0 },
@@ -193,7 +252,7 @@ function makeSession(): SessionDefinition {
     contactBox: { width: 1, height: 1 },
     maxSpeed: 6,
     maxHp: 10,
-    loadout: { weapons: ['pistol'], selectedIndex: 0 },
+    loadout: { weapons: [weaponArchetypeId], selectedIndex: 0 },
     companion: null
   };
   return {
@@ -217,7 +276,7 @@ function makeSession(): SessionDefinition {
   };
 }
 
-function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
+function makeSnapshot(overrides: Partial<Snapshot> = {}, weaponArchetypeId = 'pistol'): Snapshot {
   return {
     simTimeMs: 100,
     entities: [
@@ -236,7 +295,7 @@ function makeSnapshot(overrides: Partial<Snapshot> = {}): Snapshot {
           weapons: [
             {
               index: 0,
-              weaponArchetypeId: 'pistol',
+              weaponArchetypeId,
               cooldownStartedAtSimMs: 0,
               cooldownReadyAtSimMs: 0,
               modifiers: [],

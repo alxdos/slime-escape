@@ -2,13 +2,13 @@
 
 - Status: accepted
 - Created: 2026-05-01
-- Updated: 2026-05-01
+- Updated: 2026-05-01 (story 038 review: clarified that online prediction uses a separate `createOnlinePredictionCore` factory in the existing browser worker, built from shared simulation systems rather than the public `createSimulationCore` façade. Clarified PvP slime-form parity: radius/contact/maxHp come from enemy content, while maxSpeed and ordered loadout mirror the host policy constants used by `pvpKillToLevelOps`.)
 
 ## Context
 
 Today every action of the local player in an online session travels server-and-back before it shows on screen. The minimum visible delay between input and rendered effect is `RTT/2` (input to server) plus `SNAPSHOT_INTERVAL_MS` (server snapshot cadence per [simulation-timing.md](simulation-timing.md)) plus `RTT/2` (snapshot back to client) — `RTT + ~33 ms` in the best case, more under realistic networks. For fast-paced PvP (036) and competitive-feeling co-op (037) this is felt as input lag and breaks the contract that local play already meets.
 
-Story 034 extracted the simulation runtime into `src/shared/sim/**` so the same core can run under multiple hosts ([simulation-runtime.md](simulation-runtime.md), [sim-core-interface.md](sim-core-interface.md), [web-stack.md](web-stack.md)). This decision records the contract for running that same core on the client itself, as a non-authoritative predictor: instant input feedback for the local player and the projectiles they fire, with server-authoritative reconciliation against incoming snapshots.
+Story 034 extracted the simulation runtime into `src/shared/sim/**` so shared systems can run under multiple hosts ([simulation-runtime.md](simulation-runtime.md), [sim-core-interface.md](sim-core-interface.md), [web-stack.md](web-stack.md)). This decision records the contract for running those same systems on the client itself through a non-authoritative predictor: instant input feedback for the local player and the projectiles they fire, with server-authoritative reconciliation against incoming snapshots.
 
 The decision sits inside three pre-existing constraints that it does not relax:
 
@@ -44,10 +44,10 @@ The client does not predict, by design:
 
 ### Predictor host placement
 
-- The shared `SimulationCore` runs in the existing browser simulation worker ([web-stack.md](web-stack.md)). The worker has two **mutually exclusive** modes:
-  - **local-authoritative** — current behavior for offline play (campaign, training, dungeon, sandbox). The core is the source of truth; runtime events flow out as `SimToMain` events.
-  - **online-predictor** — used for online sessions ([online-session-hosting.md](online-session-hosting.md)). The core runs the same `SessionDefinition` the server runs, but the predictor's `EntityStore` is **synced from authoritative snapshots** (self-only, see above) and the buffered local inputs are **replayed** on top.
-- At any moment the worker holds at most one core instance. Modes never coexist; switching modes is `core.stop()` followed by a fresh `core.start(session)` in the new mode. `UiShell` phase transitions ([main-ui-shell.md](main-ui-shell.md)) gate the switch — the same phase machine that already prevents local sessions from running concurrently with online sessions.
+- The existing browser simulation worker ([web-stack.md](web-stack.md)) has two **mutually exclusive** modes:
+  - **local-authoritative** — current behavior for offline play (campaign, training, dungeon, sandbox). The worker owns a `createSimulationCore` instance; it is the source of truth and runtime events flow out as `SimToMain` events.
+  - **online-predictor** — used for online sessions ([online-session-hosting.md](online-session-hosting.md)). The worker owns a separate `createOnlinePredictionCore` instance. That predictor is built from shared systems (`EntityStore`, `RuntimeInputState`, `MovementSystem`, `CombatSystem`, `SpatialIndex`, `SnapshotExportSystem`, and status-effect resolution) but does not expose the public `SimulationCore` façade. Its `EntityStore` is **synced from authoritative snapshots** (self-only, see above) and the buffered local inputs are **replayed** on top.
+- At any moment the worker holds at most one runtime instance. Modes never coexist; switching modes is `stop()` on the active runtime followed by a fresh `start(...)` in the new mode. `UiShell` phase transitions ([main-ui-shell.md](main-ui-shell.md)) gate the switch — the same phase machine that already prevents local sessions from running concurrently with online sessions.
 - This satisfies the layer rule from [web-stack.md](web-stack.md) that simulation logic lives in the worker and `src/main/**` is integration/UI only. The existing main-side connector at `src/main/sim/SimWorkerHost.ts` is extended to drive the predictor mode without touching the local-authoritative path; the existing local-play tests remain green without modification.
 - Cost: the predictor's `EntityStore` contains at most `1 + maxOwnProjectiles` entities, bounded by the local player's weapon throughput. CPU per tick is negligible compared to either the existing browser worker budget for local play or the render frame budget.
 
@@ -110,6 +110,8 @@ On rejection, the predictor removes the projectile from its `EntityStore` and th
 
 Mispredicted-fire is not logged as an error; it is part of the contract. The acceptance criterion in story 038 covers this case explicitly.
 
+The main thread does not snap out an acknowledged-but-missing predicted fire immediately on the first acknowledging snapshot. It estimates RTT from acknowledged input age (`nowMs - sentAtMs - SNAPSHOT_INTERVAL_MS`, clamped at zero and smoothed) and waits `2 * RTT_estimate + SNAPSHOT_INTERVAL_MS` before treating the missing authoritative projectile as rejected. This protects normal WAN latency from looking like a rejected fire while still bounding phantom projectile lifetime.
+
 ### Cosmetic hit feedback
 
 - Renderers consuming the predicted self-projectile stream may render local cosmetic hit effects (impact sparks, slime splash droplets per [impact-feedback.md](impact-feedback.md)) when a predicted own projectile's rendered position visually coincides with the rendered position of an interpolated other entity. This is presentation only.
@@ -123,7 +125,7 @@ Mispredicted-fire is not logged as an error; it is part of the contract. The acc
   - A snapshot's `PlayerSnapshot.formArchetypeId` for self differs from the predictor's current form (defensive path for future mutations not carrying a host event).
 - On form change the predictor performs a snap-update of the local Player runtime entity:
   - `formArchetypeId === null` → canonical hero form. Stats (`maxSpeed`, `contactBox`, `maxHp`, default `loadout`) come from the cached `PlayerConfig` stored at join (or from session content on session restart).
-  - `formArchetypeId` matching an `EnemyArchetype.id` → slime form. Stats come from `content/enemies.md` ([content-archetypes.md](content-archetypes.md)).
+  - `formArchetypeId` matching an `EnemyArchetype.id` → slime form. Body/contact/maxHp come from `content/enemies.md` ([content-archetypes.md](content-archetypes.md)); maxSpeed and ordered loadout intentionally mirror the PvP host policy constants `PUBLIC_ARENA_HOST_PLAYER.maxSpeed` and `PUBLIC_ARENA_HOST_LOADOUT`, not the slime's native `maxSpeed`, so prediction stays in parity with `pvpKillToLevelOps`.
   - `formArchetypeId` matching a `BossArchetype.id` → boss form. Stats come from `content/bosses.md`.
   - The actor's loadout for the new form is derived from per-form policy already encoded in shared content (PvP arena: `PUBLIC_ARENA_BOSS_WEAPON_ID` for boss, default ordered loadout for hero), exactly mirroring how the host's `pvpKillToLevelOps` builds the new `PlayerConfig.loadout`.
 - The predictor never reads form stats from `PlayerSnapshot.weaponHud` — `weaponHud` is presentation state for the HUD, not authoritative form stats.

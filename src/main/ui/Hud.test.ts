@@ -556,6 +556,7 @@ describe('Hud view model', () => {
             y: 0,
             hp: 4,
             maxHp: 5,
+            statusEffects: [],
             weaponHud: {
               selectedIndex: 0,
               weapons: [
