@@ -432,7 +432,8 @@ export function createUiShell(init: UiShellInit): UiShell {
   let onlinePredictionRttEstimateMs: number | null = null;
   let onlinePredictionTransitionSnap: {
     simTimeMs: number;
-    consumedCurr: Snapshot | null;
+    currAtMark: Snapshot | null;
+    resetCurr: Snapshot | null;
   } | null = null;
   let onlineCampaignHudAttached = false;
   let onlineStatusMessage = PUBLIC_ARENA_CONNECTING_MESSAGE;
@@ -1362,8 +1363,11 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (snap === null || pair.curr === null || pair.curr.simTimeMs < snap.simTimeMs) {
       return pair;
     }
-    if (snap.consumedCurr === null || pair.curr === snap.consumedCurr) {
-      onlinePredictionTransitionSnap = { ...snap, consumedCurr: pair.curr };
+    if (pair.curr === snap.currAtMark) {
+      return pair;
+    }
+    if (snap.resetCurr === null || pair.curr === snap.resetCurr) {
+      onlinePredictionTransitionSnap = { ...snap, resetCurr: pair.curr };
       return {
         ...pair,
         prev: null
@@ -1389,7 +1393,11 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function markOnlinePredictionTransitionSnap(simTimeMs: number): void {
-    onlinePredictionTransitionSnap = { simTimeMs, consumedCurr: null };
+    onlinePredictionTransitionSnap = {
+      simTimeMs,
+      currAtMark: sim.predictedSnapshotPair().curr,
+      resetCurr: null
+    };
   }
 
   function ensureOnlinePredictionStarted(): void {

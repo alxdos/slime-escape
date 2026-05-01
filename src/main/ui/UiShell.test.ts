@@ -2978,17 +2978,17 @@ describe('UiShell', () => {
     expect(publicArenaCombatAffordances.lastSelfId()).toBe('socket-a');
     expect(publicArenaRenderer.calls.render).toBe(1);
 
-    const predictedBeforeSpawn = makePublicArenaSnapshotWithSelf(
+    const predictedPrevBeforeSpawn = makePublicArenaSnapshotWithSelf(
       { x: -8, y: -4 },
       { simTimeMs: 120 }
     );
-    const predictedAfterSpawn = makePublicArenaSnapshotWithSelf(
-      { x: 8, y: 4 },
+    const stalePredictedCurrAtSpawnEvent = makePublicArenaSnapshotWithSelf(
+      { x: -7, y: -4 },
       { simTimeMs: 140 }
     );
     sim.setPredictedSnapshotPair({
-      prev: predictedBeforeSpawn,
-      curr: predictedAfterSpawn,
+      prev: predictedPrevBeforeSpawn,
+      curr: stalePredictedCurrAtSpawnEvent,
       currReceivedAtMs: 1000,
       nowMs: 1000
     });
@@ -3004,6 +3004,21 @@ describe('UiShell', () => {
     });
 
     let predictedPair = publicArenaRenderer.lastInit()?.getPredictedSnapshotPair?.();
+    expect(predictedPair?.prev).toBe(predictedPrevBeforeSpawn);
+    expect(predictedPair?.curr).toBe(stalePredictedCurrAtSpawnEvent);
+
+    const predictedAfterSpawn = makePublicArenaSnapshotWithSelf(
+      { x: 8, y: 4 },
+      { simTimeMs: 156 }
+    );
+    sim.setPredictedSnapshotPair({
+      prev: stalePredictedCurrAtSpawnEvent,
+      curr: predictedAfterSpawn,
+      currReceivedAtMs: 1016,
+      nowMs: 1016
+    });
+
+    predictedPair = publicArenaRenderer.lastInit()?.getPredictedSnapshotPair?.();
     expect(predictedPair?.prev).toBeNull();
     expect(predictedPair?.curr).toBe(predictedAfterSpawn);
     predictedPair = publicArenaRenderer.lastInit()?.getPredictedSnapshotPair?.();
@@ -3012,13 +3027,13 @@ describe('UiShell', () => {
 
     const predictedAfterFollowup = makePublicArenaSnapshotWithSelf(
       { x: 9, y: 4 },
-      { simTimeMs: 156 }
+      { simTimeMs: 172 }
     );
     sim.setPredictedSnapshotPair({
       prev: predictedAfterSpawn,
       curr: predictedAfterFollowup,
-      currReceivedAtMs: 1016,
-      nowMs: 1016
+      currReceivedAtMs: 1032,
+      nowMs: 1032
     });
 
     predictedPair = publicArenaRenderer.lastInit()?.getPredictedSnapshotPair?.();
