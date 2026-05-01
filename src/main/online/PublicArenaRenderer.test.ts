@@ -168,15 +168,19 @@ describe('PublicArenaRenderer', () => {
     expect(predictedProjectile?.position.x).toBeCloseTo(6.5);
     expect(predictedProjectile?.position.y).toBeCloseTo(-1);
 
+    predictedSnapshot = makePredictedSnapshot({ simTimeMs: 1050, selfX: 6.03, selfY: -1 });
+    renderer.render();
+    expect(predictedSelf?.position.x).toBeCloseTo(6.03);
+
     snapshot = { ...makeSnapshot(), simTimeMs: 1100 };
     predictedSnapshot = makePredictedSnapshot({ simTimeMs: 1100, selfX: 10, selfY: -1 });
     renderer.render();
-    expect(predictedSelf?.position.x).toBeCloseTo(6);
+    expect(predictedSelf?.position.x).toBeCloseTo(6.03);
 
     snapshot = { ...makeSnapshot(), simTimeMs: 1150 };
     predictedSnapshot = makePredictedSnapshot({ simTimeMs: 1150, selfX: 10, selfY: -1 });
     renderer.render();
-    expect(predictedSelf?.position.x).toBeCloseTo(8);
+    expect(predictedSelf?.position.x).toBeCloseTo(8.015);
 
     predictionSnapSerial = 1;
     predictedSnapshot = makePredictedSnapshot({ simTimeMs: 1150, selfX: 12, selfY: -1 });

@@ -124,6 +124,7 @@ describe('simulation worker controller modes', () => {
     });
 
     expect(posted.some((msg) => msg.kind === 'predictedSnapshot')).toBe(true);
+    expect(posted.every((msg) => msg.kind === 'predictedSnapshot')).toBe(true);
     expect(
       eventMessages.filter((msg) => FORBIDDEN_PREDICTOR_EVENT_KINDS.includes(msg.event.kind))
     ).toEqual([]);

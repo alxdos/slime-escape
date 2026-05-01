@@ -236,6 +236,10 @@ type OnlinePredictionBufferedInput = Readonly<{
   inputSequence: number;
   sentAtMs: number;
 }>;
+type OnlinePredictionPendingFireAck = Readonly<{
+  inputSequence: number;
+  sentAtMs: number;
+}>;
 type SequencedPublicArenaInput = Readonly<{
   command: InputCommand;
   intent: PublicArenaInputIntent;
@@ -421,6 +425,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let nextPublicArenaInputSequence = 1;
   let onlinePredictionActive = false;
   let onlinePredictionInputBuffer: OnlinePredictionBufferedInput[] = [];
+  let onlinePredictionPendingFireAcks: OnlinePredictionPendingFireAck[] = [];
   let onlinePredictionLastSelfForm: string | null | undefined = undefined;
   let onlinePredictionSnapSerial = 0;
   let onlineCampaignHudAttached = false;
@@ -1374,6 +1379,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     sim.startSession(session, { mode: 'online-predictor', selfPlayerId: playerId });
     onlinePredictionActive = true;
     onlinePredictionInputBuffer = [];
+    onlinePredictionPendingFireAcks = [];
     onlinePredictionLastSelfForm = undefined;
     onlinePredictionSnapSerial = 0;
   }
@@ -1382,6 +1388,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (!onlinePredictionActive) return;
     onlinePredictionActive = false;
     onlinePredictionInputBuffer = [];
+    onlinePredictionPendingFireAcks = [];
     onlinePredictionLastSelfForm = undefined;
     onlinePredictionSnapSerial = 0;
     sim.stopSession();
@@ -1399,7 +1406,13 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function trackPredictedFireRejectedSnap(snapshot: Snapshot): void {
     const playerId = publicArenaPlayerId;
-    if (playerId === null || onlinePredictionInputBuffer.length === 0) return;
+    if (
+      playerId === null ||
+      (onlinePredictionInputBuffer.length === 0 &&
+        onlinePredictionPendingFireAcks.length === 0)
+    ) {
+      return;
+    }
     const acknowledged = snapshot.lastInputSequence[playerId] ?? 0;
     if (acknowledged <= 0) return;
     const self = snapshot.entities.find(
@@ -1418,16 +1431,33 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
     }
     const nowMs = currentUiTimeMs();
-    if (
-      onlinePredictionInputBuffer.some(
-        (entry) =>
-          entry.inputSequence <= acknowledged &&
-          entry.command.kind === 'fire' &&
-          entry.command.phase === 'start' &&
-          nowMs - entry.sentAtMs >= SNAPSHOT_INTERVAL_MS &&
-          !ownProjectileSequences.has(entry.inputSequence)
-      )
-    ) {
+    for (const entry of onlinePredictionInputBuffer) {
+      if (
+        entry.inputSequence <= acknowledged &&
+        entry.command.kind === 'fire' &&
+        entry.command.phase === 'start' &&
+        !ownProjectileSequences.has(entry.inputSequence) &&
+        !onlinePredictionPendingFireAcks.some(
+          (pending) => pending.inputSequence === entry.inputSequence
+        )
+      ) {
+        onlinePredictionPendingFireAcks.push({
+          inputSequence: entry.inputSequence,
+          sentAtMs: entry.sentAtMs
+        });
+      }
+    }
+    let shouldSnap = false;
+    onlinePredictionPendingFireAcks = onlinePredictionPendingFireAcks.filter((entry) => {
+      if (entry.inputSequence > acknowledged) return true;
+      if (ownProjectileSequences.has(entry.inputSequence)) return false;
+      if (nowMs - entry.sentAtMs >= SNAPSHOT_INTERVAL_MS) {
+        shouldSnap = true;
+        return false;
+      }
+      return true;
+    });
+    if (shouldSnap) {
       onlinePredictionSnapSerial += 1;
     }
   }

@@ -17,7 +17,8 @@ import type {
 import { ARENA_HOST_PROTOCOL_VERSION } from '../../shared/arenaHostProtocol';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
-import type { Snapshot } from '../../shared/snapshot';
+import type { PlayerSnapshot, Snapshot } from '../../shared/snapshot';
+import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import type { MobileInputControllerInit } from '../input/MobileInputController';
@@ -938,6 +939,62 @@ function createPublicArenaRendererHarness() {
   };
 }
 
+async function startPublicArenaPredictionHarness(firstSnapshot: Snapshot = makePublicArenaSnapshot()) {
+  const menu = createMenuHarness();
+  const status = createPublicArenaStatusHarness();
+  const publicArenaMenu = createPublicArenaMenuHarness();
+  const publicArenaHud = createPublicArenaHudHarness();
+  const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
+  const publicArenaClient = createPublicArenaClientHarness();
+  const publicArenaRenderer = createPublicArenaRendererHarness();
+  const input = createInputHarness();
+  const sim = createSimHarness();
+  const hud = createHudHarness();
+  const audio = createAudioHarness();
+  const windowTarget = new FakeEventTarget();
+  const documentEvents = new FakeEventTarget();
+  const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+  const shell = createUiShellForTest({
+    parent: {} as HTMLElement,
+    canvas: { clientHeight: 900 } as HTMLCanvasElement,
+    createSimWorkerHost: sim.factory,
+    createMenuOverlay: menu.factory,
+    createPauseOverlay: createPauseHarness().factory,
+    createResultOverlay: createResultHarness().factory,
+    createSettingsOverlay: createSettingsOverlayHarness().factory,
+    createHud: hud.factory,
+    createPublicArenaHud: publicArenaHud.factory,
+    createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
+    createPublicArenaMenuOverlay: publicArenaMenu.factory,
+    createPublicArenaStatusOverlay: status.factory,
+    createPublicArenaClient: publicArenaClient.factory,
+    createPublicArenaRenderer: publicArenaRenderer.factory,
+    createInputController: input.factory,
+    createAudio: audio.factory,
+    publicArenaConfig: {
+      serverUrl: 'https://arena.example.test',
+      fullArenaMessage: 'The online arena is full. Try again soon.'
+    },
+    windowTarget,
+    documentTarget
+  });
+
+  await flushUiShellStartup();
+  menu.startPublicArena();
+  publicArenaClient.accept();
+  publicArenaClient.snapshot(firstSnapshot);
+  shell.onFrame();
+
+  return {
+    shell,
+    input,
+    publicArenaClient,
+    publicArenaRenderer,
+    sim
+  };
+}
+
 function createPublicArenaClientHarness() {
   let lastInit: PublicArenaClientInit | null = null;
   let disconnectCalls = 0;
@@ -1061,6 +1118,22 @@ function makePublicArenaSnapshot(): Snapshot {
     waveProgress: null,
     bossHud: null,
     lastInputSequence: {}
+  };
+}
+
+function makePublicArenaSnapshotWithSelf(
+  selfOverrides: Partial<PlayerSnapshot>,
+  snapshotOverrides: Partial<Snapshot> = {}
+): Snapshot {
+  const base = makePublicArenaSnapshot();
+  return {
+    ...base,
+    ...snapshotOverrides,
+    entities: base.entities.map((entity) =>
+      entity.kind === 'player' && entity.playerId === 'socket-a'
+        ? { ...entity, ...selfOverrides }
+        : entity
+    )
   };
 }
 
@@ -3066,6 +3139,137 @@ describe('UiShell', () => {
 
     expect(shell.phase()).toEqual({ kind: 'menu' });
     expect(menu.latestFeedback()).toBeNull();
+  });
+
+  it('snaps online prediction for self transition events and authoritative form changes', async () => {
+    const { publicArenaClient, publicArenaRenderer } = await startPublicArenaPredictionHarness();
+    const snapSerial = (): number =>
+      publicArenaRenderer.lastInit()?.getPredictionSnapSerial?.() ?? -1;
+
+    expect(snapSerial()).toBe(0);
+
+    publicArenaClient.presentation({
+      kind: 'playerDowned',
+      simTime: 125,
+      entityId: 2,
+      playerId: 'socket-2',
+      weaponArchetypeId: 'rock-thrower',
+      impactDirX: 1,
+      impactDirY: 0,
+      x: 3,
+      y: 0
+    });
+
+    expect(snapSerial()).toBe(0);
+
+    publicArenaClient.presentation({
+      kind: 'playerSpawn',
+      simTime: 130,
+      entityId: 1,
+      playerId: 'socket-a',
+      x: 1,
+      y: 2,
+      formArchetypeId: 'slime-hornling'
+    });
+
+    expect(snapSerial()).toBe(1);
+
+    publicArenaClient.snapshot(
+      makePublicArenaSnapshotWithSelf({ formArchetypeId: 'slime-hornling' }, { simTimeMs: 140 })
+    );
+
+    expect(snapSerial()).toBe(1);
+
+    publicArenaClient.presentation({
+      kind: 'playerDowned',
+      simTime: 150,
+      entityId: 1,
+      playerId: 'socket-a',
+      weaponArchetypeId: 'rock-thrower',
+      impactDirX: -1,
+      impactDirY: 0,
+      x: 1,
+      y: 2
+    });
+    publicArenaClient.presentation({
+      kind: 'playerRevived',
+      simTime: 170,
+      entityId: 1,
+      playerId: 'socket-a',
+      rescuerEntityId: 2,
+      rescuerPlayerId: 'socket-2',
+      hp: 5,
+      maxHp: 20,
+      x: 1,
+      y: 2
+    });
+    publicArenaClient.presentation({
+      kind: 'host:levelUp',
+      simTime: 180,
+      actorId: 'socket-2',
+      level: 4,
+      formArchetypeId: 'slime-one-eye'
+    });
+
+    expect(snapSerial()).toBe(3);
+
+    publicArenaClient.snapshot(
+      makePublicArenaSnapshotWithSelf({ formArchetypeId: 'slime-one-eye' }, { simTimeMs: 190 })
+    );
+    publicArenaClient.snapshot(
+      makePublicArenaSnapshotWithSelf({ formArchetypeId: 'slime-one-eye' }, { simTimeMs: 200 })
+    );
+
+    expect(snapSerial()).toBe(4);
+  });
+
+  it('keeps acknowledged fire starts pending until the predicted-fire rejection snap window elapses', async () => {
+    const nowSpy = vi.spyOn(globalThis.performance, 'now').mockReturnValue(0);
+    try {
+      const { input, publicArenaClient, publicArenaRenderer } =
+        await startPublicArenaPredictionHarness();
+      const snapSerial = (): number =>
+        publicArenaRenderer.lastInit()?.getPredictionSnapSerial?.() ?? -1;
+
+      input.lastInit()?.onCommand({ kind: 'fire', phase: 'start' });
+
+      nowSpy.mockReturnValue(SNAPSHOT_INTERVAL_MS - 1);
+      publicArenaClient.snapshot(
+        makePublicArenaSnapshotWithSelf(
+          {},
+          {
+            simTimeMs: 140,
+            lastInputSequence: { 'socket-a': 1 }
+          }
+        )
+      );
+
+      expect(snapSerial()).toBe(0);
+
+      nowSpy.mockReturnValue(SNAPSHOT_INTERVAL_MS);
+      publicArenaClient.snapshot(
+        makePublicArenaSnapshotWithSelf(
+          {},
+          {
+            simTimeMs: 150,
+            lastInputSequence: { 'socket-a': 1 }
+          }
+        )
+      );
+      publicArenaClient.snapshot(
+        makePublicArenaSnapshotWithSelf(
+          {},
+          {
+            simTimeMs: 160,
+            lastInputSequence: { 'socket-a': 1 }
+          }
+        )
+      );
+
+      expect(snapSerial()).toBe(1);
+    } finally {
+      nowSpy.mockRestore();
+    }
   });
 
   it('routes the data-driven co-op online entry through lobby, selected pet, campaign renderer, HUD, and result', async () => {
