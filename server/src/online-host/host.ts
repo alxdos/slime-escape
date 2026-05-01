@@ -153,8 +153,26 @@ type RoomRecord = {
   core: SimulationCore | null;
   actorsBySocketId: Map<string, ActorRecord>;
   actorsByActorId: Map<string, ActorRecord>;
+  lastInputSequence: Map<string, number>;
   progressionForms: ReadonlyMap<number, ArenaFormContent> | null;
 };
+
+export function shouldAcceptOnlineInputSequence(
+  lastApplied: number | undefined,
+  inputSequence: number
+): boolean {
+  return (
+    Number.isSafeInteger(inputSequence) &&
+    inputSequence > 0 &&
+    inputSequence > (lastApplied ?? 0)
+  );
+}
+
+export function projectOnlineInputSequences(
+  lastInputSequence: ReadonlyMap<string, number>
+): Readonly<Record<string, number>> {
+  return Object.fromEntries(lastInputSequence);
+}
 
 export function createOnlineSessionHost(options: OnlineSessionHostOptions): OnlineSessionHost {
   const clock = options.clock ?? defaultOnlineHostClock();
@@ -227,7 +245,7 @@ export function createOnlineSessionHost(options: OnlineSessionHostOptions): Onli
       room.actorsByActorId.delete(actor.actorId);
       roomIdBySocketId.delete(socketId);
       if (room.state === 'running') {
-        room.core?.removePlayer(actor.actorId);
+        removePlayerFromRoomCore(room, actor.actorId);
       }
       if (room.actorsBySocketId.size === 0) {
         destroyRoom(room, { stopCore: true });
@@ -252,6 +270,17 @@ export function createOnlineSessionHost(options: OnlineSessionHostOptions): Onli
       }
       if (room.state !== 'running' || room.core === null) return false;
       if (!acceptArenaHostInputIntent(actor.inputRateLimit, nowMs)) return false;
+      const lastAppliedInputSequence = room.lastInputSequence.get(actor.actorId);
+      if (!shouldAcceptOnlineInputSequence(lastAppliedInputSequence, intent.inputSequence)) {
+        log.warn('online input ignored: non-increasing inputSequence', {
+          roomId: room.roomId,
+          actorId: actor.actorId,
+          inputSequence: intent.inputSequence,
+          lastInputSequence: lastAppliedInputSequence ?? 0
+        });
+        return false;
+      }
+      room.lastInputSequence.set(actor.actorId, intent.inputSequence);
       const { inputSequence: _inputSequence, ...command } = intent;
       room.core.submitInput(actor.actorId, command, intent.inputSequence);
       return true;
@@ -306,6 +335,7 @@ export function createOnlineSessionHost(options: OnlineSessionHostOptions): Onli
       core: null,
       actorsBySocketId: new Map(),
       actorsByActorId: new Map(),
+      lastInputSequence: new Map(),
       progressionForms:
         sessionConfigId === PUBLIC_ARENA_HOST_SESSION_PRESET_ID
           ? createProgressionForms()
@@ -428,8 +458,12 @@ export function createOnlineSessionHost(options: OnlineSessionHostOptions): Onli
 
   function handleSnapshot(room: RoomRecord, snapshot: Snapshot): void {
     room.currentSimTimeMs = snapshot.simTimeMs;
+    const sequencedSnapshot: Snapshot = {
+      ...snapshot,
+      lastInputSequence: projectOnlineInputSequences(room.lastInputSequence)
+    };
     for (const actor of room.actorsByActorId.values()) {
-      options.sink.emitSnapshot(actor.actorId, snapshot);
+      options.sink.emitSnapshot(actor.actorId, sequencedSnapshot);
     }
   }
 
@@ -553,6 +587,11 @@ export function createOnlineSessionHost(options: OnlineSessionHostOptions): Onli
     );
   }
 
+  function removePlayerFromRoomCore(room: RoomRecord, actorId: string): void {
+    room.lastInputSequence.delete(actorId);
+    room.core?.removePlayer(actorId);
+  }
+
   function playerConfigForActor(room: RoomRecord, actor: ActorRecord): PlayerConfig {
     return {
       id: actor.actorId,
@@ -612,6 +651,7 @@ export function createOnlineSessionHost(options: OnlineSessionHostOptions): Onli
     }
     room.actorsBySocketId.clear();
     room.actorsByActorId.clear();
+    room.lastInputSequence.clear();
     roomsByRoomId.delete(room.roomId);
   }
 }

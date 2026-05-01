@@ -1,10 +1,45 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { RuntimeEvent } from '../../../src/shared/events.js';
+import { log } from '../../../src/shared/log.js';
 import type { Snapshot } from '../../../src/shared/snapshot.js';
 import type { SimulationCore, SimulationCoreOptions } from '../../../src/shared/sim/SimulationCore.js';
 import { SIM_STEP_MS } from '../../../src/shared/timing.js';
-import { createOnlineSessionHost, type ArenaHostClock, type ArenaHostEvent, type ArenaHostSink } from './host.js';
+import {
+  createOnlineSessionHost,
+  projectOnlineInputSequences,
+  shouldAcceptOnlineInputSequence,
+  type ArenaHostClock,
+  type ArenaHostEvent,
+  type ArenaHostSink
+} from './host.js';
+
+describe('OnlineSessionHost input sequence validation', () => {
+  it('accepts only first positive and strictly increasing input sequences', () => {
+    expect(shouldAcceptOnlineInputSequence(undefined, 1)).toBe(true);
+    expect(shouldAcceptOnlineInputSequence(undefined, 5)).toBe(true);
+    expect(shouldAcceptOnlineInputSequence(5, 6)).toBe(true);
+
+    expect(shouldAcceptOnlineInputSequence(undefined, 0)).toBe(false);
+    expect(shouldAcceptOnlineInputSequence(undefined, -1)).toBe(false);
+    expect(shouldAcceptOnlineInputSequence(5, 5)).toBe(false);
+    expect(shouldAcceptOnlineInputSequence(5, 4)).toBe(false);
+    expect(shouldAcceptOnlineInputSequence(5, Number.NaN)).toBe(false);
+    expect(shouldAcceptOnlineInputSequence(5, 6.5)).toBe(false);
+  });
+
+  it('projects room sequence state into snapshot records', () => {
+    const source = new Map([
+      ['alpha', 2],
+      ['bravo', 7]
+    ]);
+
+    expect(projectOnlineInputSequences(source)).toEqual({
+      alpha: 2,
+      bravo: 7
+    });
+  });
+});
 
 describe('OnlineSessionHost room registry', () => {
   it('keeps Public Arena backward-compatible as an instant-running room', () => {
@@ -251,6 +286,138 @@ describe('OnlineSessionHost room registry', () => {
   });
 });
 
+describe('OnlineSessionHost gameplay input sequencing', () => {
+  it('emits accepted per-actor input sequences without pre-seeding newly joined actors', () => {
+    const core = createCoreHarness();
+    const sink = createSinkHarness();
+    const host = createOnlineSessionHost({
+      playerCap: 4,
+      tickHz: 60,
+      snapshotHz: 30,
+      sink: sink.sink,
+      clock: createClockHarness().clock,
+      coreFactory: core.factory
+    });
+
+    expect(host.join('alpha', { requestedSessionId: 'public-arena' })).toMatchObject({
+      kind: 'accepted'
+    });
+    expect(host.join('bravo', { requestedSessionId: 'public-arena' })).toMatchObject({
+      kind: 'accepted'
+    });
+
+    expect(host.submitInput('alpha', { kind: 'move', dx: 1, dy: 0, inputSequence: 2 })).toBe(
+      true
+    );
+
+    core.snapshot();
+
+    expect(sink.snapshots.slice(-2)).toEqual([
+      { actorId: 'alpha', snapshot: expect.objectContaining({ lastInputSequence: { alpha: 2 } }) },
+      { actorId: 'bravo', snapshot: expect.objectContaining({ lastInputSequence: { alpha: 2 } }) }
+    ]);
+
+    expect(host.submitInput('bravo', { kind: 'fire', phase: 'start', inputSequence: 1 })).toBe(
+      true
+    );
+
+    core.snapshot();
+
+    expect(sink.snapshots.slice(-2)).toEqual([
+      {
+        actorId: 'alpha',
+        snapshot: expect.objectContaining({ lastInputSequence: { alpha: 2, bravo: 1 } })
+      },
+      {
+        actorId: 'bravo',
+        snapshot: expect.objectContaining({ lastInputSequence: { alpha: 2, bravo: 1 } })
+      }
+    ]);
+  });
+
+  it('drops repeated and out-of-order inputs with a warning instead of forwarding them', () => {
+    const core = createCoreHarness();
+    const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined);
+    const host = createOnlineSessionHost({
+      playerCap: 4,
+      tickHz: 60,
+      snapshotHz: 30,
+      sink: createSinkHarness().sink,
+      clock: createClockHarness().clock,
+      coreFactory: core.factory
+    });
+
+    try {
+      expect(host.join('alpha', { requestedSessionId: 'public-arena' })).toMatchObject({
+        kind: 'accepted'
+      });
+
+      expect(host.submitInput('alpha', { kind: 'move', dx: 1, dy: 0, inputSequence: 1 })).toBe(
+        true
+      );
+      expect(host.submitInput('alpha', { kind: 'move', dx: 0, dy: 1, inputSequence: 1 })).toBe(
+        false
+      );
+      expect(host.submitInput('alpha', { kind: 'move', dx: -1, dy: 0, inputSequence: 0 })).toBe(
+        false
+      );
+      expect(host.submitInput('alpha', { kind: 'holsterWeapon', inputSequence: 3 })).toBe(true);
+
+      expect(core.core.submitInput).toHaveBeenCalledTimes(2);
+      expect(core.core.submitInput).toHaveBeenNthCalledWith(
+        1,
+        'alpha',
+        { kind: 'move', dx: 1, dy: 0 },
+        1
+      );
+      expect(core.core.submitInput).toHaveBeenNthCalledWith(
+        2,
+        'alpha',
+        { kind: 'holsterWeapon' },
+        3
+      );
+      expect(warn).toHaveBeenCalledTimes(2);
+      expect(warn).toHaveBeenCalledWith(
+        'online input ignored: non-increasing inputSequence',
+        expect.objectContaining({
+          actorId: 'alpha',
+          inputSequence: 1,
+          lastInputSequence: 1
+        })
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('drops sequence state when a running actor leaves', () => {
+    const core = createCoreHarness();
+    const sink = createSinkHarness();
+    const host = createOnlineSessionHost({
+      playerCap: 4,
+      tickHz: 60,
+      snapshotHz: 30,
+      sink: sink.sink,
+      clock: createClockHarness().clock,
+      coreFactory: core.factory
+    });
+
+    host.join('alpha', { requestedSessionId: 'public-arena' });
+    host.join('bravo', { requestedSessionId: 'public-arena' });
+    host.submitInput('alpha', { kind: 'move', dx: 1, dy: 0, inputSequence: 1 });
+    host.submitInput('bravo', { kind: 'move', dx: 0, dy: 1, inputSequence: 4 });
+
+    host.leave('alpha');
+    core.snapshot();
+
+    expect(core.core.removePlayer).toHaveBeenCalledWith('alpha');
+    expect(sink.snapshots.at(-1)).toEqual({
+      actorId: 'bravo',
+      snapshot: expect.objectContaining({ lastInputSequence: { bravo: 4 } })
+    });
+  });
+});
+
 function createCoreHarness(): Readonly<{
   core: SimulationCore & {
     start: ReturnType<typeof vi.fn<SimulationCore['start']>>;
@@ -346,6 +513,7 @@ function makeSnapshot(): Snapshot {
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }
