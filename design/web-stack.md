@@ -65,3 +65,4 @@ The game runs in the browser and must keep both a `main thread` with DOM/UI/audi
 - [logging.md](logging.md)
 - [content-authoring.md](content-authoring.md)
 - [online-arena-hosting.md](online-arena-hosting.md)
+- [../stories/036-node-arena-host.md](../stories/036-node-arena-host.md)
