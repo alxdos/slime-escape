@@ -1716,6 +1716,13 @@ function createAudioHarness() {
   const events: RuntimeEvent[] = [];
   const uiEvents: AudioUiEventId[] = [];
   const attachedSessions: SessionDefinition[] = [];
+  const updates: Array<
+    Readonly<{
+      snapshotPair: SnapshotPair;
+      phase: Parameters<Audio['update']>[1];
+      encounter: Parameters<Audio['update']>[2];
+    }>
+  > = [];
   const masterGainValues: number[] = [];
   const calls = {
     unlock: 0,
@@ -1733,8 +1740,9 @@ function createAudioHarness() {
         handleEvent(event: RuntimeEvent): void {
           events.push(event);
         },
-        update(): void {
+        update(snapshotPair, phase, encounter): void {
           calls.update += 1;
+          updates.push({ snapshotPair, phase, encounter });
         },
         attach(session: SessionDefinition): void {
           attachedSessions.push(session);
@@ -1755,6 +1763,7 @@ function createAudioHarness() {
     },
     events,
     uiEvents,
+    updates,
     attachedSessions,
     masterGainValues,
     calls
@@ -2838,6 +2847,11 @@ describe('UiShell', () => {
     publicArenaClient.snapshot();
     shell.onFrame();
 
+    expect(audio.updates.at(-1)?.snapshotPair.curr?.entities[0]).toMatchObject({
+      kind: 'player',
+      playerId: 'socket-a',
+      formArchetypeId: 'slime-many-eye'
+    });
     expect(input.calls.create).toBe(1);
     expect(input.calls.start).toBe(1);
     expect(input.lastInit()?.initialAim).toEqual({ x: 1, y: 2 });
@@ -2879,8 +2893,8 @@ describe('UiShell', () => {
       ownerId: 1,
       ownerKind: 'player',
       targetId: 2,
-      targetKind: 'enemy',
-      targetArchetypeId: 'slime-one-eye',
+      targetKind: 'player',
+      targetArchetypeId: null,
       weaponArchetypeId: 'rock-thrower',
       damage: 3,
       x: 3,
@@ -2891,8 +2905,8 @@ describe('UiShell', () => {
 
     expect(audio.events.at(-1)).toMatchObject({
       kind: 'hit',
-      targetKind: 'enemy',
-      targetArchetypeId: 'slime-one-eye',
+      targetKind: 'player',
+      targetArchetypeId: null,
       weaponArchetypeId: 'rock-thrower'
     });
 
@@ -2903,8 +2917,8 @@ describe('UiShell', () => {
       ownerId: 2,
       ownerKind: 'player',
       targetId: 1,
-      targetKind: 'enemy',
-      targetArchetypeId: 'slime-hornling',
+      targetKind: 'player',
+      targetArchetypeId: null,
       weaponArchetypeId: 'rock-thrower',
       damage: 3,
       x: 1,
@@ -2915,8 +2929,8 @@ describe('UiShell', () => {
 
     expect(audio.events.at(-1)).toMatchObject({
       kind: 'hit',
-      targetKind: 'enemy',
-      targetArchetypeId: 'slime-hornling',
+      targetKind: 'player',
+      targetArchetypeId: null,
       weaponArchetypeId: 'rock-thrower'
     });
 

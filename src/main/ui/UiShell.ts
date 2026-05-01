@@ -2029,6 +2029,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   return {
     onFrame(): void {
       const snapshotPair = sim.snapshotPair();
+      const onlinePair = phase.kind === 'online' ? onlineSnapshotPair() : null;
       if (activeSession !== null) {
         portalController.update(snapshotPair.curr, phase);
       }
@@ -2039,10 +2040,10 @@ export function createUiShell(init: UiShellInit): UiShell {
         hud.update(snapshotPair);
       }
       if (onlineCampaignHudAttached && activeOnlineSession !== null && phase.kind === 'online') {
-        const onlinePair = onlineSnapshotPair();
-        hud.update(onlinePair);
-        escapeProgressPath.update(onlinePair, phase);
-        titleOverlay.update(onlinePair, phase);
+        const activeOnlinePair = onlinePair ?? onlineSnapshotPair();
+        hud.update(activeOnlinePair);
+        escapeProgressPath.update(activeOnlinePair, phase);
+        titleOverlay.update(activeOnlinePair, phase);
       }
       if (activeSession !== null) {
         escapeProgressPath.update(snapshotPair, phase);
@@ -2054,7 +2055,8 @@ export function createUiShell(init: UiShellInit): UiShell {
           );
         }
       }
-      audio.update(snapshotPair, phase, snapshotPair.curr?.encounter ?? null);
+      const audioSnapshotPair = onlinePair ?? snapshotPair;
+      audio.update(audioSnapshotPair, phase, audioSnapshotPair.curr?.encounter ?? null);
       renderer?.render();
       input?.syncAim();
       if (phase.kind === 'online') {
