@@ -1,8 +1,10 @@
 import { buildSessionDefinition } from '../../shared/content/buildSession';
 import {
+  getOnlineModeCatalog,
   getPlayableModeCatalog,
   DUNGEON_PRESET,
   resolveModePreset,
+  SESSION_PRESET_TEMPLATES,
   type ModePreset,
   type ModePresetId
 } from '../../shared/content/sessions';
@@ -13,12 +15,13 @@ import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type {
   ArenaHostEvent,
+  ArenaHostLobbyStateEvent,
   PublicArenaInputIntent,
   PublicArenaPlayerId,
   PublicArenaWorldBounds
 } from '../../shared/arenaHostProtocol';
 import type { Snapshot } from '../../shared/snapshot';
-import type { PlayerConfig, SessionDefinition } from '../../shared/session';
+import type { Loadout, PlayerConfig, SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import { createAudio, type Audio } from '../audio/Audio';
 import { applyAimAssist } from '../input/AimAssist';
@@ -54,7 +57,8 @@ import {
 import {
   createSimWorkerHost,
   type SimWorkerHost,
-  type SimWorkerHostOptions
+  type SimWorkerHostOptions,
+  type SnapshotPair
 } from '../sim/SimWorkerHost';
 import {
   publicArenaClientConfig,
@@ -286,6 +290,7 @@ const LOADING_PHASE: UiShellPhase = { kind: 'loading' };
 const MENU_PHASE: UiShellPhase = { kind: 'menu' };
 const RUNNING_PHASE: UiShellPhase = { kind: 'running' };
 const ONLINE_CONNECTING_PHASE: UiShellPhase = { kind: 'onlineConnecting' };
+const ONLINE_LOBBY_PHASE: UiShellPhase = { kind: 'onlineLobby' };
 const ONLINE_PHASE: UiShellPhase = { kind: 'online' };
 const PAUSED_PHASE: UiShellPhase = { kind: 'paused' };
 const ESCAPE_KEY_CODE = 'Escape';
@@ -298,6 +303,7 @@ const CAMPAIGN_PRESET_IDS = new Set<ModePresetId>([
 ]);
 const PUBLIC_ARENA_CONNECTING_MESSAGE = 'Joining Public Arena';
 const PUBLIC_ARENA_NOT_CONFIGURED_MESSAGE = 'Public arena server is not configured.';
+const ONLINE_SESSION_NOT_CONFIGURED_MESSAGE = 'Online session server is not configured.';
 
 type SessionStartSource = 'campaign' | 'nonCampaign' | 'autoStart';
 
@@ -388,12 +394,21 @@ export function createUiShell(init: UiShellInit): UiShell {
   let input: InputController | null = null;
   let publicArenaClient: PublicArenaClient | null = null;
   let publicArenaRenderer: PublicArenaRenderer | null = null;
+  let onlineRenderer: Renderer | null = null;
   let publicArenaInput: InputController | null = null;
   let publicArenaVisibleAreaCamera: VisibleAreaCamera | null = null;
+  let onlineVisibleAreaCamera: VisibleAreaCamera | null = null;
+  let publicArenaPreviousSnapshot: Snapshot | null = null;
   let publicArenaSnapshot: Snapshot | null = null;
+  let publicArenaSnapshotReceivedAtMs = 0;
   let publicArenaPlayerId: PublicArenaPlayerId | null = null;
   let publicArenaArena: PublicArenaWorldBounds | null = null;
   let publicArenaPlayerCap: number | null = null;
+  let activeOnlineSessionId: ModePresetId | null = null;
+  let activeOnlineSession: SessionDefinition | null = null;
+  let onlineLobbyState: ArenaHostLobbyStateEvent | null = null;
+  let onlineCampaignHudAttached = false;
+  let onlineStatusMessage = PUBLIC_ARENA_CONNECTING_MESSAGE;
   let publicArenaMenuOpen = false;
   let publicArenaConnectionId = 0;
   let unsubscribeRendererSettings: (() => void) | null = null;
@@ -446,6 +461,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   const menu = menuFactory({
     parent: init.parent,
     modes: getPlayableModeCatalog(),
+    onlineModes: getOnlineModeCatalog(),
     lab: buildMenuLabViewModel(clientProgressionStore.get()),
     pets: buildMenuPetsViewModel(clientProgressionStore.get()),
     onStart(presetId) {
@@ -454,6 +470,13 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
       audio.playUi('buttonClick');
       startPresetId(presetId, classifyPlayerStartSource(presetId));
+    },
+    onStartOnline(presetId) {
+      if (phase.kind !== 'menu' || isTransitionActive()) {
+        return;
+      }
+      audio.playUi('buttonClick');
+      startOnlineSession(presetId);
     },
     onStartTraining() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
@@ -496,13 +519,6 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
       audio.playUi('buttonClick');
       log.info('menu teaser selected', { controlId });
-    },
-    onStartPublicArena() {
-      if (phase.kind !== 'menu' || isTransitionActive()) {
-        return;
-      }
-      audio.playUi('buttonClick');
-      startPublicArena();
     },
     onStartDungeon() {
       if (phase.kind !== 'menu' || isTransitionActive()) {
@@ -565,6 +581,14 @@ export function createUiShell(init: UiShellInit): UiShell {
     onBack() {
       audio.playUi('buttonClick');
       exitPublicArenaToMenu();
+    },
+    onLobbyStart() {
+      audio.playUi('buttonClick');
+      publicArenaClient?.sendInput({ kind: 'lobby:start' });
+    },
+    onLobbyTransferHost(targetActorId) {
+      audio.playUi('buttonClick');
+      publicArenaClient?.sendInput({ kind: 'lobby:transferHost', targetActorId });
     }
   });
   const publicArenaMenu = publicArenaMenuFactory({
@@ -683,7 +707,21 @@ export function createUiShell(init: UiShellInit): UiShell {
         pause.hide();
         result.hide();
         mobileControls.hide();
-        publicArenaStatus.show(PUBLIC_ARENA_CONNECTING_MESSAGE);
+        publicArenaStatus.show(onlineStatusMessage);
+        publicArenaMenuOpen = false;
+        publicArenaMenu.hide();
+        publicArenaCombatAffordances.hide();
+        publicArenaHud.hide();
+        syncSettingsVisibility();
+        return;
+      case 'onlineLobby':
+        startupOverlay.hide();
+        startupErrorOverlay.hide();
+        menu.hide();
+        pause.hide();
+        result.hide();
+        mobileControls.hide();
+        showOnlineLobbyStatus();
         publicArenaMenuOpen = false;
         publicArenaMenu.hide();
         publicArenaCombatAffordances.hide();
@@ -707,12 +745,16 @@ export function createUiShell(init: UiShellInit): UiShell {
         } else {
           publicArenaMenu.hide();
         }
-        if (!isMobileInputMode() && !publicArenaMenuOpen) {
+        if (!onlineCampaignHudAttached && !isMobileInputMode() && !publicArenaMenuOpen) {
           publicArenaCombatAffordances.show();
         } else {
           publicArenaCombatAffordances.hide();
         }
-        publicArenaHud.show();
+        if (onlineCampaignHudAttached) {
+          publicArenaHud.hide();
+        } else {
+          publicArenaHud.show();
+        }
         syncSettingsVisibility();
         return;
       case 'paused':
@@ -769,6 +811,35 @@ export function createUiShell(init: UiShellInit): UiShell {
     }
     settingsVisible = false;
     settingsOverlay.hide();
+  }
+
+  function showOnlineLobbyStatus(): void {
+    const state = onlineLobbyState;
+    const selfActorId = publicArenaPlayerId;
+    if (state === null || selfActorId === null) {
+      publicArenaStatus.show(onlineStatusMessage);
+      return;
+    }
+    publicArenaStatus.showLobby({
+      sessionDisplayName: onlineModeDisplayName(state.sessionConfigId),
+      roomId: state.roomId,
+      selfActorId,
+      state: state.state,
+      joined: state.joined,
+      hostActorId: state.hostActorId,
+      maxPlayers: state.maxPlayers,
+      lateJoinAllowed: state.lateJoinAllowed
+    });
+  }
+
+  function onlineModeDisplayName(presetId: ModePresetId): string {
+    return SESSION_PRESET_TEMPLATES[presetId].displayName;
+  }
+
+  function onlineConnectingMessage(presetId: ModePresetId): string {
+    return presetId === 'public-arena'
+      ? PUBLIC_ARENA_CONNECTING_MESSAGE
+      : `Joining ${onlineModeDisplayName(presetId)}`;
   }
 
   function openSettings(): void {
@@ -861,34 +932,53 @@ export function createUiShell(init: UiShellInit): UiShell {
     void startPresetWithTransition(preset, source);
   }
 
-  function startPublicArena(): void {
+  function startOnlineSession(presetId: ModePresetId): void {
     if (phase.kind !== 'menu' || publicArenaClient !== null) {
       return;
     }
     const serverUrl = resolvedPublicArenaConfig.serverUrl;
     if (serverUrl === null) {
-      menu.showFeedback(PUBLIC_ARENA_NOT_CONFIGURED_MESSAGE);
+      menu.showFeedback(
+        presetId === 'public-arena'
+          ? PUBLIC_ARENA_NOT_CONFIGURED_MESSAGE
+          : ONLINE_SESSION_NOT_CONFIGURED_MESSAGE
+      );
       return;
     }
 
     const connectionId = publicArenaConnectionId + 1;
     publicArenaConnectionId = connectionId;
+    activeOnlineSessionId = presetId;
+    onlineStatusMessage = onlineConnectingMessage(presetId);
     setPhase(ONLINE_CONNECTING_PHASE);
     const nextPublicArenaClient = publicArenaClientFactory({
       serverUrl,
+      requestedSessionId: presetId,
+      selectedPetId: clientProgressionStore.get().selectedPetId,
       onAccepted(message) {
         if (!isCurrentPublicArenaConnection(connectionId)) {
           return;
         }
+        const acceptedSessionId = message.sessionConfigId ?? presetId;
+        activeOnlineSessionId = acceptedSessionId;
         attachPublicArenaPresentation({
           playerId: message.actorId,
           arena: message.arena,
-          playerCap: message.playerCap
+          playerCap: message.playerCap,
+          sessionConfigId: acceptedSessionId
         });
-        log.info('public arena accepted', {
+        log.info('online session accepted', {
           playerId: message.actorId,
-          population: message.population
+          population: message.population,
+          sessionConfigId: acceptedSessionId,
+          roomId: message.roomId ?? null,
+          roomState: message.roomState ?? 'running'
         });
+        if (message.roomState === 'open') {
+          onlineStatusMessage = `Joining ${onlineModeDisplayName(acceptedSessionId)}`;
+          setPhase(ONLINE_CONNECTING_PHASE);
+          return;
+        }
         setPhase(ONLINE_PHASE);
       },
       onRejected(message) {
@@ -903,12 +993,19 @@ export function createUiShell(init: UiShellInit): UiShell {
         if (!isCurrentPublicArenaConnection(connectionId)) {
           return;
         }
+        publicArenaPreviousSnapshot = publicArenaSnapshot;
         publicArenaSnapshot = snapshot;
+        publicArenaSnapshotReceivedAtMs = currentUiTimeMs();
         const arena = requirePublicArenaArena();
-        const visibleAreaCamera = ensurePublicArenaRenderer(arena);
+        const visibleAreaCamera = ensureOnlineRendererForSnapshot(arena, snapshot);
         ensurePublicArenaInput(arena, visibleAreaCamera);
-        publicArenaHud.update(snapshot, publicArenaPlayerId, publicArenaPlayerCap);
-        publicArenaCombatAffordances.update(snapshot, publicArenaPlayerId);
+        if (onlineCampaignHudAttached) {
+          publicArenaHud.hide();
+          publicArenaCombatAffordances.hide();
+        } else {
+          publicArenaHud.update(snapshot, publicArenaPlayerId, publicArenaPlayerCap);
+          publicArenaCombatAffordances.update(snapshot, publicArenaPlayerId);
+        }
       },
       onPresentation(event) {
         if (!isCurrentPublicArenaConnection(connectionId)) {
@@ -946,16 +1043,58 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function handlePublicArenaPresentationEvent(event: ArenaHostEvent): void {
-    if (
-      event.kind === 'host:levelUp' ||
-      event.kind === 'host:lobby:hostChanged' ||
-      event.kind === 'host:lobby:start' ||
-      event.kind === 'host:lobby:state' ||
-      event.kind === 'playerSpawn'
-    ) {
+    if (event.kind === 'host:lobby:state') {
+      handleOnlineLobbyState(event);
+      return;
+    }
+    if (event.kind === 'host:lobby:hostChanged') {
+      handleOnlineLobbyHostChanged(event.newHostActorId);
+      return;
+    }
+    if (event.kind === 'host:lobby:start') {
+      setPhase(ONLINE_PHASE);
+      return;
+    }
+    if (event.kind === 'host:levelUp') {
+      return;
+    }
+    if (event.kind === 'playerSpawn') {
       return;
     }
     audio.handleEvent(event);
+    onlineRenderer?.handleEvent(event);
+    if (event.kind === 'win' || event.kind === 'loss') {
+      handleOnlineRunEnd(event);
+    }
+  }
+
+  function handleOnlineLobbyState(event: ArenaHostLobbyStateEvent): void {
+    onlineLobbyState = event;
+    activeOnlineSessionId = event.sessionConfigId;
+    if (!onlineCampaignHudAttached && onlineRenderer === null) {
+      activeOnlineSession = null;
+    }
+    if (event.state === 'open') {
+      setPhase(ONLINE_LOBBY_PHASE);
+      return;
+    }
+    if (phase.kind === 'onlineConnecting' || phase.kind === 'onlineLobby') {
+      setPhase(ONLINE_PHASE);
+    }
+  }
+
+  function handleOnlineLobbyHostChanged(newHostActorId: string): void {
+    const state = onlineLobbyState;
+    if (state === null) {
+      return;
+    }
+    onlineLobbyState = {
+      ...state,
+      hostActorId: newHostActorId
+    };
+    if (phase.kind === 'onlineLobby') {
+      showOnlineLobbyStatus();
+    }
   }
 
   function attachPublicArenaPresentation(
@@ -963,13 +1102,17 @@ export function createUiShell(init: UiShellInit): UiShell {
       playerId: PublicArenaPlayerId;
       arena: PublicArenaWorldBounds;
       playerCap: number;
+      sessionConfigId: ModePresetId;
     }>
   ): void {
     tearDownPublicArenaPresentation();
     publicArenaSnapshot = null;
+    publicArenaPreviousSnapshot = null;
+    publicArenaSnapshotReceivedAtMs = 0;
     publicArenaPlayerId = handshake.playerId;
     publicArenaArena = handshake.arena;
     publicArenaPlayerCap = handshake.playerCap;
+    activeOnlineSessionId = handshake.sessionConfigId;
     portalController.attachPublicArena();
     publicArenaHud.update(null, publicArenaPlayerId, handshake.playerCap);
     publicArenaCombatAffordances.update(null, publicArenaPlayerId);
@@ -980,6 +1123,17 @@ export function createUiShell(init: UiShellInit): UiShell {
       throw new Error('Public Arena snapshot arrived before joinAccepted arena config.');
     }
     return publicArenaArena;
+  }
+
+  function ensureOnlineRendererForSnapshot(
+    arena: PublicArenaWorldBounds,
+    snapshot: Snapshot
+  ): VisibleAreaCamera {
+    if (isCampaignShapeOnlineSnapshot(snapshot)) {
+      attachOnlineCampaignHud();
+      return ensureOnlineCampaignRenderer(arena);
+    }
+    return ensurePublicArenaRenderer(arena);
   }
 
   function ensurePublicArenaRenderer(arena: PublicArenaWorldBounds): VisibleAreaCamera {
@@ -1022,6 +1176,48 @@ export function createUiShell(init: UiShellInit): UiShell {
     return visibleAreaCamera;
   }
 
+  function ensureOnlineCampaignRenderer(arena: PublicArenaWorldBounds): VisibleAreaCamera {
+    if (onlineRenderer !== null) {
+      if (onlineVisibleAreaCamera === null) {
+        throw new Error('Online campaign renderer is missing its visible-area camera.');
+      }
+      return onlineVisibleAreaCamera;
+    }
+    if (preloadedTextures === null) {
+      throw new Error('Online campaign renderer requires preloaded sprite textures.');
+    }
+    const session = requireActiveOnlineSession();
+    const visibleAreaCamera = createVisibleAreaCamera({
+      arena,
+      profile: visibleAreaProfile(),
+      effectiveViewport: currentEffectiveViewport(),
+      playerPosition: findPublicArenaSelfPosition()
+    });
+    const nextRenderer = rendererFactory({
+      canvas: init.canvas,
+      renderScalePreset: clientSettingsStore.get().renderScalePreset,
+      arena,
+      session,
+      spriteTextures: preloadedTextures,
+      selectedPetId: null,
+      visibleAreaCamera,
+      getSnapshotPair: onlineSnapshotPair,
+      getPortalDescriptors: portalController.portals,
+      getAim: () =>
+        publicArenaInput !== null && publicArenaInput.isActive()
+          ? publicArenaInput.currentAim()
+          : null,
+      windowTarget: rendererWindowTarget
+    });
+    unsubscribeRendererSettings?.();
+    unsubscribeRendererSettings = clientSettingsStore.subscribe((settings) => {
+      nextRenderer.applyScalePolicy(settings.renderScalePreset);
+    });
+    onlineRenderer = nextRenderer;
+    onlineVisibleAreaCamera = visibleAreaCamera;
+    return visibleAreaCamera;
+  }
+
   function ensurePublicArenaInput(
     arena: PublicArenaWorldBounds,
     visibleAreaCamera: VisibleAreaCamera
@@ -1040,6 +1236,98 @@ export function createUiShell(init: UiShellInit): UiShell {
     );
     publicArenaInput = nextInput;
     nextInput.start();
+  }
+
+  function attachOnlineCampaignHud(): void {
+    const session = requireActiveOnlineSession();
+    if (onlineCampaignHudAttached) {
+      return;
+    }
+    hud.attach(session);
+    escapeProgressPath.attach(session);
+    titleOverlay.attach(session);
+    onlineCampaignHudAttached = true;
+    applyPhaseVisibility();
+  }
+
+  function requireActiveOnlineSession(): SessionDefinition {
+    if (activeOnlineSession !== null) {
+      return activeOnlineSession;
+    }
+    const sessionId = activeOnlineSessionId;
+    if (sessionId === null) {
+      throw new Error('Online presentation session requires an accepted session id.');
+    }
+    const baseSession = builder(resolveModePreset(sessionId), {
+      seed: 0,
+      selectedPetId: null
+    });
+    activeOnlineSession = withOnlinePresentationPlayers(baseSession, sessionId);
+    return activeOnlineSession;
+  }
+
+  function withOnlinePresentationPlayers(
+    session: SessionDefinition,
+    sessionId: ModePresetId
+  ): SessionDefinition {
+    const template = SESSION_PRESET_TEMPLATES[sessionId];
+    if (!session.dynamicRoster) {
+      return session;
+    }
+    return {
+      ...session,
+      dynamicRoster: true,
+      players: onlinePresentationActors().map((actor) => ({
+        ...template.playerTemplate,
+        id: actor.actorId,
+        loadout: copyLoadout(template.playerTemplate.loadout),
+        companion:
+          template.companion === null || actor.petArchetypeId === null
+            ? null
+            : {
+                ...template.companion,
+                weaponLoadout: copyLoadout(template.companion.weaponLoadout),
+                petArchetypeId: actor.petArchetypeId
+              }
+      }))
+    };
+  }
+
+  function onlinePresentationActors(): ReadonlyArray<
+    Readonly<{ actorId: string; petArchetypeId: string | null }>
+  > {
+    if (onlineLobbyState !== null) {
+      return onlineLobbyState.joined;
+    }
+    if (publicArenaPlayerId === null) {
+      return [];
+    }
+    return [
+      {
+        actorId: publicArenaPlayerId,
+        petArchetypeId: clientProgressionStore.get().selectedPetId
+      }
+    ];
+  }
+
+  function onlineSnapshotPair(): SnapshotPair {
+    const prev = snapshotWithSelfPlayerFirst(publicArenaPreviousSnapshot, publicArenaPlayerId);
+    const curr = snapshotWithSelfPlayerFirst(publicArenaSnapshot, publicArenaPlayerId);
+    return {
+      prev,
+      curr,
+      currReceivedAtMs: publicArenaSnapshotReceivedAtMs,
+      nowMs: currentUiTimeMs()
+    };
+  }
+
+  function isCampaignShapeOnlineSnapshot(snapshot: Snapshot): boolean {
+    return (
+      snapshot.encounter !== null ||
+      snapshot.waveProgress !== null ||
+      snapshot.bossHud !== null ||
+      snapshot.zone.mode !== 'disabled'
+    );
   }
 
   function createPublicArenaInputController(
@@ -1138,12 +1426,16 @@ export function createUiShell(init: UiShellInit): UiShell {
     publicArenaCombatAffordances.hide();
     if (
       publicArenaRenderer === null &&
+      onlineRenderer === null &&
       publicArenaInput === null &&
       publicArenaVisibleAreaCamera === null &&
+      onlineVisibleAreaCamera === null &&
       publicArenaSnapshot === null &&
       publicArenaPlayerId === null &&
       publicArenaArena === null &&
-      publicArenaPlayerCap === null
+      publicArenaPlayerCap === null &&
+      activeOnlineSession === null &&
+      onlineLobbyState === null
     ) {
       publicArenaHud.hide();
       publicArenaCombatAffordances.hide();
@@ -1151,19 +1443,34 @@ export function createUiShell(init: UiShellInit): UiShell {
     }
     const previousInput = publicArenaInput;
     const previousRenderer = publicArenaRenderer;
+    const previousOnlineRenderer = onlineRenderer;
     const previousUnsubscribeRendererSettings = unsubscribeRendererSettings;
     publicArenaInput = null;
     publicArenaRenderer = null;
+    onlineRenderer = null;
     publicArenaVisibleAreaCamera = null;
+    onlineVisibleAreaCamera = null;
+    publicArenaPreviousSnapshot = null;
     publicArenaSnapshot = null;
+    publicArenaSnapshotReceivedAtMs = 0;
     publicArenaPlayerId = null;
     publicArenaArena = null;
     publicArenaPlayerCap = null;
+    activeOnlineSessionId = null;
+    activeOnlineSession = null;
+    onlineLobbyState = null;
+    if (onlineCampaignHudAttached) {
+      titleOverlay.detach();
+      escapeProgressPath.detach();
+      hud.detach();
+      onlineCampaignHudAttached = false;
+    }
     unsubscribeRendererSettings = null;
     portalController.detachSession();
     previousInput?.stop();
     previousUnsubscribeRendererSettings?.();
     previousRenderer?.dispose();
+    previousOnlineRenderer?.dispose();
     publicArenaHud.hide();
     publicArenaCombatAffordances.hide();
   }
@@ -1352,7 +1659,11 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function exitToMenu(): void {
     const previousPhase = phase;
-    if (previousPhase.kind === 'onlineConnecting' || previousPhase.kind === 'online') {
+    if (
+      previousPhase.kind === 'onlineConnecting' ||
+      previousPhase.kind === 'onlineLobby' ||
+      previousPhase.kind === 'online'
+    ) {
       exitPublicArenaToMenu();
       return;
     }
@@ -1372,7 +1683,11 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function exitPublicArenaToMenu(): void {
-    if (phase.kind !== 'onlineConnecting' && phase.kind !== 'online') {
+    if (
+      phase.kind !== 'onlineConnecting' &&
+      phase.kind !== 'onlineLobby' &&
+      phase.kind !== 'online'
+    ) {
       return;
     }
     const activePublicArenaClient = publicArenaClient;
@@ -1412,6 +1727,25 @@ export function createUiShell(init: UiShellInit): UiShell {
     const xpReward = awardResultXp(event.summary);
     const viewModel = buildResultViewModel(session, event.summary, { dungeonBest, xpReward });
     tearDownClientSession();
+    setPhase({ kind: 'result', outcome: kind, summary: event.summary, viewModel });
+  }
+
+  function handleOnlineRunEnd(event: Extract<RuntimeEvent, { kind: 'win' | 'loss' }>): void {
+    const session = requireActiveOnlineSession();
+    const kind = event.kind;
+    log.info(`online run ended: ${kind}`, {
+      simTimeMs: event.simTime,
+      sessionConfigId: activeOnlineSessionId
+    });
+    const viewModel = buildResultViewModel(session, event.summary, {
+      dungeonBest: null,
+      xpReward: null
+    });
+    const activePublicArenaClient = publicArenaClient;
+    publicArenaConnectionId += 1;
+    publicArenaClient = null;
+    activePublicArenaClient?.disconnect();
+    tearDownPublicArenaPresentation();
     setPhase({ kind: 'result', outcome: kind, summary: event.summary, viewModel });
   }
 
@@ -1553,6 +1887,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   function fitToWindow(): void {
     renderer?.fitToWindow();
     publicArenaRenderer?.fitToWindow();
+    onlineRenderer?.fitToWindow();
   }
 
   function createSessionInputController(
@@ -1661,7 +1996,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         texturesOwnedByShell = true;
         setPhase(MENU_PHASE);
         if (autoStartPublicArena) {
-          startPublicArena();
+          startOnlineSession('public-arena');
         } else if (autoStartPresetId !== null) {
           startPreset(resolveModePreset(autoStartPresetId), {
             startInput: true,
@@ -1703,6 +2038,12 @@ export function createUiShell(init: UiShellInit): UiShell {
       if (isRunningSessionActive()) {
         hud.update(snapshotPair);
       }
+      if (onlineCampaignHudAttached && activeOnlineSession !== null && phase.kind === 'online') {
+        const onlinePair = onlineSnapshotPair();
+        hud.update(onlinePair);
+        escapeProgressPath.update(onlinePair, phase);
+        titleOverlay.update(onlinePair, phase);
+      }
       if (activeSession !== null) {
         escapeProgressPath.update(snapshotPair, phase);
         dungeonWaveCounter.update(snapshotPair, phase);
@@ -1718,6 +2059,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       input?.syncAim();
       if (phase.kind === 'online') {
         publicArenaRenderer?.render();
+        onlineRenderer?.render();
         publicArenaInput?.syncAim();
       }
     },
@@ -1849,6 +2191,41 @@ function formatStartupError(error: unknown): string {
   return 'Unknown preload error';
 }
 
+function snapshotWithSelfPlayerFirst(
+  snapshot: Snapshot | null,
+  selfId: PublicArenaPlayerId | null
+): Snapshot | null {
+  if (snapshot === null || selfId === null) {
+    return snapshot;
+  }
+  const selfIndex = snapshot.entities.findIndex(
+    (entity) => entity.kind === 'player' && entity.playerId === selfId
+  );
+  if (selfIndex <= 0) {
+    return snapshot;
+  }
+  const self = snapshot.entities[selfIndex];
+  if (self === undefined) {
+    return snapshot;
+  }
+  return {
+    ...snapshot,
+    entities: [
+      self,
+      ...snapshot.entities.slice(0, selfIndex),
+      ...snapshot.entities.slice(selfIndex + 1)
+    ]
+  };
+}
+
+function currentUiTimeMs(): number {
+  return globalThis.performance?.now() ?? Date.now();
+}
+
+function copyLoadout(loadout: Loadout | null): Loadout | null {
+  return loadout === null ? null : { ...loadout, weapons: [...loadout.weapons] };
+}
+
 function publicArenaIntentFromInput(command: InputCommand): PublicArenaInputIntent | null {
   switch (command.kind) {
     case 'move':
@@ -1939,6 +2316,7 @@ function createNullPublicArenaStatusOverlay(
 ): PublicArenaStatusOverlay {
   return {
     show(): void {},
+    showLobby(): void {},
     hide(): void {},
     isVisible(): boolean {
       return false;

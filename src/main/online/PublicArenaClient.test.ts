@@ -70,14 +70,23 @@ class FakePublicArenaSocket {
 describe('PublicArenaClient', () => {
   it('sends the join request on socket connect', () => {
     const socket = new FakePublicArenaSocket();
-    createPublicArenaClient(makeInit(socket));
+    createPublicArenaClient(
+      makeInit(socket, {
+        requestedSessionId: 'coop-slime',
+        selectedPetId: 'pet-01'
+      })
+    );
 
     socket.dispatch('connect');
 
     expect(socket.emitted).toEqual([
       {
         event: PUBLIC_ARENA_EVENTS.join,
-        payload: { protocolVersion: ARENA_HOST_PROTOCOL_VERSION }
+        payload: {
+          protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+          requestedSessionId: 'coop-slime',
+          selectedPetId: 'pet-01'
+        }
       }
     ]);
   });

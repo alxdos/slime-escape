@@ -11,6 +11,7 @@ import {
   type PublicArenaJoinRejected,
   type PublicArenaServerToClientEvents
 } from '../../shared/arenaHostProtocol';
+import type { ModePresetId } from '../../shared/content/sessions';
 import type { Snapshot } from '../../shared/snapshot';
 
 export type PublicArenaSocket = Readonly<{
@@ -28,6 +29,8 @@ export type PublicArenaSocket = Readonly<{
 
 export type PublicArenaClientInit = Readonly<{
   serverUrl: string;
+  requestedSessionId?: ModePresetId;
+  selectedPetId?: string | null;
   createSocket?: (serverUrl: string) => PublicArenaSocket;
   onAccepted(message: PublicArenaJoinAccepted): void;
   onRejected(message: PublicArenaJoinRejected): void;
@@ -61,7 +64,9 @@ export function createPublicArenaClient(init: PublicArenaClientInit): PublicAren
       return;
     }
     socket.emit(PUBLIC_ARENA_EVENTS.join, {
-      protocolVersion: ARENA_HOST_PROTOCOL_VERSION
+      protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+      requestedSessionId: init.requestedSessionId,
+      selectedPetId: init.selectedPetId ?? null
     });
   });
 

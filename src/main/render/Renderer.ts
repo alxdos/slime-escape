@@ -300,6 +300,7 @@ export function createRenderer(init: RendererInit): Renderer {
   ) / 2;
 
   const enemyMeshes = new Map<number, EntityMeshEntry>();
+  const otherPlayerMeshes = new Map<number, EntityMeshEntry>();
   const companionMeshes = new Map<number, EntityMeshEntry>();
   const bossMeshes = new Map<number, EntityMeshEntry>();
   const projectileMeshes = new Map<number, EntityMeshEntry>();
@@ -390,6 +391,21 @@ export function createRenderer(init: RendererInit): Renderer {
     entry.mesh.add(createStatusMarker(visual.worldSize.height));
     scene.add(entry.mesh);
     enemyMeshes.set(snap.id, entry);
+    return entry;
+  }
+
+  function ensureOtherPlayerMesh(snap: PlayerSnapshot): EntityMeshEntry {
+    const existing = otherPlayerMeshes.get(snap.id);
+    if (existing !== undefined) return existing;
+    const entry = createSpriteMesh(
+      DEFAULT_PLAYER_VISUAL,
+      requireSpriteTexture(init.spriteTextures, DEFAULT_PLAYER_VISUAL.archetypeId, 'player'),
+      ENEMY_Z
+    );
+    entry.mesh.add(createPlayerHpBar(DEFAULT_PLAYER_VISUAL.worldSize.height));
+    entry.mesh.add(createStatusMarker(DEFAULT_PLAYER_VISUAL.worldSize.height));
+    scene.add(entry.mesh);
+    otherPlayerMeshes.set(snap.id, entry);
     return entry;
   }
 
@@ -498,6 +514,24 @@ export function createRenderer(init: RendererInit): Renderer {
       applyCameraVisibleArea(camera, visibleAreaCamera.visibleArea());
       updatePlayer(playerMesh, pair, alpha, characterSnapGrid);
       applyPlayerPortalTravelPresentation(playerEntry, pair, portalDescriptors);
+      const primaryPlayerSnapshot = findPlayerSnapshot(pair.curr);
+      updateEntities(
+        pair,
+        alpha,
+        (e): e is PlayerSnapshot =>
+          e.kind === 'player' && e.id !== primaryPlayerSnapshot?.id,
+        otherPlayerMeshes,
+        ensureOtherPlayerMesh,
+        disposeEntityMesh,
+        characterSnapGrid,
+        (entry, entity) =>
+          applyOtherPlayerPresentation(
+            entry.mesh,
+            entity,
+            pair.nowMs,
+            hitImpulsesByTarget.get(entity.id)
+          )
+      );
       updateCompanion(
         companionEntry,
         pair,
@@ -646,6 +680,8 @@ export function createRenderer(init: RendererInit): Renderer {
       scene.remove(zoneOverlay.mesh);
       for (const entry of enemyMeshes.values()) disposeEntityMesh(entry);
       enemyMeshes.clear();
+      for (const entry of otherPlayerMeshes.values()) disposeEntityMesh(entry);
+      otherPlayerMeshes.clear();
       for (const entry of companionMeshes.values()) disposeEntityMesh(entry);
       companionMeshes.clear();
       for (const entry of bossMeshes.values()) disposeEntityMesh(entry);
@@ -1045,6 +1081,19 @@ function applyEnemyPresentation(
   applyStatusMarker(mesh, entity.statusEffects ?? [], nowMs);
 }
 
+function applyOtherPlayerPresentation(
+  mesh: THREE.Mesh,
+  entity: PlayerSnapshot,
+  nowMs: number,
+  hitImpulse: HitImpulseEffect | undefined
+): void {
+  applyPlayerPresentation(mesh, nowMs, { dx: 0, dy: 0, strength: 0 });
+  applyHitFlash(mesh, hitImpulse, nowMs);
+  applyPlayerHpBar(mesh, entity);
+  applyStatusMarker(mesh, entity.statusEffects ?? [], nowMs);
+  applyPlayerGhostPresentation(mesh, entity, nowMs);
+}
+
 function applyCompanionPresentation(
   mesh: THREE.Mesh,
   entity: CompanionSnapshot,
@@ -1145,6 +1194,28 @@ function applyPlayerHpBar(mesh: THREE.Mesh, player: PlayerSnapshot): void {
   const ratio = clamp01(player.hp / player.maxHp);
   fill.scale.x = ratio;
   fill.position.x = (-CHARACTER_HP_BAR_WIDTH_WU * (1 - ratio)) / 2;
+}
+
+function applyPlayerGhostPresentation(
+  mesh: THREE.Mesh,
+  player: PlayerSnapshot,
+  nowMs: number
+): void {
+  const material = mesh.material;
+  if (Array.isArray(material) || !(material instanceof THREE.MeshBasicMaterial)) return;
+  material.opacity =
+    player.state === 'ghost' ? 0.48 + 0.1 * shimmer01(nowMs, player.id, 280) : 1;
+}
+
+function applyHitFlash(
+  mesh: THREE.Mesh,
+  hitImpulse: HitImpulseEffect | undefined,
+  nowMs: number
+): void {
+  const material = mesh.material;
+  if (Array.isArray(material) || !(material instanceof THREE.MeshBasicMaterial)) return;
+  const flash = 1 + 0.55 * computeHitResponseT(hitImpulse, nowMs);
+  material.color.setRGB(flash, flash, flash);
 }
 
 function applyCompanionWarningMarker(
@@ -1411,6 +1482,7 @@ function updatePlayer(
     applyPlayerPresentation(mesh, pair.nowMs, { dx: 0, dy: 0, strength: 0 });
     applyPlayerHpBar(mesh, player);
     applyStatusMarker(mesh, player.statusEffects ?? [], pair.nowMs);
+    applyPlayerGhostPresentation(mesh, player, pair.nowMs);
     return;
   }
   const x = prevPlayer.x + (player.x - prevPlayer.x) * alpha;
@@ -1424,6 +1496,7 @@ function updatePlayer(
   );
   applyPlayerHpBar(mesh, player);
   applyStatusMarker(mesh, player.statusEffects ?? [], pair.nowMs);
+  applyPlayerGhostPresentation(mesh, player, pair.nowMs);
 }
 
 type PlayerPresentationMotion = Readonly<{

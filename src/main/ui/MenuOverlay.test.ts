@@ -103,6 +103,7 @@ describe('MenuOverlay', () => {
     createMenuOverlay({
       parent,
       modes: [],
+      onlineModes: [],
       lab: makeLabViewModel(),
       pets: makePetsViewModel(),
       onStart() {},
@@ -112,7 +113,7 @@ describe('MenuOverlay', () => {
       onOpenScreen() {},
       onBackToMainMenu() {},
       onTeaser() {},
-      onStartPublicArena() {},
+      onStartOnline() {},
       onStartDungeon() {},
       onPurchasePet() {
         return { ok: false, reason: 'insufficientXp', quality: 'green', price: 25, totalXp: 0 };
@@ -156,11 +157,32 @@ describe('MenuOverlay', () => {
       value: new FakeDocument()
     });
 
-    const onStartPublicArena = vi.fn();
+    const onStartOnline = vi.fn();
     const parent = document.createElement('div');
     createMenuOverlay({
       parent,
       modes: [],
+      onlineModes: [
+        {
+          presetId: 'public-arena',
+          displayName: 'Public Arena',
+          description: 'PvP',
+          order: 91,
+          online: { enabled: true, maxPlayers: 200, lateJoinAllowed: true, lobbyKind: 'none' }
+        },
+        {
+          presetId: 'coop-slime',
+          displayName: 'Co-Op vs Slimes',
+          description: 'Co-op',
+          order: 92,
+          online: {
+            enabled: true,
+            maxPlayers: 4,
+            lateJoinAllowed: true,
+            lobbyKind: 'hostControlled'
+          }
+        }
+      ],
       lab: makeLabViewModel(),
       pets: makePetsViewModel(),
       onStart() {},
@@ -170,7 +192,7 @@ describe('MenuOverlay', () => {
       onOpenScreen() {},
       onBackToMainMenu() {},
       onTeaser() {},
-      onStartPublicArena,
+      onStartOnline,
       onStartDungeon() {},
       onPurchasePet() {
         return { ok: false, reason: 'insufficientXp', quality: 'green', price: 25, totalXp: 0 };
@@ -186,15 +208,22 @@ describe('MenuOverlay', () => {
 
     const root = findByRole(parent, 'menu-overlay');
     const publicArena = findByRole(root, 'menu-public-arena-button');
+    const onlineModes = findAllByRole(root, 'menu-online-mode-button');
 
     expect(publicArena.textContent).toBe('ONLINE ARENA');
-    expect(publicArena.getAttribute('aria-label')).toBe('Join Online Arena');
+    expect(publicArena.getAttribute('aria-label')).toBe('Join Public Arena');
     expect(publicArena.style.cssText).toContain('left:38%');
     expect(publicArena.style.cssText).toContain('top:6.8%');
+    expect(onlineModes.map((button) => button.dataset['presetId'])).toEqual(['coop-slime']);
+    expect(onlineModes[0]?.textContent).toBe('CO-OP VS SLIMES');
+    expect(onlineModes[0]?.style.cssText).toContain('left:57%');
 
     click(publicArena);
+    click(onlineModes[0] as HTMLElement);
 
-    expect(onStartPublicArena).toHaveBeenCalledTimes(1);
+    expect(onStartOnline).toHaveBeenCalledTimes(2);
+    expect(onStartOnline).toHaveBeenNthCalledWith(1, 'public-arena');
+    expect(onStartOnline).toHaveBeenNthCalledWith(2, 'coop-slime');
   });
 
   it('starts Dungeon from the subscreen and renders the saved best number only', () => {
@@ -208,6 +237,7 @@ describe('MenuOverlay', () => {
     const overlay = createMenuOverlay({
       parent,
       modes: [],
+      onlineModes: [],
       lab: makeLabViewModel(),
       pets: makePetsViewModel(),
       onStart() {},
@@ -217,7 +247,7 @@ describe('MenuOverlay', () => {
       onOpenScreen() {},
       onBackToMainMenu() {},
       onTeaser() {},
-      onStartPublicArena() {},
+      onStartOnline() {},
       onStartDungeon,
       onPurchasePet() {
         return { ok: false, reason: 'insufficientXp', quality: 'green', price: 25, totalXp: 0 };
@@ -285,6 +315,7 @@ describe('MenuOverlay', () => {
     const overlay = createMenuOverlay({
       parent,
       modes: [],
+      onlineModes: [],
       lab: makeLabViewModel({ totalXp: 30 }),
       pets: makePetsViewModel(),
       onStart() {},
@@ -294,7 +325,7 @@ describe('MenuOverlay', () => {
       onOpenScreen() {},
       onBackToMainMenu() {},
       onTeaser() {},
-      onStartPublicArena() {},
+      onStartOnline() {},
       onStartDungeon() {},
       onPurchasePet,
       onSelectPet(petId) {
@@ -367,6 +398,7 @@ describe('MenuOverlay', () => {
     const overlay = createMenuOverlay({
       parent,
       modes: [],
+      onlineModes: [],
       lab: makeLabViewModel(),
       pets: makePetsViewModel({
         greenPetIds: ['green-a'],
@@ -380,7 +412,7 @@ describe('MenuOverlay', () => {
       onOpenScreen() {},
       onBackToMainMenu() {},
       onTeaser() {},
-      onStartPublicArena() {},
+      onStartOnline() {},
       onStartDungeon() {},
       onPurchasePet() {
         return { ok: false, reason: 'insufficientXp', quality: 'green', price: 25, totalXp: 0 };

@@ -65,7 +65,7 @@ export function createTitleOverlay(init: TitleOverlayInit): TitleOverlay {
         render(root, titleLine, subtitleLine, lastVisibleViewModel);
         return;
       }
-      if (phase.kind !== 'running') {
+      if (phase.kind !== 'running' && phase.kind !== 'online') {
         lastVisibleViewModel = HIDDEN_VIEW_MODEL;
         render(root, titleLine, subtitleLine, HIDDEN_VIEW_MODEL);
         return;

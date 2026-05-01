@@ -66,7 +66,7 @@ export function createEscapeProgressPath(init: EscapeProgressPathInit): EscapePr
         render(root, label, track, footer, lastVisibleViewModel);
         return;
       }
-      if (phase.kind !== 'running') {
+      if (phase.kind !== 'running' && phase.kind !== 'online') {
         lastVisibleViewModel = HIDDEN_VIEW_MODEL;
         render(root, label, track, footer, HIDDEN_VIEW_MODEL);
         return;

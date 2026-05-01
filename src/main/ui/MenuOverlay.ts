@@ -1,5 +1,9 @@
 import { PET_QUALITIES, type PetQuality } from '../../shared/content/pets';
-import type { ModePresetId, PlayableModeEntry } from '../../shared/content/sessions';
+import type {
+  ModePresetId,
+  OnlineModeEntry,
+  PlayableModeEntry
+} from '../../shared/content/sessions';
 
 import { comicTextStyle } from './comicTextStyle';
 import {
@@ -39,16 +43,17 @@ const LAB_REVEAL_DISMISS_MS = 220;
 export type MenuOverlayInit = Readonly<{
   parent: HTMLElement;
   modes: ReadonlyArray<PlayableModeEntry>;
+  onlineModes: ReadonlyArray<OnlineModeEntry>;
   lab: MenuLabViewModel;
   pets: MenuPetsViewModel;
   onStart(presetId: ModePresetId): void;
+  onStartOnline(presetId: ModePresetId): void;
   onStartTraining(): void;
   onOpenSettings(): void;
   onToggleFullscreen(): void;
   onOpenScreen(screenId: MenuSubscreenId): void;
   onBackToMainMenu(): void;
   onTeaser(controlId: TeaserControlId): void;
-  onStartPublicArena(): void;
   onStartDungeon(): void;
   onPurchasePet(quality: PetQuality): MenuLabPurchaseResult;
   onSelectPet(petId: string): MenuPetsSelectionResult;
@@ -128,7 +133,11 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
     }
     mainStage.appendChild(button);
   }
-  mainStage.appendChild(createPublicArenaButton(init.onStartPublicArena, init.onButtonHover));
+  for (const [index, mode] of init.onlineModes.entries()) {
+    mainStage.appendChild(
+      createOnlineModeButton(mode, index, init.onStartOnline, init.onButtonHover)
+    );
+  }
   mainStage.appendChild(teaserFeedback);
 
   const socialLinks = createSocialLinkRail();
@@ -515,17 +524,28 @@ export function createMenuOverlay(init: MenuOverlayInit): MenuOverlay {
   }
 }
 
-function createPublicArenaButton(onClick: () => void, onHover: () => void): HTMLButtonElement {
+function createOnlineModeButton(
+  mode: OnlineModeEntry,
+  index: number,
+  onStartOnline: (presetId: ModePresetId) => void,
+  onHover: () => void
+): HTMLButtonElement {
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'menu-public-arena-button';
-  button.dataset['role'] = 'menu-public-arena-button';
-  button.setAttribute('aria-label', 'Join Online Arena');
-  button.textContent = 'ONLINE ARENA';
-  button.style.cssText = publicArenaButtonStyle();
-  button.addEventListener('click', onClick);
+  button.className = 'menu-online-mode-button';
+  button.dataset['role'] =
+    mode.presetId === 'public-arena' ? 'menu-public-arena-button' : 'menu-online-mode-button';
+  button.dataset['presetId'] = mode.presetId;
+  button.setAttribute('aria-label', `Join ${mode.displayName}`);
+  button.textContent = onlineModeButtonText(mode);
+  button.style.cssText = onlineModeButtonStyle(index);
+  button.addEventListener('click', () => onStartOnline(mode.presetId));
   button.addEventListener('pointerenter', onHover);
   return button;
+}
+
+function onlineModeButtonText(mode: OnlineModeEntry): string {
+  return mode.presetId === 'public-arena' ? 'ONLINE ARENA' : mode.displayName.toUpperCase();
 }
 
 function createDungeonBestWaveElement(): HTMLDivElement {
@@ -1118,11 +1138,12 @@ function teaserFeedbackStyle(): string {
   ].join(';');
 }
 
-function publicArenaButtonStyle(): string {
+function onlineModeButtonStyle(index: number): string {
+  const leftPercent = index === 0 ? 38 : 38 + index * 19;
   return [
     'appearance:none',
     'position:absolute',
-    'left:38%',
+    `left:${leftPercent}%`,
     'top:6.8%',
     'width:24%',
     'min-height:8.8%',
@@ -1142,7 +1163,7 @@ function publicArenaButtonStyle(): string {
       lineHeight: '0.95',
       textAlign: 'center'
     }),
-    'font-size:min(3.2cqw, 4.7cqh, 27px)',
+    'font-size:min(3cqw, 4.5cqh, 25px)',
     'overflow-wrap:anywhere',
     'white-space:normal'
   ].join(';');
@@ -1376,14 +1397,14 @@ function menuOverlayCss(): string {
   filter: saturate(1) brightness(1.06) drop-shadow(5px 5px 0 #000000);
 }
 
-.menu-public-arena-button {
+.menu-online-mode-button {
   outline: none;
   transform: rotate(-1deg);
   transition: filter 140ms ease, transform 140ms ease;
 }
 
-.menu-public-arena-button:hover,
-.menu-public-arena-button:focus-visible {
+.menu-online-mode-button:hover,
+.menu-online-mode-button:focus-visible {
   filter: brightness(1.1) saturate(1.04) drop-shadow(6px 6px 0 #000000);
   transform: translate(-1px, -1px) rotate(-1deg) scale(1.015);
 }

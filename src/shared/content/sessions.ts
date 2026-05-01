@@ -122,6 +122,11 @@ export type PlayableModeEntry = Readonly<{
   order: number;
 }>;
 
+export type OnlineModeEntry = PlayableModeEntry &
+  Readonly<{
+    online: OnlineSessionPresetConfig;
+  }>;
+
 export function getPlayableModeCatalog(): ReadonlyArray<PlayableModeEntry> {
   return Object.values(SESSION_PRESET_TEMPLATES)
     .filter((preset) => preset.visibleInMenu)
@@ -131,5 +136,18 @@ export function getPlayableModeCatalog(): ReadonlyArray<PlayableModeEntry> {
       displayName: preset.displayName,
       description: preset.description,
       order: preset.order
+    }));
+}
+
+export function getOnlineModeCatalog(): ReadonlyArray<OnlineModeEntry> {
+  return Object.values(SESSION_PRESET_TEMPLATES)
+    .filter((preset) => preset.online.enabled)
+    .sort((left, right) => left.order - right.order)
+    .map((preset) => ({
+      presetId: preset.presetId,
+      displayName: preset.displayName,
+      description: preset.description,
+      order: preset.order,
+      online: preset.online
     }));
 }

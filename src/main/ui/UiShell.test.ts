@@ -12,7 +12,7 @@ import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type {
   ArenaHostEvent,
-  PublicArenaInputIntent,
+  PublicArenaInputIntent
 } from '../../shared/arenaHostProtocol';
 import { ARENA_HOST_PROTOCOL_VERSION } from '../../shared/arenaHostProtocol';
 import type { SessionDefinition } from '../../shared/session';
@@ -293,7 +293,7 @@ function createMenuHarness() {
   let onOpenScreen: ((screenId: MenuSubscreenId) => void) | null = null;
   let onBackToMainMenu: (() => void) | null = null;
   let onTeaser: ((controlId: TeaserControlId) => void) | null = null;
-  let onStartPublicArena: (() => void) | null = null;
+  let onStartOnline: ((presetId: ModePresetId) => void) | null = null;
   let onStartDungeon: (() => void) | null = null;
   let onPurchasePet: MenuOverlayInit['onPurchasePet'] | null = null;
   let onSelectPet: MenuOverlayInit['onSelectPet'] | null = null;
@@ -301,6 +301,7 @@ function createMenuHarness() {
   let onButtonHover: (() => void) | null = null;
   let onModeSwitch: (() => void) | null = null;
   let modes: ReadonlyArray<{ presetId: ModePresetId }> = [];
+  let onlineModes: ReadonlyArray<{ presetId: ModePresetId }> = [];
   const labViewModels: MenuLabViewModel[] = [];
   const petsViewModels: MenuPetsViewModel[] = [];
   const feedbackMessages: string[] = [];
@@ -348,6 +349,7 @@ function createMenuHarness() {
   return {
     factory(init: MenuOverlayInit): MenuOverlay {
       modes = init.modes;
+      onlineModes = init.onlineModes;
       onStart = init.onStart;
       onStartTraining = init.onStartTraining;
       onOpenSettings = init.onOpenSettings;
@@ -355,7 +357,7 @@ function createMenuHarness() {
       onOpenScreen = init.onOpenScreen;
       onBackToMainMenu = init.onBackToMainMenu;
       onTeaser = init.onTeaser;
-      onStartPublicArena = init.onStartPublicArena;
+      onStartOnline = init.onStartOnline;
       onStartDungeon = init.onStartDungeon;
       onPurchasePet = init.onPurchasePet;
       onSelectPet = init.onSelectPet;
@@ -384,6 +386,9 @@ function createMenuHarness() {
     modes(): ReadonlyArray<{ presetId: ModePresetId }> {
       return modes;
     },
+    onlineModes(): ReadonlyArray<{ presetId: ModePresetId }> {
+      return onlineModes;
+    },
     openSettings(): void {
       if (!visible) {
         return;
@@ -406,7 +411,13 @@ function createMenuHarness() {
       if (!visible) {
         return;
       }
-      onStartPublicArena?.();
+      onStartOnline?.('public-arena');
+    },
+    startOnline(presetId: ModePresetId): void {
+      if (!visible) {
+        return;
+      }
+      onStartOnline?.(presetId);
     },
     startDungeon(): void {
       if (!visible) {
@@ -671,13 +682,31 @@ function createPauseHarness() {
 function createPublicArenaStatusHarness() {
   let visible = false;
   let message = '';
+  let lobbyState:
+    | Readonly<{
+        selfActorId: string;
+        hostActorId: string;
+        joined: ReadonlyArray<Readonly<{ actorId: string }>>;
+      }>
+    | null = null;
   let onBack: (() => void) | null = null;
+  let onLobbyStart: (() => void) | null = null;
+  let onLobbyTransferHost: ((targetActorId: string) => void) | null = null;
   let root: FakeDomElement | null = null;
 
   const overlay: PublicArenaStatusOverlay = {
     show(nextMessage): void {
       visible = true;
       message = nextMessage;
+      lobbyState = null;
+      if (root !== null) {
+        root.style.display = 'flex';
+      }
+    },
+    showLobby(viewModel): void {
+      visible = true;
+      lobbyState = viewModel;
+      message = viewModel.sessionDisplayName;
       if (root !== null) {
         root.style.display = 'flex';
       }
@@ -700,6 +729,8 @@ function createPublicArenaStatusHarness() {
   return {
     factory(init: PublicArenaStatusOverlayInit): PublicArenaStatusOverlay {
       onBack = init.onBack;
+      onLobbyStart = init.onLobbyStart ?? null;
+      onLobbyTransferHost = init.onLobbyTransferHost ?? null;
       root = new FakeDomElement();
       root.dataset['role'] = 'public-arena-status-overlay';
       root.style.zIndex = '95';
@@ -715,6 +746,15 @@ function createPublicArenaStatusHarness() {
     },
     message(): string {
       return message;
+    },
+    lobbyState() {
+      return lobbyState;
+    },
+    startLobby(): void {
+      onLobbyStart?.();
+    },
+    transferHost(targetActorId: string): void {
+      onLobbyTransferHost?.(targetActorId);
     }
   };
 }
@@ -915,15 +955,23 @@ function createPublicArenaClientHarness() {
         }
       };
     },
-    accept(): void {
+    accept(
+      overrides: Partial<Parameters<PublicArenaClientInit['onAccepted']>[0]> = {}
+    ): void {
       lastInit?.onAccepted({
         protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+        roomId: 'room-a',
+        sessionConfigId: 'public-arena',
         actorId: 'socket-a',
         arena: PUBLIC_ARENA_WORLD_BOUNDS,
         playerCap: 200,
         population: 1,
+        maxPlayers: 200,
+        lateJoinAllowed: true,
+        roomState: 'running',
         tickHz: 60,
-        snapshotHz: 30
+        snapshotHz: 30,
+        ...overrides
       });
     },
     reject(message: string): void {
@@ -944,8 +992,8 @@ function createPublicArenaClientHarness() {
     presentation(event: ArenaHostEvent): void {
       lastInit?.onPresentation(event);
     },
-    snapshot(): void {
-      lastInit?.onSnapshot(makePublicArenaSnapshot());
+    snapshot(snapshot: Snapshot = makePublicArenaSnapshot()): void {
+      lastInit?.onSnapshot(snapshot);
     },
     lastInit(): PublicArenaClientInit | null {
       return lastInit;
@@ -1003,6 +1051,69 @@ function makePublicArenaSnapshot(): Snapshot {
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
+    bossHud: null
+  };
+}
+
+function makeCoopOnlineSnapshot(): Snapshot {
+  return {
+    simTimeMs: 240,
+    entities: [
+      {
+        id: 2,
+        kind: 'player',
+        playerId: 'socket-b',
+        x: -2,
+        y: 0,
+        hp: 8,
+        maxHp: 10,
+        state: 'alive',
+        formArchetypeId: null,
+        weaponHud: null
+      },
+      {
+        id: 1,
+        kind: 'player',
+        playerId: 'socket-a',
+        x: 3,
+        y: 4,
+        hp: 7,
+        maxHp: 10,
+        state: 'alive',
+        formArchetypeId: null,
+        weaponHud: {
+          selectedIndex: 0,
+          weapons: [
+            {
+              index: 0,
+              weaponArchetypeId: 'pistol',
+              cooldownStartedAtSimMs: 0,
+              cooldownReadyAtSimMs: 0,
+              modifiers: [],
+              timedEffects: []
+            }
+          ]
+        }
+      },
+      {
+        id: 3,
+        kind: 'enemy',
+        archetypeId: 'slime-one-eye',
+        x: 0,
+        y: 1,
+        hp: 3,
+        maxHp: 3
+      }
+    ],
+    encounter: {
+      id: 'coop-slime-wave-1',
+      index: 0,
+      type: 'wave',
+      elapsedMs: 120,
+      waveOrdinal: null
+    },
+    zone: { mode: 'disabled', margin: 0 },
+    waveProgress: { dispatched: 1, alive: 1, total: 3 },
     bossHud: null
   };
 }
@@ -2705,6 +2816,7 @@ describe('UiShell', () => {
     menu.startPublicArena();
 
     expect(publicArenaClient.lastInit()?.serverUrl).toBe('https://arena.example.test');
+    expect(publicArenaClient.lastInit()?.requestedSessionId).toBe('public-arena');
     expect(shell.phase()).toEqual({ kind: 'onlineConnecting' });
     expect(status.message()).toBe('Joining Public Arena');
     expect(sim.startSessions).toHaveLength(0);
@@ -2874,6 +2986,156 @@ describe('UiShell', () => {
 
     expect(shell.phase()).toEqual({ kind: 'menu' });
     expect(menu.latestFeedback()).toBeNull();
+  });
+
+  it('routes the data-driven co-op online entry through lobby, selected pet, campaign renderer, HUD, and result', async () => {
+    const menu = createMenuHarness();
+    const status = createPublicArenaStatusHarness();
+    const publicArenaHud = createPublicArenaHudHarness();
+    const publicArenaCombatAffordances = createPublicArenaCombatAffordancesHarness();
+    const publicArenaClient = createPublicArenaClientHarness();
+    const publicArenaRenderer = createPublicArenaRendererHarness();
+    const renderer = createRendererHarness();
+    const input = createInputHarness();
+    const sim = createSimHarness();
+    const hud = createHudHarness();
+    const escapeProgressPath = createEscapeProgressPathHarness();
+    const titleOverlay = createTitleOverlayHarness();
+    const result = createResultHarness();
+    const progression = createClientProgressionStoreHarness({
+      ownedPetIds: ['pet-01'],
+      selectedPetId: 'pet-01'
+    });
+    const windowTarget = new FakeEventTarget();
+    const documentEvents = new FakeEventTarget();
+    const documentTarget = Object.assign(documentEvents, { pointerLockElement: null });
+
+    const shell = createUiShellForTest({
+      parent: {} as HTMLElement,
+      canvas: { clientHeight: 900 } as HTMLCanvasElement,
+      createSimWorkerHost: sim.factory,
+      createMenuOverlay: menu.factory,
+      createPauseOverlay: createPauseHarness().factory,
+      createResultOverlay: result.factory,
+      createSettingsOverlay: createSettingsOverlayHarness().factory,
+      createRenderer: renderer.factory,
+      createInputController: input.factory,
+      createHud: hud.factory,
+      createEscapeProgressPath: escapeProgressPath.factory,
+      createTitleOverlay: titleOverlay.factory,
+      createPublicArenaHud: publicArenaHud.factory,
+      createPublicArenaCombatAffordances: publicArenaCombatAffordances.factory,
+      createPublicArenaMenuOverlay: createPublicArenaMenuHarness().factory,
+      createPublicArenaStatusOverlay: status.factory,
+      createPublicArenaClient: publicArenaClient.factory,
+      createPublicArenaRenderer: publicArenaRenderer.factory,
+      createClientProgressionStore: progression.factory,
+      publicArenaConfig: {
+        serverUrl: 'https://arena.example.test',
+        fullArenaMessage: 'The online arena is full. Try again soon.'
+      },
+      windowTarget,
+      documentTarget
+    });
+
+    await flushUiShellStartup();
+
+    expect(menu.onlineModes().map((entry) => entry.presetId)).toEqual([
+      'public-arena',
+      'coop-slime'
+    ]);
+
+    menu.startOnline('coop-slime');
+
+    expect(publicArenaClient.lastInit()?.requestedSessionId).toBe('coop-slime');
+    expect(publicArenaClient.lastInit()?.selectedPetId).toBe('pet-01');
+    expect(status.message()).toBe('Joining Co-Op vs Slimes');
+    expect(sim.startSessions).toHaveLength(0);
+
+    publicArenaClient.accept({
+      sessionConfigId: 'coop-slime',
+      roomId: 'room-coop',
+      roomState: 'open',
+      playerCap: 4,
+      maxPlayers: 4
+    });
+    publicArenaClient.presentation({
+      kind: 'host:lobby:state',
+      simTime: 0,
+      roomId: 'room-coop',
+      sessionConfigId: 'coop-slime',
+      state: 'open',
+      joined: [
+        { actorId: 'socket-a', petArchetypeId: 'pet-01' },
+        { actorId: 'socket-b', petArchetypeId: null }
+      ],
+      hostActorId: 'socket-a',
+      maxPlayers: 4,
+      lateJoinAllowed: true
+    });
+
+    expect(shell.phase()).toEqual({ kind: 'onlineLobby' });
+    expect(status.lobbyState()).toMatchObject({
+      selfActorId: 'socket-a',
+      hostActorId: 'socket-a'
+    });
+
+    status.transferHost('socket-b');
+    status.startLobby();
+
+    expect(publicArenaClient.sentInputs()).toEqual([
+      { kind: 'lobby:transferHost', targetActorId: 'socket-b' },
+      { kind: 'lobby:start' }
+    ]);
+
+    publicArenaClient.presentation({
+      kind: 'host:lobby:start',
+      simTime: 16,
+      roomId: 'room-coop'
+    });
+    publicArenaClient.snapshot(makeCoopOnlineSnapshot());
+    shell.onFrame();
+
+    expect(shell.phase()).toEqual({ kind: 'online' });
+    expect(publicArenaRenderer.lastInit()).toBeNull();
+    expect(renderer.lastInit()?.session.encounters[0]?.id).toBe('coop-slime-wave-1');
+    expect(renderer.lastInit()?.getSnapshotPair().curr?.entities[0]).toMatchObject({
+      kind: 'player',
+      playerId: 'socket-a'
+    });
+    expect(input.lastInit()?.initialAim).toEqual({ x: 3, y: 4 });
+    expect(hud.calls.attach).toBe(1);
+    expect(hud.calls.update).toBe(1);
+    expect(escapeProgressPath.calls.attach).toBe(1);
+    expect(escapeProgressPath.calls.update).toBe(1);
+    expect(titleOverlay.calls.attach).toBe(1);
+    expect(titleOverlay.calls.update).toBe(1);
+    expect(publicArenaHud.isVisible()).toBe(false);
+    expect(publicArenaCombatAffordances.isVisible()).toBe(false);
+
+    publicArenaClient.presentation({
+      kind: 'host:lobby:state',
+      simTime: 260,
+      roomId: 'room-coop',
+      sessionConfigId: 'coop-slime',
+      state: 'running',
+      joined: [{ actorId: 'socket-a', petArchetypeId: 'pet-01' }],
+      hostActorId: 'socket-a',
+      maxPlayers: 4,
+      lateJoinAllowed: true
+    });
+    shell.onFrame();
+
+    expect(hud.calls.update).toBe(2);
+    expect(shell.phase()).toEqual({ kind: 'online' });
+
+    publicArenaClient.presentation(makeTerminalEvent('win', 480));
+
+    expect(shell.phase().kind).toBe('result');
+    expect(result.outcome()).toBe('win');
+    expect(result.viewModel()?.title).toBeTruthy();
+    expect(publicArenaClient.disconnectCalls()).toBe(1);
+    expect(renderer.calls.dispose).toBe(1);
   });
 
   it('wires Vibe Jam portal descriptors into Public Arena presentation without server state', async () => {
