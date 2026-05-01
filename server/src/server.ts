@@ -1,6 +1,7 @@
 import { createServer, type Server as HttpServer, type ServerResponse } from 'node:http';
 
 import { Server as SocketIOServer } from 'socket.io';
+import * as msgpackParser from 'socket.io-msgpack-parser';
 
 import {
   ARENA_HOST_PROTOCOL_VERSION,
@@ -77,7 +78,12 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
     {
       cors: {
         origin: config.corsOrigin
-      }
+      },
+      transports: ['websocket'],
+      perMessageDeflate: false,
+      pingInterval: config.pingIntervalMs,
+      pingTimeout: config.pingTimeoutMs,
+      parser: msgpackParser
     }
   );
   const joinBuffers = new Map<string, ArenaHostJoinBuffer>();

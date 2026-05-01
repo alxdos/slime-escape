@@ -4,6 +4,8 @@ export const DEFAULT_PUBLIC_ARENA_PORT = 8787;
 export const DEFAULT_PUBLIC_ARENA_HOST = '0.0.0.0';
 export const DEFAULT_PUBLIC_ARENA_PLAYER_CAP = 200;
 export const DEFAULT_PUBLIC_ARENA_CORS_ORIGIN = '*';
+export const DEFAULT_PUBLIC_ARENA_PING_INTERVAL_MS = 5000;
+export const DEFAULT_PUBLIC_ARENA_PING_TIMEOUT_MS = 5000;
 
 export type PublicArenaServerConfig = Readonly<{
   host: string;
@@ -12,6 +14,8 @@ export type PublicArenaServerConfig = Readonly<{
   corsOrigin: string;
   tickHz: number;
   snapshotHz: number;
+  pingIntervalMs: number;
+  pingTimeoutMs: number;
 }>;
 
 function parsePositiveInteger(name: string, raw: string | undefined, fallback: number): number {
@@ -49,6 +53,16 @@ export function loadPublicArenaServerConfig(env: NodeJS.ProcessEnv = process.env
     ),
     corsOrigin: parseText(env.PUBLIC_ARENA_CORS_ORIGIN, DEFAULT_PUBLIC_ARENA_CORS_ORIGIN),
     tickHz: SIM_HZ,
-    snapshotHz: SNAPSHOT_HZ
+    snapshotHz: SNAPSHOT_HZ,
+    pingIntervalMs: parsePositiveInteger(
+      'PUBLIC_ARENA_PING_INTERVAL_MS',
+      env.PUBLIC_ARENA_PING_INTERVAL_MS,
+      DEFAULT_PUBLIC_ARENA_PING_INTERVAL_MS
+    ),
+    pingTimeoutMs: parsePositiveInteger(
+      'PUBLIC_ARENA_PING_TIMEOUT_MS',
+      env.PUBLIC_ARENA_PING_TIMEOUT_MS,
+      DEFAULT_PUBLIC_ARENA_PING_TIMEOUT_MS
+    )
   };
 }

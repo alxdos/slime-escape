@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import * as msgpackParser from 'socket.io-msgpack-parser';
 
 import {
   PUBLIC_ARENA_EVENTS,
@@ -47,7 +48,12 @@ export type PublicArenaClient = Readonly<{
 const CLIENT_CLOSE_MESSAGE = 'Disconnected from the online arena.';
 
 export function createPublicArenaClient(init: PublicArenaClientInit): PublicArenaClient {
-  const socket = init.createSocket?.(init.serverUrl) ?? (io(init.serverUrl) as PublicArenaSocket);
+  const socket =
+    init.createSocket?.(init.serverUrl) ??
+    (io(init.serverUrl, {
+      transports: ['websocket'],
+      parser: msgpackParser
+    }) as PublicArenaSocket);
   let closed = false;
   let accepted: PublicArenaJoinAccepted | null = null;
 
