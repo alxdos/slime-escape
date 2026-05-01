@@ -101,6 +101,7 @@ export type RendererInit = Readonly<{
   selectedPetId?: string | null;
   visibleAreaCamera?: VisibleAreaCamera;
   getSnapshotPair: () => SnapshotPair;
+  getPredictedSnapshot?: () => Snapshot | null;
   getPortalDescriptors?: () => ReadonlyArray<VibeJamPortalDescriptor>;
   getAim?: AimAccessor;
   weaponRegistry?: Readonly<Record<string, WeaponArchetype>>;
@@ -498,7 +499,12 @@ export function createRenderer(init: RendererInit): Renderer {
 
   return {
     render(): void {
-      const pair = init.getSnapshotPair();
+      const rawPair = init.getSnapshotPair();
+      const predictedSnapshot = init.getPredictedSnapshot?.() ?? null;
+      const pair =
+        predictedSnapshot === null
+          ? rawPair
+          : composeOnlineRendererPair(rawPair, predictedSnapshot);
       lastRenderNowMs = pair.nowMs;
       impactEffects.update(pair.nowMs);
       const impactSnapshot = impactEffects.snapshot();
@@ -1427,6 +1433,154 @@ function prefersReducedMotionFromWindow(windowTarget: RendererWindowTarget): boo
   return windowTarget.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }
 
+function composeOnlineRendererPair(pair: SnapshotPair, predictedSnapshot: Snapshot): SnapshotPair {
+  const composedCurr = composeOnlineRendererSnapshot(pair, predictedSnapshot);
+  if (composedCurr === null) {
+    return pair;
+  }
+  return {
+    ...pair,
+    prev: null,
+    curr: composedCurr
+  };
+}
+
+function composeOnlineRendererSnapshot(
+  pair: SnapshotPair,
+  predictedSnapshot: Snapshot
+): Snapshot | null {
+  const interpolatedAuthoritative = interpolateSnapshotPair(pair);
+  if (interpolatedAuthoritative === null || pair.curr === null) return null;
+
+  const authoritativeSelf = findPlayerSnapshot(pair.curr);
+  const predictedSelf =
+    authoritativeSelf === null
+      ? null
+      : findPlayerSnapshotByPlayerId(predictedSnapshot, authoritativeSelf.playerId);
+  const composedSelf =
+    authoritativeSelf !== null && predictedSelf !== null
+      ? composeSelfPlayer(authoritativeSelf, predictedSelf)
+      : authoritativeSelf;
+  const predictedOwnProjectiles =
+    authoritativeSelf !== null && predictedSelf !== null
+      ? predictedOwnProjectileViews(predictedSnapshot, predictedSelf, authoritativeSelf)
+      : [];
+  const predictedOwnGroups = groupProjectilesBySequence(predictedOwnProjectiles);
+
+  const entities = interpolatedAuthoritative.entities.flatMap((entity): EntitySnapshot[] => {
+    if (entity.kind === 'player' && authoritativeSelf !== null && entity.id === authoritativeSelf.id) {
+      return composedSelf === null ? [entity] : [composedSelf];
+    }
+    if (
+      authoritativeSelf !== null &&
+      entity.kind === 'projectile' &&
+      entity.ownerKind === 'player' &&
+      entity.ownerId === authoritativeSelf.id
+    ) {
+      if (entity.spawnInputSequence === null) return [entity];
+      return predictedOwnGroups.has(entity.spawnInputSequence) ? [] : [entity];
+    }
+    return [entity];
+  });
+
+  return {
+    ...interpolatedAuthoritative,
+    entities: [...entities, ...predictedOwnProjectiles]
+  };
+}
+
+function interpolateSnapshotPair(pair: SnapshotPair): Snapshot | null {
+  const { prev, curr } = pair;
+  if (curr === null) return null;
+  if (prev === null) return curr;
+  const alpha = computeAlpha(pair);
+  return {
+    ...curr,
+    entities: curr.entities.map((entity) =>
+      interpolateEntity(entity, findPreviousEntity(prev, entity), alpha)
+    )
+  };
+}
+
+function interpolateEntity<S extends EntitySnapshot>(
+  entity: S,
+  previous: S | null,
+  alpha: number
+): S {
+  if (previous === null) return entity;
+  return {
+    ...entity,
+    x: previous.x + (entity.x - previous.x) * alpha,
+    y: previous.y + (entity.y - previous.y) * alpha
+  };
+}
+
+function findPreviousEntity<S extends EntitySnapshot>(snapshot: Snapshot, entity: S): S | null {
+  for (const candidate of snapshot.entities) {
+    if (candidate.kind === entity.kind && candidate.id === entity.id) {
+      return candidate as S;
+    }
+  }
+  return null;
+}
+
+function composeSelfPlayer(
+  authoritativeSelf: PlayerSnapshot,
+  predictedSelf: PlayerSnapshot
+): PlayerSnapshot {
+  return {
+    ...authoritativeSelf,
+    x: predictedSelf.x,
+    y: predictedSelf.y,
+    state: predictedSelf.state,
+    formArchetypeId: predictedSelf.formArchetypeId,
+    weaponHud: predictedSelf.weaponHud,
+    statusEffects: predictedSelf.statusEffects
+  };
+}
+
+function predictedOwnProjectileViews(
+  predictedSnapshot: Snapshot,
+  predictedSelf: PlayerSnapshot,
+  authoritativeSelf: PlayerSnapshot
+): ProjectileSnapshot[] {
+  return predictedSnapshot.entities
+    .filter(
+      (entity): entity is ProjectileSnapshot =>
+        entity.kind === 'projectile' &&
+        entity.ownerKind === 'player' &&
+        entity.ownerId === predictedSelf.id &&
+        entity.spawnInputSequence !== null
+    )
+    .map((projectile, index): ProjectileSnapshot => ({
+      ...projectile,
+      id: predictedProjectileRenderId(projectile, index),
+      ownerId: authoritativeSelf.id
+    }));
+}
+
+function groupProjectilesBySequence(
+  projectiles: ReadonlyArray<ProjectileSnapshot>
+): ReadonlyMap<number, ReadonlyArray<ProjectileSnapshot>> {
+  const groups = new Map<number, ProjectileSnapshot[]>();
+  for (const projectile of projectiles) {
+    const sequence = projectile.spawnInputSequence;
+    if (sequence === null) continue;
+    const group = groups.get(sequence);
+    if (group === undefined) {
+      groups.set(sequence, [projectile]);
+    } else {
+      group.push(projectile);
+    }
+  }
+  return groups;
+}
+
+function predictedProjectileRenderId(projectile: ProjectileSnapshot, index: number): number {
+  const base = projectile.spawnInputSequence ?? projectile.id;
+  return -1_000_000 - Math.abs(base * 100 + index);
+}
+
 function computeAlpha(pair: SnapshotPair): number {
   const { prev, curr } = pair;
   if (!prev || !curr) return 1;
@@ -1613,6 +1767,18 @@ function findPlayerSnapshot(snapshot: Snapshot | null): PlayerSnapshot | null {
   return (
     snapshot?.entities.find(
       (entity): entity is PlayerSnapshot => entity.kind === 'player'
+    ) ?? null
+  );
+}
+
+function findPlayerSnapshotByPlayerId(
+  snapshot: Snapshot,
+  playerId: string
+): PlayerSnapshot | null {
+  return (
+    snapshot.entities.find(
+      (entity): entity is PlayerSnapshot =>
+        entity.kind === 'player' && entity.playerId === playerId
     ) ?? null
   );
 }

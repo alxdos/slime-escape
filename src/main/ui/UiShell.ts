@@ -1229,6 +1229,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       selectedPetId: null,
       visibleAreaCamera,
       getSnapshotPair: onlineSnapshotPair,
+      getPredictedSnapshot: () => sim.predictedSnapshotPair().curr,
       getPortalDescriptors: portalController.portals,
       getAim: () =>
         publicArenaInput !== null && publicArenaInput.isActive()

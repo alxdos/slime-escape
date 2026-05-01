@@ -13,6 +13,7 @@ import type { SessionDefinition } from '../../shared/session';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import type { CompanionSnapshot } from '../../shared/snapshot';
 import type { WeaponHudSnapshot } from '../../shared/snapshot';
+import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
 import { ARC_PREVIEW_OUTLINE_NAME } from './arcPreview';
 import { DROP_VISUALS } from './dropVisuals';
@@ -351,6 +352,51 @@ function companionSnapshot(
     targetId: 2,
     ...overrides
   };
+}
+
+function playerSnapshot(
+  overrides: Partial<TestPlayerSnapshot> & { id: number }
+): TestPlayerSnapshot {
+  return {
+    kind: 'player',
+    x: 0,
+    y: 0,
+    hp: 5,
+    maxHp: 5,
+    ...overrides
+  };
+}
+
+function projectileSnapshot(
+  overrides: Partial<Extract<SnapshotEntity, { kind: 'projectile' }>> & { id: number; x: number }
+): TestProjectileSnapshot {
+  return {
+    kind: 'projectile',
+    ownerKind: 'player',
+    ownerId: 1,
+    weaponArchetypeId: PISTOL.id,
+    originX: overrides.x - 10,
+    originY: overrides.y ?? 0,
+    y: 0,
+    size: PISTOL.projectile.size,
+    state: 'flying',
+    visualState: {
+      angleRadians: 0,
+      spinRadians: 0,
+      pulsePhase: 0
+    },
+    explosionRadius: null,
+    detonateAtSimMs: null,
+    arcEnd: null,
+    spawnInputSequence: null,
+    ...overrides
+  };
+}
+
+function projectileXPositions(scene: THREE.Scene | null, texture: THREE.Texture): number[] {
+  return findMeshesWithMaterialMap(scene, texture)
+    .map((mesh) => mesh.position.x)
+    .sort((a, b) => a - b);
 }
 
 describe('createRenderer', () => {
@@ -760,6 +806,207 @@ describe('createRenderer', () => {
     renderer.render();
 
     expect(backend.ops).toEqual([{ kind: 'render' }]);
+  });
+
+  it('composes online self prediction directly while interpolating non-self entities by wall-clock time', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const playerTexture = new THREE.Texture();
+    const projectileTexture = new THREE.Texture();
+    const receivedAtMs = 500;
+    const prev = createSnapshot(
+      [
+        playerSnapshot({ id: 1, playerId: 'self', x: 0, y: 0 }),
+        projectileSnapshot({ id: 20, ownerId: 2, x: 0, spawnInputSequence: 8 })
+      ],
+      { simTimeMs: 100 }
+    );
+    const curr = createSnapshot(
+      [
+        playerSnapshot({ id: 1, playerId: 'self', x: 0, y: 0 }),
+        projectileSnapshot({ id: 20, ownerId: 2, x: 10, spawnInputSequence: 8 })
+      ],
+      { simTimeMs: 100 + SNAPSHOT_INTERVAL_MS }
+    );
+    const predicted = createSnapshot([
+      playerSnapshot({ id: 101, playerId: 'self', x: 12, y: -1 })
+    ]);
+    let pair: SnapshotPair = {
+      prev,
+      curr,
+      currReceivedAtMs: receivedAtMs,
+      nowMs: receivedAtMs
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({
+        [DEFAULT_PLAYER_VISUAL.archetypeId]: playerTexture,
+        [PISTOL.id]: projectileTexture
+      }),
+      getSnapshotPair: () => pair,
+      getPredictedSnapshot: () => predicted,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+    expect(findMeshWithMaterialMap(backend.lastScene(), playerTexture)?.position.x).toBeCloseTo(12);
+    expect(findMeshWithMaterialMap(backend.lastScene(), playerTexture)?.position.y).toBeCloseTo(-1);
+    expect(projectileXPositions(backend.lastScene(), projectileTexture)[0]).toBeCloseTo(0);
+
+    pair = { ...pair, nowMs: receivedAtMs + SNAPSHOT_INTERVAL_MS / 2 };
+    renderer.render();
+    expect(findMeshWithMaterialMap(backend.lastScene(), playerTexture)?.position.x).toBeCloseTo(12);
+    expect(projectileXPositions(backend.lastScene(), projectileTexture)[0]).toBeCloseTo(5);
+
+    pair = { ...pair, nowMs: receivedAtMs + SNAPSHOT_INTERVAL_MS };
+    renderer.render();
+    expect(projectileXPositions(backend.lastScene(), projectileTexture)[0]).toBeCloseTo(10);
+  });
+
+  it('uses sequence-group own-projectile fallback for online prediction', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const projectileTexture = new THREE.Texture();
+    let predicted: SnapshotPair['curr'] = null;
+    const pair = createSnapshotPairWithEntities([
+      playerSnapshot({ id: 1, playerId: 'self', x: 0, y: 0 }),
+      projectileSnapshot({ id: 31, ownerId: 1, x: 1, spawnInputSequence: 42 }),
+      projectileSnapshot({ id: 32, ownerId: 1, x: 2, spawnInputSequence: 42 }),
+      projectileSnapshot({ id: 33, ownerId: 1, x: 3, spawnInputSequence: 42 })
+    ]);
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [PISTOL.id]: projectileTexture }),
+      getSnapshotPair: () => pair,
+      getPredictedSnapshot: () => predicted,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+    expect(projectileXPositions(backend.lastScene(), projectileTexture)).toEqual([1, 2, 3]);
+
+    predicted = createSnapshot([
+      playerSnapshot({ id: 101, playerId: 'self', x: 0, y: 0 }),
+      projectileSnapshot({ id: 201, ownerId: 101, x: 10, spawnInputSequence: 42 }),
+      projectileSnapshot({ id: 202, ownerId: 101, x: 11, spawnInputSequence: 42 }),
+      projectileSnapshot({ id: 203, ownerId: 101, x: 12, spawnInputSequence: 42 }),
+      projectileSnapshot({ id: 204, ownerId: 101, x: 13, spawnInputSequence: 42 }),
+      projectileSnapshot({ id: 205, ownerId: 101, x: 14, spawnInputSequence: 42 })
+    ]);
+    renderer.render();
+    expect(projectileXPositions(backend.lastScene(), projectileTexture)).toEqual([
+      10,
+      11,
+      12,
+      13,
+      14
+    ]);
+  });
+
+  it('keeps online authoritative own projectiles with null spawn sequence visible', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const projectileTexture = new THREE.Texture();
+    const pair = createSnapshotPairWithEntities([
+      playerSnapshot({ id: 1, playerId: 'self', x: 0, y: 0 }),
+      projectileSnapshot({ id: 31, ownerId: 1, x: 1, spawnInputSequence: null })
+    ]);
+    const predicted = createSnapshot([
+      playerSnapshot({ id: 101, playerId: 'self', x: 0, y: 0 }),
+      projectileSnapshot({ id: 201, ownerId: 101, x: 10, spawnInputSequence: 42 })
+    ]);
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [PISTOL.id]: projectileTexture }),
+      getSnapshotPair: () => pair,
+      getPredictedSnapshot: () => predicted,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+    expect(projectileXPositions(backend.lastScene(), projectileTexture)).toEqual([1, 10]);
+  });
+
+  it('snaps online self transition presentation from the predicted snapshot', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const playerTexture = new THREE.Texture();
+    const pair = createSnapshotPairWithEntities([
+      playerSnapshot({ id: 1, playerId: 'self', x: 0, y: 0, state: 'alive' })
+    ]);
+    const predicted = createSnapshot([
+      playerSnapshot({
+        id: 101,
+        playerId: 'self',
+        x: 8,
+        y: 0,
+        statusEffects: [{ kind: 'burn', expireAtSimMs: 1000 }]
+      })
+    ]);
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({
+        [DEFAULT_PLAYER_VISUAL.archetypeId]: playerTexture
+      }),
+      getSnapshotPair: () => pair,
+      getPredictedSnapshot: () => predicted,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    const playerMesh = findMeshWithMaterialMap(backend.lastScene(), playerTexture);
+    const statusMarker = findChildMeshByName(playerMesh, 'status-effect-marker');
+    expect(playerMesh?.position.x).toBeCloseTo(8);
+    expect(statusMarker?.visible).toBe(true);
   });
 
   it('renders player HP above the player sprite in companion bar style', () => {

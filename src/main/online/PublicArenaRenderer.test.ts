@@ -398,6 +398,46 @@ describe('PublicArenaRenderer', () => {
 
     renderer.dispose();
   });
+
+  it('snaps self transition presentation from the predicted snapshot', () => {
+    const backend = createRendererBackendHarness();
+    const pair = snapshotPair(
+      makeSnapshotWithEntities([
+        makePlayer({ id: 1, playerId: 'self', x: 0, y: 0, formArchetypeId: 'slime-one-eye' })
+      ])
+    );
+    const predictedSnapshot = makeSnapshotWithEntities([
+      makePlayer({
+        id: 101,
+        playerId: 'self',
+        x: 8,
+        y: 0,
+        formArchetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID
+      })
+    ]);
+    const renderer = createPublicArenaRenderer({
+      canvas: makeCanvas(),
+      arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
+      selfId: 'self',
+      renderScalePreset: 'medium',
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => pair,
+      getPredictedSnapshot: () => predictedSnapshot,
+      windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
+      createRendererBackend: backend.factory,
+      loadBackgroundTexture: createLoadedBackgroundTexture
+    });
+
+    renderer.render();
+
+    const self = findAllByName(backend.lastScene(), 'public-arena-player').find(
+      (player) => player.userData['playerId'] === 'self'
+    );
+    expect(self?.position.x).toBeCloseTo(8);
+    expect(self?.userData['formKind']).toBe('boss');
+
+    renderer.dispose();
+  });
 });
 
 function requireActivePublicArenaBackground() {

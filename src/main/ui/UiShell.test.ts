@@ -1516,6 +1516,8 @@ function createSimHarness() {
     nowMs: 0
   };
 
+  let snapshotPairValue = emptyPair;
+  let predictedSnapshotPairValue = emptyPair;
   let paused = false;
   let onEvent: ((event: RuntimeEvent) => void) | undefined;
   const startSessions: SessionDefinition[] = [];
@@ -1561,10 +1563,10 @@ function createSimHarness() {
           authoritativeSnapshots.push(snapshot);
         },
         snapshotPair(): SnapshotPair {
-          return emptyPair;
+          return snapshotPairValue;
         },
         predictedSnapshotPair(): SnapshotPair {
-          return emptyPair;
+          return predictedSnapshotPairValue;
         },
         isPaused(): boolean {
           return paused;
@@ -1585,6 +1587,12 @@ function createSimHarness() {
     authoritativeSnapshots,
     setPaused(next: boolean): void {
       paused = next;
+    },
+    setSnapshotPair(pair: SnapshotPair): void {
+      snapshotPairValue = pair;
+    },
+    setPredictedSnapshotPair(pair: SnapshotPair): void {
+      predictedSnapshotPairValue = pair;
     }
   };
 }
@@ -3242,6 +3250,20 @@ describe('UiShell', () => {
       simTime: 16,
       roomId: 'room-coop'
     });
+    const predictedCoopSnapshot: Snapshot = {
+      ...makeCoopOnlineSnapshot(),
+      entities: makeCoopOnlineSnapshot().entities.map((entity) =>
+        entity.kind === 'player' && entity.playerId === 'socket-a'
+          ? { ...entity, x: 9, y: 10 }
+          : entity
+      )
+    };
+    sim.setPredictedSnapshotPair({
+      prev: null,
+      curr: predictedCoopSnapshot,
+      currReceivedAtMs: 0,
+      nowMs: predictedCoopSnapshot.simTimeMs
+    });
     publicArenaClient.snapshot(makeCoopOnlineSnapshot());
     shell.onFrame();
 
@@ -3252,6 +3274,7 @@ describe('UiShell', () => {
       kind: 'player',
       playerId: 'socket-a'
     });
+    expect(renderer.lastInit()?.getPredictedSnapshot?.()).toBe(predictedCoopSnapshot);
     expect(input.lastInit()?.initialAim).toEqual({ x: 3, y: 4 });
     expect(hud.calls.attach).toBe(1);
     expect(hud.calls.update).toBe(1);
