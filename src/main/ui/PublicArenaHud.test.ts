@@ -125,7 +125,8 @@ function makeSnapshot(
         maxHp: 40,
         state: 'alive',
         formArchetypeId: selfFormArchetypeId,
-        weaponHud: null
+        weaponHud: null,
+        statusEffects: []
       },
       ...Array.from({ length: 11 }, (_, index) => ({
         id: index + 2,
@@ -137,13 +138,15 @@ function makeSnapshot(
         maxHp: 10,
         state: 'alive' as const,
         formArchetypeId: 'slime-one-eye',
-        weaponHud: null
+        weaponHud: null,
+        statusEffects: []
       }))
     ],
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }
 

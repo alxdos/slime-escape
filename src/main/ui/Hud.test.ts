@@ -236,9 +236,11 @@ type TestEncounterSnapshot =
 
 type TestPlayerSnapshot = Omit<
   PlayerSnapshot,
-  'playerId' | 'state' | 'formArchetypeId' | 'weaponHud'
+  'playerId' | 'state' | 'formArchetypeId' | 'weaponHud' | 'statusEffects'
 > &
-  Partial<Pick<PlayerSnapshot, 'playerId' | 'state' | 'formArchetypeId' | 'weaponHud'>>;
+  Partial<
+    Pick<PlayerSnapshot, 'playerId' | 'state' | 'formArchetypeId' | 'weaponHud' | 'statusEffects'>
+  >;
 type TestEntitySnapshot = Snapshot['entities'][number] | TestPlayerSnapshot;
 type TestSnapshotOverrides =
   Partial<Omit<Snapshot, 'encounter' | 'entities'>> &
@@ -282,6 +284,7 @@ function makeSnapshot(overrides: TestSnapshotOverrides = {}): Snapshot {
     waveProgress: { dispatched: 3, total: 7, alive: 2 },
     bossHud: null,
     ...otherOverrides,
+    lastInputSequence: otherOverrides.lastInputSequence ?? {},
     encounter: normalizeEncounterSnapshot(encounterOverride === undefined ? encounter : encounterOverride)
   };
 }
@@ -297,7 +300,8 @@ function normalizeEntities(
       playerId: entity.playerId ?? 'player',
       state: entity.state ?? 'alive',
       formArchetypeId: entity.formArchetypeId ?? null,
-      weaponHud: entity.weaponHud ?? weaponHudOverride ?? null
+      weaponHud: entity.weaponHud ?? weaponHudOverride ?? null,
+      statusEffects: entity.statusEffects ?? []
     };
   });
 }

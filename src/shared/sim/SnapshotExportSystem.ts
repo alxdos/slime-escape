@@ -2,6 +2,7 @@ import type {
   BossHudSnapshot,
   EncounterSnapshot,
   EntitySnapshot,
+  PlayerStatusEffectSnapshot,
   Snapshot,
   WeaponHudSnapshot,
   WeaponTimedEffectHudSnapshot,
@@ -13,6 +14,7 @@ import { assertNever } from '../protocol.js';
 import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../timing.js';
 
 import type { EntityId, EntityStore } from './EntityStore.js';
+import type { ActorStatusEffect } from './EntityStore.js';
 import type { EncounterContext } from './SessionFlowSystem.js';
 
 const TICKS_PER_SNAPSHOT = Math.round(SNAPSHOT_INTERVAL_MS / SIM_STEP_MS);
@@ -22,6 +24,7 @@ export type SnapshotSources = Readonly<{
   zone: ZoneSnapshot;
   waveProgress: WaveProgressSnapshot | null;
   weaponHudFor(playerId: EntityId): WeaponHudSnapshot | null;
+  lastInputSequence?: Readonly<Record<string, number>>;
 }>;
 
 export type SnapshotExportSystem = Readonly<{
@@ -50,10 +53,7 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           formArchetypeId: player.formArchetypeId,
           weaponHud:
             player.state === 'alive' ? copyWeaponHud(sources.weaponHudFor(player.id)) : null,
-          statusEffects: player.statusEffects.map((effect) => ({
-            kind: effect.kind,
-            expiresAtSimMs: effect.expireAtSimMs
-          }))
+          statusEffects: copyPlayerStatusEffects(player.statusEffects, simTimeMs)
         });
       }
       for (const companion of store.companions()) {
@@ -97,6 +97,7 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           kind: 'projectile',
           weaponArchetypeId: projectile.weaponArchetypeId,
           ownerKind: projectile.ownerKind,
+          ownerId: projectile.ownerId,
           originX: projectile.origin.x,
           originY: projectile.origin.y,
           x: projectile.position.x,
@@ -106,7 +107,8 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           visualState: projectileVisualState(projectile, simTimeMs),
           explosionRadius: projectile.explosion?.radius ?? null,
           detonateAtSimMs: projectile.detonateAtSimMs,
-          arcEnd: projectile.state === 'flying' ? projectile.arcEnd : null
+          arcEnd: projectile.state === 'flying' ? projectile.arcEnd : null,
+          spawnInputSequence: projectile.spawnInputSequence
         });
       }
       for (const drop of store.drops()) {
@@ -171,7 +173,8 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
                 total: sources.waveProgress.total,
                 alive: sources.waveProgress.alive
               },
-        bossHud
+        bossHud,
+        lastInputSequence: { ...(sources.lastInputSequence ?? {}) }
       };
     },
     reset(): void {
@@ -226,6 +229,32 @@ function copyTimedWeaponEffect(
     startedAtSimMs: effect.startedAtSimMs,
     expiresAtSimMs: effect.expiresAtSimMs
   };
+}
+
+function copyPlayerStatusEffects(
+  effects: ReadonlyArray<ActorStatusEffect>,
+  simTimeMs: number
+): ReadonlyArray<PlayerStatusEffectSnapshot> {
+  const active: PlayerStatusEffectSnapshot[] = [];
+  for (const effect of effects) {
+    if (effect.expireAtSimMs <= simTimeMs) continue;
+    switch (effect.kind) {
+      case 'slow':
+        active.push({
+          kind: 'slow',
+          speedMultiplier: effect.speedMultiplier,
+          expireAtSimMs: effect.expireAtSimMs
+        });
+        break;
+      case 'burn':
+      case 'poison':
+        active.push({ kind: effect.kind, expireAtSimMs: effect.expireAtSimMs });
+        break;
+      default:
+        assertNever(effect);
+    }
+  }
+  return active;
 }
 
 function projectileVisualState(

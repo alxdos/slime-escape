@@ -51,7 +51,8 @@ function makeSharedSnapshot(): Snapshot {
         maxHp: 5,
         state: 'alive',
         formArchetypeId: null,
-        weaponHud: null
+        weaponHud: null,
+        statusEffects: []
       },
       {
         id: 2,
@@ -75,7 +76,8 @@ function makeSharedSnapshot(): Snapshot {
               timedEffects: []
             }
           ]
-        }
+        },
+        statusEffects: []
       },
       {
         id: 3,
@@ -87,13 +89,15 @@ function makeSharedSnapshot(): Snapshot {
         maxHp: 30,
         state: 'alive',
         formArchetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
-        weaponHud: null
+        weaponHud: null,
+        statusEffects: []
       },
       {
         id: 99,
         kind: 'projectile',
         weaponArchetypeId: 'rock-thrower',
         ownerKind: 'player',
+        ownerId: 2,
         originX: 0,
         originY: 0,
         x: 1,
@@ -103,12 +107,14 @@ function makeSharedSnapshot(): Snapshot {
         visualState: { angleRadians: 0, spinRadians: 0, pulsePhase: 0 },
         explosionRadius: null,
         detonateAtSimMs: null,
-        arcEnd: null
+        arcEnd: null,
+        spawnInputSequence: 7
       }
     ],
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }

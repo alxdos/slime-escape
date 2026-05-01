@@ -114,6 +114,7 @@ function snapshot(
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null,
+    lastInputSequence: {}
   };
 }
 

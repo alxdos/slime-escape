@@ -47,7 +47,7 @@ self.addEventListener('message', (event: MessageEvent<MainToSim>) => {
         log.warn('input command received before active local player id is known');
         return;
       }
-      core.submitInput(activeLocalPlayerId, msg.command);
+      core.submitInput(activeLocalPlayerId, msg.command, msg.inputSequence);
       return;
     case 'debug':
       log.warn('debug command received but not implemented', { command: msg.command });

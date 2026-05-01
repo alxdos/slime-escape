@@ -34,7 +34,7 @@ export type SessionFlowSystem = Readonly<{
   stop(): void;
   pause(): void;
   resume(): void;
-  handleInput(playerId: string, command: InputCommand): void;
+  handleInput(playerId: string, command: InputCommand, inputSequence?: number): void;
   checkTransitions(simTimeMs: number): void;
   onPlayerDeath(entityId: EntityId): void;
   onBossDeath(entityId: EntityId): void;
@@ -158,7 +158,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     emitEvent({ kind: 'resume', simTime: clock.simTimeMs() });
   }
 
-  function handleInput(playerId: string, command: InputCommand): void {
+  function handleInput(playerId: string, command: InputCommand, inputSequence?: number): void {
     if (active === null) {
       log.warn('input command ignored: no active session');
       return;
@@ -179,6 +179,8 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
         return;
       case 'fire':
         playerInput.firing = command.phase === 'start';
+        playerInput.firingInputSequence =
+          command.phase === 'start' ? inputSequence ?? null : null;
         return;
       case 'selectWeaponSlot':
         selectWeaponSlot(playerInput, command.slotIndex);

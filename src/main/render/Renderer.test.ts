@@ -100,15 +100,20 @@ function createEmptySnapshotPair(): SnapshotPair {
 type SnapshotEntity = NonNullable<SnapshotPair['curr']>['entities'][number];
 type TestPlayerSnapshot = Omit<
   Extract<SnapshotEntity, { kind: 'player' }>,
-  'playerId' | 'state' | 'formArchetypeId' | 'weaponHud'
+  'playerId' | 'state' | 'formArchetypeId' | 'weaponHud' | 'statusEffects'
 > &
   Partial<
     Pick<
       Extract<SnapshotEntity, { kind: 'player' }>,
-      'playerId' | 'state' | 'formArchetypeId' | 'weaponHud'
+      'playerId' | 'state' | 'formArchetypeId' | 'weaponHud' | 'statusEffects'
     >
   >;
-type SnapshotEntities = ReadonlyArray<SnapshotEntity | TestPlayerSnapshot>;
+type TestProjectileSnapshot = Omit<
+  Extract<SnapshotEntity, { kind: 'projectile' }>,
+  'ownerId' | 'spawnInputSequence'
+> &
+  Partial<Pick<Extract<SnapshotEntity, { kind: 'projectile' }>, 'ownerId' | 'spawnInputSequence'>>;
+type SnapshotEntities = ReadonlyArray<SnapshotEntity | TestPlayerSnapshot | TestProjectileSnapshot>;
 
 function createSnapshot(
   entities: SnapshotEntities,
@@ -120,7 +125,8 @@ function createSnapshot(
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }
 
@@ -129,13 +135,21 @@ function normalizeSnapshotEntities(
   weaponHudOverride: WeaponHudSnapshot | null | undefined
 ): NonNullable<SnapshotPair['curr']>['entities'] {
   return entities.map((entity) => {
+    if (entity.kind === 'projectile') {
+      return {
+        ...entity,
+        ownerId: entity.ownerId ?? 1,
+        spawnInputSequence: entity.spawnInputSequence ?? null
+      };
+    }
     if (entity.kind !== 'player') return entity;
     return {
       ...entity,
       playerId: entity.playerId ?? 'player',
       state: entity.state ?? 'alive',
       formArchetypeId: entity.formArchetypeId ?? null,
-      weaponHud: entity.weaponHud ?? weaponHudOverride ?? null
+      weaponHud: entity.weaponHud ?? weaponHudOverride ?? null,
+      statusEffects: entity.statusEffects ?? []
     };
   });
 }
@@ -2278,7 +2292,8 @@ describe('createRenderer', () => {
         },
         zone: { mode: 'disabled', margin: 0 },
         waveProgress: null,
-        bossHud: null
+        bossHud: null,
+        lastInputSequence: {}
       },
       currReceivedAtMs: 0,
       nowMs: 0

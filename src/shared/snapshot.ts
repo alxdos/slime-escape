@@ -12,7 +12,7 @@ export type PlayerSnapshot = Readonly<{
   state: 'alive' | 'ghost' | 'reviving';
   formArchetypeId: string | null;
   weaponHud: WeaponHudSnapshot | null;
-  statusEffects?: ReadonlyArray<StatusEffectSnapshot>;
+  statusEffects: ReadonlyArray<PlayerStatusEffectSnapshot>;
 }>;
 
 export type CompanionSnapshot = Readonly<{
@@ -47,6 +47,7 @@ export type ProjectileSnapshot = Readonly<{
   kind: 'projectile';
   weaponArchetypeId: string;
   ownerKind: 'player' | 'companion' | 'enemy' | 'boss';
+  ownerId: number;
   originX: number;
   originY: number;
   x: number;
@@ -61,6 +62,7 @@ export type ProjectileSnapshot = Readonly<{
   explosionRadius: number | null;
   detonateAtSimMs: number | null;
   arcEnd: Readonly<{ x: number; y: number }> | null;
+  spawnInputSequence: number | null;
 }>;
 
 export type DropSnapshot = Readonly<{
@@ -89,6 +91,11 @@ export type StatusEffectSnapshot = Readonly<{
   kind: 'burn' | 'slow' | 'poison';
   expiresAtSimMs: number;
 }>;
+
+export type PlayerStatusEffectSnapshot =
+  | Readonly<{ kind: 'slow'; speedMultiplier: number; expireAtSimMs: number }>
+  | Readonly<{ kind: 'burn'; expireAtSimMs: number }>
+  | Readonly<{ kind: 'poison'; expireAtSimMs: number }>;
 
 export type FieldEffectSnapshot = Readonly<{
   id: number;
@@ -170,4 +177,5 @@ export type Snapshot = Readonly<{
   zone: ZoneSnapshot;
   waveProgress: WaveProgressSnapshot | null;
   bossHud: BossHudSnapshot | null;
+  lastInputSequence: Readonly<Record<string, number>>;
 }>;

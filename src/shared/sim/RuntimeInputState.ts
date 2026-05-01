@@ -9,6 +9,7 @@ export type RuntimeActorInputState = {
   moveDir: { dx: number; dy: number };
   aimWorld: { x: number; y: number };
   firing: boolean;
+  firingInputSequence: number | null;
   loadout: RuntimeLoadoutState | null;
 };
 
@@ -31,6 +32,7 @@ export function createRuntimeActorInputState(
     moveDir: { dx: 0, dy: 0 },
     aimWorld: { x: aimX, y: aimY },
     firing: false,
+    firingInputSequence: null,
     loadout: copyLoadout(loadout)
   };
 }

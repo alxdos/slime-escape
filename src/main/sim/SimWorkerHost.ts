@@ -46,6 +46,7 @@ export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWork
 
   let paused = false;
   let pauseAnchorMs = 0;
+  let nextInputSequence = 1;
 
   worker.addEventListener('message', (event: MessageEvent<SimToMain>) => {
     const msg = event.data;
@@ -91,6 +92,7 @@ export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWork
     startSession(session): void {
       paused = false;
       clearPair();
+      nextInputSequence = 1;
       send({ kind: 'startSession', session });
     },
     stopSession(): void {
@@ -112,7 +114,9 @@ export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWork
       send({ kind: 'resume' });
     },
     sendInput(command): void {
-      send({ kind: 'input', command });
+      const inputSequence = nextInputSequence;
+      nextInputSequence += 1;
+      send({ kind: 'input', command, inputSequence });
     },
     snapshotPair(): SnapshotPair {
       pair.nowMs = paused ? pauseAnchorMs : performance.now();

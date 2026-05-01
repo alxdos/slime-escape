@@ -176,6 +176,7 @@ describe('SnapshotExportSystem', () => {
       weaponArchetypeId: PISTOL.id,
       ownerId: 1 as EntityId,
       ownerKind: 'player',
+      spawnInputSequence: 42,
       motionKind: 'linear',
       origin: { x: 0, y: 0 },
       position: { x: 1, y: 0 },
@@ -208,6 +209,8 @@ describe('SnapshotExportSystem', () => {
     if (projectile?.kind !== 'projectile') throw new Error('expected projectile snapshot');
     expect(projectile.weaponArchetypeId).toBe(PISTOL.id);
     expect(projectile.ownerKind).toBe('player');
+    expect(projectile.ownerId).toBe(1);
+    expect(projectile.spawnInputSequence).toBe(42);
     expect(projectile.originX).toBe(0);
     expect(projectile.originY).toBe(0);
     expect(projectile.state).toBe('flying');
@@ -299,6 +302,49 @@ describe('SnapshotExportSystem top-level fields', () => {
     if (playerSnap?.kind !== 'player') throw new Error('expected player snapshot');
     expect(playerSnap.hp).toBe(3);
     expect(playerSnap.maxHp).toBe(5);
+  });
+
+  it('emits local prediction fields with local-safe defaults', () => {
+    const store = createEntityStore();
+    spawnPlayerAt(store);
+    const exporter = createSnapshotExportSystem();
+
+    const snap = exporter.onTick(0, store, NO_SOURCES);
+
+    expect(snap?.lastInputSequence).toEqual({});
+    const playerSnap = snap?.entities.find((entity) => entity.kind === 'player');
+    if (playerSnap?.kind !== 'player') throw new Error('expected player snapshot');
+    expect(playerSnap.statusEffects).toEqual([]);
+  });
+
+  it('copies active player status effects with movement prediction data', () => {
+    const store = createEntityStore();
+    const player = spawnPlayerAt(store);
+    player.statusEffects.push(
+      {
+        kind: 'slow',
+        speedMultiplier: 0.5,
+        expireAtSimMs: 250,
+        source: { kind: 'fieldEffect', fieldEffectId: 7 as EntityId, archetypeId: 'slow-puddle' }
+      },
+      {
+        kind: 'burn',
+        damagePerTick: 1,
+        tickEveryMs: 100,
+        nextTickSimMs: 150,
+        expireAtSimMs: 50,
+        source: { kind: 'explosion', projectileId: 9 as EntityId, weaponArchetypeId: 'bomb' }
+      }
+    );
+    const exporter = createSnapshotExportSystem();
+
+    const snap = exporter.onTick(100, store, NO_SOURCES);
+
+    const playerSnap = snap?.entities.find((entity) => entity.kind === 'player');
+    if (playerSnap?.kind !== 'player') throw new Error('expected player snapshot');
+    expect(playerSnap.statusEffects).toEqual([
+      { kind: 'slow', speedMultiplier: 0.5, expireAtSimMs: 250 }
+    ]);
   });
 
   it('encounter is null without a session and reflects context.elapsedMs otherwise', () => {

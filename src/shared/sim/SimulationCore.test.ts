@@ -23,10 +23,10 @@ describe('SimulationCore', () => {
     core.start(session);
     core.submitInput('alpha', { kind: 'move', dx: 1, dy: 0 });
     core.submitInput('alpha', { kind: 'aim', x: 5, y: 0 });
-    core.submitInput('alpha', { kind: 'fire', phase: 'start' });
+    core.submitInput('alpha', { kind: 'fire', phase: 'start' }, 3);
     core.submitInput('bravo', { kind: 'move', dx: -1, dy: 0 });
     core.submitInput('bravo', { kind: 'aim', x: -5, y: 0 });
-    core.submitInput('bravo', { kind: 'fire', phase: 'start' });
+    core.submitInput('bravo', { kind: 'fire', phase: 'start' }, 6);
     core.pump(0);
     core.pump(SIM_STEP_MS);
 
@@ -38,6 +38,11 @@ describe('SimulationCore', () => {
     expect(fireEvents.map((event) => Math.sign(event.dirX))).toEqual([1, -1]);
     const playerSnapshot = snapshots[0]?.entities.find((entity) => entity.kind === 'player');
     expect(playerSnapshot?.x).toBeGreaterThan(session.players[0].position.x);
+    const projectileSequences = snapshots[0]?.entities
+      .filter((entity) => entity.kind === 'projectile')
+      .map((entity) => entity.spawnInputSequence)
+      .sort((a, b) => (a ?? 0) - (b ?? 0));
+    expect(projectileSequences).toEqual([3, 6]);
   });
 
   it('keeps ghost players movable while filtering combat inputs', () => {

@@ -225,6 +225,7 @@ function snapshot(encounter: NonNullable<Snapshot['encounter']>): Snapshot {
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null,
+    lastInputSequence: {}
   };
 }
 

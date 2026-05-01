@@ -252,7 +252,8 @@ export function createOnlineSessionHost(options: OnlineSessionHostOptions): Onli
       }
       if (room.state !== 'running' || room.core === null) return false;
       if (!acceptArenaHostInputIntent(actor.inputRateLimit, nowMs)) return false;
-      room.core.submitInput(actor.actorId, intent);
+      const { inputSequence: _inputSequence, ...command } = intent;
+      room.core.submitInput(actor.actorId, command, intent.inputSequence);
       return true;
     },
     population,

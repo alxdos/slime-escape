@@ -173,6 +173,7 @@ export type Projectile = {
   readonly ownerId: EntityId;
   readonly ownerKind: CombatOwnerKind;
   readonly ownerTeamPlayerId: string | null;
+  readonly spawnInputSequence: number | null;
   readonly motionKind: 'linear' | 'arc' | 'placed';
   readonly arcStart: Vec2 | null;
   readonly arcEnd: Vec2 | null;
@@ -247,6 +248,7 @@ export type ProjectileSpawnSpec = Readonly<{
   ownerId: EntityId;
   ownerKind: CombatOwnerKind;
   ownerTeamPlayerId?: string | null;
+  spawnInputSequence?: number | null;
   motionKind: 'linear' | 'arc' | 'placed';
   arcStart?: Vec2 | null;
   arcEnd?: Vec2 | null;
@@ -549,6 +551,7 @@ export function createEntityStore(): EntityStore {
         ownerId: spec.ownerId,
         ownerKind: spec.ownerKind,
         ownerTeamPlayerId: spec.ownerTeamPlayerId ?? null,
+        spawnInputSequence: spec.spawnInputSequence ?? null,
         motionKind: spec.motionKind,
         arcStart:
           spec.arcStart === undefined || spec.arcStart === null

@@ -4,7 +4,7 @@ import type { RuntimeEvent } from '../../shared/events';
 import type { Log } from '../../shared/log';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultSummary } from '../../shared/sessionResult';
-import type { Snapshot } from '../../shared/snapshot';
+import type { EntitySnapshot, PlayerSnapshot, Snapshot } from '../../shared/snapshot';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 
 import { calculateEffectiveGain, createAudio } from './Audio';
@@ -215,7 +215,17 @@ function makeResultSummary(
   };
 }
 
-type SnapshotInput = (Snapshot & Readonly<{ weaponHud?: unknown }>) | null;
+type TestPlayerSnapshot = Omit<PlayerSnapshot, 'statusEffects'> &
+  Partial<Pick<PlayerSnapshot, 'statusEffects'>>;
+type TestEntitySnapshot = Exclude<EntitySnapshot, PlayerSnapshot> | TestPlayerSnapshot;
+type SnapshotInput =
+  | (Omit<Snapshot, 'entities' | 'lastInputSequence'> &
+      Readonly<{
+        entities: ReadonlyArray<TestEntitySnapshot>;
+        lastInputSequence?: Readonly<Record<string, number>>;
+        weaponHud?: unknown;
+      }>)
+  | null;
 
 function makeSnapshotPair(curr: SnapshotInput = null, nowMs = 0): SnapshotPair {
   const normalizedCurr = curr === null ? null : stripLegacyWeaponHud(curr);
@@ -227,9 +237,16 @@ function makeSnapshotPair(curr: SnapshotInput = null, nowMs = 0): SnapshotPair {
   };
 }
 
-function stripLegacyWeaponHud(snapshot: Snapshot & Readonly<{ weaponHud?: unknown }>): Snapshot {
+function stripLegacyWeaponHud(snapshot: NonNullable<SnapshotInput>): Snapshot {
   const { weaponHud: _legacyWeaponHud, ...rest } = snapshot;
-  return rest;
+  return {
+    ...rest,
+    entities: rest.entities.map((entity): EntitySnapshot => {
+      if (entity.kind !== 'player') return entity;
+      return { ...entity, statusEffects: entity.statusEffects ?? [] };
+    }),
+    lastInputSequence: rest.lastInputSequence ?? {}
+  };
 }
 
 function makeBossSession(
@@ -1072,7 +1089,8 @@ describe('createAudio', () => {
       encounter: null,
       zone: { mode: 'disabled', margin: 0 },
       waveProgress: null,
-      bossHud: null
+      bossHud: null,
+      lastInputSequence: {}
     };
 
     audio.update(makeSnapshotPair(rescueSnapshot, 1000), { kind: 'running' }, null);
@@ -1397,7 +1415,8 @@ describe('createAudio', () => {
       },
       zone: { mode: 'disabled', margin: 0 },
       waveProgress: null,
-      bossHud: null
+      bossHud: null,
+      lastInputSequence: {}
     };
 
     audio.update(makeSnapshotPair(slimeSnapshot), { kind: 'running' }, null);

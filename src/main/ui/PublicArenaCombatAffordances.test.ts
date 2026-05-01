@@ -211,13 +211,15 @@ function publicArenaSnapshotWithSelectedWeapon(selectedWeaponIndex: number): Sna
               timedEffects: []
             }
           ]
-        }
+        },
+        statusEffects: []
       }
     ],
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }
 
@@ -235,7 +237,8 @@ function publicArenaSnapshotWithoutWeaponHud(): Snapshot {
         maxHp: 20,
         state: 'alive',
         formArchetypeId: 'slime-one-eye',
-        weaponHud: null
+        weaponHud: null,
+        statusEffects: []
       }
     ]
   };

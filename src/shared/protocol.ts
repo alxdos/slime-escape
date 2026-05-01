@@ -11,7 +11,7 @@ export type MainToSim =
   | { kind: 'stopSession' }
   | { kind: 'pause' }
   | { kind: 'resume' }
-  | { kind: 'input'; command: InputCommand }
+  | { kind: 'input'; command: InputCommand; inputSequence: number }
   | { kind: 'debug'; command: DebugCommand };
 
 export type SimToMain =

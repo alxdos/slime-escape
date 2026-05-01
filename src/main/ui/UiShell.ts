@@ -407,6 +407,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let activeOnlineSessionId: ModePresetId | null = null;
   let activeOnlineSession: SessionDefinition | null = null;
   let onlineLobbyState: ArenaHostLobbyStateEvent | null = null;
+  let nextPublicArenaInputSequence = 1;
   let onlineCampaignHudAttached = false;
   let onlineStatusMessage = PUBLIC_ARENA_CONNECTING_MESSAGE;
   let publicArenaMenuOpen = false;
@@ -948,6 +949,7 @@ export function createUiShell(init: UiShellInit): UiShell {
 
     const connectionId = publicArenaConnectionId + 1;
     publicArenaConnectionId = connectionId;
+    nextPublicArenaInputSequence = 1;
     activeOnlineSessionId = presetId;
     onlineStatusMessage = onlineConnectingMessage(presetId);
     setPhase(ONLINE_CONNECTING_PHASE);
@@ -1336,7 +1338,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     activePublicArenaClient: PublicArenaClient
   ): InputController {
     const inputCommandSink = (command: InputCommand): void => {
-      const intent = publicArenaIntentFromInput(command);
+      const intent = sequencedPublicArenaIntentFromInput(command);
       if (intent === null) {
         return;
       }
@@ -1362,6 +1364,16 @@ export function createUiShell(init: UiShellInit): UiShell {
       ...sharedInput,
       canvas: init.canvas
     });
+  }
+
+  function sequencedPublicArenaIntentFromInput(
+    command: InputCommand
+  ): PublicArenaInputIntent | null {
+    const intent = publicArenaIntentFromInput(command);
+    if (intent === null) return null;
+    const inputSequence = nextPublicArenaInputSequence;
+    nextPublicArenaInputSequence += 1;
+    return { ...intent, inputSequence };
   }
 
   function openPublicArenaMenu(): void {
@@ -1390,8 +1402,10 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function stopPublicArenaInputForMenu(): void {
     const activePublicArenaClient = publicArenaClient;
-    activePublicArenaClient?.sendInput({ kind: 'move', dx: 0, dy: 0 });
-    activePublicArenaClient?.sendInput({ kind: 'fire', phase: 'stop' });
+    const stopMove = sequencedPublicArenaIntentFromInput({ kind: 'move', dx: 0, dy: 0 });
+    const stopFire = sequencedPublicArenaIntentFromInput({ kind: 'fire', phase: 'stop' });
+    if (stopMove !== null) activePublicArenaClient?.sendInput(stopMove);
+    if (stopFire !== null) activePublicArenaClient?.sendInput(stopFire);
     const previousInput = publicArenaInput;
     publicArenaInput = null;
     previousInput?.stop();
@@ -2228,15 +2242,14 @@ function copyLoadout(loadout: Loadout | null): Loadout | null {
   return loadout === null ? null : { ...loadout, weapons: [...loadout.weapons] };
 }
 
-function publicArenaIntentFromInput(command: InputCommand): PublicArenaInputIntent | null {
+function publicArenaIntentFromInput(command: InputCommand): InputCommand | null {
   switch (command.kind) {
     case 'move':
     case 'aim':
     case 'fire':
     case 'selectWeaponSlot':
-      return command;
     case 'holsterWeapon':
-      return null;
+      return command;
     default:
       assertNever(command);
   }

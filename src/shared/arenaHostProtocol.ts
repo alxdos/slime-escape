@@ -71,10 +71,12 @@ export type PublicArenaLobbyControlIntent =
   | Readonly<{ kind: 'lobby:start' }>
   | Readonly<{ kind: 'lobby:transferHost'; targetActorId: string }>;
 
-export type PublicArenaInputIntent = Extract<
-  InputCommand,
-  { kind: 'move' } | { kind: 'aim' } | { kind: 'fire' } | { kind: 'selectWeaponSlot' }
-> | PublicArenaLobbyControlIntent;
+export type SequencedInputCommand<TCommand extends InputCommand = InputCommand> = TCommand &
+  Readonly<{ inputSequence: number }>;
+
+export type PublicArenaInputIntent =
+  | SequencedInputCommand
+  | PublicArenaLobbyControlIntent;
 
 export type PublicArenaLeaveRequest = Readonly<{
   reason: 'playerExit' | 'pageUnload';

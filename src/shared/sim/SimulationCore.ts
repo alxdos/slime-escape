@@ -47,7 +47,7 @@ export type SimulationCore = Readonly<{
   stop(): void;
   pause(): void;
   resume(): void;
-  submitInput(playerId: string, command: InputCommand): void;
+  submitInput(playerId: string, command: InputCommand, inputSequence?: number): void;
   addPlayer(playerConfig: PlayerConfig, opts?: { invulnerableUntilSimMs?: number }): void;
   removePlayer(playerId: string): void;
   setPlayerForm(
@@ -496,9 +496,9 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
     resume(): void {
       sessionFlow.resume();
     },
-    submitInput(playerId, command): void {
+    submitInput(playerId, command, inputSequence): void {
       if (!canSubmitInputForPlayerState(playerId, command.kind)) return;
-      sessionFlow.handleInput(playerId, command);
+      sessionFlow.handleInput(playerId, command, inputSequence);
     },
     addPlayer(playerConfig, opts): void {
       enqueueDynamicRosterOp({

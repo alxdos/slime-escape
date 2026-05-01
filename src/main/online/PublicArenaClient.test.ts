@@ -95,7 +95,7 @@ describe('PublicArenaClient', () => {
     const socket = new FakePublicArenaSocket();
     const client = createPublicArenaClient(makeInit(socket));
 
-    client.sendInput({ kind: 'fire', phase: 'start' });
+    client.sendInput({ kind: 'fire', phase: 'start', inputSequence: 1 });
 
     expect(socket.emitted).toEqual([]);
   });
@@ -105,11 +105,11 @@ describe('PublicArenaClient', () => {
     const client = createPublicArenaClient(makeInit(socket));
 
     socket.dispatch(PUBLIC_ARENA_EVENTS.joinAccepted, makeAccepted());
-    client.sendInput({ kind: 'fire', phase: 'start' });
+    client.sendInput({ kind: 'fire', phase: 'start', inputSequence: 1 });
 
     expect(socket.emitted).toContainEqual({
       event: PUBLIC_ARENA_EVENTS.input,
-      payload: { kind: 'fire', phase: 'start' }
+      payload: { kind: 'fire', phase: 'start', inputSequence: 1 }
     });
   });
 
@@ -240,6 +240,7 @@ function makeSnapshot(): Snapshot {
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }

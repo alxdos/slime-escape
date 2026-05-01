@@ -298,7 +298,8 @@ function runPlayerFiringDecisions(
       weapons.ownerKind,
       player.position,
       playerInput.aimWorld,
-      simTimeMs
+      simTimeMs,
+      playerInput.firingInputSequence
     );
     if (result === null) continue;
 
@@ -353,7 +354,8 @@ function runCompanionFiringDecisions(
       'companion',
       companion.position,
       target.position,
-      simTimeMs
+      simTimeMs,
+      null
     );
     if (result === null) continue;
 
@@ -418,7 +420,8 @@ function runEnemyFiringDecisions(
       'enemy',
       enemy.position,
       target.position,
-      simTimeMs
+      simTimeMs,
+      null
     );
     if (result === null) continue;
 
@@ -448,7 +451,8 @@ export function fireWeaponProjectiles(
   ownerKind: CombatOwnerKind,
   origin: Vec2,
   aimWorld: Vec2,
-  simTimeMs: number
+  simTimeMs: number,
+  spawnInputSequence: number | null = null
 ): WeaponFireResult | null {
   const effectiveFirePattern = applyFirePatternModifiers(archetype.firePattern, modifiers);
   const effectiveProjectile = applyProjectileModifiers(archetype.projectile, modifiers);
@@ -469,7 +473,8 @@ export function fireWeaponProjectiles(
     origin,
     fireDirections,
     simTimeMs,
-    aimDistance
+    aimDistance,
+    spawnInputSequence
   );
   if (spawned === 0) return null;
   return { spawned, eventDirection };
@@ -791,7 +796,8 @@ function spawnProjectilesForDirections(
   origin: Vec2,
   directions: ReadonlyArray<Vec2>,
   simTimeMs: number,
-  aimDistance: number | null
+  aimDistance: number | null,
+  spawnInputSequence: number | null
 ): number {
   for (const direction of directions) {
     spawnProjectileForDirection(
@@ -803,7 +809,8 @@ function spawnProjectilesForDirections(
       origin,
       direction,
       simTimeMs,
-      aimDistance
+      aimDistance,
+      spawnInputSequence
     );
   }
   return directions.length;
@@ -818,7 +825,8 @@ function spawnProjectileForDirection(
   origin: Vec2,
   direction: Vec2,
   simTimeMs: number,
-  aimDistance: number | null
+  aimDistance: number | null,
+  spawnInputSequence: number | null
 ): void {
   const expireAtSimMs = simTimeMs + projectile.ttlMs;
   const ownerTeam = ownerTeamPlayerId(ownerId, ownerKind, store);
@@ -829,6 +837,7 @@ function spawnProjectileForDirection(
         ownerId,
         ownerKind,
         ownerTeamPlayerId: ownerTeam,
+        spawnInputSequence,
         motionKind: 'linear',
         origin,
         position: origin,
@@ -864,6 +873,7 @@ function spawnProjectileForDirection(
         ownerId,
         ownerKind,
         ownerTeamPlayerId: ownerTeam,
+        spawnInputSequence,
         motionKind: 'arc',
         origin,
         arcStart: origin,
@@ -903,6 +913,7 @@ function spawnProjectileForDirection(
         ownerId,
         ownerKind,
         ownerTeamPlayerId: ownerTeam,
+        spawnInputSequence,
         motionKind: 'placed',
         origin,
         position: origin,
@@ -1567,6 +1578,7 @@ function spawnExplosionFragments(
     projectile.position,
     directions,
     simTimeMs,
+    null,
     null
   );
 }

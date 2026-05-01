@@ -32,7 +32,8 @@ describe('arena host protocol constants', () => {
       encounter: null,
       zone: { mode: 'disabled', margin: 0 },
       waveProgress: null,
-      bossHud: null
+      bossHud: null,
+      lastInputSequence: {}
     } satisfies Snapshot;
     const hostEvent = {
       kind: 'host:levelUp',

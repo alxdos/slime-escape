@@ -1033,7 +1033,8 @@ function makePublicArenaSnapshot(): Snapshot {
               timedEffects: []
             }
           ]
-        }
+        },
+        statusEffects: []
       },
       ...Array.from({ length: 6 }, (_, index) => ({
         id: index + 2,
@@ -1045,7 +1046,8 @@ function makePublicArenaSnapshot(): Snapshot {
         maxHp: 10,
         state: 'alive' as const,
         formArchetypeId: 'slime-one-eye',
-        weaponHud: null
+        weaponHud: null,
+        statusEffects: []
       }))
     ],
     encounter: {
@@ -1057,7 +1059,8 @@ function makePublicArenaSnapshot(): Snapshot {
     },
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }
 
@@ -1075,7 +1078,8 @@ function makeCoopOnlineSnapshot(): Snapshot {
         maxHp: 10,
         state: 'alive',
         formArchetypeId: null,
-        weaponHud: null
+        weaponHud: null,
+        statusEffects: []
       },
       {
         id: 1,
@@ -1099,7 +1103,8 @@ function makeCoopOnlineSnapshot(): Snapshot {
               timedEffects: []
             }
           ]
-        }
+        },
+        statusEffects: []
       },
       {
         id: 3,
@@ -1120,7 +1125,8 @@ function makeCoopOnlineSnapshot(): Snapshot {
     },
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: { dispatched: 1, alive: 1, total: 3 },
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }
 
@@ -2962,10 +2968,11 @@ describe('UiShell', () => {
     input.lastInit()?.onCommand({ kind: 'holsterWeapon' });
 
     expect(publicArenaClient.sentInputs()).toEqual([
-      { kind: 'move', dx: 1, dy: 0 },
-      { kind: 'aim', x: 3, y: 4 },
-      { kind: 'fire', phase: 'start' },
-      { kind: 'selectWeaponSlot', slotIndex: 1 }
+      { kind: 'move', dx: 1, dy: 0, inputSequence: 1 },
+      { kind: 'aim', x: 3, y: 4, inputSequence: 2 },
+      { kind: 'fire', phase: 'start', inputSequence: 3 },
+      { kind: 'selectWeaponSlot', slotIndex: 1, inputSequence: 4 },
+      { kind: 'holsterWeapon', inputSequence: 5 }
     ]);
 
     windowTarget.dispatch(
@@ -2985,12 +2992,13 @@ describe('UiShell', () => {
     expect(publicArenaCombatAffordances.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'online' });
     expect(publicArenaClient.sentInputs()).toEqual([
-      { kind: 'move', dx: 1, dy: 0 },
-      { kind: 'aim', x: 3, y: 4 },
-      { kind: 'fire', phase: 'start' },
-      { kind: 'selectWeaponSlot', slotIndex: 1 },
-      { kind: 'move', dx: 0, dy: 0 },
-      { kind: 'fire', phase: 'stop' }
+      { kind: 'move', dx: 1, dy: 0, inputSequence: 1 },
+      { kind: 'aim', x: 3, y: 4, inputSequence: 2 },
+      { kind: 'fire', phase: 'start', inputSequence: 3 },
+      { kind: 'selectWeaponSlot', slotIndex: 1, inputSequence: 4 },
+      { kind: 'holsterWeapon', inputSequence: 5 },
+      { kind: 'move', dx: 0, dy: 0, inputSequence: 6 },
+      { kind: 'fire', phase: 'stop', inputSequence: 7 }
     ]);
 
     publicArenaMenu.exit();
@@ -3275,8 +3283,8 @@ describe('UiShell', () => {
       expect(publicArenaRenderer.calls.dispose).toBe(0);
       expect(publicArenaHud.isVisible()).toBe(true);
       expect(publicArenaClient.sentInputs()).toEqual([
-        { kind: 'move', dx: 0, dy: 0 },
-        { kind: 'fire', phase: 'stop' }
+        { kind: 'move', dx: 0, dy: 0, inputSequence: 1 },
+        { kind: 'fire', phase: 'stop', inputSequence: 2 }
       ]);
       expect(sim.calls.pause).toBe(0);
       expect(sim.calls.stop).toBe(0);
@@ -3363,9 +3371,9 @@ describe('UiShell', () => {
     input.lastInit()?.onCommand({ kind: 'move', dx: -1, dy: 0 });
 
     expect(publicArenaClient.sentInputs()).toEqual([
-      { kind: 'move', dx: 0, dy: 0 },
-      { kind: 'fire', phase: 'stop' },
-      { kind: 'move', dx: -1, dy: 0 }
+      { kind: 'move', dx: 0, dy: 0, inputSequence: 1 },
+      { kind: 'fire', phase: 'stop', inputSequence: 2 },
+      { kind: 'move', dx: -1, dy: 0, inputSequence: 3 }
     ]);
   });
 
@@ -3426,8 +3434,8 @@ describe('UiShell', () => {
     expect(publicArenaRenderer.calls.dispose).toBe(0);
     expect(publicArenaHud.isVisible()).toBe(true);
     expect(publicArenaClient.sentInputs()).toEqual([
-      { kind: 'move', dx: 0, dy: 0 },
-      { kind: 'fire', phase: 'stop' }
+      { kind: 'move', dx: 0, dy: 0, inputSequence: 1 },
+      { kind: 'fire', phase: 'stop', inputSequence: 2 }
     ]);
     expect(sim.calls.pause).toBe(0);
     expect(sim.calls.stop).toBe(0);
@@ -3561,10 +3569,10 @@ describe('UiShell', () => {
     mobileInput.lastInit()?.onCommand({ kind: 'selectWeaponSlot', slotIndex: 0 });
 
     expect(publicArenaClient.sentInputs()).toEqual([
-      { kind: 'move', dx: 0, dy: -1 },
-      { kind: 'aim', x: 5, y: 6 },
-      { kind: 'fire', phase: 'stop' },
-      { kind: 'selectWeaponSlot', slotIndex: 0 }
+      { kind: 'move', dx: 0, dy: -1, inputSequence: 1 },
+      { kind: 'aim', x: 5, y: 6, inputSequence: 2 },
+      { kind: 'fire', phase: 'stop', inputSequence: 3 },
+      { kind: 'selectWeaponSlot', slotIndex: 0, inputSequence: 4 }
     ]);
 
     mobileInput.lastInit()?.onPause();
@@ -3577,12 +3585,12 @@ describe('UiShell', () => {
     expect(mobileControls.isVisible()).toBe(false);
     expect(shell.phase()).toEqual({ kind: 'online' });
     expect(publicArenaClient.sentInputs()).toEqual([
-      { kind: 'move', dx: 0, dy: -1 },
-      { kind: 'aim', x: 5, y: 6 },
-      { kind: 'fire', phase: 'stop' },
-      { kind: 'selectWeaponSlot', slotIndex: 0 },
-      { kind: 'move', dx: 0, dy: 0 },
-      { kind: 'fire', phase: 'stop' }
+      { kind: 'move', dx: 0, dy: -1, inputSequence: 1 },
+      { kind: 'aim', x: 5, y: 6, inputSequence: 2 },
+      { kind: 'fire', phase: 'stop', inputSequence: 3 },
+      { kind: 'selectWeaponSlot', slotIndex: 0, inputSequence: 4 },
+      { kind: 'move', dx: 0, dy: 0, inputSequence: 5 },
+      { kind: 'fire', phase: 'stop', inputSequence: 6 }
     ]);
     expect(sim.startSessions).toHaveLength(0);
 

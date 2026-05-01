@@ -155,7 +155,8 @@ function snapshot(projectiles: ReadonlyArray<ProjectileSnapshot>): Snapshot {
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }
 
@@ -165,6 +166,7 @@ function projectile(overrides: Partial<ProjectileSnapshot> = {}): ProjectileSnap
     kind: 'projectile',
     weaponArchetypeId: ROCK_THROWER.id,
     ownerKind: 'enemy',
+    ownerId: 1,
     originX: 0,
     originY: 0,
     x: 0,
@@ -175,6 +177,7 @@ function projectile(overrides: Partial<ProjectileSnapshot> = {}): ProjectileSnap
     explosionRadius: null,
     detonateAtSimMs: null,
     arcEnd: { x: 0, y: 0 },
+    spawnInputSequence: null,
     ...overrides
   };
 }

@@ -255,7 +255,8 @@ function makeSnapshot(): Snapshot {
         maxHp: 20,
         state: 'alive',
         formArchetypeId: 'slime-one-eye',
-        weaponHud: makeWeaponHud(0)
+        weaponHud: makeWeaponHud(0),
+        statusEffects: []
       },
       {
         id: 2,
@@ -267,7 +268,8 @@ function makeSnapshot(): Snapshot {
         maxHp: 24,
         state: 'alive',
         formArchetypeId: 'slime-hornling',
-        weaponHud: makeWeaponHud(0)
+        weaponHud: makeWeaponHud(0),
+        statusEffects: []
       },
       {
         id: 3,
@@ -279,7 +281,8 @@ function makeSnapshot(): Snapshot {
         maxHp: 180,
         state: 'alive',
         formArchetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
-        weaponHud: null
+        weaponHud: null,
+        statusEffects: []
       },
       {
         id: 4,
@@ -291,12 +294,14 @@ function makeSnapshot(): Snapshot {
         maxHp: 5,
         state: 'alive',
         formArchetypeId: null,
-        weaponHud: null
+        weaponHud: null,
+        statusEffects: []
       },
       {
         id: 5,
         kind: 'projectile',
         ownerKind: 'player',
+        ownerId: 1,
         weaponArchetypeId: 'rock-thrower',
         originX: 8,
         originY: -4,
@@ -311,13 +316,15 @@ function makeSnapshot(): Snapshot {
         },
         explosionRadius: null,
         detonateAtSimMs: null,
-        arcEnd: { x: 12, y: -6 }
+        arcEnd: { x: 12, y: -6 },
+        spawnInputSequence: 4
       }
     ],
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }
 

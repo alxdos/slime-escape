@@ -460,13 +460,15 @@ function snapshot(
         y: options.playerY ?? 100,
         hp: 5,
         maxHp: 5,
-        state: 'alive'
+        state: 'alive',
+        statusEffects: []
       }
     ],
     encounter: { id, type, index, elapsedMs: 0, waveOrdinal: type === 'wave' ? index + 1 : null },
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }
 

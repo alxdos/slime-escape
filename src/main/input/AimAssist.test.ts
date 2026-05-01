@@ -19,7 +19,8 @@ function snapshot(entities: Snapshot['entities']): Snapshot {
     encounter: null,
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
-    bossHud: null
+    bossHud: null,
+    lastInputSequence: {}
   };
 }
 
@@ -34,7 +35,8 @@ function player(x: number, y: number): Snapshot['entities'][number] {
     maxHp: 5,
     state: 'alive',
     formArchetypeId: null,
-    weaponHud: null
+    weaponHud: null,
+    statusEffects: []
   };
 }
 
