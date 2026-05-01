@@ -15,6 +15,12 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: true,
     order: 0,
     arena: { width: 32, height: 18 },
+    online: { enabled: false, maxPlayers: null, lateJoinAllowed: false, lobbyKind: 'none' },
+    playerTemplate: {
+      id: 'hero-training',
+      ...TRAINING_PLAYER,
+      loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 1 }
+    },
     players: [
       {
         id: 'hero-training',
@@ -47,9 +53,10 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ],
     musicSampleId: 'music/007-nature',
-    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: true, maxAngleRadians: 0.4, maxDistance: 8, strength: 0.7 } },
+    rules: { damage: { slimeFriendlyFire: true, playerVsPlayerDamage: false }, aimAssist: { enabled: true, maxAngleRadians: 0.4, maxDistance: 8, strength: 0.7 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
+    playerCoopRevive: null,
     encounters: [
       {
         id: 'campaign-easy-set-1-wave-1',
@@ -241,6 +248,12 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: true,
     order: 2,
     arena: { width: 32, height: 18 },
+    online: { enabled: false, maxPlayers: null, lateJoinAllowed: false, lobbyKind: 'none' },
+    playerTemplate: {
+      id: 'hero-training',
+      ...TRAINING_PLAYER,
+      loadout: { weapons: [PISTOL.id, SMG.id, ROCK_THROWER.id], selectedIndex: 0 }
+    },
     players: [
       {
         id: 'hero-training',
@@ -281,9 +294,10 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ],
     musicSampleId: 'music/100-waves',
-    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    rules: { damage: { slimeFriendlyFire: false, playerVsPlayerDamage: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
+    playerCoopRevive: null,
     encounters: [
       {
         id: 'campaign-set-1-wave-1',
@@ -1366,6 +1380,12 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: true,
     order: 1,
     arena: { width: 32, height: 18 },
+    online: { enabled: false, maxPlayers: null, lateJoinAllowed: false, lobbyKind: 'none' },
+    playerTemplate: {
+      id: 'hero-training',
+      ...TRAINING_PLAYER,
+      loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id], selectedIndex: 0 }
+    },
     players: [
       {
         id: 'hero-training',
@@ -1406,9 +1426,10 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ],
     musicSampleId: 'music/005-forest',
-    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    rules: { damage: { slimeFriendlyFire: true, playerVsPlayerDamage: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
+    playerCoopRevive: null,
     encounters: [
       {
         id: 'campaign-set-1-wave-1',
@@ -2250,6 +2271,12 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 1,
     arena: { width: 32, height: 18 },
+    online: { enabled: false, maxPlayers: null, lateJoinAllowed: false, lobbyKind: 'none' },
+    playerTemplate: {
+      id: 'hero-sandbox',
+      ...SANDBOX_PLAYER,
+      loadout: { weapons: [DEMO_HAZARD_GRENADE.id, DEMO_PROXIMITY_MINE.id, PISTOL.id], selectedIndex: 0 }
+    },
     players: [
       {
         id: 'hero-sandbox',
@@ -2266,9 +2293,10 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ],
     musicSampleId: null,
-    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: true, maxAngleRadians: 0.35, maxDistance: 8, strength: 0.65 } },
+    rules: { damage: { slimeFriendlyFire: true, playerVsPlayerDamage: false }, aimAssist: { enabled: true, maxAngleRadians: 0.35, maxDistance: 8, strength: 0.65 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
+    playerCoopRevive: null,
     encounters: [
       {
         id: 'combat-modifiers-demo-encounter',
@@ -2309,6 +2337,151 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ]
   },
+  'coop-slime': {
+    presetId: 'coop-slime',
+    displayName: 'Co-Op vs Slimes',
+    description: 'Online co-op slime waves with shared revives, companions, and a boss finish.',
+    visibleInMenu: false,
+    order: 92,
+    arena: { width: 32, height: 18 },
+    online: { enabled: true, maxPlayers: 4, lateJoinAllowed: true, lobbyKind: 'hostControlled' },
+    playerTemplate: {
+      id: 'hero-training',
+      ...TRAINING_PLAYER,
+      loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, GRENADE_LAUNCHER.id], selectedIndex: 0 }
+    },
+    players: [],
+    dynamicRoster: true,
+    companion: {
+      maxHp: 5,
+      contactBox: { width: 0.55, height: 0.55 },
+      movement: { maxSpeed: 3.2, acceleration: 22, orbitRadius: 3.2 },
+      threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
+      weaponLoadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+      boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
+      rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
+    },
+    backgrounds: [
+      {
+        id: 'coop-yard',
+        imageUrl: '/images/bg/bg-01.jpg'
+      },
+      {
+        id: 'coop-ruins',
+        imageUrl: '/images/bg/bg-03.jpg'
+      }
+    ],
+    musicSampleId: 'music/005-forest',
+    rules: { damage: { slimeFriendlyFire: true, playerVsPlayerDamage: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    winCondition: { kind: 'bossDefeated' },
+    lossCondition: { kind: 'allPlayersDead' },
+    playerCoopRevive: { radius: 1.5, durationMs: 2500, reviveHpFraction: 0.5 },
+    encounters: [
+      {
+        id: 'coop-slime-wave-1',
+        type: 'wave',
+        backgroundId: 'coop-yard',
+        introDurationMs: 2200,
+        name: 'Party Crashers',
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: SLIME_ONE_EYE.id },
+            { archetypeId: SLIME_SLEEPER.id },
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_SLEEPER.id },
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_MANY_EYE.id },
+            { archetypeId: SLIME_STONEHEAD.id }
+          ],
+          spawnIntervalMs: 1000,
+          maxAlive: 7,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 0, toMargin: 2, durationMs: 16000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'coop-slime-wave-2',
+        type: 'wave',
+        backgroundId: 'coop-yard',
+        introDurationMs: 2200,
+        name: 'Crossfire Practice',
+        text: null,
+        spawnPlan: {
+          kind: 'wave',
+          spawns: [
+            { archetypeId: SLIME_SPARK.id },
+            { archetypeId: SLIME_HORNLING.id },
+            { archetypeId: SLIME_SHELL.id },
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_WRAITH.id },
+            { archetypeId: SLIME_SHELL.id },
+            { archetypeId: SLIME_SPARK.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            },
+            { archetypeId: SLIME_TRICKSTER.id },
+            { archetypeId: SLIME_WRAITH.id },
+            { archetypeId: SLIME_MANY_EYE.id },
+            {
+              archetypeId: SLIME_STONEHEAD.id,
+              override: { loadout: { weapons: [ROCK_THROWER.id], selectedIndex: 0 } }
+            }
+          ],
+          spawnIntervalMs: 850,
+          maxAlive: 8,
+          edgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'shrinkLinear', fromMargin: 2, toMargin: 3, durationMs: 18000 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'coop-slime-pre-boss-break',
+        type: 'break',
+        backgroundId: 'coop-ruins',
+        introDurationMs: 0,
+        name: null,
+        text: 'Hold the circle. Big one incoming.',
+        spawnPlan: { kind: 'empty' },
+        zoneBehavior: { kind: 'expandLinear', fromMargin: 3, toMargin: 0, durationMs: 2500 },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'timer', durationMs: 2500, next: 'sequential' },
+        tuning: null
+      },
+      {
+        id: 'coop-slime-boss',
+        type: 'boss',
+        backgroundId: 'coop-ruins',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'boss',
+          bossArchetypeId: BOSS_GARGOYLE.id,
+          position: 'top-center',
+          bossEdgeMargin: 0.5
+        },
+        zoneBehavior: { kind: 'disabled' },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'allEnemiesCleared', next: 'sequential' },
+        tuning: null
+      }
+    ]
+  },
   dungeon: {
     presetId: 'dungeon',
     displayName: 'Dungeon',
@@ -2316,6 +2489,12 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 1,
     arena: { width: 32, height: 18 },
+    online: { enabled: false, maxPlayers: null, lateJoinAllowed: false, lobbyKind: 'none' },
+    playerTemplate: {
+      id: 'hero-training',
+      ...TRAINING_PLAYER,
+      loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id, SNIPER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id], selectedIndex: 0 }
+    },
     players: [
       {
         id: 'hero-training',
@@ -2340,9 +2519,10 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ],
     musicSampleId: 'music/100-waves',
-    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    rules: { damage: { slimeFriendlyFire: true, playerVsPlayerDamage: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'dungeon' },
     lossCondition: { kind: 'playerDeath' },
+    playerCoopRevive: null,
     encounters: [
       {
         id: 'dungeon-wave-1',
@@ -2500,6 +2680,12 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 90,
     arena: { width: 35, height: 35 },
+    online: { enabled: false, maxPlayers: null, lateJoinAllowed: false, lobbyKind: 'none' },
+    playerTemplate: {
+      id: 'hero-training',
+      ...TRAINING_PLAYER,
+      loadout: { weapons: [ROCK_THROWER.id, SHOTGUN.id], selectedIndex: 0 }
+    },
     players: [
       {
         id: 'hero-training',
@@ -2516,9 +2702,10 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ],
     musicSampleId: null,
-    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    rules: { damage: { slimeFriendlyFire: true, playerVsPlayerDamage: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
+    playerCoopRevive: null,
     encounters: [
       {
         id: 'portal-opening',
@@ -2543,6 +2730,12 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 91,
     arena: { width: 35, height: 35 },
+    online: { enabled: true, maxPlayers: 200, lateJoinAllowed: true, lobbyKind: 'none' },
+    playerTemplate: {
+      id: 'hero-training',
+      ...TRAINING_PLAYER,
+      loadout: { weapons: [ROCK_THROWER.id, SHOTGUN.id], selectedIndex: 0 }
+    },
     players: [],
     dynamicRoster: true,
     companion: null,
@@ -2553,9 +2746,10 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ],
     musicSampleId: null,
-    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    rules: { damage: { slimeFriendlyFire: true, playerVsPlayerDamage: true }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'respawnOnDeath' },
+    playerCoopRevive: null,
     encounters: [
       {
         id: 'public-arena',
@@ -2580,6 +2774,12 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 0,
     arena: { width: 32, height: 18 },
+    online: { enabled: false, maxPlayers: null, lateJoinAllowed: false, lobbyKind: 'none' },
+    playerTemplate: {
+      id: 'hero-sandbox',
+      ...SANDBOX_PLAYER,
+      loadout: null
+    },
     players: [
       {
         id: 'hero-sandbox',
@@ -2596,9 +2796,10 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ],
     musicSampleId: null,
-    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    rules: { damage: { slimeFriendlyFire: false, playerVsPlayerDamage: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
+    playerCoopRevive: null,
     encounters: [
       {
         id: 'sandbox-encounter',
@@ -2623,6 +2824,12 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 0,
     arena: { width: 32, height: 18 },
+    online: { enabled: false, maxPlayers: null, lateJoinAllowed: false, lobbyKind: 'none' },
+    playerTemplate: {
+      id: 'hero-sandbox',
+      ...SANDBOX_PLAYER,
+      loadout: { weapons: [PISTOL.id, ROCK_THROWER.id, GRENADE_LAUNCHER.id, BOMB_PLACER.id, FIREBALL_STAFF.id], selectedIndex: 0 }
+    },
     players: [
       {
         id: 'hero-sandbox',
@@ -2639,9 +2846,10 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ],
     musicSampleId: null,
-    rules: { damage: { slimeFriendlyFire: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    rules: { damage: { slimeFriendlyFire: false, playerVsPlayerDamage: false }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
     winCondition: { kind: 'none' },
     lossCondition: { kind: 'none' },
+    playerCoopRevive: null,
     encounters: [
       {
         id: 'sandbox-with-combat-encounter',
@@ -2674,6 +2882,12 @@ export const SESSION_PRESET_TEMPLATES = {
     visibleInMenu: false,
     order: 1,
     arena: { width: 32, height: 18 },
+    online: { enabled: false, maxPlayers: null, lateJoinAllowed: false, lobbyKind: 'none' },
+    playerTemplate: {
+      id: 'hero-training',
+      ...TRAINING_PLAYER,
+      loadout: { weapons: [PISTOL.id, SHOTGUN.id, SMG.id], selectedIndex: 0 }
+    },
     players: [
       {
         id: 'hero-training',
@@ -2698,9 +2912,10 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ],
     musicSampleId: 'music/001-calm',
-    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: true, maxAngleRadians: 0.35, maxDistance: 8, strength: 0.55 } },
+    rules: { damage: { slimeFriendlyFire: true, playerVsPlayerDamage: false }, aimAssist: { enabled: true, maxAngleRadians: 0.35, maxDistance: 8, strength: 0.55 } },
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
+    playerCoopRevive: null,
     encounters: [
       {
         id: 'training-intro',

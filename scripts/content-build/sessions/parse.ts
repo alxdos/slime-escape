@@ -6,6 +6,7 @@ import type {
   EncounterType,
   Loadout,
   LossCondition,
+  PlayerCoopReviveConfig,
   SessionRules,
   TransitionNext,
   WinCondition,
@@ -117,6 +118,15 @@ export type ParsedSessionArena = Readonly<{
   height: number;
 }>;
 
+export type ParsedOnlineLobbyKind = 'none' | 'hostControlled';
+
+export type ParsedOnlineSessionConfig = Readonly<{
+  enabled: boolean;
+  maxPlayers: number | null;
+  lateJoinAllowed: boolean;
+  lobbyKind: ParsedOnlineLobbyKind;
+}>;
+
 export type ParsedSessionPreset = Readonly<{
   sourcePath: string;
   presetId: string;
@@ -125,9 +135,11 @@ export type ParsedSessionPreset = Readonly<{
   visibleInMenu: boolean;
   order: number;
   arena: ParsedSessionArena;
+  online: ParsedOnlineSessionConfig;
   dynamicRoster: boolean;
   player: ParsedRef;
   companion: ParsedCompanionConfig | null;
+  playerCoopRevive: PlayerCoopReviveConfig | null;
   loadout: ParsedLoadout | null;
   backgrounds: ReadonlyArray<ParsedSessionBackground>;
   musicSampleId: string | null;
@@ -242,6 +254,7 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
   const sessionTables = requireSessionTables(sessionSection);
   const sessionFields = fieldReader(sessionSection, sessionTables.fields);
   const companionSection = findTopLevelSection(document, 'Companion');
+  const coopReviveSection = findTopLevelSection(document, 'CoopRevive');
   const publicArenaHostSection = findTopLevelSection(document, 'Public Arena Host');
   const backgrounds = parseSessionBackgrounds(sessionSection, sessionTables.backgrounds);
   const backgroundIds = new Set(backgrounds.map((background) => background.id));
@@ -254,9 +267,11 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
     visibleInMenu: parseBooleanField(sessionFields, 'visibleInMenu'),
     order: sessionFields.readNumber('order'),
     arena: parseArenaConfig(sessionFields),
+    online: parseOnlineConfig(sessionFields),
     dynamicRoster: parseOptionalBooleanField(sessionFields, 'dynamicRoster', false),
     player: parsePlayerRef(sessionFields, 'playerId'),
     companion: parseCompanionSection(companionSection),
+    playerCoopRevive: parseCoopReviveSection(coopReviveSection),
     loadout: parseLoadout(sessionFields),
     backgrounds,
     musicSampleId: parseMusicSampleId(sessionFields),
@@ -282,6 +297,21 @@ function validateSessionPreset(preset: ParsedSessionPreset): void {
       `${preset.sourcePath}: Public Arena Host section is only valid in public-arena.md`
     );
   }
+  if (preset.online.enabled && preset.online.maxPlayers === null) {
+    throw new ContentBuildError(
+      `${preset.sourcePath}: online sessions must define maxPlayers`
+    );
+  }
+  if (preset.online.lobbyKind === 'hostControlled' && !preset.online.enabled) {
+    throw new ContentBuildError(
+      `${preset.sourcePath}: lobbyKind "hostControlled" requires online true`
+    );
+  }
+  if (preset.playerCoopRevive !== null && preset.lossCondition.kind !== 'allPlayersDead') {
+    throw new ContentBuildError(
+      `${preset.sourcePath}: CoopRevive section requires lossCondition "allPlayersDead"`
+    );
+  }
   if (preset.winCondition.kind !== 'dungeon') return;
   if (preset.lossCondition.kind !== 'playerDeath') {
     throw new ContentBuildError(
@@ -293,6 +323,40 @@ function validateSessionPreset(preset: ParsedSessionPreset): void {
       `${preset.sourcePath}: winCondition "dungeon" requires at least one wave encounter`
     );
   }
+}
+
+function parseOnlineConfig(field: FieldReader): ParsedOnlineSessionConfig {
+  return {
+    enabled: parseOptionalBooleanField(field, 'online', false),
+    maxPlayers: parseOptionalPositiveIntegerField(field, 'maxPlayers'),
+    lateJoinAllowed: parseOptionalBooleanField(field, 'lateJoinAllowed', false),
+    lobbyKind: parseOptionalEnumField(field, 'lobbyKind', ['none', 'hostControlled'], 'none')
+  };
+}
+
+function parseCoopReviveSection(section: MarkdownSection | null): PlayerCoopReviveConfig | null {
+  if (section === null) {
+    return null;
+  }
+  const table = requireCoopReviveTable(section);
+  const field = fieldReader(section, table);
+  return {
+    radius: parsePositiveNumberField(field, 'rescueRadius'),
+    durationMs: parsePositiveIntegerField(field, 'rescueDurationMs'),
+    reviveHpFraction: parseFractionField(field, 'reviveHpFraction')
+  };
+}
+
+function requireCoopReviveTable(section: MarkdownSection): MarkdownTable {
+  const table = section.tables[0];
+  if (table === undefined) {
+    throw sectionError(section, 'expected field/value table');
+  }
+  assertFieldValueHeader(section, table);
+  if (section.tables.length > 1) {
+    throw sectionError(section, 'expected exactly one GFM table');
+  }
+  return table;
 }
 
 function parsePublicArenaHostSection(
@@ -413,6 +477,19 @@ function parseNonNegativeIntegerField(field: FieldReader, fieldName: string): nu
   const value = field.readNumber(fieldName);
   if (!Number.isInteger(value) || value < 0) {
     throw fieldError(field, fieldName, 'expected integer >= 0');
+  }
+  return value;
+}
+
+function parseOptionalPositiveIntegerField(
+  field: FieldReader,
+  fieldName: string
+): number | null {
+  const cell = field.readOptionalCell(fieldName);
+  if (cell === null || cell.value === 'none') return null;
+  const value = Number(cell.value);
+  if (!Number.isInteger(value) || value <= 0) {
+    throw cellError(field.section, cell.position, fieldName, 'value', 'expected integer > 0 or none');
   }
   return value;
 }
@@ -1146,6 +1223,7 @@ function parseLossCondition(field: FieldReader, fieldName: string): ParsedLossCo
   const kind = parseEnumField(field, fieldName, [
     'none',
     'playerDeath',
+    'allPlayersDead',
     'respawnOnDeath',
     'timerOrScenarioFail',
     'forced'
@@ -1170,6 +1248,26 @@ function parseOptionalBooleanField(
   if (cell.value === 'true') return true;
   if (cell.value === 'false') return false;
   throw cellError(field.section, cell.position, fieldName, 'value', 'expected true or false');
+}
+
+function parseOptionalEnumField<const T extends string>(
+  field: FieldReader,
+  fieldName: string,
+  allowed: ReadonlyArray<T>,
+  fallback: T
+): T {
+  const cell = field.readOptionalCell(fieldName);
+  if (cell === null) return fallback;
+  if (allowed.includes(cell.value as T)) {
+    return cell.value as T;
+  }
+  throw cellError(
+    field.section,
+    cell.position,
+    fieldName,
+    'value',
+    `expected one of: ${allowed.join(', ')}`
+  );
 }
 
 function parseLoadout(field: FieldReader): ParsedLoadout | null {
@@ -1319,7 +1417,7 @@ function parseSessionRules(field: FieldReader): SessionRules {
   return {
     damage: {
       slimeFriendlyFire: parseBooleanField(field, 'slimeFriendlyFire'),
-      playerVsPlayerDamage: false
+      playerVsPlayerDamage: parseOptionalBooleanField(field, 'playerVsPlayerDamage', false)
     },
     aimAssist: {
       enabled: aimAssistEnabled,

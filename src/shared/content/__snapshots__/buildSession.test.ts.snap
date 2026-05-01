@@ -12303,6 +12303,732 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
 }
 `;
 
+exports[`buildSessionDefinition acceptance snapshots > matches accepted coop-slime session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "coop-yard",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "coop-ruins",
+      "imageUrl": "/images/bg/bg-03.jpg",
+    },
+  ],
+  "dynamicRoster": true,
+  "encounters": [
+    {
+      "backgroundId": "coop-yard",
+      "id": "coop-slime-wave-1",
+      "introDurationMs": 2200,
+      "name": "Party Crashers",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "coop-yard",
+      "id": "coop-slime-wave-2",
+      "introDurationMs": 2200,
+      "name": "Crossfire Practice",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 8,
+        "spawnIntervalMs": 850,
+        "spawns": [
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 3,
+      },
+    },
+    {
+      "backgroundId": "coop-ruins",
+      "id": "coop-slime-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Hold the circle. Big one incoming.",
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 3,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "coop-ruins",
+      "id": "coop-slime-boss",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-gargoyle",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.3125,
+        },
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "coop-slime-session",
+  "lossCondition": {
+    "kind": "allPlayersDead",
+  },
+  "modifiers": [],
+  "musicSampleId": "music/005-forest",
+  "playerCoopRevive": {
+    "durationMs": 2500,
+    "radius": 1.5,
+    "reviveHpFraction": 0.5,
+  },
+  "players": [],
+  "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
+    "damage": {
+      "playerVsPlayerDamage": false,
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "bossDefeated",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted coop-slime session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "coop-yard",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "coop-ruins",
+      "imageUrl": "/images/bg/bg-03.jpg",
+    },
+  ],
+  "dynamicRoster": true,
+  "encounters": [
+    {
+      "backgroundId": "coop-yard",
+      "id": "coop-slime-wave-1",
+      "introDurationMs": 2200,
+      "name": "Party Crashers",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "coop-yard",
+      "id": "coop-slime-wave-2",
+      "introDurationMs": 2200,
+      "name": "Crossfire Practice",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 8,
+        "spawnIntervalMs": 850,
+        "spawns": [
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 3,
+      },
+    },
+    {
+      "backgroundId": "coop-ruins",
+      "id": "coop-slime-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Hold the circle. Big one incoming.",
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 3,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "coop-ruins",
+      "id": "coop-slime-boss",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-gargoyle",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.3125,
+        },
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "coop-slime-session",
+  "lossCondition": {
+    "kind": "allPlayersDead",
+  },
+  "modifiers": [],
+  "musicSampleId": "music/005-forest",
+  "playerCoopRevive": {
+    "durationMs": 2500,
+    "radius": 1.5,
+    "reviveHpFraction": 0.5,
+  },
+  "players": [],
+  "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
+    "damage": {
+      "playerVsPlayerDamage": false,
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "bossDefeated",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted coop-slime session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 18,
+    "width": 32,
+  },
+  "backgrounds": [
+    {
+      "id": "coop-yard",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+    {
+      "id": "coop-ruins",
+      "imageUrl": "/images/bg/bg-03.jpg",
+    },
+  ],
+  "dynamicRoster": true,
+  "encounters": [
+    {
+      "backgroundId": "coop-yard",
+      "id": "coop-slime-wave-1",
+      "introDurationMs": 2200,
+      "name": "Party Crashers",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 7,
+        "spawnIntervalMs": 1000,
+        "spawns": [
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-one-eye",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-sleeper",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 16000,
+        "fromMargin": 0,
+        "kind": "shrinkLinear",
+        "toMargin": 2,
+      },
+    },
+    {
+      "backgroundId": "coop-yard",
+      "id": "coop-slime-wave-2",
+      "introDurationMs": 2200,
+      "name": "Crossfire Practice",
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "edgeMargin": 0.5,
+        "kind": "wave",
+        "maxAlive": 8,
+        "spawnIntervalMs": 850,
+        "spawns": [
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-hornling",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-shell",
+          },
+          {
+            "archetypeId": "slime-spark",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+          {
+            "archetypeId": "slime-trickster",
+          },
+          {
+            "archetypeId": "slime-wraith",
+          },
+          {
+            "archetypeId": "slime-many-eye",
+          },
+          {
+            "archetypeId": "slime-stonehead",
+            "override": {
+              "loadout": {
+                "selectedIndex": 0,
+                "weapons": [
+                  "rock-thrower",
+                ],
+              },
+            },
+          },
+        ],
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "wave",
+      "zoneBehavior": {
+        "durationMs": 18000,
+        "fromMargin": 2,
+        "kind": "shrinkLinear",
+        "toMargin": 3,
+      },
+    },
+    {
+      "backgroundId": "coop-ruins",
+      "id": "coop-slime-pre-boss-break",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": "Hold the circle. Big one incoming.",
+      "transitionRules": {
+        "durationMs": 2500,
+        "kind": "timer",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "break",
+      "zoneBehavior": {
+        "durationMs": 2500,
+        "fromMargin": 3,
+        "kind": "expandLinear",
+        "toMargin": 0,
+      },
+    },
+    {
+      "backgroundId": "coop-ruins",
+      "id": "coop-slime-boss",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "bossArchetypeId": "boss-gargoyle",
+        "kind": "boss",
+        "position": {
+          "x": 0,
+          "y": 7.3125,
+        },
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "allEnemiesCleared",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "boss",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "coop-slime-session",
+  "lossCondition": {
+    "kind": "allPlayersDead",
+  },
+  "modifiers": [],
+  "musicSampleId": "music/005-forest",
+  "playerCoopRevive": {
+    "durationMs": 2500,
+    "radius": 1.5,
+    "reviveHpFraction": 0.5,
+  },
+  "players": [],
+  "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
+    "damage": {
+      "playerVsPlayerDamage": false,
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "bossDefeated",
+  },
+}
+`;
+
 exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon session for seed 0 1`] = `
 {
   "arena": {
@@ -13702,7 +14428,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted public-a
       "strength": 0,
     },
     "damage": {
-      "playerVsPlayerDamage": false,
+      "playerVsPlayerDamage": true,
       "slimeFriendlyFire": true,
     },
   },
@@ -13766,7 +14492,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted public-a
       "strength": 0,
     },
     "damage": {
-      "playerVsPlayerDamage": false,
+      "playerVsPlayerDamage": true,
       "slimeFriendlyFire": true,
     },
   },
@@ -13830,7 +14556,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted public-a
       "strength": 0,
     },
     "damage": {
-      "playerVsPlayerDamage": false,
+      "playerVsPlayerDamage": true,
       "slimeFriendlyFire": true,
     },
   },

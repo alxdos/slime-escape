@@ -7,6 +7,10 @@
 | musicSampleId | none |
 | visibleInMenu | false |
 | order | 91 |
+| online | true |
+| maxPlayers | 200 |
+| lateJoinAllowed | true |
+| lobbyKind | none |
 | arenaWidth | 35 |
 | arenaHeight | 35 |
 | dynamicRoster | true |
@@ -14,6 +18,7 @@
 | loadoutWeaponIds | rock-thrower, shotgun |
 | selectedWeaponIndex | 0 |
 | slimeFriendlyFire | true |
+| playerVsPlayerDamage | true |
 | aimAssistEnabled | false |
 | aimAssistMaxAngleRadians | 0 |
 | aimAssistMaxDistance | 0 |

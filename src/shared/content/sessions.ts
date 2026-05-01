@@ -48,11 +48,20 @@ export type SessionPresetPlayerTemplate = PlayerSpawn &
     loadout: Loadout | null;
   }>;
 
+export type OnlineLobbyKind = 'none' | 'hostControlled';
+
+export type OnlineSessionPresetConfig = Readonly<{
+  enabled: boolean;
+  maxPlayers: number | null;
+  lateJoinAllowed: boolean;
+  lobbyKind: OnlineLobbyKind;
+}>;
+
 export type SessionPresetRulesTemplate = Omit<SessionRules, 'damage'> &
   Readonly<{
     damage: Readonly<{
       slimeFriendlyFire: boolean;
-      playerVsPlayerDamage?: boolean;
+      playerVsPlayerDamage: boolean;
     }>;
   }>;
 
@@ -63,13 +72,15 @@ export type BaseSessionPresetTemplate = Readonly<{
   visibleInMenu: boolean;
   order: number;
   arena: ArenaConfig;
+  online: OnlineSessionPresetConfig;
+  playerTemplate: SessionPresetPlayerTemplate;
   companion: SessionPresetCompanionTemplate | null;
   backgrounds: ReadonlyArray<SessionBackground>;
   musicSampleId: string | null;
   rules: SessionPresetRulesTemplate;
   winCondition: WinCondition;
   lossCondition: LossCondition;
-  playerCoopRevive?: PlayerCoopReviveConfig | null;
+  playerCoopRevive: PlayerCoopReviveConfig | null;
   encounters: ReadonlyArray<SessionPresetEncounterTemplate>;
 }>;
 

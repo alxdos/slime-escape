@@ -13,6 +13,7 @@ const SESSION_SOURCE_FILES = [
   'campaign-hard.md',
   'campaign-normal.md',
   'combat-modifiers-demo.md',
+  'coop-slime.md',
   'dungeon.md',
   'portal.md',
   'public-arena.md',
@@ -140,6 +141,12 @@ describe('content-build sessions area', () => {
     const encounter = publicArena?.encounters.at(0);
 
     expect(publicArena?.dynamicRoster).toBe(true);
+    expect(publicArena?.online).toEqual({
+      enabled: true,
+      maxPlayers: 200,
+      lateJoinAllowed: true,
+      lobbyKind: 'none'
+    });
     expect(publicArena?.player).toEqual({ id: 'hero-training', constName: 'TRAINING_PLAYER' });
     expect(publicArena?.loadout).toEqual({
       weapons: [
@@ -149,6 +156,7 @@ describe('content-build sessions area', () => {
       selectedIndex: 0
     });
     expect(publicArena?.rules.damage.slimeFriendlyFire).toBe(true);
+    expect(publicArena?.rules.damage.playerVsPlayerDamage).toBe(true);
     expect(publicArena?.winCondition).toEqual({ kind: 'none' });
     expect(publicArena?.lossCondition).toEqual({ kind: 'respawnOnDeath' });
     expect(publicArena?.publicArenaHost).toEqual({
@@ -163,6 +171,45 @@ describe('content-build sessions area', () => {
       spawnPlan: { kind: 'empty' },
       zoneBehavior: { kind: 'disabled' },
       transitionRules: { kind: 'never', next: 'sequential' }
+    });
+  });
+
+  it('parses the co-op slime preset as an online host-controlled session', async () => {
+    const fixture = await copySessionsFixture();
+    const area = await parseSessionsArea(fixture.sourceDirectory);
+    const coop = area.presets.find((preset) => preset.presetId === 'coop-slime');
+    const boss = coop?.encounters.at(-1);
+
+    expect(coop?.displayName).toBe('Co-Op vs Slimes');
+    expect(coop?.visibleInMenu).toBe(false);
+    expect(coop?.online).toEqual({
+      enabled: true,
+      maxPlayers: 4,
+      lateJoinAllowed: true,
+      lobbyKind: 'hostControlled'
+    });
+    expect(coop?.dynamicRoster).toBe(true);
+    expect(coop?.rules.damage).toEqual({
+      slimeFriendlyFire: true,
+      playerVsPlayerDamage: false
+    });
+    expect(coop?.lossCondition).toEqual({ kind: 'allPlayersDead' });
+    expect(coop?.playerCoopRevive).toEqual({
+      radius: 1.5,
+      durationMs: 2500,
+      reviveHpFraction: 0.5
+    });
+    expect(coop?.companion?.weaponLoadout).toEqual({
+      weapons: [{ id: 'pistol', constName: 'PISTOL' }],
+      selectedIndex: 0
+    });
+    expect(boss).toMatchObject({
+      id: 'coop-slime-boss',
+      type: 'boss',
+      spawnPlan: {
+        kind: 'boss',
+        bossArchetype: { id: 'boss-gargoyle', constName: 'BOSS_GARGOYLE' }
+      }
     });
   });
 
@@ -223,6 +270,25 @@ describe('content-build sessions area', () => {
           )
       },
       /spawnInvulnerabilityMs.*expected integer >= 0/
+    );
+  });
+
+  it('rejects online sessions without a maxPlayers cap', async () => {
+    await expectParseRejects(
+      {
+        'coop-slime.md': (source) => removeExact(source, '| maxPlayers | 4 |\n')
+      },
+      /online sessions must define maxPlayers/
+    );
+  });
+
+  it('rejects CoopRevive without allPlayersDead loss semantics', async () => {
+    await expectParseRejects(
+      {
+        'coop-slime.md': (source) =>
+          replaceExact(source, '| lossCondition | allPlayersDead |', '| lossCondition | playerDeath |')
+      },
+      /CoopRevive section requires lossCondition "allPlayersDead"/
     );
   });
 

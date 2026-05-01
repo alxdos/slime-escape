@@ -118,6 +118,8 @@ function renderPreset(preset: ParsedSessionPreset): string {
     visibleInMenu: ${preset.visibleInMenu ? 'true' : 'false'},
     order: ${formatNumber(preset.order)},
     arena: ${renderArena(preset.arena)},
+    online: ${renderOnlineConfig(preset)},
+    playerTemplate: ${renderPlayerTemplate(preset, '      ', '    ')},
     players: ${renderPlayers(preset)},
     dynamicRoster: ${preset.dynamicRoster ? 'true' : 'false'},
     companion: ${renderCompanionConfig(preset.companion)},
@@ -128,10 +130,27 @@ ${preset.backgrounds.map(renderBackground).join(',\n')}
     rules: ${renderRules(preset)},
     winCondition: ${renderWinCondition(preset.winCondition)},
     lossCondition: ${renderLossCondition(preset.lossCondition)},
+    playerCoopRevive: ${renderPlayerCoopRevive(preset)},
     encounters: [
 ${preset.encounters.map(renderEncounter).join(',\n')}
     ]
   }`;
+}
+
+function renderOnlineConfig(preset: ParsedSessionPreset): string {
+  return `{ enabled: ${preset.online.enabled ? 'true' : 'false'}, maxPlayers: ${preset.online.maxPlayers === null ? 'null' : formatNumber(preset.online.maxPlayers)}, lateJoinAllowed: ${preset.online.lateJoinAllowed ? 'true' : 'false'}, lobbyKind: '${preset.online.lobbyKind}' }`;
+}
+
+function renderPlayerTemplate(
+  preset: ParsedSessionPreset,
+  bodyIndent: string,
+  closingIndent: string
+): string {
+  return `{
+${bodyIndent}id: '${escapeString(preset.player.id)}',
+${bodyIndent}...${preset.player.constName},
+${bodyIndent}loadout: ${renderLoadout(preset.loadout)}
+${closingIndent}}`;
 }
 
 function renderPlayers(preset: ParsedSessionPreset): string {
@@ -139,11 +158,7 @@ function renderPlayers(preset: ParsedSessionPreset): string {
     return '[]';
   }
   return `[
-      {
-        id: '${escapeString(preset.player.id)}',
-        ...${preset.player.constName},
-        loadout: ${renderLoadout(preset.loadout)}
-      }
+      ${renderPlayerTemplate(preset, '        ', '      ')}
     ]`;
 }
 
@@ -330,7 +345,15 @@ function renderLoadout(loadout: ParsedLoadout | null): string {
 
 function renderRules(preset: ParsedSessionPreset): string {
   const aimAssist = preset.rules.aimAssist;
-  return `{ damage: { slimeFriendlyFire: ${preset.rules.damage.slimeFriendlyFire ? 'true' : 'false'} }, aimAssist: { enabled: ${aimAssist.enabled ? 'true' : 'false'}, maxAngleRadians: ${formatNumber(aimAssist.maxAngleRadians)}, maxDistance: ${formatNumber(aimAssist.maxDistance)}, strength: ${formatNumber(aimAssist.strength)} } }`;
+  return `{ damage: { slimeFriendlyFire: ${preset.rules.damage.slimeFriendlyFire ? 'true' : 'false'}, playerVsPlayerDamage: ${preset.rules.damage.playerVsPlayerDamage ? 'true' : 'false'} }, aimAssist: { enabled: ${aimAssist.enabled ? 'true' : 'false'}, maxAngleRadians: ${formatNumber(aimAssist.maxAngleRadians)}, maxDistance: ${formatNumber(aimAssist.maxDistance)}, strength: ${formatNumber(aimAssist.strength)} } }`;
+}
+
+function renderPlayerCoopRevive(preset: ParsedSessionPreset): string {
+  const config = preset.playerCoopRevive;
+  if (config === null) {
+    return 'null';
+  }
+  return `{ radius: ${formatNumber(config.radius)}, durationMs: ${formatNumber(config.durationMs)}, reviveHpFraction: ${formatNumber(config.reviveHpFraction)} }`;
 }
 
 function renderNullableString(value: string | null): string {
@@ -351,10 +374,8 @@ function renderLossCondition(lossCondition: ParsedLossCondition): string {
 function collectImports(area: ParsedSessionsArea): ReadonlyMap<ImportBucket, ReadonlySet<string>> {
   const imports = new Map<ImportBucket, Set<string>>();
   for (const preset of area.presets) {
-    if (!preset.dynamicRoster) {
-      addImport(imports, 'players', preset.player.constName);
-    }
-    if (!preset.dynamicRoster && preset.loadout !== null) {
+    addImport(imports, 'players', preset.player.constName);
+    if (preset.loadout !== null) {
       for (const weapon of preset.loadout.weapons) {
         addImport(imports, 'weapons', weapon.constName);
       }
