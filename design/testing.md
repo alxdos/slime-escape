@@ -76,4 +76,4 @@ The runner is a dev/runtime dependency and a shared tool for future stories (003
 - [impact-feedback.md](impact-feedback.md)
 - [mobile-web-support.md](mobile-web-support.md)
 - [camera-and-visible-area.md](camera-and-visible-area.md)
-- [online-arena-hosting.md](online-arena-hosting.md)
+- [online-session-hosting.md](online-session-hosting.md)

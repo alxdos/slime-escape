@@ -56,7 +56,7 @@ Main principle:
 
 | Decision | Status | Description |
 |----------|--------|-------------|
-| [session-definition.md](session-definition.md) | accepted | Shape of `SessionDefinition`, `EncounterDefinition`, and `ModePreset`; `dynamicRoster` flag and `lossCondition: 'respawnOnDeath'` semantics |
+| [session-definition.md](session-definition.md) | accepted | Shape of `SessionDefinition`, `EncounterDefinition`, `ModePreset`, `PlayerConfig.companion`, `SessionRules.playerVsPlayerDamage`, `playerCoopRevive`; `dynamicRoster` flag and `'respawnOnDeath'`/`'allPlayersDead'` lossCondition semantics |
 | [thread-model.md](thread-model.md) | accepted | Boundary between the `main thread`, `simulation worker`, and rendering |
 | [runtime-systems.md](runtime-systems.md) | accepted | Minimal `core runtime` systems and the simulation lifecycle |
 | [content-boundaries.md](content-boundaries.md) | accepted | Separation between the `content library`, session configuration, runtime state, client progression, and client settings |
@@ -99,7 +99,8 @@ Main principle:
 | [session-result-summary.md](session-result-summary.md) | accepted | Terminal run summary for `win`/`loss`: progress, duration, kills, drops, boss state, defeat cause, Dungeon summary, and Result UI ownership |
 | [escape-progress-path.md](escape-progress-path.md) | accepted | Main-thread Escape Path: wave-only progress path for compact HUD, break map, and Result UI, derived from `SessionDefinition`, snapshots, and result summary without sim contract changes |
 | [vibe-jam-portals.md](vibe-jam-portals.md) | accepted | Vibe Jam portal entrypoint, inbound return context, opening exit portal, normal post-boss completion, and redirect contracts |
-| [online-arena-hosting.md](online-arena-hosting.md) | accepted | Node arena host contract: lifecycle, wall-clock pump, dynamic-roster wiring, wire envelope (Path A — shared `Snapshot`/`RuntimeEvent` plus host `levelUp`), per-event delivery rules, kill→level→form host policy, spawn-invulnerability, reconnect-policy (closed) |
+| [online-session-hosting.md](online-session-hosting.md) | accepted | Node host contract for any online session: multi-room registry, per-session-config routing on join, per-room core lifecycle and pump, companion delivery on join, wire envelope (Path A — shared `Snapshot`/`RuntimeEvent` plus `host:*` events), per-event delivery rules, PvP session policy (kill→level→form, spawn invulnerability), per-room/global population caps, reconnect-policy (closed) |
+| [online-lobby.md](online-lobby.md) | accepted | Online lobby contract for host-controlled-lobby sessions: room state machine (`open`/`running`/`closed`), host election (first-joiner becomes host, deterministic auto-election on disconnect, no host-claim), `lobby:start`/`lobby:transferHost` wire protocol, "alive while ≥1 connected client" lifetime, roster handover at start |
 | [simulation-runtime.md](simulation-runtime.md) | accepted | Single shared simulation core, browser worker host for local play and Node arena host for online modes; online modes are multi-actor sessions of the shared core, not a separate runtime |
 | [sim-core-interface.md](sim-core-interface.md) | accepted | Host interface to the shared simulation core: factory, input methods, output ports, lifecycle, `pump(nowMs)` boundary, dynamic-roster `addPlayer`/`removePlayer`/`setPlayerForm`, and what stays internal |
 | [_template.md](_template.md) | template | Minimal template for a new decision |

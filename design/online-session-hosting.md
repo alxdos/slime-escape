@@ -1,8 +1,8 @@
-# Online Arena Hosting
+# Online Session Hosting
 
 - Status: accepted
 - Created: 2026-05-01
-- Updated: 2026-05-01 (story 036 review alignment: aligned the spawn-invulnerability paragraph with the shipped implementation — the filter lives in `HealthDeathSystem` damage-intent intake, with the `hit`-event flash treated as accepted iframe-style feedback. Earlier review-fix note marked `pvpKillToLevelOps` pseudocode as illustrative only — concrete `state`/`CoreOp` field shapes are finalised by T4 under this contract. Earlier: 2026-05-01 story 036 replaces the provisional `public-multiplayer-arena.md` with this focused decision: the Node arena host runs Public Arena PvP through the shared simulation core ([simulation-runtime.md](simulation-runtime.md), [sim-core-interface.md](sim-core-interface.md)) instead of a compact in-process reimplementation. Durable rules from the provisional file (one stateful Node process, server authority, in-memory arena, content-driven combat, `30 Hz` snapshots, rate-limited input, shutdown reason) carry over; the wire shape moves to the shared `Snapshot`/`RuntimeEvent` plus a host event channel (Path A); the kill→level→form chain is a host pure-function policy on top of `addPlayer`/`removePlayer`/`setPlayerForm`; reconnect is intentionally closed.)
+- Updated: 2026-05-01 (story 037 prep: generalised this decision from "the Node arena host that runs Public Arena PvP" into "the Node host that runs **any** online session" — Public Arena PvP is now one of several session configurations the same host can run, alongside online co-op slime arena (story 037). The host gains: multi-room hosting (one `SimulationCore` per room, multiple rooms in the same Node process), per-session-config routing on `joinRequested` against an explicit `sessionConfigId`, and per-actor companion delivery on join (each connected client may send `selectedPetId` in its handshake, the host fans the session-level `# Companion` template tuning out per actor through the same builder used by `UiShell`). Lobby semantics — host-controlled start, host election, host transfer, lifetime "alive while ≥1 connected client" — moved into the new sibling decision [online-lobby.md](online-lobby.md); this file records only the room/core/wire/policy contract that applies once `start(session)` has fired. The existing PvP-specific rules (kill→level→form host policy, spawn-invulnerability content field, corner spawning, respawn-on-death loop) stay recorded in this file as **PvP session policy** — they apply to a Public Arena PvP room and not to a co-op room. Earlier: 2026-05-01 story 036 review alignment: aligned the spawn-invulnerability paragraph with the shipped implementation — the filter lives in `HealthDeathSystem` damage-intent intake, with the `hit`-event flash treated as accepted iframe-style feedback. Earlier review-fix note marked `pvpKillToLevelOps` pseudocode as illustrative only — concrete `state`/`CoreOp` field shapes are finalised by T4 under this contract. Earlier: 2026-05-01 story 036 replaces the provisional `public-multiplayer-arena.md` with this focused decision: the Node arena host runs Public Arena PvP through the shared simulation core ([simulation-runtime.md](simulation-runtime.md), [sim-core-interface.md](sim-core-interface.md)) instead of a compact in-process reimplementation. Durable rules from the provisional file (one stateful Node process, server authority, in-memory arena, content-driven combat, `30 Hz` snapshots, rate-limited input, shutdown reason) carry over; the wire shape moves to the shared `Snapshot`/`RuntimeEvent` plus a host event channel (Path A); the kill→level→form chain is a host pure-function policy on top of `addPlayer`/`removePlayer`/`setPlayerForm`; reconnect is intentionally closed.)
 
 ## Context
 
@@ -20,20 +20,47 @@ This file records the focused contract for the **Node arena host**: how the shar
 - The host source is `server/src/arena-host/**`. The previous `server/src/arenaSimulation.ts` is removed by story 036.
 - Imports follow the boundary recorded in [web-stack.md](web-stack.md): `server/**` may import from `src/shared/**` (including `src/shared/sim/**`) only via the public façade returned by `createSimulationCore` and exported shared types (protocol, snapshot, content, timing, log, RNG); imports from `src/main/**` or `src/sim/**` are forbidden and are enforced by `server/src/importBoundaries.test.ts`.
 - The web client connects to the host through `socket.io-client`; the host uses Socket.IO `4.x` already pinned in the server lockfile. The static web app receives the host URL at build time through a `VITE_`-prefixed environment variable; the client must not hardcode a production URL.
-- The first slice runs on one stateful Node process. Multi-process scaling, Redis adapters, sticky sessions, queues, and database-backed arena state are out of scope. Serverless/stateless hosting is not valid for this runtime because arena state lives in process memory.
+- The first slice runs on one stateful Node process. Multi-process scaling, Redis adapters, sticky sessions, queues, and database-backed arena state are out of scope. Serverless/stateless hosting is not valid for this runtime because session state lives in process memory.
 
-### Lifecycle: core, sockets, actors
+### Multi-room hosting (story 037)
 
-- The host creates `SimulationCore` once at process start, before accepting Socket.IO connections, and reuses it across the lifetime of the arena, per [sim-core-interface.md](sim-core-interface.md).
-- The host calls `core.start(session)` once at boot with the Public Arena PvP session loaded from shared content. The session has `dynamicRoster: true`, `players: []`, `lossCondition: { kind: 'respawnOnDeath' }`, and `winCondition: { kind: 'none' }`; see [session-definition.md](session-definition.md). Restarts (a planned `stop()` followed by `start(session)` for a tuning change or a content reload) reset the entity store, exporter, RNG and pending dynamic-roster operations exactly as a fresh process would.
-- On each accepted Socket.IO connection, the host derives a stable `actorId` from the `socket.id` string and calls `core.addPlayer(playerConfig)` with a fresh `PlayerConfig` carrying that `actorId`, the level-1 stats from PvP content, the corner spawn position, and the level-1 loadout. The opt `addPlayer.opts.invulnerableUntilSimMs = simTimeMs + spawnInvulnerabilityMs` seeds spawn protection from PvP content (see "Spawn invulnerability" below).
-- On each socket disconnect (clean or unclean), the host calls `core.removePlayer(actorId)` immediately. The dynamic-roster contract guarantees the removal is buffered to the next tick boundary; in the meantime the actor's input state is frozen until the buffered removal applies. In-flight projectiles owned by the actor disappear silently with the removal, as recorded in [sim-core-interface.md](sim-core-interface.md).
-- Identity is socket-local. There are no accounts, names, profiles, moderation records, or persistent arena progress. `actorId` lives only for the current socket lifetime.
+- The Node host owns a **room registry** keyed by an opaque `roomId`. Each room has exactly one `SimulationCore` (constructed with `createSimulationCore` per [sim-core-interface.md](sim-core-interface.md)) and exactly one current room state: `lobby` (waiting for the host player to start, see [online-lobby.md](online-lobby.md)) or `running` (`core.start(session)` has fired). One Node process holds many rooms simultaneously, and rooms run independently — sockets bound to room A do not see snapshots, events, or wire envelopes from room B.
+- Each room is created against a specific `sessionConfigId` from shared content (`content/sessions/<sessionConfigId>.md`). The host loads the session config once per room creation, builds the `SessionDefinition` through the same builder used by `UiShell` (`src/shared/content/buildSession.ts`), and then either runs the lobby phase (per [online-lobby.md](online-lobby.md)) or moves directly into `running` for sessions that have no lobby phase. The `sessionConfigId` is also the room-shopping key clients use on connect — see "Per-session-config routing" below.
+- Single-process scope: every room shares the same Node process (and therefore the same `setInterval` budget, the same memory pool, and the same `Date.now()`/`performance.now()` clock source). The host shell allocates one `setInterval(SIM_STEP_MS)` timer **per running room** (each room owns its own pump cadence) and avoids one shared 30Hz timer that fans out across all cores — the catch-up loop is per-core and a slow room must not stall faster ones. A pure-function room manager keeps `roomId → { state, sessionConfigId, core, hostActorId, sockets, timer? }` and is testable without a live `setInterval`.
+- Room lifetime is owned by [online-lobby.md](online-lobby.md): a room is created when the first connecting client requests its `sessionConfigId` and no existing room is available, and it is destroyed when the last connected socket leaves. Host-state failure paths (timer crash, core throwing during `pump`) tear the room down and emit a `host:roomClosed` host event with a reason.
+- The cap from [online-lobby.md](online-lobby.md) limits players per room. The Node process itself has a separate global cap — total connected sockets across all rooms — carried over from `server/src/config.ts`. The host rejects new connections with `joinRejected` once either cap fires.
 
-### Wall-clock pump
+### Per-session-config routing on join
 
-- The host owns the wall clock. It calls `core.pump(performance.now())` from a single `setInterval(..., SIM_STEP_MS)` loop ([simulation-timing.md](simulation-timing.md), [sim-core-interface.md](sim-core-interface.md)). The first call after `start(session)` establishes the baseline and does not advance ticks; subsequent calls drive the catch-up loop.
-- The previous host kept two intervals (a tick interval and a snapshot interval). With the shared core both cadences are internal to `SimulationClock`/`SnapshotExportSystem`; the host runs one timer.
+- The Socket.IO connection handshake gains a required field `requestedSessionId: string` carried in the existing join intent payload. Valid values are exactly the `presetId`s that have `# Session.online === true` (or equivalent gate added by [content-authoring.md](content-authoring.md)) in `content/sessions/<presetId>.md`. The Public Arena PvP session (`presetId: 'public-arena'`) is one such value; co-op session content authored by story 037 is another.
+- On accepting a join, the host:
+  1. Validates `requestedSessionId` against the set of online-eligible session ids; an unknown id is `joinRejected` with reason `'unknownSession'`.
+  2. Selects an existing room with the same `sessionConfigId` that still has an open lobby slot (lobby state, capacity not full). If multiple match, the host picks deterministically (oldest room first by creation `simTime`).
+  3. If no matching room exists, creates a fresh room for `requestedSessionId` and assigns the joining socket as the lobby host (see [online-lobby.md](online-lobby.md)).
+  4. Returns `joinAccepted` carrying `roomId`, `sessionConfigId`, the assigned `actorId`, the cached arena bounds (from the loaded session config), the room's `maxPlayers`/`lateJoinAllowed`, the current room state (`lobby` / `running`), and the cached tick/snapshot rates.
+- Already-running rooms accept new joins only if `lateJoinAllowed: true` in their session content (see [online-lobby.md](online-lobby.md)); otherwise the host emits `joinRejected` with reason `'sessionInProgress'`. The same reason fires when the matched room's `maxPlayers` cap is full.
+- Per-session protocol versions are unified: all online sessions share a single `ARENA_HOST_PROTOCOL_VERSION` (from story 036's planned T5 rename). A version bump is a session-content-agnostic protocol change and applies to every session config the host serves.
+
+### Companion delivery on join (story 037)
+
+- The same join intent payload carries `selectedPetId: string | null` (the value comes from each client's main-thread `ClientProgression.selectedPetId`, [main-ui-shell.md](main-ui-shell.md)). `null` means "this player has no companion this session" even if the session content enables companions.
+- On `addPlayer` for the joining actor, the host builds the actor's `PlayerConfig.companion` ([session-definition.md](session-definition.md), [companion-combat.md](companion-combat.md)) by combining the session-level `# Companion` template tuning (loaded from `content/sessions/<sessionConfigId>.md` at room creation) with the actor's `selectedPetId`. If the session content has no `# Companion` table or has it disabled, every actor in that room gets `companion: null` regardless of what `selectedPetId` they sent. If the session content enables companions and the joining actor sent `selectedPetId: null`, that actor gets `companion: null` while other actors with a selected pet get a configured companion.
+- The host validates `selectedPetId` against the shared `petArchetypeRegistry` (same content lookup the main thread uses); unknown id is treated as `null` with a warning through the shared log module ([logging.md](logging.md)) — the actor still joins with no companion. The host does **not** read or sync client-side pet ownership progress: it trusts the connected client's `selectedPetId` field as a presentation choice and does nothing else with it. Anti-cheat for "did this client actually own this pet" is intentionally out of scope (per the existing "no auth, no leaderboard, no anti-cheat" stance from story 028).
+- Form changes via `setPlayerForm` for PvP-style sessions (see "PvP session policy" below) do not touch the actor's companion. PvP sessions typically run with `companion: null` for every actor — but if a future PvP session enables companions, the existing `setPlayerForm` contract still leaves the companion as-is.
+
+### Lifecycle: core, sockets, actors (per room)
+
+- Each room creates one `SimulationCore` on first need, per [sim-core-interface.md](sim-core-interface.md). The core's lifetime equals the room's lifetime — destroyed when the room is destroyed (last socket leaves, see [online-lobby.md](online-lobby.md)).
+- The room calls `core.start(session)` once at the moment the lobby host triggers start (for sessions with a lobby phase) or immediately after the room's first socket joins (for sessions whose `# Session` has no lobby phase, e.g. Public Arena PvP — see "PvP session policy" below). The session passed to `start` is built once per room from `content/sessions/<sessionConfigId>.md` through `src/shared/content/buildSession.ts`. Restarts of the same session within the same room (a planned `stop()` followed by `start(session)` for a content reload) reset the entity store, exporter, RNG and pending dynamic-roster operations exactly as a fresh room would.
+- On each accepted Socket.IO connection bound to a room, the host derives a stable `actorId` from the `socket.id` string. If the room is in `running` state with `dynamicRoster: true` and `lateJoinAllowed: true`, the host calls `core.addPlayer(playerConfig)` with a `PlayerConfig` shaped from the session config plus the per-socket join data (corner spawn position derived from `session.arena`, the level-1 loadout for PvP sessions or the authored loadout for co-op sessions, and the per-actor `companion` config built per "Companion delivery on join" above). For PvP sessions, the opt `addPlayer.opts.invulnerableUntilSimMs = simTimeMs + spawnInvulnerabilityMs` seeds spawn protection from PvP content (see "Spawn invulnerability" below). For co-op sessions with `playerCoopRevive`, spawn invulnerability is content-tunable per session and may be `0`.
+- On each socket disconnect (clean or unclean), the host calls `core.removePlayer(actorId)` for the disconnected socket's room. The dynamic-roster contract guarantees the removal is buffered to the next tick boundary; in the meantime the actor's input state is frozen until the buffered removal applies. In-flight projectiles **and** the actor's companion entity (per [sim-core-interface.md](sim-core-interface.md), updated in 037) disappear silently with the removal.
+- Identity is socket-local within a room. There are no accounts, names, profiles, moderation records, or persistent progress. `actorId` lives only for the current socket lifetime; a reconnect from the same client is a fresh actor in whichever room it joins next.
+
+### Wall-clock pump (per room)
+
+- Each running room owns its own wall-clock pump. The host runs one `setInterval(..., SIM_STEP_MS)` per room and calls `core.pump(performance.now())` for that room ([simulation-timing.md](simulation-timing.md), [sim-core-interface.md](sim-core-interface.md)). The first call after `start(session)` establishes the baseline for that room and does not advance ticks; subsequent calls drive the catch-up loop.
+- One timer per room (rather than one shared timer fanning out to every core) keeps the per-room catch-up loop honest: a single slow room cannot stall the others. The Node process pays for `N` `setInterval` callbacks where `N` is the number of currently running rooms — acceptable in the host's single-process scope, since `N` is also bounded by the global socket cap.
+- The previous host kept two intervals (a tick interval and a snapshot interval). With the shared core both cadences are internal to `SimulationClock`/`SnapshotExportSystem`; per-room pumping uses one timer per room.
 
 ### Input intake
 
@@ -68,7 +95,9 @@ This file records the focused contract for the **Node arena host**: how the shar
 - The "owner-side delivery is skipped when no connected actor matches" rule keeps the table coherent for 037: when the projectile owner is a slime (`ownerKind === 'enemy'`) or a boss spawned by encounter content (`ownerKind === 'boss'`), there is no socket on the owner side; the engine event still fires, the host fanout simply does not target a non-existent actor.
 - `win` and `loss` are not produced by the Public Arena PvP session because the session uses `winCondition: 'none'` and `lossCondition: 'respawnOnDeath'`. If a future online mode (story 037) uses a session that does produce them, the host delivers them to every connected socket along with the `summary` payload.
 
-### Kill → level → form: pure-function host policy
+### PvP session policy: kill → level → form
+
+This subsection applies only to PvP rooms (`content/sessions/public-arena.md` and any future PvP session). Co-op rooms ([online-lobby.md](online-lobby.md), session content with `lossCondition: 'allPlayersDead'`) do not run this policy — they use the engine's shared rescue mechanic from [companion-combat.md](companion-combat.md) and never call `setPlayerForm` against player deaths.
 
 - The kill-chain rule lives in `server/src/arena-host/**` as a pure function:
 
@@ -97,21 +126,23 @@ This file records the focused contract for the **Node arena host**: how the shar
   - if the killer is already at the boss level (kills made as boss still award `+1` to the killer, but the chain caps at boss level — the existing PvP rule): only the `host:levelUp` event with `level: bossLevel`, no `setPlayerForm`.
   - The dead actor's `removePlayer` is **not** generated here because the engine already removed the entity through `HealthDeathSystem`; respawn is the `addPlayer` reuse of the same `actorId`.
 
-### Spawn invulnerability
+### Spawn invulnerability (per-session content field)
 
 - The engine primitive is `addPlayer.opts.invulnerableUntilSimMs` ([sim-core-interface.md](sim-core-interface.md)). It is a single runtime field on the player entity consulted by `HealthDeathSystem` at damage-intent intake; invulnerable actors lose every incoming `DamageIntent` before HP application or hooks fire, uniformly across damage sources. The `hit` event itself still fires (visible iframe-style flash, zero damage). Not a status effect.
 - The PvP value of "how many milliseconds of invulnerability after spawn" lives in shared content (the `content/sessions/public-arena.md` field `spawnInvulnerabilityMs`, default `900` matching the previous compact-sim constant). The host shell reads it once at `start(session)` and applies `simTimeMs + spawnInvulnerabilityMs` for both initial spawn and respawn through `pvpKillToLevelOps`. The host shell must not hard-code the magic number; this keeps the value tunable through content without redeploying the server.
 
-### Corner spawning
+### Corner spawning (per session, derived from `session.arena`)
 
 - Spawn corners are derived from `session.arena` width/height at `start(session)`, not from a `PUBLIC_ARENA_WORLD_BOUNDS` constant. With content-authored arenas the constant is a hidden coupling; the host shell must compute corners from session data so changing arena dimensions in `content/sessions/public-arena.md` is sufficient to move spawn points.
 - The host rotates through the four corners deterministically across sequential joins. The first slice does not need spawn balancing or squads.
 
-### Population cap
+### Population cap (per room and global)
 
-- The host enforces a configured cap on connected actors. At the cap, the next `addPlayer` is preceded by a join-rejected message; the core never sees the `addPlayer` call. The cap, host, port, CORS origin, and tick/snapshot rates carry over from `server/src/config.ts` unchanged.
+- The **per-room cap** comes from session content (`maxPlayers` field per [online-lobby.md](online-lobby.md), [content-authoring.md](content-authoring.md)). At the cap, the next join request to a full room is rejected with `joinRejected` reason `'roomFull'`; the host does not call `core.addPlayer` for that connection.
+- The **global cap** is the maximum total connected sockets across all rooms in this Node process; carried over from `server/src/config.ts` unchanged. At the global cap, new joins are rejected with `joinRejected` reason `'serverFull'` regardless of which room they request.
+- Host, port, CORS origin, and tick/snapshot rates carry over from `server/src/config.ts` unchanged.
 
-### Reconnect policy (closed for 036)
+### Reconnect policy (closed for 036/037)
 
 - On socket disconnect (clean or unclean), the host immediately calls `core.removePlayer(actorId)`. State is **not** retained for the disconnected `actorId`. A subsequent reconnect from the same socket is a fresh join with a new `actorId` and starts at level 1 with fresh stats, fresh position, fresh invulnerability.
 - Reconnect-with-state-recovery is intentionally out of scope for 036. Adding it later requires recording an updated decision here, with at minimum: how `actorId` persists across socket disconnects, how the protocol identifies a returning actor, how state is preserved when the disconnect is unclean (network drop) versus intentional (player exit), and how the cap interacts with held-state slots. Story 036 must not introduce ad-hoc partial reconnect support that ships before a decision lands.
@@ -144,6 +175,8 @@ This file records the focused contract for the **Node arena host**: how the shar
 - [simulation-runtime.md](simulation-runtime.md)
 - [sim-core-interface.md](sim-core-interface.md)
 - [session-definition.md](session-definition.md)
+- [online-lobby.md](online-lobby.md)
+- [companion-combat.md](companion-combat.md)
 - [snapshot-shape.md](snapshot-shape.md)
 - [runtime-systems.md](runtime-systems.md)
 - [simulation-timing.md](simulation-timing.md)

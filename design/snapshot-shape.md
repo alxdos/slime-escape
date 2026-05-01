@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-05-01 (story 036 T4 alignment: `RuntimeEvent.hit` and `RuntimeEvent.explosion` carry `ownerId` alongside `ownerKind` so the Node arena host can implement the accepted per-event delivery table in [online-arena-hosting.md](online-arena-hosting.md) without reconstructing projectile ownership from snapshots.)
+- Updated: 2026-05-01 (story 037 prep: `PlayerSnapshot` gains required field `state: 'alive' | 'ghost' | 'reviving'` so renderers and HUD can distinguish a downed-but-not-removed player from a live one and a player whose revive interaction is in progress; `'alive'` matches every existing single-player and PvP-respawn behavior bit-for-bit, `'ghost'` is the new co-op downed state defined in [health-and-death.md](health-and-death.md), `'reviving'` is the same ghost actor with an active revive interaction making progress (rendered with a fill-up affordance). New runtime events `playerDowned` and `playerRevived` are introduced for actor transitions into and out of the ghost state under `lossCondition: 'allPlayersDead'` ([session-definition.md](session-definition.md)), symmetric to `companionDowned`/`companionRescued`. The existing `death` runtime event is **still emitted** when an actor flips to ghost (the entity records "this damage instance ended this player's alive period"), so existing consumers (Result UI defeat cause, audio, impact feedback) keep working without branching on session lossCondition; `playerDowned` is the additional ghost-specific event for systems that need the new state semantics. `death` for a given actor entity fires at most once per session lifetime: when the host later calls `core.removePlayer` on a ghosted actor or `core.stop()` clears the session, the entity disappears silently from snapshots without a second `death` event. Earlier: 2026-05-01 story 036 T4 alignment: `RuntimeEvent.hit` and `RuntimeEvent.explosion` carry `ownerId` alongside `ownerKind` so the Node arena host can implement the accepted per-event delivery table in [online-session-hosting.md](online-session-hosting.md) without reconstructing projectile ownership from snapshots.)
 - Updated: 2026-05-01 (story 036 prep: `PlayerSnapshot` gains `formArchetypeId: string | null` so a player entity can render as a slime/boss form (Public Arena PvP) without adding a new entity discriminator; `null` means canonical hero form. `WeaponHudSnapshot` migrates from a top-level `Snapshot.weaponHud` field into `PlayerSnapshot.weaponHud` so a fanned-out shared `Snapshot` carries per-player HUD without per-recipient construction; the field stays on the player kind only and is intentionally not added to `CompanionSnapshot`. `RuntimeEvent.death` gains `killerId: number | null` so PvP host policy can attribute kills without inspecting the snapshot stream. New `playerSpawn` runtime event is introduced for actor entry into the arena, emitted both for initial `players[]` at `start(session)` and for `core.addPlayer` mid-session ([sim-core-interface.md](sim-core-interface.md)). `levelUp` is intentionally **not** added to shared `RuntimeEvent`: it stays a host-emitted PvP event recorded separately in story 036's hosting decision. Earlier: 2026-04-30 story 035 prep: clarifying note on `PlayerSnapshot` — multiple `kind: 'player'` entries are valid for multi-actor sessions; no field changes, no new discriminator. Earlier: 2026-04-30 story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-29 story 030 follow-up: `dropPickup.pickerId` may now be the player or the companion; pickup eligibility remains defined in [drops.md](drops.md). Earlier story 030 prep: add `CompanionSnapshot`, `ownerKind: 'companion'`, `targetKind: 'companion'`, and companion boop/downed/rescued events; full behavior contract in [companion-combat.md](companion-combat.md). Earlier: 2026-04-28 story 028 prep: `EncounterSnapshot` adds `waveOrdinal: number | null` so Dungeon can show an increasing run-level wave number while looping authored encounter indices. Earlier: 2026-04-27 story 026 prep: `EncounterSnapshot.type` includes the new `portal` encounter type, but portals do not become entity snapshots or runtime events; main-thread portal descriptors are defined in [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: projectile snapshots expose effective runtime `size` so render can show projectile-size modifiers without inferring weapon state on the main thread; existing `originX`/`originY` projectile fields are documented here as presentation data copied from runtime `Projectile.origin`). Earlier: 2026-04-26 story 024: terminal `win`/`loss` runtime events carry `SessionResultSummary`; authoritative result stats are defined in [session-result-summary.md](session-result-summary.md). Earlier story 022: `WeaponHudSnapshot` receives a cooldown interval (`cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`), permanent `modifiers`, and active `timedEffects` for the weapon-slot HUD; the presentation contract lives in [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-25 story 020: `ProjectileSnapshot` receives required field `arcEnd: { x: number; y: number } | null`, the fixed world landing position for an in-flight arc projectile; it is `null` for grounded projectiles and for linear/placed motion. Source of truth is `CombatSystem` at projectile creation; `SnapshotExportSystem` copies the value and does not recompute it. The render contract for landing telegraphs on non-player in-flight arcs is [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD, and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
 
 ## Context
@@ -49,6 +49,7 @@ type EntitySnapshot =
     y: number;
     hp: number;                  // integer >= 0
     maxHp: number;               // integer > 0; repeated in each snapshot, like enemy
+    state: 'alive' | 'ghost' | 'reviving';
     formArchetypeId: string | null;
     weaponHud: WeaponHudSnapshot | null;
   }
@@ -56,6 +57,7 @@ type EntitySnapshot =
   `hp`/`maxHp` are present **always**, regardless of whether the current session has `lossCondition: playerDeath`. This avoids two ways to say "no data" in HUD and simplifies rendering: in a non-combat sandbox session, `hp = maxHp` for the whole run.
   `playerId` is the cross-host actor identifier from `SessionDefinition.players[].id` ([session-definition.md](session-definition.md)). It is stable for the lifetime of the actor in the session, including across `setPlayerForm` form changes ([sim-core-interface.md](sim-core-interface.md)); `EntityId` (the `id` field) is the runtime handle and may change if the actor is removed and re-added. Online clients use `playerId` to locate "self" in `entities[]` against the value cached from the join handshake; local single-player UI continues to use `findPlayerSnapshot` (any `kind: 'player'`) because every local preset emits `players: [<one>]`. The field is required and must not be empty.
   `formArchetypeId` is the optional render-form override. `null` means the canonical hero form (used by every local preset today); a non-null string is an archetype id from `content/enemies.md` or `content/bosses.md` and tells the renderer to draw that form instead of the hero sprite. The field exists for online modes where a player wears a slime or boss form (Public Arena PvP, story 036). Stats (radius/contactBox/maxSpeed/maxHp/loadout) for the form are written into the player runtime state by `setPlayerForm` and reach this snapshot through the existing `radius`/`maxHp`/`weaponHud` fields; the renderer must not re-read enemy/boss content for those stats.
+  `state` (story 037) is the actor's current liveness state, distinguishing alive, downed-but-still-present (`'ghost'`), and downed-with-active-revive (`'reviving'`). For sessions whose `lossCondition` is anything other than `'allPlayersDead'`, the value is always `'alive'` — the state machine simply never transitions, so existing single-player, PvP-respawn (level-1 fresh entity), and dungeon flows keep behaving identically. Under `'allPlayersDead'` ([session-definition.md](session-definition.md)), `'ghost'` indicates the actor is downed and waiting for a revive (HP is `0`, weapon HUD is `null`, the entity is invulnerable to further damage); `'reviving'` indicates a `playerCoopRevive` interaction is making progress on this actor (HP still `0`; renderer uses this for a fill-up affordance). Transition events are `playerDowned` (`'alive' → 'ghost'`) and `playerRevived` (`'ghost' | 'reviving' → 'alive'`); the in-and-out-of-`'reviving'` micro-transitions are not eventified because they are derivable from snapshot diffs and do not need atomic point-in-time reactions.
   `weaponHud` is the per-player weapon HUD. It moves into `PlayerSnapshot` from the previous top-level `Snapshot.weaponHud` field so a single shared `Snapshot` fanned out to many sockets carries each actor's HUD without per-recipient reconstruction. Local single-player consumers must read `players[0].weaponHud` (or whichever player they own); a regression test for the local HUD migration is required when this field moves. The field stays on the player kind only — it is intentionally **not** added to `CompanionSnapshot`. Companion HUD presentation, if it gains weapon-slot UI in the future, lives in a separate field tracked in [companion-combat.md](companion-combat.md).
   Multi-actor sessions ([session-definition.md](session-definition.md)) may produce multiple `kind: 'player'` entries in `snapshot.entities` — one per living player. Story 036 makes this routine for online play; local single-player remains a one-element list.
 - `EnemySnapshot`:
@@ -307,7 +309,7 @@ type EntitySnapshot =
         phaseIndex: number;
         phaseId: string;
       }
-    // player roster (this file, story 036)
+    // player roster (this file, stories 036 / 037)
     | {
         kind: 'playerSpawn';
         simTime: number;
@@ -316,6 +318,29 @@ type EntitySnapshot =
         x: number;
         y: number;
         formArchetypeId: string | null;
+      }
+    | {
+        kind: 'playerDowned';
+        simTime: number;
+        entityId: number;
+        playerId: string;
+        weaponArchetypeId: string | null;
+        impactDirX: number | null;
+        impactDirY: number | null;
+        x: number;
+        y: number;
+      }
+    | {
+        kind: 'playerRevived';
+        simTime: number;
+        entityId: number;
+        playerId: string;
+        rescuerEntityId: number;
+        rescuerPlayerId: string;
+        hp: number;
+        maxHp: number;
+        x: number;
+        y: number;
       }
     | {
         kind: 'companionBoop';
@@ -383,6 +408,8 @@ type EntitySnapshot =
 - `hit.targetArchetypeId` and `death.weaponArchetypeId`/`impactDir*` exist for main-thread presentation consumers ([impact-feedback.md](impact-feedback.md)): renderer must not reconstruct target color, bullet direction, or death cause from nearby snapshots, because the target may be removed before the next frame. For `targetKind: 'player'`, target archetype is absent and the field is `null`; for `targetKind: 'companion'`, the value is the companion `petArchetypeId`. For non-projectile deaths, weapon/direction fields are `null`.
 - `death.killerId` (story 036) is the `EntityId` of the damage source's owner if attribution is well-defined, otherwise `null`. `null` for self-detonation (a player who triggers their own mine), suicide damage, environmental damage, and any other case without a distinct actor on the dealer side. For projectile damage the owner is `Projectile.ownerId` (regardless of `ownerKind`); for enemy contact the owner is the contacting enemy. Consumers (host PvP policy in story 036) must treat `killerId === entityId` and `killerId === null` identically — no level-up reward.
 - `playerSpawn` (story 036) fires every time a player entity is created — once per `SessionDefinition.players[]` entry inside `start(session)` and once per `core.addPlayer` call ([sim-core-interface.md](sim-core-interface.md)) on the next tick boundary. After `stop()` followed by `start(session)` the events re-fire for the new initial roster: a session restart is observationally equivalent to a fresh session for any consumer subscribed to spawn cues. Local single-player gains the event for the canonical hero on every `startSession`; this is additive and does not change existing snapshot-driven HUD.
+- `playerDowned` (story 037) fires when an `'alive'` player flips to `'ghost'` under `lossCondition: 'allPlayersDead'`. The event is emitted by `HealthDeathSystem` on the same tick the actor's HP would have reached zero under the standard removal path — not in a deferred phase. The existing `death` event also fires for the same instance (so `defeat.cause` and audio/feedback consumers keep working without branching on lossCondition), and `playerDowned` is the additional event ghost-aware consumers (online HUD, online result UI, rescue presentation) subscribe to. `weaponArchetypeId`/`impactDir*` mirror the same fields on `death` and `companionDowned` so the death-direction visual works identically on player ghost transitions.
+- `playerRevived` (story 037) fires when a player transitions from `'ghost'` or `'reviving'` back to `'alive'` through the `playerCoopRevive` interaction in [session-definition.md](session-definition.md). `rescuerEntityId`/`rescuerPlayerId` carry the actor whose proximity completed the rescue (one of the actors in the rescuer pair if multiple were contributing). `hp` and `maxHp` reflect the post-revive runtime state (`hp = max(1, floor(maxHp * playerCoopRevive.reviveHpFraction))`). The event fires inside the shared rescue handler ([runtime-systems.md](runtime-systems.md)) immediately after the runtime state transition and before the next snapshot export.
 - Owner systems (see [runtime-systems.md](runtime-systems.md)):
   - `fire`, `hit`, and `explosion` are published by `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md));
   - `death` is published by `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) immediately after death is recorded and before death hooks run;
@@ -391,7 +418,9 @@ type EntitySnapshot =
   - `win` and `loss` are published by `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md), [session-definition.md](session-definition.md)) exactly once per run;
   - `dropSpawn`, `dropPickup`, and `dropExpire` are published by `DropSystem` ([drops.md](drops.md)): `dropSpawn` inside the death hook synchronously after `EntityStore.spawnDrop`; `dropPickup` and `dropExpire` during the `DropSystem` tick phase, by [drops.md](drops.md) rules, with exactly one of them for each drop;
   - `playerSpawn` is published by `EntityStore.spawnPlayer` (the same path used by `start(session)` and `core.addPlayer`); see [runtime-systems.md](runtime-systems.md).
-- No other system may publish `fire`/`hit`/`explosion`/`death`/`companionBoop`/`companionDowned`/`companionRescued`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`/`bossPhaseChange`/`playerSpawn`. Exception: `BossPhaseSystem` publishes only `bossPhaseChange`; `DropSystem` subscribes to death hooks for drops and does not replace `death`. Neither system publishes an alternate death or victory event.
+  - `playerDowned` is published by `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) at the same place that would have recorded a normal player death under any other lossCondition; the event is suppressed if the active session does not use `lossCondition: 'allPlayersDead'`.
+  - `playerRevived` is published by the shared rescue handler ([runtime-systems.md](runtime-systems.md)) when a player transitions from `'ghost'`/`'reviving'` back to `'alive'`; the same handler publishes `companionRescued` for companion rescues to keep one ownership boundary for both rescues.
+- No other system may publish `fire`/`hit`/`explosion`/`death`/`companionBoop`/`companionDowned`/`companionRescued`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`/`bossPhaseChange`/`playerSpawn`/`playerDowned`/`playerRevived`. Exception: `BossPhaseSystem` publishes only `bossPhaseChange`; `DropSystem` subscribes to death hooks for drops and does not replace `death`. Neither system publishes an alternate death or victory event.
 - Story 036 deliberately does **not** add a `levelUp` (or equivalent form-change) kind to shared `RuntimeEvent`. Level chains are PvP policy with no current consumer in the shared sim; the host emits its own `levelUp` event on a parallel wire channel recorded in story 036's hosting decision. If a second consumer of form changes appears in the shared sim later, the event kind is added here at that time.
 - Vibe Jam portals do not add snapshot entity kinds or runtime events in story 026. The main thread derives portal descriptors and redirect checks from `SessionDefinition`, `SnapshotPair.curr`, and browser URL context; see [vibe-jam-portals.md](vibe-jam-portals.md).
 
@@ -435,8 +464,10 @@ type EntitySnapshot =
 - [session-result-summary.md](session-result-summary.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
 - [companion-combat.md](companion-combat.md)
-- [online-arena-hosting.md](online-arena-hosting.md)
+- [online-session-hosting.md](online-session-hosting.md)
+- [online-lobby.md](online-lobby.md)
 - [../stories/028-dungeon-mode.md](../stories/028-dungeon-mode.md)
 - [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
 - [../stories/035-multi-actor-sessions.md](../stories/035-multi-actor-sessions.md)
 - [../stories/036-node-arena-host.md](../stories/036-node-arena-host.md)
+- [../stories/037-coop-vs-slimes.md](../stories/037-coop-vs-slimes.md)

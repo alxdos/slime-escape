@@ -182,4 +182,4 @@ This decision defines the stable presentation contract for sprite assets for pla
 - [../stories/017-universal-weapons-and-projectiles.md](../stories/017-universal-weapons-and-projectiles.md)
 - [companion-combat.md](companion-combat.md)
 - [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
-- [online-arena-hosting.md](online-arena-hosting.md)
+- [online-session-hosting.md](online-session-hosting.md)

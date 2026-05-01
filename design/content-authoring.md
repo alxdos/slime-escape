@@ -2,7 +2,15 @@
 
 - Status: accepted
 - Created: 2026-04-23
-- Updated: 2026-04-30 (story 035 prep: recorded that the `sessions` area continues to author one player per session via session-level fields (`playerId`, `loadoutWeaponIds`, `selectedWeaponIndex`); the generator distributes those into the runtime `SessionDefinition.players[]` shape from [session-definition.md](session-definition.md). Per-player MD override is not introduced and is reserved for the future co-op story.)
+- Updated: 2026-05-01 (story 037 prep: extended the `sessions` area authoring shape for online co-op:
+  - `# Session` gains a required `online: boolean` field (default `false`). When `true`, the session is offered as an online catalog entry in [main-ui-shell.md](main-ui-shell.md) and is routable on the join handshake by `requestedSessionId` per [online-session-hosting.md](online-session-hosting.md). When `false`, the session is local-only.
+  - `# Session` gains a required `playerVsPlayerDamage: boolean` field (default `false`); the value flows into `SessionRules.damage.playerVsPlayerDamage` per [session-definition.md](session-definition.md) and gates HP-damage between two `kind: 'player'` actors at the shared damage-helper. Local presets continue to omit the column or set `false`; PvP arena content sets `true`; co-op content sets `false`.
+  - `# Session` gains optional `lateJoinAllowed: boolean` (defaults to `false`) for online sessions. When `dynamicRoster: true` and `lateJoinAllowed: true`, the host accepts new sockets after `core.start(session)` per [online-lobby.md](online-lobby.md); when `lateJoinAllowed: false`, late join is rejected. Local sessions ignore this field.
+  - `# Session` gains optional `maxPlayers: number` for online sessions (1..N integer). The host caps the room population at this value; new joins to a full room receive `joinRejected: 'roomFull'` per [online-session-hosting.md](online-session-hosting.md). For local sessions the field is ignored.
+  - `# Session` gains optional `lobbyKind: 'none' | 'hostControlled'` (defaults to `'none'` for online sessions, fully ignored for local). `hostControlled` triggers the lobby phase from [online-lobby.md](online-lobby.md).
+  - New optional `# CoopRevive` field-table partition for sessions whose `lossCondition` is `'allPlayersDead'`. When present, it lists `rescueRadius`, `rescueDurationMs`, `reviveHpFraction` (matching the shape of `PlayerCoopReviveConfig` in [session-definition.md](session-definition.md)). When absent, `SessionDefinition.playerCoopRevive` is `null` and ghost players cannot be revived in this session.
+  - The existing `# Companion` partition is reframed as **session-level template tuning shared by every actor that has a companion**. The builder fans authored tuning out per actor: for local single-player presets the fan-out is identical to the previous shape (one actor, one companion); for online co-op sessions each connected client sends `selectedPetId` in the join handshake and the host builds per-actor `PlayerConfig.companion` by combining the template tuning with that pet identity. `# Companion`'s authoring shape is unchanged — no new columns and no per-player rows; per-player override authoring is intentionally not introduced and is reserved for a future story.
+  Earlier: 2026-04-30 story 035 prep: recorded that the `sessions` area continues to author one player per session via session-level fields (`playerId`, `loadoutWeaponIds`, `selectedWeaponIndex`); the generator distributes those into the runtime `SessionDefinition.players[]` shape from [session-definition.md](session-definition.md). Per-player MD override is not introduced and is reserved for the future co-op story.)
 
 ## Context
 
@@ -189,4 +197,7 @@ Existing npm scripts remain: `dev = vite`, `build = tsc -p tsconfig.json && tsc 
 - [spawn-overrides.md](spawn-overrides.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
 - [companion-combat.md](companion-combat.md)
+- [online-session-hosting.md](online-session-hosting.md)
+- [online-lobby.md](online-lobby.md)
 - [../stories/035-multi-actor-sessions.md](../stories/035-multi-actor-sessions.md)
+- [../stories/037-coop-vs-slimes.md](../stories/037-coop-vs-slimes.md)

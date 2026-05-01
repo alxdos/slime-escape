@@ -96,4 +96,4 @@ Without this decision:
 - [thread-model.md](thread-model.md)
 - [testing.md](testing.md)
 - [../stories/031-mobile-web-support.md](../stories/031-mobile-web-support.md)
-- [online-arena-hosting.md](online-arena-hosting.md)
+- [online-session-hosting.md](online-session-hosting.md)

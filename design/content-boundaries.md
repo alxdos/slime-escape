@@ -84,4 +84,4 @@ Runtime code must be separated from game content so new modes, enemy sets, and l
 - [companion-combat.md](companion-combat.md)
 - [../stories/029-xp-and-pet-companions.md](../stories/029-xp-and-pet-companions.md)
 - [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
-- [online-arena-hosting.md](online-arena-hosting.md)
+- [online-session-hosting.md](online-session-hosting.md)

@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-30
-- Updated: 2026-05-01 (story 036 prep: redirected references away from the now-deleted `public-multiplayer-arena.md` to the focused [online-arena-hosting.md](online-arena-hosting.md). The migration plan recorded under "Decision" is now historical: the Node arena host owns Public Arena PvP through the shared core, and `server/src/arenaSimulation.ts` is removed in story 036. Earlier: 2026-04-30 story 034 prep: corrected the "browser worker host lives under `src/main/**`" wording — the host is split across `src/main/sim/**` for the main-side connector and `src/sim/**` for the worker-context entry; concrete host-interface contract moved to its own file [sim-core-interface.md](sim-core-interface.md).)
+- Updated: 2026-05-01 (story 036 prep: redirected references away from the now-deleted `public-multiplayer-arena.md` to the focused [online-session-hosting.md](online-session-hosting.md). The migration plan recorded under "Decision" is now historical: the Node arena host owns Public Arena PvP through the shared core, and `server/src/arenaSimulation.ts` is removed in story 036. Earlier: 2026-04-30 story 034 prep: corrected the "browser worker host lives under `src/main/**`" wording — the host is split across `src/main/sim/**` for the main-side connector and `src/sim/**` for the worker-context entry; concrete host-interface contract moved to its own file [sim-core-interface.md](sim-core-interface.md).)
 
 ## Context
 
@@ -19,13 +19,13 @@ This decision records the chosen direction: a single simulation core runs under 
   - **Node arena host** (Node context, used for all online modes). Owns clock pumping, Socket.IO input intake, per-socket snapshot/event fanout. Lives under `server/**`. Used by Public Arena and any future online mode (online co-op vs slimes, online co-op campaign).
 - Local play continues to run in the browser worker host. The Node host is engaged only by online modes. Single-player offline play does not require a server, does not depend on network availability, and incurs no server cost.
 - Online modes are sessions of the shared core with multiple controlled actors and online-specific session rules (friendly fire, respawn-on-death, kill→level→form chain in PvP, shared waves in co-op, etc.). They are not a separate runtime. Online-specific rules are expressed through existing session/encounter/loadout configuration where possible, and through narrowly scoped extensions to those configs where required.
-- Story 036 retires the first-slice expedient from story 032 (`server/src/arenaSimulation.ts` and the provisional `public-multiplayer-arena.md`) and replaces it with the Node arena host running on the shared core, recorded in [online-arena-hosting.md](online-arena-hosting.md). New online behavior lives behind the `online-arena-hosting.md` contract, in shared content, or as a recorded shared-engine extension — never as a parallel re-implementation in the server.
+- Story 036 retires the first-slice expedient from story 032 (`server/src/arenaSimulation.ts` and the provisional `public-multiplayer-arena.md`) and replaces it with the Node arena host running on the shared core, recorded in [online-session-hosting.md](online-session-hosting.md). New online behavior lives behind the `online-session-hosting.md` contract, in shared content, or as a recorded shared-engine extension — never as a parallel re-implementation in the server.
 - Concrete contracts deferred to subsequent decisions, recorded as their stories enter work:
   - the host interface to the shared core (factory shape, input methods, output ports, lifecycle relative to sessions) — recorded in [sim-core-interface.md](sim-core-interface.md);
   - generalizing `SessionDefinition` and the systems to a list of controlled actors instead of a single player (input state map by `playerId`, AI targeting policy, `lossCondition` semantics for multi-player, run summary semantics for multi-player);
   - the Node host interface and its lifecycle relative to Socket.IO sockets, including how shared-core snapshots and events are fanned out per socket;
   - online-specific session rules expressed through existing session/encounter/loadout config rather than through host-specific code.
-- The host contract for online play is recorded in [online-arena-hosting.md](online-arena-hosting.md), which replaces the provisional `public-multiplayer-arena.md` deleted in story 036.
+- The host contract for online play is recorded in [online-session-hosting.md](online-session-hosting.md), which replaces the provisional `public-multiplayer-arena.md` deleted in story 036.
 
 ## Consequences
 
@@ -44,7 +44,7 @@ This decision records the chosen direction: a single simulation core runs under 
 - [session-definition.md](session-definition.md)
 - [snapshot-shape.md](snapshot-shape.md)
 - [simulation-timing.md](simulation-timing.md)
-- [online-arena-hosting.md](online-arena-hosting.md)
+- [online-session-hosting.md](online-session-hosting.md)
 - [content-boundaries.md](content-boundaries.md)
 - [input-commands.md](input-commands.md)
 - [web-stack.md](web-stack.md)

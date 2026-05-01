@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-29
-- Updated: 2026-04-29 (follow-up: a living damaged companion may seek nearby heal drops and pick up only that drop effect through `DropSystem`; player-only modifier drops stay player-only.)
+- Updated: 2026-05-01 (story 037 prep: move companion ownership from `SessionDefinition.companion` (single per session) into `PlayerConfig.companion` (one per actor) — each controlled actor in `players[]` may carry its own `CompanionSessionConfig` or `null`. `CompanionSystem` learns multi-companion iteration: per-actor companions run their orbit/threat/engage/ghost/heal-seek logic independently, each pinned to its owning `playerId` rather than to "the nearest player". The shared rescue-progress handler in `CompanionSystem` now drives both companion rescue and player rescue (when `SessionDefinition.playerCoopRevive` is non-null, [session-definition.md](session-definition.md)) — same proximity+duration mechanic, different tuning sources, different completion paths (`companionRescued` vs `playerRevived` from [snapshot-shape.md](snapshot-shape.md)). Owner ghost-state behavior recorded explicitly: when an owner flips to `state: 'ghost'`, the companion's owner reference does not change — orbit/ghost positions follow the ghost owner exactly as they followed the alive owner; the companion does not retarget to a different player and does not enter its own ghost state because of owner ghost transition. Damage rules extended: `playerVsPlayerDamage` from `SessionRules` ([session-definition.md](session-definition.md), [projectiles-and-combat.md](projectiles-and-combat.md)) gates damage between team-A and team-B, where a "team" is one player and that player's companion. With `playerVsPlayerDamage: false`, all `(player, companion)` pairs in the session form one effective friendly group; with `true`, each pair is its own team. Earlier: 2026-04-29 follow-up: a living damaged companion may seek nearby heal drops and pick up only that drop effect through `DropSystem`; player-only modifier drops stay player-only.)
 
 ## Context
 
@@ -14,9 +14,9 @@ The companion also has a special death rule. Enemy and boss deaths remove entiti
 
 ## Decision
 
-### Session ownership
+### Per-actor ownership
 
-`SessionDefinition` owns whether a runtime companion exists:
+A runtime companion belongs to a specific controlled actor and is owned through that actor's `PlayerConfig.companion` field ([session-definition.md](session-definition.md)):
 
 ```ts
 type CompanionSessionConfig = Readonly<{
@@ -31,21 +31,24 @@ type CompanionSessionConfig = Readonly<{
 }>;
 ```
 
-`SessionDefinition.companion` is `CompanionSessionConfig | null`.
+`PlayerConfig.companion` is `CompanionSessionConfig | null`. The previous top-level `SessionDefinition.companion` field is removed.
 
-- `null` means the session has no runtime companion.
+- `null` means this actor has no runtime companion in this session.
 - The session builder may create this config from the selected pet id only when the run supports companion combat.
 - `petArchetypeId` is presentation identity only. Pet archetypes do not receive HP, damage, cooldown, speed, weapon, rescue, or boop stats.
 - `maxHp`, `weaponLoadout`, contact shape, movement tuning, boop tuning, and rescue tuning are session values.
 - If `weaponLoadout` is `null`, the companion has no weapon attack in that run.
+- For sessions where `players.length === 1` (every existing local preset), the single actor's `companion` field carries exactly the configuration the previous top-level `SessionDefinition.companion` carried; behaviour is unchanged. Multi-actor sessions (story 037 online co-op) may have different `companion` values per actor — typically the same tuning fanned out to every actor whose client provided a `selectedPetId`, with `null` for actors who did not.
 
 ### Session authoring
 
-The selected pet id is never authored in session MD. It comes from client progression at run start.
+The selected pet id is never authored in session MD. It comes from client progression at run start (local play) or from each connected client's join handshake (online play, see [online-session-hosting.md](online-session-hosting.md)).
 
-Companion-enabled presets may add an optional `# Companion` field table in `content/sessions/<presetId>.md`. If the section is absent or `enabled` is `false`, the builder emits `companion: null`.
+Companion-enabled presets may add an optional `# Companion` field table in `content/sessions/<presetId>.md`. The table is **session-level template tuning** — one set of values shared by every actor in the session that has a companion. If the section is absent or `enabled` is `false`, the builder emits `companion: null` for every actor in `players[]`.
 
-When `enabled` is `true`, the builder emits `companion: null` if no selected pet is available; otherwise it builds `CompanionSessionConfig` by combining the selected `petArchetypeId` with the table's session tuning.
+When `enabled` is `true`:
+- For local single-player presets, the builder emits `players[0].companion = null` if no selected pet is available; otherwise it builds `CompanionSessionConfig` by combining the selected `petArchetypeId` with the table's tuning.
+- For online co-op sessions (story 037), the builder fans the same template tuning out per actor: each actor whose join handshake included a `selectedPetId` gets `companion = { ...templateTuning, petArchetypeId: <that pet> }`; actors without a selected pet get `companion: null`. There is exactly one place to author "the companion tuning shared by everyone" — the session-level `# Companion` table — and per-actor pet identity is sourced live from clients, not authored.
 
 Initial field names:
 
@@ -72,12 +75,13 @@ Initial field names:
 
 ### Runtime entity
 
-When `SessionDefinition.companion` is present, the session starts with one `kind: 'companion'` entity.
+For every actor in `SessionDefinition.players[]` whose `companion` is non-null, the session starts one `kind: 'companion'` entity owned by that actor. Sessions may therefore start zero, one, or many companion entities (one per actor with a non-null companion config). For local single-player this is unchanged from the previous shape — exactly one companion entity exists for the single actor.
 
 The companion runtime state includes:
 
 - `id`
 - `kind: 'companion'`
+- `ownerPlayerId: string` — the `PlayerConfig.id` this companion belongs to. Stable for the lifetime of the companion entity; the companion does not migrate between owners.
 - `petArchetypeId`
 - position and velocity
 - `contactBox`
@@ -87,7 +91,7 @@ The companion runtime state includes:
 - current `targetId`, when a valid threat is acquired
 - rescue progress
 - boop cooldown state
-- copied session movement, threat, boop, and rescue tuning
+- copied per-actor movement, threat, boop, and rescue tuning
 
 The companion is a runtime entity, not a renderer-only follower, in companion-enabled sessions.
 
@@ -104,7 +108,9 @@ It owns:
 - companion aim intent for `CombatSystem`
 - protective boop impulses
 - ghost follow behavior
-- rescue channel progress and completion
+- rescue channel progress and completion (for both companion-rescue and player-rescue)
+
+In multi-companion sessions ([session-definition.md](session-definition.md)), the system iterates the per-actor companions in deterministic order (by `ownerPlayerId` ascending lexicographic) and runs each companion's logic independently. Cross-companion interaction is limited to spatial-index queries (companion A may threat-acquire an enemy that companion B is also engaging — both are valid; per-companion target choice is independent and follows the existing entity-id tie-break).
 
 It does not own projectile creation, projectile hit tests, or HP mutation from damage intents.
 
@@ -112,14 +118,16 @@ It does not own projectile creation, projectile hit tests, or HP mutation from d
 
 Companion movement is velocity-based and uses acceleration limits from the session config. The companion never teleports or instantly flips its movement vector to follow the player.
 
-Modes:
+Modes (every "the player" reference resolves to the companion's `ownerPlayerId`, **not** to "the nearest player from `players[]`"):
 
-- `rest`: used outside active combat pressure, especially between waves. The companion stays near the player and lets presentation handle soft idle motion.
-- `guard`: used during active waves when no valid threat is close enough. The companion follows an orbit/guard position around the player with spring-like correction and tangential motion.
+- `rest`: used outside active combat pressure, especially between waves. The companion stays near its owner and lets presentation handle soft idle motion.
+- `guard`: used during active waves when no valid threat is close enough. The companion follows an orbit/guard position around its owner with spring-like correction and tangential motion.
 - `alert`: a short warning state when a new threat is acquired.
 - `engage`: the companion tracks a selected threat and provides aim intent to `CombatSystem` when alive and armed.
-- `ghost`: the downed companion stays near the player, cannot aim or fire, and may still boop.
-- `rescue`: while the player remains inside the rescue radius, rescue progress advances. Leaving the radius cancels or resets progress according to the session rescue config.
+- `ghost`: the downed companion stays near its owner, cannot aim or fire, and may still boop.
+- `rescue`: while a living player remains inside the rescue radius, rescue progress advances. The rescuer does not have to be the companion's owner — any living player may rescue a downed companion regardless of ownership. Leaving the radius cancels or resets progress according to the session rescue config.
+
+When a companion's owner enters `state: 'ghost'` ([snapshot-shape.md](snapshot-shape.md), `lossCondition: 'allPlayersDead'`), the companion's owner reference is unchanged; orbit and ghost-follow positions track the ghost owner exactly as they tracked the alive owner. The companion does not retarget to a different live player and does not enter its own ghost mode merely because of the owner's transition. The companion may still boop, threat-acquire, and engage hostile entities to defend the ghosted owner — gameplay-wise, the companion "guards" its downed owner until either the owner is revived (companion resumes normal flow) or all actors fall (run ends in `loss`).
 
 Threat acquisition is deterministic: choose the nearest enemy or boss inside the acquisition radius, with entity id as the tie breaker. A release radius prevents target flicker.
 
@@ -137,14 +145,16 @@ Look-around flips, idle personality timing, ghost shimmer, and rescue flip rate 
 - Entering `ghost` disables companion weapon firing without deleting the session-defined loadout.
 - Rescue restores firing only if the session-defined loadout exists.
 
-Damage rules gain one friendly alliance:
+Damage rules gain a team-based friendly model that scales from single-player through PvP to co-op:
 
-- `player` and `companion` are friendly to each other.
-- Player-owned projectiles and explosions cannot damage the companion.
-- Companion-owned projectiles and explosions cannot damage the player or companion.
-- Enemy and boss attacks can damage the companion unless an explicit future rule says otherwise.
-- Companion projectiles can damage enemies and bosses.
-- Existing enemy friendly-fire rules remain governed by `rules.damage.slimeFriendlyFire`.
+- A **team** is one player plus that player's companion. In multi-actor sessions there is one team per actor in `players[]` (each pair `(playerEntity, companionEntity)` keyed by `ownerPlayerId`); actors without a companion still form a one-member team.
+- Same-team friendly fire is always off: a player cannot damage their own companion through projectiles or explosions; a companion cannot damage its own owner.
+- Different-team interactions are governed by `SessionRules.damage.playerVsPlayerDamage` ([session-definition.md](session-definition.md)):
+  - `playerVsPlayerDamage: false` (online co-op default, story 037): every team is friendly to every other team. Player A's projectiles cannot damage player B or companion B; companion A's projectiles cannot damage player B or companion B. Effectively all `(player, companion)` pairs in the session are one combined friendly group.
+  - `playerVsPlayerDamage: true` (PvP arena, story 036; also valid for any future PvP session content): each team is hostile to every other team. Player A's projectiles can damage player B and companion B; companion A's projectiles can damage player B and companion B. Same-team friendly fire is still off regardless of this flag.
+- Enemy and boss attacks can damage any team's player or companion. Existing enemy friendly-fire rules remain governed by `rules.damage.slimeFriendlyFire`.
+- Player and companion projectiles can damage enemies and bosses.
+- The shared damage-rule helper ([projectiles-and-combat.md](projectiles-and-combat.md)) is the single read site for both `slimeFriendlyFire` and `playerVsPlayerDamage`. Systems must not branch on these flags directly.
 
 ### Boop
 
@@ -160,15 +170,29 @@ The companion is damageable, but HP reaching zero does not use the normal remova
 
 For `kind: 'companion'`, `HealthDeathSystem` clamps HP to zero, changes state to `ghost`, clears active weapon firing, and emits a companion downed event. It does not emit a normal `death` event, run enemy/boss death hooks, increment kill counters, spawn drops, or remove the companion entity.
 
-`CompanionSystem` owns rescue:
+#### Shared rescue handler
 
-- rescue can progress only while the companion is `ghost`
-- the player must remain inside the configured rescue radius
-- progress completes after the configured channel duration
-- completion changes state back to `alive`
-- HP becomes the configured revived HP value
-- the companion may use its weapon again if the session loadout exists
-- a companion rescued event is emitted for presentation/audio
+`CompanionSystem` hosts a single rescue-progress handler that drives both companion-rescue (this file) and player-rescue (under `SessionDefinition.playerCoopRevive`, [session-definition.md](session-definition.md)). The handler reads the relevant rescue tuning per ghost target:
+
+- For ghost companions, tuning comes from each companion's owner-pinned `PlayerConfig.companion.rescue` (`rescueRadius`, `rescueDurationMs`, `rescueReviveHpFraction`).
+- For ghost players, tuning comes from `SessionDefinition.playerCoopRevive` (same field names, session-wide values).
+
+Both share one mechanic:
+
+- rescue can progress only while the target is `ghost` (companion) or `state === 'ghost'` (player);
+- a living player must remain inside the configured rescue radius around the ghost target;
+- per-rescuer progress accumulates over continuous proximity time; multiple rescuers contribute independent progress against the same target, and the first rescuer to reach the duration triggers completion;
+- leaving the radius or the rescuer falling cancels that rescuer's progress;
+- on completion: ghost target transitions to `alive` (companion → existing rules; player → `state: 'alive'` per [snapshot-shape.md](snapshot-shape.md)) with HP set per the corresponding `reviveHpFraction`;
+- the appropriate event fires (`companionRescued` for companion targets, `playerRevived` for player targets, both per [snapshot-shape.md](snapshot-shape.md)).
+
+Companion-specific completion details (the companion may use its weapon again if the session loadout exists) are unchanged. Player-specific completion: the player's `RuntimeInputState` slot resumes the full input set ([input-commands.md](input-commands.md)) — no other state is touched.
+
+#### Companion-rescuer constraints
+
+A companion **does not** rescue (companions are not rescuers). Rescuers are always alive players. The reverse is fine: any living player may rescue any ghost target — companion or player — regardless of ownership; in particular a player can rescue another player's companion.
+
+When a session has `playerCoopRevive: null`, the handler simply skips ghost-player targets and runs unchanged for ghost companions. When a session has no companions, the handler runs unchanged for ghost players. When both are absent, the handler is a no-op.
 
 ### Snapshot and presentation
 
@@ -178,6 +202,7 @@ For `kind: 'companion'`, `HealthDeathSystem` clamps HP to zero, changes state to
 type CompanionSnapshot = Readonly<{
   id: EntityId;
   kind: 'companion';
+  ownerPlayerId: string;
   petArchetypeId: string;
   x: number;
   y: number;
@@ -190,11 +215,15 @@ type CompanionSnapshot = Readonly<{
 }>;
 ```
 
+`ownerPlayerId` (story 037) is the `PlayerConfig.id` of this companion's owner. Local single-player consumers can ignore the field; multi-companion online consumers (renderer, HUD) use it to draw owner-relative affordances and to find the companion belonging to the local player. The field is required even in single-player sessions to keep the snapshot shape consistent across modes.
+
 Runtime events gain:
 
 - `companionBoop`
 - `companionDowned`
 - `companionRescued`
+- `playerDowned` (story 037, [snapshot-shape.md](snapshot-shape.md)) — published by `HealthDeathSystem` for the player ghost transition; consumers in this file are presentation-only.
+- `playerRevived` (story 037, [snapshot-shape.md](snapshot-shape.md)) — published by the shared rescue handler in `CompanionSystem` for both companion-rescue (`companionRescued`) and player-rescue paths.
 
 Existing `hit` events may use `targetKind: 'companion'` for friendly slime hit feedback.
 
@@ -233,4 +262,8 @@ A companion can pick up only `DropEffect.kind === 'heal'`, only while `state ===
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [non-player-firing.md](non-player-firing.md)
 - [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md)
+- [input-commands.md](input-commands.md)
+- [online-session-hosting.md](online-session-hosting.md)
+- [online-lobby.md](online-lobby.md)
 - [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
+- [../stories/037-coop-vs-slimes.md](../stories/037-coop-vs-slimes.md)
