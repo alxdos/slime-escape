@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { PISTOL, SHOTGUN } from '../content/weapons';
+import { PISTOL, ROCK_THROWER, SHOTGUN } from '../content/weapons';
 import type { InputCommand } from '../input';
 import { log } from '../log';
 import type { PlayerConfig, SessionDefinition } from '../session';
@@ -458,6 +458,49 @@ describe('OnlinePredictionCore', () => {
     );
 
     expect(projectiles(lastSnapshot(predictions))).toEqual([]);
+  });
+
+  it('removes acknowledged predicted projectiles when the authoritative group is grounded', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+    const rockPlayer = makePlayer({ weaponHud: makeWeaponHud(ROCK_THROWER.id) });
+
+    core.start(makeSession(ROCK_THROWER.id), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ simTimeMs: 0, entities: [rockPlayer] }));
+    core.submitInput({ kind: 'aim', x: 8, y: 0 }, 1);
+    core.submitInput({ kind: 'fire', phase: 'start' }, 2);
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
+
+    const predictedBeforeAck = projectiles(lastSnapshot(predictions));
+    expect(predictedBeforeAck).toHaveLength(1);
+    expect(predictedBeforeAck[0]?.spawnInputSequence).toBe(2);
+    expect(predictedBeforeAck[0]?.state).toBe('flying');
+
+    const authoritativeGroundedRock = {
+      ...predictedBeforeAck[0]!,
+      id: 400,
+      ownerId: rockPlayer.id,
+      x: 4,
+      y: 0,
+      state: 'grounded' as const,
+      arcEnd: null
+    };
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: 150,
+        entities: [rockPlayer, authoritativeGroundedRock],
+        lastInputSequence: { self: 2 }
+      })
+    );
+
+    expect(
+      projectiles(lastSnapshot(predictions)).filter(
+        (projectile) => projectile.spawnInputSequence === 2
+      )
+    ).toEqual([]);
   });
 
   it('keeps held-fire follow-up shots when the authoritative stream still has an older shot', () => {

@@ -472,6 +472,44 @@ describe('PublicArenaRenderer', () => {
     renderer.dispose();
   });
 
+  it('prefers authoritative grounded own projectiles over predicted groups', () => {
+    const backend = createRendererBackendHarness();
+    const pair: SnapshotPair = snapshotPair(
+      makeSnapshotWithEntities([
+        makePlayer({ id: 1, playerId: 'self', x: 0, y: 0 }),
+        makeProjectile({
+          id: 31,
+          ownerId: 1,
+          x: 1,
+          y: 0,
+          state: 'grounded',
+          spawnInputSequence: 42
+        })
+      ])
+    );
+    const predictedSnapshot = makeSnapshotWithEntities([
+      makePlayer({ id: 101, playerId: 'self', x: 0, y: 0 }),
+      makeProjectile({ id: 201, ownerId: 101, x: 10, y: 0, spawnInputSequence: 42 })
+    ]);
+    const renderer = createPublicArenaRenderer({
+      canvas: makeCanvas(),
+      arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
+      selfId: 'self',
+      renderScalePreset: 'medium',
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => pair,
+      getPredictedSnapshotPair: () => snapshotPair(predictedSnapshot),
+      windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
+      createRendererBackend: backend.factory,
+      loadBackgroundTexture: createLoadedBackgroundTexture
+    });
+
+    renderer.render();
+    expect(projectilePositions(backend.lastScene())).toEqual([1]);
+
+    renderer.dispose();
+  });
+
   it('keeps predicted projectile render ids stable when held-fire projectiles despawn', () => {
     const backend = createRendererBackendHarness();
     const authoritativePair = snapshotPair(

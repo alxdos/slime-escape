@@ -317,10 +317,19 @@ function composeOnlineSnapshot(init: Readonly<{
     authoritativeSelf !== null && predictedSelf !== null
       ? composeSelfPlayer(authoritativeSelf, predictedSelf)
       : authoritativeSelf;
-  const predictedOwnProjectiles =
+  const authoritativePreferredOwnSequences =
+    authoritativeSelf === null
+      ? new Set<number>()
+      : authoritativePreferredOwnProjectileSequences(interpolatedAuthoritative, authoritativeSelf);
+  const rawPredictedOwnProjectiles =
     authoritativeSelf !== null && predictedSelf !== null && interpolatedPredicted !== null
       ? predictedOwnProjectileViews(interpolatedPredicted, predictedSelf, authoritativeSelf)
       : [];
+  const predictedOwnProjectiles = rawPredictedOwnProjectiles.filter(
+    (projectile) =>
+      projectile.spawnInputSequence === null ||
+      !authoritativePreferredOwnSequences.has(projectile.spawnInputSequence)
+  );
   const predictedOwnGroups = groupProjectilesBySequence(predictedOwnProjectiles);
 
   const entities = interpolatedAuthoritative.entities.flatMap((entity): EntitySnapshot[] => {
@@ -334,6 +343,7 @@ function composeOnlineSnapshot(init: Readonly<{
       entity.ownerId === authoritativeSelf.id
     ) {
       if (entity.spawnInputSequence === null) return [entity];
+      if (authoritativePreferredOwnSequences.has(entity.spawnInputSequence)) return [entity];
       return predictedOwnGroups.has(entity.spawnInputSequence) ? [] : [entity];
     }
     return [entity];
@@ -395,6 +405,26 @@ function groupProjectilesBySequence(
     }
   }
   return groups;
+}
+
+function authoritativePreferredOwnProjectileSequences(
+  snapshot: Snapshot,
+  authoritativeSelf: PlayerSnapshot
+): ReadonlySet<number> {
+  const sequences = new Set<number>();
+  for (const entity of snapshot.entities) {
+    if (
+      entity.kind !== 'projectile' ||
+      entity.ownerKind !== 'player' ||
+      entity.ownerId !== authoritativeSelf.id ||
+      entity.spawnInputSequence === null ||
+      entity.state === 'flying'
+    ) {
+      continue;
+    }
+    sequences.add(entity.spawnInputSequence);
+  }
+  return sequences;
 }
 
 function interpolateSnapshotPair(

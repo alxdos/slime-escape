@@ -223,6 +223,7 @@ export function createOnlinePredictionCore(
   ): Set<number> {
     const acknowledged = snapshot.lastInputSequence[selfSnapshot.playerId] ?? 0;
     const authoritativeCounts = new Map<number, number>();
+    const authoritativeTerminalSequences = new Set<number>();
     for (const entity of snapshot.entities) {
       if (entity.kind !== 'projectile') continue;
       if (entity.ownerKind !== 'player' || entity.ownerId !== selfSnapshot.id) continue;
@@ -231,6 +232,9 @@ export function createOnlinePredictionCore(
         entity.spawnInputSequence,
         (authoritativeCounts.get(entity.spawnInputSequence) ?? 0) + 1
       );
+      if (entity.state !== 'flying') {
+        authoritativeTerminalSequences.add(entity.spawnInputSequence);
+      }
     }
 
     const predictedGroups = new Map<number, Projectile[]>();
@@ -251,9 +255,12 @@ export function createOnlinePredictionCore(
       const predictedGroup = predictedGroups.get(sequence) ?? [];
       // Count fallback is for same-tick bursts; held-fire streams reuse a
       // sequence across cooldown shots and stay on the per-projectile path.
+      if (sequence > acknowledged || authoritativeCount <= 0) continue;
+      if (authoritativeTerminalSequences.has(sequence)) {
+        authoritativePreferredSequences.add(sequence);
+        continue;
+      }
       if (
-        sequence <= acknowledged &&
-        authoritativeCount > 0 &&
         authoritativeCount < predictedGroup.length &&
         isSingleTickProjectileGroup(predictedGroup)
       ) {

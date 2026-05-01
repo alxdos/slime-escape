@@ -1064,6 +1064,48 @@ describe('createRenderer', () => {
     ]);
   });
 
+  it('prefers online authoritative grounded own projectiles over predicted groups', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const projectileTexture = new THREE.Texture();
+    const pair = createSnapshotPairWithEntities([
+      playerSnapshot({ id: 1, playerId: 'self', x: 0, y: 0 }),
+      projectileSnapshot({
+        id: 31,
+        ownerId: 1,
+        x: 1,
+        state: 'grounded',
+        spawnInputSequence: 42
+      })
+    ]);
+    const predicted = createSnapshot([
+      playerSnapshot({ id: 101, playerId: 'self', x: 0, y: 0 }),
+      projectileSnapshot({ id: 201, ownerId: 101, x: 10, spawnInputSequence: 42 })
+    ]);
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [PISTOL.id]: projectileTexture }),
+      getSnapshotPair: () => pair,
+      getPredictedSnapshotPair: () => createSnapshotPair(predicted),
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+    expect(projectileXPositions(backend.lastScene(), projectileTexture)).toEqual([1]);
+  });
+
   it('keeps online predicted projectile render ids stable when held-fire projectiles despawn', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();
