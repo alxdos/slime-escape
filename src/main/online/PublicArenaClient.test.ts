@@ -8,6 +8,7 @@ import {
   type PublicArenaServerToClientEvents
 } from '../../shared/publicArenaProtocol';
 import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/content/publicArena';
+import type { Snapshot } from '../../shared/snapshot';
 
 import { createPublicArenaClient, type PublicArenaSocket } from './PublicArenaClient';
 
@@ -118,6 +119,27 @@ describe('PublicArenaClient', () => {
     );
   });
 
+  it('forwards shared snapshots and host events from the socket', () => {
+    const socket = new FakePublicArenaSocket();
+    const onSnapshot = vi.fn();
+    const onPresentation = vi.fn();
+    createPublicArenaClient(makeInit(socket, { onSnapshot, onPresentation }));
+    const snapshot = makeSnapshot();
+    const event = {
+      kind: 'host:levelUp' as const,
+      simTime: 160,
+      actorId: 'player-a',
+      level: 2,
+      formArchetypeId: 'slime-hornling'
+    };
+
+    socket.dispatch(PUBLIC_ARENA_EVENTS.snapshot, snapshot);
+    socket.dispatch(PUBLIC_ARENA_EVENTS.presentation, event);
+
+    expect(onSnapshot).toHaveBeenCalledWith(snapshot);
+    expect(onPresentation).toHaveBeenCalledWith(event);
+  });
+
   it('reports full arena rejection and disconnects', () => {
     const socket = new FakePublicArenaSocket();
     const onRejected = vi.fn();
@@ -200,4 +222,15 @@ function makeAccepted() {
     tickHz: 60,
     snapshotHz: 30
   } as const;
+}
+
+function makeSnapshot(): Snapshot {
+  return {
+    simTimeMs: 120,
+    entities: [],
+    encounter: null,
+    zone: { mode: 'disabled', margin: 0 },
+    waveProgress: null,
+    bossHud: null
+  };
 }

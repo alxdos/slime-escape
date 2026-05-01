@@ -11,13 +11,13 @@ import { PUBLIC_ARENA_BOSS_LEVEL } from '../../shared/publicArenaProgression';
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
 import type {
+  ArenaHostEvent,
   PublicArenaInputIntent,
-  PublicArenaPresentationEvent,
-  PublicArenaSnapshot
 } from '../../shared/publicArenaProtocol';
 import { ARENA_HOST_PROTOCOL_VERSION } from '../../shared/publicArenaProtocol';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
+import type { Snapshot } from '../../shared/snapshot';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
 import type { InputController, InputControllerInit } from '../input/InputController';
 import type { MobileInputControllerInit } from '../input/MobileInputController';
@@ -940,7 +940,7 @@ function createPublicArenaClientHarness() {
         message
       });
     },
-    presentation(event: PublicArenaPresentationEvent): void {
+    presentation(event: ArenaHostEvent): void {
       lastInit?.onPresentation(event);
     },
     snapshot(): void {
@@ -958,23 +958,49 @@ function createPublicArenaClientHarness() {
   };
 }
 
-function makePublicArenaSnapshot(): PublicArenaSnapshot {
+function makePublicArenaSnapshot(): Snapshot {
   return {
     simTimeMs: 120,
-    population: 7,
-    players: [
+    entities: [
       {
-        id: 'socket-a',
+        id: 1,
+        kind: 'player',
+        playerId: 'socket-a',
         x: 1,
         y: 2,
         hp: 20,
         maxHp: 20,
-        level: 3,
-        form: { kind: 'slime', archetypeId: 'slime-hornling' },
-        selectedWeaponIndex: 0
-      }
+        formArchetypeId: 'slime-many-eye',
+        weaponHud: {
+          selectedIndex: 0,
+          weapons: [
+            {
+              index: 0,
+              weaponArchetypeId: 'rock-thrower',
+              cooldownStartedAtSimMs: 0,
+              cooldownReadyAtSimMs: 0,
+              modifiers: [],
+              timedEffects: []
+            }
+          ]
+        }
+      },
+      ...Array.from({ length: 6 }, (_, index) => ({
+        id: index + 2,
+        kind: 'player' as const,
+        playerId: `socket-${index + 2}`,
+        x: index,
+        y: 0,
+        hp: 10,
+        maxHp: 10,
+        formArchetypeId: 'slime-one-eye',
+        weaponHud: null
+      }))
     ],
-    projectiles: []
+    encounter: null,
+    zone: { mode: 'disabled', margin: 0 },
+    waveProgress: null,
+    bossHud: null
   };
 }
 
@@ -2709,8 +2735,8 @@ describe('UiShell', () => {
 
     publicArenaClient.presentation({
       kind: 'fire',
-      simTimeMs: 140,
-      shooterId: 'socket-a',
+      simTime: 140,
+      shooterId: 1,
       ownerKind: 'player',
       weaponArchetypeId: 'rock-thrower',
       originX: 1,
@@ -2727,12 +2753,13 @@ describe('UiShell', () => {
 
     publicArenaClient.presentation({
       kind: 'hit',
-      simTimeMs: 150,
-      projectileId: 'projectile-a',
-      ownerId: 'socket-a',
+      simTime: 150,
+      projectileId: 100,
+      ownerId: 1,
       ownerKind: 'player',
-      targetId: 'socket-b',
-      targetForm: { kind: 'slime', archetypeId: 'slime-one-eye' },
+      targetId: 2,
+      targetKind: 'enemy',
+      targetArchetypeId: 'slime-one-eye',
       weaponArchetypeId: 'rock-thrower',
       damage: 3,
       x: 3,
@@ -2750,12 +2777,13 @@ describe('UiShell', () => {
 
     publicArenaClient.presentation({
       kind: 'hit',
-      simTimeMs: 151,
-      projectileId: 'projectile-b',
-      ownerId: 'socket-b',
+      simTime: 151,
+      projectileId: 101,
+      ownerId: 2,
       ownerKind: 'player',
-      targetId: 'socket-a',
-      targetForm: { kind: 'slime', archetypeId: 'slime-hornling' },
+      targetId: 1,
+      targetKind: 'enemy',
+      targetArchetypeId: 'slime-hornling',
       weaponArchetypeId: 'rock-thrower',
       damage: 3,
       x: 1,
@@ -2773,11 +2801,14 @@ describe('UiShell', () => {
 
     publicArenaClient.presentation({
       kind: 'death',
-      simTimeMs: 160,
-      playerId: 'socket-b',
-      killerId: 'socket-a',
-      form: { kind: 'boss', archetypeId: 'boss-tower-sentinel' },
+      simTime: 160,
+      entityId: 2,
+      entityKind: 'boss',
+      archetypeId: 'boss-tower-sentinel',
       weaponArchetypeId: 'rock-thrower',
+      impactDirX: null,
+      impactDirY: null,
+      killerId: 1,
       x: 3,
       y: 2
     });

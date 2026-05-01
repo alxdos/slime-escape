@@ -3,15 +3,15 @@ import { io } from 'socket.io-client';
 import {
   PUBLIC_ARENA_EVENTS,
   ARENA_HOST_PROTOCOL_VERSION,
+  type ArenaHostEvent,
   type PublicArenaClientToServerEvents,
   type PublicArenaCloseReason,
   type PublicArenaInputIntent,
   type PublicArenaJoinAccepted,
   type PublicArenaJoinRejected,
-  type PublicArenaPresentationEvent,
-  type PublicArenaServerToClientEvents,
-  type PublicArenaSnapshot
+  type PublicArenaServerToClientEvents
 } from '../../shared/publicArenaProtocol';
+import type { Snapshot } from '../../shared/snapshot';
 
 export type PublicArenaSocket = Readonly<{
   on(event: 'connect' | 'disconnect', listener: () => void): PublicArenaSocket;
@@ -31,8 +31,8 @@ export type PublicArenaClientInit = Readonly<{
   createSocket?: (serverUrl: string) => PublicArenaSocket;
   onAccepted(message: PublicArenaJoinAccepted): void;
   onRejected(message: PublicArenaJoinRejected): void;
-  onSnapshot(snapshot: PublicArenaSnapshot): void;
-  onPresentation(event: PublicArenaPresentationEvent): void;
+  onSnapshot(snapshot: Snapshot): void;
+  onPresentation(event: ArenaHostEvent): void;
   onClose(reason: PublicArenaCloseReason): void;
 }>;
 

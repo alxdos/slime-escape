@@ -12,13 +12,12 @@ import type { InputCommand } from '../../shared/input';
 import { log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
 import type {
+  ArenaHostEvent,
   PublicArenaInputIntent,
   PublicArenaPlayerId,
-  PublicArenaPlayerFormSnapshot,
-  PublicArenaPresentationEvent,
-  PublicArenaSnapshot,
   PublicArenaWorldBounds
 } from '../../shared/publicArenaProtocol';
+import type { Snapshot } from '../../shared/snapshot';
 import type { PlayerConfig, SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import { createAudio, type Audio } from '../audio/Audio';
@@ -66,6 +65,7 @@ import {
   type PublicArenaClient,
   type PublicArenaClientInit
 } from '../online/PublicArenaClient';
+import { publicArenaSnapshotView } from '../online/publicArenaSnapshotView';
 import {
   createPublicArenaRenderer,
   type PublicArenaRenderer,
@@ -390,7 +390,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let publicArenaRenderer: PublicArenaRenderer | null = null;
   let publicArenaInput: InputController | null = null;
   let publicArenaVisibleAreaCamera: VisibleAreaCamera | null = null;
-  let publicArenaSnapshot: PublicArenaSnapshot | null = null;
+  let publicArenaSnapshot: Snapshot | null = null;
   let publicArenaPlayerId: PublicArenaPlayerId | null = null;
   let publicArenaArena: PublicArenaWorldBounds | null = null;
   let publicArenaPlayerCap: number | null = null;
@@ -945,11 +945,11 @@ export function createUiShell(init: UiShellInit): UiShell {
     return true;
   }
 
-  function handlePublicArenaPresentationEvent(event: PublicArenaPresentationEvent): void {
-    const runtimeEvent = publicArenaPresentationToAudioEvent(event);
-    if (runtimeEvent !== null) {
-      audio.handleEvent(runtimeEvent);
+  function handlePublicArenaPresentationEvent(event: ArenaHostEvent): void {
+    if (event.kind === 'host:levelUp' || event.kind === 'playerSpawn') {
+      return;
     }
+    audio.handleEvent(event);
   }
 
   function attachPublicArenaPresentation(
@@ -1104,7 +1104,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function findPublicArenaSelfPosition(): Readonly<{ x: number; y: number }> {
-    const snapshot = publicArenaSnapshot;
+    const snapshot = publicArenaSnapshotView(publicArenaSnapshot);
     const selfId = publicArenaPlayerId;
     const self =
       selfId === null ? undefined : snapshot?.players.find((player) => player.id === selfId);
@@ -1116,9 +1116,10 @@ export function createUiShell(init: UiShellInit): UiShell {
     if (snapshot === null) {
       return null;
     }
+    const view = publicArenaSnapshotView(snapshot);
     const selfId = publicArenaPlayerId;
     const self =
-      selfId === null ? undefined : snapshot.players.find((player) => player.id === selfId);
+      selfId === null ? undefined : view?.players.find((player) => player.id === selfId);
     return {
       simTimeMs: snapshot.simTimeMs,
       player: self === undefined ? null : { x: self.x, y: self.y }
@@ -1836,87 +1837,6 @@ function formatStartupError(error: unknown): string {
     return error;
   }
   return 'Unknown preload error';
-}
-
-function publicArenaPresentationToAudioEvent(
-  event: PublicArenaPresentationEvent
-): RuntimeEvent | null {
-  switch (event.kind) {
-    case 'fire':
-      return {
-        kind: 'fire',
-        simTime: event.simTimeMs,
-        shooterId: 0,
-        ownerKind: 'player',
-        weaponArchetypeId: event.weaponArchetypeId,
-        originX: event.originX,
-        originY: event.originY,
-        dirX: event.dirX,
-        dirY: event.dirY
-      };
-    case 'explosion':
-      return {
-        kind: 'explosion',
-        simTime: event.simTimeMs,
-        projectileId: 0,
-        ownerId: 1,
-        ownerKind: 'player',
-        weaponArchetypeId: event.weaponArchetypeId,
-        damage: event.damage,
-        radius: event.radius,
-        x: event.x,
-        y: event.y
-      };
-    case 'hit':
-      return {
-        kind: 'hit',
-        simTime: event.simTimeMs,
-        projectileId: 0,
-        ownerId: 1,
-        ownerKind: 'player',
-        targetId: 0,
-        targetKind: publicArenaFormToRuntimeEntityKind(event.targetForm),
-        targetArchetypeId: event.targetForm.archetypeId,
-        weaponArchetypeId: event.weaponArchetypeId,
-        damage: event.damage,
-        impactDirX: event.impactDirX,
-        impactDirY: event.impactDirY,
-        x: event.x,
-        y: event.y
-      };
-    case 'death':
-      return {
-        kind: 'death',
-        simTime: event.simTimeMs,
-        entityId: 0,
-        entityKind: publicArenaFormToRuntimeEntityKind(event.form),
-        archetypeId: event.form.archetypeId,
-        weaponArchetypeId: event.weaponArchetypeId,
-        impactDirX: null,
-        impactDirY: null,
-        killerId: null,
-        x: event.x,
-        y: event.y
-      };
-    case 'levelUp':
-    case 'spawn':
-      return null;
-    default:
-      return event satisfies never;
-  }
-}
-
-function publicArenaFormToRuntimeEntityKind(
-  form: PublicArenaPlayerFormSnapshot
-): 'enemy' | 'boss' {
-  switch (form.kind) {
-    case 'slime':
-      return 'enemy';
-    case 'boss':
-      return 'boss';
-    default:
-      return form satisfies never;
-  }
 }
 
 function publicArenaIntentFromInput(command: InputCommand): PublicArenaInputIntent | null {

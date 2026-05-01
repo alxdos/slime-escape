@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
 import {
   PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
   PUBLIC_ARENA_BOSS_LEVEL
@@ -27,22 +26,6 @@ describe('publicArenaSnapshotView', () => {
         weaponArchetypeId: 'rock-thrower'
       })
     ]);
-  });
-
-  it('keeps legacy compact snapshots readable during the client migration', () => {
-    const view = publicArenaSnapshotView(makeLegacySnapshot());
-
-    expect(view?.population).toBe(1);
-    expect(view?.players[0]).toMatchObject({
-      id: 'legacy-player',
-      form: { kind: 'slime', archetypeId: 'slime-one-eye' },
-      level: 1,
-      weaponHud: null
-    });
-    expect(view?.projectiles[0]).toMatchObject({
-      id: 'legacy-projectile',
-      kind: 'projectile'
-    });
   });
 
   it('derives boss and regular levels from public arena form content', () => {
@@ -124,43 +107,5 @@ function makeSharedSnapshot(): Snapshot {
     zone: { mode: 'disabled', margin: 0 },
     waveProgress: null,
     bossHud: null
-  };
-}
-
-function makeLegacySnapshot(): PublicArenaSnapshot {
-  return {
-    simTimeMs: 1000,
-    population: 1,
-    players: [
-      {
-        id: 'legacy-player',
-        x: 0,
-        y: 0,
-        hp: 5,
-        maxHp: 5,
-        level: 1,
-        form: { kind: 'slime', archetypeId: 'slime-one-eye' },
-        selectedWeaponIndex: 0
-      }
-    ],
-    projectiles: [
-      {
-        id: 'legacy-projectile',
-        ownerId: 'legacy-player',
-        ownerKind: 'player',
-        weaponArchetypeId: 'rock-thrower',
-        originX: 0,
-        originY: 0,
-        x: 1,
-        y: 1,
-        size: { width: 0.4, height: 0.4 },
-        state: 'flying',
-        visualState: { angleRadians: 0, spinRadians: 0, pulsePhase: 0 },
-        explosionRadius: null,
-        detonateAtSimMs: null,
-        arcEnd: null,
-        angleRadians: 0
-      }
-    ]
   };
 }

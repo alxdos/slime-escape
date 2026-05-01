@@ -1,8 +1,4 @@
-import type {
-  PublicArenaPlayerFormSnapshot,
-  PublicArenaPlayerId,
-  PublicArenaSnapshot
-} from '../../shared/publicArenaProtocol';
+import type { PublicArenaPlayerId } from '../../shared/publicArenaProtocol';
 import {
   PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
   PUBLIC_ARENA_BOSS_LEVEL,
@@ -15,11 +11,12 @@ import type {
   WeaponHudSnapshot
 } from '../../shared/snapshot';
 
-export type PublicArenaOnlineSnapshot = PublicArenaSnapshot | Snapshot;
+export type PublicArenaOnlineSnapshot = Snapshot;
 
 export type PublicArenaPlayerViewForm =
   | Readonly<{ kind: 'player'; archetypeId: null }>
-  | PublicArenaPlayerFormSnapshot;
+  | Readonly<{ kind: 'slime'; archetypeId: string }>
+  | Readonly<{ kind: 'boss'; archetypeId: string }>;
 
 export type PublicArenaPlayerView = Readonly<{
   id: PublicArenaPlayerId;
@@ -48,8 +45,7 @@ export function publicArenaSnapshotView(
   snapshot: PublicArenaOnlineSnapshot | null
 ): PublicArenaSnapshotView | null {
   if (snapshot === null) return null;
-  if ('entities' in snapshot) return sharedSnapshotView(snapshot);
-  return legacySnapshotView(snapshot);
+  return sharedSnapshotView(snapshot);
 }
 
 export function publicArenaLevelForForm(formArchetypeId: string | null): number {
@@ -99,17 +95,5 @@ function sharedProjectileView(projectile: ProjectileSnapshot): PublicArenaProjec
   return {
     ...projectile,
     id: String(projectile.id)
-  };
-}
-
-function legacySnapshotView(snapshot: PublicArenaSnapshot): PublicArenaSnapshotView {
-  return {
-    simTimeMs: snapshot.simTimeMs,
-    population: snapshot.population,
-    players: snapshot.players.map((player) => ({ ...player, weaponHud: null })),
-    projectiles: snapshot.projectiles.map((projectile) => ({
-      ...projectile,
-      kind: 'projectile' as const
-    }))
   };
 }

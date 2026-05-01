@@ -1,4 +1,6 @@
 import type { InputCommand } from './input.js';
+import type { RuntimeEvent } from './events.js';
+import type { Snapshot } from './snapshot.js';
 
 export const ARENA_HOST_PROTOCOL_VERSION = 6;
 export const PUBLIC_ARENA_FULL_MESSAGE = 'The online arena is full. Try again soon.';
@@ -183,6 +185,16 @@ export type PublicArenaCloseReason = Readonly<{
   message: string;
 }>;
 
+export type ArenaHostLevelUpEvent = Readonly<{
+  kind: 'host:levelUp';
+  simTime: number;
+  actorId: string;
+  level: number;
+  formArchetypeId: string;
+}>;
+
+export type ArenaHostEvent = RuntimeEvent | ArenaHostLevelUpEvent;
+
 export type PublicArenaClientToServerEvents = {
   [PUBLIC_ARENA_EVENTS.join]: (request: PublicArenaJoinRequest) => void;
   [PUBLIC_ARENA_EVENTS.input]: (intent: PublicArenaInputIntent) => void;
@@ -192,7 +204,7 @@ export type PublicArenaClientToServerEvents = {
 export type PublicArenaServerToClientEvents = {
   [PUBLIC_ARENA_EVENTS.joinAccepted]: (message: PublicArenaJoinAccepted) => void;
   [PUBLIC_ARENA_EVENTS.joinRejected]: (message: PublicArenaJoinRejected) => void;
-  [PUBLIC_ARENA_EVENTS.snapshot]: (snapshot: PublicArenaSnapshot) => void;
-  [PUBLIC_ARENA_EVENTS.presentation]: (event: PublicArenaPresentationEvent) => void;
+  [PUBLIC_ARENA_EVENTS.snapshot]: (snapshot: Snapshot) => void;
+  [PUBLIC_ARENA_EVENTS.presentation]: (event: ArenaHostEvent) => void;
   [PUBLIC_ARENA_EVENTS.closeReason]: (reason: PublicArenaCloseReason) => void;
 };

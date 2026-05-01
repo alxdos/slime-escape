@@ -1,16 +1,12 @@
 import type { RuntimeEvent } from '../../../src/shared/events.js';
+import type {
+  ArenaHostEvent,
+  ArenaHostLevelUpEvent
+} from '../../../src/shared/publicArenaProtocol.js';
 import type { PlayerConfig } from '../../../src/shared/session.js';
 import type { PlayerFormUpdate } from '../../../src/shared/sim/SimulationCore.js';
 
-export type ArenaHostLevelUpEvent = Readonly<{
-  kind: 'host:levelUp';
-  simTime: number;
-  actorId: string;
-  level: number;
-  formArchetypeId: string;
-}>;
-
-export type ArenaHostEvent = RuntimeEvent | ArenaHostLevelUpEvent;
+export type { ArenaHostEvent, ArenaHostLevelUpEvent };
 
 export type ArenaActorProgressionState = Readonly<{
   actorId: string;

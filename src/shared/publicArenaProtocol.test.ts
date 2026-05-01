@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  type ArenaHostEvent,
   PUBLIC_ARENA_EVENTS,
   PUBLIC_ARENA_FULL_MESSAGE,
-  ARENA_HOST_PROTOCOL_VERSION,
-  type PublicArenaSnapshot
+  ARENA_HOST_PROTOCOL_VERSION
 } from './publicArenaProtocol';
+import type { Snapshot } from './snapshot';
 
 describe('public arena protocol constants', () => {
   it('uses one current protocol version', () => {
@@ -24,15 +25,25 @@ describe('public arena protocol constants', () => {
     expect(PUBLIC_ARENA_FULL_MESSAGE.toLowerCase()).toContain('full');
   });
 
-  it('keeps authoritative snapshots limited to changing arena state', () => {
+  it('uses shared snapshots and host events on the server-to-client payload path', () => {
     const snapshot = {
       simTimeMs: 1000,
-      population: 0,
-      players: [],
-      projectiles: []
-    } satisfies PublicArenaSnapshot;
+      entities: [],
+      encounter: null,
+      zone: { mode: 'disabled', margin: 0 },
+      waveProgress: null,
+      bossHud: null
+    } satisfies Snapshot;
+    const hostEvent = {
+      kind: 'host:levelUp',
+      simTime: 1000,
+      actorId: 'socket-a',
+      level: 2,
+      formArchetypeId: 'slime-hornling'
+    } satisfies ArenaHostEvent;
 
     expect('selfId' in snapshot).toBe(false);
     expect('arena' in snapshot).toBe(false);
+    expect(hostEvent.kind).toBe('host:levelUp');
   });
 });
