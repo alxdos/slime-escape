@@ -1186,7 +1186,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       spriteTextures: preloadedTextures,
       visibleAreaCamera,
       getSnapshotPair: onlineSnapshotPair,
-      getPredictedSnapshot: () => sim.predictedSnapshotPair().curr,
+      getPredictedSnapshotPair: sim.predictedSnapshotPair,
       getPortalDescriptors: portalController.portals,
       getAim: () =>
         publicArenaInput !== null && publicArenaInput.isActive()
@@ -1229,7 +1229,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       selectedPetId: null,
       visibleAreaCamera,
       getSnapshotPair: onlineSnapshotPair,
-      getPredictedSnapshot: () => sim.predictedSnapshotPair().curr,
+      getPredictedSnapshotPair: sim.predictedSnapshotPair,
       getPortalDescriptors: portalController.portals,
       getAim: () =>
         publicArenaInput !== null && publicArenaInput.isActive()

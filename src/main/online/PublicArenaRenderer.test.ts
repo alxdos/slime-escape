@@ -9,7 +9,7 @@ import {
   PUBLIC_ARENA_BOSS_LEVEL
 } from '../../shared/publicArenaProgression';
 import type { Snapshot } from '../../shared/snapshot';
-import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
+import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import { ARC_PREVIEW_NAME } from '../render/arcPreview';
 import { DEFAULT_PLAYER_VISUAL } from '../render/playerVisuals';
 import type { TextureMap } from '../render/spritePreload';
@@ -84,7 +84,7 @@ describe('PublicArenaRenderer', () => {
       renderScalePreset: 'medium',
       spriteTextures: textures,
       getSnapshotPair: () => pair,
-      getPredictedSnapshot: () => predictedSnapshot,
+      getPredictedSnapshotPair: () => snapshotPair(predictedSnapshot),
       getAim: () => ({ x: 12, y: -6 }),
       windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
       createRendererBackend: backend.factory,
@@ -327,6 +327,63 @@ describe('PublicArenaRenderer', () => {
     renderer.dispose();
   });
 
+  it('interpolates predicted self and own projectiles between predictor snapshots', () => {
+    const backend = createRendererBackendHarness();
+    const receivedAtMs = 500;
+    const authoritativePair = snapshotPair(
+      makeSnapshotWithEntities([makePlayer({ id: 1, playerId: 'self', x: 0, y: 0 })])
+    );
+    const predictedPrev = makeSnapshotWithEntities(
+      [
+        makePlayer({ id: 101, playerId: 'self', x: 0, y: 0 }),
+        makeProjectile({ id: 201, ownerId: 101, x: 0, y: 0, spawnInputSequence: 42 })
+      ],
+      100
+    );
+    const predictedCurr = makeSnapshotWithEntities(
+      [
+        makePlayer({ id: 101, playerId: 'self', x: 6, y: 0 }),
+        makeProjectile({ id: 201, ownerId: 101, x: 10, y: 0, spawnInputSequence: 42 }),
+        makeProjectile({ id: 202, ownerId: 101, x: 20, y: 0, spawnInputSequence: 42 })
+      ],
+      100 + SIM_STEP_MS
+    );
+    let predictedPair: SnapshotPair = {
+      prev: predictedPrev,
+      curr: predictedCurr,
+      currReceivedAtMs: receivedAtMs,
+      nowMs: receivedAtMs
+    };
+    const renderer = createPublicArenaRenderer({
+      canvas: makeCanvas(),
+      arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
+      selfId: 'self',
+      renderScalePreset: 'medium',
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => authoritativePair,
+      getPredictedSnapshotPair: () => predictedPair,
+      windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
+      createRendererBackend: backend.factory,
+      loadBackgroundTexture: createLoadedBackgroundTexture
+    });
+
+    renderer.render();
+    expect(selfPlayerMesh(backend.lastScene())?.position.x).toBeCloseTo(0);
+    expect(projectilePositions(backend.lastScene()).sort((a, b) => a - b)).toEqual([0, 20]);
+
+    predictedPair = { ...predictedPair, nowMs: receivedAtMs + SIM_STEP_MS / 2 };
+    renderer.render();
+    expect(selfPlayerMesh(backend.lastScene())?.position.x).toBeCloseTo(3);
+    expect(projectilePositions(backend.lastScene()).sort((a, b) => a - b)).toEqual([5, 20]);
+
+    predictedPair = { ...predictedPair, nowMs: receivedAtMs + SIM_STEP_MS };
+    renderer.render();
+    expect(selfPlayerMesh(backend.lastScene())?.position.x).toBeCloseTo(6);
+    expect(projectilePositions(backend.lastScene()).sort((a, b) => a - b)).toEqual([10, 20]);
+
+    renderer.dispose();
+  });
+
   it('uses sequence-group own-projectile fallback between predicted and authoritative snapshots', () => {
     const backend = createRendererBackendHarness();
     let predictedSnapshot: Snapshot | null = null;
@@ -345,7 +402,7 @@ describe('PublicArenaRenderer', () => {
       renderScalePreset: 'medium',
       spriteTextures: createSpriteTextures(),
       getSnapshotPair: () => pair,
-      getPredictedSnapshot: () => predictedSnapshot,
+      getPredictedSnapshotPair: () => snapshotPair(predictedSnapshot),
       windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
       createRendererBackend: backend.factory,
       loadBackgroundTexture: createLoadedBackgroundTexture
@@ -364,6 +421,47 @@ describe('PublicArenaRenderer', () => {
     ]);
     renderer.render();
     expect(projectilePositions(backend.lastScene())).toEqual([10, 11, 12, 13, 14]);
+
+    renderer.dispose();
+  });
+
+  it('keeps predicted projectile render ids stable when held-fire projectiles despawn', () => {
+    const backend = createRendererBackendHarness();
+    const authoritativePair = snapshotPair(
+      makeSnapshotWithEntities([makePlayer({ id: 1, playerId: 'self', x: 0, y: 0 })])
+    );
+    let predictedSnapshot = makeSnapshotWithEntities([
+      makePlayer({ id: 101, playerId: 'self', x: 0, y: 0 }),
+      makeProjectile({ id: 201, ownerId: 101, x: 10, y: 0, spawnInputSequence: 42 }),
+      makeProjectile({ id: 202, ownerId: 101, x: 11, y: 0, spawnInputSequence: 42 })
+    ]);
+    const renderer = createPublicArenaRenderer({
+      canvas: makeCanvas(),
+      arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
+      selfId: 'self',
+      renderScalePreset: 'medium',
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => authoritativePair,
+      getPredictedSnapshotPair: () => snapshotPair(predictedSnapshot),
+      windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
+      createRendererBackend: backend.factory,
+      loadBackgroundTexture: createLoadedBackgroundTexture
+    });
+
+    renderer.render();
+    const retainedProjectile = findAllByName(backend.lastScene(), 'public-arena-projectile').find(
+      (projectile) => projectile.position.x === 11
+    );
+
+    predictedSnapshot = makeSnapshotWithEntities([
+      makePlayer({ id: 101, playerId: 'self', x: 0, y: 0 }),
+      makeProjectile({ id: 202, ownerId: 101, x: 12, y: 0, spawnInputSequence: 42 })
+    ]);
+    renderer.render();
+
+    const remainingProjectile = findAllByName(backend.lastScene(), 'public-arena-projectile')[0];
+    expect(remainingProjectile).toBe(retainedProjectile);
+    expect(remainingProjectile?.position.x).toBeCloseTo(12);
 
     renderer.dispose();
   });
@@ -387,7 +485,7 @@ describe('PublicArenaRenderer', () => {
       renderScalePreset: 'medium',
       spriteTextures: createSpriteTextures(),
       getSnapshotPair: () => pair,
-      getPredictedSnapshot: () => predictedSnapshot,
+      getPredictedSnapshotPair: () => snapshotPair(predictedSnapshot),
       windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
       createRendererBackend: backend.factory,
       loadBackgroundTexture: createLoadedBackgroundTexture
@@ -422,7 +520,7 @@ describe('PublicArenaRenderer', () => {
       renderScalePreset: 'medium',
       spriteTextures: createSpriteTextures(),
       getSnapshotPair: () => pair,
-      getPredictedSnapshot: () => predictedSnapshot,
+      getPredictedSnapshotPair: () => snapshotPair(predictedSnapshot),
       windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
       createRendererBackend: backend.factory,
       loadBackgroundTexture: createLoadedBackgroundTexture
@@ -747,6 +845,12 @@ function materialMap(mesh: THREE.Mesh | null): THREE.Texture | null {
 
 function firstProjectile(scene: THREE.Scene): THREE.Object3D | undefined {
   return findAllByName(scene, 'public-arena-projectile')[0];
+}
+
+function selfPlayerMesh(scene: THREE.Scene): THREE.Object3D | undefined {
+  return findAllByName(scene, 'public-arena-player').find(
+    (player) => player.userData['playerId'] === 'self'
+  );
 }
 
 function projectilePositions(scene: THREE.Scene): number[] {

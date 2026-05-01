@@ -18,7 +18,7 @@ import type {
   ProjectileSnapshot,
   Snapshot
 } from '../../shared/snapshot';
-import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
+import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import type { SnapshotPair } from '../sim/SimWorkerHost';
 import {
   createVisibleAreaCamera,
@@ -101,7 +101,7 @@ export type RendererInit = Readonly<{
   selectedPetId?: string | null;
   visibleAreaCamera?: VisibleAreaCamera;
   getSnapshotPair: () => SnapshotPair;
-  getPredictedSnapshot?: () => Snapshot | null;
+  getPredictedSnapshotPair?: () => SnapshotPair;
   getPortalDescriptors?: () => ReadonlyArray<VibeJamPortalDescriptor>;
   getAim?: AimAccessor;
   weaponRegistry?: Readonly<Record<string, WeaponArchetype>>;
@@ -500,11 +500,11 @@ export function createRenderer(init: RendererInit): Renderer {
   return {
     render(): void {
       const rawPair = init.getSnapshotPair();
-      const predictedSnapshot = init.getPredictedSnapshot?.() ?? null;
+      const predictedPair = init.getPredictedSnapshotPair?.() ?? null;
       const pair =
-        predictedSnapshot === null
+        predictedPair === null || predictedPair.curr === null
           ? rawPair
-          : composeOnlineRendererPair(rawPair, predictedSnapshot);
+          : composeOnlineRendererPair(rawPair, predictedPair);
       lastRenderNowMs = pair.nowMs;
       impactEffects.update(pair.nowMs);
       const impactSnapshot = impactEffects.snapshot();
@@ -1433,8 +1433,8 @@ function prefersReducedMotionFromWindow(windowTarget: RendererWindowTarget): boo
   return windowTarget.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }
 
-function composeOnlineRendererPair(pair: SnapshotPair, predictedSnapshot: Snapshot): SnapshotPair {
-  const composedCurr = composeOnlineRendererSnapshot(pair, predictedSnapshot);
+function composeOnlineRendererPair(pair: SnapshotPair, predictedPair: SnapshotPair): SnapshotPair {
+  const composedCurr = composeOnlineRendererSnapshot(pair, predictedPair);
   if (composedCurr === null) {
     return pair;
   }
@@ -1447,10 +1447,12 @@ function composeOnlineRendererPair(pair: SnapshotPair, predictedSnapshot: Snapsh
 
 function composeOnlineRendererSnapshot(
   pair: SnapshotPair,
-  predictedSnapshot: Snapshot
+  predictedPair: SnapshotPair
 ): Snapshot | null {
   const interpolatedAuthoritative = interpolateSnapshotPair(pair);
   if (interpolatedAuthoritative === null || pair.curr === null) return null;
+  const predictedSnapshot = interpolateSnapshotPair(predictedPair, SIM_STEP_MS);
+  if (predictedSnapshot === null) return interpolatedAuthoritative;
 
   const authoritativeSelf = findPlayerSnapshot(pair.curr);
   const predictedSelf =
@@ -1489,11 +1491,14 @@ function composeOnlineRendererSnapshot(
   };
 }
 
-function interpolateSnapshotPair(pair: SnapshotPair): Snapshot | null {
+function interpolateSnapshotPair(
+  pair: SnapshotPair,
+  interpolationDelayMs = SNAPSHOT_INTERVAL_MS
+): Snapshot | null {
   const { prev, curr } = pair;
   if (curr === null) return null;
   if (prev === null) return curr;
-  const alpha = computeAlpha(pair);
+  const alpha = computeAlpha(pair, interpolationDelayMs);
   return {
     ...curr,
     entities: curr.entities.map((entity) =>
@@ -1508,11 +1513,20 @@ function interpolateEntity<S extends EntitySnapshot>(
   alpha: number
 ): S {
   if (previous === null) return entity;
+  if (shouldSnapEntityInterpolation(previous, entity)) return entity;
   return {
     ...entity,
     x: previous.x + (entity.x - previous.x) * alpha,
     y: previous.y + (entity.y - previous.y) * alpha
   };
+}
+
+function shouldSnapEntityInterpolation(previous: EntitySnapshot, entity: EntitySnapshot): boolean {
+  return (
+    previous.kind === 'player' &&
+    entity.kind === 'player' &&
+    (previous.state !== entity.state || previous.formArchetypeId !== entity.formArchetypeId)
+  );
 }
 
 function findPreviousEntity<S extends EntitySnapshot>(snapshot: Snapshot, entity: S): S | null {
@@ -1552,9 +1566,9 @@ function predictedOwnProjectileViews(
         entity.ownerId === predictedSelf.id &&
         entity.spawnInputSequence !== null
     )
-    .map((projectile, index): ProjectileSnapshot => ({
+    .map((projectile): ProjectileSnapshot => ({
       ...projectile,
-      id: predictedProjectileRenderId(projectile, index),
+      id: predictedProjectileRenderId(projectile),
       ownerId: authoritativeSelf.id
     }));
 }
@@ -1576,16 +1590,15 @@ function groupProjectilesBySequence(
   return groups;
 }
 
-function predictedProjectileRenderId(projectile: ProjectileSnapshot, index: number): number {
-  const base = projectile.spawnInputSequence ?? projectile.id;
-  return -1_000_000 - Math.abs(base * 100 + index);
+function predictedProjectileRenderId(projectile: ProjectileSnapshot): number {
+  return -1_000_000 - Math.abs(projectile.id);
 }
 
-function computeAlpha(pair: SnapshotPair): number {
+function computeAlpha(pair: SnapshotPair, interpolationDelayMs = SNAPSHOT_INTERVAL_MS): number {
   const { prev, curr } = pair;
   if (!prev || !curr) return 1;
   const elapsedMs = pair.nowMs - pair.currReceivedAtMs;
-  const renderSimTimeMs = curr.simTimeMs + elapsedMs - SNAPSHOT_INTERVAL_MS;
+  const renderSimTimeMs = curr.simTimeMs + elapsedMs - interpolationDelayMs;
   const span = curr.simTimeMs - prev.simTimeMs;
   if (span <= 0) return 1;
   const raw = (renderSimTimeMs - prev.simTimeMs) / span;

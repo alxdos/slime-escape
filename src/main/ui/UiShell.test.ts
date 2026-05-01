@@ -2971,7 +2971,7 @@ describe('UiShell', () => {
       x: 1,
       y: 2
     });
-    expect(publicArenaRenderer.lastInit()?.getPredictedSnapshot?.()).toBeNull();
+    expect(publicArenaRenderer.lastInit()?.getPredictedSnapshotPair?.().curr).toBeNull();
     expect(publicArenaRenderer.lastInit()?.getAim?.()).toEqual({ x: 0, y: 0 });
     expect(publicArenaHud.level()).toBe(`Level 3/${PUBLIC_ARENA_BOSS_LEVEL}`);
     expect(publicArenaHud.population()).toBe('Online 7');
@@ -3274,7 +3274,7 @@ describe('UiShell', () => {
       kind: 'player',
       playerId: 'socket-a'
     });
-    expect(renderer.lastInit()?.getPredictedSnapshot?.()).toBe(predictedCoopSnapshot);
+    expect(renderer.lastInit()?.getPredictedSnapshotPair?.().curr).toBe(predictedCoopSnapshot);
     expect(input.lastInit()?.initialAim).toEqual({ x: 3, y: 4 });
     expect(hud.calls.attach).toBe(1);
     expect(hud.calls.update).toBe(1);
