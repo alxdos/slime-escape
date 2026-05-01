@@ -11,6 +11,7 @@ import {
 } from './EntityStore';
 import { createMovementSystem } from './MovementSystem';
 import {
+  createRuntimeInputState,
   createRuntimeActorInputState,
   type RuntimeActorInputState,
   type RuntimeInputState
@@ -69,6 +70,15 @@ function makeInput(): RuntimeActorInputState & RuntimeInputState {
   return Object.assign(input, { players: new Map([[PLAYER_INPUT_ID, input]]) });
 }
 
+function actorInput(overrides: Partial<RuntimeActorInputState> = {}): RuntimeActorInputState {
+  const input = createRuntimeActorInputState();
+  if (overrides.moveDir) input.moveDir = overrides.moveDir;
+  if (overrides.aimWorld) input.aimWorld = overrides.aimWorld;
+  if (overrides.firing !== undefined) input.firing = overrides.firing;
+  if (overrides.loadout !== undefined) input.loadout = overrides.loadout;
+  return input;
+}
+
 function trainingTargetAt(x: number, y: number): EnemySpawnSpec {
   return {
     archetypeId: STATIONARY_TEST_ENEMY.archetypeId,
@@ -106,6 +116,23 @@ function slimeFastAt(x: number, y: number): EnemySpawnSpec {
 }
 
 describe('MovementSystem player', () => {
+  it('fans out movement by playerId for multiple players', () => {
+    const store = createEntityStore();
+    const movement = createMovementSystem();
+    const alpha = store.spawnPlayer({ ...PLAYER, id: 'alpha', position: { x: -2, y: 0 } });
+    const bravo = store.spawnPlayer({ ...PLAYER, id: 'bravo', position: { x: 2, y: 0 } });
+    const input = createRuntimeInputState();
+    input.players.set('alpha', actorInput({ moveDir: { dx: 1, dy: 0 } }));
+    input.players.set('bravo', actorInput({ moveDir: { dx: 0, dy: -1 } }));
+
+    movement.tick(ARENA, store, input, 0);
+
+    expect(alpha.position.x).toBeCloseTo(-2 + PLAYER.maxSpeed * SIM_STEP_SEC, 10);
+    expect(alpha.position.y).toBe(0);
+    expect(bravo.position.x).toBe(2);
+    expect(bravo.position.y).toBeCloseTo(-PLAYER.maxSpeed * SIM_STEP_SEC, 10);
+  });
+
   it('does not move the player when moveDir is zero', () => {
     const { store, movement, input } = setup();
     for (let i = 0; i < 10; i += 1) {
@@ -201,6 +228,34 @@ describe('MovementSystem player', () => {
 });
 
 describe('MovementSystem enemies', () => {
+  it('chases the nearest living player in multi-actor sessions', () => {
+    const store = createEntityStore();
+    const movement = createMovementSystem();
+    store.spawnPlayer({ ...PLAYER, id: 'alpha', position: { x: -4, y: 0 } });
+    store.spawnPlayer({ ...PLAYER, id: 'bravo', position: { x: 1, y: 0 } });
+    const enemy = store.spawnEnemy(slimeFastAt(0, 0));
+    const input = createRuntimeInputState();
+
+    movement.tick(ARENA, store, input, 0);
+
+    expect(enemy.position.x).toBeGreaterThan(0);
+    expect(enemy.velocity.vx).toBeCloseTo(CHASE_TEST_ENEMY.maxSpeed, 10);
+  });
+
+  it('breaks equal-distance player targeting ties by playerId lexicographic order', () => {
+    const store = createEntityStore();
+    const movement = createMovementSystem();
+    store.spawnPlayer({ ...PLAYER, id: 'bravo', position: { x: -2, y: 0 } });
+    store.spawnPlayer({ ...PLAYER, id: 'alpha', position: { x: 2, y: 0 } });
+    const enemy = store.spawnEnemy(slimeFastAt(0, 0));
+    const input = createRuntimeInputState();
+
+    movement.tick(ARENA, store, input, 0);
+
+    expect(enemy.position.x).toBeGreaterThan(0);
+    expect(enemy.velocity.vx).toBeCloseTo(CHASE_TEST_ENEMY.maxSpeed, 10);
+  });
+
   it('does not move stationary enemies or projectiles', () => {
     const { store, movement, input } = setup();
     const enemy = store.spawnEnemy(trainingTargetAt(5, 0));

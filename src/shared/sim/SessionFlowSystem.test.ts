@@ -815,6 +815,27 @@ describe('SessionFlowSystem player death', () => {
     expect(events).toHaveLength(0);
   });
 
+  it("does not republish 'loss' when a second player death arrives after the run ended", () => {
+    const clock = createFakeClock();
+    const events: RuntimeEvent[] = [];
+    const flow = createSessionFlowSystem({ clock, emitEvent: (e) => events.push(e) });
+    const base = makeSession([emptyEncounter('only', { kind: 'never', next: 'sequential' })]);
+    const session: SessionDefinition = {
+      ...base,
+      players: [
+        { ...base.players[0], id: 'alpha' },
+        { ...base.players[0], id: 'bravo', position: { x: 1, y: 0 } }
+      ]
+    };
+
+    flow.start(session);
+    events.length = 0;
+    flow.onPlayerDeath(1 as EntityId);
+    flow.onPlayerDeath(2 as EntityId);
+
+    expect(events.map((event) => event.kind)).toEqual(['encounterEnd', 'loss', 'sessionStop']);
+  });
+
   it('does not mark the active encounter complete when player death ends the run', () => {
     const clock = createFakeClock();
     const completed: string[] = [];

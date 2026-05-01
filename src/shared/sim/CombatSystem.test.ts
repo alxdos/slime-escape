@@ -28,10 +28,12 @@ import {
   type ProjectileSpawnSpec
 } from './EntityStore';
 import {
+  createRuntimeInputState,
   createRuntimeActorInputState,
   type RuntimeActorInputState,
   type RuntimeInputState
 } from './RuntimeInputState';
+import { createHealthDeathSystem, type DamageContext } from './HealthDeathSystem';
 import { createSpatialIndex } from './SpatialIndex';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
@@ -185,15 +187,134 @@ function setupCombat() {
 function makeInput(
   overrides: Partial<RuntimeActorInputState> = {}
 ): RuntimeActorInputState & RuntimeInputState {
+  const state = makeActorInput(overrides);
+  return Object.assign(state, { players: new Map([[PLAYER_INPUT_ID, state]]) });
+}
+
+function makeActorInput(overrides: Partial<RuntimeActorInputState> = {}): RuntimeActorInputState {
   const state = createRuntimeActorInputState();
   if (overrides.moveDir) state.moveDir = overrides.moveDir;
   if (overrides.aimWorld) state.aimWorld = overrides.aimWorld;
   if (overrides.firing !== undefined) state.firing = overrides.firing;
   if (overrides.loadout !== undefined) state.loadout = overrides.loadout;
-  return Object.assign(state, { players: new Map([[PLAYER_INPUT_ID, state]]) });
+  return state;
+}
+
+function makeMultiInput(
+  entries: ReadonlyArray<readonly [string, Partial<RuntimeActorInputState>]>
+): RuntimeInputState {
+  const input = createRuntimeInputState();
+  for (const [playerId, overrides] of entries) {
+    input.players.set(playerId, makeActorInput(overrides));
+  }
+  return input;
 }
 
 describe('CombatSystem', () => {
+  it('fans out aim, fire, and selected loadout slot by playerId', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const alpha = store.spawnPlayer({ ...PLAYER_SPEC, id: 'alpha', position: { x: -1, y: 0 } });
+    const bravo = store.spawnPlayer({ ...PLAYER_SPEC, id: 'bravo', position: { x: 1, y: 0 } });
+    const loadout = { weapons: [PISTOL.id, SHOTGUN.id], selectedIndex: 0 };
+    combat.setPlayerLoadout(alpha.id, loadout, 0);
+    combat.setPlayerLoadout(bravo.id, loadout, 0);
+    const input = makeMultiInput([
+      [
+        'alpha',
+        {
+          aimWorld: { x: 5, y: 0 },
+          firing: true,
+          loadout: { weapons: loadout.weapons, selectedIndex: 0 }
+        }
+      ],
+      [
+        'bravo',
+        {
+          aimWorld: { x: 1, y: 4 },
+          firing: true,
+          loadout: { weapons: loadout.weapons, selectedIndex: 1 }
+        }
+      ]
+    ]);
+    const events: RuntimeEvent[] = [];
+
+    combat.tick(input, store, index, 0, ARENA, (event) => events.push(event));
+
+    const fireEvents = events.filter(
+      (event): event is Extract<RuntimeEvent, { kind: 'fire' }> => event.kind === 'fire'
+    );
+    expect(fireEvents).toHaveLength(2);
+    expect(fireEvents.map((event) => event.weaponArchetypeId)).toEqual([PISTOL.id, SHOTGUN.id]);
+    expect(fireEvents[0]?.shooterId).toBe(alpha.id);
+    expect(fireEvents[0]?.dirX).toBeCloseTo(1);
+    expect(fireEvents[0]?.dirY).toBeCloseTo(0);
+    expect(fireEvents[1]?.shooterId).toBe(bravo.id);
+    expect(fireEvents[1]?.dirX).toBeCloseTo(0);
+    expect(fireEvents[1]?.dirY).toBeCloseTo(1);
+    expect(combat.weaponHudFor(alpha.id, 0)?.selectedIndex).toBe(0);
+    expect(combat.weaponHudFor(bravo.id, 0)?.selectedIndex).toBe(1);
+    expect(store.projectileCount()).toBe(1 + SHOTGUN.firePattern.count);
+  });
+
+  it('lets two player-owned projectile streams damage each other when slime friendly fire is enabled', () => {
+    const store = createEntityStore();
+    const index = createSpatialIndex();
+    const combat = createCombatSystem();
+    const healthDeath = createHealthDeathSystem();
+    combat.setDamageRules({ slimeFriendlyFire: true });
+    const alpha = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'alpha',
+      position: { x: -1, y: 0 },
+      maxHp: 2
+    });
+    const bravo = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'bravo',
+      position: { x: 1, y: 0 },
+      maxHp: 2
+    });
+    combat.setPlayerLoadout(alpha.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+    combat.setPlayerLoadout(bravo.id, { weapons: [PISTOL.id], selectedIndex: 0 }, 0);
+    const input = makeMultiInput([
+      ['alpha', { aimWorld: { x: 4, y: 0 }, firing: true }],
+      ['bravo', { aimWorld: { x: -4, y: 0 }, firing: true }]
+    ]);
+    const damages: DamageContext[] = [];
+    healthDeath.registerDamageHook((ctx) => damages.push(ctx));
+
+    let simTime = 0;
+    let intents = combat.tick(input, store, index, simTime, ARENA, () => {});
+    healthDeath.tick(intents, store, simTime, () => {});
+    for (const playerInput of input.players.values()) playerInput.firing = false;
+    for (let step = 1; step <= 12; step += 1) {
+      simTime = step * SIM_STEP_MS;
+      intents = combat.tick(input, store, index, simTime, ARENA, () => {});
+      healthDeath.tick(intents, store, simTime, () => {});
+      const damagedIds = new Set(damages.map((damage) => damage.targetId));
+      if (damagedIds.has(alpha.id) && damagedIds.has(bravo.id)) break;
+    }
+
+    expect(new Set(damages.map((damage) => damage.targetId))).toEqual(
+      new Set([alpha.id, bravo.id])
+    );
+    expect(
+      damages.map((damage) => {
+        if (damage.source.kind !== 'projectile') return null;
+        return { ownerId: damage.source.ownerId, targetId: damage.targetId };
+      })
+    ).toEqual(
+      expect.arrayContaining([
+        { ownerId: alpha.id, targetId: bravo.id },
+        { ownerId: bravo.id, targetId: alpha.id }
+      ])
+    );
+    expect(alpha.hp).toBe(1);
+    expect(bravo.hp).toBe(1);
+  });
+
   it('spawns a projectile and emits fire event when firing with valid aim', () => {
     const { store, index, combat } = setupCombat();
     const input = makeInput({ aimWorld: { x: 5, y: 0 }, firing: true });
