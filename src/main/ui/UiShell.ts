@@ -16,7 +16,7 @@ import type {
   PublicArenaInputIntent,
   PublicArenaPlayerId,
   PublicArenaWorldBounds
-} from '../../shared/publicArenaProtocol';
+} from '../../shared/arenaHostProtocol';
 import type { Snapshot } from '../../shared/snapshot';
 import type { PlayerConfig, SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';

@@ -1,4 +1,4 @@
-import type { PublicArenaPlayerId } from '../../shared/publicArenaProtocol';
+import type { PublicArenaPlayerId } from '../../shared/arenaHostProtocol';
 import {
   publicArenaSnapshotView,
   type PublicArenaOnlineSnapshot

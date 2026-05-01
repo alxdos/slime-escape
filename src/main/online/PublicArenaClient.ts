@@ -10,7 +10,7 @@ import {
   type PublicArenaJoinAccepted,
   type PublicArenaJoinRejected,
   type PublicArenaServerToClientEvents
-} from '../../shared/publicArenaProtocol';
+} from '../../shared/arenaHostProtocol';
 import type { Snapshot } from '../../shared/snapshot';
 
 export type PublicArenaSocket = Readonly<{

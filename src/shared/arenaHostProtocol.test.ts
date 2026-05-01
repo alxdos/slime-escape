@@ -5,10 +5,10 @@ import {
   PUBLIC_ARENA_EVENTS,
   PUBLIC_ARENA_FULL_MESSAGE,
   ARENA_HOST_PROTOCOL_VERSION
-} from './publicArenaProtocol';
+} from './arenaHostProtocol';
 import type { Snapshot } from './snapshot';
 
-describe('public arena protocol constants', () => {
+describe('arena host protocol constants', () => {
   it('uses one current protocol version', () => {
     expect(ARENA_HOST_PROTOCOL_VERSION).toBe(6);
   });

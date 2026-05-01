@@ -1,4 +1,4 @@
-import { PUBLIC_ARENA_FULL_MESSAGE } from '../shared/publicArenaProtocol';
+import { PUBLIC_ARENA_FULL_MESSAGE } from '../shared/arenaHostProtocol';
 
 export const PUBLIC_ARENA_SERVER_URL_ENV = 'VITE_PUBLIC_ARENA_SERVER_URL';
 

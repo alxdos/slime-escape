@@ -2,7 +2,7 @@ import type { RuntimeEvent } from '../../../src/shared/events.js';
 import type {
   ArenaHostEvent,
   ArenaHostLevelUpEvent
-} from '../../../src/shared/publicArenaProtocol.js';
+} from '../../../src/shared/arenaHostProtocol.js';
 import type { PlayerConfig } from '../../../src/shared/session.js';
 import type { PlayerFormUpdate } from '../../../src/shared/sim/SimulationCore.js';
 

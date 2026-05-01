@@ -2,7 +2,7 @@ import {
   PUBLIC_ARENA_HOST_CONTENT,
   PUBLIC_ARENA_PRESENTATION_CONTENT
 } from './publicArena.generated.js';
-import type { PublicArenaWorldBounds } from '../publicArenaProtocol.js';
+import type { PublicArenaWorldBounds } from '../arenaHostProtocol.js';
 
 type PublicArenaPlayerSpawn = Readonly<{
   position: Readonly<{ x: number; y: number }>;

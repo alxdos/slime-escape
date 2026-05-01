@@ -1,6 +1,6 @@
 import type {
   PublicArenaPlayerId
-} from '../../shared/publicArenaProtocol';
+} from '../../shared/arenaHostProtocol';
 import { PUBLIC_ARENA_BOSS_LEVEL } from '../../shared/publicArenaProgression';
 import {
   publicArenaSnapshotView,

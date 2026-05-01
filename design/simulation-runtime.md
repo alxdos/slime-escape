@@ -6,7 +6,7 @@
 
 ## Context
 
-The project has two parallel simulations today: the rich runtime in `src/sim/**` driven by the browser simulation worker, and a compact reimplementation in `server/src/arenaSimulation.ts` driven by the Node arena server. The compact server simulation was the right first-slice choice for the Public Arena (story 032), but it does not scale to upcoming online modes. In particular, multi-player co-op against authored slime waves needs the full local-sim machinery — encounters, waves, zone, drops, boss phases, status effects, field effects, content-driven weapons, modifiers, retaliation, and run summary. Reimplementing that compactly on the server would create a third sim, not solve the duplication.
+Before story 036, the project had two parallel simulations: the rich runtime in `src/sim/**` driven by the browser simulation worker, and a compact reimplementation in `server/src/arenaSimulation.ts` driven by the Node arena server. The compact server simulation was the right first-slice choice for the Public Arena (story 032), but it did not scale to upcoming online modes. In particular, multi-player co-op against authored slime waves needs the full local-sim machinery — encounters, waves, zone, drops, boss phases, status effects, field effects, content-driven weapons, modifiers, retaliation, and run summary. Reimplementing that compactly on the server would have created a third sim, not solved the duplication.
 
 This decision records the chosen direction: a single simulation core runs under two hosts. Concrete contracts (host interface, multi-actor `SessionDefinition` shape, online-specific session rules, AI targeting policy for multi-actor sessions) are deferred to subsequent decisions linked from this file as the corresponding stories enter work.
 
@@ -34,7 +34,7 @@ This decision records the chosen direction: a single simulation core runs under 
 - Cost: one round of structural work — extracting the core from the worker host, generalizing session shape to multi-actor, building the Node host. The work is split into separate stories so the local single-player path is preserved through every transition.
 - Server cost stays minimal: the Node host is required only when online modes are active. Local play continues to have no server dependency.
 - The existing Public Arena protocol and snapshot delivery decisions stay valid through the transition. Story 033's snapshot-delivery cleanup (no interest filtering, snapshots carry only changing state) is independent of and compatible with this direction.
-- During the transition, two simulations coexist. New online behavior must not be added to the provisional `server/src/arenaSimulation.ts` outside the planned migration path.
+- The transition period with two simulations ended in story 036. New online behavior belongs in the Node host, shared content, or shared runtime systems, not in a parallel server-side simulation.
 
 ## Related
 

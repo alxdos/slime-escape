@@ -1,4 +1,4 @@
-import type { PublicArenaPlayerId } from '../../shared/publicArenaProtocol';
+import type { PublicArenaPlayerId } from '../../shared/arenaHostProtocol';
 import {
   PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
   PUBLIC_ARENA_BOSS_LEVEL,

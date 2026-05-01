@@ -28,7 +28,7 @@ import {
   PUBLIC_ARENA_FULL_MESSAGE,
   type PublicArenaCloseReason,
   type PublicArenaWorldBounds
-} from '../../../src/shared/publicArenaProtocol.js';
+} from '../../../src/shared/arenaHostProtocol.js';
 import {
   type ArenaActorProgressionState,
   type ArenaCoreOp,

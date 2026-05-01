@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-import type { PublicArenaPlayerId } from '../../shared/publicArenaProtocol';
+import type { PublicArenaPlayerId } from '../../shared/arenaHostProtocol';
 import { WEAPON_ARCHETYPES } from '../../shared/content/weapons';
 import {
   PUBLIC_ARENA_LOADOUT,

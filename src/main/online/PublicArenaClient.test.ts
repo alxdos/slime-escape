@@ -6,7 +6,7 @@ import {
   ARENA_HOST_PROTOCOL_VERSION,
   type PublicArenaClientToServerEvents,
   type PublicArenaServerToClientEvents
-} from '../../shared/publicArenaProtocol';
+} from '../../shared/arenaHostProtocol';
 import { PUBLIC_ARENA_WORLD_BOUNDS } from '../../shared/content/publicArena';
 import type { Snapshot } from '../../shared/snapshot';
 

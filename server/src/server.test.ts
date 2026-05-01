@@ -4,7 +4,7 @@ import {
   ARENA_HOST_PROTOCOL_VERSION,
   PUBLIC_ARENA_EVENTS,
   PUBLIC_ARENA_FULL_MESSAGE
-} from '../../src/shared/publicArenaProtocol.js';
+} from '../../src/shared/arenaHostProtocol.js';
 import type { Snapshot } from '../../src/shared/snapshot.js';
 import { ARENA_HOST_SERVER_SHUTDOWN_REASON } from './arena-host/host.js';
 

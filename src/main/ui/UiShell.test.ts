@@ -13,8 +13,8 @@ import type { InputCommand } from '../../shared/input';
 import type {
   ArenaHostEvent,
   PublicArenaInputIntent,
-} from '../../shared/publicArenaProtocol';
-import { ARENA_HOST_PROTOCOL_VERSION } from '../../shared/publicArenaProtocol';
+} from '../../shared/arenaHostProtocol';
+import { ARENA_HOST_PROTOCOL_VERSION } from '../../shared/arenaHostProtocol';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import type { Snapshot } from '../../shared/snapshot';

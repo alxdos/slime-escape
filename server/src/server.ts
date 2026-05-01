@@ -10,7 +10,7 @@ import {
   type PublicArenaJoinAccepted,
   type PublicArenaJoinRejected,
   type PublicArenaServerToClientEvents
-} from '../../src/shared/publicArenaProtocol.js';
+} from '../../src/shared/arenaHostProtocol.js';
 import type { Snapshot } from '../../src/shared/snapshot.js';
 import {
   ARENA_HOST_SERVER_SHUTDOWN_REASON,
