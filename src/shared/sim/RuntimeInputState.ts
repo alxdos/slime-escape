@@ -1,4 +1,4 @@
-import type { Loadout, PlayerConfig } from '../session';
+import type { Loadout, PlayerConfig } from '../session.js';
 
 export type RuntimeLoadoutState = {
   weapons: ReadonlyArray<string>;

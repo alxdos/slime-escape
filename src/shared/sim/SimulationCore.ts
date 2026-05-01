@@ -1,32 +1,32 @@
-import type { RuntimeEvent } from '../events';
-import type { InputCommand } from '../input';
-import { log } from '../log';
-import type { ContactBox, Loadout, PlayerConfig, SessionDefinition } from '../session';
-import type { Snapshot } from '../snapshot';
+import type { RuntimeEvent } from '../events.js';
+import type { InputCommand } from '../input.js';
+import { log } from '../log.js';
+import type { ContactBox, Loadout, PlayerConfig, SessionDefinition } from '../session.js';
+import type { Snapshot } from '../snapshot.js';
 
-import { createBossPhaseSystem } from './BossPhaseSystem';
-import { createCompanionSystem } from './CompanionSystem';
-import { createCombatSystem } from './CombatSystem';
-import { createDropSystem } from './DropSystem';
-import { createEntityStore, type EntityId, type Player } from './EntityStore';
-import { createFieldEffectSystem } from './FieldEffectSystem';
-import { createHealthDeathSystem } from './HealthDeathSystem';
-import { createMovementSystem } from './MovementSystem';
-import { createRetaliationSystem } from './RetaliationSystem';
+import { createBossPhaseSystem } from './BossPhaseSystem.js';
+import { createCompanionSystem } from './CompanionSystem.js';
+import { createCombatSystem } from './CombatSystem.js';
+import { createDropSystem } from './DropSystem.js';
+import { createEntityStore, type EntityId, type Player } from './EntityStore.js';
+import { createFieldEffectSystem } from './FieldEffectSystem.js';
+import { createHealthDeathSystem } from './HealthDeathSystem.js';
+import { createMovementSystem } from './MovementSystem.js';
+import { createRetaliationSystem } from './RetaliationSystem.js';
 import {
   addRuntimeInputPlayer,
   removeRuntimeInputPlayer,
   runtimeInputForPlayer,
   setRuntimeInputPlayerLoadout
-} from './RuntimeInputState';
-import { createRunSummaryTracker } from './RunSummaryTracker';
-import { createSessionFlowSystem } from './SessionFlowSystem';
-import { createSimulationClock } from './SimulationClock';
-import { createSnapshotExportSystem } from './SnapshotExportSystem';
-import { createSpatialIndex } from './SpatialIndex';
-import { createSpawnSystem } from './SpawnSystem';
-import { createStatusEffectSystem } from './StatusEffectSystem';
-import { createZoneSystem } from './ZoneSystem';
+} from './RuntimeInputState.js';
+import { createRunSummaryTracker } from './RunSummaryTracker.js';
+import { createSessionFlowSystem } from './SessionFlowSystem.js';
+import { createSimulationClock } from './SimulationClock.js';
+import { createSnapshotExportSystem } from './SnapshotExportSystem.js';
+import { createSpatialIndex } from './SpatialIndex.js';
+import { createSpawnSystem } from './SpawnSystem.js';
+import { createStatusEffectSystem } from './StatusEffectSystem.js';
+import { createZoneSystem } from './ZoneSystem.js';
 
 export type SimulationCoreOptions = Readonly<{
   onSnapshot(snapshot: Snapshot): void;

@@ -1,7 +1,7 @@
-import type { RuntimeEvent } from './events';
-import type { InputCommand } from './input';
-import type { SessionDefinition } from './session';
-import type { Snapshot } from './snapshot';
+import type { RuntimeEvent } from './events.js';
+import type { InputCommand } from './input.js';
+import type { SessionDefinition } from './session.js';
+import type { Snapshot } from './snapshot.js';
 
 export type DebugCommand = unknown;
 export type TelemetryRecord = unknown;

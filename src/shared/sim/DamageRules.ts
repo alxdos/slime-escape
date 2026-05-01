@@ -1,6 +1,6 @@
-import type { DamageRules } from '../session';
+import type { DamageRules } from '../session.js';
 
-import type { Boss, CombatOwnerKind, Companion, Enemy, EntityId, Player } from './EntityStore';
+import type { Boss, CombatOwnerKind, Companion, Enemy, EntityId, Player } from './EntityStore.js';
 
 export const DEFAULT_DAMAGE_RULES: DamageRules = { slimeFriendlyFire: false };
 

@@ -1,9 +1,9 @@
-import { log } from '../log';
-import type { ContactBox } from '../session';
-import { SIM_STEP_MS } from '../timing';
+import { log } from '../log.js';
+import type { ContactBox } from '../session.js';
+import { SIM_STEP_MS } from '../timing.js';
 
-import { DROP_ARCHETYPES, type DropArchetype } from './drops';
-import * as generatedEnemies from './enemies.generated';
+import { DROP_ARCHETYPES, type DropArchetype } from './drops.js';
+import * as generatedEnemies from './enemies.generated.js';
 
 export type EnemyBehavior = 'stationary' | 'chase';
 
@@ -35,7 +35,7 @@ export type EnemyArchetype = Readonly<{
   retaliation: RetaliationPolicy;
 }>;
 
-export * from './enemies.generated';
+export * from './enemies.generated.js';
 
 export const ENEMY_ARCHETYPES: Readonly<Record<string, EnemyArchetype>> =
   createEnemyRegistry(generatedEnemies.ENEMY_ARCHETYPE_LIST);

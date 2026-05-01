@@ -1,4 +1,4 @@
-import type { EntityStore, Player } from './EntityStore';
+import type { EntityStore, Player } from './EntityStore.js';
 
 export function resolveNearestLivingPlayer(
   store: EntityStore,

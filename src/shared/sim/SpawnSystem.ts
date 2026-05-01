@@ -1,7 +1,7 @@
-import { BOSS_ARCHETYPES, type BossArchetype } from '../content/bosses';
-import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../content/enemies';
-import { assertNever } from '../protocol';
-import type { Rng } from '../rng';
+import { BOSS_ARCHETYPES, type BossArchetype } from '../content/bosses.js';
+import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../content/enemies.js';
+import { assertNever } from '../protocol.js';
+import type { Rng } from '../rng.js';
 import type {
   ArenaConfig,
   BossSpawnPlan,
@@ -11,10 +11,10 @@ import type {
   StaticSpawnPlan,
   Vec2,
   WaveSpawnPlan
-} from '../session';
-import type { WaveProgressSnapshot } from '../snapshot';
+} from '../session.js';
+import type { WaveProgressSnapshot } from '../snapshot.js';
 
-import type { BossSpawnSpec, EnemySpawnSpec, EntityId, EntityStore } from './EntityStore';
+import type { BossSpawnSpec, EnemySpawnSpec, EntityId, EntityStore } from './EntityStore.js';
 
 export type SpawnSystem = Readonly<{
   setRng(rng: Rng | null): void;

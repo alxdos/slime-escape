@@ -1,4 +1,4 @@
-import type { DropTableEntry, RetaliationPolicy } from './content/enemies';
+import type { DropTableEntry, RetaliationPolicy } from './content/enemies.js';
 
 export type Vec2 = Readonly<{ x: number; y: number }>;
 

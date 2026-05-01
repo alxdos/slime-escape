@@ -1,4 +1,4 @@
-import type { ArenaConfig } from '../session';
+import type { ArenaConfig } from '../session.js';
 
 export const SANDBOX_ARENA: ArenaConfig = {
   width: 32,

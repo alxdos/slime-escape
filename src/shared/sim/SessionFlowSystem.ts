@@ -1,17 +1,17 @@
-import type { RuntimeEvent } from '../events';
-import type { InputCommand } from '../input';
-import { log } from '../log';
-import { assertNever } from '../protocol';
-import { createRng, type Rng } from '../rng';
+import type { RuntimeEvent } from '../events.js';
+import type { InputCommand } from '../input.js';
+import { log } from '../log.js';
+import { assertNever } from '../protocol.js';
+import { createRng, type Rng } from '../rng.js';
 import type {
   EncounterDefinition,
   SessionDefinition,
   TransitionNext,
   TransitionRules
-} from '../session';
-import type { SessionResultOutcome, SessionResultSummary } from '../sessionResult';
-import type { SimulationClock } from './SimulationClock';
-import type { WaveProgressSnapshot } from '../snapshot';
+} from '../session.js';
+import type { SessionResultOutcome, SessionResultSummary } from '../sessionResult.js';
+import type { SimulationClock } from './SimulationClock.js';
+import type { WaveProgressSnapshot } from '../snapshot.js';
 
 import {
   createRuntimeInputState,
@@ -19,8 +19,8 @@ import {
   runtimeInputForPlayer,
   type RuntimeActorInputState,
   type RuntimeInputState
-} from './RuntimeInputState';
-import type { EntityId } from './EntityStore';
+} from './RuntimeInputState.js';
+import type { EntityId } from './EntityStore.js';
 
 export type EncounterContext = Readonly<{
   encounter: EncounterDefinition;

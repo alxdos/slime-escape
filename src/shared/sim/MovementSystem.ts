@@ -1,15 +1,15 @@
-import { assertNever } from '../protocol';
-import type { ArenaConfig } from '../session';
-import { SIM_STEP_MS } from '../timing';
+import { assertNever } from '../protocol.js';
+import type { ArenaConfig } from '../session.js';
+import { SIM_STEP_MS } from '../timing.js';
 
-import type { Boss, Enemy, EntityStore, Player } from './EntityStore';
-import { resolveNearestLivingPlayer } from './PlayerTargeting';
+import type { Boss, Enemy, EntityStore, Player } from './EntityStore.js';
+import { resolveNearestLivingPlayer } from './PlayerTargeting.js';
 import {
   runtimeInputForPlayer,
   type RuntimeActorInputState,
   type RuntimeInputState
-} from './RuntimeInputState';
-import { resolveMovementSpeedMultiplier } from './StatusEffectSystem';
+} from './RuntimeInputState.js';
+import { resolveMovementSpeedMultiplier } from './StatusEffectSystem.js';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 

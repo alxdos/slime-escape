@@ -1,11 +1,11 @@
-import { BOSS_ARCHETYPES, type BossArchetype } from '../content/bosses';
-import { FIREBALL_STAFF } from '../content/weapons';
-import type { RuntimeEvent } from '../events';
-import type { ArenaConfig } from '../session';
+import { BOSS_ARCHETYPES, type BossArchetype } from '../content/bosses.js';
+import { FIREBALL_STAFF } from '../content/weapons.js';
+import type { RuntimeEvent } from '../events.js';
+import type { ArenaConfig } from '../session.js';
 
-import { fireWeaponProjectiles, type DamageIntent } from './CombatSystem';
-import type { Boss, EntityStore } from './EntityStore';
-import { resolveNearestLivingPlayer } from './PlayerTargeting';
+import { fireWeaponProjectiles, type DamageIntent } from './CombatSystem.js';
+import type { Boss, EntityStore } from './EntityStore.js';
+import { resolveNearestLivingPlayer } from './PlayerTargeting.js';
 
 export type BossPhaseSystem = Readonly<{
   tick(

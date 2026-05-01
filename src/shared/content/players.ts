@@ -1,10 +1,10 @@
-import type { ContactBox, PlayerSpawn } from '../session';
+import type { ContactBox, PlayerSpawn } from '../session.js';
 
 import {
   PLAYER_ARCHETYPE_SPECS,
   SANDBOX_PLAYER,
   TRAINING_PLAYER
-} from './players.generated';
+} from './players.generated.js';
 
 export type PlayerArchetype = Readonly<{
   id: string;
@@ -15,7 +15,7 @@ export type PlayerArchetype = Readonly<{
   maxHp: number;
 }>;
 
-export * from './players.generated';
+export * from './players.generated.js';
 
 export const PLAYER_ARCHETYPES: Readonly<Record<string, PlayerArchetype>> = {
   ...createPlayerRegistry(PLAYER_ARCHETYPE_SPECS)

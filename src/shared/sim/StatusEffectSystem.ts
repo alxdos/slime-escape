@@ -1,8 +1,8 @@
-import type { StatusEffectSpec } from '../content/weapons';
+import type { StatusEffectSpec } from '../content/weapons.js';
 
-import type { DamageIntent } from './CombatSystem';
-import type { ActorEffectIntent, ActorEffectSource } from './FieldEffectSystem';
-import type { ActorStatusEffect, Boss, Enemy, EntityId, EntityStore, Player } from './EntityStore';
+import type { DamageIntent } from './CombatSystem.js';
+import type { ActorEffectIntent, ActorEffectSource } from './FieldEffectSystem.js';
+import type { ActorStatusEffect, Boss, Enemy, EntityId, EntityStore, Player } from './EntityStore.js';
 
 type StatusCarrier = Player | Enemy | Boss;
 

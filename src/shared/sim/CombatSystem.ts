@@ -1,5 +1,5 @@
-import { BOSS_ARCHETYPES } from '../content/bosses';
-import { ENEMY_ARCHETYPES } from '../content/enemies';
+import { BOSS_ARCHETYPES } from '../content/bosses.js';
+import { ENEMY_ARCHETYPES } from '../content/enemies.js';
 import {
   WEAPON_ARCHETYPES,
   type ActorEffectApplication,
@@ -9,12 +9,12 @@ import {
   type ProjectileArchetype,
   type WeaponArchetype,
   type WeaponModifier
-} from '../content/weapons';
-import type { RuntimeEvent } from '../events';
-import { assertNever } from '../protocol';
-import type { ArenaConfig, DamageRules, Loadout, Vec2 } from '../session';
-import type { WeaponHudSnapshot, WeaponTimedEffectHudSnapshot } from '../snapshot';
-import { SIM_STEP_MS } from '../timing';
+} from '../content/weapons.js';
+import type { RuntimeEvent } from '../events.js';
+import { assertNever } from '../protocol.js';
+import type { ArenaConfig, DamageRules, Loadout, Vec2 } from '../session.js';
+import type { WeaponHudSnapshot, WeaponTimedEffectHudSnapshot } from '../snapshot.js';
+import { SIM_STEP_MS } from '../timing.js';
 
 import type {
   Boss,
@@ -25,16 +25,16 @@ import type {
   EntityStore,
   Player,
   Projectile
-} from './EntityStore';
-import { canDamageTarget, DEFAULT_DAMAGE_RULES } from './DamageRules';
-import type { ActorEffectIntent } from './FieldEffectSystem';
-import { resolveNearestLivingPlayer } from './PlayerTargeting';
+} from './EntityStore.js';
+import { canDamageTarget, DEFAULT_DAMAGE_RULES } from './DamageRules.js';
+import type { ActorEffectIntent } from './FieldEffectSystem.js';
+import { resolveNearestLivingPlayer } from './PlayerTargeting.js';
 import {
   runtimeInputForPlayer,
   type RuntimeActorInputState,
   type RuntimeInputState
-} from './RuntimeInputState';
-import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
+} from './RuntimeInputState.js';
+import type { IndexedEntity, SpatialIndex } from './SpatialIndex.js';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const WEAPON_MODIFIER_MIN_SPREAD_RADIANS = 0.25;

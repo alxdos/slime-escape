@@ -1,9 +1,9 @@
-import type { RuntimeEvent } from '../events';
-import type { ArenaConfig, EncounterDefinition, Vec2 } from '../session';
-import { SIM_STEP_MS } from '../timing';
+import type { RuntimeEvent } from '../events.js';
+import type { ArenaConfig, EncounterDefinition, Vec2 } from '../session.js';
+import { SIM_STEP_MS } from '../timing.js';
 
-import type { Boss, Companion, Drop, Enemy, EntityId, EntityStore, Player } from './EntityStore';
-import { resolveNearestLivingPlayer } from './PlayerTargeting';
+import type { Boss, Companion, Drop, Enemy, EntityId, EntityStore, Player } from './EntityStore.js';
+import { resolveNearestLivingPlayer } from './PlayerTargeting.js';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const ALERT_DURATION_MS = 300;

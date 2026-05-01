@@ -1,8 +1,8 @@
-import type { RuntimeEvent } from '../events';
-import type { Vec2 } from '../session';
+import type { RuntimeEvent } from '../events.js';
+import type { Vec2 } from '../session.js';
 
-import type { DamageIntent, DamageSource } from './CombatSystem';
-import type { Boss, Companion, Enemy, EntityId, EntityStore, Player } from './EntityStore';
+import type { DamageIntent, DamageSource } from './CombatSystem.js';
+import type { Boss, Companion, Enemy, EntityId, EntityStore, Player } from './EntityStore.js';
 
 export type DeathContext = Readonly<{
   entityId: EntityId;

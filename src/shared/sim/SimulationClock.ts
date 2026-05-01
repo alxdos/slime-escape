@@ -1,4 +1,4 @@
-import { SIM_STEP_MS } from '../timing';
+import { SIM_STEP_MS } from '../timing.js';
 
 const STEP_EPSILON_MS = 1e-9;
 

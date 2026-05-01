@@ -7,9 +7,9 @@ import {
   PIERCE,
   SIZE_UP,
   SPEED_UP
-} from './drops.generated';
+} from './drops.generated.js';
 
-import type { WeaponModifier } from './weapons';
+import type { WeaponModifier } from './weapons.js';
 
 export type PickupModifier = Readonly<{
   kind: 'dropMagnet';

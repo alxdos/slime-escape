@@ -5,16 +5,16 @@ import type {
   ResultKillByArchetypeSummary,
   SessionResultOutcome,
   SessionResultSummary
-} from '../sessionResult';
-import { assertNever } from '../protocol';
-import type { EncounterDefinition, SessionDefinition } from '../session';
-import type { WaveProgressSnapshot } from '../snapshot';
+} from '../sessionResult.js';
+import { assertNever } from '../protocol.js';
+import type { EncounterDefinition, SessionDefinition } from '../session.js';
+import type { WaveProgressSnapshot } from '../snapshot.js';
 
-import type { DamageSource } from './CombatSystem';
-import type { DropPickupFact } from './DropSystem';
-import type { Boss, EntityId, EntityStore } from './EntityStore';
-import type { DeathContext } from './HealthDeathSystem';
-import type { EncounterContext } from './SessionFlowSystem';
+import type { DamageSource } from './CombatSystem.js';
+import type { DropPickupFact } from './DropSystem.js';
+import type { Boss, EntityId, EntityStore } from './EntityStore.js';
+import type { DeathContext } from './HealthDeathSystem.js';
+import type { EncounterContext } from './SessionFlowSystem.js';
 
 export type ResultBuildContext = Readonly<{
   session: SessionDefinition | null;

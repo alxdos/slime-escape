@@ -1,4 +1,4 @@
-import { PET_ARCHETYPE_SPECS } from './pets.generated';
+import { PET_ARCHETYPE_SPECS } from './pets.generated.js';
 
 export type PetQuality = 'green' | 'purple';
 
@@ -15,7 +15,7 @@ export type PetEconomy = Readonly<{
 
 export const PET_QUALITIES = ['green', 'purple'] as const satisfies ReadonlyArray<PetQuality>;
 
-export * from './pets.generated';
+export * from './pets.generated.js';
 
 export const PET_ARCHETYPES: Readonly<Record<string, PetArchetype>> =
   createPetRegistry(PET_ARCHETYPE_SPECS);

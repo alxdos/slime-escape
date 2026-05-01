@@ -1,4 +1,4 @@
-import type { SessionResultOutcome, SessionResultSummary } from '../sessionResult';
+import type { SessionResultOutcome, SessionResultSummary } from '../sessionResult.js';
 
 export function makeTestResultSummary(
   outcome: SessionResultOutcome,

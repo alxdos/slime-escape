@@ -1,5 +1,5 @@
-import { log } from '../log';
-import { assertNever } from '../protocol';
+import { log } from '../log.js';
+import { assertNever } from '../protocol.js';
 import type {
   ArenaConfig,
   CompanionSessionConfig,
@@ -10,22 +10,22 @@ import type {
   SpawnOverride,
   SpawnPlan,
   Vec2
-} from '../session';
-import { SIM_STEP_MS } from '../timing';
+} from '../session.js';
+import { SIM_STEP_MS } from '../timing.js';
 
-import { BOSS_ARCHETYPES } from './bosses';
-import { DROP_ARCHETYPES } from './drops';
-import { ENEMY_ARCHETYPES, validateEnemyRegistry } from './enemies';
-import { PET_ARCHETYPES } from './pets';
-import { SESSION_PRESET_TEMPLATES } from './sessions.generated';
+import { BOSS_ARCHETYPES } from './bosses.js';
+import { DROP_ARCHETYPES } from './drops.js';
+import { ENEMY_ARCHETYPES, validateEnemyRegistry } from './enemies.js';
+import { PET_ARCHETYPES } from './pets.js';
+import { SESSION_PRESET_TEMPLATES } from './sessions.generated.js';
 import type {
   BossSpawnPlanTemplate,
   BossSpawnPositionTemplate,
   ModePreset,
   SessionPresetEncounterTemplate,
   SessionPresetTemplate
-} from './sessions';
-import { WEAPON_ARCHETYPES } from './weapons';
+} from './sessions.js';
+import { WEAPON_ARCHETYPES } from './weapons.js';
 
 export type BuildOptions = Readonly<{
   seed: number;

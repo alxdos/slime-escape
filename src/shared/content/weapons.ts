@@ -10,7 +10,7 @@ import {
   SHOTGUN,
   SMG,
   SNIPER
-} from './weapons.generated';
+} from './weapons.generated.js';
 
 export type ProjectileMotion =
   | Readonly<{ kind: 'linear'; speed: number }>

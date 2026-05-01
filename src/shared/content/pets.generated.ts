@@ -1,6 +1,6 @@
 // AUTO-GENERATED from content/pets.md by `npm run content:build`.
 // Do not edit by hand.
-import type { PetArchetype, PetEconomy } from './pets';
+import type { PetArchetype, PetEconomy } from './pets.js';
 
 export const PET_01: PetArchetype = {
   id: 'pet-01',

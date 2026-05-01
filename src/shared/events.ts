@@ -1,4 +1,4 @@
-import type { SessionResultSummary } from './sessionResult';
+import type { SessionResultSummary } from './sessionResult.js';
 
 export type RuntimeEvent =
   | { kind: 'sessionStart'; simTime: number }

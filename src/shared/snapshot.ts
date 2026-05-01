@@ -1,5 +1,5 @@
-import type { WeaponModifier } from './content/weapons';
-import type { EncounterType } from './session';
+import type { WeaponModifier } from './content/weapons.js';
+import type { EncounterType } from './session.js';
 
 export type PlayerSnapshot = Readonly<{
   id: number;

@@ -7,13 +7,13 @@ import type {
   WeaponTimedEffectHudSnapshot,
   WaveProgressSnapshot,
   ZoneSnapshot
-} from '../snapshot';
-import { WEAPON_ARCHETYPES, type WeaponModifier } from '../content/weapons';
-import { assertNever } from '../protocol';
-import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../timing';
+} from '../snapshot.js';
+import { WEAPON_ARCHETYPES, type WeaponModifier } from '../content/weapons.js';
+import { assertNever } from '../protocol.js';
+import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../timing.js';
 
-import type { EntityId, EntityStore } from './EntityStore';
-import type { EncounterContext } from './SessionFlowSystem';
+import type { EntityId, EntityStore } from './EntityStore.js';
+import type { EncounterContext } from './SessionFlowSystem.js';
 
 const TICKS_PER_SNAPSHOT = Math.round(SNAPSHOT_INTERVAL_MS / SIM_STEP_MS);
 

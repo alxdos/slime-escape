@@ -1,7 +1,7 @@
-import { assertNever } from '../protocol';
-import type { EncounterDefinition } from '../session';
-import type { ZoneMode, ZoneSnapshot } from '../snapshot';
-import { SIM_STEP_MS } from '../timing';
+import { assertNever } from '../protocol.js';
+import type { EncounterDefinition } from '../session.js';
+import type { ZoneMode, ZoneSnapshot } from '../snapshot.js';
+import { SIM_STEP_MS } from '../timing.js';
 
 export type ZoneSystem = Readonly<{
   reset(): void;

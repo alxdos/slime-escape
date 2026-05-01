@@ -15,7 +15,7 @@ export function renderDropContent(area: ParsedDropsArea): string {
 }
 
 function renderImport(): string {
-  return "import type { DropArchetype } from './drops';\n\n";
+  return "import type { DropArchetype } from './drops.js';\n\n";
 }
 
 function renderDrop(drop: ParsedDrop): string {

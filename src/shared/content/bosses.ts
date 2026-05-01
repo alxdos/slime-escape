@@ -1,6 +1,6 @@
-import type { ContactBox } from '../session';
+import type { ContactBox } from '../session.js';
 
-import * as generatedBosses from './bosses.generated';
+import * as generatedBosses from './bosses.generated.js';
 
 export type BossPhaseSpec = Readonly<{
   id: string;
@@ -31,7 +31,7 @@ export type BossArchetype = Readonly<{
   attacks: Readonly<Record<string, BossAttackSpec>>;
 }>;
 
-export * from './bosses.generated';
+export * from './bosses.generated.js';
 
 export const BOSS_ARCHETYPES: Readonly<Record<string, BossArchetype>> =
   createBossRegistry(Object.values(generatedBosses));

@@ -39,6 +39,8 @@ import {
   pvpKillToLevelOps
 } from './policy.js';
 
+export type { ArenaHostEvent, ArenaHostLevelUpEvent } from './policy.js';
+
 export const ARENA_HOST_INPUT_RATE_LIMIT_MAX = 240;
 export const ARENA_HOST_INPUT_RATE_LIMIT_WINDOW_MS = 1000;
 export const ARENA_HOST_SPAWN_INSET_WU = 4;

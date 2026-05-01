@@ -12,9 +12,9 @@ import type {
   WinCondition,
   LossCondition,
   EmptySpawnPlan
-} from '../session';
+} from '../session.js';
 
-import { SESSION_PRESET_TEMPLATES } from './sessions.generated';
+import { SESSION_PRESET_TEMPLATES } from './sessions.generated.js';
 
 export { SESSION_PRESET_TEMPLATES };
 

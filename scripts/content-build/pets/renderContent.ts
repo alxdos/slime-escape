@@ -8,7 +8,7 @@ export function renderPetContent(area: ParsedPetsArea): string {
 }
 
 function renderImport(): string {
-  return "import type { PetArchetype, PetEconomy } from './pets';\n\n";
+  return "import type { PetArchetype, PetEconomy } from './pets.js';\n\n";
 }
 
 function renderPet(pet: ParsedPet): string {

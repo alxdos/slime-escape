@@ -74,12 +74,12 @@ export const PUBLIC_ARENA_HOST_CONTENT = {
 
 function renderImports(imports: ReadonlyMap<ImportBucket, ReadonlySet<string>>): string {
   return [
-    renderImport(imports, 'bosses', './bosses.generated'),
-    renderImport(imports, 'drops', './drops.generated'),
-    renderImport(imports, 'enemies', './enemies.generated'),
-    renderImport(imports, 'players', './players.generated'),
-    "import type { SessionPresetTemplate } from './sessions';",
-    renderImport(imports, 'weapons', './weapons.generated'),
+    renderImport(imports, 'bosses', './bosses.generated.js'),
+    renderImport(imports, 'drops', './drops.generated.js'),
+    renderImport(imports, 'enemies', './enemies.generated.js'),
+    renderImport(imports, 'players', './players.generated.js'),
+    "import type { SessionPresetTemplate } from './sessions.js';",
+    renderImport(imports, 'weapons', './weapons.generated.js'),
     ''
   ]
     .filter((line) => line.length > 0)

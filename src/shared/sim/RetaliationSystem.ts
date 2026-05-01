@@ -1,6 +1,6 @@
-import type { DamageSource } from './CombatSystem';
-import type { CombatOwnerKind, EntityId, EntityStore } from './EntityStore';
-import type { DamageContext } from './HealthDeathSystem';
+import type { DamageSource } from './CombatSystem.js';
+import type { CombatOwnerKind, EntityId, EntityStore } from './EntityStore.js';
+import type { DamageContext } from './HealthDeathSystem.js';
 
 export type RetaliationSystem = Readonly<{
   onDamage(ctx: DamageContext, store: EntityStore): void;

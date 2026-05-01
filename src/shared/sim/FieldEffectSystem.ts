@@ -1,10 +1,10 @@
-import type { ActorEffectApplication } from '../content/weapons';
-import type { DamageRules } from '../session';
+import type { ActorEffectApplication } from '../content/weapons.js';
+import type { DamageRules } from '../session.js';
 
-import type { DamageIntent } from './CombatSystem';
-import { canDamageTarget, DEFAULT_DAMAGE_RULES, type DamageableEntity } from './DamageRules';
-import type { EntityId, EntityStore, FieldEffect } from './EntityStore';
-import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
+import type { DamageIntent } from './CombatSystem.js';
+import { canDamageTarget, DEFAULT_DAMAGE_RULES, type DamageableEntity } from './DamageRules.js';
+import type { EntityId, EntityStore, FieldEffect } from './EntityStore.js';
+import type { IndexedEntity, SpatialIndex } from './SpatialIndex.js';
 
 export type ActorEffectIntent = Readonly<{
   targetId: EntityId;

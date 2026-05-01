@@ -3,17 +3,17 @@ import {
   type DropArchetype,
   type DropEffect,
   type PickupModifier
-} from '../content/drops';
-import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../content/enemies';
-import type { WeaponModifier } from '../content/weapons';
-import type { RuntimeEvent } from '../events';
-import { log } from '../log';
-import { assertNever } from '../protocol';
-import type { Rng } from '../rng';
-import { SIM_STEP_MS } from '../timing';
+} from '../content/drops.js';
+import { ENEMY_ARCHETYPES, type EnemyArchetype } from '../content/enemies.js';
+import type { WeaponModifier } from '../content/weapons.js';
+import type { RuntimeEvent } from '../events.js';
+import { log } from '../log.js';
+import { assertNever } from '../protocol.js';
+import type { Rng } from '../rng.js';
+import { SIM_STEP_MS } from '../timing.js';
 
-import type { Companion, Drop, EntityId, EntityStore, Player } from './EntityStore';
-import type { DeathContext } from './HealthDeathSystem';
+import type { Companion, Drop, EntityId, EntityStore, Player } from './EntityStore.js';
+import type { DeathContext } from './HealthDeathSystem.js';
 
 export type DropSystem = Readonly<{
   setRng(rng: Rng | null): void;

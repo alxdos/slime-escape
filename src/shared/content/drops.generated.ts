@@ -1,6 +1,6 @@
 // AUTO-GENERATED from content/drops.md by `npm run content:build`.
 // Do not edit by hand.
-import type { DropArchetype } from './drops';
+import type { DropArchetype } from './drops.js';
 
 export const HEAL_ORB: DropArchetype = {
   id: 'heal-orb',

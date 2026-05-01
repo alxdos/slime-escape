@@ -1,4 +1,4 @@
-import type { Boss, Companion, Enemy, EntityStore, Player, Projectile } from './EntityStore';
+import type { Boss, Companion, Enemy, EntityStore, Player, Projectile } from './EntityStore.js';
 
 export type IndexedEntity = Player | Companion | Enemy | Boss | Projectile;
 

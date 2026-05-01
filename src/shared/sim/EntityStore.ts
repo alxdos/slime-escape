@@ -1,10 +1,10 @@
-import type { DropEffect } from '../content/drops';
-import type { DropTableEntry, EnemyBehavior, RetaliationPolicy } from '../content/enemies';
+import type { DropEffect } from '../content/drops.js';
+import type { DropTableEntry, EnemyBehavior, RetaliationPolicy } from '../content/enemies.js';
 import type {
   ActorEffectApplication,
   DetonationTrigger,
   ExplosionSpec
-} from '../content/weapons';
+} from '../content/weapons.js';
 import type {
   CompanionBoopConfig,
   CompanionMovementConfig,
@@ -14,8 +14,8 @@ import type {
   Loadout,
   PlayerSpawn,
   Vec2
-} from '../session';
-import type { RuntimeEvent } from '../events';
+} from '../session.js';
+import type { RuntimeEvent } from '../events.js';
 
 export type EntityId = number & { readonly __brand: 'EntityId' };
 export type CombatOwnerKind = 'player' | 'companion' | 'enemy' | 'boss';
