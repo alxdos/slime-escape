@@ -1447,7 +1447,9 @@ function createSimHarness() {
   let paused = false;
   let onEvent: ((event: RuntimeEvent) => void) | undefined;
   const startSessions: SessionDefinition[] = [];
+  const startSessionOptions: Array<Parameters<SimWorkerHost['startSession']>[1]> = [];
   const sentInputs: InputCommand[] = [];
+  const sentSequencedInputs: Array<{ command: InputCommand; inputSequence: number }> = [];
   const authoritativeSnapshots: Snapshot[] = [];
   const calls = {
     stop: 0,
@@ -1460,8 +1462,9 @@ function createSimHarness() {
     factory(options: SimWorkerHostOptions = {}): SimWorkerHost {
       onEvent = options.onEvent;
       return {
-        startSession(session): void {
+        startSession(session, options): void {
           startSessions.push(session);
+          startSessionOptions.push(options);
           paused = false;
         },
         stopSession(): void {
@@ -1478,6 +1481,9 @@ function createSimHarness() {
         },
         sendInput(command): void {
           sentInputs.push(command);
+        },
+        sendSequencedInput(command, inputSequence): void {
+          sentSequencedInputs.push({ command, inputSequence });
         },
         acceptAuthoritativeSnapshot(snapshot): void {
           authoritativeSnapshots.push(snapshot);
@@ -1501,7 +1507,9 @@ function createSimHarness() {
     },
     calls,
     startSessions,
+    startSessionOptions,
     sentInputs,
+    sentSequencedInputs,
     authoritativeSnapshots,
     setPaused(next: boolean): void {
       paused = next;
@@ -2858,9 +2866,16 @@ describe('UiShell', () => {
     expect(publicArenaCombatAffordances.isVisible()).toBe(true);
     expect(publicArenaRenderer.lastInit()).toBeNull();
 
-    publicArenaClient.snapshot();
+    const firstOnlineSnapshot = makePublicArenaSnapshot();
+    publicArenaClient.snapshot(firstOnlineSnapshot);
     shell.onFrame();
 
+    expect(sim.startSessions).toHaveLength(1);
+    expect(sim.startSessionOptions[0]).toEqual({
+      mode: 'online-predictor',
+      selfPlayerId: 'socket-a'
+    });
+    expect(sim.authoritativeSnapshots).toEqual([firstOnlineSnapshot]);
     expect(audio.updates.at(-1)?.snapshotPair.curr?.entities[0]).toMatchObject({
       kind: 'player',
       playerId: 'socket-a',
@@ -2876,11 +2891,23 @@ describe('UiShell', () => {
       x: 1,
       y: 2
     });
+    expect(publicArenaRenderer.lastInit()?.getPredictedSnapshot?.()).toBeNull();
+    expect(publicArenaRenderer.lastInit()?.getPredictionSnapSerial?.()).toBe(0);
     expect(publicArenaRenderer.lastInit()?.getAim?.()).toEqual({ x: 0, y: 0 });
     expect(publicArenaHud.level()).toBe(`Level 3/${PUBLIC_ARENA_BOSS_LEVEL}`);
     expect(publicArenaHud.population()).toBe('Online 7');
     expect(publicArenaCombatAffordances.lastSelfId()).toBe('socket-a');
     expect(publicArenaRenderer.calls.render).toBe(1);
+
+    publicArenaClient.presentation({
+      kind: 'host:levelUp',
+      simTime: 130,
+      actorId: 'socket-a',
+      level: 4,
+      formArchetypeId: 'slime-many-eye'
+    });
+
+    expect(publicArenaRenderer.lastInit()?.getPredictionSnapSerial?.()).toBe(1);
 
     publicArenaClient.presentation({
       kind: 'fire',
@@ -2982,6 +3009,13 @@ describe('UiShell', () => {
       { kind: 'selectWeaponSlot', slotIndex: 1, inputSequence: 4 },
       { kind: 'holsterWeapon', inputSequence: 5 }
     ]);
+    expect(sim.sentSequencedInputs).toEqual([
+      { command: { kind: 'move', dx: 1, dy: 0 }, inputSequence: 1 },
+      { command: { kind: 'aim', x: 3, y: 4 }, inputSequence: 2 },
+      { command: { kind: 'fire', phase: 'start' }, inputSequence: 3 },
+      { command: { kind: 'selectWeaponSlot', slotIndex: 1 }, inputSequence: 4 },
+      { command: { kind: 'holsterWeapon' }, inputSequence: 5 }
+    ]);
 
     windowTarget.dispatch(
       'keydown',
@@ -3008,6 +3042,15 @@ describe('UiShell', () => {
       { kind: 'move', dx: 0, dy: 0, inputSequence: 6 },
       { kind: 'fire', phase: 'stop', inputSequence: 7 }
     ]);
+    expect(sim.sentSequencedInputs).toEqual([
+      { command: { kind: 'move', dx: 1, dy: 0 }, inputSequence: 1 },
+      { command: { kind: 'aim', x: 3, y: 4 }, inputSequence: 2 },
+      { command: { kind: 'fire', phase: 'start' }, inputSequence: 3 },
+      { command: { kind: 'selectWeaponSlot', slotIndex: 1 }, inputSequence: 4 },
+      { command: { kind: 'holsterWeapon' }, inputSequence: 5 },
+      { command: { kind: 'move', dx: 0, dy: 0 }, inputSequence: 6 },
+      { command: { kind: 'fire', phase: 'stop' }, inputSequence: 7 }
+    ]);
 
     publicArenaMenu.exit();
 
@@ -3016,6 +3059,7 @@ describe('UiShell', () => {
     expect(publicArenaRenderer.calls.dispose).toBe(1);
     expect(publicArenaHud.isVisible()).toBe(false);
     expect(publicArenaCombatAffordances.isVisible()).toBe(false);
+    expect(sim.calls.stop).toBe(1);
     expect(shell.phase()).toEqual({ kind: 'menu' });
 
     publicArenaClient.close('Arena server is restarting.');
@@ -3600,13 +3644,26 @@ describe('UiShell', () => {
       { kind: 'move', dx: 0, dy: 0, inputSequence: 5 },
       { kind: 'fire', phase: 'stop', inputSequence: 6 }
     ]);
-    expect(sim.startSessions).toHaveLength(0);
+    expect(sim.startSessions).toHaveLength(1);
+    expect(sim.startSessionOptions[0]).toEqual({
+      mode: 'online-predictor',
+      selfPlayerId: 'socket-a'
+    });
+    expect(sim.sentSequencedInputs).toEqual([
+      { command: { kind: 'move', dx: 0, dy: -1 }, inputSequence: 1 },
+      { command: { kind: 'aim', x: 5, y: 6 }, inputSequence: 2 },
+      { command: { kind: 'fire', phase: 'stop' }, inputSequence: 3 },
+      { command: { kind: 'selectWeaponSlot', slotIndex: 0 }, inputSequence: 4 },
+      { command: { kind: 'move', dx: 0, dy: 0 }, inputSequence: 5 },
+      { command: { kind: 'fire', phase: 'stop' }, inputSequence: 6 }
+    ]);
 
     publicArenaMenu.exit();
 
     expect(publicArenaClient.disconnectCalls()).toBe(1);
     expect(publicArenaRenderer.calls.dispose).toBe(1);
     expect(mobileControls.isVisible()).toBe(false);
+    expect(sim.calls.stop).toBe(1);
     expect(shell.phase()).toEqual({ kind: 'menu' });
   });
 

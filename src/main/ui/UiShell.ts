@@ -23,6 +23,7 @@ import type {
 import type { Snapshot } from '../../shared/snapshot';
 import type { Loadout, PlayerConfig, SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
+import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import { createAudio, type Audio } from '../audio/Audio';
 import { applyAimAssist } from '../input/AimAssist';
 import { createInputController, type InputController, type InputControllerInit } from '../input/InputController';
@@ -230,6 +231,16 @@ type CreateClientProgressionStoreFn = () => ClientProgressionStore;
 type RunStartupPreloadFn = (
   onProgress: (loaded: number, total: number) => void
 ) => Promise<TextureMap>;
+type OnlinePredictionBufferedInput = Readonly<{
+  command: InputCommand;
+  inputSequence: number;
+  sentAtMs: number;
+}>;
+type SequencedPublicArenaInput = Readonly<{
+  command: InputCommand;
+  intent: PublicArenaInputIntent;
+  inputSequence: number;
+}>;
 type ReloadPageFn = () => void;
 type AssignLocationFn = (url: string) => void;
 
@@ -408,6 +419,10 @@ export function createUiShell(init: UiShellInit): UiShell {
   let activeOnlineSession: SessionDefinition | null = null;
   let onlineLobbyState: ArenaHostLobbyStateEvent | null = null;
   let nextPublicArenaInputSequence = 1;
+  let onlinePredictionActive = false;
+  let onlinePredictionInputBuffer: OnlinePredictionBufferedInput[] = [];
+  let onlinePredictionLastSelfForm: string | null | undefined = undefined;
+  let onlinePredictionSnapSerial = 0;
   let onlineCampaignHudAttached = false;
   let onlineStatusMessage = PUBLIC_ARENA_CONNECTING_MESSAGE;
   let publicArenaMenuOpen = false;
@@ -998,6 +1013,7 @@ export function createUiShell(init: UiShellInit): UiShell {
         publicArenaPreviousSnapshot = publicArenaSnapshot;
         publicArenaSnapshot = snapshot;
         publicArenaSnapshotReceivedAtMs = currentUiTimeMs();
+        handleAuthoritativeOnlineSnapshot(snapshot);
         const arena = requirePublicArenaArena();
         const visibleAreaCamera = ensureOnlineRendererForSnapshot(arena, snapshot);
         ensurePublicArenaInput(arena, visibleAreaCamera);
@@ -1045,6 +1061,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function handlePublicArenaPresentationEvent(event: ArenaHostEvent): void {
+    markOnlinePredictionSnapForEvent(event);
     if (event.kind === 'host:lobby:state') {
       handleOnlineLobbyState(event);
       return;
@@ -1067,6 +1084,31 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlineRenderer?.handleEvent(event);
     if (event.kind === 'win' || event.kind === 'loss') {
       handleOnlineRunEnd(event);
+    }
+  }
+
+  function markOnlinePredictionSnapForEvent(event: ArenaHostEvent): void {
+    const playerId = publicArenaPlayerId;
+    if (playerId === null || !onlinePredictionActive) return;
+    switch (event.kind) {
+      case 'host:levelUp':
+        if (event.actorId === playerId) {
+          onlinePredictionSnapSerial += 1;
+          onlinePredictionLastSelfForm = event.formArchetypeId;
+        }
+        return;
+      case 'playerSpawn':
+        if (event.playerId === playerId) {
+          onlinePredictionSnapSerial += 1;
+          onlinePredictionLastSelfForm = event.formArchetypeId;
+        }
+        return;
+      case 'playerDowned':
+      case 'playerRevived':
+        if (event.playerId === playerId) onlinePredictionSnapSerial += 1;
+        return;
+      default:
+        return;
     }
   }
 
@@ -1162,6 +1204,8 @@ export function createUiShell(init: UiShellInit): UiShell {
       spriteTextures: preloadedTextures,
       visibleAreaCamera,
       getSnapshot: () => publicArenaSnapshot,
+      getPredictedSnapshot: () => sim.predictedSnapshotPair().curr,
+      getPredictionSnapSerial: () => onlinePredictionSnapSerial,
       getPortalDescriptors: portalController.portals,
       getAim: () =>
         publicArenaInput !== null && publicArenaInput.isActive()
@@ -1323,6 +1367,96 @@ export function createUiShell(init: UiShellInit): UiShell {
     };
   }
 
+  function ensureOnlinePredictionStarted(): void {
+    const playerId = publicArenaPlayerId;
+    if (onlinePredictionActive || playerId === null) return;
+    const session = requireActiveOnlineSession();
+    sim.startSession(session, { mode: 'online-predictor', selfPlayerId: playerId });
+    onlinePredictionActive = true;
+    onlinePredictionInputBuffer = [];
+    onlinePredictionLastSelfForm = undefined;
+    onlinePredictionSnapSerial = 0;
+  }
+
+  function stopOnlinePrediction(): void {
+    if (!onlinePredictionActive) return;
+    onlinePredictionActive = false;
+    onlinePredictionInputBuffer = [];
+    onlinePredictionLastSelfForm = undefined;
+    onlinePredictionSnapSerial = 0;
+    sim.stopSession();
+  }
+
+  function handleAuthoritativeOnlineSnapshot(snapshot: Snapshot): void {
+    ensureOnlinePredictionStarted();
+    trackPredictedFireRejectedSnap(snapshot);
+    trimOnlinePredictionInputBuffer(snapshot);
+    trackOnlinePredictionFormSnap(snapshot);
+    if (onlinePredictionActive) {
+      sim.acceptAuthoritativeSnapshot(snapshot);
+    }
+  }
+
+  function trackPredictedFireRejectedSnap(snapshot: Snapshot): void {
+    const playerId = publicArenaPlayerId;
+    if (playerId === null || onlinePredictionInputBuffer.length === 0) return;
+    const acknowledged = snapshot.lastInputSequence[playerId] ?? 0;
+    if (acknowledged <= 0) return;
+    const self = snapshot.entities.find(
+      (entity) => entity.kind === 'player' && entity.playerId === playerId
+    );
+    if (self === undefined || self.kind !== 'player') return;
+    const ownProjectileSequences = new Set<number>();
+    for (const entity of snapshot.entities) {
+      if (
+        entity.kind === 'projectile' &&
+        entity.ownerKind === 'player' &&
+        entity.ownerId === self.id &&
+        entity.spawnInputSequence !== null
+      ) {
+        ownProjectileSequences.add(entity.spawnInputSequence);
+      }
+    }
+    const nowMs = currentUiTimeMs();
+    if (
+      onlinePredictionInputBuffer.some(
+        (entry) =>
+          entry.inputSequence <= acknowledged &&
+          entry.command.kind === 'fire' &&
+          entry.command.phase === 'start' &&
+          nowMs - entry.sentAtMs >= SNAPSHOT_INTERVAL_MS &&
+          !ownProjectileSequences.has(entry.inputSequence)
+      )
+    ) {
+      onlinePredictionSnapSerial += 1;
+    }
+  }
+
+  function trimOnlinePredictionInputBuffer(snapshot: Snapshot): void {
+    const playerId = publicArenaPlayerId;
+    if (playerId === null || onlinePredictionInputBuffer.length === 0) return;
+    const acknowledged = snapshot.lastInputSequence[playerId] ?? 0;
+    onlinePredictionInputBuffer = onlinePredictionInputBuffer.filter(
+      (entry) => entry.inputSequence > acknowledged
+    );
+  }
+
+  function trackOnlinePredictionFormSnap(snapshot: Snapshot): void {
+    const playerId = publicArenaPlayerId;
+    if (playerId === null) return;
+    const self = snapshot.entities.find(
+      (entity) => entity.kind === 'player' && entity.playerId === playerId
+    );
+    if (self === undefined || self.kind !== 'player') return;
+    if (
+      onlinePredictionLastSelfForm !== undefined &&
+      onlinePredictionLastSelfForm !== self.formArchetypeId
+    ) {
+      onlinePredictionSnapSerial += 1;
+    }
+    onlinePredictionLastSelfForm = self.formArchetypeId;
+  }
+
   function isCampaignShapeOnlineSnapshot(snapshot: Snapshot): boolean {
     return (
       snapshot.encounter !== null ||
@@ -1338,11 +1472,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     activePublicArenaClient: PublicArenaClient
   ): InputController {
     const inputCommandSink = (command: InputCommand): void => {
-      const intent = sequencedPublicArenaIntentFromInput(command);
-      if (intent === null) {
-        return;
-      }
-      activePublicArenaClient.sendInput(intent);
+      sendSequencedPublicArenaInput(activePublicArenaClient, command);
     };
     const sharedInput = {
       pixelsPerWorldUnit: () =>
@@ -1368,12 +1498,28 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function sequencedPublicArenaIntentFromInput(
     command: InputCommand
-  ): PublicArenaInputIntent | null {
+  ): SequencedPublicArenaInput | null {
     const intent = publicArenaIntentFromInput(command);
     if (intent === null) return null;
     const inputSequence = nextPublicArenaInputSequence;
     nextPublicArenaInputSequence += 1;
-    return { ...intent, inputSequence };
+    return { command, intent: { ...intent, inputSequence }, inputSequence };
+  }
+
+  function sendSequencedPublicArenaInput(
+    activePublicArenaClient: PublicArenaClient | null,
+    command: InputCommand
+  ): void {
+    const sequenced = sequencedPublicArenaIntentFromInput(command);
+    if (sequenced === null) return;
+    activePublicArenaClient?.sendInput(sequenced.intent);
+    if (!onlinePredictionActive) return;
+    onlinePredictionInputBuffer.push({
+      command: sequenced.command,
+      inputSequence: sequenced.inputSequence,
+      sentAtMs: currentUiTimeMs()
+    });
+    sim.sendSequencedInput(sequenced.command, sequenced.inputSequence);
   }
 
   function openPublicArenaMenu(): void {
@@ -1402,10 +1548,8 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function stopPublicArenaInputForMenu(): void {
     const activePublicArenaClient = publicArenaClient;
-    const stopMove = sequencedPublicArenaIntentFromInput({ kind: 'move', dx: 0, dy: 0 });
-    const stopFire = sequencedPublicArenaIntentFromInput({ kind: 'fire', phase: 'stop' });
-    if (stopMove !== null) activePublicArenaClient?.sendInput(stopMove);
-    if (stopFire !== null) activePublicArenaClient?.sendInput(stopFire);
+    sendSequencedPublicArenaInput(activePublicArenaClient, { kind: 'move', dx: 0, dy: 0 });
+    sendSequencedPublicArenaInput(activePublicArenaClient, { kind: 'fire', phase: 'stop' });
     const previousInput = publicArenaInput;
     publicArenaInput = null;
     previousInput?.stop();
@@ -1449,7 +1593,8 @@ export function createUiShell(init: UiShellInit): UiShell {
       publicArenaArena === null &&
       publicArenaPlayerCap === null &&
       activeOnlineSession === null &&
-      onlineLobbyState === null
+      onlineLobbyState === null &&
+      !onlinePredictionActive
     ) {
       publicArenaHud.hide();
       publicArenaCombatAffordances.hide();
@@ -1473,6 +1618,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     activeOnlineSessionId = null;
     activeOnlineSession = null;
     onlineLobbyState = null;
+    stopOnlinePrediction();
     if (onlineCampaignHudAttached) {
       titleOverlay.detach();
       escapeProgressPath.detach();

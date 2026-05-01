@@ -76,6 +76,8 @@ export type PublicArenaRendererInit = Readonly<{
   presentationConfig?: PublicArenaPresentationConfig;
   spriteTextures: TextureMap;
   getSnapshot(): PublicArenaOnlineSnapshot | null;
+  getPredictedSnapshot?: () => PublicArenaOnlineSnapshot | null;
+  getPredictionSnapSerial?: () => number;
   getPortalDescriptors?: () => ReadonlyArray<VibeJamPortalDescriptor>;
   getAim?: AimAccessor;
   prefersReducedMotion?: boolean;

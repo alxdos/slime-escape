@@ -22,6 +22,7 @@ export type SimWorkerHost = Readonly<{
   pause(): void;
   resume(): void;
   sendInput(command: InputCommand): void;
+  sendSequencedInput(command: InputCommand, inputSequence: number): void;
   acceptAuthoritativeSnapshot(snapshot: Snapshot): void;
   snapshotPair(): SnapshotPair;
   predictedSnapshotPair(): SnapshotPair;
@@ -164,6 +165,10 @@ export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWork
     sendInput(command): void {
       const inputSequence = nextInputSequence;
       nextInputSequence += 1;
+      send({ kind: 'input', command, inputSequence });
+    },
+    sendSequencedInput(command, inputSequence): void {
+      nextInputSequence = Math.max(nextInputSequence, inputSequence + 1);
       send({ kind: 'input', command, inputSequence });
     },
     acceptAuthoritativeSnapshot(snapshot): void {
