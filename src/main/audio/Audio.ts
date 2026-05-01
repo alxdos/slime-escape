@@ -1,6 +1,7 @@
 import type { RuntimeEvent } from '../../shared/events';
 import { log as defaultLog, type Log } from '../../shared/log';
 import { assertNever } from '../../shared/protocol';
+import { PUBLIC_ARENA_BOSS_ARCHETYPE_ID } from '../../shared/publicArenaProgression';
 import type { SessionDefinition } from '../../shared/session';
 import type {
   BossSnapshot,
@@ -484,6 +485,14 @@ export function createAudio(init: AudioInit = {}): Audio {
       }
       case 'hit': {
         if (event.targetKind === 'player') {
+          const sampleId = resolvePlayerFormSample(
+            dependencies.audioMappings,
+            'hit',
+            event.targetId
+          );
+          if (sampleId !== null) {
+            playSampleById(sampleId);
+          }
           return;
         }
         const target = resolveEntity(event.targetId);
@@ -516,6 +525,14 @@ export function createAudio(init: AudioInit = {}): Audio {
       }
       case 'death': {
         if (event.entityKind === 'player') {
+          const sampleId = resolvePlayerFormSample(
+            dependencies.audioMappings,
+            'death',
+            event.entityId
+          );
+          if (sampleId !== null) {
+            playSampleById(sampleId);
+          }
           return;
         }
 
@@ -611,6 +628,21 @@ export function createAudio(init: AudioInit = {}): Audio {
       default:
         assertNever(event);
     }
+  }
+
+  function resolvePlayerFormSample(
+    audioMappings: AudioMappings,
+    kind: 'hit' | 'death',
+    entityId: number
+  ): string | null {
+    const target = resolveEntity(entityId);
+    if (target?.kind !== 'player' || target.formArchetypeId === null) {
+      return null;
+    }
+    if (target.formArchetypeId === PUBLIC_ARENA_BOSS_ARCHETYPE_ID) {
+      return audioMappings.resolveBossSample(kind, target.formArchetypeId);
+    }
+    return audioMappings.resolveEnemySample(kind, target.formArchetypeId);
   }
 
   return {

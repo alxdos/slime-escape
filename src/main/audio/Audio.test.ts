@@ -600,9 +600,37 @@ describe('createAudio', () => {
     expect(context.sources).toHaveLength(baselineSourceCount + 2);
   });
 
-  it('skips player hit events without playback or warnings', async () => {
-    const { audio, context, log } = createAudioHarness();
+  it('routes formed player hit and death through snapshot form archetype resolution', async () => {
+    const { audio, context, fetchedUrls, log } = createAudioHarness(() => 0);
     context.setState('running');
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 100,
+        entities: [
+          {
+            id: 5,
+            kind: 'player',
+            playerId: 'socket-a',
+            x: 0,
+            y: 0,
+            hp: 10,
+            maxHp: 10,
+            state: 'alive',
+            formArchetypeId: 'slime-one-eye',
+            weaponHud: null
+          }
+        ],
+        encounter: null,
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }),
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+    const baselineSourceCount = context.sources.length;
 
     audio.handleEvent({
       kind: 'hit',
@@ -617,6 +645,89 @@ describe('createAudio', () => {
       damage: 1,
       impactDirX: 1,
       impactDirY: 0,
+      x: 0,
+      y: 0
+    });
+    audio.handleEvent({
+      kind: 'death',
+      simTime: 120,
+      entityId: 5,
+      entityKind: 'player',
+      archetypeId: null,
+      weaponArchetypeId: 'pistol',
+      impactDirX: 1,
+      impactDirY: 0,
+      killerId: null,
+      x: 0,
+      y: 0
+    });
+
+    await flushAudioWork();
+
+    expect(context.sources).toHaveLength(baselineSourceCount + 2);
+    expect(context.sources[baselineSourceCount]?.startCalls).toBe(1);
+    expect(context.sources[baselineSourceCount + 1]?.startCalls).toBe(1);
+    expect(fetchedUrls).toEqual(['/sfx/slimes/slime-1.mp3', '/sfx/slimes/slime-1.mp3']);
+    expect(log.warn).not.toHaveBeenCalled();
+  });
+
+  it('skips canonical player hit and death events without playback or warnings', async () => {
+    const { audio, context, log } = createAudioHarness();
+    context.setState('running');
+
+    audio.update(
+      makeSnapshotPair({
+        simTimeMs: 100,
+        entities: [
+          {
+            id: 5,
+            kind: 'player',
+            playerId: 'socket-a',
+            x: 0,
+            y: 0,
+            hp: 10,
+            maxHp: 10,
+            state: 'alive',
+            formArchetypeId: null,
+            weaponHud: null
+          }
+        ],
+        encounter: null,
+        zone: { mode: 'disabled', margin: 0 },
+        waveProgress: null,
+        bossHud: null
+      }),
+      { kind: 'running' },
+      null
+    );
+    await flushAudioWork();
+
+    audio.handleEvent({
+      kind: 'hit',
+      simTime: 110,
+      projectileId: 1,
+      ownerId: 1,
+      ownerKind: 'player',
+      targetId: 5,
+      targetKind: 'player',
+      targetArchetypeId: null,
+      weaponArchetypeId: 'pistol',
+      damage: 1,
+      impactDirX: 1,
+      impactDirY: 0,
+      x: 0,
+      y: 0
+    });
+    audio.handleEvent({
+      kind: 'death',
+      simTime: 120,
+      entityId: 5,
+      entityKind: 'player',
+      archetypeId: null,
+      weaponArchetypeId: 'pistol',
+      impactDirX: 1,
+      impactDirY: 0,
+      killerId: null,
       x: 0,
       y: 0
     });
