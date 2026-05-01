@@ -72,8 +72,14 @@ export function createSimulationWorkerController(
   ): void {
     stopActiveRuntime();
     const core = createPredictionCore({
-      onPredictedSnapshot(snapshot) {
-        options.postToMain({ kind: 'predictedSnapshot', snapshot });
+      onPredictedSnapshot(snapshot, snapshotOptions) {
+        options.postToMain({
+          kind: 'predictedSnapshot',
+          snapshot,
+          ...(snapshotOptions?.resetInterpolation === true
+            ? { resetInterpolation: true }
+            : {})
+        });
       }
     });
     active = {
@@ -126,7 +132,9 @@ export function createSimulationWorkerController(
             log.warn('authoritative snapshot ignored outside online predictor mode');
             return;
           }
-          active.core.receiveAuthoritativeSnapshot(msg.snapshot);
+          active.core.receiveAuthoritativeSnapshot(msg.snapshot, {
+            resetInterpolation: msg.resetPredictedInterpolation === true
+          });
           return;
         case 'debug':
           log.warn('debug command received but not implemented', { command: msg.command });

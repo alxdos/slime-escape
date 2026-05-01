@@ -1525,6 +1525,9 @@ function createSimHarness() {
   const sentInputs: InputCommand[] = [];
   const sentSequencedInputs: Array<{ command: InputCommand; inputSequence: number }> = [];
   const authoritativeSnapshots: Snapshot[] = [];
+  const authoritativeSnapshotOptions: Array<
+    Parameters<SimWorkerHost['acceptAuthoritativeSnapshot']>[1]
+  > = [];
   const calls = {
     stop: 0,
     pause: 0,
@@ -1559,8 +1562,9 @@ function createSimHarness() {
         sendSequencedInput(command, inputSequence): void {
           sentSequencedInputs.push({ command, inputSequence });
         },
-        acceptAuthoritativeSnapshot(snapshot): void {
+        acceptAuthoritativeSnapshot(snapshot, options): void {
           authoritativeSnapshots.push(snapshot);
+          authoritativeSnapshotOptions.push(options);
         },
         snapshotPair(): SnapshotPair {
           return snapshotPairValue;
@@ -1585,6 +1589,7 @@ function createSimHarness() {
     sentInputs,
     sentSequencedInputs,
     authoritativeSnapshots,
+    authoritativeSnapshotOptions,
     setPaused(next: boolean): void {
       paused = next;
     },
@@ -3007,38 +3012,26 @@ describe('UiShell', () => {
     expect(predictedPair?.prev).toBe(predictedPrevBeforeSpawn);
     expect(predictedPair?.curr).toBe(stalePredictedCurrAtSpawnEvent);
 
-    const predictedAfterSpawn = makePublicArenaSnapshotWithSelf(
+    const authoritativeAfterSpawn = makePublicArenaSnapshotWithSelf(
       { x: 8, y: 4 },
       { simTimeMs: 156 }
     );
-    sim.setPredictedSnapshotPair({
-      prev: stalePredictedCurrAtSpawnEvent,
-      curr: predictedAfterSpawn,
-      currReceivedAtMs: 1016,
-      nowMs: 1016
+    publicArenaClient.snapshot(authoritativeAfterSpawn);
+
+    expect(sim.authoritativeSnapshots.at(-1)).toBe(authoritativeAfterSpawn);
+    expect(sim.authoritativeSnapshotOptions.at(-1)).toEqual({
+      resetPredictedInterpolation: true
     });
 
-    predictedPair = publicArenaRenderer.lastInit()?.getPredictedSnapshotPair?.();
-    expect(predictedPair?.prev).toBeNull();
-    expect(predictedPair?.curr).toBe(predictedAfterSpawn);
-    predictedPair = publicArenaRenderer.lastInit()?.getPredictedSnapshotPair?.();
-    expect(predictedPair?.prev).toBeNull();
-    expect(predictedPair?.curr).toBe(predictedAfterSpawn);
-
-    const predictedAfterFollowup = makePublicArenaSnapshotWithSelf(
-      { x: 9, y: 4 },
+    const authoritativeBeforeNextTransition = makePublicArenaSnapshotWithSelf(
+      { x: 8.5, y: 4 },
       { simTimeMs: 172 }
     );
-    sim.setPredictedSnapshotPair({
-      prev: predictedAfterSpawn,
-      curr: predictedAfterFollowup,
-      currReceivedAtMs: 1032,
-      nowMs: 1032
-    });
+    publicArenaClient.snapshot(authoritativeBeforeNextTransition);
 
-    predictedPair = publicArenaRenderer.lastInit()?.getPredictedSnapshotPair?.();
-    expect(predictedPair?.prev).toBe(predictedAfterSpawn);
-    expect(predictedPair?.curr).toBe(predictedAfterFollowup);
+    expect(sim.authoritativeSnapshotOptions.at(-1)).toEqual({
+      resetPredictedInterpolation: false
+    });
 
     publicArenaClient.presentation({
       kind: 'host:levelUp',

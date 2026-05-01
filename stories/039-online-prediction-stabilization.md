@@ -18,7 +18,7 @@ First code review found two predicted-own-projectile blockers after T5. Follow-u
 
 Second code review found two renderer-side stabilization gaps. Follow-up fix derives negative predicted projectile render ids from the stable predicted projectile `id`, not from `spawnInputSequence + index`, so held-fire despawns do not shift surviving mesh identities. It also wires predicted `SnapshotPair` into both online render paths and interpolates predicted self and own projectiles with a one-`SIM_STEP_MS` lag; own projectiles that exist only in predicted `curr` render immediately from `curr`.
 
-Third code review found that transition events no longer reset predicted-pair interpolation. Follow-up fix restores the event-driven snap path by clearing predicted `prev` for the first new predicted `curr` after a self transition event, covering same-state/same-form `playerSpawn` respawns without changing wire or host contracts. A follow-up review tightened the marker so an already-current stale predicted `curr` cannot consume the snap before the real post-event predicted snapshot arrives.
+Third code review found that transition events no longer reset predicted-pair interpolation. Follow-up fix restores the event-driven snap path by sending `resetPredictedInterpolation` with the authoritative snapshot that covers the self transition event; the worker marks the reconcile predicted snapshot with `resetInterpolation`, and `SimWorkerHost` clears predicted `prev` only for that marked output. This covers same-state/same-form `playerSpawn` respawns without changing network host contracts and prevents stale worker-pump predicted snapshots from consuming the snap.
 
 ## Player-facing
 

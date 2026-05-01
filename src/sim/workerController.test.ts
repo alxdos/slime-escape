@@ -82,7 +82,8 @@ describe('simulation worker controller modes', () => {
     expect(predictionCores[0]?.core.start).toHaveBeenCalledWith(session, 'self');
     expect(predictionCores[0]?.core.submitInput).toHaveBeenCalledWith(moveInput, 2);
     expect(predictionCores[0]?.core.receiveAuthoritativeSnapshot).toHaveBeenCalledWith(
-      makeSnapshot()
+      makeSnapshot(),
+      { resetInterpolation: false }
     );
 
     controller.handleMessage({ kind: 'startSession', session });
@@ -134,6 +135,47 @@ describe('simulation worker controller modes', () => {
     expect(
       eventMessages.filter((msg) => FORBIDDEN_PREDICTOR_EVENT_KINDS.includes(msg.event.kind))
     ).toEqual([]);
+  });
+
+  it('forwards predicted interpolation reset through reconcile output only', () => {
+    const posted: SimToMain[] = [];
+    const predictionCores: FakePredictionCore[] = [];
+    const controller = createSimulationWorkerController({
+      postToMain: (msg) => posted.push(msg),
+      createPredictionCore: (options) => {
+        const core = createFakePredictionCore(options);
+        predictionCores.push(core);
+        return core.core;
+      }
+    });
+    const session = makeSession();
+    const pumpSnapshot = makeSnapshot({ simTimeMs: 140 });
+    const reconcileSnapshot = makeSnapshot({ simTimeMs: 160 });
+
+    controller.handleMessage({
+      kind: 'startSession',
+      session,
+      mode: 'online-predictor',
+      selfPlayerId: 'self'
+    });
+    predictionCores[0]?.options.onPredictedSnapshot(pumpSnapshot);
+    controller.handleMessage({
+      kind: 'authoritativeSnapshot',
+      snapshot: makeSnapshot({ simTimeMs: 150 }),
+      resetPredictedInterpolation: true
+    });
+    predictionCores[0]?.options.onPredictedSnapshot(reconcileSnapshot, {
+      resetInterpolation: true
+    });
+
+    expect(predictionCores[0]?.core.receiveAuthoritativeSnapshot).toHaveBeenCalledWith(
+      makeSnapshot({ simTimeMs: 150 }),
+      { resetInterpolation: true }
+    );
+    expect(posted).toEqual([
+      { kind: 'predictedSnapshot', snapshot: pumpSnapshot },
+      { kind: 'predictedSnapshot', snapshot: reconcileSnapshot, resetInterpolation: true }
+    ]);
   });
 
   it('suppresses explosive projectile events from the online predictor output stream', () => {

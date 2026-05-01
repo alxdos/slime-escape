@@ -430,11 +430,7 @@ export function createUiShell(init: UiShellInit): UiShell {
   let onlinePredictionInputBuffer: OnlinePredictionBufferedInput[] = [];
   let onlinePredictionPendingFireAcks: OnlinePredictionPendingFireAck[] = [];
   let onlinePredictionRttEstimateMs: number | null = null;
-  let onlinePredictionTransitionSnap: {
-    simTimeMs: number;
-    currAtMark: Snapshot | null;
-    resetCurr: Snapshot | null;
-  } | null = null;
+  let onlinePredictionTransitionSnapSimTimes: number[] = [];
   let onlineCampaignHudAttached = false;
   let onlineStatusMessage = PUBLIC_ARENA_CONNECTING_MESSAGE;
   let publicArenaMenuOpen = false;
@@ -1086,7 +1082,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       return;
     }
     if (isSelfPredictionSnapEvent(event)) {
-      markOnlinePredictionTransitionSnap(event.simTime);
+      onlinePredictionTransitionSnapSimTimes.push(event.simTime);
     }
     if (event.kind === 'host:levelUp') {
       return;
@@ -1143,6 +1139,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     publicArenaSnapshot = null;
     publicArenaPreviousSnapshot = null;
     publicArenaSnapshotReceivedAtMs = 0;
+    onlinePredictionTransitionSnapSimTimes = [];
     publicArenaPlayerId = handshake.playerId;
     publicArenaArena = handshake.arena;
     publicArenaPlayerCap = handshake.playerCap;
@@ -1194,7 +1191,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       spriteTextures: preloadedTextures,
       visibleAreaCamera,
       getSnapshotPair: onlineSnapshotPair,
-      getPredictedSnapshotPair: predictedOnlineSnapshotPair,
+      getPredictedSnapshotPair: sim.predictedSnapshotPair,
       getPortalDescriptors: portalController.portals,
       getAim: () =>
         publicArenaInput !== null && publicArenaInput.isActive()
@@ -1237,7 +1234,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       selectedPetId: null,
       visibleAreaCamera,
       getSnapshotPair: onlineSnapshotPair,
-      getPredictedSnapshotPair: predictedOnlineSnapshotPair,
+      getPredictedSnapshotPair: sim.predictedSnapshotPair,
       getPortalDescriptors: portalController.portals,
       getAim: () =>
         publicArenaInput !== null && publicArenaInput.isActive()
@@ -1357,26 +1354,6 @@ export function createUiShell(init: UiShellInit): UiShell {
     };
   }
 
-  function predictedOnlineSnapshotPair(): SnapshotPair {
-    const pair = sim.predictedSnapshotPair();
-    const snap = onlinePredictionTransitionSnap;
-    if (snap === null || pair.curr === null || pair.curr.simTimeMs < snap.simTimeMs) {
-      return pair;
-    }
-    if (pair.curr === snap.currAtMark) {
-      return pair;
-    }
-    if (snap.resetCurr === null || pair.curr === snap.resetCurr) {
-      onlinePredictionTransitionSnap = { ...snap, resetCurr: pair.curr };
-      return {
-        ...pair,
-        prev: null
-      };
-    }
-    onlinePredictionTransitionSnap = null;
-    return pair;
-  }
-
   function isSelfPredictionSnapEvent(event: ArenaHostEvent): boolean {
     const playerId = publicArenaPlayerId;
     if (playerId === null) return false;
@@ -1392,14 +1369,6 @@ export function createUiShell(init: UiShellInit): UiShell {
     }
   }
 
-  function markOnlinePredictionTransitionSnap(simTimeMs: number): void {
-    onlinePredictionTransitionSnap = {
-      simTimeMs,
-      currAtMark: sim.predictedSnapshotPair().curr,
-      resetCurr: null
-    };
-  }
-
   function ensureOnlinePredictionStarted(): void {
     const playerId = publicArenaPlayerId;
     if (onlinePredictionActive || playerId === null) return;
@@ -1409,7 +1378,6 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlinePredictionInputBuffer = [];
     onlinePredictionPendingFireAcks = [];
     onlinePredictionRttEstimateMs = null;
-    onlinePredictionTransitionSnap = null;
   }
 
   function stopOnlinePrediction(): void {
@@ -1418,7 +1386,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlinePredictionInputBuffer = [];
     onlinePredictionPendingFireAcks = [];
     onlinePredictionRttEstimateMs = null;
-    onlinePredictionTransitionSnap = null;
+    onlinePredictionTransitionSnapSimTimes = [];
     sim.stopSession();
   }
 
@@ -1427,7 +1395,13 @@ export function createUiShell(init: UiShellInit): UiShell {
     trackPredictedFireRejectedSnap(snapshot);
     trimOnlinePredictionInputBuffer(snapshot);
     if (onlinePredictionActive) {
-      sim.acceptAuthoritativeSnapshot(snapshot);
+      const resetPredictedInterpolation = onlinePredictionTransitionSnapSimTimes.some(
+        (simTimeMs) => simTimeMs <= snapshot.simTimeMs
+      );
+      onlinePredictionTransitionSnapSimTimes = onlinePredictionTransitionSnapSimTimes.filter(
+        (simTimeMs) => simTimeMs > snapshot.simTimeMs
+      );
+      sim.acceptAuthoritativeSnapshot(snapshot, { resetPredictedInterpolation });
     }
   }
 

@@ -23,7 +23,10 @@ export type SimWorkerHost = Readonly<{
   resume(): void;
   sendInput(command: InputCommand): void;
   sendSequencedInput(command: InputCommand, inputSequence: number): void;
-  acceptAuthoritativeSnapshot(snapshot: Snapshot): void;
+  acceptAuthoritativeSnapshot(
+    snapshot: Snapshot,
+    options?: SimWorkerAuthoritativeSnapshotOptions
+  ): void;
   snapshotPair(): SnapshotPair;
   predictedSnapshotPair(): SnapshotPair;
   isPaused(): boolean;
@@ -33,6 +36,10 @@ export type SimWorkerHost = Readonly<{
 export type SimWorkerStartOptions =
   | Readonly<{ mode?: Extract<SimWorkerMode, 'local-authoritative'> }>
   | Readonly<{ mode: Extract<SimWorkerMode, 'online-predictor'>; selfPlayerId: string }>;
+
+export type SimWorkerAuthoritativeSnapshotOptions = Readonly<{
+  resetPredictedInterpolation?: boolean;
+}>;
 
 export type SimWorkerHostOptions = Readonly<{
   onEvent?: (event: RuntimeEvent) => void;
@@ -86,7 +93,7 @@ export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWork
         if (paused) {
           return;
         }
-        predictedPair.prev = predictedPair.curr;
+        predictedPair.prev = msg.resetInterpolation === true ? null : predictedPair.curr;
         predictedPair.curr = msg.snapshot;
         predictedPair.currReceivedAtMs = performance.now();
         return;
@@ -171,8 +178,14 @@ export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWork
       nextInputSequence = Math.max(nextInputSequence, inputSequence + 1);
       send({ kind: 'input', command, inputSequence });
     },
-    acceptAuthoritativeSnapshot(snapshot): void {
-      send({ kind: 'authoritativeSnapshot', snapshot });
+    acceptAuthoritativeSnapshot(snapshot, options = {}): void {
+      send({
+        kind: 'authoritativeSnapshot',
+        snapshot,
+        ...(options.resetPredictedInterpolation === true
+          ? { resetPredictedInterpolation: true }
+          : {})
+      });
     },
     snapshotPair(): SnapshotPair {
       pair.nowMs = paused ? pauseAnchorMs : performance.now();

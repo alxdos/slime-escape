@@ -56,7 +56,15 @@ type PersistentInputState = {
 };
 
 export type OnlinePredictionCoreOptions = Readonly<{
-  onPredictedSnapshot(snapshot: Snapshot): void;
+  onPredictedSnapshot(snapshot: Snapshot, options?: OnlinePredictionSnapshotOptions): void;
+}>;
+
+export type OnlinePredictionSnapshotOptions = Readonly<{
+  resetInterpolation?: boolean;
+}>;
+
+export type OnlinePredictionReconcileOptions = Readonly<{
+  resetInterpolation?: boolean;
 }>;
 
 export type OnlinePredictionCore = Readonly<{
@@ -65,7 +73,10 @@ export type OnlinePredictionCore = Readonly<{
   pause(): void;
   resume(): void;
   submitInput(command: InputCommand, inputSequence: number): void;
-  receiveAuthoritativeSnapshot(snapshot: Snapshot): void;
+  receiveAuthoritativeSnapshot(
+    snapshot: Snapshot,
+    options?: OnlinePredictionReconcileOptions
+  ): void;
   pump(nowMs: number): void;
 }>;
 
@@ -473,7 +484,7 @@ export function createOnlinePredictionCore(
     }
   }
 
-  function emitPredictedSnapshot(): void {
+  function emitPredictedSnapshot(snapshotOptions: OnlinePredictionSnapshotOptions = {}): void {
     const activeSession = session;
     if (activeSession === null || playerByStableId(activeSelfPlayerId() ?? '') === null) {
       return;
@@ -487,13 +498,16 @@ export function createOnlinePredictionCore(
       lastInputSequence: latestAuthoritativeSnapshot?.lastInputSequence ?? {}
     });
     if (exported === null) return;
-    options.onPredictedSnapshot({
-      ...exported,
-      encounter: latestAuthoritativeSnapshot?.encounter ?? null,
-      zone: latestAuthoritativeSnapshot?.zone ?? { mode: 'disabled', margin: 0 },
-      waveProgress: latestAuthoritativeSnapshot?.waveProgress ?? null,
-      bossHud: latestAuthoritativeSnapshot?.bossHud ?? null
-    });
+    options.onPredictedSnapshot(
+      {
+        ...exported,
+        encounter: latestAuthoritativeSnapshot?.encounter ?? null,
+        zone: latestAuthoritativeSnapshot?.zone ?? { mode: 'disabled', margin: 0 },
+        waveProgress: latestAuthoritativeSnapshot?.waveProgress ?? null,
+        bossHud: latestAuthoritativeSnapshot?.bossHud ?? null
+      },
+      snapshotOptions
+    );
   }
 
   function pumpRunning(nowMs: number): void {
@@ -550,7 +564,7 @@ export function createOnlinePredictionCore(
       inputBuffer.push({ command, inputSequence, appliedAtSimTime: simTimeMs });
       applyInputCommand(command, inputSequence);
     },
-    receiveAuthoritativeSnapshot(snapshot): void {
+    receiveAuthoritativeSnapshot(snapshot, reconcileOptions = {}): void {
       if (!running) return;
       const preReconcileSimTimeMs = simTimeMs;
       latestAuthoritativeSnapshot = snapshot;
@@ -562,7 +576,7 @@ export function createOnlinePredictionCore(
         preReconcileSimTimeMs,
         syncResult.authoritativePreferredProjectileSequences
       );
-      emitPredictedSnapshot();
+      emitPredictedSnapshot({ resetInterpolation: reconcileOptions.resetInterpolation === true });
     },
     pump(nowMs): void {
       pumpRunning(nowMs);

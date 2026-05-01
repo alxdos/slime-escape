@@ -10,6 +10,29 @@ import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../timing';
 import { createOnlinePredictionCore } from './OnlinePredictionCore';
 
 describe('OnlinePredictionCore', () => {
+  it('marks the reconcile prediction when interpolation reset is requested', () => {
+    const predictions: Array<
+      Readonly<{ snapshot: Snapshot; resetInterpolation: boolean | undefined }>
+    > = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot, options) =>
+        predictions.push({ snapshot, resetInterpolation: options?.resetInterpolation })
+    });
+
+    core.start(makeSession(), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ simTimeMs: 100 }), {
+      resetInterpolation: true
+    });
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
+
+    expect(predictions[0]).toMatchObject({
+      snapshot: { simTimeMs: 100 },
+      resetInterpolation: true
+    });
+    expect(predictions.at(-1)?.resetInterpolation).toBeUndefined();
+  });
+
   it('replays buffered inputs deterministically without extrapolating other actors', () => {
     const authoritative = makeSnapshot({
       simTimeMs: 200,

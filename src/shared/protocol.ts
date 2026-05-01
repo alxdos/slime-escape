@@ -22,12 +22,12 @@ export type MainToSim =
   | { kind: 'pause' }
   | { kind: 'resume' }
   | { kind: 'input'; command: InputCommand; inputSequence: number }
-  | { kind: 'authoritativeSnapshot'; snapshot: Snapshot }
+  | { kind: 'authoritativeSnapshot'; snapshot: Snapshot; resetPredictedInterpolation?: boolean }
   | { kind: 'debug'; command: DebugCommand };
 
 export type SimToMain =
   | { kind: 'snapshot'; snapshot: Snapshot }
-  | { kind: 'predictedSnapshot'; snapshot: Snapshot }
+  | { kind: 'predictedSnapshot'; snapshot: Snapshot; resetInterpolation?: boolean }
   | { kind: 'event'; event: RuntimeEvent }
   | { kind: 'telemetry'; record: TelemetryRecord };
 
