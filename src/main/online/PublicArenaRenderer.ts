@@ -1,11 +1,6 @@
 import * as THREE from 'three';
 
-import type {
-  PublicArenaPlayerId,
-  PublicArenaPlayerSnapshot,
-  PublicArenaProjectileSnapshot,
-  PublicArenaSnapshot
-} from '../../shared/publicArenaProtocol';
+import type { PublicArenaPlayerId } from '../../shared/publicArenaProtocol';
 import { WEAPON_ARCHETYPES } from '../../shared/content/weapons';
 import {
   PUBLIC_ARENA_LOADOUT,
@@ -25,6 +20,7 @@ import {
 } from '../render/crosshair';
 import { ENEMY_VISUALS } from '../render/enemyVisuals';
 import { fitCanvasToViewport } from '../render/fitToViewport';
+import { DEFAULT_PLAYER_VISUAL } from '../render/playerVisuals';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 import {
   applyProjectilePresentation,
@@ -44,6 +40,13 @@ import {
   type VisibleAreaCamera
 } from '../visibleArea';
 import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
+import {
+  publicArenaSnapshotView,
+  type PublicArenaOnlineSnapshot,
+  type PublicArenaPlayerView,
+  type PublicArenaProjectileView,
+  type PublicArenaSnapshotView
+} from './publicArenaSnapshotView';
 
 type PublicArenaRendererWindowTarget = Pick<
   Window,
@@ -72,7 +75,7 @@ export type PublicArenaRendererInit = Readonly<{
   selfId: PublicArenaPlayerId;
   presentationConfig?: PublicArenaPresentationConfig;
   spriteTextures: TextureMap;
-  getSnapshot(): PublicArenaSnapshot | null;
+  getSnapshot(): PublicArenaOnlineSnapshot | null;
   getPortalDescriptors?: () => ReadonlyArray<VibeJamPortalDescriptor>;
   getAim?: AimAccessor;
   prefersReducedMotion?: boolean;
@@ -149,7 +152,7 @@ export function createPublicArenaRenderer(
       arena: init.arena,
       profile: 'desktop',
       effectiveViewport: readRendererViewport(windowTarget),
-      playerPosition: findSelfPosition(init.getSnapshot(), init.selfId)
+      playerPosition: findSelfPosition(publicArenaSnapshotView(init.getSnapshot()), init.selfId)
     });
 
   const camera = new THREE.OrthographicCamera(0, 0, 0, 0, 0.1, 10);
@@ -223,7 +226,7 @@ export function createPublicArenaRenderer(
 
   return {
     render(): void {
-      const snapshot = init.getSnapshot();
+      const snapshot = publicArenaSnapshotView(init.getSnapshot());
       const nowMs = snapshot?.simTimeMs ?? 0;
       visibleAreaCamera.follow(findSelfPosition(snapshot, init.selfId), nowMs);
       applyCameraVisibleArea(camera, visibleAreaCamera.visibleArea());
@@ -361,7 +364,7 @@ function readTextureSourceSize(texture: THREE.Texture): Readonly<{
 }
 
 function syncPlayers(
-  snapshot: PublicArenaSnapshot | null,
+  snapshot: PublicArenaSnapshotView | null,
   selfId: PublicArenaPlayerId,
   entries: Map<string, PlayerMeshEntry>,
   textures: TextureMap,
@@ -388,7 +391,7 @@ function syncPlayers(
 }
 
 function ensurePlayerEntry(
-  player: PublicArenaPlayerSnapshot,
+  player: PublicArenaPlayerView,
   entries: Map<string, PlayerMeshEntry>,
   textures: TextureMap,
   scene: THREE.Scene,
@@ -409,7 +412,7 @@ function ensurePlayerEntry(
 }
 
 function replacePlayerEntry(
-  player: PublicArenaPlayerSnapshot,
+  player: PublicArenaPlayerView,
   entries: Map<string, PlayerMeshEntry>,
   textures: TextureMap,
   scene: THREE.Scene,
@@ -427,7 +430,7 @@ function replacePlayerEntry(
   group.name = 'public-arena-player';
   group.userData['playerId'] = player.id;
   group.userData['formKind'] = player.form.kind;
-  group.userData['archetypeId'] = player.form.archetypeId;
+  group.userData['archetypeId'] = visual.archetypeId;
   group.userData['level'] = player.level;
 
   const sprite = createSpriteMesh(visual, texture, PLAYER_Z);
@@ -460,7 +463,7 @@ function replacePlayerEntry(
 }
 
 function syncProjectiles(
-  snapshot: PublicArenaSnapshot | null,
+  snapshot: PublicArenaSnapshotView | null,
   entries: Map<string, ProjectileMeshEntry>,
   textures: TextureMap,
   scene: THREE.Scene
@@ -480,7 +483,7 @@ function syncProjectiles(
 }
 
 function ensureProjectileEntry(
-  projectile: PublicArenaProjectileSnapshot,
+  projectile: PublicArenaProjectileView,
   entries: Map<string, ProjectileMeshEntry>,
   textures: TextureMap,
   scene: THREE.Scene
@@ -508,16 +511,20 @@ function ensureProjectileEntry(
   return entry;
 }
 
-function playerVisualKey(player: PublicArenaPlayerSnapshot): string {
+function playerVisualKey(player: PublicArenaPlayerView): string {
   return `${player.form.kind}:${player.form.archetypeId}`;
 }
 
-function playerVisualSpec(player: PublicArenaPlayerSnapshot): SpriteVisualSpec {
+function playerVisualSpec(player: PublicArenaPlayerView): SpriteVisualSpec {
   switch (player.form.kind) {
+    case 'player':
+      return DEFAULT_PLAYER_VISUAL;
     case 'slime':
       return requireVisualSpec(ENEMY_VISUALS, player.form.archetypeId, 'slime');
     case 'boss':
       return requireVisualSpec(BOSS_VISUALS, player.form.archetypeId, 'boss');
+    default:
+      return player.form satisfies never;
   }
 }
 
@@ -618,7 +625,7 @@ function createSelfHpBarMesh(name: string, color: number, opacity: number): THRE
   return mesh;
 }
 
-function applySelfHpBar(group: THREE.Group, player: PublicArenaPlayerSnapshot): void {
+function applySelfHpBar(group: THREE.Group, player: PublicArenaPlayerView): void {
   const track = findChildMesh(group, SELF_HP_TRACK_NAME);
   const fill = findChildMesh(group, SELF_HP_FILL_NAME);
   if (track === null || fill === null) return;
@@ -686,7 +693,7 @@ function roundedRect(
 
 function applyPlayerBreath(
   sprite: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>,
-  player: PublicArenaPlayerSnapshot,
+  player: PublicArenaPlayerView,
   nowMs: number
 ): void {
   const amplitude = player.form.kind === 'boss' ? BOSS_BREATH_AMPLITUDE : SLIME_BREATH_AMPLITUDE;
@@ -695,7 +702,7 @@ function applyPlayerBreath(
 }
 
 function findSelfArcPreviewPlayer(
-  snapshot: PublicArenaSnapshot | null,
+  snapshot: PublicArenaSnapshotView | null,
   selfId: PublicArenaPlayerId
 ): Readonly<{ x: number; y: number }> | null {
   const player = snapshot?.players.find((candidate) => candidate.id === selfId);
@@ -703,7 +710,7 @@ function findSelfArcPreviewPlayer(
 }
 
 function selectedPublicArenaWeaponId(
-  snapshot: PublicArenaSnapshot | null,
+  snapshot: PublicArenaSnapshotView | null,
   selfId: PublicArenaPlayerId
 ): string | null {
   const player = snapshot?.players.find((candidate) => candidate.id === selfId);
@@ -713,9 +720,9 @@ function selectedPublicArenaWeaponId(
   if (player.form.kind === 'boss') {
     return PUBLIC_ARENA_BOSS_WEAPON_ID;
   }
-  return regularWeaponIdAtIndex(
-    player.selectedWeaponIndex ?? defaultPublicArenaSelectedWeaponIndex()
-  );
+  const selectedIndex = player.selectedWeaponIndex ?? defaultPublicArenaSelectedWeaponIndex();
+  const hudWeapon = player.weaponHud?.weapons.find((weapon) => weapon.index === selectedIndex);
+  return hudWeapon?.weaponArchetypeId ?? regularWeaponIdAtIndex(selectedIndex);
 }
 
 function defaultPublicArenaSelectedWeaponIndex(): number {
@@ -735,7 +742,7 @@ function regularWeaponIdAtIndex(index: number): string {
 }
 
 function findSelfPosition(
-  snapshot: PublicArenaSnapshot | null,
+  snapshot: PublicArenaSnapshotView | null,
   selfId: PublicArenaPlayerId
 ): Readonly<{ x: number; y: number }> {
   const self = snapshot?.players.find((player) => player.id === selfId);

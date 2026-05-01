@@ -4,8 +4,13 @@ import { describe, expect, it } from 'vitest';
 import {
   PUBLIC_ARENA_PRESENTATION_CONFIG
 } from '../../shared/content/publicArena';
-import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
+import {
+  PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
+  PUBLIC_ARENA_BOSS_LEVEL
+} from '../../shared/publicArenaProgression';
+import type { Snapshot } from '../../shared/snapshot';
 import { ARC_PREVIEW_NAME } from '../render/arcPreview';
+import { DEFAULT_PLAYER_VISUAL } from '../render/playerVisuals';
 import type { TextureMap } from '../render/spritePreload';
 import {
   VIBE_JAM_PORTAL_GROUP_NAME,
@@ -63,7 +68,7 @@ function createRendererBackendHarness() {
 
 describe('PublicArenaRenderer', () => {
   it('renders online slime, boss, projectile, and level label snapshots', () => {
-    let snapshot: PublicArenaSnapshot | null = makeSnapshot();
+    let snapshot: Snapshot | null = makeSnapshot();
     const backend = createRendererBackendHarness();
     const textures = createSpriteTextures();
     const backgroundTexture = createBackgroundTexture();
@@ -109,14 +114,24 @@ describe('PublicArenaRenderer', () => {
     expect(materialMap(background ?? null)).toBe(backgroundTexture);
     expect(backgroundTexture.repeat.x).toBeGreaterThan(1);
     expect(backgroundTexture.repeat.y).toBeGreaterThan(1);
-    expect(players).toHaveLength(3);
-    expect(labels.map((label) => label.userData['level']).sort()).toEqual([1, 2, 8]);
+    const hero = players.find((player) => player.userData['playerId'] === 'hero');
+
+    expect(players).toHaveLength(4);
+    expect(labels.map((label) => label.userData['level']).sort((a, b) => a - b)).toEqual([
+      1,
+      1,
+      2,
+      PUBLIC_ARENA_BOSS_LEVEL
+    ]);
     expect(projectiles).toHaveLength(1);
     expect(projectiles[0]?.rotation.z).toBeCloseTo(Math.PI / 3);
-    expect(boss?.userData['archetypeId']).toBe('boss-tower-sentinel');
-    expect(materialMap(findSprite(boss))).toBe(textures['boss-tower-sentinel']);
+    expect(boss?.userData['archetypeId']).toBe(PUBLIC_ARENA_BOSS_ARCHETYPE_ID);
+    expect(materialMap(findSprite(boss))).toBe(textures[PUBLIC_ARENA_BOSS_ARCHETYPE_ID]);
     expect(slime?.userData['archetypeId']).toBe('slime-one-eye');
     expect(materialMap(findSprite(slime))).toBe(textures['slime-one-eye']);
+    expect(hero?.userData['formKind']).toBe('player');
+    expect(hero?.userData['archetypeId']).toBe(DEFAULT_PLAYER_VISUAL.archetypeId);
+    expect(materialMap(findSprite(hero))).toBe(textures[DEFAULT_PLAYER_VISUAL.archetypeId]);
     expect(selfRing?.parent?.userData['playerId']).toBe('self');
     expect(crosshair?.visible).toBe(true);
     expect(crosshair?.position.x).toBe(12);
@@ -133,8 +148,13 @@ describe('PublicArenaRenderer', () => {
 
     snapshot = {
       ...makeSnapshot(),
-      players: makeSnapshot().players.map((player) =>
-        player.id === 'self' ? { ...player, selectedWeaponIndex: 1 } : player
+      entities: makeSnapshot().entities.map((entity) =>
+        entity.kind === 'player' && entity.playerId === 'self'
+          ? {
+              ...entity,
+              weaponHud: entity.weaponHud === null ? null : { ...entity.weaponHud, selectedIndex: 1 }
+            }
+          : entity
       )
     };
     renderer.render();
@@ -142,8 +162,9 @@ describe('PublicArenaRenderer', () => {
 
     snapshot = {
       ...makeSnapshot(),
-      players: makeSnapshot().players.slice(0, 1),
-      projectiles: []
+      entities: makeSnapshot().entities.filter(
+        (entity) => entity.kind === 'player' && entity.playerId === 'self'
+      )
     };
     renderer.render();
 
@@ -220,46 +241,57 @@ function requireActivePublicArenaBackground() {
   return background;
 }
 
-function makeSnapshot(): PublicArenaSnapshot {
+function makeSnapshot(): Snapshot {
   return {
     simTimeMs: 1000,
-    population: 3,
-    players: [
+    entities: [
       {
-        id: 'self',
+        id: 1,
+        kind: 'player',
+        playerId: 'self',
         x: 8,
         y: -4,
         hp: 10,
         maxHp: 20,
-        level: 1,
-        form: { kind: 'slime', archetypeId: 'slime-one-eye' },
-        selectedWeaponIndex: 0
+        formArchetypeId: 'slime-one-eye',
+        weaponHud: makeWeaponHud(0)
       },
       {
-        id: 'other',
+        id: 2,
+        kind: 'player',
+        playerId: 'other',
         x: 9,
         y: -3,
         hp: 24,
         maxHp: 24,
-        level: 2,
-        form: { kind: 'slime', archetypeId: 'slime-hornling' },
-        selectedWeaponIndex: 0
+        formArchetypeId: 'slime-hornling',
+        weaponHud: makeWeaponHud(0)
       },
       {
-        id: 'boss',
+        id: 3,
+        kind: 'player',
+        playerId: 'boss',
         x: 11,
         y: -2,
         hp: 180,
         maxHp: 180,
-        level: 8,
-        form: { kind: 'boss', archetypeId: 'boss-tower-sentinel' },
-        selectedWeaponIndex: null
-      }
-    ],
-    projectiles: [
+        formArchetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
+        weaponHud: null
+      },
       {
-        id: 'projectile-a',
-        ownerId: 'self',
+        id: 4,
+        kind: 'player',
+        playerId: 'hero',
+        x: 7,
+        y: -5,
+        hp: 5,
+        maxHp: 5,
+        formArchetypeId: null,
+        weaponHud: null
+      },
+      {
+        id: 5,
+        kind: 'projectile',
         ownerKind: 'player',
         weaponArchetypeId: 'rock-thrower',
         originX: 8,
@@ -275,8 +307,35 @@ function makeSnapshot(): PublicArenaSnapshot {
         },
         explosionRadius: null,
         detonateAtSimMs: null,
-        arcEnd: { x: 12, y: -6 },
-        angleRadians: Math.PI / 3
+        arcEnd: { x: 12, y: -6 }
+      }
+    ],
+    encounter: null,
+    zone: { mode: 'disabled', margin: 0 },
+    waveProgress: null,
+    bossHud: null
+  };
+}
+
+function makeWeaponHud(selectedIndex: number) {
+  return {
+    selectedIndex,
+    weapons: [
+      {
+        index: 0,
+        weaponArchetypeId: 'rock-thrower',
+        cooldownStartedAtSimMs: 0,
+        cooldownReadyAtSimMs: 0,
+        modifiers: [],
+        timedEffects: []
+      },
+      {
+        index: 1,
+        weaponArchetypeId: 'pistol',
+        cooldownStartedAtSimMs: 0,
+        cooldownReadyAtSimMs: 0,
+        modifiers: [],
+        timedEffects: []
       }
     ]
   };
@@ -286,8 +345,9 @@ function createSpriteTextures(): TextureMap {
   return {
     'slime-one-eye': new THREE.Texture(),
     'slime-hornling': new THREE.Texture(),
-    'boss-tower-sentinel': new THREE.Texture(),
-    'rock-thrower': new THREE.Texture()
+    [PUBLIC_ARENA_BOSS_ARCHETYPE_ID]: new THREE.Texture(),
+    'rock-thrower': new THREE.Texture(),
+    [DEFAULT_PLAYER_VISUAL.archetypeId]: new THREE.Texture()
   };
 }
 

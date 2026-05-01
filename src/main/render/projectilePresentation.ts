@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 import { WEAPON_ARCHETYPES, type WeaponArchetype } from '../../shared/content/weapons';
-import type { PublicArenaProjectileSnapshot } from '../../shared/publicArenaProtocol';
+import type { ProjectileSnapshot } from '../../shared/snapshot';
 import { PROJECTILE_VISUALS } from './projectileVisuals';
 import type { SpriteVisualSpec } from './SpriteVisualSpec';
 
@@ -16,7 +16,7 @@ const PROJECTILE_RADIUS_OUTLINE_OPACITY = 0.54;
 const PROJECTILE_GROUNDED_PULSE_AMPLITUDE = 0.1;
 
 export type ProjectilePresentationSnapshot = Pick<
-  PublicArenaProjectileSnapshot,
+  ProjectileSnapshot,
   | 'weaponArchetypeId'
   | 'originX'
   | 'originY'
