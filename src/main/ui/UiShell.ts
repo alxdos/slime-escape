@@ -320,6 +320,8 @@ const PUBLIC_ARENA_CONNECTING_MESSAGE = 'Joining Public Arena';
 const PUBLIC_ARENA_NOT_CONFIGURED_MESSAGE = 'Public arena server is not configured.';
 const ONLINE_SESSION_NOT_CONFIGURED_MESSAGE = 'Online session server is not configured.';
 const ONLINE_PREDICTION_RTT_ESTIMATE_ALPHA = 0.25;
+const ONLINE_PREDICTION_REJECT_WINDOW_MIN_MS = 100;
+const ONLINE_PREDICTION_REJECT_WINDOW_MAX_MS = 500;
 
 type SessionStartSource = 'campaign' | 'nonCampaign' | 'autoStart';
 
@@ -1472,7 +1474,10 @@ export function createUiShell(init: UiShellInit): UiShell {
   function updateOnlinePredictionRttEstimate(acknowledged: number, nowMs: number): void {
     for (const entry of onlinePredictionInputBuffer) {
       if (entry.inputSequence > acknowledged) continue;
-      const sampleMs = Math.max(0, nowMs - entry.sentAtMs - SNAPSHOT_INTERVAL_MS);
+      const sampleMs = Math.min(
+        ONLINE_PREDICTION_REJECT_WINDOW_MAX_MS,
+        Math.max(0, nowMs - entry.sentAtMs - SNAPSHOT_INTERVAL_MS)
+      );
       onlinePredictionRttEstimateMs =
         onlinePredictionRttEstimateMs === null
           ? sampleMs
@@ -1483,7 +1488,13 @@ export function createUiShell(init: UiShellInit): UiShell {
 
   function predictedFireRejectedWindowMs(): number {
     const rttEstimateMs = onlinePredictionRttEstimateMs ?? SNAPSHOT_INTERVAL_MS;
-    return rttEstimateMs * 2 + SNAPSHOT_INTERVAL_MS;
+    return Math.min(
+      ONLINE_PREDICTION_REJECT_WINDOW_MAX_MS,
+      Math.max(
+        ONLINE_PREDICTION_REJECT_WINDOW_MIN_MS,
+        rttEstimateMs * 2 + SNAPSHOT_INTERVAL_MS
+      )
+    );
   }
 
   function trimOnlinePredictionInputBuffer(snapshot: Snapshot): void {

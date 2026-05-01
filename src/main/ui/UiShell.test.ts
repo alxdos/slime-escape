@@ -3223,17 +3223,20 @@ describe('UiShell', () => {
     expect(snapSerial()).toBe(4);
   });
 
-  it('keeps acknowledged fire starts pending until the predicted-fire rejection snap window elapses', async () => {
+  it('keeps acknowledged fire starts pending until the RTT-based rejection snap window elapses', async () => {
     const nowSpy = vi.spyOn(globalThis.performance, 'now').mockReturnValue(0);
     try {
       const { input, publicArenaClient, publicArenaRenderer } =
         await startPublicArenaPredictionHarness();
       const snapSerial = (): number =>
         publicArenaRenderer.lastInit()?.getPredictionSnapSerial?.() ?? -1;
+      const simulatedRttMs = 200;
+      const firstAckAtMs = SNAPSHOT_INTERVAL_MS + simulatedRttMs;
+      const rejectAtMs = SNAPSHOT_INTERVAL_MS + simulatedRttMs * 2;
 
       input.lastInit()?.onCommand({ kind: 'fire', phase: 'start' });
 
-      nowSpy.mockReturnValue(SNAPSHOT_INTERVAL_MS * 3);
+      nowSpy.mockReturnValue(firstAckAtMs);
       publicArenaClient.snapshot(
         makePublicArenaSnapshotWithSelf(
           {},
@@ -3246,7 +3249,7 @@ describe('UiShell', () => {
 
       expect(snapSerial()).toBe(0);
 
-      nowSpy.mockReturnValue(SNAPSHOT_INTERVAL_MS * 5 - 1);
+      nowSpy.mockReturnValue(rejectAtMs - 1);
       publicArenaClient.snapshot(
         makePublicArenaSnapshotWithSelf(
           {},
@@ -3258,7 +3261,7 @@ describe('UiShell', () => {
       );
       expect(snapSerial()).toBe(0);
 
-      nowSpy.mockReturnValue(SNAPSHOT_INTERVAL_MS * 5);
+      nowSpy.mockReturnValue(rejectAtMs);
       publicArenaClient.snapshot(
         makePublicArenaSnapshotWithSelf(
           {},

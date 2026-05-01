@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { PISTOL } from '../content/weapons';
+import { PISTOL, SHOTGUN } from '../content/weapons';
 import type { InputCommand } from '../input';
 import { log } from '../log';
 import type { PlayerConfig, SessionDefinition } from '../session';
@@ -121,6 +121,47 @@ describe('OnlinePredictionCore', () => {
     expect(projectiles(lastSnapshot(predictions))).toEqual([]);
   });
 
+  it('keeps predicted shotgun pellets distinct when authoritative snapshots confirm their shared input sequence', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+    const shotgunPlayer = makePlayer({ weaponHud: makeWeaponHud(SHOTGUN.id) });
+
+    core.start(makeSession(SHOTGUN.id), 'self');
+    core.submitInput({ kind: 'aim', x: 8, y: 0 }, 1);
+    core.submitInput({ kind: 'fire', phase: 'start' }, 2);
+    core.submitInput({ kind: 'fire', phase: 'stop' }, 3);
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ entities: [shotgunPlayer] }));
+
+    const predictedBeforeAck = projectiles(lastSnapshot(predictions));
+    const positionsBeforeAck = predictedBeforeAck.map(projectilePositionKey);
+    expect(predictedBeforeAck).toHaveLength(5);
+    expect(new Set(positionsBeforeAck).size).toBeGreaterThan(1);
+    expect(predictedBeforeAck.map((projectile) => projectile.spawnInputSequence)).toEqual([
+      2, 2, 2, 2, 2
+    ]);
+
+    const authoritativeProjectiles = predictedBeforeAck.map((projectile, index) => ({
+      ...projectile,
+      id: 100 + index,
+      ownerId: shotgunPlayer.id,
+      x: 20 + index,
+      y: -20 - index
+    }));
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: 150,
+        entities: [shotgunPlayer, ...authoritativeProjectiles],
+        lastInputSequence: { self: 3 }
+      })
+    );
+
+    const predictedAfterAck = projectiles(lastSnapshot(predictions));
+    expect(predictedAfterAck).toHaveLength(5);
+    expect(predictedAfterAck.map(projectilePositionKey)).toEqual(positionsBeforeAck);
+  });
+
   it('warns and waits for a later snapshot when no session player config can seed prediction', () => {
     const warn = vi.spyOn(log, 'warn').mockImplementation(() => undefined);
     const predictions: Snapshot[] = [];
@@ -179,7 +220,11 @@ function projectiles(snapshot: Snapshot): ProjectileSnapshot[] {
   );
 }
 
-function makeSession(): SessionDefinition {
+function projectilePositionKey(projectile: ProjectileSnapshot): string {
+  return `${projectile.x.toFixed(4)}:${projectile.y.toFixed(4)}`;
+}
+
+function makeSession(weaponArchetypeId = PISTOL.id): SessionDefinition {
   const player: PlayerConfig = {
     id: 'self',
     position: { x: 0, y: 0 },
@@ -187,7 +232,7 @@ function makeSession(): SessionDefinition {
     contactBox: { width: 1, height: 1 },
     maxSpeed: 6,
     maxHp: 10,
-    loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+    loadout: { weapons: [weaponArchetypeId], selectedIndex: 0 },
     companion: null
   };
   return {
@@ -235,20 +280,24 @@ function makePlayer(overrides: Partial<PlayerSnapshot> = {}): PlayerSnapshot {
     maxHp: 10,
     state: 'alive',
     formArchetypeId: null,
-    weaponHud: {
-      selectedIndex: 0,
-      weapons: [
-        {
-          index: 0,
-          weaponArchetypeId: PISTOL.id,
-          cooldownStartedAtSimMs: 0,
-          cooldownReadyAtSimMs: 0,
-          modifiers: [],
-          timedEffects: []
-        }
-      ]
-    },
+    weaponHud: makeWeaponHud(PISTOL.id),
     statusEffects: [],
     ...overrides
+  };
+}
+
+function makeWeaponHud(weaponArchetypeId: string): NonNullable<PlayerSnapshot['weaponHud']> {
+  return {
+    selectedIndex: 0,
+    weapons: [
+      {
+        index: 0,
+        weaponArchetypeId,
+        cooldownStartedAtSimMs: 0,
+        cooldownReadyAtSimMs: 0,
+        modifiers: [],
+        timedEffects: []
+      }
+    ]
   };
 }

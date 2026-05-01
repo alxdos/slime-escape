@@ -12,7 +12,6 @@ import type { Loadout, PlayerConfig, SessionDefinition, Vec2 } from '../session.
 import type {
   PlayerSnapshot,
   PlayerStatusEffectSnapshot,
-  ProjectileSnapshot,
   Snapshot,
   WeaponHudSnapshot
 } from '../snapshot.js';
@@ -195,24 +194,19 @@ export function createOnlinePredictionCore(
     localSelfEntityId: EntityId
   ): void {
     const acknowledged = snapshot.lastInputSequence[selfSnapshot.playerId] ?? 0;
-    const authoritativeBySequence = new Map<number, ProjectileSnapshot>();
+    const authoritativeSequences = new Set<number>();
     for (const entity of snapshot.entities) {
       if (entity.kind !== 'projectile') continue;
       if (entity.ownerKind !== 'player' || entity.ownerId !== selfSnapshot.id) continue;
       if (entity.spawnInputSequence === null) continue;
-      authoritativeBySequence.set(entity.spawnInputSequence, entity);
+      authoritativeSequences.add(entity.spawnInputSequence);
     }
 
     const removals: EntityId[] = [];
     for (const projectile of store.projectiles()) {
       if (projectile.ownerId !== localSelfEntityId) continue;
       const sequence = projectile.spawnInputSequence;
-      const authoritative = sequence === null ? undefined : authoritativeBySequence.get(sequence);
-      if (authoritative !== undefined) {
-        projectile.position.x = authoritative.x;
-        projectile.position.y = authoritative.y;
-        continue;
-      }
+      if (sequence !== null && authoritativeSequences.has(sequence)) continue;
       if (sequence !== null && sequence > acknowledged) continue;
       removals.push(projectile.id);
     }
