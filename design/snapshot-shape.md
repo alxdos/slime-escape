@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-30 (story 035 prep: clarifying note on `PlayerSnapshot` — multiple `kind: 'player'` entries are valid for multi-actor sessions; no field changes, no new discriminator. Earlier: 2026-04-30 story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-29 story 030 follow-up: `dropPickup.pickerId` may now be the player or the companion; pickup eligibility remains defined in [drops.md](drops.md). Earlier story 030 prep: add `CompanionSnapshot`, `ownerKind: 'companion'`, `targetKind: 'companion'`, and companion boop/downed/rescued events; full behavior contract in [companion-combat.md](companion-combat.md). Earlier: 2026-04-28 story 028 prep: `EncounterSnapshot` adds `waveOrdinal: number | null` so Dungeon can show an increasing run-level wave number while looping authored encounter indices. Earlier: 2026-04-27 story 026 prep: `EncounterSnapshot.type` includes the new `portal` encounter type, but portals do not become entity snapshots or runtime events; main-thread portal descriptors are defined in [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: projectile snapshots expose effective runtime `size` so render can show projectile-size modifiers without inferring weapon state on the main thread; existing `originX`/`originY` projectile fields are documented here as presentation data copied from runtime `Projectile.origin`). Earlier: 2026-04-26 story 024: terminal `win`/`loss` runtime events carry `SessionResultSummary`; authoritative result stats are defined in [session-result-summary.md](session-result-summary.md). Earlier story 022: `WeaponHudSnapshot` receives a cooldown interval (`cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`), permanent `modifiers`, and active `timedEffects` for the weapon-slot HUD; the presentation contract lives in [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-25 story 020: `ProjectileSnapshot` receives required field `arcEnd: { x: number; y: number } | null`, the fixed world landing position for an in-flight arc projectile; it is `null` for grounded projectiles and for linear/placed motion. Source of truth is `CombatSystem` at projectile creation; `SnapshotExportSystem` copies the value and does not recompute it. The render contract for landing telegraphs on non-player in-flight arcs is [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD, and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
+- Updated: 2026-05-01 (story 036 prep: `PlayerSnapshot` gains `formArchetypeId: string | null` so a player entity can render as a slime/boss form (Public Arena PvP) without adding a new entity discriminator; `null` means canonical hero form. `WeaponHudSnapshot` migrates from a top-level `Snapshot.weaponHud` field into `PlayerSnapshot.weaponHud` so a fanned-out shared `Snapshot` carries per-player HUD without per-recipient construction; the field stays on the player kind only and is intentionally not added to `CompanionSnapshot`. `RuntimeEvent.death` gains `killerId: number | null` so PvP host policy can attribute kills without inspecting the snapshot stream. New `playerSpawn` runtime event is introduced for actor entry into the arena, emitted both for initial `players[]` at `start(session)` and for `core.addPlayer` mid-session ([sim-core-interface.md](sim-core-interface.md)). `levelUp` is intentionally **not** added to shared `RuntimeEvent`: it stays a host-emitted PvP event recorded separately in story 036's hosting decision. Earlier: 2026-04-30 story 035 prep: clarifying note on `PlayerSnapshot` — multiple `kind: 'player'` entries are valid for multi-actor sessions; no field changes, no new discriminator. Earlier: 2026-04-30 story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-29 story 030 follow-up: `dropPickup.pickerId` may now be the player or the companion; pickup eligibility remains defined in [drops.md](drops.md). Earlier story 030 prep: add `CompanionSnapshot`, `ownerKind: 'companion'`, `targetKind: 'companion'`, and companion boop/downed/rescued events; full behavior contract in [companion-combat.md](companion-combat.md). Earlier: 2026-04-28 story 028 prep: `EncounterSnapshot` adds `waveOrdinal: number | null` so Dungeon can show an increasing run-level wave number while looping authored encounter indices. Earlier: 2026-04-27 story 026 prep: `EncounterSnapshot.type` includes the new `portal` encounter type, but portals do not become entity snapshots or runtime events; main-thread portal descriptors are defined in [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: projectile snapshots expose effective runtime `size` so render can show projectile-size modifiers without inferring weapon state on the main thread; existing `originX`/`originY` projectile fields are documented here as presentation data copied from runtime `Projectile.origin`). Earlier: 2026-04-26 story 024: terminal `win`/`loss` runtime events carry `SessionResultSummary`; authoritative result stats are defined in [session-result-summary.md](session-result-summary.md). Earlier story 022: `WeaponHudSnapshot` receives a cooldown interval (`cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`), permanent `modifiers`, and active `timedEffects` for the weapon-slot HUD; the presentation contract lives in [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-25 story 020: `ProjectileSnapshot` receives required field `arcEnd: { x: number; y: number } | null`, the fixed world landing position for an in-flight arc projectile; it is `null` for grounded projectiles and for linear/placed motion. Source of truth is `CombatSystem` at projectile creation; `SnapshotExportSystem` copies the value and does not recompute it. The render contract for landing telegraphs on non-player in-flight arcs is [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD, and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
 
 ## Context
 
@@ -43,14 +43,20 @@ type EntitySnapshot =
   {
     id: number;
     kind: 'player';
+    playerId: string;            // PlayerConfig.id, stable across forms
     x: number;
     y: number;
-    hp: number;       // integer >= 0
-    maxHp: number;    // integer > 0; repeated in each snapshot, like enemy
+    hp: number;                  // integer >= 0
+    maxHp: number;               // integer > 0; repeated in each snapshot, like enemy
+    formArchetypeId: string | null;
+    weaponHud: WeaponHudSnapshot | null;
   }
   ```
   `hp`/`maxHp` are present **always**, regardless of whether the current session has `lossCondition: playerDeath`. This avoids two ways to say "no data" in HUD and simplifies rendering: in a non-combat sandbox session, `hp = maxHp` for the whole run.
-  Multi-actor sessions ([session-definition.md](session-definition.md)) may produce multiple `kind: 'player'` entries in `snapshot.entities` — one per living `PlayerConfig` entry from `SessionDefinition.players[]`. Each entry has its own stable `id` (`EntityId`). Story 035 intentionally does **not** add a `playerId: string` discriminator to this shape: local single-player main UI (`findPlayerSnapshot`) keeps working because every local preset emits `players: [<one>]`, and the consumer that actually needs to identify "which entity is mine" — the online client running shared `MovementSystem` for prediction — is story 038. When that consumer lands, the field is added through this file at that time.
+  `playerId` is the cross-host actor identifier from `SessionDefinition.players[].id` ([session-definition.md](session-definition.md)). It is stable for the lifetime of the actor in the session, including across `setPlayerForm` form changes ([sim-core-interface.md](sim-core-interface.md)); `EntityId` (the `id` field) is the runtime handle and may change if the actor is removed and re-added. Online clients use `playerId` to locate "self" in `entities[]` against the value cached from the join handshake; local single-player UI continues to use `findPlayerSnapshot` (any `kind: 'player'`) because every local preset emits `players: [<one>]`. The field is required and must not be empty.
+  `formArchetypeId` is the optional render-form override. `null` means the canonical hero form (used by every local preset today); a non-null string is an archetype id from `content/enemies.md` or `content/bosses.md` and tells the renderer to draw that form instead of the hero sprite. The field exists for online modes where a player wears a slime or boss form (Public Arena PvP, story 036). Stats (radius/contactBox/maxSpeed/maxHp/loadout) for the form are written into the player runtime state by `setPlayerForm` and reach this snapshot through the existing `radius`/`maxHp`/`weaponHud` fields; the renderer must not re-read enemy/boss content for those stats.
+  `weaponHud` is the per-player weapon HUD. It moves into `PlayerSnapshot` from the previous top-level `Snapshot.weaponHud` field so a single shared `Snapshot` fanned out to many sockets carries each actor's HUD without per-recipient reconstruction. Local single-player consumers must read `players[0].weaponHud` (or whichever player they own); a regression test for the local HUD migration is required when this field moves. The field stays on the player kind only — it is intentionally **not** added to `CompanionSnapshot`. Companion HUD presentation, if it gains weapon-slot UI in the future, lives in a separate field tracked in [companion-combat.md](companion-combat.md).
+  Multi-actor sessions ([session-definition.md](session-definition.md)) may produce multiple `kind: 'player'` entries in `snapshot.entities` — one per living player. Story 036 makes this routine for online play; local single-player remains a one-element list.
 - `EnemySnapshot`:
   ```ts
   {
@@ -150,7 +156,7 @@ type EntitySnapshot =
 
 ### Top-level snapshot
 
-- Top-level shape for the 004 horizon:
+- Top-level shape:
   ```ts
   type Snapshot = Readonly<{
     simTimeMs: number;
@@ -159,10 +165,9 @@ type EntitySnapshot =
     zone: ZoneSnapshot;
     waveProgress: WaveProgressSnapshot | null;
     bossHud: BossHudSnapshot | null;
-    weaponHud: WeaponHudSnapshot | null;
   }>;
   ```
-- Run-level HUD aggregates, such as player HP, wave progress, and boss state, live as separate top-level fields rather than being folded into `entities`. Each such extension is recorded here.
+- Run-level HUD aggregates that are session-global, such as wave progress and boss state, live as separate top-level fields rather than being folded into `entities`. Per-actor HUD aggregates (today: `weaponHud`) live on the actor's entity snapshot — see `PlayerSnapshot.weaponHud` above. Each top-level extension is recorded here.
 - `bossHud`:
   ```ts
   type BossHudSnapshot = Readonly<{
@@ -175,7 +180,7 @@ type EntitySnapshot =
   }>;
   ```
   For encounters where `encounter.type !== 'boss'`, or when there is no active boss, the field is **`null`**. Values duplicate key boss-entity fields so HUD can read cheaply without searching `entities`; `SnapshotExportSystem` guarantees consistency with the entity.
-- `weaponHud` (017, extended by 022):
+- `WeaponHudSnapshot` (017, extended by 022; relocation to `PlayerSnapshot.weaponHud` recorded in story 036):
   ```ts
   type WeaponTimedEffectHudSnapshot =
     | Readonly<{
@@ -197,7 +202,7 @@ type EntitySnapshot =
     }>>;
   }>;
   ```
-  `null` means the active session has no player loadout. HUD reads selected weapon, cooldown interval, permanent modifiers, and active timed weapon effects from this field instead of inspecting runtime weapon instances directly. `cooldownStartedAtSimMs`/`cooldownReadyAtSimMs` define the current or most recent cooldown interval; HUD derives fill from those timestamps and `snapshot.simTimeMs`. `modifiers` contains permanent `WeaponModifier` values copied from the selected owner's weapon instance. `timedEffects` contains only active timed effects at snapshot time (`expiresAtSimMs > snapshot.simTimeMs`); on this horizon the only timed effect is `temporaryOverdrive`. Full render semantics are in [hud-presentation.md](hud-presentation.md).
+  Lives on `PlayerSnapshot.weaponHud`. `null` means the actor has no loadout (sandbox without combat, or any other actor whose `PlayerConfig.loadout === null`). HUD reads selected weapon, cooldown interval, permanent modifiers, and active timed weapon effects from this field instead of inspecting runtime weapon instances directly. `cooldownStartedAtSimMs`/`cooldownReadyAtSimMs` define the current or most recent cooldown interval; HUD derives fill from those timestamps and `snapshot.simTimeMs`. `modifiers` contains permanent `WeaponModifier` values copied from the actor's selected weapon instance. `timedEffects` contains only active timed effects at snapshot time (`expiresAtSimMs > snapshot.simTimeMs`); on this horizon the only timed effect is `temporaryOverdrive`. Full render semantics are in [hud-presentation.md](hud-presentation.md). Companions are intentionally excluded — `CompanionSnapshot` does not gain `weaponHud` even when a companion has its own loadout.
 - 004 fields:
   - `encounter`:
     ```ts
@@ -287,6 +292,7 @@ type EntitySnapshot =
         weaponArchetypeId: string | null; // final projectile weapon, if any
         impactDirX: number | null;        // normalized final projectile direction, if any
         impactDirY: number | null;
+        killerId: number | null;          // EntityId of the damage source's owner, if any
         x: number;
         y: number;
       }
@@ -296,6 +302,16 @@ type EntitySnapshot =
         bossId: number;
         phaseIndex: number;
         phaseId: string;
+      }
+    // player roster (this file, story 036)
+    | {
+        kind: 'playerSpawn';
+        simTime: number;
+        entityId: number;
+        playerId: string;
+        x: number;
+        y: number;
+        formArchetypeId: string | null;
       }
     | {
         kind: 'companionBoop';
@@ -361,14 +377,18 @@ type EntitySnapshot =
   ```
 - `win`/`loss` carry `simTime` and `summary`. The full `SessionResultSummary` shape, stats owner, and progress/kills/boss/defeat-cause rules are defined in [session-result-summary.md](session-result-summary.md). `summary.outcome` must match `event.kind`, and `summary.durationMs` must match `event.simTime`.
 - `hit.targetArchetypeId` and `death.weaponArchetypeId`/`impactDir*` exist for main-thread presentation consumers ([impact-feedback.md](impact-feedback.md)): renderer must not reconstruct target color, bullet direction, or death cause from nearby snapshots, because the target may be removed before the next frame. For `targetKind: 'player'`, target archetype is absent and the field is `null`; for `targetKind: 'companion'`, the value is the companion `petArchetypeId`. For non-projectile deaths, weapon/direction fields are `null`.
+- `death.killerId` (story 036) is the `EntityId` of the damage source's owner if attribution is well-defined, otherwise `null`. `null` for self-detonation (a player who triggers their own mine), suicide damage, environmental damage, and any other case without a distinct actor on the dealer side. For projectile damage the owner is `Projectile.ownerId` (regardless of `ownerKind`); for enemy contact the owner is the contacting enemy. Consumers (host PvP policy in story 036) must treat `killerId === entityId` and `killerId === null` identically — no level-up reward.
+- `playerSpawn` (story 036) fires every time a player entity is created — once per `SessionDefinition.players[]` entry inside `start(session)` and once per `core.addPlayer` call ([sim-core-interface.md](sim-core-interface.md)) on the next tick boundary. After `stop()` followed by `start(session)` the events re-fire for the new initial roster: a session restart is observationally equivalent to a fresh session for any consumer subscribed to spawn cues. Local single-player gains the event for the canonical hero on every `startSession`; this is additive and does not change existing snapshot-driven HUD.
 - Owner systems (see [runtime-systems.md](runtime-systems.md)):
   - `fire`, `hit`, and `explosion` are published by `CombatSystem` ([projectiles-and-combat.md](projectiles-and-combat.md));
   - `death` is published by `HealthDeathSystem` ([health-and-death.md](health-and-death.md)) immediately after death is recorded and before death hooks run;
   - `companionDowned` is published by `HealthDeathSystem` when companion HP reaches zero without entering the normal death/removal path;
   - `companionBoop` and `companionRescued` are published by `CompanionSystem` ([companion-combat.md](companion-combat.md));
   - `win` and `loss` are published by `SessionFlowSystem` ([runtime-systems.md](runtime-systems.md), [session-definition.md](session-definition.md)) exactly once per run;
-  - `dropSpawn`, `dropPickup`, and `dropExpire` are published by `DropSystem` ([drops.md](drops.md)): `dropSpawn` inside the death hook synchronously after `EntityStore.spawnDrop`; `dropPickup` and `dropExpire` during the `DropSystem` tick phase, by [drops.md](drops.md) rules, with exactly one of them for each drop.
-- No other system may publish `fire`/`hit`/`explosion`/`death`/`companionBoop`/`companionDowned`/`companionRescued`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`/`bossPhaseChange`. Exception: `BossPhaseSystem` publishes only `bossPhaseChange`; `DropSystem` subscribes to death hooks for drops and does not replace `death`. Neither system publishes an alternate death or victory event.
+  - `dropSpawn`, `dropPickup`, and `dropExpire` are published by `DropSystem` ([drops.md](drops.md)): `dropSpawn` inside the death hook synchronously after `EntityStore.spawnDrop`; `dropPickup` and `dropExpire` during the `DropSystem` tick phase, by [drops.md](drops.md) rules, with exactly one of them for each drop;
+  - `playerSpawn` is published by `EntityStore.spawnPlayer` (the same path used by `start(session)` and `core.addPlayer`); see [runtime-systems.md](runtime-systems.md).
+- No other system may publish `fire`/`hit`/`explosion`/`death`/`companionBoop`/`companionDowned`/`companionRescued`/`win`/`loss`/`dropSpawn`/`dropPickup`/`dropExpire`/`bossPhaseChange`/`playerSpawn`. Exception: `BossPhaseSystem` publishes only `bossPhaseChange`; `DropSystem` subscribes to death hooks for drops and does not replace `death`. Neither system publishes an alternate death or victory event.
+- Story 036 deliberately does **not** add a `levelUp` (or equivalent form-change) kind to shared `RuntimeEvent`. Level chains are PvP policy with no current consumer in the shared sim; the host emits its own `levelUp` event on a parallel wire channel recorded in story 036's hosting decision. If a second consumer of form changes appears in the shared sim later, the event kind is added here at that time.
 - Vibe Jam portals do not add snapshot entity kinds or runtime events in story 026. The main thread derives portal descriptors and redirect checks from `SessionDefinition`, `SnapshotPair.curr`, and browser URL context; see [vibe-jam-portals.md](vibe-jam-portals.md).
 
 ### Guarantees and priorities
@@ -411,7 +431,8 @@ type EntitySnapshot =
 - [session-result-summary.md](session-result-summary.md)
 - [vibe-jam-portals.md](vibe-jam-portals.md)
 - [companion-combat.md](companion-combat.md)
-- [public-multiplayer-arena.md](public-multiplayer-arena.md)
+- [online-arena-hosting.md](online-arena-hosting.md)
 - [../stories/028-dungeon-mode.md](../stories/028-dungeon-mode.md)
 - [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
 - [../stories/035-multi-actor-sessions.md](../stories/035-multi-actor-sessions.md)
+- [../stories/036-node-arena-host.md](../stories/036-node-arena-host.md)

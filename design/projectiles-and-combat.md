@@ -137,4 +137,4 @@ The order is intentional: fragments spawned by an explosion do not hit in the sa
 - [companion-combat.md](companion-combat.md)
 - [../docs/SURVIVAL_SYSTEMS.md](../docs/SURVIVAL_SYSTEMS.md)
 - [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
-- [public-multiplayer-arena.md](public-multiplayer-arena.md)
+- [online-arena-hosting.md](online-arena-hosting.md)

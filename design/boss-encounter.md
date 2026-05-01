@@ -62,4 +62,4 @@ Product constraints are in [../docs/BOSS.md](../docs/BOSS.md).
 - [projectiles-and-combat.md](projectiles-and-combat.md)
 - [../stories/006-boss-encounter.md](../stories/006-boss-encounter.md)
 - [session-result-summary.md](session-result-summary.md)
-- [public-multiplayer-arena.md](public-multiplayer-arena.md)
+- [online-arena-hosting.md](online-arena-hosting.md)

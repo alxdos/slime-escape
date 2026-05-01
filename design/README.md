@@ -56,7 +56,7 @@ Main principle:
 
 | Decision | Status | Description |
 |----------|--------|-------------|
-| [session-definition.md](session-definition.md) | accepted | Shape of `SessionDefinition`, `EncounterDefinition`, and `ModePreset` |
+| [session-definition.md](session-definition.md) | accepted | Shape of `SessionDefinition`, `EncounterDefinition`, and `ModePreset`; `dynamicRoster` flag and `lossCondition: 'respawnOnDeath'` semantics |
 | [thread-model.md](thread-model.md) | accepted | Boundary between the `main thread`, `simulation worker`, and rendering |
 | [runtime-systems.md](runtime-systems.md) | accepted | Minimal `core runtime` systems and the simulation lifecycle |
 | [content-boundaries.md](content-boundaries.md) | accepted | Separation between the `content library`, session configuration, runtime state, client progression, and client settings |
@@ -73,7 +73,7 @@ Main principle:
 | [content-archetypes.md](content-archetypes.md) | accepted | Minimal content archetypes (`EnemyArchetype`, `WeaponArchetype`, `DropArchetype`, `PetArchetype`, `Loadout`) and lookup by `id` |
 | [projectiles-and-combat.md](projectiles-and-combat.md) | accepted | `CombatSystem` ownership for universal weapon/projectile lifecycle, hit tests, damage rules, explosions and damage intents |
 | [health-and-death.md](health-and-death.md) | accepted | HP on entities, damage intents, death hooks, and entity removal |
-| [snapshot-shape.md](snapshot-shape.md) | accepted | Per-kind entity fields in snapshots, top-level `encounter`/`zone`/`waveProgress`, combat shape, and lifecycle runtime events |
+| [snapshot-shape.md](snapshot-shape.md) | accepted | Per-kind entity fields in snapshots (including `PlayerSnapshot.formArchetypeId` and per-player `weaponHud`), top-level `encounter`/`zone`/`waveProgress`, combat shape, and lifecycle runtime events (including `playerSpawn`) |
 | [zone.md](zone.md) | accepted | `ZoneSystem`: scalar `margin`, `disabled`/`shrinkLinear`/`expandLinear` modes, snapshot export, and separation between gameplay shape and visualization |
 | [enemy-contact.md](enemy-contact.md) | accepted | Enemy contact damage: new `CombatSystem` phase, `DamageIntent.source: 'enemyContact'`, and per-enemy cooldown |
 | [boss-encounter.md](boss-encounter.md) | accepted | `kind: 'boss'` entity, `'boss'` `SpawnPlan`, `BossArchetype`, `BossPhaseSystem`, `winCondition: bossDefeated`, and boss snapshot/HUD |
@@ -99,9 +99,9 @@ Main principle:
 | [session-result-summary.md](session-result-summary.md) | accepted | Terminal run summary for `win`/`loss`: progress, duration, kills, drops, boss state, defeat cause, Dungeon summary, and Result UI ownership |
 | [escape-progress-path.md](escape-progress-path.md) | accepted | Main-thread Escape Path: wave-only progress path for compact HUD, break map, and Result UI, derived from `SessionDefinition`, snapshots, and result summary without sim contract changes |
 | [vibe-jam-portals.md](vibe-jam-portals.md) | accepted | Vibe Jam portal entrypoint, inbound return context, opening exit portal, normal post-boss completion, and redirect contracts |
-| [public-multiplayer-arena.md](public-multiplayer-arena.md) | accepted | First-slice Socket.IO server package and compact in-memory public arena; provisional, scheduled for removal when the Node host (story 036) replaces it with a focused `online-arena-hosting.md` |
+| [online-arena-hosting.md](online-arena-hosting.md) | accepted | Node arena host contract: lifecycle, wall-clock pump, dynamic-roster wiring, wire envelope (Path A — shared `Snapshot`/`RuntimeEvent` plus host `levelUp`), per-event delivery rules, kill→level→form host policy, spawn-invulnerability, reconnect-policy (closed) |
 | [simulation-runtime.md](simulation-runtime.md) | accepted | Single shared simulation core, browser worker host for local play and Node arena host for online modes; online modes are multi-actor sessions of the shared core, not a separate runtime |
-| [sim-core-interface.md](sim-core-interface.md) | accepted | Host interface to the shared simulation core: factory, input methods, output ports, lifecycle, `pump(nowMs)` boundary, and what stays internal |
+| [sim-core-interface.md](sim-core-interface.md) | accepted | Host interface to the shared simulation core: factory, input methods, output ports, lifecycle, `pump(nowMs)` boundary, dynamic-roster `addPlayer`/`removePlayer`/`setPlayerForm`, and what stays internal |
 | [_template.md](_template.md) | template | Minimal template for a new decision |
 
 ---

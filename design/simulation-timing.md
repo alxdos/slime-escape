@@ -52,4 +52,4 @@
 - [simulation-runtime.md](simulation-runtime.md)
 - [sim-core-interface.md](sim-core-interface.md)
 - [session-definition.md](session-definition.md)
-- [public-multiplayer-arena.md](public-multiplayer-arena.md)
+- [online-arena-hosting.md](online-arena-hosting.md)

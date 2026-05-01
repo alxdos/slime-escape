@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
-- Updated: 2026-04-30 (story 034 prep: redefined `src/sim/**` as the browser worker entry plumbing only, reserved `src/shared/sim/**` for the shared simulation core, and added the host-agnostic rule for the core. Earlier: 2026-04-30 story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-23 for story 011, explicitly recorded that build-time tools live outside `src/**`; permission for the root-level `scripts/` directory is covered by a separate decision, `content-authoring.md`.)
+- Updated: 2026-05-01 (story 036 prep: explicit boundary rule for the Node arena host — `server/**` may import from `src/shared/**` including `src/shared/sim/**`, only via the public façade returned by `createSimulationCore` and exported types; `server/**` must not import from `src/main/**` or `src/sim/**`. The boundary test in `server/src/importBoundaries.test.ts` already enforces the latter; this update records the matching design rule. Earlier: 2026-04-30 story 034 prep: redefined `src/sim/**` as the browser worker entry plumbing only, reserved `src/shared/sim/**` for the shared simulation core, and added the host-agnostic rule for the core. Earlier: 2026-04-30 story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-23 for story 011, explicitly recorded that build-time tools live outside `src/**`; permission for the root-level `scripts/` directory is covered by a separate decision, `content-authoring.md`.)
 
 ## Context
 
@@ -35,7 +35,8 @@ The game runs in the browser and must keep both a `main thread` with DOM/UI/audi
   - `src/shared/**` (including `src/shared/sim/**`) must not import from `src/main/**` or `src/sim/**`.
   - `src/shared/sim/**` must additionally satisfy the host-agnostic rule above (no host-specific globals or packages).
   - `src/main/**` may import from `src/shared/**`; `src/sim/**` may import from `src/shared/**` (in particular, the worker entry imports the public façade from `src/shared/sim/**`).
-  - This gives one invariant: the simulation worker stays headless, the shared contract does not pull in DOM/three.js, and any code in `src/shared/**` (including `src/shared/content/**` and `src/shared/sim/**`) is safe in any host context.
+  - **`server/**` may import from `src/shared/**`, including `src/shared/sim/**`, only via the public façade returned by `createSimulationCore` ([sim-core-interface.md](sim-core-interface.md)) and the exported shared types (protocol, snapshot, content, timing, log, RNG). `server/**` must not import from `src/main/**` or `src/sim/**`.** This is enforced by `server/src/importBoundaries.test.ts`; the design rule mirrors the test so that the rationale is explicit.
+  - This gives one invariant: the simulation worker stays headless, the shared contract does not pull in DOM/three.js, and any code in `src/shared/**` (including `src/shared/content/**` and `src/shared/sim/**`) is safe in any host context (browser worker, Node arena host).
 - The `content library` physically lives in `src/shared/content/**` because both `main` (for building `SessionDefinition` in UI and configuring camera/rendering for the arena) and the shared simulation core (for executing `spawnPlan`, reading arena parameters, and so on) need to read it. Putting it in `src/main/**` or `src/sim/**` would require duplication or would violate import direction rules.
 - The browser worker entry point is the single file `src/sim/worker.ts`; after story 034 it is a thin host wrapper over the shared core ([sim-core-interface.md](sim-core-interface.md)). Main connects to it as follows:
   ```ts
@@ -63,4 +64,4 @@ The game runs in the browser and must keep both a `main thread` with DOM/UI/audi
 - [testing.md](testing.md)
 - [logging.md](logging.md)
 - [content-authoring.md](content-authoring.md)
-- [public-multiplayer-arena.md](public-multiplayer-arena.md)
+- [online-arena-hosting.md](online-arena-hosting.md)

@@ -151,7 +151,7 @@ There are also product requirements:
 - [../docs/GDD_CORE.md](../docs/GDD_CORE.md)
 - [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md)
 - [mobile-web-support.md](mobile-web-support.md)
-- [public-multiplayer-arena.md](public-multiplayer-arena.md)
+- [online-arena-hosting.md](online-arena-hosting.md)
 - [sim-core-interface.md](sim-core-interface.md)
 - [session-definition.md](session-definition.md)
 - [../stories/035-multi-actor-sessions.md](../stories/035-multi-actor-sessions.md)

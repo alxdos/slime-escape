@@ -57,7 +57,7 @@ The beauty of the mode is simplicity: join, spawn, fight, kill, level up, die, s
 
 ## Technical
 
-Public Slime Arena is built on [public-multiplayer-arena.md](../design/public-multiplayer-arena.md): one separate stateful Node/TypeScript server package, Socket.IO `4.x`, one authoritative in-memory `35 x 35 wu` arena, socket-local player identity, server-owned HP/kills/levels/boss transforms, and per-socket interest snapshots based on visible area plus margin. The static client gets the arena server URL at build time through a `VITE_` environment variable. The existing web shell uses the online phase branch recorded in [main-ui-shell.md](../design/main-ui-shell.md), with Public Arena as an explicit side-mode entry point rather than a local `ModePreset` run. Desktop and mobile online input reuse the visible-area camera mapping and the existing movement/aim/fire intent shape from [input-commands.md](../design/input-commands.md) and [mobile-web-support.md](../design/mobile-web-support.md). The first slice reuses shared content ids, world units, timing constants, input intent shape, and sprite registries, but it does not run the existing local one-player `src/sim` session runtime on the server.
+Public Slime Arena is built on [online-arena-hosting.md](../design/online-arena-hosting.md): one separate stateful Node/TypeScript server package, Socket.IO `4.x`, one authoritative in-memory `35 x 35 wu` arena, socket-local player identity, server-owned HP/kills/levels/boss transforms, and per-socket interest snapshots based on visible area plus margin. The static client gets the arena server URL at build time through a `VITE_` environment variable. The existing web shell uses the online phase branch recorded in [main-ui-shell.md](../design/main-ui-shell.md), with Public Arena as an explicit side-mode entry point rather than a local `ModePreset` run. Desktop and mobile online input reuse the visible-area camera mapping and the existing movement/aim/fire intent shape from [input-commands.md](../design/input-commands.md) and [mobile-web-support.md](../design/mobile-web-support.md). The first slice reuses shared content ids, world units, timing constants, input intent shape, and sprite registries, but it does not run the existing local one-player `src/sim` session runtime on the server.
 
 Follow-up from online testing: the online arena must not render over an empty background. The Vibe Jam `/portal` entrypoint now leads to the online Public Arena, not to the old local authored portal run. Use `content/sessions/portal.md` as the content-authored source for the online arena's presentation config: arena size, background list, and active background. Remove the old authored waves/break/boss chain from that file. Do not introduce a hand-written `publicArenaConfig` copy of the same `portal` id, arena numbers, or background path; browser and server code must read the generated shared content projection instead.
 
@@ -133,7 +133,7 @@ Follow-up for Vibe Jam portal semantics: return portal and exit portal positions
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [x] | Record the architecture decision for the public online arena runtime and link the story to it. | Added [public-multiplayer-arena.md](../design/public-multiplayer-arena.md). |
+| T1 | [x] | Record the architecture decision for the public online arena runtime and link the story to it. | Added [online-arena-hosting.md](../design/online-arena-hosting.md). |
 | T2 | [x] | Scaffold the `server/` package as a separate stateful Node/TypeScript deployable with npm scripts, tests, Socket.IO server dependency, and runtime config. | Added `server/` with Socket.IO host, runtime config, build/test scripts, lockfile, and import-boundary tests. |
 | T3 | [x] | Define the first online protocol and client configuration path: build-time `VITE_` arena server URL, join accepted/rejected, input intent, authoritative snapshot, presentation events, disconnect/leave, and full-arena message. | Added shared Public Arena protocol types and `VITE_PUBLIC_ARENA_SERVER_URL` client config. |
 | T4 | [x] | Implement server arena membership: one in-memory public arena, `200` player cap, socket-local player ids, corner spawn areas, disconnect removal, and restart-reset semantics. | Added in-memory arena state, Socket.IO join/leave/disconnect handlers, and membership tests. |
@@ -163,7 +163,7 @@ Follow-up for Vibe Jam portal semantics: return portal and exit portal positions
 
 ## Related
 
-- [public-multiplayer-arena.md](../design/public-multiplayer-arena.md)
+- [online-arena-hosting.md](../design/online-arena-hosting.md)
 - [web-stack.md](../design/web-stack.md)
 - [content-boundaries.md](../design/content-boundaries.md)
 - [content-authoring.md](../design/content-authoring.md)

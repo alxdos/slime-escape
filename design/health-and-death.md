@@ -152,4 +152,4 @@ Without this contract, story 003 will implicitly introduce "HP directly in `Enti
 - [companion-combat.md](companion-combat.md)
 - [../stories/030-companion-combat-and-rescue.md](../stories/030-companion-combat-and-rescue.md)
 - [../stories/035-multi-actor-sessions.md](../stories/035-multi-actor-sessions.md)
-- [public-multiplayer-arena.md](public-multiplayer-arena.md)
+- [online-arena-hosting.md](online-arena-hosting.md)

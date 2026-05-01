@@ -127,5 +127,5 @@ Without a decision, the implementation could spread mobile rules across `index.t
 - [thread-model.md](thread-model.md)
 - [testing.md](testing.md)
 - [../stories/031-mobile-web-support.md](../stories/031-mobile-web-support.md)
-- [public-multiplayer-arena.md](public-multiplayer-arena.md)
+- [online-arena-hosting.md](online-arena-hosting.md)
 - [../stories/032-public-slime-arena.md](../stories/032-public-slime-arena.md)

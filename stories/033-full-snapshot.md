@@ -20,7 +20,7 @@ This story drops both. Every connected socket receives the same authoritative ar
 
 ## Technical
 
-Updates [public-multiplayer-arena.md](../design/public-multiplayer-arena.md) twice. The "Interest snapshots" section is replaced with a recorded decision that the first slice does not perform interest filtering. The "Authority and state" / "Socket.IO contract" sections record that the authoritative snapshot carries only changing state, with `arena` and the recipient's player id delivered once via `joinAccepted` in line with [snapshot-shape.md](../design/snapshot-shape.md). `PublicArenaSnapshot` in `src/shared/publicArenaProtocol.ts` drops `selfId` and `arena` and bumps `PUBLIC_ARENA_PROTOCOL_VERSION`. Interest filtering implementation is removed from `server/src/arenaSimulation.ts`; the per-socket emit path in `server/src/server.ts` calls a single full `snapshotFor`. Client UI/renderer code (`UiShell`, `PublicArenaRenderer`, `PublicArenaHud`, `PublicArenaCombatAffordances`) reads `selfId` and `arena` from the cached `joinAccepted` payload instead of from each snapshot.
+Updates [online-arena-hosting.md](../design/online-arena-hosting.md) twice. The "Interest snapshots" section is replaced with a recorded decision that the first slice does not perform interest filtering. The "Authority and state" / "Socket.IO contract" sections record that the authoritative snapshot carries only changing state, with `arena` and the recipient's player id delivered once via `joinAccepted` in line with [snapshot-shape.md](../design/snapshot-shape.md). `PublicArenaSnapshot` in `src/shared/publicArenaProtocol.ts` drops `selfId` and `arena` and bumps `PUBLIC_ARENA_PROTOCOL_VERSION`. Interest filtering implementation is removed from `server/src/arenaSimulation.ts`; the per-socket emit path in `server/src/server.ts` calls a single full `snapshotFor`. Client UI/renderer code (`UiShell`, `PublicArenaRenderer`, `PublicArenaHud`, `PublicArenaCombatAffordances`) reads `selfId` and `arena` from the cached `joinAccepted` payload instead of from each snapshot.
 
 ## Out of scope
 
@@ -36,7 +36,7 @@ Updates [public-multiplayer-arena.md](../design/public-multiplayer-arena.md) twi
 - Online demo from story 032 still works: join, kill, level up, die, become the boss, fight the boss.
 - `PublicArenaSnapshot` no longer contains `selfId` or `arena`.
 - `PUBLIC_ARENA_PROTOCOL_VERSION` is bumped, and a client connecting to a server with a mismatched version receives a clean `protocolMismatch` rejection.
-- `design/public-multiplayer-arena.md` reflects both decisions: no interest filtering in the first slice, and authoritative snapshots carry only changing state.
+- `design/online-arena-hosting.md` (formerly `design/public-multiplayer-arena.md`, renamed in story 036) reflects both decisions: no interest filtering in the first slice, and authoritative snapshots carry only changing state.
 - Server tests: the dedicated interest-filter test is removed; a new test verifies that snapshots delivered to two distant sockets are equal in `players`/`projectiles` and contain no `selfId`/`arena`.
 - Client tests: cover that `selfId` and `arena` come from `joinAccepted` and reach the renderer/HUD/combat affordances; HUD self lookup, renderer self ring, and online camera/input setup still work after the snapshot loses `selfId`/`arena`.
 - Live online verification by the user with at least two players on opposite corners of the arena.
@@ -45,7 +45,7 @@ Updates [public-multiplayer-arena.md](../design/public-multiplayer-arena.md) twi
 
 | ID | Status | Task | Note |
 |----|--------|------|------|
-| T1 | [x] | Update [public-multiplayer-arena.md](../design/public-multiplayer-arena.md): replace the "Interest snapshots" section with the no-filter decision and the trigger for reintroducing it; record in "Authority and state" / "Socket.IO contract" that the authoritative snapshot carries only changing state, with `arena` and the recipient player id delivered once via `joinAccepted`. Update `Consequences`. | Recorded in [public-multiplayer-arena.md](../design/public-multiplayer-arena.md); architectural PR, no code. |
+| T1 | [x] | Update [online-arena-hosting.md](../design/online-arena-hosting.md): replace the "Interest snapshots" section with the no-filter decision and the trigger for reintroducing it; record in "Authority and state" / "Socket.IO contract" that the authoritative snapshot carries only changing state, with `arena` and the recipient player id delivered once via `joinAccepted`. Update `Consequences`. | Recorded in [online-arena-hosting.md](../design/online-arena-hosting.md); architectural PR, no code. |
 | T2 | [x] | Update `src/shared/publicArenaProtocol.ts`: drop `selfId` and `arena` from `PublicArenaSnapshot`, bump `PUBLIC_ARENA_PROTOCOL_VERSION`, update `publicArenaProtocol.test.ts`. | Protocol test passes. |
 | T3 | [x] | Server: drop interest filtering from `server/src/arenaSimulation.ts` (`InterestRect`, `interestRectFor`, `playerIntersectsInterest`, `projectileIntersectsInterest`, `circleIntersectsRect`, `interestSnapshotFor`, `PUBLIC_ARENA_INTEREST_*`); simplify `snapshotFor` to no longer include `selfId`/`arena`; switch `server/src/server.ts` to the simplified `snapshotFor` per socket. | Server typecheck passes. |
 | T4 | [x] | Update `server/src/arenaSimulation.test.ts`: remove the interest-filter test; add a test that snapshots delivered to two distant sockets are equal in `players`/`projectiles` and contain no `selfId`/`arena`. | Server arena simulation test passes. |
@@ -55,7 +55,7 @@ Updates [public-multiplayer-arena.md](../design/public-multiplayer-arena.md) twi
 
 ## Related
 
-- [public-multiplayer-arena.md](../design/public-multiplayer-arena.md)
+- [online-arena-hosting.md](../design/online-arena-hosting.md)
 - [snapshot-shape.md](../design/snapshot-shape.md)
 - [simulation-timing.md](../design/simulation-timing.md)
 - [arena-and-coordinates.md](../design/arena-and-coordinates.md)
