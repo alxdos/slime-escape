@@ -13,9 +13,10 @@ import type {
   PlayerSnapshot,
   PlayerStatusEffectSnapshot,
   Snapshot,
+  WeaponTimedEffectHudSnapshot,
   WeaponHudSnapshot
 } from '../snapshot.js';
-import { SIM_STEP_MS } from '../timing.js';
+import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../timing.js';
 
 import { createCombatSystem } from './CombatSystem.js';
 import {
@@ -43,6 +44,7 @@ const SNAPSHOT_STATUS_EFFECT_SOURCE = {
 type BufferedInput = Readonly<{
   command: InputCommand;
   inputSequence: number;
+  appliedAtSimTime: number;
 }>;
 
 type PersistentInputState = {
@@ -154,9 +156,17 @@ export function createOnlinePredictionCore(
 
   function syncSelfPlayer(playerConfig: PlayerConfig, snapshot: PlayerSnapshot): Player {
     let player = playerByStableId(snapshot.playerId);
+    const previousFormArchetypeId = player?.formArchetypeId ?? null;
+    const predictorWeaponHud =
+      player === null ? null : combat.weaponHudFor(player.id, simTimeMs);
     if (player === null) {
       player = store.spawnPlayer(playerConfig);
     }
+    const mergedWeaponHud = mergePredictorWeaponHud({
+      authoritative: snapshot.weaponHud,
+      predictor: predictorWeaponHud,
+      shouldMerge: previousFormArchetypeId === snapshot.formArchetypeId
+    });
     player.radius = playerConfig.radius;
     player.contactBox = {
       width: playerConfig.contactBox.width,
@@ -172,7 +182,7 @@ export function createOnlinePredictionCore(
     player.velocity.vx = 0;
     player.velocity.vy = 0;
     player.statusEffects = statusEffectsFromSnapshot(snapshot.statusEffects);
-    combat.setPlayerWeaponHud(player.id, snapshot.weaponHud);
+    combat.setPlayerWeaponHud(player.id, mergedWeaponHud);
     return player;
   }
 
@@ -206,8 +216,11 @@ export function createOnlinePredictionCore(
     for (const projectile of store.projectiles()) {
       if (projectile.ownerId !== localSelfEntityId) continue;
       const sequence = projectile.spawnInputSequence;
-      if (sequence !== null && authoritativeSequences.has(sequence)) continue;
-      if (sequence !== null && sequence > acknowledged) continue;
+      if (sequence === null) continue;
+      if (authoritativeSequences.has(sequence)) continue;
+      if (sequence > acknowledged) continue;
+      const spawnedAtSimMs = projectile.spawnedAtPredictorSimMs ?? simTimeMs;
+      if (simTimeMs - spawnedAtSimMs + STEP_EPSILON_MS < SNAPSHOT_INTERVAL_MS) continue;
       removals.push(projectile.id);
     }
     for (const projectileId of removals) {
@@ -215,12 +228,43 @@ export function createOnlinePredictionCore(
     }
   }
 
-  function replayBufferedInputs(): void {
-    for (const entry of inputBuffer) {
-      applyInputCommand(entry.command, entry.inputSequence);
-      simTimeMs += SIM_STEP_MS;
+  function replayBufferedInputs(preReconcileSimTimeMs: number): void {
+    const replayStartSimTimeMs = simTimeMs;
+    const replayEndSimTimeMs = Math.max(replayStartSimTimeMs, preReconcileSimTimeMs);
+    let remaining = inputBuffer;
+    remaining = applyBufferedInputsMatching(remaining, (entry) =>
+      entry.appliedAtSimTime <= replayStartSimTimeMs + STEP_EPSILON_MS
+    );
+    while (simTimeMs + STEP_EPSILON_MS < replayEndSimTimeMs) {
+      const tickStartSimTimeMs = simTimeMs;
+      remaining = applyBufferedInputsMatching(
+        remaining,
+        (entry) =>
+          entry.appliedAtSimTime > replayStartSimTimeMs + STEP_EPSILON_MS &&
+          entry.appliedAtSimTime + STEP_EPSILON_MS >= tickStartSimTimeMs &&
+          entry.appliedAtSimTime < tickStartSimTimeMs + SIM_STEP_MS
+      );
       tickSystems();
+      simTimeMs += SIM_STEP_MS;
+      if (Math.abs(simTimeMs - replayEndSimTimeMs) < STEP_EPSILON_MS) {
+        simTimeMs = replayEndSimTimeMs;
+      }
     }
+  }
+
+  function applyBufferedInputsMatching(
+    entries: ReadonlyArray<BufferedInput>,
+    matches: (entry: BufferedInput) => boolean
+  ): BufferedInput[] {
+    const remaining: BufferedInput[] = [];
+    for (const entry of entries) {
+      if (matches(entry)) {
+        applyInputCommand(entry.command, entry.inputSequence);
+      } else {
+        remaining.push(entry);
+      }
+    }
+    return remaining;
   }
 
   function tickSystems(): void {
@@ -229,6 +273,15 @@ export function createOnlinePredictionCore(
     movement.tick(activeSession.arena, store, input, simTimeMs);
     combat.tick(input, store, spatialIndex, simTimeMs, activeSession.arena, () => undefined);
     combat.drainActorEffectIntents();
+    stampPredictorProjectileSpawnTimes();
+  }
+
+  function stampPredictorProjectileSpawnTimes(): void {
+    for (const projectile of store.projectiles()) {
+      if (projectile.spawnedAtPredictorSimMs === null) {
+        projectile.spawnedAtPredictorSimMs = simTimeMs;
+      }
+    }
   }
 
   function applyPersistentInputToRuntime(state: PersistentInputState): void {
@@ -349,18 +402,17 @@ export function createOnlinePredictionCore(
     },
     submitInput(command, inputSequence): void {
       if (!running) return;
-      inputBuffer.push({ command, inputSequence });
+      inputBuffer.push({ command, inputSequence, appliedAtSimTime: simTimeMs });
       applyInputCommand(command, inputSequence);
     },
     receiveAuthoritativeSnapshot(snapshot): void {
       if (!running) return;
+      const preReconcileSimTimeMs = simTimeMs;
       latestAuthoritativeSnapshot = snapshot;
       simTimeMs = snapshot.simTimeMs;
-      lastWallMs = null;
-      lagMs = 0;
       trimAcknowledgedInputs(snapshot);
       if (!syncFromAuthoritativeSnapshot(snapshot)) return;
-      replayBufferedInputs();
+      replayBufferedInputs(preReconcileSimTimeMs);
       emitPredictedSnapshot();
     },
     pump(nowMs): void {
@@ -400,6 +452,91 @@ function applyCommandToPersistentInput(
     default:
       assertNever(command);
   }
+}
+
+type WeaponHudSlot = WeaponHudSnapshot['weapons'][number];
+type TemporaryOverdriveHudEffect = Extract<
+  WeaponTimedEffectHudSnapshot,
+  { kind: 'temporaryOverdrive' }
+>;
+
+function mergePredictorWeaponHud(init: Readonly<{
+  authoritative: WeaponHudSnapshot | null;
+  predictor: WeaponHudSnapshot | null;
+  shouldMerge: boolean;
+}>): WeaponHudSnapshot | null {
+  if (!init.shouldMerge || init.authoritative === null || init.predictor === null) {
+    return init.authoritative;
+  }
+  return {
+    ...init.authoritative,
+    weapons: init.authoritative.weapons.map((authoritativeWeapon) => {
+      const predictorWeapon = init.predictor?.weapons.find(
+        (weapon) =>
+          weapon.index === authoritativeWeapon.index &&
+          weapon.weaponArchetypeId === authoritativeWeapon.weaponArchetypeId
+      );
+      return predictorWeapon === undefined
+        ? authoritativeWeapon
+        : mergePredictorWeaponSlot(authoritativeWeapon, predictorWeapon);
+    })
+  };
+}
+
+function mergePredictorWeaponSlot(
+  authoritative: WeaponHudSlot,
+  predictor: WeaponHudSlot
+): WeaponHudSlot {
+  const keepPredictorCooldown =
+    predictor.cooldownReadyAtSimMs > authoritative.cooldownReadyAtSimMs;
+  return {
+    ...authoritative,
+    cooldownStartedAtSimMs: keepPredictorCooldown
+      ? predictor.cooldownStartedAtSimMs
+      : authoritative.cooldownStartedAtSimMs,
+    cooldownReadyAtSimMs: Math.max(
+      authoritative.cooldownReadyAtSimMs,
+      predictor.cooldownReadyAtSimMs
+    ),
+    timedEffects: mergePredictorTimedEffects(authoritative.timedEffects, predictor.timedEffects)
+  };
+}
+
+function mergePredictorTimedEffects(
+  authoritative: WeaponHudSlot['timedEffects'],
+  predictor: WeaponHudSlot['timedEffects']
+): WeaponHudSlot['timedEffects'] {
+  const overdrive = mergeTemporaryOverdriveEffect(
+    findTemporaryOverdriveEffect(authoritative),
+    findTemporaryOverdriveEffect(predictor)
+  );
+  return overdrive === null ? [] : [overdrive];
+}
+
+function findTemporaryOverdriveEffect(
+  effects: WeaponHudSlot['timedEffects']
+): TemporaryOverdriveHudEffect | null {
+  return (
+    effects.find(
+      (effect): effect is TemporaryOverdriveHudEffect =>
+        effect.kind === 'temporaryOverdrive'
+    ) ?? null
+  );
+}
+
+function mergeTemporaryOverdriveEffect(
+  authoritative: TemporaryOverdriveHudEffect | null,
+  predictor: TemporaryOverdriveHudEffect | null
+): TemporaryOverdriveHudEffect | null {
+  if (authoritative === null) return predictor;
+  if (predictor === null) return authoritative;
+  const source =
+    predictor.expiresAtSimMs >= authoritative.expiresAtSimMs ? predictor : authoritative;
+  return {
+    ...source,
+    startedAtSimMs: Math.max(authoritative.startedAtSimMs, predictor.startedAtSimMs),
+    expiresAtSimMs: Math.max(authoritative.expiresAtSimMs, predictor.expiresAtSimMs)
+  };
 }
 
 function statusEffectsFromSnapshot(

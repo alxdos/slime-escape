@@ -150,6 +150,10 @@ describe('simulation worker controller modes', () => {
       selfPlayerId: 'self'
     });
     controller.handleMessage({
+      kind: 'authoritativeSnapshot',
+      snapshot: makeSnapshot({}, BOMB_PLACER.id)
+    });
+    controller.handleMessage({
       kind: 'input',
       command: { kind: 'aim', x: 0, y: 1 },
       inputSequence: 1
@@ -159,16 +163,14 @@ describe('simulation worker controller modes', () => {
       command: { kind: 'fire', phase: 'start' },
       inputSequence: 2
     });
+    controller.pump(0);
+    controller.pump(SIM_STEP_MS);
     controller.handleMessage({
       kind: 'input',
       command: { kind: 'fire', phase: 'stop' },
       inputSequence: 3
     });
-    controller.handleMessage({
-      kind: 'authoritativeSnapshot',
-      snapshot: makeSnapshot({}, BOMB_PLACER.id)
-    });
-    for (let step = 0; step < 170; step += 1) {
+    for (let step = 2; step < 170; step += 1) {
       controller.pump(step * SIM_STEP_MS);
     }
 

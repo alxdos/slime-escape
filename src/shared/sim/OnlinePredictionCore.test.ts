@@ -5,7 +5,7 @@ import type { InputCommand } from '../input';
 import { log } from '../log';
 import type { PlayerConfig, SessionDefinition } from '../session';
 import type { PlayerSnapshot, ProjectileSnapshot, Snapshot } from '../snapshot';
-import { SIM_STEP_MS } from '../timing';
+import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../timing';
 
 import { createOnlinePredictionCore } from './OnlinePredictionCore';
 
@@ -40,8 +40,11 @@ describe('OnlinePredictionCore', () => {
     });
 
     core.start(makeSession(), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ simTimeMs: 100 }));
     core.submitInput({ kind: 'move', dx: 1, dy: 0 }, 1);
     core.submitInput({ kind: 'move', dx: 0, dy: 1 }, 2);
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
     core.receiveAuthoritativeSnapshot(
       makeSnapshot({
         simTimeMs: 100,
@@ -54,6 +57,72 @@ describe('OnlinePredictionCore', () => {
     expect(predicted.simTimeMs).toBeCloseTo(100 + SIM_STEP_MS, 6);
     expect(player.x).toBeCloseTo(0, 6);
     expect(player.y).toBeCloseTo((6 * SIM_STEP_MS) / 1000, 6);
+  });
+
+  it('replays held movement across the pre-reconcile elapsed sim time', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+
+    core.start(makeSession(), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ simTimeMs: 100 }));
+    core.submitInput({ kind: 'move', dx: 1, dy: 0 }, 1);
+    core.pump(0);
+    core.pump(200);
+
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: 100,
+        lastInputSequence: {}
+      })
+    );
+
+    const predicted = lastSnapshot(predictions);
+    expect(predicted.simTimeMs).toBeCloseTo(300, 6);
+    expect(selfPlayer(predicted).x).toBeCloseTo((6 * 200) / 1000, 6);
+  });
+
+  it('applies unacknowledged old commands before the first replay tick', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+
+    core.start(makeSession(), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ simTimeMs: 100 }));
+    core.submitInput({ kind: 'move', dx: 0, dy: -1 }, 1);
+    core.pump(0);
+    core.pump(100);
+
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: 150,
+        lastInputSequence: {}
+      })
+    );
+
+    const predicted = lastSnapshot(predictions);
+    expect(predicted.simTimeMs).toBeCloseTo(200, 6);
+    expect(selfPlayer(predicted).y).toBeLessThan(0);
+  });
+
+  it('preserves wall-clock continuity across authoritative reconcile', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+
+    core.start(makeSession(), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ simTimeMs: 0 }));
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ simTimeMs: SIM_STEP_MS }));
+
+    const beforePump = lastSnapshot(predictions);
+    core.pump(SIM_STEP_MS * 2);
+
+    expect(lastSnapshot(predictions).simTimeMs).toBeGreaterThan(beforePump.simTimeMs);
   });
 
   it('snaps back to the authoritative position when the server rejects a predicted movement advantage', () => {
@@ -96,6 +165,138 @@ describe('OnlinePredictionCore', () => {
     expect(selfPlayer(predicted).x).toBeCloseTo((6 * 0.25 * SIM_STEP_MS) / 1000, 6);
   });
 
+  it('does not regress local per-slot cooldowns from stale authoritative snapshots', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+
+    core.start(makeSession(), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ simTimeMs: 0 }));
+    core.submitInput({ kind: 'aim', x: 8, y: 0 }, 1);
+    core.submitInput({ kind: 'fire', phase: 'start' }, 2);
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
+
+    const localCooldownReadyAt =
+      selfPlayer(lastSnapshot(predictions)).weaponHud?.weapons[0]?.cooldownReadyAtSimMs ?? 0;
+    expect(localCooldownReadyAt).toBeGreaterThan(0);
+
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: SIM_STEP_MS,
+        entities: [
+          makePlayer({
+            weaponHud: makeWeaponHud(PISTOL.id, {
+              cooldownStartedAtSimMs: 0,
+              cooldownReadyAtSimMs: 0
+            })
+          })
+        ],
+        lastInputSequence: { self: 2 }
+      })
+    );
+
+    expect(
+      selfPlayer(lastSnapshot(predictions)).weaponHud?.weapons[0]?.cooldownReadyAtSimMs
+    ).toBe(localCooldownReadyAt);
+  });
+
+  it('does not regress local overdrive timed effects from stale authoritative snapshots', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+
+    core.start(makeSession(), 'self');
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: 100,
+        entities: [
+          makePlayer({
+            weaponHud: makeWeaponHud(PISTOL.id, {
+              timedEffects: [
+                {
+                  kind: 'temporaryOverdrive',
+                  cooldownMultiplier: 0.5,
+                  startedAtSimMs: 200,
+                  expiresAtSimMs: 900
+                }
+              ]
+            })
+          })
+        ]
+      })
+    );
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: 120,
+        entities: [
+          makePlayer({
+            weaponHud: makeWeaponHud(PISTOL.id, {
+              timedEffects: [
+                {
+                  kind: 'temporaryOverdrive',
+                  cooldownMultiplier: 0.5,
+                  startedAtSimMs: 100,
+                  expiresAtSimMs: 500
+                }
+              ]
+            })
+          })
+        ]
+      })
+    );
+
+    const overdrive =
+      selfPlayer(lastSnapshot(predictions)).weaponHud?.weapons[0]?.timedEffects[0] ?? null;
+    expect(overdrive).toMatchObject({
+      kind: 'temporaryOverdrive',
+      startedAtSimMs: 200,
+      expiresAtSimMs: 900
+    });
+  });
+
+  it('replaces the cooldown set on form change without leaking previous-form cooldowns', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+
+    core.start(makeSession(), 'self');
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: 100,
+        entities: [
+          makePlayer({
+            formArchetypeId: null,
+            weaponHud: makeWeaponHud(PISTOL.id, {
+              cooldownReadyAtSimMs: 1000
+            })
+          })
+        ]
+      })
+    );
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: 120,
+        entities: [
+          makePlayer({
+            formArchetypeId: 'slime-one-eye',
+            weaponHud: makeWeaponHud(PISTOL.id, {
+              cooldownStartedAtSimMs: 0,
+              cooldownReadyAtSimMs: 0
+            })
+          })
+        ]
+      })
+    );
+
+    expect(
+      selfPlayer(lastSnapshot(predictions)).weaponHud?.weapons[0]?.cooldownReadyAtSimMs
+    ).toBe(0);
+  });
+
   it('drops predicted own projectiles once their firing input is acknowledged without an authoritative projectile', () => {
     const predictions: Snapshot[] = [];
     const core = createOnlinePredictionCore({
@@ -103,8 +304,11 @@ describe('OnlinePredictionCore', () => {
     });
 
     core.start(makeSession(), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot());
     core.submitInput({ kind: 'aim', x: 8, y: 0 }, 1);
     core.submitInput({ kind: 'fire', phase: 'start' }, 2);
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
     core.receiveAuthoritativeSnapshot(makeSnapshot());
 
     expect(projectiles(lastSnapshot(predictions)).map((projectile) => projectile.spawnInputSequence)).toEqual([
@@ -129,9 +333,13 @@ describe('OnlinePredictionCore', () => {
     const shotgunPlayer = makePlayer({ weaponHud: makeWeaponHud(SHOTGUN.id) });
 
     core.start(makeSession(SHOTGUN.id), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ entities: [shotgunPlayer] }));
     core.submitInput({ kind: 'aim', x: 8, y: 0 }, 1);
     core.submitInput({ kind: 'fire', phase: 'start' }, 2);
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
     core.submitInput({ kind: 'fire', phase: 'stop' }, 3);
+    core.pump(SIM_STEP_MS * 3);
     core.receiveAuthoritativeSnapshot(makeSnapshot({ entities: [shotgunPlayer] }));
 
     const predictedBeforeAck = projectiles(lastSnapshot(predictions));
@@ -160,6 +368,38 @@ describe('OnlinePredictionCore', () => {
     const predictedAfterAck = projectiles(lastSnapshot(predictions));
     expect(predictedAfterAck).toHaveLength(5);
     expect(predictedAfterAck.map(projectilePositionKey)).toEqual(positionsBeforeAck);
+  });
+
+  it('keeps a held-fire follow-up shot during the per-projectile rejection grace window', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+
+    core.start(makeSession(PISTOL.id), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ simTimeMs: 0 }));
+    core.submitInput({ kind: 'aim', x: 8, y: 0 }, 41);
+    core.submitInput({ kind: 'fire', phase: 'start' }, 42);
+    core.pump(0);
+    core.pump(PISTOL.cooldownMs + SIM_STEP_MS * 2);
+
+    const beforeAck = lastSnapshot(predictions);
+    const predictedBeforeAck = projectiles(beforeAck).filter(
+      (projectile) => projectile.spawnInputSequence === 42
+    );
+    expect(predictedBeforeAck.length).toBeGreaterThanOrEqual(2);
+
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: beforeAck.simTimeMs,
+        lastInputSequence: { self: 42 }
+      })
+    );
+
+    const predictedAfterAck = projectiles(lastSnapshot(predictions)).filter(
+      (projectile) => projectile.spawnInputSequence === 42
+    );
+    expect(predictedAfterAck).toHaveLength(1);
   });
 
   it('warns and waits for a later snapshot when no session player config can seed prediction', () => {
@@ -193,9 +433,12 @@ function runPrediction(
     onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
   });
   core.start(makeSession(), 'self');
+  core.receiveAuthoritativeSnapshot(authoritative);
   for (const input of inputs) {
     core.submitInput(input.command, input.inputSequence);
   }
+  core.pump(0);
+  core.pump(SIM_STEP_MS * inputs.length);
   core.receiveAuthoritativeSnapshot(authoritative);
   return lastSnapshot(predictions);
 }
@@ -286,7 +529,10 @@ function makePlayer(overrides: Partial<PlayerSnapshot> = {}): PlayerSnapshot {
   };
 }
 
-function makeWeaponHud(weaponArchetypeId: string): NonNullable<PlayerSnapshot['weaponHud']> {
+function makeWeaponHud(
+  weaponArchetypeId: string,
+  overrides: Partial<NonNullable<PlayerSnapshot['weaponHud']>['weapons'][number]> = {}
+): NonNullable<PlayerSnapshot['weaponHud']> {
   return {
     selectedIndex: 0,
     weapons: [
@@ -296,7 +542,8 @@ function makeWeaponHud(weaponArchetypeId: string): NonNullable<PlayerSnapshot['w
         cooldownStartedAtSimMs: 0,
         cooldownReadyAtSimMs: 0,
         modifiers: [],
-        timedEffects: []
+        timedEffects: [],
+        ...overrides
       }
     ]
   };
