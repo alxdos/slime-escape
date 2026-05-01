@@ -372,7 +372,8 @@ function makeSession(overrides: Partial<Omit<SessionDefinition, 'players' | 'dyn
         contactBox: { width: 1, height: 1 },
         maxSpeed: 6,
         maxHp: 5,
-        loadout: null
+        loadout: null,
+        companion: null
       }
     ],
     backgrounds: [],
@@ -386,8 +387,7 @@ function makeSession(overrides: Partial<Omit<SessionDefinition, 'players' | 'dyn
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null,
-    ...overrides,
-    companion: overrides.companion ?? null
+    ...overrides
   };
 }
 

@@ -123,6 +123,7 @@ function makeSnapshot(
         y: 2,
         hp: 28,
         maxHp: 40,
+        state: 'alive',
         formArchetypeId: selfFormArchetypeId,
         weaponHud: null
       },
@@ -134,6 +135,7 @@ function makeSnapshot(
         y: 0,
         hp: 10,
         maxHp: 10,
+        state: 'alive' as const,
         formArchetypeId: 'slime-one-eye',
         weaponHud: null
       }))

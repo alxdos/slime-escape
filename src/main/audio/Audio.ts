@@ -591,6 +591,8 @@ export function createAudio(init: AudioInit = {}): Audio {
       case 'dropSpawn':
       case 'dropExpire':
       case 'playerSpawn':
+      case 'playerDowned':
+      case 'playerRevived':
         return;
       case 'companionRescued': {
         const sampleId = dependencies.audioMappings.resolveEventSample('companionRescued');

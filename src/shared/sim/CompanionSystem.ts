@@ -3,7 +3,6 @@ import type { ArenaConfig, EncounterDefinition, Vec2 } from '../session.js';
 import { SIM_STEP_MS } from '../timing.js';
 
 import type { Boss, Companion, Drop, Enemy, EntityId, EntityStore, Player } from './EntityStore.js';
-import { resolveNearestLivingPlayer } from './PlayerTargeting.js';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const ALERT_DURATION_MS = 300;
@@ -29,23 +28,65 @@ export type CompanionSystem = Readonly<{
 export function createCompanionSystem(): CompanionSystem {
   return {
     tick(arena, store, encounter, simTimeMs, emit): void {
-      const companion = store.companion();
-      if (companion === null) return;
-      const player = resolveNearestLivingPlayer(store, companion.position);
-      if (player === null) {
-        companion.velocity.vx = 0;
-        companion.velocity.vy = 0;
-        return;
-      }
+      for (const companion of companionsInOwnerOrder(store)) {
+        const player = playerByStableId(store, companion.ownerPlayerId);
+        if (player === null) {
+          companion.velocity.vx = 0;
+          companion.velocity.vy = 0;
+          continue;
+        }
 
-      if (companion.state === 'ghost') {
-        tickGhostCompanion(companion, player, store, arena, simTimeMs, emit);
-        return;
-      }
+        if (companion.state === 'ghost') {
+          tickGhostCompanion(companion, player, store, arena, simTimeMs, emit);
+          continue;
+        }
 
-      tickLivingCompanion(companion, player, store, arena, encounter, simTimeMs, emit);
+        tickLivingCompanion(companion, player, store, arena, encounter, simTimeMs, emit);
+      }
     }
   };
+}
+
+function companionsInOwnerOrder(store: EntityStore): ReadonlyArray<Companion> {
+  return [...store.companions()].sort((left, right) =>
+    left.ownerPlayerId.localeCompare(right.ownerPlayerId)
+  );
+}
+
+function playerByStableId(store: EntityStore, playerId: string): Player | null {
+  for (const player of store.players()) {
+    if (player.playerId === playerId) return player;
+  }
+  return null;
+}
+
+function nearestLivingRescuer(
+  target: Companion,
+  store: EntityStore,
+  rescueRadius: number
+): Player | null {
+  let best: Player | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const player of store.players()) {
+    if (player.state !== 'alive' || player.hp <= 0) continue;
+    const candidateDistance = distance(target.position, player.position);
+    if (candidateDistance > rescueRadius) continue;
+    if (
+      candidateDistance < bestDistance ||
+      (candidateDistance === bestDistance && (best === null || player.playerId < best.playerId))
+    ) {
+      best = player;
+      bestDistance = candidateDistance;
+    }
+  }
+  return best;
+}
+
+function hasAnyLivingPlayer(store: EntityStore): boolean {
+  for (const player of store.players()) {
+    if (player.state === 'alive' && player.hp > 0) return true;
+  }
+  return false;
 }
 
 function tickLivingCompanion(
@@ -97,21 +138,22 @@ function tickLivingCompanion(
 
 function tickGhostCompanion(
   companion: Companion,
-  player: Player,
+  owner: Player,
   store: EntityStore,
   arena: ArenaConfig,
   simTimeMs: number,
   emit: ((event: RuntimeEvent) => void) | undefined
 ): void {
   companion.targetId = null;
-  if (distance(companion.position, player.position) <= companion.rescue.radius) {
+  const rescuer = nearestLivingRescuer(companion, store, companion.rescue.radius);
+  if (rescuer !== null) {
     companion.rescueProgressMs += SIM_STEP_MS;
     if (companion.rescueProgressMs >= companion.rescue.durationMs) {
       companion.state = 'alive';
       companion.hp = Math.max(1, Math.ceil(companion.maxHp * companion.rescue.reviveHpFraction));
       companion.rescueProgressMs = 0;
       companion.mode = 'rest';
-      steerToward(companion, restPosition(player, companion), arena);
+      steerToward(companion, restPosition(owner, companion), arena);
       emit?.({
         kind: 'companionRescued',
         simTime: simTimeMs,
@@ -122,7 +164,7 @@ function tickGhostCompanion(
         x: companion.position.x,
         y: companion.position.y
       });
-      tryBoop(companion, player, store, simTimeMs, emit);
+      tryBoop(companion, owner, store, simTimeMs, emit);
       return;
     }
     companion.mode = 'rescue';
@@ -131,8 +173,10 @@ function tickGhostCompanion(
     companion.mode = 'ghost';
   }
 
-  steerToward(companion, ghostPosition(player, companion), arena, GHOST_SPEED_MULTIPLIER);
-  tryBoop(companion, player, store, simTimeMs, emit);
+  steerToward(companion, ghostPosition(owner, companion), arena, GHOST_SPEED_MULTIPLIER);
+  if (hasAnyLivingPlayer(store)) {
+    tryBoop(companion, owner, store, simTimeMs, emit);
+  }
 }
 
 function acquireThreat(companion: Companion, store: EntityStore): Hostile | null {

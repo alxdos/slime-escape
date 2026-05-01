@@ -459,7 +459,8 @@ function snapshot(
         x: options.playerX ?? 100,
         y: options.playerY ?? 100,
         hp: 5,
-        maxHp: 5
+        maxHp: 5,
+        state: 'alive'
       }
     ],
     encounter: { id, type, index, elapsedMs: 0, waveOrdinal: type === 'wave' ? index + 1 : null },
@@ -508,10 +509,10 @@ function makeSession(
         contactBox: { width: 1, height: 1 },
         maxSpeed: 5,
         maxHp: 5,
-        loadout: null
+        loadout: null,
+        companion: null
       }
     ],
-    companion: null,
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],

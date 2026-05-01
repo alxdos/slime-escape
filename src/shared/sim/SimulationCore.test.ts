@@ -40,6 +40,39 @@ describe('SimulationCore', () => {
     expect(playerSnapshot?.x).toBeGreaterThan(session.players[0].position.x);
   });
 
+  it('keeps ghost players movable while filtering combat inputs', () => {
+    const snapshots: Snapshot[] = [];
+    const events: RuntimeEvent[] = [];
+    const core = createSimulationCore({
+      onSnapshot: (snapshot) => snapshots.push(snapshot),
+      onEvent: (event) => events.push(event)
+    });
+    const session = makeAllPlayersDeadContactSession();
+
+    core.start(session);
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
+    core.pump(SIM_STEP_MS * 2);
+
+    const ghostBeforeMove = lastPlayerSnapshot(snapshots);
+    expect(ghostBeforeMove.state).toBe('ghost');
+    expect(ghostBeforeMove.weaponHud).toBeNull();
+    expect(events.map((event) => event.kind)).toContain('playerDowned');
+
+    const fireEventsBefore = events.filter((event) => event.kind === 'fire').length;
+    core.submitInput('solo', { kind: 'aim', x: 5, y: 0 });
+    core.submitInput('solo', { kind: 'fire', phase: 'start' });
+    core.submitInput('solo', { kind: 'move', dx: 1, dy: 0 });
+    core.pump(SIM_STEP_MS * 3);
+    core.pump(SIM_STEP_MS * 4);
+
+    const ghostAfterMove = lastPlayerSnapshot(snapshots);
+    const fireEventsAfter = events.filter((event) => event.kind === 'fire').length;
+    expect(fireEventsAfter).toBe(fireEventsBefore);
+    expect(ghostAfterMove.state).toBe('ghost');
+    expect(ghostAfterMove.x).toBeGreaterThan(ghostBeforeMove.x);
+  });
+
   it('runs lifecycle, input, snapshots, and stop through the public facade', () => {
     const snapshots: Snapshot[] = [];
     const events: RuntimeEvent[] = [];
@@ -217,7 +250,8 @@ function makeMultiActorSession(): SessionDefinition {
         contactBox: { width: 1, height: 1 },
         maxSpeed: 6,
         maxHp: 2,
-        loadout: { weapons: [PISTOL.id], selectedIndex: 0 }
+        loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+        companion: null
       },
       {
         id: 'bravo',
@@ -226,10 +260,10 @@ function makeMultiActorSession(): SessionDefinition {
         contactBox: { width: 1, height: 1 },
         maxSpeed: 6,
         maxHp: 2,
-        loadout: { weapons: [PISTOL.id], selectedIndex: 0 }
+        loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+        companion: null
       }
     ],
-    companion: null,
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],
@@ -266,7 +300,6 @@ function makeDynamicRosterSession(): SessionDefinition {
     arena: { width: 32, height: 18 },
     dynamicRoster: true,
     players: [],
-    companion: null,
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],
@@ -304,6 +337,57 @@ function dynamicPlayer(id: string): PlayerConfig {
     contactBox: { width: 1, height: 1 },
     maxSpeed: 6,
     maxHp: 4,
-    loadout: { weapons: [PISTOL.id], selectedIndex: 0 }
+    loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+    companion: null
+  };
+}
+
+function makeAllPlayersDeadContactSession(): SessionDefinition {
+  return {
+    id: 'ghost-input-core-test',
+    seed: 1,
+    arena: { width: 32, height: 18 },
+    dynamicRoster: false,
+    players: [
+      {
+        id: 'solo',
+        position: { x: 0, y: 0 },
+        radius: 0.5,
+        contactBox: { width: 1, height: 1 },
+        maxSpeed: 6,
+        maxHp: 1,
+        loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+        companion: null
+      }
+    ],
+    backgrounds: [],
+    musicSampleId: null,
+    modifiers: [],
+    rules: {
+      damage: { slimeFriendlyFire: true },
+      aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 }
+    },
+    encounters: [
+      {
+        id: 'contact',
+        type: 'sandbox',
+        backgroundId: null,
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: {
+          kind: 'static',
+          spawns: [{ archetypeId: 'slime-one-eye', position: { x: 0, y: 0 } }]
+        },
+        zoneBehavior: { kind: 'disabled' },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'never', next: 'sequential' },
+        tuning: null
+      }
+    ],
+    winCondition: { kind: 'none' },
+    lossCondition: { kind: 'allPlayersDead' },
+    uiMeta: null
   };
 }

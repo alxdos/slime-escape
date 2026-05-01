@@ -29,6 +29,7 @@ const PLAYER_SPEC = {
   maxHp: 5
 };
 const COMPANION_SPEC: CompanionSpawnSpec = {
+  ownerPlayerId: 'player',
   petArchetypeId: 'debug-buddy',
   position: { x: 0, y: 0 },
   contactBox: squareContactBox(0.4),

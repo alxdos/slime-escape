@@ -93,6 +93,7 @@ const TEST_BOSS: BossSpawnSpec = {
   attackIdsFromArchetype: []
 };
 const COMPANION_SPEC: CompanionSpawnSpec = {
+  ownerPlayerId: 'player',
   petArchetypeId: 'debug-buddy',
   position: { x: 0, y: 0 },
   contactBox: { width: 0.8, height: 0.8 },

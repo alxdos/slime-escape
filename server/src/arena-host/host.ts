@@ -427,7 +427,8 @@ function createBasePlayerConfigFields(): Omit<PlayerConfig, 'id' | 'position'> {
     contactBox: PUBLIC_ARENA_HOST_PLAYER.contactBox,
     maxSpeed: PUBLIC_ARENA_HOST_PLAYER.maxSpeed,
     maxHp: PUBLIC_ARENA_HOST_PLAYER.maxHp,
-    loadout: loadoutFromIds(PUBLIC_ARENA_HOST_LOADOUT.weapons, PUBLIC_ARENA_HOST_LOADOUT.selectedIndex)
+    loadout: loadoutFromIds(PUBLIC_ARENA_HOST_LOADOUT.weapons, PUBLIC_ARENA_HOST_LOADOUT.selectedIndex),
+    companion: null
   };
 }
 

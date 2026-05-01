@@ -73,6 +73,7 @@ const FIELD_EFFECT_SPEC: FieldEffectSpawnSpec = {
 };
 
 const COMPANION_SPEC: CompanionSpawnSpec = {
+  ownerPlayerId: 'player',
   petArchetypeId: 'debug-buddy',
   position: { x: -1, y: 1 },
   contactBox: { width: 0.9, height: 0.8 },

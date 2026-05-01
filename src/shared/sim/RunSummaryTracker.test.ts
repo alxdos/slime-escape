@@ -255,10 +255,10 @@ function makeSession(
         contactBox: { width: 1, height: 1 },
         maxSpeed: 6,
         maxHp: 5,
-        loadout: null
+        loadout: null,
+        companion: null
       }
     ],
-    companion: null,
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],

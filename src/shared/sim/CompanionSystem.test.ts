@@ -24,6 +24,7 @@ const PLAYER_SPEC = {
   maxHp: 3
 };
 const BASE_COMPANION: CompanionSpawnSpec = {
+  ownerPlayerId: 'player',
   petArchetypeId: 'debug-buddy',
   position: { x: 0, y: 0 },
   contactBox: { width: 0.8, height: 0.8 },
@@ -92,6 +93,42 @@ function healDropAt(x: number, y: number, overrides: Partial<DropSpawnSpec> = {}
 }
 
 describe('CompanionSystem movement modes', () => {
+  it('ticks multiple companions independently while keeping each pinned to its owner', () => {
+    const store = createEntityStore();
+    store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'alpha',
+      position: { x: -4, y: 0 }
+    });
+    store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'bravo',
+      position: { x: 4, y: 0 }
+    });
+    const alphaCompanion = store.spawnCompanion({
+      ...BASE_COMPANION,
+      ownerPlayerId: 'alpha',
+      position: { x: -4, y: 0 }
+    });
+    const bravoCompanion = store.spawnCompanion({
+      ...BASE_COMPANION,
+      ownerPlayerId: 'bravo',
+      position: { x: 4, y: 0 }
+    });
+    const leftEnemy = store.spawnEnemy(enemyAt(-3, 0));
+    const rightEnemy = store.spawnEnemy(enemyAt(3, 0));
+    const system = createCompanionSystem();
+
+    system.tick(ARENA, store, ACTIVE_WAVE, 0);
+
+    expect(Array.from(store.companions(), (companion) => companion.id)).toEqual([
+      alphaCompanion.id,
+      bravoCompanion.id
+    ]);
+    expect(alphaCompanion.targetId).toBe(leftEnemy.id);
+    expect(bravoCompanion.targetId).toBe(rightEnemy.id);
+  });
+
   it('rests outside active combat pressure and moves with acceleration limits', () => {
     const { companion, system, store } = setup({
       ...BASE_COMPANION,
@@ -208,6 +245,43 @@ describe('CompanionSystem heal drop seeking', () => {
 });
 
 describe('CompanionSystem ghost and rescue', () => {
+  it('lets any living player rescue a ghost companion while the owner remains a ghost', () => {
+    const store = createEntityStore();
+    const owner = store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'owner',
+      position: { x: 10, y: 0 }
+    });
+    store.spawnPlayer({
+      ...PLAYER_SPEC,
+      id: 'rescuer',
+      position: { x: 0, y: 0 }
+    });
+    owner.state = 'ghost';
+    owner.hp = 0;
+    const companion = store.spawnCompanion({
+      ...BASE_COMPANION,
+      ownerPlayerId: 'owner',
+      position: { x: 0.5, y: 0 },
+      rescue: { ...BASE_COMPANION.rescue, durationMs: SIM_STEP_MS * 2 }
+    });
+    companion.state = 'ghost';
+    companion.hp = 0;
+    const system = createCompanionSystem();
+    const events: RuntimeEvent[] = [];
+
+    system.tick(ARENA, store, ACTIVE_WAVE, 0);
+    expect(companion.mode).toBe('rescue');
+    expect(companion.rescueProgressMs).toBe(SIM_STEP_MS);
+
+    system.tick(ARENA, store, ACTIVE_WAVE, SIM_STEP_MS, (event) => events.push(event));
+
+    expect(owner.state).toBe('ghost');
+    expect(companion.state).toBe('alive');
+    expect(companion.hp).toBe(3);
+    expect(events.some((event) => event.kind === 'companionRescued')).toBe(true);
+  });
+
   it('resets rescue progress when the player leaves the radius', () => {
     const { companion, player, system, store } = setup();
     companion.state = 'ghost';

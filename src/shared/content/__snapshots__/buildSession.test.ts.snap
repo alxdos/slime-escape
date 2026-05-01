@@ -20,7 +20,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -358,6 +357,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "musicSampleId": "music/007-nature",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -424,7 +424,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -762,6 +761,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "musicSampleId": "music/007-nature",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -828,7 +828,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -1166,6 +1165,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "musicSampleId": "music/007-nature",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -1240,7 +1240,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -3020,6 +3019,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "musicSampleId": "music/100-waves",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -3089,7 +3089,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -4869,6 +4868,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "musicSampleId": "music/100-waves",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -4938,7 +4938,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -6718,6 +6717,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "musicSampleId": "music/100-waves",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -6787,7 +6787,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -8408,6 +8407,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "musicSampleId": "music/005-forest",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -8480,7 +8480,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -10101,6 +10100,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "musicSampleId": "music/005-forest",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -10173,7 +10173,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
       "imageUrl": "/images/bg/bg-05.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -11794,6 +11793,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted campaign
   "musicSampleId": "music/005-forest",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -11850,7 +11850,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -11944,6 +11943,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -11997,7 +11997,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -12091,6 +12090,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -12144,7 +12144,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -12238,6 +12237,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted combat-m
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -12299,7 +12299,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
       "imageUrl": "/images/bg/bg-06.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -12595,6 +12594,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
   "musicSampleId": "music/100-waves",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -12659,7 +12659,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
       "imageUrl": "/images/bg/bg-06.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -12955,6 +12954,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
   "musicSampleId": "music/100-waves",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -13019,7 +13019,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
       "imageUrl": "/images/bg/bg-06.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -13315,6 +13314,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted dungeon 
   "musicSampleId": "music/100-waves",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -13371,7 +13371,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -13404,6 +13403,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -13456,7 +13456,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -13489,6 +13488,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -13541,7 +13541,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -13574,6 +13573,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -13626,7 +13626,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted public-a
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": true,
   "encounters": [
     {
@@ -13689,7 +13688,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted public-a
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": true,
   "encounters": [
     {
@@ -13752,7 +13750,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted public-a
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": true,
   "encounters": [
     {
@@ -13815,7 +13812,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -13848,6 +13844,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -13894,7 +13891,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -13927,6 +13923,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -13973,7 +13970,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -14006,6 +14002,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox 
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -14052,7 +14049,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -14094,6 +14090,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -14149,7 +14146,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -14191,6 +14187,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -14246,7 +14243,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
       "imageUrl": "/images/bg/bg-01.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -14288,6 +14284,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox-
   "musicSampleId": null,
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -14351,7 +14348,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "imageUrl": "/images/bg/bg-03.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -14829,6 +14825,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   "musicSampleId": "music/001-calm",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -14890,7 +14887,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "imageUrl": "/images/bg/bg-03.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -15368,6 +15364,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   "musicSampleId": "music/001-calm",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,
@@ -15429,7 +15426,6 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
       "imageUrl": "/images/bg/bg-03.jpg",
     },
   ],
-  "companion": null,
   "dynamicRoster": false,
   "encounters": [
     {
@@ -15907,6 +15903,7 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted training
   "musicSampleId": "music/001-calm",
   "players": [
     {
+      "companion": null,
       "contactBox": {
         "height": 2.2916666666666665,
         "width": 1.225,

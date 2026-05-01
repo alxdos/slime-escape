@@ -49,6 +49,7 @@ function makeSharedSnapshot(): Snapshot {
         y: 0,
         hp: 5,
         maxHp: 5,
+        state: 'alive',
         formArchetypeId: null,
         weaponHud: null
       },
@@ -60,6 +61,7 @@ function makeSharedSnapshot(): Snapshot {
         y: 0,
         hp: 5,
         maxHp: 5,
+        state: 'alive',
         formArchetypeId: 'slime-one-eye',
         weaponHud: {
           selectedIndex: 0,
@@ -83,6 +85,7 @@ function makeSharedSnapshot(): Snapshot {
         y: 0,
         hp: 30,
         maxHp: 30,
+        state: 'alive',
         formArchetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
         weaponHud: null
       },

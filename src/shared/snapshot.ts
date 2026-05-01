@@ -9,6 +9,7 @@ export type PlayerSnapshot = Readonly<{
   y: number;
   hp: number;
   maxHp: number;
+  state: 'alive' | 'ghost' | 'reviving';
   formArchetypeId: string | null;
   weaponHud: WeaponHudSnapshot | null;
   statusEffects?: ReadonlyArray<StatusEffectSnapshot>;
@@ -17,6 +18,7 @@ export type PlayerSnapshot = Readonly<{
 export type CompanionSnapshot = Readonly<{
   id: number;
   kind: 'companion';
+  ownerPlayerId: string;
   petArchetypeId: string;
   x: number;
   y: number;

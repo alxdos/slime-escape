@@ -77,8 +77,14 @@ function bossOnlySession(seed: number): SessionDefinition {
     seed,
     arena: SANDBOX_ARENA,
     dynamicRoster: false,
-    players: [{ id: 'hero-training', ...TRAINING_PLAYER, loadout: { weapons: [PISTOL.id], selectedIndex: 0 } }],
-    companion: null,
+    players: [
+      {
+        id: 'hero-training',
+        ...TRAINING_PLAYER,
+        loadout: { weapons: [PISTOL.id], selectedIndex: 0 },
+        companion: null
+      }
+    ],
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],

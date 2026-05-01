@@ -253,6 +253,7 @@ function makeSnapshot(): Snapshot {
         y: -4,
         hp: 10,
         maxHp: 20,
+        state: 'alive',
         formArchetypeId: 'slime-one-eye',
         weaponHud: makeWeaponHud(0)
       },
@@ -264,6 +265,7 @@ function makeSnapshot(): Snapshot {
         y: -3,
         hp: 24,
         maxHp: 24,
+        state: 'alive',
         formArchetypeId: 'slime-hornling',
         weaponHud: makeWeaponHud(0)
       },
@@ -275,6 +277,7 @@ function makeSnapshot(): Snapshot {
         y: -2,
         hp: 180,
         maxHp: 180,
+        state: 'alive',
         formArchetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
         weaponHud: null
       },
@@ -286,6 +289,7 @@ function makeSnapshot(): Snapshot {
         y: -5,
         hp: 5,
         maxHp: 5,
+        state: 'alive',
         formArchetypeId: null,
         weaponHud: null
       },

@@ -2,8 +2,9 @@ import type {
   ArenaConfig,
   CompanionSessionConfig,
   EncounterDefinition,
+  Loadout,
   NonEmptyReadonlyArray,
-  PlayerConfig,
+  PlayerSpawn,
   SessionBackground,
   SessionRules,
   StaticSpawnPlan,
@@ -40,6 +41,12 @@ export type SessionPresetEncounterTemplate = Omit<EncounterDefinition, 'spawnPla
 
 export type SessionPresetCompanionTemplate = Omit<CompanionSessionConfig, 'petArchetypeId'>;
 
+export type SessionPresetPlayerTemplate = PlayerSpawn &
+  Readonly<{
+    id: string;
+    loadout: Loadout | null;
+  }>;
+
 export type BaseSessionPresetTemplate = Readonly<{
   presetId: string;
   displayName: string;
@@ -58,13 +65,13 @@ export type BaseSessionPresetTemplate = Readonly<{
 
 export type StaticSessionPresetTemplate = BaseSessionPresetTemplate &
   Readonly<{
-    players: NonEmptyReadonlyArray<PlayerConfig>;
+    players: NonEmptyReadonlyArray<SessionPresetPlayerTemplate>;
     dynamicRoster: false;
   }>;
 
 export type DynamicSessionPresetTemplate = BaseSessionPresetTemplate &
   Readonly<{
-    players: ReadonlyArray<PlayerConfig>;
+    players: ReadonlyArray<SessionPresetPlayerTemplate>;
     dynamicRoster: true;
   }>;
 

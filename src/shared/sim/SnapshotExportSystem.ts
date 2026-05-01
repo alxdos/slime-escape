@@ -46,19 +46,21 @@ export function createSnapshotExportSystem(): SnapshotExportSystem {
           y: player.position.y,
           hp: player.hp,
           maxHp: player.maxHp,
+          state: player.state,
           formArchetypeId: player.formArchetypeId,
-          weaponHud: copyWeaponHud(sources.weaponHudFor(player.id)),
+          weaponHud:
+            player.state === 'alive' ? copyWeaponHud(sources.weaponHudFor(player.id)) : null,
           statusEffects: player.statusEffects.map((effect) => ({
             kind: effect.kind,
             expiresAtSimMs: effect.expireAtSimMs
           }))
         });
       }
-      const companion = store.companion();
-      if (companion !== null) {
+      for (const companion of store.companions()) {
         entities.push({
           id: companion.id,
           kind: 'companion',
+          ownerPlayerId: companion.ownerPlayerId,
           petArchetypeId: companion.petArchetypeId,
           x: companion.position.x,
           y: companion.position.y,

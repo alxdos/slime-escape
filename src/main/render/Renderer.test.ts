@@ -100,10 +100,13 @@ function createEmptySnapshotPair(): SnapshotPair {
 type SnapshotEntity = NonNullable<SnapshotPair['curr']>['entities'][number];
 type TestPlayerSnapshot = Omit<
   Extract<SnapshotEntity, { kind: 'player' }>,
-  'playerId' | 'formArchetypeId' | 'weaponHud'
+  'playerId' | 'state' | 'formArchetypeId' | 'weaponHud'
 > &
   Partial<
-    Pick<Extract<SnapshotEntity, { kind: 'player' }>, 'playerId' | 'formArchetypeId' | 'weaponHud'>
+    Pick<
+      Extract<SnapshotEntity, { kind: 'player' }>,
+      'playerId' | 'state' | 'formArchetypeId' | 'weaponHud'
+    >
   >;
 type SnapshotEntities = ReadonlyArray<SnapshotEntity | TestPlayerSnapshot>;
 
@@ -130,6 +133,7 @@ function normalizeSnapshotEntities(
     return {
       ...entity,
       playerId: entity.playerId ?? 'player',
+      state: entity.state ?? 'alive',
       formArchetypeId: entity.formArchetypeId ?? null,
       weaponHud: entity.weaponHud ?? weaponHudOverride ?? null
     };
@@ -163,15 +167,12 @@ function createTextureEntries(
 }
 
 function createRenderSession(
-  overrides: Partial<
-    Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'players' | 'companion'>
-  > = {}
-): Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'players' | 'companion'> {
+  overrides: Partial<Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'players'>> = {}
+): Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'players'> {
   return {
     backgrounds: [],
     encounters: [],
-    players: [{ id: 'hero-training', ...TRAINING_PLAYER, loadout: null }],
-    companion: null,
+    players: [{ id: 'hero-training', ...TRAINING_PLAYER, loadout: null, companion: null }],
     ...overrides
   };
 }
@@ -324,6 +325,7 @@ function companionSnapshot(
   return {
     id: 7,
     kind: 'companion',
+    ownerPlayerId: 'hero-training',
     petArchetypeId: PET_01.id,
     x: 2,
     y: -1,
@@ -807,7 +809,9 @@ describe('createRenderer', () => {
       canvas,
       renderScalePreset: 'medium',
       arena: { width: 16, height: 9 },
-      session: createRenderSession({ players: [{ id: 'hero-training', ...player, loadout: null }] }),
+      session: createRenderSession({
+        players: [{ id: 'hero-training', ...player, loadout: null, companion: null }]
+      }),
       spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
       selectedPetId: PET_01.id,
       getSnapshotPair: () => pair,
@@ -863,7 +867,9 @@ describe('createRenderer', () => {
       canvas,
       renderScalePreset: 'medium',
       arena: { width: 16, height: 9 },
-      session: createRenderSession({ players: [{ id: 'hero-training', ...player, loadout: null }] }),
+      session: createRenderSession({
+        players: [{ id: 'hero-training', ...player, loadout: null, companion: null }]
+      }),
       spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
       selectedPetId: PET_01.id,
       getSnapshotPair: () => pair,
@@ -999,16 +1005,23 @@ describe('createRenderer', () => {
       renderScalePreset: 'medium',
       arena: { width: 16, height: 9 },
       session: createRenderSession({
-        companion: {
-          petArchetypeId: PET_01.id,
-          maxHp: 6,
-          contactBox: { width: 0.55, height: 0.55 },
-          movement: { maxSpeed: 3, acceleration: 22, orbitRadius: 3.2 },
-          threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
-          weaponLoadout: { weapons: ['pistol'], selectedIndex: 0 },
-          boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
-          rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
-        }
+        players: [
+          {
+            id: 'hero-training',
+            ...TRAINING_PLAYER,
+            loadout: null,
+            companion: {
+              petArchetypeId: PET_01.id,
+              maxHp: 6,
+              contactBox: { width: 0.55, height: 0.55 },
+              movement: { maxSpeed: 3, acceleration: 22, orbitRadius: 3.2 },
+              threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
+              weaponLoadout: { weapons: ['pistol'], selectedIndex: 0 },
+              boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
+              rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
+            }
+          }
+        ]
       }),
       spriteTextures: createSpriteTextures({ [PET_01.id]: petTexture }),
       getSnapshotPair: () => pair,

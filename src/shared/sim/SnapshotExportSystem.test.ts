@@ -34,6 +34,7 @@ const STATIONARY_TEST_ENEMY = {
   color: 0xff7766
 } as const;
 const COMPANION_SPEC: CompanionSpawnSpec = {
+  ownerPlayerId: 'player',
   petArchetypeId: 'debug-buddy',
   position: { x: -1, y: 2 },
   contactBox: { width: 0.8, height: 0.8 },

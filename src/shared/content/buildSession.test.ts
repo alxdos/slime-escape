@@ -312,16 +312,16 @@ describe('buildSessionDefinition (campaign)', () => {
   it('builds no companion when the selected pet is null', () => {
     const session = buildSessionDefinition(CAMPAIGN_PRESET, { seed: 2 });
 
-    expect(session.companion).toBeNull();
+    expect(session.players[0]?.companion).toBeNull();
   });
 
-  it('builds session-owned companion config from a selected pet', () => {
+  it('builds player-owned companion config from a selected pet', () => {
     const session = buildSessionDefinition(CAMPAIGN_PRESET, {
       seed: 2,
       selectedPetId: PET_01.id
     });
 
-    expect(session.companion).toEqual({
+    expect(session.players[0]?.companion).toEqual({
       petArchetypeId: PET_01.id,
       maxHp: 4,
       contactBox: { width: 0.55, height: 0.55 },
@@ -343,14 +343,16 @@ describe('buildSessionDefinition (campaign)', () => {
       selectedPetId: PET_02.id
     });
 
-    if (first.companion === null || second.companion === null) {
+    const firstCompanion = first.players[0]?.companion;
+    const secondCompanion = second.players[0]?.companion;
+    if (firstCompanion === null || firstCompanion === undefined || secondCompanion === null || secondCompanion === undefined) {
       throw new Error('expected companion config');
     }
     expect({
-      ...first.companion,
+      ...firstCompanion,
       petArchetypeId: 'presentation-only'
     }).toEqual({
-      ...second.companion,
+      ...secondCompanion,
       petArchetypeId: 'presentation-only'
     });
   });
@@ -361,7 +363,7 @@ describe('buildSessionDefinition (campaign)', () => {
       selectedPetId: PET_01.id
     });
 
-    expect(session.companion).toBeNull();
+    expect(session.players[0]?.companion).toBeNull();
   });
 
   it('rejects an unknown selected pet for a companion-enabled preset', () => {
@@ -459,7 +461,8 @@ describe('buildSessionDefinition (portal)', () => {
     expect(session.players[0]).toEqual({
       id: 'hero-training',
       ...PUBLIC_ARENA_PRESENTATION_CONFIG.player,
-      loadout: PUBLIC_ARENA_PRESENTATION_CONFIG.loadout
+      loadout: PUBLIC_ARENA_PRESENTATION_CONFIG.loadout,
+      companion: null
     });
     expect(session.players[0].loadout).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.loadout);
     expect(session.backgrounds).toEqual(PUBLIC_ARENA_PRESENTATION_CONFIG.backgrounds);

@@ -17,6 +17,8 @@ export function canDamageTarget(
   target: DamageableEntity,
   damageRules: DamageRules
 ): boolean {
+  if (target.kind === 'player' && target.state !== 'alive') return false;
+  if (target.kind === 'companion' && target.state !== 'alive') return false;
   if (owner.ownerId !== null && target.id === owner.ownerId) return false;
   if (owner.ownerKind === 'player' && target.kind === 'companion') return false;
   if (

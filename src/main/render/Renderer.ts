@@ -90,11 +90,13 @@ type DebugHud = Readonly<{
   dispose(): void;
 }>;
 
+type RendererSessionConfig = Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'players'>;
+
 export type RendererInit = Readonly<{
   canvas: HTMLCanvasElement;
   renderScalePreset: RenderScalePreset;
   arena: ArenaConfig;
-  session: Pick<SessionDefinition, 'backgrounds' | 'encounters' | 'players' | 'companion'>;
+  session: RendererSessionConfig;
   spriteTextures: TextureMap;
   selectedPetId?: string | null;
   visibleAreaCamera?: VisibleAreaCamera;
@@ -516,7 +518,7 @@ export function createRenderer(init: RendererInit): Renderer {
           applyCompanionPresentation(
             entry.mesh,
             entity,
-            init.session.companion,
+            init.session,
             pair.nowMs,
             hitImpulsesByTarget.get(entity.id)
           )
@@ -1046,7 +1048,7 @@ function applyEnemyPresentation(
 function applyCompanionPresentation(
   mesh: THREE.Mesh,
   entity: CompanionSnapshot,
-  companionConfig: SessionDefinition['companion'],
+  session: RendererSessionConfig,
   nowMs: number,
   hitImpulse: HitImpulseEffect | undefined
 ): void {
@@ -1060,7 +1062,7 @@ function applyCompanionPresentation(
       entity.state === 'ghost' ? 0.5 + 0.1 * shimmer01(nowMs, entity.id, 260) : 1;
   }
 
-  applyCompanionHpBar(mesh, entity, companionConfig, flip);
+  applyCompanionHpBar(mesh, entity, companionConfigForSnapshot(session, entity), flip);
   applyCompanionWarningMarker(mesh, entity, nowMs);
   applyCompanionGhostAura(mesh, entity, nowMs);
   applyCompanionRescueRing(mesh, entity, nowMs);
@@ -1085,7 +1087,7 @@ function companionFlipSign(entity: CompanionSnapshot, nowMs: number): number {
 function applyCompanionHpBar(
   mesh: THREE.Mesh,
   entity: CompanionSnapshot,
-  companionConfig: SessionDefinition['companion'],
+  companionConfig: NonNullable<SessionDefinition['players'][number]['companion']> | null,
   flip: number
 ): void {
   const track = findChildMesh(mesh, COMPANION_HP_TRACK_NAME);
@@ -1121,6 +1123,15 @@ function applyCompanionHpBar(
     );
     fillMaterial.opacity = entity.state === 'ghost' ? 0.48 : 0.95;
   }
+}
+
+function companionConfigForSnapshot(
+  session: RendererSessionConfig,
+  entity: CompanionSnapshot
+): NonNullable<SessionDefinition['players'][number]['companion']> | null {
+  return (
+    session.players.find((player) => player.id === entity.ownerPlayerId)?.companion ?? null
+  );
 }
 
 function applyPlayerHpBar(mesh: THREE.Mesh, player: PlayerSnapshot): void {

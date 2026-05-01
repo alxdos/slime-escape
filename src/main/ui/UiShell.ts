@@ -1226,7 +1226,11 @@ export function createUiShell(init: UiShellInit): UiShell {
         arena: session.arena,
         session,
         spriteTextures,
-        selectedPetId: session.companion === null && options.source === 'campaign' ? selectedPetId : null,
+        selectedPetId:
+          !session.players.some((player) => player.companion !== null) &&
+          options.source === 'campaign'
+            ? selectedPetId
+            : null,
         visibleAreaCamera,
         getSnapshotPair: sim.snapshotPair,
         getPortalDescriptors: portalController.portals,

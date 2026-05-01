@@ -180,7 +180,8 @@ function makeSession(overrides: Partial<Omit<SessionDefinition, 'players' | 'dyn
         contactBox: { width: 1, height: 1 },
         maxSpeed: 5,
         maxHp: 5,
-        loadout: { weapons: ['pistol'], selectedIndex: 0 }
+        loadout: { weapons: ['pistol'], selectedIndex: 0 },
+        companion: null
       }
     ],
     backgrounds: [],
@@ -194,8 +195,7 @@ function makeSession(overrides: Partial<Omit<SessionDefinition, 'players' | 'dyn
     winCondition: { kind: 'dungeon' },
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null,
-    ...overrides,
-    companion: overrides.companion ?? null
+    ...overrides
   };
 }
 

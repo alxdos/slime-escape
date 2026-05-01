@@ -29,6 +29,7 @@ const STATIONARY_TEST_ENEMY = {
   color: 0xff7766
 } as const;
 const COMPANION_SPEC: CompanionSpawnSpec = {
+  ownerPlayerId: 'player',
   petArchetypeId: 'debug-buddy',
   position: { x: 2, y: 3 },
   contactBox: { width: 0.8, height: 0.8 },
@@ -404,6 +405,53 @@ describe('HealthDeathSystem player damage', () => {
     expect(deaths[0].y).toBe(2);
     expect(captured).toHaveLength(1);
     expect(store.player()).toBeNull();
+  });
+
+  it('turns defeated players into ghosts in ghost death mode and emits playerDowned before death', () => {
+    const store = createEntityStore();
+    const player = store.spawnPlayer({
+      id: 'player',
+      position: { x: 1, y: 2 },
+      radius: 0.5,
+      contactBox: squareContactBox(0.5),
+      maxSpeed: 6,
+      maxHp: 1
+    });
+    const enemy = spawnTarget(store, 1);
+    const sys = createHealthDeathSystem();
+    const deathHook = vi.fn();
+    const events: RuntimeEvent[] = [];
+    sys.setPlayerDeathMode('ghost');
+    sys.registerHook(deathHook);
+
+    sys.tick(
+      [
+        makeContactIntent(enemy.id, player.id, 1),
+        makeContactIntent(enemy.id, player.id, 1)
+      ],
+      store,
+      100,
+      (event) => events.push(event)
+    );
+
+    expect(player.hp).toBe(0);
+    expect(player.state).toBe('ghost');
+    expect(store.playerById(player.id)).toBe(player);
+    expect(events.map((event) => event.kind)).toEqual(['playerDowned', 'death']);
+    const downed = events[0];
+    if (downed?.kind !== 'playerDowned') throw new Error('expected playerDowned');
+    expect(downed.entityId).toBe(player.id);
+    expect(downed.playerId).toBe('player');
+    expect(downed.x).toBe(1);
+    expect(downed.y).toBe(2);
+    expect(deathHook).toHaveBeenCalledTimes(1);
+
+    events.length = 0;
+    sys.tick([makeContactIntent(enemy.id, player.id, 1)], store, SIM_STEP_MS, (event) =>
+      events.push(event)
+    );
+    expect(events).toHaveLength(0);
+    expect(deathHook).toHaveBeenCalledTimes(1);
   });
 
   it('ignores repeated intents in the same tick after player death (no double loss)', () => {

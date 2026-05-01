@@ -131,8 +131,8 @@ export function createDropSystem(
         });
       }
 
-      const companion = store.companion();
-      if (isCompanionHealPickupEligible(companion)) {
+      for (const companion of store.companions()) {
+        if (!isCompanionHealPickupEligible(companion)) continue;
         const companionRadius = bodyRadius(companion.contactBox);
         for (const drop of store.drops()) {
           if (expired.has(drop.id) || pickedUp.has(drop.id)) continue;

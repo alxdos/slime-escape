@@ -193,6 +193,7 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       entities.clear();
       exporter.reset();
       combat.clear();
+      healthDeath.clear();
       fieldEffects.clear();
       statusEffects.clear();
       drops.clear();
@@ -204,6 +205,9 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       spawn.setRng(rng);
       drops.setRng(rng);
       combat.setDamageRules(session.rules.damage);
+      healthDeath.setPlayerDeathMode(
+        session.lossCondition.kind === 'allPlayersDead' ? 'ghost' : 'remove'
+      );
       fieldEffects.setDamageRules(session.rules.damage);
       for (const playerConfig of session.players) {
         const player = entities.spawnPlayer(playerConfig, {
@@ -213,23 +217,23 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
         if (playerConfig.loadout !== null) {
           combat.setPlayerLoadout(player.id, playerConfig.loadout, clock.simTimeMs());
         }
-      }
-      const primaryPlayer = entities.player();
-      if (session.companion !== null && primaryPlayer !== null) {
-        const offset = session.companion.movement.orbitRadius * 0.75;
-        const spawnedCompanion = entities.spawnCompanion({
-          ...session.companion,
-          position: {
-            x: primaryPlayer.position.x - offset,
-            y: primaryPlayer.position.y - offset
+        if (playerConfig.companion !== null) {
+          const offset = playerConfig.companion.movement.orbitRadius * 0.75;
+          const spawnedCompanion = entities.spawnCompanion({
+            ...playerConfig.companion,
+            ownerPlayerId: playerConfig.id,
+            position: {
+              x: player.position.x - offset,
+              y: player.position.y - offset
+            }
+          });
+          if (playerConfig.companion.weaponLoadout !== null) {
+            combat.setCompanionLoadout(
+              spawnedCompanion.id,
+              playerConfig.companion.weaponLoadout,
+              clock.simTimeMs()
+            );
           }
-        });
-        if (session.companion.weaponLoadout !== null) {
-          combat.setCompanionLoadout(
-            spawnedCompanion.id,
-            session.companion.weaponLoadout,
-            clock.simTimeMs()
-          );
         }
       }
     },
@@ -237,6 +241,7 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       entities.clear();
       exporter.reset();
       combat.clear();
+      healthDeath.clear();
       fieldEffects.clear();
       statusEffects.clear();
       drops.clear();
@@ -266,14 +271,17 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
     runSummary.onDeath(ctx, entities);
     if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
     if (ctx.entityKind === 'enemy') combat.removeShooter(ctx.entityId);
-    if (ctx.entityKind === 'player') combat.removeShooter(ctx.entityId);
     if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
     if (ctx.entityKind === 'player') {
       const player = entities.playerById(ctx.entityId);
-      if (player !== null) {
+      if (player !== null && player.state === 'ghost') {
+        const playerInput = runtimeInputForPlayer(sessionFlow.inputState(), player.playerId);
+        if (playerInput !== null) playerInput.firing = false;
+      } else if (player !== null) {
         removeRuntimeInputPlayer(sessionFlow.inputState(), player.playerId);
+        combat.removeShooter(ctx.entityId);
       }
       sessionFlow.onPlayerDeath(ctx.entityId);
     }
@@ -323,6 +331,24 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
     if (playerConfig.loadout !== null) {
       combat.setPlayerLoadout(player.id, playerConfig.loadout, simTimeMs);
     }
+    if (playerConfig.companion !== null) {
+      const offset = playerConfig.companion.movement.orbitRadius * 0.75;
+      const spawnedCompanion = entities.spawnCompanion({
+        ...playerConfig.companion,
+        ownerPlayerId: playerConfig.id,
+        position: {
+          x: player.position.x - offset,
+          y: player.position.y - offset
+        }
+      });
+      if (playerConfig.companion.weaponLoadout !== null) {
+        combat.setCompanionLoadout(
+          spawnedCompanion.id,
+          playerConfig.companion.weaponLoadout,
+          simTimeMs
+        );
+      }
+    }
   }
 
   function applyRemovePlayer(playerId: string): void {
@@ -335,6 +361,7 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
     removeRuntimeInputPlayer(sessionFlow.inputState(), playerId);
     combat.removeShooter(player.id);
     removeProjectilesOwnedBy(player.id);
+    removeCompanionForPlayer(playerId);
     entities.removePlayer(player.id);
   }
 
@@ -406,6 +433,26 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
     }
   }
 
+  function canSubmitInputForPlayerState(playerId: string, commandKind: InputCommand['kind']): boolean {
+    const player = playerByStableId(playerId);
+    if (player === null) return true;
+    if (player.state === 'alive') return true;
+    if (commandKind === 'move') return true;
+    log.warn('input command ignored: ghost player accepts only movement', {
+      playerId,
+      commandKind
+    });
+    return false;
+  }
+
+  function removeCompanionForPlayer(playerId: string): void {
+    const companion = entities.companionByOwnerPlayerId(playerId);
+    if (companion === null) return;
+    combat.removeShooter(companion.id);
+    removeProjectilesOwnedBy(companion.id);
+    entities.removeCompanion(companion.id);
+  }
+
   function enqueueDynamicRosterOp(op: PendingDynamicRosterOp): void {
     const session = sessionFlow.activeSession();
     if (session === null) {
@@ -435,6 +482,7 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       sessionFlow.resume();
     },
     submitInput(playerId, command): void {
+      if (!canSubmitInputForPlayerState(playerId, command.kind)) return;
       sessionFlow.handleInput(playerId, command);
     },
     addPlayer(playerConfig, opts): void {

@@ -169,7 +169,8 @@ function makeSession(
         contactBox: { width: 1, height: 1 },
         maxSpeed: 5,
         maxHp: 5,
-        loadout: { weapons: ['pistol'], selectedIndex: 0 }
+        loadout: { weapons: ['pistol'], selectedIndex: 0 },
+        companion: null
       }
     ],
     backgrounds: [],
@@ -183,8 +184,7 @@ function makeSession(
     winCondition: { kind: 'allEncountersComplete' },
     lossCondition: { kind: 'playerDeath' },
     uiMeta: null,
-    ...overrides,
-    companion: overrides.companion ?? null
+    ...overrides
   };
 }
 
@@ -970,6 +970,7 @@ function makePublicArenaSnapshot(): Snapshot {
         y: 2,
         hp: 20,
         maxHp: 20,
+        state: 'alive',
         formArchetypeId: 'slime-many-eye',
         weaponHud: {
           selectedIndex: 0,
@@ -993,6 +994,7 @@ function makePublicArenaSnapshot(): Snapshot {
         y: 0,
         hp: 10,
         maxHp: 10,
+        state: 'alive' as const,
         formArchetypeId: 'slime-one-eye',
         weaponHud: null
       }))
@@ -3776,18 +3778,29 @@ describe('UiShell', () => {
       canvas: { clientHeight: 900 } as HTMLCanvasElement,
       buildSessionDefinition: (_preset, options) => {
         buildOptions.push(options);
-        return makeSession('campaign-runtime-companion-session', {
-          companion: {
-            petArchetypeId: options.selectedPetId ?? PET_01.id,
-            maxHp: 4,
-            contactBox: { width: 0.55, height: 0.55 },
-            movement: { maxSpeed: 3, acceleration: 22, orbitRadius: 3.2 },
-            threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
-            weaponLoadout: { weapons: ['pistol'], selectedIndex: 0 },
-            boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
-            rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
-          }
-        });
+        const session = makeSession('campaign-runtime-companion-session');
+        const player = session.players[0];
+        if (player === undefined) {
+          throw new Error('expected test player');
+        }
+        return {
+          ...session,
+          players: [
+            {
+              ...player,
+              companion: {
+                petArchetypeId: options.selectedPetId ?? PET_01.id,
+                maxHp: 4,
+                contactBox: { width: 0.55, height: 0.55 },
+                movement: { maxSpeed: 3, acceleration: 22, orbitRadius: 3.2 },
+                threat: { acquireRadius: 5.5, releaseRadius: 6.5 },
+                weaponLoadout: { weapons: ['pistol'], selectedIndex: 0 },
+                boop: { radius: 1.1, impulse: 7, durationMs: 260, cooldownMs: 900 },
+                rescue: { radius: 1.4, durationMs: 5000, reviveHpFraction: 0.5 }
+              }
+            }
+          ]
+        };
       },
       createSimWorkerHost: sim.factory,
       createMenuOverlay: menu.factory,
@@ -3808,7 +3821,7 @@ describe('UiShell', () => {
     await flushUiShellStartup();
 
     expect(buildOptions[0]?.selectedPetId).toBe(PET_01.id);
-    expect(sim.startSessions[0]?.companion?.petArchetypeId).toBe(PET_01.id);
+    expect(sim.startSessions[0]?.players[0]?.companion?.petArchetypeId).toBe(PET_01.id);
     expect(renderer.lastInit()?.selectedPetId).toBeNull();
   });
 

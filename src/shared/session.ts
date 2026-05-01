@@ -29,6 +29,7 @@ export type PlayerConfig = PlayerSpawn &
   Readonly<{
     id: string;
     loadout: Loadout | null;
+    companion: CompanionSessionConfig | null;
   }>;
 
 export type NonEmptyReadonlyArray<T> = readonly [T, ...T[]];
@@ -192,7 +193,6 @@ export type BaseSessionDefinition = Readonly<{
   id: string;
   seed: number;
   arena: ArenaConfig;
-  companion: CompanionSessionConfig | null;
   backgrounds: ReadonlyArray<SessionBackground>;
   musicSampleId: string | null;
   modifiers: ReadonlyArray<Modifier>;

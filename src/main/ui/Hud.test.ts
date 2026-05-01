@@ -168,10 +168,10 @@ function makeSession(): SessionDefinition {
         contactBox: { width: 1, height: 1 },
         maxSpeed: 5,
         maxHp: 5,
-        loadout: { weapons: ['pistol'], selectedIndex: 0 }
+        loadout: { weapons: ['pistol'], selectedIndex: 0 },
+        companion: null
       }
     ],
-    companion: null,
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],
@@ -233,8 +233,11 @@ type TestEncounterSnapshot =
   Omit<NonNullable<Snapshot['encounter']>, 'waveOrdinal'> &
     Partial<Pick<NonNullable<Snapshot['encounter']>, 'waveOrdinal'>>;
 
-type TestPlayerSnapshot = Omit<PlayerSnapshot, 'playerId' | 'formArchetypeId' | 'weaponHud'> &
-  Partial<Pick<PlayerSnapshot, 'playerId' | 'formArchetypeId' | 'weaponHud'>>;
+type TestPlayerSnapshot = Omit<
+  PlayerSnapshot,
+  'playerId' | 'state' | 'formArchetypeId' | 'weaponHud'
+> &
+  Partial<Pick<PlayerSnapshot, 'playerId' | 'state' | 'formArchetypeId' | 'weaponHud'>>;
 type TestEntitySnapshot = Snapshot['entities'][number] | TestPlayerSnapshot;
 type TestSnapshotOverrides =
   Partial<Omit<Snapshot, 'encounter' | 'entities'>> &
@@ -291,6 +294,7 @@ function normalizeEntities(
     return {
       ...entity,
       playerId: entity.playerId ?? 'player',
+      state: entity.state ?? 'alive',
       formArchetypeId: entity.formArchetypeId ?? null,
       weaponHud: entity.weaponHud ?? weaponHudOverride ?? null
     };

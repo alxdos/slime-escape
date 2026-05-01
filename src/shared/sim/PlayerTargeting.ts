@@ -7,7 +7,7 @@ export function resolveNearestLivingPlayer(
   let best: Player | null = null;
   let bestDistanceSq = Number.POSITIVE_INFINITY;
   for (const player of store.players()) {
-    if (player.hp <= 0) continue;
+    if (player.state !== 'alive' || player.hp <= 0) continue;
     const distanceSq = distanceSquared(position, player.position);
     if (
       best === null ||

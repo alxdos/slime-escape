@@ -24,6 +24,7 @@ export type Player = {
   readonly id: EntityId;
   readonly playerId: string;
   readonly kind: 'player';
+  state: 'alive' | 'ghost' | 'reviving';
   radius: number;
   contactBox: ContactBox;
   maxSpeed: number;
@@ -42,6 +43,7 @@ export type CompanionMode = 'rest' | 'guard' | 'alert' | 'engage' | 'rescue' | '
 export type Companion = {
   readonly id: EntityId;
   readonly kind: 'companion';
+  readonly ownerPlayerId: string;
   readonly petArchetypeId: string;
   readonly contactBox: ContactBox;
   readonly maxHp: number;
@@ -307,6 +309,7 @@ export type BossSpawnSpec = Readonly<{
 }>;
 
 export type CompanionSpawnSpec = Readonly<{
+  ownerPlayerId: string;
   petArchetypeId: string;
   position: Vec2;
   contactBox: ContactBox;
@@ -342,6 +345,7 @@ export type EntityStore = Readonly<{
   playerById(id: EntityId): Player | null;
   companion(): Companion | null;
   companionById(id: EntityId): Companion | null;
+  companionByOwnerPlayerId(playerId: string): Companion | null;
   enemyById(id: EntityId): Enemy | null;
   bossById(id: EntityId): Boss | null;
   projectileById(id: EntityId): Projectile | null;
@@ -349,6 +353,7 @@ export type EntityStore = Readonly<{
   fieldEffectById(id: EntityId): FieldEffect | null;
   enemies(): IterableIterator<Enemy>;
   players(): IterableIterator<Player>;
+  companions(): IterableIterator<Companion>;
   bosses(): IterableIterator<Boss>;
   projectiles(): IterableIterator<Projectile>;
   drops(): IterableIterator<Drop>;
@@ -364,14 +369,15 @@ export type EntityStore = Readonly<{
   removeDrop(id: EntityId): boolean;
   removeFieldEffect(id: EntityId): boolean;
   removePlayer(id: EntityId): boolean;
-  removeCompanion(): boolean;
+  removeCompanion(id?: EntityId): boolean;
+  removeCompanionByOwnerPlayerId(playerId: string): boolean;
   clear(): void;
 }>;
 
 export function createEntityStore(): EntityStore {
   let nextId = 1;
   const players = new Map<EntityId, Player>();
-  let companion: Companion | null = null;
+  const companions = new Map<EntityId, Companion>();
   const enemies = new Map<EntityId, Enemy>();
   const bosses = new Map<EntityId, Boss>();
   const projectiles = new Map<EntityId, Projectile>();
@@ -391,6 +397,7 @@ export function createEntityStore(): EntityStore {
         id,
         playerId: spec.id,
         kind: 'player',
+        state: 'alive',
         radius: spec.radius,
         contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
         maxSpeed: spec.maxSpeed,
@@ -415,12 +422,13 @@ export function createEntityStore(): EntityStore {
       return next;
     },
     spawnCompanion(spec): Companion {
-      if (companion !== null) {
-        throw new Error('companion already spawned');
+      if (companionByOwnerPlayerId(companions, spec.ownerPlayerId) !== null) {
+        throw new Error(`companion already spawned for owner "${spec.ownerPlayerId}"`);
       }
       const next: Companion = {
         id: makeId(),
         kind: 'companion',
+        ownerPlayerId: spec.ownerPlayerId,
         petArchetypeId: spec.petArchetypeId,
         contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
         maxHp: spec.maxHp,
@@ -461,7 +469,7 @@ export function createEntityStore(): EntityStore {
         boopReadyAtSimMs: 0,
         alertUntilSimMs: 0
       };
-      companion = next;
+      companions.set(next.id, next);
       return next;
     },
     spawnEnemy(spec): Enemy {
@@ -616,10 +624,13 @@ export function createEntityStore(): EntityStore {
       return players.get(id) ?? null;
     },
     companion(): Companion | null {
-      return companion;
+      return companions.values().next().value ?? null;
     },
     companionById(id): Companion | null {
-      return companion?.id === id ? companion : null;
+      return companions.get(id) ?? null;
+    },
+    companionByOwnerPlayerId(playerId): Companion | null {
+      return companionByOwnerPlayerId(companions, playerId);
     },
     enemyById(id): Enemy | null {
       return enemies.get(id) ?? null;
@@ -641,6 +652,9 @@ export function createEntityStore(): EntityStore {
     },
     players(): IterableIterator<Player> {
       return players.values();
+    },
+    companions(): IterableIterator<Companion> {
+      return companions.values();
     },
     bosses(): IterableIterator<Boss> {
       return bosses.values();
@@ -687,14 +701,20 @@ export function createEntityStore(): EntityStore {
     removePlayer(id): boolean {
       return players.delete(id);
     },
-    removeCompanion(): boolean {
+    removeCompanion(id): boolean {
+      if (id !== undefined) return companions.delete(id);
+      const first = companions.keys().next().value;
+      if (first === undefined) return false;
+      return companions.delete(first);
+    },
+    removeCompanionByOwnerPlayerId(playerId): boolean {
+      const companion = companionByOwnerPlayerId(companions, playerId);
       if (companion === null) return false;
-      companion = null;
-      return true;
+      return companions.delete(companion.id);
     },
     clear(): void {
       players.clear();
-      companion = null;
+      companions.clear();
       enemies.clear();
       bosses.clear();
       projectiles.clear();
@@ -737,6 +757,16 @@ function copyActorEffect(effect: ActorEffectApplication): ActorEffectApplication
     default:
       return assertNever(effect);
   }
+}
+
+function companionByOwnerPlayerId(
+  companions: ReadonlyMap<EntityId, Companion>,
+  playerId: string
+): Companion | null {
+  for (const companion of companions.values()) {
+    if (companion.ownerPlayerId === playerId) return companion;
+  }
+  return null;
 }
 
 function assertNever(value: never): never {

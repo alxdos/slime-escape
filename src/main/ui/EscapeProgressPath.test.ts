@@ -199,10 +199,10 @@ function makeSession(encounters: ReadonlyArray<EncounterDefinition>): SessionDef
         contactBox: { width: 1, height: 1 },
         maxSpeed: 5,
         maxHp: 5,
-        loadout: { weapons: ['pistol'], selectedIndex: 0 }
+        loadout: { weapons: ['pistol'], selectedIndex: 0 },
+        companion: null
       }
     ],
-    companion: null,
     backgrounds: [],
     musicSampleId: null,
     modifiers: [],

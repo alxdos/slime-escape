@@ -26,7 +26,6 @@ export function createMovementSystem(): MovementSystem {
   return {
     tick(arena, store, input, simTimeMs): void {
       for (const player of store.players()) {
-        if (player.hp <= 0) continue;
         const playerInput = runtimeInputForPlayer(input, player.playerId);
         if (playerInput !== null) tickPlayer(arena, player, playerInput);
       }
@@ -150,7 +149,9 @@ function resolveEnemyTarget(
   const aggroBoss = store.bossById(aggro.targetId);
   if (aggroBoss !== null) return aggroBoss;
   const currentPlayer = store.playerById(aggro.targetId);
-  if (currentPlayer !== null && currentPlayer.hp > 0) return currentPlayer;
+  if (currentPlayer !== null && currentPlayer.state === 'alive' && currentPlayer.hp > 0) {
+    return currentPlayer;
+  }
   enemy.aggroMemory = null;
   return fallbackPlayer;
 }

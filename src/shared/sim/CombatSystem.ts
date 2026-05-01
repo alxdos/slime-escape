@@ -254,6 +254,7 @@ function syncPlayerSelectedIndex(
   shooterWeapons: Map<EntityId, ShooterWeapons>
 ): void {
   for (const player of store.players()) {
+    if (player.state !== 'alive') continue;
     const playerInput = runtimeInputForPlayer(input, player.playerId);
     if (playerInput === null) continue;
     if (playerInput.loadout === null) continue;
@@ -323,52 +324,52 @@ function runCompanionFiringDecisions(
   weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
   emit: (event: RuntimeEvent) => void
 ): void {
-  const companion = store.companion();
-  if (companion === null) return;
-  if (companion.state !== 'alive') return;
+  for (const companion of store.companions()) {
+    if (companion.state !== 'alive') continue;
 
-  const target = resolveCompanionTarget(store, companion.targetId);
-  if (target === null) return;
+    const target = resolveCompanionTarget(store, companion.targetId);
+    if (target === null) continue;
 
-  const weapons = shooterWeapons.get(companion.id);
-  if (weapons === undefined || weapons.ownerKind !== 'companion') return;
-  const selectedWeapon = selectedWeaponInstance(weapons);
-  if (selectedWeapon === null) return;
-  if (simTimeMs < selectedWeapon.nextFireSimMs) return;
+    const weapons = shooterWeapons.get(companion.id);
+    if (weapons === undefined || weapons.ownerKind !== 'companion') continue;
+    const selectedWeapon = selectedWeaponInstance(weapons);
+    if (selectedWeapon === null) continue;
+    if (simTimeMs < selectedWeapon.nextFireSimMs) continue;
 
-  const aimDx = target.position.x - companion.position.x;
-  const aimDy = target.position.y - companion.position.y;
-  if (aimDx === 0 && aimDy === 0) return;
+    const aimDx = target.position.x - companion.position.x;
+    const aimDy = target.position.y - companion.position.y;
+    if (aimDx === 0 && aimDy === 0) continue;
 
-  const archetype = weaponRegistry[selectedWeapon.archetypeId];
-  if (archetype === undefined) return;
-  const result = fireWeaponProjectiles(
-    store,
-    archetype,
-    selectedWeapon.modifiers,
-    companion.id,
-    'companion',
-    companion.position,
-    target.position,
-    simTimeMs
-  );
-  if (result === null) return;
+    const archetype = weaponRegistry[selectedWeapon.archetypeId];
+    if (archetype === undefined) continue;
+    const result = fireWeaponProjectiles(
+      store,
+      archetype,
+      selectedWeapon.modifiers,
+      companion.id,
+      'companion',
+      companion.position,
+      target.position,
+      simTimeMs
+    );
+    if (result === null) continue;
 
-  selectedWeapon.cooldownStartedAtSimMs = simTimeMs;
-  selectedWeapon.nextFireSimMs =
-    simTimeMs +
-    effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs, weapons.ownerKind);
-  emit({
-    kind: 'fire',
-    simTime: simTimeMs,
-    shooterId: companion.id,
-    ownerKind: 'companion',
-    weaponArchetypeId: archetype.id,
-    originX: companion.position.x,
-    originY: companion.position.y,
-    dirX: result.eventDirection.x,
-    dirY: result.eventDirection.y
-  });
+    selectedWeapon.cooldownStartedAtSimMs = simTimeMs;
+    selectedWeapon.nextFireSimMs =
+      simTimeMs +
+      effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs, weapons.ownerKind);
+    emit({
+      kind: 'fire',
+      simTime: simTimeMs,
+      shooterId: companion.id,
+      ownerKind: 'companion',
+      weaponArchetypeId: archetype.id,
+      originX: companion.position.x,
+      originY: companion.position.y,
+      dirX: result.eventDirection.x,
+      dirY: result.eventDirection.y
+    });
+  }
 }
 
 function resolveCompanionTarget(
@@ -1053,11 +1054,11 @@ function runContactIntents(
 ): DamageIntent[] {
   const intents: DamageIntent[] = [];
   for (const player of store.players()) {
-    if (player.hp <= 0) continue;
+    if (player.state !== 'alive' || player.hp <= 0) continue;
     addEnemyContactIntentsForTarget(player, index, simTimeMs, maxEnemyContactBoundsRadius, intents);
   }
-  const companion = store.companion();
-  if (companion !== null && companion.state === 'alive') {
+  for (const companion of store.companions()) {
+    if (companion.state !== 'alive') continue;
     addEnemyContactIntentsForTarget(
       companion,
       index,
@@ -1560,8 +1561,7 @@ function computeMaxProjectileTargetBoundsRadius(store: EntityStore): number {
   for (const player of store.players()) {
     max = Math.max(max, contactBoundsRadius(player));
   }
-  const companion = store.companion();
-  if (companion !== null) {
+  for (const companion of store.companions()) {
     max = Math.max(max, contactBoundsRadius(companion));
   }
   for (const archetype of Object.values(ENEMY_ARCHETYPES)) {

@@ -69,6 +69,29 @@ export type RuntimeEvent =
       formArchetypeId: string | null;
     }
   | {
+      kind: 'playerDowned';
+      simTime: number;
+      entityId: number;
+      playerId: string;
+      weaponArchetypeId: string | null;
+      impactDirX: number | null;
+      impactDirY: number | null;
+      x: number;
+      y: number;
+    }
+  | {
+      kind: 'playerRevived';
+      simTime: number;
+      entityId: number;
+      playerId: string;
+      rescuerEntityId: number;
+      rescuerPlayerId: string;
+      hp: number;
+      maxHp: number;
+      x: number;
+      y: number;
+    }
+  | {
       kind: 'companionDowned';
       simTime: number;
       companionId: number;

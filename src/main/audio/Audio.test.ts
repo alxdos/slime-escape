@@ -250,10 +250,10 @@ function makeBossSession(
         contactBox: { width: 1, height: 1 },
         maxSpeed: 5,
         maxHp: 5,
-        loadout: { weapons: ['pistol'], selectedIndex: 0 }
+        loadout: { weapons: ['pistol'], selectedIndex: 0 },
+        companion: null
       }
     ],
-    companion: null,
     backgrounds: [],
     musicSampleId: overrides.musicSampleId ?? null,
     modifiers: [],
@@ -945,6 +945,7 @@ describe('createAudio', () => {
         {
           id: 4,
           kind: 'companion',
+          ownerPlayerId: 'audio-test-player',
           petArchetypeId: 'pet-01',
           x: 1,
           y: 2,

@@ -6,6 +6,7 @@ import type {
   ContactBox,
   EncounterDefinition,
   Loadout,
+  PlayerConfig,
   SessionDefinition,
   SpawnOverride,
   SpawnPlan,
@@ -22,8 +23,10 @@ import type {
   BossSpawnPlanTemplate,
   BossSpawnPositionTemplate,
   ModePreset,
+  SessionPresetPlayerTemplate,
   SessionPresetEncounterTemplate,
-  SessionPresetTemplate
+  SessionPresetTemplate,
+  StaticSessionPresetTemplate
 } from './sessions.js';
 import { WEAPON_ARCHETYPES } from './weapons.js';
 
@@ -52,7 +55,6 @@ export function buildSessionDefinition(
     id: options.id ?? `${template.presetId}-session`,
     seed: options.seed,
     arena,
-    companion: resolveCompanionConfig(template, options.selectedPetId ?? null),
     backgrounds: template.backgrounds,
     musicSampleId: template.musicSampleId,
     modifiers: [],
@@ -65,14 +67,43 @@ export function buildSessionDefinition(
   return template.dynamicRoster
     ? {
         ...base,
-        players: template.players,
+        players: resolvePlayers(template, options.selectedPetId ?? null),
         dynamicRoster: true
       }
     : {
         ...base,
-        players: template.players,
+        players: resolveStaticPlayers(template, options.selectedPetId ?? null),
         dynamicRoster: false
       };
+}
+
+function resolvePlayers(
+  template: SessionPresetTemplate,
+  selectedPetId: string | null
+): ReadonlyArray<PlayerConfig> {
+  return template.players.map((player) => resolvePlayer(template, player, selectedPetId));
+}
+
+function resolveStaticPlayers(
+  template: StaticSessionPresetTemplate,
+  selectedPetId: string | null
+): readonly [PlayerConfig, ...PlayerConfig[]] {
+  const [first, ...rest] = template.players;
+  return [
+    resolvePlayer(template, first, selectedPetId),
+    ...rest.map((player) => resolvePlayer(template, player, selectedPetId))
+  ];
+}
+
+function resolvePlayer(
+  template: SessionPresetTemplate,
+  player: SessionPresetPlayerTemplate,
+  selectedPetId: string | null
+): PlayerConfig {
+  return {
+    ...player,
+    companion: resolveCompanionConfig(template, selectedPetId)
+  };
 }
 
 function resolveCompanionConfig(

@@ -182,6 +182,7 @@ function publicArenaSnapshotWithSelectedWeapon(selectedWeaponIndex: number): Sna
         y: 0,
         hp: 20,
         maxHp: 20,
+        state: 'alive',
         formArchetypeId: 'slime-one-eye',
         weaponHud: {
           selectedIndex: selectedWeaponIndex,
@@ -232,6 +233,7 @@ function publicArenaSnapshotWithoutWeaponHud(): Snapshot {
         y: 0,
         hp: 20,
         maxHp: 20,
+        state: 'alive',
         formArchetypeId: 'slime-one-eye',
         weaponHud: null
       }

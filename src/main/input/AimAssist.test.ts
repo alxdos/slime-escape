@@ -32,6 +32,7 @@ function player(x: number, y: number): Snapshot['entities'][number] {
     y,
     hp: 5,
     maxHp: 5,
+    state: 'alive',
     formArchetypeId: null,
     weaponHud: null
   };
