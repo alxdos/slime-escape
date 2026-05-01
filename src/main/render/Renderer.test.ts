@@ -954,6 +954,64 @@ describe('createRenderer', () => {
     expect(projectileXPositions(backend.lastScene(), projectileTexture)[1]).toBeCloseTo(20);
   });
 
+  it('snaps online predicted self on same-form playerSpawn when predicted prev is reset', () => {
+    const canvas = createCanvasHarness();
+    const backend = createRendererBackendHarness();
+    const playerTexture = new THREE.Texture();
+    const receivedAtMs = 500;
+    const pair = createSnapshotPairWithEntities([
+      playerSnapshot({
+        id: 1,
+        playerId: 'self',
+        x: 10,
+        y: 0,
+        formArchetypeId: DEFAULT_PLAYER_VISUAL.archetypeId
+      })
+    ]);
+    const predictedCurr = createSnapshot(
+      [
+        playerSnapshot({
+          id: 101,
+          playerId: 'self',
+          x: 10,
+          y: 0,
+          state: 'alive',
+          formArchetypeId: DEFAULT_PLAYER_VISUAL.archetypeId
+        })
+      ],
+      { simTimeMs: 100 + SIM_STEP_MS }
+    );
+    const predictedPair: SnapshotPair = {
+      prev: null,
+      curr: predictedCurr,
+      currReceivedAtMs: receivedAtMs,
+      nowMs: receivedAtMs + SIM_STEP_MS / 2
+    };
+    const renderer = createRenderer({
+      canvas,
+      renderScalePreset: 'medium',
+      arena: { width: 16, height: 9 },
+      session: createRenderSession(),
+      spriteTextures: createSpriteTextures({ [DEFAULT_PLAYER_VISUAL.archetypeId]: playerTexture }),
+      getSnapshotPair: () => pair,
+      getPredictedSnapshotPair: () => predictedPair,
+      windowTarget: {
+        innerWidth: 800,
+        innerHeight: 600,
+        devicePixelRatio: 2
+      },
+      createRendererBackend: backend.factory,
+      createDebugHud: () => ({
+        update(): void {},
+        dispose(): void {}
+      })
+    });
+
+    renderer.render();
+
+    expect(findMeshWithMaterialMap(backend.lastScene(), playerTexture)?.position.x).toBeCloseTo(10);
+  });
+
   it('uses sequence-group own-projectile fallback for online prediction', () => {
     const canvas = createCanvasHarness();
     const backend = createRendererBackendHarness();

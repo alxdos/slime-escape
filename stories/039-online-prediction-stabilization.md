@@ -18,6 +18,8 @@ First code review found two predicted-own-projectile blockers after T5. Follow-u
 
 Second code review found two renderer-side stabilization gaps. Follow-up fix derives negative predicted projectile render ids from the stable predicted projectile `id`, not from `spawnInputSequence + index`, so held-fire despawns do not shift surviving mesh identities. It also wires predicted `SnapshotPair` into both online render paths and interpolates predicted self and own projectiles with a one-`SIM_STEP_MS` lag; own projectiles that exist only in predicted `curr` render immediately from `curr`.
 
+Third code review found that transition events no longer reset predicted-pair interpolation. Follow-up fix restores the event-driven snap path by clearing predicted `prev` for the first predicted `curr` at or after a self transition event, covering same-state/same-form `playerSpawn` respawns without changing wire or host contracts.
+
 ## Player-facing
 
 - Sees: in online PvP (Public Arena), other players' slimes and their bullets render as smoothly as offline single-player — no visible 30 Hz stair-step on remote entities.

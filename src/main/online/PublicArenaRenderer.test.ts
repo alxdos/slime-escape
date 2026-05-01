@@ -384,6 +384,53 @@ describe('PublicArenaRenderer', () => {
     renderer.dispose();
   });
 
+  it('snaps predicted self on same-form playerSpawn when predicted prev is reset', () => {
+    const backend = createRendererBackendHarness();
+    const receivedAtMs = 500;
+    const authoritativePair = snapshotPair(
+      makeSnapshotWithEntities([
+        makePlayer({ id: 1, playerId: 'self', x: 10, y: 0, formArchetypeId: 'slime-one-eye' })
+      ])
+    );
+    const predictedCurr = makeSnapshotWithEntities(
+      [
+        makePlayer({
+          id: 101,
+          playerId: 'self',
+          x: 10,
+          y: 0,
+          state: 'alive',
+          formArchetypeId: 'slime-one-eye'
+        })
+      ],
+      100 + SIM_STEP_MS
+    );
+    const predictedPair: SnapshotPair = {
+      prev: null,
+      curr: predictedCurr,
+      currReceivedAtMs: receivedAtMs,
+      nowMs: receivedAtMs + SIM_STEP_MS / 2
+    };
+    const renderer = createPublicArenaRenderer({
+      canvas: makeCanvas(),
+      arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
+      selfId: 'self',
+      renderScalePreset: 'medium',
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => authoritativePair,
+      getPredictedSnapshotPair: () => predictedPair,
+      windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
+      createRendererBackend: backend.factory,
+      loadBackgroundTexture: createLoadedBackgroundTexture
+    });
+
+    renderer.render();
+
+    expect(selfPlayerMesh(backend.lastScene())?.position.x).toBeCloseTo(10);
+
+    renderer.dispose();
+  });
+
   it('uses sequence-group own-projectile fallback between predicted and authoritative snapshots', () => {
     const backend = createRendererBackendHarness();
     let predictedSnapshot: Snapshot | null = null;

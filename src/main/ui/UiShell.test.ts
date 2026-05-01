@@ -2978,6 +2978,53 @@ describe('UiShell', () => {
     expect(publicArenaCombatAffordances.lastSelfId()).toBe('socket-a');
     expect(publicArenaRenderer.calls.render).toBe(1);
 
+    const predictedBeforeSpawn = makePublicArenaSnapshotWithSelf(
+      { x: -8, y: -4 },
+      { simTimeMs: 120 }
+    );
+    const predictedAfterSpawn = makePublicArenaSnapshotWithSelf(
+      { x: 8, y: 4 },
+      { simTimeMs: 140 }
+    );
+    sim.setPredictedSnapshotPair({
+      prev: predictedBeforeSpawn,
+      curr: predictedAfterSpawn,
+      currReceivedAtMs: 1000,
+      nowMs: 1000
+    });
+
+    publicArenaClient.presentation({
+      kind: 'playerSpawn',
+      simTime: 130,
+      entityId: 1,
+      playerId: 'socket-a',
+      x: 8,
+      y: 4,
+      formArchetypeId: 'slime-many-eye'
+    });
+
+    let predictedPair = publicArenaRenderer.lastInit()?.getPredictedSnapshotPair?.();
+    expect(predictedPair?.prev).toBeNull();
+    expect(predictedPair?.curr).toBe(predictedAfterSpawn);
+    predictedPair = publicArenaRenderer.lastInit()?.getPredictedSnapshotPair?.();
+    expect(predictedPair?.prev).toBeNull();
+    expect(predictedPair?.curr).toBe(predictedAfterSpawn);
+
+    const predictedAfterFollowup = makePublicArenaSnapshotWithSelf(
+      { x: 9, y: 4 },
+      { simTimeMs: 156 }
+    );
+    sim.setPredictedSnapshotPair({
+      prev: predictedAfterSpawn,
+      curr: predictedAfterFollowup,
+      currReceivedAtMs: 1016,
+      nowMs: 1016
+    });
+
+    predictedPair = publicArenaRenderer.lastInit()?.getPredictedSnapshotPair?.();
+    expect(predictedPair?.prev).toBe(predictedAfterSpawn);
+    expect(predictedPair?.curr).toBe(predictedAfterFollowup);
+
     publicArenaClient.presentation({
       kind: 'host:levelUp',
       simTime: 130,

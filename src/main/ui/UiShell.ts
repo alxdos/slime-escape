@@ -430,6 +430,10 @@ export function createUiShell(init: UiShellInit): UiShell {
   let onlinePredictionInputBuffer: OnlinePredictionBufferedInput[] = [];
   let onlinePredictionPendingFireAcks: OnlinePredictionPendingFireAck[] = [];
   let onlinePredictionRttEstimateMs: number | null = null;
+  let onlinePredictionTransitionSnap: {
+    simTimeMs: number;
+    consumedCurr: Snapshot | null;
+  } | null = null;
   let onlineCampaignHudAttached = false;
   let onlineStatusMessage = PUBLIC_ARENA_CONNECTING_MESSAGE;
   let publicArenaMenuOpen = false;
@@ -1080,6 +1084,9 @@ export function createUiShell(init: UiShellInit): UiShell {
       setPhase(ONLINE_PHASE);
       return;
     }
+    if (isSelfPredictionSnapEvent(event)) {
+      markOnlinePredictionTransitionSnap(event.simTime);
+    }
     if (event.kind === 'host:levelUp') {
       return;
     }
@@ -1186,7 +1193,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       spriteTextures: preloadedTextures,
       visibleAreaCamera,
       getSnapshotPair: onlineSnapshotPair,
-      getPredictedSnapshotPair: sim.predictedSnapshotPair,
+      getPredictedSnapshotPair: predictedOnlineSnapshotPair,
       getPortalDescriptors: portalController.portals,
       getAim: () =>
         publicArenaInput !== null && publicArenaInput.isActive()
@@ -1229,7 +1236,7 @@ export function createUiShell(init: UiShellInit): UiShell {
       selectedPetId: null,
       visibleAreaCamera,
       getSnapshotPair: onlineSnapshotPair,
-      getPredictedSnapshotPair: sim.predictedSnapshotPair,
+      getPredictedSnapshotPair: predictedOnlineSnapshotPair,
       getPortalDescriptors: portalController.portals,
       getAim: () =>
         publicArenaInput !== null && publicArenaInput.isActive()
@@ -1349,6 +1356,42 @@ export function createUiShell(init: UiShellInit): UiShell {
     };
   }
 
+  function predictedOnlineSnapshotPair(): SnapshotPair {
+    const pair = sim.predictedSnapshotPair();
+    const snap = onlinePredictionTransitionSnap;
+    if (snap === null || pair.curr === null || pair.curr.simTimeMs < snap.simTimeMs) {
+      return pair;
+    }
+    if (snap.consumedCurr === null || pair.curr === snap.consumedCurr) {
+      onlinePredictionTransitionSnap = { ...snap, consumedCurr: pair.curr };
+      return {
+        ...pair,
+        prev: null
+      };
+    }
+    onlinePredictionTransitionSnap = null;
+    return pair;
+  }
+
+  function isSelfPredictionSnapEvent(event: ArenaHostEvent): boolean {
+    const playerId = publicArenaPlayerId;
+    if (playerId === null) return false;
+    switch (event.kind) {
+      case 'playerSpawn':
+      case 'playerDowned':
+      case 'playerRevived':
+        return event.playerId === playerId;
+      case 'host:levelUp':
+        return event.actorId === playerId;
+      default:
+        return false;
+    }
+  }
+
+  function markOnlinePredictionTransitionSnap(simTimeMs: number): void {
+    onlinePredictionTransitionSnap = { simTimeMs, consumedCurr: null };
+  }
+
   function ensureOnlinePredictionStarted(): void {
     const playerId = publicArenaPlayerId;
     if (onlinePredictionActive || playerId === null) return;
@@ -1358,6 +1401,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlinePredictionInputBuffer = [];
     onlinePredictionPendingFireAcks = [];
     onlinePredictionRttEstimateMs = null;
+    onlinePredictionTransitionSnap = null;
   }
 
   function stopOnlinePrediction(): void {
@@ -1366,6 +1410,7 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlinePredictionInputBuffer = [];
     onlinePredictionPendingFireAcks = [];
     onlinePredictionRttEstimateMs = null;
+    onlinePredictionTransitionSnap = null;
     sim.stopSession();
   }
 
