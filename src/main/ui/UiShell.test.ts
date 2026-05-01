@@ -5128,6 +5128,8 @@ describe('UiShell', () => {
       kind: 'hit',
       simTime: 123,
       projectileId: 1,
+      ownerId: 1,
+      ownerKind: 'player',
       targetId: 2,
       targetKind: 'enemy',
       targetArchetypeId: 'slime-one-eye',

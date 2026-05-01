@@ -1098,6 +1098,8 @@ describe('CombatSystem', () => {
     expect(intents[0]?.source.kind).toBe('explosion');
     const explosion = events.find((e) => e.kind === 'explosion');
     if (explosion?.kind !== 'explosion') throw new Error('expected explosion event');
+    expect(explosion.ownerId).toBe(player.id);
+    expect(explosion.ownerKind).toBe('player');
     expect(explosion.weaponArchetypeId).toBe(BOMB_PLACER.id);
     expect(explosion.radius).toBe(BOMB_PLACER.projectile.explosion!.radius);
     expect(enemy.knockback).not.toBeNull();
@@ -1271,7 +1273,7 @@ describe('CombatSystem', () => {
   });
 
   it('produces a damage intent and hit event when projectile reaches an enemy', () => {
-    const { store, index, combat } = setupCombat();
+    const { store, index, combat, player } = setupCombat();
     const enemy = store.spawnEnemy(stationaryEnemySpec({ x: 0.75, y: 0 }));
     const input = makeInput({ aimWorld: { x: 5, y: 0 }, firing: true });
     const events: RuntimeEvent[] = [];
@@ -1289,6 +1291,8 @@ describe('CombatSystem', () => {
     expect(hitEvents).toHaveLength(1);
     const hit = hitEvents[0]!;
     if (hit.kind !== 'hit') throw new Error('expected hit event');
+    expect(hit.ownerId).toBe(player.id);
+    expect(hit.ownerKind).toBe('player');
     expect(hit.targetArchetypeId).toBe(STATIONARY_TEST_ENEMY.archetypeId);
     expect(hit.impactDirX).toBeCloseTo(1);
     expect(hit.impactDirY).toBeCloseTo(0);

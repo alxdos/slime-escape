@@ -22,6 +22,8 @@ export type RuntimeEvent =
       kind: 'hit';
       simTime: number;
       projectileId: number;
+      ownerId: number;
+      ownerKind: 'player' | 'companion' | 'enemy' | 'boss';
       targetId: number;
       targetKind: 'enemy' | 'player' | 'companion' | 'boss';
       targetArchetypeId: string | null;
@@ -36,6 +38,7 @@ export type RuntimeEvent =
       kind: 'explosion';
       simTime: number;
       projectileId: number;
+      ownerId: number;
       ownerKind: 'player' | 'companion' | 'enemy' | 'boss';
       weaponArchetypeId: string;
       damage: number;
