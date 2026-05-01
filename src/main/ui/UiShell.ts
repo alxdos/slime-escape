@@ -430,8 +430,6 @@ export function createUiShell(init: UiShellInit): UiShell {
   let onlinePredictionInputBuffer: OnlinePredictionBufferedInput[] = [];
   let onlinePredictionPendingFireAcks: OnlinePredictionPendingFireAck[] = [];
   let onlinePredictionRttEstimateMs: number | null = null;
-  let onlinePredictionLastSelfForm: string | null | undefined = undefined;
-  let onlinePredictionSnapSerial = 0;
   let onlineCampaignHudAttached = false;
   let onlineStatusMessage = PUBLIC_ARENA_CONNECTING_MESSAGE;
   let publicArenaMenuOpen = false;
@@ -1070,7 +1068,6 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function handlePublicArenaPresentationEvent(event: ArenaHostEvent): void {
-    markOnlinePredictionSnapForEvent(event);
     if (event.kind === 'host:lobby:state') {
       handleOnlineLobbyState(event);
       return;
@@ -1093,31 +1090,6 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlineRenderer?.handleEvent(event);
     if (event.kind === 'win' || event.kind === 'loss') {
       handleOnlineRunEnd(event);
-    }
-  }
-
-  function markOnlinePredictionSnapForEvent(event: ArenaHostEvent): void {
-    const playerId = publicArenaPlayerId;
-    if (playerId === null || !onlinePredictionActive) return;
-    switch (event.kind) {
-      case 'host:levelUp':
-        if (event.actorId === playerId) {
-          onlinePredictionSnapSerial += 1;
-          onlinePredictionLastSelfForm = event.formArchetypeId;
-        }
-        return;
-      case 'playerSpawn':
-        if (event.playerId === playerId) {
-          onlinePredictionSnapSerial += 1;
-          onlinePredictionLastSelfForm = event.formArchetypeId;
-        }
-        return;
-      case 'playerDowned':
-      case 'playerRevived':
-        if (event.playerId === playerId) onlinePredictionSnapSerial += 1;
-        return;
-      default:
-        return;
     }
   }
 
@@ -1213,9 +1185,8 @@ export function createUiShell(init: UiShellInit): UiShell {
       selfId: requirePublicArenaPlayerId(),
       spriteTextures: preloadedTextures,
       visibleAreaCamera,
-      getSnapshot: () => publicArenaSnapshot,
+      getSnapshotPair: onlineSnapshotPair,
       getPredictedSnapshot: () => sim.predictedSnapshotPair().curr,
-      getPredictionSnapSerial: () => onlinePredictionSnapSerial,
       getPortalDescriptors: portalController.portals,
       getAim: () =>
         publicArenaInput !== null && publicArenaInput.isActive()
@@ -1386,8 +1357,6 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlinePredictionInputBuffer = [];
     onlinePredictionPendingFireAcks = [];
     onlinePredictionRttEstimateMs = null;
-    onlinePredictionLastSelfForm = undefined;
-    onlinePredictionSnapSerial = 0;
   }
 
   function stopOnlinePrediction(): void {
@@ -1396,8 +1365,6 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlinePredictionInputBuffer = [];
     onlinePredictionPendingFireAcks = [];
     onlinePredictionRttEstimateMs = null;
-    onlinePredictionLastSelfForm = undefined;
-    onlinePredictionSnapSerial = 0;
     sim.stopSession();
   }
 
@@ -1405,7 +1372,6 @@ export function createUiShell(init: UiShellInit): UiShell {
     ensureOnlinePredictionStarted();
     trackPredictedFireRejectedSnap(snapshot);
     trimOnlinePredictionInputBuffer(snapshot);
-    trackOnlinePredictionFormSnap(snapshot);
     if (onlinePredictionActive) {
       sim.acceptAuthoritativeSnapshot(snapshot);
     }
@@ -1456,19 +1422,12 @@ export function createUiShell(init: UiShellInit): UiShell {
       }
     }
     const rejectionWindowMs = predictedFireRejectedWindowMs();
-    let shouldSnap = false;
     onlinePredictionPendingFireAcks = onlinePredictionPendingFireAcks.filter((entry) => {
       if (entry.inputSequence > acknowledged) return true;
       if (ownProjectileSequences.has(entry.inputSequence)) return false;
-      if (nowMs - entry.sentAtMs >= rejectionWindowMs) {
-        shouldSnap = true;
-        return false;
-      }
+      if (nowMs - entry.sentAtMs >= rejectionWindowMs) return false;
       return true;
     });
-    if (shouldSnap) {
-      onlinePredictionSnapSerial += 1;
-    }
   }
 
   function updateOnlinePredictionRttEstimate(acknowledged: number, nowMs: number): void {
@@ -1504,22 +1463,6 @@ export function createUiShell(init: UiShellInit): UiShell {
     onlinePredictionInputBuffer = onlinePredictionInputBuffer.filter(
       (entry) => entry.inputSequence > acknowledged
     );
-  }
-
-  function trackOnlinePredictionFormSnap(snapshot: Snapshot): void {
-    const playerId = publicArenaPlayerId;
-    if (playerId === null) return;
-    const self = snapshot.entities.find(
-      (entity) => entity.kind === 'player' && entity.playerId === playerId
-    );
-    if (self === undefined || self.kind !== 'player') return;
-    if (
-      onlinePredictionLastSelfForm !== undefined &&
-      onlinePredictionLastSelfForm !== self.formArchetypeId
-    ) {
-      onlinePredictionSnapSerial += 1;
-    }
-    onlinePredictionLastSelfForm = self.formArchetypeId;
   }
 
   function isCampaignShapeOnlineSnapshot(snapshot: Snapshot): boolean {

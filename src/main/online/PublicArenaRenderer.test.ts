@@ -9,9 +9,11 @@ import {
   PUBLIC_ARENA_BOSS_LEVEL
 } from '../../shared/publicArenaProgression';
 import type { Snapshot } from '../../shared/snapshot';
+import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import { ARC_PREVIEW_NAME } from '../render/arcPreview';
 import { DEFAULT_PLAYER_VISUAL } from '../render/playerVisuals';
 import type { TextureMap } from '../render/spritePreload';
+import type { SnapshotPair } from '../sim/SimWorkerHost';
 import {
   VIBE_JAM_PORTAL_GROUP_NAME,
   VIBE_JAM_PORTAL_RETURN_LABEL_NAME
@@ -70,7 +72,7 @@ describe('PublicArenaRenderer', () => {
   it('renders online slime, boss, projectile, and level label snapshots', () => {
     let snapshot: Snapshot | null = makeSnapshot();
     let predictedSnapshot: Snapshot | null = null;
-    let predictionSnapSerial = 0;
+    let pair: SnapshotPair = snapshotPair(snapshot);
     const backend = createRendererBackendHarness();
     const textures = createSpriteTextures();
     const backgroundTexture = createBackgroundTexture();
@@ -81,9 +83,8 @@ describe('PublicArenaRenderer', () => {
       selfId: 'self',
       renderScalePreset: 'medium',
       spriteTextures: textures,
-      getSnapshot: () => snapshot,
+      getSnapshotPair: () => pair,
       getPredictedSnapshot: () => predictedSnapshot,
-      getPredictionSnapSerial: () => predictionSnapSerial,
       getAim: () => ({ x: 12, y: -6 }),
       windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
       createRendererBackend: backend.factory,
@@ -173,19 +174,16 @@ describe('PublicArenaRenderer', () => {
     expect(predictedSelf?.position.x).toBeCloseTo(6.03);
 
     snapshot = { ...makeSnapshot(), simTimeMs: 1100 };
+    pair = snapshotPair(snapshot);
     predictedSnapshot = makePredictedSnapshot({ simTimeMs: 1100, selfX: 10, selfY: -1 });
     renderer.render();
-    expect(predictedSelf?.position.x).toBeCloseTo(6.03);
+    expect(predictedSelf?.position.x).toBeCloseTo(10);
 
     snapshot = { ...makeSnapshot(), simTimeMs: 1150 };
+    pair = snapshotPair(snapshot);
     predictedSnapshot = makePredictedSnapshot({ simTimeMs: 1150, selfX: 10, selfY: -1 });
     renderer.render();
-    expect(predictedSelf?.position.x).toBeCloseTo(8.015);
-
-    predictionSnapSerial = 1;
-    predictedSnapshot = makePredictedSnapshot({ simTimeMs: 1150, selfX: 12, selfY: -1 });
-    renderer.render();
-    expect(predictedSelf?.position.x).toBeCloseTo(12);
+    expect(predictedSelf?.position.x).toBeCloseTo(10);
 
     predictedSnapshot = null;
     snapshot = {
@@ -199,6 +197,7 @@ describe('PublicArenaRenderer', () => {
           : entity
       )
     };
+    pair = snapshotPair(snapshot);
     renderer.render();
     expect(arcPreview?.visible).toBe(false);
 
@@ -208,6 +207,7 @@ describe('PublicArenaRenderer', () => {
         (entity) => entity.kind === 'player' && entity.playerId === 'self'
       )
     };
+    pair = snapshotPair(snapshot);
     renderer.render();
 
     expect(findAllByName(backend.lastScene(), 'public-arena-player')).toHaveLength(1);
@@ -237,7 +237,7 @@ describe('PublicArenaRenderer', () => {
       selfId: 'self',
       renderScalePreset: 'medium',
       spriteTextures: createSpriteTextures(),
-      getSnapshot: () => null,
+      getSnapshotPair: () => snapshotPair(null),
       getPortalDescriptors: () => portals,
       windowTarget,
       createRendererBackend: backend.factory,
@@ -270,6 +270,133 @@ describe('PublicArenaRenderer', () => {
 
     renderer.dispose();
     expect(backend.disposeCalls()).toBe(1);
+  });
+
+  it('advances non-self interpolation from wall-clock time between snapshots', () => {
+    const backend = createRendererBackendHarness();
+    const receivedAtMs = 500;
+    const prev = makeSnapshotWithEntities(
+      [
+        makePlayer({ id: 1, playerId: 'self', x: 0, y: 0 }),
+        makeProjectile({ id: 20, ownerId: 2, x: 0, y: 0, spawnInputSequence: 8 })
+      ],
+      100
+    );
+    const curr = makeSnapshotWithEntities(
+      [
+        makePlayer({ id: 1, playerId: 'self', x: 0, y: 0 }),
+        makeProjectile({
+          id: 20,
+          ownerId: 2,
+          x: 10,
+          y: 0,
+          spawnInputSequence: 8
+        })
+      ],
+      100 + SNAPSHOT_INTERVAL_MS
+    );
+    let pair: SnapshotPair = {
+      prev,
+      curr,
+      currReceivedAtMs: receivedAtMs,
+      nowMs: receivedAtMs
+    };
+    const renderer = createPublicArenaRenderer({
+      canvas: makeCanvas(),
+      arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
+      selfId: 'self',
+      renderScalePreset: 'medium',
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => pair,
+      windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
+      createRendererBackend: backend.factory,
+      loadBackgroundTexture: createLoadedBackgroundTexture
+    });
+
+    renderer.render();
+    expect(firstProjectile(backend.lastScene())?.position.x).toBeCloseTo(0);
+
+    pair = { ...pair, nowMs: receivedAtMs + SNAPSHOT_INTERVAL_MS / 2 };
+    renderer.render();
+    expect(firstProjectile(backend.lastScene())?.position.x).toBeCloseTo(5);
+
+    pair = { ...pair, nowMs: receivedAtMs + SNAPSHOT_INTERVAL_MS };
+    renderer.render();
+    expect(firstProjectile(backend.lastScene())?.position.x).toBeCloseTo(10);
+
+    renderer.dispose();
+  });
+
+  it('uses sequence-group own-projectile fallback between predicted and authoritative snapshots', () => {
+    const backend = createRendererBackendHarness();
+    let predictedSnapshot: Snapshot | null = null;
+    const pair: SnapshotPair = snapshotPair(
+      makeSnapshotWithEntities([
+        makePlayer({ id: 1, playerId: 'self', x: 0, y: 0 }),
+        makeProjectile({ id: 31, ownerId: 1, x: 1, y: 0, spawnInputSequence: 42 }),
+        makeProjectile({ id: 32, ownerId: 1, x: 2, y: 0, spawnInputSequence: 42 }),
+        makeProjectile({ id: 33, ownerId: 1, x: 3, y: 0, spawnInputSequence: 42 })
+      ])
+    );
+    const renderer = createPublicArenaRenderer({
+      canvas: makeCanvas(),
+      arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
+      selfId: 'self',
+      renderScalePreset: 'medium',
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => pair,
+      getPredictedSnapshot: () => predictedSnapshot,
+      windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
+      createRendererBackend: backend.factory,
+      loadBackgroundTexture: createLoadedBackgroundTexture
+    });
+
+    renderer.render();
+    expect(projectilePositions(backend.lastScene())).toEqual([1, 2, 3]);
+
+    predictedSnapshot = makeSnapshotWithEntities([
+      makePlayer({ id: 101, playerId: 'self', x: 0, y: 0 }),
+      makeProjectile({ id: 201, ownerId: 101, x: 10, y: 0, spawnInputSequence: 42 }),
+      makeProjectile({ id: 202, ownerId: 101, x: 11, y: 0, spawnInputSequence: 42 }),
+      makeProjectile({ id: 203, ownerId: 101, x: 12, y: 0, spawnInputSequence: 42 }),
+      makeProjectile({ id: 204, ownerId: 101, x: 13, y: 0, spawnInputSequence: 42 }),
+      makeProjectile({ id: 205, ownerId: 101, x: 14, y: 0, spawnInputSequence: 42 })
+    ]);
+    renderer.render();
+    expect(projectilePositions(backend.lastScene())).toEqual([10, 11, 12, 13, 14]);
+
+    renderer.dispose();
+  });
+
+  it('keeps authoritative own projectiles with null spawn sequence visible', () => {
+    const backend = createRendererBackendHarness();
+    const pair = snapshotPair(
+      makeSnapshotWithEntities([
+        makePlayer({ id: 1, playerId: 'self', x: 0, y: 0 }),
+        makeProjectile({ id: 31, ownerId: 1, x: 1, y: 0, spawnInputSequence: null })
+      ])
+    );
+    const predictedSnapshot = makeSnapshotWithEntities([
+      makePlayer({ id: 101, playerId: 'self', x: 0, y: 0 }),
+      makeProjectile({ id: 201, ownerId: 101, x: 10, y: 0, spawnInputSequence: 42 })
+    ]);
+    const renderer = createPublicArenaRenderer({
+      canvas: makeCanvas(),
+      arena: PUBLIC_ARENA_PRESENTATION_CONFIG.arena,
+      selfId: 'self',
+      renderScalePreset: 'medium',
+      spriteTextures: createSpriteTextures(),
+      getSnapshotPair: () => pair,
+      getPredictedSnapshot: () => predictedSnapshot,
+      windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
+      createRendererBackend: backend.factory,
+      loadBackgroundTexture: createLoadedBackgroundTexture
+    });
+
+    renderer.render();
+    expect(projectilePositions(backend.lastScene())).toEqual([1, 10]);
+
+    renderer.dispose();
   });
 });
 
@@ -427,6 +554,76 @@ function makePredictedSnapshot(
   };
 }
 
+type TestPlayer = Extract<Snapshot['entities'][number], { kind: 'player' }>;
+type TestProjectile = Extract<Snapshot['entities'][number], { kind: 'projectile' }>;
+
+function snapshotPair(snapshot: Snapshot | null): SnapshotPair {
+  return {
+    prev: null,
+    curr: snapshot,
+    currReceivedAtMs: 0,
+    nowMs: snapshot?.simTimeMs ?? 0
+  };
+}
+
+function makeSnapshotWithEntities(
+  entities: ReadonlyArray<Snapshot['entities'][number]>,
+  simTimeMs = 1000
+): Snapshot {
+  return {
+    simTimeMs,
+    entities,
+    encounter: null,
+    zone: { mode: 'disabled', margin: 0 },
+    waveProgress: null,
+    bossHud: null,
+    lastInputSequence: {}
+  };
+}
+
+function makePlayer(overrides: Partial<TestPlayer> = {}): TestPlayer {
+  return {
+    id: 1,
+    kind: 'player',
+    playerId: 'self',
+    x: 0,
+    y: 0,
+    hp: 10,
+    maxHp: 20,
+    state: 'alive',
+    formArchetypeId: null,
+    weaponHud: makeWeaponHud(0),
+    statusEffects: [],
+    ...overrides
+  };
+}
+
+function makeProjectile(overrides: Partial<TestProjectile> = {}): TestProjectile {
+  return {
+    id: 100,
+    kind: 'projectile',
+    ownerKind: 'player',
+    ownerId: 1,
+    weaponArchetypeId: 'rock-thrower',
+    originX: 0,
+    originY: 0,
+    x: 0,
+    y: 0,
+    size: { width: 0.42, height: 0.42 },
+    state: 'flying',
+    visualState: {
+      angleRadians: 0,
+      spinRadians: 0,
+      pulsePhase: 0
+    },
+    explosionRadius: null,
+    detonateAtSimMs: null,
+    arcEnd: null,
+    spawnInputSequence: null,
+    ...overrides
+  };
+}
+
 function makeWeaponHud(selectedIndex: number) {
   return {
     selectedIndex,
@@ -467,6 +664,15 @@ function createBackgroundTexture(): THREE.Texture {
   return texture;
 }
 
+function createLoadedBackgroundTexture(
+  _url: string,
+  onLoad?: (texture: THREE.Texture) => void
+): THREE.Texture {
+  const texture = createBackgroundTexture();
+  onLoad?.(texture);
+  return texture;
+}
+
 function makeCanvas(): HTMLCanvasElement {
   return {
     style: new FakeStyle(),
@@ -497,4 +703,14 @@ function materialMap(mesh: THREE.Mesh | null): THREE.Texture | null {
   if (mesh === null || Array.isArray(mesh.material)) return null;
   const material = mesh.material;
   return material instanceof THREE.MeshBasicMaterial ? material.map : null;
+}
+
+function firstProjectile(scene: THREE.Scene): THREE.Object3D | undefined {
+  return findAllByName(scene, 'public-arena-projectile')[0];
+}
+
+function projectilePositions(scene: THREE.Scene): number[] {
+  return findAllByName(scene, 'public-arena-projectile').map((projectile) =>
+    Number(projectile.position.x.toFixed(6))
+  );
 }

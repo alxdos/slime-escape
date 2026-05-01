@@ -9,8 +9,14 @@ import {
 } from '../../shared/content/publicArena';
 import { PUBLIC_ARENA_BOSS_WEAPON_ID } from '../../shared/publicArenaProgression';
 import type { ArenaConfig } from '../../shared/session';
-import type { PlayerSnapshot, ProjectileSnapshot, Snapshot } from '../../shared/snapshot';
+import type {
+  EntitySnapshot,
+  PlayerSnapshot,
+  ProjectileSnapshot,
+  Snapshot
+} from '../../shared/snapshot';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
+import { SNAPSHOT_INTERVAL_MS } from '../../shared/timing';
 import { createArcPreview, updateArcPreview } from '../render/arcPreview';
 import { BOSS_VISUALS } from '../render/bossVisuals';
 import {
@@ -40,6 +46,7 @@ import {
   type VisibleArea,
   type VisibleAreaCamera
 } from '../visibleArea';
+import type { SnapshotPair } from '../sim/SimWorkerHost';
 import type { VibeJamPortalDescriptor } from '../VibeJamPortalController';
 import {
   publicArenaSnapshotView,
@@ -76,9 +83,8 @@ export type PublicArenaRendererInit = Readonly<{
   selfId: PublicArenaPlayerId;
   presentationConfig?: PublicArenaPresentationConfig;
   spriteTextures: TextureMap;
-  getSnapshot(): PublicArenaOnlineSnapshot | null;
+  getSnapshotPair(): SnapshotPair;
   getPredictedSnapshot?: () => PublicArenaOnlineSnapshot | null;
-  getPredictionSnapSerial?: () => number;
   getPortalDescriptors?: () => ReadonlyArray<VibeJamPortalDescriptor>;
   getAim?: AimAccessor;
   prefersReducedMotion?: boolean;
@@ -135,8 +141,6 @@ const SLIME_BREATH_HZ = 0.85;
 const SLIME_BREATH_AMPLITUDE = 0.055;
 const BOSS_BREATH_AMPLITUDE = 0.035;
 const PROJECTILE_OPACITY = 0.95;
-const PREDICTION_BLEND_EPSILON_WU = 0.05;
-const PREDICTION_BLEND_DURATION_MS = 100;
 
 export function createPublicArenaRenderer(
   init: PublicArenaRendererInit
@@ -157,7 +161,10 @@ export function createPublicArenaRenderer(
       arena: init.arena,
       profile: 'desktop',
       effectiveViewport: readRendererViewport(windowTarget),
-      playerPosition: findSelfPosition(publicArenaSnapshotView(init.getSnapshot()), init.selfId)
+      playerPosition: findSelfPosition(
+        publicArenaSnapshotView(init.getSnapshotPair().curr),
+        init.selfId
+      )
     });
 
   const camera = new THREE.OrthographicCamera(0, 0, 0, 0, 0.1, 10);
@@ -188,14 +195,6 @@ export function createPublicArenaRenderer(
   scene.add(crosshair);
   const arcPreview = createArcPreview();
   scene.add(arcPreview);
-  let renderedSelfPosition: Readonly<{ x: number; y: number }> | null = null;
-  let selfBlend:
-    | Readonly<{
-        from: Readonly<{ x: number; y: number }>;
-        startedAtMs: number;
-      }>
-    | null = null;
-  let lastPredictionSnapSerial = init.getPredictionSnapSerial?.() ?? 0;
   let currentRenderScalePreset = init.renderScalePreset;
 
   function applyResolvedScalePolicy(
@@ -239,26 +238,15 @@ export function createPublicArenaRenderer(
 
   return {
     render(): void {
-      const authoritativeSnapshot = init.getSnapshot();
+      const pair = init.getSnapshotPair();
       const predictedSnapshot = init.getPredictedSnapshot?.() ?? null;
-      const snapSerial = init.getPredictionSnapSerial?.() ?? 0;
-      const composedRawSnapshot = composePredictedSnapshot({
-        authoritativeSnapshot,
+      const composedRawSnapshot = composeOnlineSnapshot({
+        pair,
         predictedSnapshot,
-        selfId: init.selfId,
-        snapSerial,
-        nowMs: authoritativeSnapshot?.simTimeMs ?? predictedSnapshot?.simTimeMs ?? 0,
-        blendState: {
-          renderedSelfPosition,
-          selfBlend,
-          lastPredictionSnapSerial
-        }
+        selfId: init.selfId
       });
-      renderedSelfPosition = composedRawSnapshot.renderedSelfPosition;
-      selfBlend = composedRawSnapshot.selfBlend;
-      lastPredictionSnapSerial = composedRawSnapshot.lastPredictionSnapSerial;
-      const snapshot = publicArenaSnapshotView(composedRawSnapshot.snapshot);
-      const nowMs = snapshot?.simTimeMs ?? 0;
+      const snapshot = publicArenaSnapshotView(composedRawSnapshot);
+      const nowMs = pair.nowMs;
       visibleAreaCamera.follow(findSelfPosition(snapshot, init.selfId), nowMs);
       applyCameraVisibleArea(camera, visibleAreaCamera.visibleArea());
       syncPlayers(snapshot, init.selfId, playerMeshes, init.spriteTextures, scene, nowMs);
@@ -309,154 +297,146 @@ export function createPublicArenaRenderer(
   };
 }
 
-type PredictionBlendState = Readonly<{
-  renderedSelfPosition: Readonly<{ x: number; y: number }> | null;
-  selfBlend: Readonly<{
-    from: Readonly<{ x: number; y: number }>;
-    startedAtMs: number;
-  }> | null;
-  lastPredictionSnapSerial: number;
-}>;
-
-type ComposedPredictionSnapshot = Readonly<{
-  snapshot: Snapshot | null;
-  renderedSelfPosition: Readonly<{ x: number; y: number }> | null;
-  selfBlend: PredictionBlendState['selfBlend'];
-  lastPredictionSnapSerial: number;
-}>;
-
-function composePredictedSnapshot(init: Readonly<{
-  authoritativeSnapshot: Snapshot | null;
+function composeOnlineSnapshot(init: Readonly<{
+  pair: SnapshotPair;
   predictedSnapshot: Snapshot | null;
   selfId: PublicArenaPlayerId;
-  snapSerial: number;
-  nowMs: number;
-  blendState: PredictionBlendState;
-}>): ComposedPredictionSnapshot {
-  const authoritativeSnapshot = init.authoritativeSnapshot;
-  if (authoritativeSnapshot === null) {
-    return {
-      snapshot: null,
-      renderedSelfPosition: null,
-      selfBlend: null,
-      lastPredictionSnapSerial: init.snapSerial
-    };
-  }
-  const predictedSnapshot = init.predictedSnapshot;
-  const authoritativeSelf = findPlayerSnapshot(authoritativeSnapshot, init.selfId);
-  const predictedSelf =
-    predictedSnapshot === null ? null : findPlayerSnapshot(predictedSnapshot, init.selfId);
-  if (authoritativeSelf === null || predictedSelf === null || predictedSnapshot === null) {
-    return {
-      snapshot: authoritativeSnapshot,
-      renderedSelfPosition:
-        authoritativeSelf !== null && init.blendState.renderedSelfPosition !== null
-          ? { x: authoritativeSelf.x, y: authoritativeSelf.y }
-          : init.blendState.renderedSelfPosition,
-      selfBlend: null,
-      lastPredictionSnapSerial: init.snapSerial
-    };
-  }
+}>): Snapshot | null {
+  const interpolatedAuthoritative = interpolateSnapshotPair(init.pair);
+  if (interpolatedAuthoritative === null || init.pair.curr === null) return null;
 
-  const positionResult = resolvePredictedSelfPosition({
-    target: { x: predictedSelf.x, y: predictedSelf.y },
-    snapSerial: init.snapSerial,
-    nowMs: init.nowMs,
-    blendState: init.blendState
+  const authoritativeSelf = findPlayerSnapshot(init.pair.curr, init.selfId);
+  const predictedSelf =
+    init.predictedSnapshot === null
+      ? null
+      : findPlayerSnapshot(init.predictedSnapshot, init.selfId);
+  const composedSelf =
+    authoritativeSelf !== null && predictedSelf !== null
+      ? composeSelfPlayer(authoritativeSelf, predictedSelf)
+      : authoritativeSelf;
+  const predictedOwnProjectiles =
+    authoritativeSelf !== null && predictedSelf !== null && init.predictedSnapshot !== null
+      ? predictedOwnProjectileViews(init.predictedSnapshot, predictedSelf, authoritativeSelf)
+      : [];
+  const predictedOwnGroups = groupProjectilesBySequence(predictedOwnProjectiles);
+
+  const entities = interpolatedAuthoritative.entities.flatMap((entity): EntitySnapshot[] => {
+    if (entity.kind === 'player' && entity.playerId === init.selfId) {
+      return composedSelf === null ? [entity] : [composedSelf];
+    }
+    if (
+      authoritativeSelf !== null &&
+      entity.kind === 'projectile' &&
+      entity.ownerKind === 'player' &&
+      entity.ownerId === authoritativeSelf.id
+    ) {
+      if (entity.spawnInputSequence === null) return [entity];
+      return predictedOwnGroups.has(entity.spawnInputSequence) ? [] : [entity];
+    }
+    return [entity];
   });
-  const composedSelf: PlayerSnapshot = {
-    ...predictedSelf,
-    id: authoritativeSelf.id,
-    x: positionResult.position.x,
-    y: positionResult.position.y
+
+  return {
+    ...interpolatedAuthoritative,
+    entities: [...entities, ...predictedOwnProjectiles]
   };
-  const predictedOwnProjectiles = predictedSnapshot.entities
+}
+
+function composeSelfPlayer(
+  authoritativeSelf: PlayerSnapshot,
+  predictedSelf: PlayerSnapshot
+): PlayerSnapshot {
+  return {
+    ...authoritativeSelf,
+    x: predictedSelf.x,
+    y: predictedSelf.y,
+    state: predictedSelf.state,
+    formArchetypeId: predictedSelf.formArchetypeId,
+    weaponHud: predictedSelf.weaponHud,
+    statusEffects: predictedSelf.statusEffects
+  };
+}
+
+function predictedOwnProjectileViews(
+  predictedSnapshot: Snapshot,
+  predictedSelf: PlayerSnapshot,
+  authoritativeSelf: PlayerSnapshot
+): ProjectileSnapshot[] {
+  return predictedSnapshot.entities
     .filter(
       (entity): entity is ProjectileSnapshot =>
         entity.kind === 'projectile' &&
         entity.ownerKind === 'player' &&
-        entity.ownerId === predictedSelf.id
+        entity.ownerId === predictedSelf.id &&
+        entity.spawnInputSequence !== null
     )
     .map((projectile, index): ProjectileSnapshot => ({
       ...projectile,
       id: predictedProjectileRenderId(projectile, index),
       ownerId: authoritativeSelf.id
     }));
-  const entities = authoritativeSnapshot.entities.flatMap((entity) => {
-    if (entity.kind === 'player' && entity.playerId === init.selfId) return [composedSelf];
-    if (
-      entity.kind === 'projectile' &&
-      entity.ownerKind === 'player' &&
-      entity.ownerId === authoritativeSelf.id
-    ) {
-      return [];
-    }
-    return [entity];
-  });
+}
 
+function groupProjectilesBySequence(
+  projectiles: ReadonlyArray<ProjectileSnapshot>
+): ReadonlyMap<number, ReadonlyArray<ProjectileSnapshot>> {
+  const groups = new Map<number, ProjectileSnapshot[]>();
+  for (const projectile of projectiles) {
+    const sequence = projectile.spawnInputSequence;
+    if (sequence === null) continue;
+    const group = groups.get(sequence);
+    if (group === undefined) {
+      groups.set(sequence, [projectile]);
+    } else {
+      group.push(projectile);
+    }
+  }
+  return groups;
+}
+
+function interpolateSnapshotPair(pair: SnapshotPair): Snapshot | null {
+  const { prev, curr } = pair;
+  if (curr === null) return null;
+  if (prev === null) return curr;
+  const alpha = computeAlpha(pair);
   return {
-    snapshot: {
-      ...authoritativeSnapshot,
-      entities: [...entities, ...predictedOwnProjectiles]
-    },
-    renderedSelfPosition: positionResult.position,
-    selfBlend: positionResult.selfBlend,
-    lastPredictionSnapSerial: positionResult.lastPredictionSnapSerial
+    ...curr,
+    entities: curr.entities.map((entity) =>
+      interpolateEntity(entity, findPreviousEntity(prev, entity), alpha)
+    )
   };
 }
 
-function resolvePredictedSelfPosition(init: Readonly<{
-  target: Readonly<{ x: number; y: number }>;
-  snapSerial: number;
-  nowMs: number;
-  blendState: PredictionBlendState;
-}>): Readonly<{
-  position: Readonly<{ x: number; y: number }>;
-  selfBlend: PredictionBlendState['selfBlend'];
-  lastPredictionSnapSerial: number;
-}> {
-  const previous = init.blendState.renderedSelfPosition;
-  if (
-    previous === null ||
-    init.snapSerial !== init.blendState.lastPredictionSnapSerial
-  ) {
-    return {
-      position: init.target,
-      selfBlend: null,
-      lastPredictionSnapSerial: init.snapSerial
-    };
-  }
-
-  const activeBlend = init.blendState.selfBlend;
-  if (activeBlend !== null) {
-    const t = clamp01((init.nowMs - activeBlend.startedAtMs) / PREDICTION_BLEND_DURATION_MS);
-    const position = lerpPosition(activeBlend.from, init.target, t);
-    return {
-      position,
-      selfBlend: t >= 1 ? null : activeBlend,
-      lastPredictionSnapSerial: init.snapSerial
-    };
-  }
-
-  const dx = init.target.x - previous.x;
-  const dy = init.target.y - previous.y;
-  if (Math.hypot(dx, dy) <= PREDICTION_BLEND_EPSILON_WU) {
-    return {
-      position: init.target,
-      selfBlend: null,
-      lastPredictionSnapSerial: init.snapSerial
-    };
-  }
-
-  const nextBlend = {
-    from: previous,
-    startedAtMs: init.nowMs
-  };
+function interpolateEntity<S extends EntitySnapshot>(
+  entity: S,
+  previous: S | null,
+  alpha: number
+): S {
+  if (previous === null) return entity;
   return {
-    position: previous,
-    selfBlend: nextBlend,
-    lastPredictionSnapSerial: init.snapSerial
+    ...entity,
+    x: previous.x + (entity.x - previous.x) * alpha,
+    y: previous.y + (entity.y - previous.y) * alpha
   };
+}
+
+function findPreviousEntity<S extends EntitySnapshot>(snapshot: Snapshot, entity: S): S | null {
+  for (const candidate of snapshot.entities) {
+    if (candidate.kind === entity.kind && candidate.id === entity.id) {
+      return candidate as S;
+    }
+  }
+  return null;
+}
+
+function computeAlpha(pair: SnapshotPair): number {
+  const { prev, curr } = pair;
+  if (prev === null || curr === null) return 1;
+  const span = curr.simTimeMs - prev.simTimeMs;
+  if (span <= 0) return 1;
+  const latestSimTime = curr.simTimeMs + (pair.nowMs - pair.currReceivedAtMs);
+  const renderSimTime = latestSimTime - SNAPSHOT_INTERVAL_MS;
+  return clamp01((renderSimTime - prev.simTimeMs) / span);
 }
 
 function findPlayerSnapshot(snapshot: Snapshot, playerId: PublicArenaPlayerId): PlayerSnapshot | null {
@@ -469,17 +449,6 @@ function findPlayerSnapshot(snapshot: Snapshot, playerId: PublicArenaPlayerId): 
 function predictedProjectileRenderId(projectile: ProjectileSnapshot, index: number): number {
   const base = projectile.spawnInputSequence ?? projectile.id;
   return -1_000_000 - Math.abs(base * 100 + index);
-}
-
-function lerpPosition(
-  from: Readonly<{ x: number; y: number }>,
-  to: Readonly<{ x: number; y: number }>,
-  t: number
-): Readonly<{ x: number; y: number }> {
-  return {
-    x: from.x + (to.x - from.x) * t,
-    y: from.y + (to.y - from.y) * t
-  };
 }
 
 type PublicArenaBackground = Readonly<{
