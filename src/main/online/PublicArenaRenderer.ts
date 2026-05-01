@@ -9,6 +9,7 @@ import {
 } from '../../shared/content/publicArena';
 import { PUBLIC_ARENA_BOSS_WEAPON_ID } from '../../shared/publicArenaProgression';
 import type { ArenaConfig } from '../../shared/session';
+import type { PlayerSnapshot, ProjectileSnapshot, Snapshot } from '../../shared/snapshot';
 import { PX_PER_WU } from '../../shared/sprite/spriteScale';
 import { createArcPreview, updateArcPreview } from '../render/arcPreview';
 import { BOSS_VISUALS } from '../render/bossVisuals';
@@ -134,6 +135,8 @@ const SLIME_BREATH_HZ = 0.85;
 const SLIME_BREATH_AMPLITUDE = 0.055;
 const BOSS_BREATH_AMPLITUDE = 0.035;
 const PROJECTILE_OPACITY = 0.95;
+const PREDICTION_BLEND_EPSILON_WU = 0.05;
+const PREDICTION_BLEND_DURATION_MS = 100;
 
 export function createPublicArenaRenderer(
   init: PublicArenaRendererInit
@@ -185,6 +188,14 @@ export function createPublicArenaRenderer(
   scene.add(crosshair);
   const arcPreview = createArcPreview();
   scene.add(arcPreview);
+  let renderedSelfPosition: Readonly<{ x: number; y: number }> | null = null;
+  let selfBlend:
+    | Readonly<{
+        from: Readonly<{ x: number; y: number }>;
+        startedAtMs: number;
+      }>
+    | null = null;
+  let lastPredictionSnapSerial = init.getPredictionSnapSerial?.() ?? 0;
   let currentRenderScalePreset = init.renderScalePreset;
 
   function applyResolvedScalePolicy(
@@ -228,7 +239,25 @@ export function createPublicArenaRenderer(
 
   return {
     render(): void {
-      const snapshot = publicArenaSnapshotView(init.getSnapshot());
+      const authoritativeSnapshot = init.getSnapshot();
+      const predictedSnapshot = init.getPredictedSnapshot?.() ?? null;
+      const snapSerial = init.getPredictionSnapSerial?.() ?? 0;
+      const composedRawSnapshot = composePredictedSnapshot({
+        authoritativeSnapshot,
+        predictedSnapshot,
+        selfId: init.selfId,
+        snapSerial,
+        nowMs: authoritativeSnapshot?.simTimeMs ?? predictedSnapshot?.simTimeMs ?? 0,
+        blendState: {
+          renderedSelfPosition,
+          selfBlend,
+          lastPredictionSnapSerial
+        }
+      });
+      renderedSelfPosition = composedRawSnapshot.renderedSelfPosition;
+      selfBlend = composedRawSnapshot.selfBlend;
+      lastPredictionSnapSerial = composedRawSnapshot.lastPredictionSnapSerial;
+      const snapshot = publicArenaSnapshotView(composedRawSnapshot.snapshot);
       const nowMs = snapshot?.simTimeMs ?? 0;
       visibleAreaCamera.follow(findSelfPosition(snapshot, init.selfId), nowMs);
       applyCameraVisibleArea(camera, visibleAreaCamera.visibleArea());
@@ -277,6 +306,179 @@ export function createPublicArenaRenderer(
       disposeObjectTree(arcPreview);
       renderer.dispose();
     }
+  };
+}
+
+type PredictionBlendState = Readonly<{
+  renderedSelfPosition: Readonly<{ x: number; y: number }> | null;
+  selfBlend: Readonly<{
+    from: Readonly<{ x: number; y: number }>;
+    startedAtMs: number;
+  }> | null;
+  lastPredictionSnapSerial: number;
+}>;
+
+type ComposedPredictionSnapshot = Readonly<{
+  snapshot: Snapshot | null;
+  renderedSelfPosition: Readonly<{ x: number; y: number }> | null;
+  selfBlend: PredictionBlendState['selfBlend'];
+  lastPredictionSnapSerial: number;
+}>;
+
+function composePredictedSnapshot(init: Readonly<{
+  authoritativeSnapshot: Snapshot | null;
+  predictedSnapshot: Snapshot | null;
+  selfId: PublicArenaPlayerId;
+  snapSerial: number;
+  nowMs: number;
+  blendState: PredictionBlendState;
+}>): ComposedPredictionSnapshot {
+  const authoritativeSnapshot = init.authoritativeSnapshot;
+  if (authoritativeSnapshot === null) {
+    return {
+      snapshot: null,
+      renderedSelfPosition: null,
+      selfBlend: null,
+      lastPredictionSnapSerial: init.snapSerial
+    };
+  }
+  const predictedSnapshot = init.predictedSnapshot;
+  const authoritativeSelf = findPlayerSnapshot(authoritativeSnapshot, init.selfId);
+  const predictedSelf =
+    predictedSnapshot === null ? null : findPlayerSnapshot(predictedSnapshot, init.selfId);
+  if (authoritativeSelf === null || predictedSelf === null || predictedSnapshot === null) {
+    return {
+      snapshot: authoritativeSnapshot,
+      renderedSelfPosition:
+        authoritativeSelf !== null && init.blendState.renderedSelfPosition !== null
+          ? { x: authoritativeSelf.x, y: authoritativeSelf.y }
+          : init.blendState.renderedSelfPosition,
+      selfBlend: null,
+      lastPredictionSnapSerial: init.snapSerial
+    };
+  }
+
+  const positionResult = resolvePredictedSelfPosition({
+    target: { x: predictedSelf.x, y: predictedSelf.y },
+    snapSerial: init.snapSerial,
+    nowMs: init.nowMs,
+    blendState: init.blendState
+  });
+  const composedSelf: PlayerSnapshot = {
+    ...predictedSelf,
+    id: authoritativeSelf.id,
+    x: positionResult.position.x,
+    y: positionResult.position.y
+  };
+  const predictedOwnProjectiles = predictedSnapshot.entities
+    .filter(
+      (entity): entity is ProjectileSnapshot =>
+        entity.kind === 'projectile' &&
+        entity.ownerKind === 'player' &&
+        entity.ownerId === predictedSelf.id
+    )
+    .map((projectile, index): ProjectileSnapshot => ({
+      ...projectile,
+      id: predictedProjectileRenderId(projectile, index),
+      ownerId: authoritativeSelf.id
+    }));
+  const entities = authoritativeSnapshot.entities.flatMap((entity) => {
+    if (entity.kind === 'player' && entity.playerId === init.selfId) return [composedSelf];
+    if (
+      entity.kind === 'projectile' &&
+      entity.ownerKind === 'player' &&
+      entity.ownerId === authoritativeSelf.id
+    ) {
+      return [];
+    }
+    return [entity];
+  });
+
+  return {
+    snapshot: {
+      ...authoritativeSnapshot,
+      entities: [...entities, ...predictedOwnProjectiles]
+    },
+    renderedSelfPosition: positionResult.position,
+    selfBlend: positionResult.selfBlend,
+    lastPredictionSnapSerial: positionResult.lastPredictionSnapSerial
+  };
+}
+
+function resolvePredictedSelfPosition(init: Readonly<{
+  target: Readonly<{ x: number; y: number }>;
+  snapSerial: number;
+  nowMs: number;
+  blendState: PredictionBlendState;
+}>): Readonly<{
+  position: Readonly<{ x: number; y: number }>;
+  selfBlend: PredictionBlendState['selfBlend'];
+  lastPredictionSnapSerial: number;
+}> {
+  const previous = init.blendState.renderedSelfPosition;
+  if (
+    previous === null ||
+    init.snapSerial !== init.blendState.lastPredictionSnapSerial
+  ) {
+    return {
+      position: init.target,
+      selfBlend: null,
+      lastPredictionSnapSerial: init.snapSerial
+    };
+  }
+
+  const activeBlend = init.blendState.selfBlend;
+  if (activeBlend !== null) {
+    const t = clamp01((init.nowMs - activeBlend.startedAtMs) / PREDICTION_BLEND_DURATION_MS);
+    const position = lerpPosition(activeBlend.from, init.target, t);
+    return {
+      position,
+      selfBlend: t >= 1 ? null : activeBlend,
+      lastPredictionSnapSerial: init.snapSerial
+    };
+  }
+
+  const dx = init.target.x - previous.x;
+  const dy = init.target.y - previous.y;
+  if (Math.hypot(dx, dy) <= PREDICTION_BLEND_EPSILON_WU) {
+    return {
+      position: init.target,
+      selfBlend: null,
+      lastPredictionSnapSerial: init.snapSerial
+    };
+  }
+
+  const nextBlend = {
+    from: previous,
+    startedAtMs: init.nowMs
+  };
+  return {
+    position: previous,
+    selfBlend: nextBlend,
+    lastPredictionSnapSerial: init.snapSerial
+  };
+}
+
+function findPlayerSnapshot(snapshot: Snapshot, playerId: PublicArenaPlayerId): PlayerSnapshot | null {
+  for (const entity of snapshot.entities) {
+    if (entity.kind === 'player' && entity.playerId === playerId) return entity;
+  }
+  return null;
+}
+
+function predictedProjectileRenderId(projectile: ProjectileSnapshot, index: number): number {
+  const base = projectile.spawnInputSequence ?? projectile.id;
+  return -1_000_000 - Math.abs(base * 100 + index);
+}
+
+function lerpPosition(
+  from: Readonly<{ x: number; y: number }>,
+  to: Readonly<{ x: number; y: number }>,
+  t: number
+): Readonly<{ x: number; y: number }> {
+  return {
+    x: from.x + (to.x - from.x) * t,
+    y: from.y + (to.y - from.y) * t
   };
 }
 

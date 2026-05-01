@@ -69,6 +69,8 @@ function createRendererBackendHarness() {
 describe('PublicArenaRenderer', () => {
   it('renders online slime, boss, projectile, and level label snapshots', () => {
     let snapshot: Snapshot | null = makeSnapshot();
+    let predictedSnapshot: Snapshot | null = null;
+    let predictionSnapSerial = 0;
     const backend = createRendererBackendHarness();
     const textures = createSpriteTextures();
     const backgroundTexture = createBackgroundTexture();
@@ -80,6 +82,8 @@ describe('PublicArenaRenderer', () => {
       renderScalePreset: 'medium',
       spriteTextures: textures,
       getSnapshot: () => snapshot,
+      getPredictedSnapshot: () => predictedSnapshot,
+      getPredictionSnapSerial: () => predictionSnapSerial,
       getAim: () => ({ x: 12, y: -6 }),
       windowTarget: { innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 },
       createRendererBackend: backend.factory,
@@ -146,6 +150,40 @@ describe('PublicArenaRenderer', () => {
     expect(camera.position.x).toBeCloseTo(1.5);
     expect(camera.position.y).toBeCloseTo(-4);
 
+    predictedSnapshot = makePredictedSnapshot({ selfX: 6, selfY: -1, projectileX: 6.5, projectileY: -1 });
+    renderer.render();
+
+    const predictedSelf = findAllByName(scene, 'public-arena-player').find(
+      (player) => player.userData['playerId'] === 'self'
+    );
+    const authoritativeOther = findAllByName(scene, 'public-arena-player').find(
+      (player) => player.userData['playerId'] === 'other'
+    );
+    const predictedProjectile = findAllByName(scene, 'public-arena-projectile')[0];
+
+    expect(predictedSelf?.position.x).toBeCloseTo(6);
+    expect(predictedSelf?.position.y).toBeCloseTo(-1);
+    expect(authoritativeOther?.position.x).toBeCloseTo(9);
+    expect(authoritativeOther?.position.y).toBeCloseTo(-3);
+    expect(predictedProjectile?.position.x).toBeCloseTo(6.5);
+    expect(predictedProjectile?.position.y).toBeCloseTo(-1);
+
+    snapshot = { ...makeSnapshot(), simTimeMs: 1100 };
+    predictedSnapshot = makePredictedSnapshot({ simTimeMs: 1100, selfX: 10, selfY: -1 });
+    renderer.render();
+    expect(predictedSelf?.position.x).toBeCloseTo(6);
+
+    snapshot = { ...makeSnapshot(), simTimeMs: 1150 };
+    predictedSnapshot = makePredictedSnapshot({ simTimeMs: 1150, selfX: 10, selfY: -1 });
+    renderer.render();
+    expect(predictedSelf?.position.x).toBeCloseTo(8);
+
+    predictionSnapSerial = 1;
+    predictedSnapshot = makePredictedSnapshot({ simTimeMs: 1150, selfX: 12, selfY: -1 });
+    renderer.render();
+    expect(predictedSelf?.position.x).toBeCloseTo(12);
+
+    predictedSnapshot = null;
     snapshot = {
       ...makeSnapshot(),
       entities: makeSnapshot().entities.map((entity) =>
@@ -325,6 +363,63 @@ function makeSnapshot(): Snapshot {
     waveProgress: null,
     bossHud: null,
     lastInputSequence: {}
+  };
+}
+
+function makePredictedSnapshot(
+  overrides: Partial<{
+    simTimeMs: number;
+    selfX: number;
+    selfY: number;
+    projectileX: number;
+    projectileY: number;
+  }> = {}
+): Snapshot {
+  const simTimeMs = overrides.simTimeMs ?? 1000;
+  const selfX = overrides.selfX ?? 6;
+  const selfY = overrides.selfY ?? -1;
+  const projectileX = overrides.projectileX ?? selfX + 0.5;
+  const projectileY = overrides.projectileY ?? selfY;
+  return {
+    ...makeSnapshot(),
+    simTimeMs,
+    entities: [
+      {
+        id: 101,
+        kind: 'player',
+        playerId: 'self',
+        x: selfX,
+        y: selfY,
+        hp: 10,
+        maxHp: 20,
+        state: 'alive',
+        formArchetypeId: 'slime-one-eye',
+        weaponHud: makeWeaponHud(0),
+        statusEffects: []
+      },
+      {
+        id: 102,
+        kind: 'projectile',
+        ownerKind: 'player',
+        ownerId: 101,
+        weaponArchetypeId: 'rock-thrower',
+        originX: selfX,
+        originY: selfY,
+        x: projectileX,
+        y: projectileY,
+        size: { width: 0.42, height: 0.42 },
+        state: 'flying',
+        visualState: {
+          angleRadians: Math.PI / 3,
+          spinRadians: 0,
+          pulsePhase: 0
+        },
+        explosionRadius: null,
+        detonateAtSimMs: null,
+        arcEnd: { x: 12, y: -6 },
+        spawnInputSequence: 4
+      }
+    ]
   };
 }
 
