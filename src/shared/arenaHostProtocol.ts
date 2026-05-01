@@ -52,7 +52,7 @@ export type PublicArenaJoinAccepted = Readonly<{
 }>;
 
 export type PublicArenaJoinRejectedReason =
-  | 'arenaFull'
+  | 'serverFull'
   | 'roomFull'
   | 'sessionInProgress'
   | 'unknownSession'

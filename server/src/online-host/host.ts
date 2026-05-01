@@ -86,7 +86,7 @@ export type OnlineSessionHostJoinAccepted = Readonly<{
 
 export type OnlineSessionHostJoinRejected = Readonly<{
   kind: 'rejected';
-  reason: 'arenaFull' | 'roomFull' | 'sessionInProgress' | 'unknownSession';
+  reason: 'serverFull' | 'roomFull' | 'sessionInProgress' | 'unknownSession';
   message: string;
   playerCap: number;
   population: number;
@@ -177,7 +177,7 @@ export function createOnlineSessionHost(options: OnlineSessionHostOptions): Onli
     },
     join(socketId, request = {}): OnlineSessionHostJoinResult {
       if (stopped) {
-        return rejectJoin('arenaFull', options.playerCap, population());
+        return rejectJoin('serverFull', options.playerCap, population());
       }
       const existingRoom = roomForSocket(socketId);
       if (existingRoom !== null) {
@@ -185,7 +185,7 @@ export function createOnlineSessionHost(options: OnlineSessionHostOptions): Onli
         if (existing !== undefined) return acceptedJoin(existingRoom, existing);
       }
       if (population() >= options.playerCap) {
-        return rejectJoin('arenaFull', options.playerCap, population());
+        return rejectJoin('serverFull', options.playerCap, population());
       }
 
       const sessionConfigId = resolveRequestedSessionId(request.requestedSessionId);
@@ -673,7 +673,7 @@ function rejectJoin(
 
 function joinRejectedMessage(reason: OnlineSessionHostJoinRejected['reason']): string {
   switch (reason) {
-    case 'arenaFull':
+    case 'serverFull':
     case 'roomFull':
       return PUBLIC_ARENA_FULL_MESSAGE;
     case 'sessionInProgress':

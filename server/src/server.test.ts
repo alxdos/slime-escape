@@ -52,14 +52,14 @@ describe('PublicArenaServer host adapter', () => {
     expect(
       arenaHostJoinRejectedMessage({
         kind: 'rejected',
-        reason: 'arenaFull',
+        reason: 'serverFull',
         message: PUBLIC_ARENA_FULL_MESSAGE,
         playerCap: 2,
         population: 2
       })
     ).toEqual({
       protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
-      reason: 'arenaFull',
+      reason: 'serverFull',
       message: PUBLIC_ARENA_FULL_MESSAGE,
       playerCap: 2,
       population: 2

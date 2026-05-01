@@ -215,7 +215,7 @@ describe('OnlineSessionHost room registry', () => {
     });
     expect(host.join('bravo', { requestedSessionId: 'coop-slime' })).toMatchObject({
       kind: 'rejected',
-      reason: 'arenaFull'
+      reason: 'serverFull'
     });
   });
 });

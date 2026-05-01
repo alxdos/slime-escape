@@ -977,7 +977,7 @@ function createPublicArenaClientHarness() {
     reject(message: string): void {
       lastInit?.onRejected({
         protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
-        reason: 'arenaFull',
+        reason: 'serverFull',
         message,
         playerCap: 200,
         population: 200

@@ -149,14 +149,14 @@ describe('PublicArenaClient', () => {
     expect(onPresentation).toHaveBeenCalledWith(event);
   });
 
-  it('reports full arena rejection and disconnects', () => {
+  it('reports full server rejection and disconnects', () => {
     const socket = new FakePublicArenaSocket();
     const onRejected = vi.fn();
     createPublicArenaClient(makeInit(socket, { onRejected }));
 
     socket.dispatch(PUBLIC_ARENA_EVENTS.joinRejected, {
       protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
-      reason: 'arenaFull',
+      reason: 'serverFull',
       message: PUBLIC_ARENA_FULL_MESSAGE,
       playerCap: 200,
       population: 200
@@ -164,7 +164,7 @@ describe('PublicArenaClient', () => {
 
     expect(onRejected).toHaveBeenCalledWith(
       expect.objectContaining({
-        reason: 'arenaFull',
+        reason: 'serverFull',
         message: PUBLIC_ARENA_FULL_MESSAGE
       })
     );

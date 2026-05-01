@@ -276,8 +276,6 @@ function weaponArchetypeIdForDamageSource(source: DamageSource): string | null {
 }
 
 function isInvulnerable(target: Enemy | Boss | Player | Companion, simTimeMs: number): boolean {
-  if (target.kind === 'player' && target.state !== 'alive') return true;
-  if (target.kind === 'companion' && target.state !== 'alive') return true;
   return (
     target.kind === 'player' &&
     target.invulnerableUntilSimMs !== null &&
