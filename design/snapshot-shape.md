@@ -2,6 +2,7 @@
 
 - Status: accepted
 - Created: 2026-04-19
+- Updated: 2026-05-01 (story 036 T4 alignment: `RuntimeEvent.hit` and `RuntimeEvent.explosion` carry `ownerId` alongside `ownerKind` so the Node arena host can implement the accepted per-event delivery table in [online-arena-hosting.md](online-arena-hosting.md) without reconstructing projectile ownership from snapshots.)
 - Updated: 2026-05-01 (story 036 prep: `PlayerSnapshot` gains `formArchetypeId: string | null` so a player entity can render as a slime/boss form (Public Arena PvP) without adding a new entity discriminator; `null` means canonical hero form. `WeaponHudSnapshot` migrates from a top-level `Snapshot.weaponHud` field into `PlayerSnapshot.weaponHud` so a fanned-out shared `Snapshot` carries per-player HUD without per-recipient construction; the field stays on the player kind only and is intentionally not added to `CompanionSnapshot`. `RuntimeEvent.death` gains `killerId: number | null` so PvP host policy can attribute kills without inspecting the snapshot stream. New `playerSpawn` runtime event is introduced for actor entry into the arena, emitted both for initial `players[]` at `start(session)` and for `core.addPlayer` mid-session ([sim-core-interface.md](sim-core-interface.md)). `levelUp` is intentionally **not** added to shared `RuntimeEvent`: it stays a host-emitted PvP event recorded separately in story 036's hosting decision. Earlier: 2026-04-30 story 035 prep: clarifying note on `PlayerSnapshot` — multiple `kind: 'player'` entries are valid for multi-actor sessions; no field changes, no new discriminator. Earlier: 2026-04-30 story 032 prep: added Related link for the public multiplayer arena. Earlier: 2026-04-29 story 030 follow-up: `dropPickup.pickerId` may now be the player or the companion; pickup eligibility remains defined in [drops.md](drops.md). Earlier story 030 prep: add `CompanionSnapshot`, `ownerKind: 'companion'`, `targetKind: 'companion'`, and companion boop/downed/rescued events; full behavior contract in [companion-combat.md](companion-combat.md). Earlier: 2026-04-28 story 028 prep: `EncounterSnapshot` adds `waveOrdinal: number | null` so Dungeon can show an increasing run-level wave number while looping authored encounter indices. Earlier: 2026-04-27 story 026 prep: `EncounterSnapshot.type` includes the new `portal` encounter type, but portals do not become entity snapshots or runtime events; main-thread portal descriptors are defined in [vibe-jam-portals.md](vibe-jam-portals.md). Earlier: projectile snapshots expose effective runtime `size` so render can show projectile-size modifiers without inferring weapon state on the main thread; existing `originX`/`originY` projectile fields are documented here as presentation data copied from runtime `Projectile.origin`). Earlier: 2026-04-26 story 024: terminal `win`/`loss` runtime events carry `SessionResultSummary`; authoritative result stats are defined in [session-result-summary.md](session-result-summary.md). Earlier story 022: `WeaponHudSnapshot` receives a cooldown interval (`cooldownStartedAtSimMs`/`cooldownReadyAtSimMs`), permanent `modifiers`, and active `timedEffects` for the weapon-slot HUD; the presentation contract lives in [hud-presentation.md](hud-presentation.md). Earlier: 2026-04-25 story 020: `ProjectileSnapshot` receives required field `arcEnd: { x: number; y: number } | null`, the fixed world landing position for an in-flight arc projectile; it is `null` for grounded projectiles and for linear/placed motion. Source of truth is `CombatSystem` at projectile creation; `SnapshotExportSystem` copies the value and does not recompute it. The render contract for landing telegraphs on non-player in-flight arcs is [landing-telegraph.md](landing-telegraph.md). Earlier: 2026-04-24 017 alignment: projectile snapshots and combat events support universal projectile state, owner `boss`, grounded/explosive presentation, selected weapon HUD, and explosion events; see [universal-weapons-and-projectiles.md](universal-weapons-and-projectiles.md). 018 alignment: `fieldEffect` and status presentation fields are reserved for [combat-modifiers-and-field-effects.md](combat-modifiers-and-field-effects.md). Earlier: 016 impact feedback, 006 boss, 005 drops.)
 
 ## Context
@@ -262,6 +263,8 @@ type EntitySnapshot =
         kind: 'hit';
         simTime: number;
         projectileId: number;
+        ownerId: number;
+        ownerKind: 'player' | 'enemy' | 'boss' | 'companion';
         targetId: number;
         targetKind: 'enemy' | 'player' | 'boss' | 'companion';
         targetArchetypeId: string | null; // enemy/boss id or companion pet id; null for player
@@ -276,6 +279,7 @@ type EntitySnapshot =
         kind: 'explosion';
         simTime: number;
         projectileId: number;
+        ownerId: number;
         ownerKind: 'player' | 'enemy' | 'boss' | 'companion';
         weaponArchetypeId: string;
         damage: number;
