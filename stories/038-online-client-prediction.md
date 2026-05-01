@@ -94,3 +94,4 @@ Cosmetic hit feedback (impact sparks, slime splash) on visual coincidence betwee
 - [035-multi-actor-sessions.md](035-multi-actor-sessions.md)
 - [036-node-arena-host.md](036-node-arena-host.md)
 - [037-coop-vs-slimes.md](037-coop-vs-slimes.md)
+- [039-online-prediction-stabilization.md](039-online-prediction-stabilization.md)
