@@ -325,6 +325,35 @@ describe('OnlinePredictionCore', () => {
     expect(projectiles(lastSnapshot(predictions))).toEqual([]);
   });
 
+  it('does not double-advance kept predicted projectiles during reconcile replay', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+
+    core.start(makeSession(), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ simTimeMs: 0 }));
+    core.submitInput({ kind: 'aim', x: 8, y: 0 }, 1);
+    core.submitInput({ kind: 'fire', phase: 'start' }, 2);
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
+
+    const beforeReconcile = projectiles(lastSnapshot(predictions));
+    expect(beforeReconcile).toHaveLength(1);
+
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: 0,
+        lastInputSequence: {}
+      })
+    );
+
+    const afterReconcile = projectiles(lastSnapshot(predictions));
+    expect(afterReconcile).toHaveLength(1);
+    expect(afterReconcile[0]!.x).toBeCloseTo(beforeReconcile[0]!.x, 6);
+    expect(afterReconcile[0]!.y).toBeCloseTo(beforeReconcile[0]!.y, 6);
+  });
+
   it('keeps predicted shotgun pellets distinct when authoritative snapshots confirm their shared input sequence', () => {
     const predictions: Snapshot[] = [];
     const core = createOnlinePredictionCore({
@@ -368,6 +397,85 @@ describe('OnlinePredictionCore', () => {
     const predictedAfterAck = projectiles(lastSnapshot(predictions));
     expect(predictedAfterAck).toHaveLength(5);
     expect(predictedAfterAck.map(projectilePositionKey)).toEqual(positionsBeforeAck);
+  });
+
+  it('switches an acknowledged partial shotgun group to authoritative fallback', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+    const shotgunPlayer = makePlayer({ weaponHud: makeWeaponHud(SHOTGUN.id) });
+
+    core.start(makeSession(SHOTGUN.id), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ entities: [shotgunPlayer] }));
+    core.submitInput({ kind: 'aim', x: 8, y: 0 }, 1);
+    core.submitInput({ kind: 'fire', phase: 'start' }, 2);
+    core.pump(0);
+    core.pump(SIM_STEP_MS);
+    core.submitInput({ kind: 'fire', phase: 'stop' }, 3);
+    core.pump(SIM_STEP_MS * 3);
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ entities: [shotgunPlayer] }));
+
+    const predictedBeforeAck = projectiles(lastSnapshot(predictions));
+    expect(predictedBeforeAck).toHaveLength(5);
+
+    const authoritativeProjectiles = predictedBeforeAck.slice(0, 3).map((projectile, index) => ({
+      ...projectile,
+      id: 200 + index,
+      ownerId: shotgunPlayer.id,
+      x: 20 + index,
+      y: -20 - index
+    }));
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: 150,
+        entities: [shotgunPlayer, ...authoritativeProjectiles],
+        lastInputSequence: { self: 3 }
+      })
+    );
+
+    expect(projectiles(lastSnapshot(predictions))).toEqual([]);
+  });
+
+  it('keeps held-fire follow-up shots when the authoritative stream still has an older shot', () => {
+    const predictions: Snapshot[] = [];
+    const core = createOnlinePredictionCore({
+      onPredictedSnapshot: (snapshot) => predictions.push(snapshot)
+    });
+    const pistolPlayer = makePlayer({ weaponHud: makeWeaponHud(PISTOL.id) });
+
+    core.start(makeSession(PISTOL.id), 'self');
+    core.receiveAuthoritativeSnapshot(makeSnapshot({ simTimeMs: 0, entities: [pistolPlayer] }));
+    core.submitInput({ kind: 'aim', x: 8, y: 0 }, 41);
+    core.submitInput({ kind: 'fire', phase: 'start' }, 42);
+    core.pump(0);
+    core.pump(PISTOL.cooldownMs + SIM_STEP_MS * 2);
+
+    const beforeAck = lastSnapshot(predictions);
+    const predictedBeforeAck = projectiles(beforeAck).filter(
+      (projectile) => projectile.spawnInputSequence === 42
+    );
+    expect(predictedBeforeAck.length).toBeGreaterThanOrEqual(2);
+
+    const authoritativeOlderShot = {
+      ...predictedBeforeAck[0]!,
+      id: 300,
+      ownerId: pistolPlayer.id,
+      x: -4,
+      y: -4
+    };
+    core.receiveAuthoritativeSnapshot(
+      makeSnapshot({
+        simTimeMs: beforeAck.simTimeMs,
+        entities: [pistolPlayer, authoritativeOlderShot],
+        lastInputSequence: { self: 42 }
+      })
+    );
+
+    const predictedAfterAck = projectiles(lastSnapshot(predictions)).filter(
+      (projectile) => projectile.spawnInputSequence === 42
+    );
+    expect(predictedAfterAck).toHaveLength(predictedBeforeAck.length);
   });
 
   it('keeps a held-fire follow-up shot during the per-projectile rejection grace window', () => {

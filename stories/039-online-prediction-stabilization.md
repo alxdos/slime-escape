@@ -12,6 +12,10 @@ Three independent reviews agreed on the failure surface. The simulation core, se
 
 This story is **stabilization, not redesign**. Closes the gaps so the cybersport-grade UX target from 038 is actually delivered. No host-side changes, no wire-shape changes, no engine changes.
 
+## Review follow-up
+
+First code review found two predicted-own-projectile blockers after T5. Follow-up fix keeps existing predicted linear projectiles from double-advancing during reconcile replay by rewinding them by the replay gap before replay ticks run; replay-spawned projectiles still move normally. It also switches an acknowledged same-tick `spawnInputSequence` burst to authoritative fallback when the authoritative group has fewer projectiles than the predicted group, covering partial shotgun hits without treating `spawnInputSequence` as a per-projectile identity. Mixed-tick held-fire streams stay on the existing per-projectile path.
+
 ## Player-facing
 
 - Sees: in online PvP (Public Arena), other players' slimes and their bullets render as smoothly as offline single-player — no visible 30 Hz stair-step on remote entities.

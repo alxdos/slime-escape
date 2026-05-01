@@ -23,7 +23,8 @@ import {
   createEntityStore,
   type ActorStatusEffect,
   type EntityId,
-  type Player
+  type Player,
+  type Projectile
 } from './EntityStore.js';
 import { createMovementSystem } from './MovementSystem.js';
 import {
@@ -133,25 +134,31 @@ export function createOnlinePredictionCore(
     inputBuffer = remaining;
   }
 
-  function syncFromAuthoritativeSnapshot(snapshot: Snapshot): boolean {
+  function syncFromAuthoritativeSnapshot(snapshot: Snapshot): Readonly<{
+    authoritativePreferredProjectileSequences: ReadonlySet<number>;
+  }> | null {
     const playerId = activeSelfPlayerId();
     const activeSession = session;
-    if (playerId === null || activeSession === null) return false;
+    if (playerId === null || activeSession === null) return null;
     const selfSnapshot = findSelfPlayerSnapshot(snapshot, playerId);
     if (selfSnapshot === null) {
       resetRuntime();
-      return false;
+      return null;
     }
     const playerConfig = playerConfigFromSnapshot(activeSession, selfSnapshot);
     if (playerConfig === null) {
       resetRuntime();
       log.warn('online predictor ignored snapshot without a self player config', { playerId });
-      return false;
+      return null;
     }
     const player = syncSelfPlayer(playerConfig, selfSnapshot);
     syncRuntimeInputFromSnapshot(playerConfig, selfSnapshot.weaponHud);
-    syncOwnProjectiles(snapshot, selfSnapshot, player.id);
-    return true;
+    const authoritativePreferredProjectileSequences = syncOwnProjectiles(
+      snapshot,
+      selfSnapshot,
+      player.id
+    );
+    return { authoritativePreferredProjectileSequences };
   }
 
   function syncSelfPlayer(playerConfig: PlayerConfig, snapshot: PlayerSnapshot): Player {
@@ -202,14 +209,45 @@ export function createOnlinePredictionCore(
     snapshot: Snapshot,
     selfSnapshot: PlayerSnapshot,
     localSelfEntityId: EntityId
-  ): void {
+  ): Set<number> {
     const acknowledged = snapshot.lastInputSequence[selfSnapshot.playerId] ?? 0;
-    const authoritativeSequences = new Set<number>();
+    const authoritativeCounts = new Map<number, number>();
     for (const entity of snapshot.entities) {
       if (entity.kind !== 'projectile') continue;
       if (entity.ownerKind !== 'player' || entity.ownerId !== selfSnapshot.id) continue;
       if (entity.spawnInputSequence === null) continue;
-      authoritativeSequences.add(entity.spawnInputSequence);
+      authoritativeCounts.set(
+        entity.spawnInputSequence,
+        (authoritativeCounts.get(entity.spawnInputSequence) ?? 0) + 1
+      );
+    }
+
+    const predictedGroups = new Map<number, Projectile[]>();
+    for (const projectile of store.projectiles()) {
+      if (projectile.ownerId !== localSelfEntityId) continue;
+      const sequence = projectile.spawnInputSequence;
+      if (sequence === null) continue;
+      const group = predictedGroups.get(sequence);
+      if (group === undefined) {
+        predictedGroups.set(sequence, [projectile]);
+      } else {
+        group.push(projectile);
+      }
+    }
+
+    const authoritativePreferredSequences = new Set<number>();
+    for (const [sequence, authoritativeCount] of authoritativeCounts) {
+      const predictedGroup = predictedGroups.get(sequence) ?? [];
+      // Count fallback is for same-tick bursts; held-fire streams reuse a
+      // sequence across cooldown shots and stay on the per-projectile path.
+      if (
+        sequence <= acknowledged &&
+        authoritativeCount > 0 &&
+        authoritativeCount < predictedGroup.length &&
+        isSingleTickProjectileGroup(predictedGroup)
+      ) {
+        authoritativePreferredSequences.add(sequence);
+      }
     }
 
     const removals: EntityId[] = [];
@@ -217,7 +255,11 @@ export function createOnlinePredictionCore(
       if (projectile.ownerId !== localSelfEntityId) continue;
       const sequence = projectile.spawnInputSequence;
       if (sequence === null) continue;
-      if (authoritativeSequences.has(sequence)) continue;
+      if (authoritativePreferredSequences.has(sequence)) {
+        removals.push(projectile.id);
+        continue;
+      }
+      if (authoritativeCounts.has(sequence)) continue;
       if (sequence > acknowledged) continue;
       const spawnedAtSimMs = projectile.spawnedAtPredictorSimMs ?? simTimeMs;
       if (simTimeMs - spawnedAtSimMs + STEP_EPSILON_MS < SNAPSHOT_INTERVAL_MS) continue;
@@ -226,12 +268,17 @@ export function createOnlinePredictionCore(
     for (const projectileId of removals) {
       store.removeProjectile(projectileId);
     }
+    return authoritativePreferredSequences;
   }
 
-  function replayBufferedInputs(preReconcileSimTimeMs: number): void {
+  function replayBufferedInputs(
+    preReconcileSimTimeMs: number,
+    authoritativePreferredProjectileSequences: ReadonlySet<number>
+  ): void {
     const replayStartSimTimeMs = simTimeMs;
     const replayEndSimTimeMs = Math.max(replayStartSimTimeMs, preReconcileSimTimeMs);
     let remaining = inputBuffer;
+    prepareExistingProjectilesForReplay(replayStartSimTimeMs, replayEndSimTimeMs);
     remaining = applyBufferedInputsMatching(remaining, (entry) =>
       entry.appliedAtSimTime <= replayStartSimTimeMs + STEP_EPSILON_MS
     );
@@ -249,6 +296,104 @@ export function createOnlinePredictionCore(
       if (Math.abs(simTimeMs - replayEndSimTimeMs) < STEP_EPSILON_MS) {
         simTimeMs = replayEndSimTimeMs;
       }
+    }
+    removeProjectilesForSequences(authoritativePreferredProjectileSequences);
+  }
+
+  function prepareExistingProjectilesForReplay(
+    replayStartSimTimeMs: number,
+    replayEndSimTimeMs: number
+  ): void {
+    const removals: EntityId[] = [];
+    for (const projectile of store.projectiles()) {
+      if (!rewindProjectileForReplay(projectile, replayStartSimTimeMs, replayEndSimTimeMs)) {
+        removals.push(projectile.id);
+      }
+    }
+    for (const projectileId of removals) {
+      store.removeProjectile(projectileId);
+    }
+  }
+
+  function rewindProjectileForReplay(
+    projectile: Projectile,
+    replayStartSimTimeMs: number,
+    replayEndSimTimeMs: number
+  ): boolean {
+    switch (projectile.motionKind) {
+      case 'linear':
+        rewindLinearProjectile(projectile, replayEndSimTimeMs - replayStartSimTimeMs);
+        return true;
+      case 'arc':
+        return rewindArcProjectile(projectile, replayStartSimTimeMs);
+      case 'placed':
+        projectile.position.x = projectile.origin.x;
+        projectile.position.y = projectile.origin.y;
+        projectile.state = 'grounded';
+        return true;
+      default:
+        return assertNever(projectile.motionKind);
+    }
+  }
+
+  function rewindLinearProjectile(
+    projectile: Projectile,
+    replayGapMs: number
+  ): void {
+    // The projectile already reached pre-reconcile time on the client; replay will
+    // advance it across the same gap again, so start it one gap earlier.
+    projectile.position.x -= projectile.velocity.vx * (replayGapMs / 1000);
+    projectile.position.y -= projectile.velocity.vy * (replayGapMs / 1000);
+    projectile.state = 'flying';
+    projectile.groundAtSimMs = null;
+  }
+
+  function rewindArcProjectile(
+    projectile: Projectile,
+    replayStartSimTimeMs: number
+  ): boolean {
+    if (
+      projectile.arcStart === null ||
+      projectile.arcEnd === null ||
+      projectile.arcStartSimMs === null ||
+      projectile.arcEndSimMs === null
+    ) {
+      return true;
+    }
+    if (replayStartSimTimeMs >= projectile.arcEndSimMs) {
+      if (!projectile.groundOnImpact) return false;
+      projectile.position.x = projectile.arcEnd.x;
+      projectile.position.y = projectile.arcEnd.y;
+      projectile.state = 'grounded';
+      projectile.groundAtSimMs = projectile.groundAtSimMs ?? projectile.arcEndSimMs;
+      return true;
+    }
+    const durationMs = Math.max(1, projectile.arcEndSimMs - projectile.arcStartSimMs);
+    const progress = clamp01((replayStartSimTimeMs - projectile.arcStartSimMs) / durationMs);
+    projectile.position.x =
+      projectile.arcStart.x + (projectile.arcEnd.x - projectile.arcStart.x) * progress;
+    projectile.position.y =
+      projectile.arcStart.y + (projectile.arcEnd.y - projectile.arcStart.y) * progress;
+    projectile.velocity.vx =
+      ((projectile.arcEnd.x - projectile.arcStart.x) / durationMs) * 1000;
+    projectile.velocity.vy =
+      ((projectile.arcEnd.y - projectile.arcStart.y) / durationMs) * 1000;
+    projectile.state = 'flying';
+    projectile.groundAtSimMs = null;
+    return true;
+  }
+
+  function removeProjectilesForSequences(sequences: ReadonlySet<number>): void {
+    if (sequences.size === 0) return;
+    const removals: EntityId[] = [];
+    for (const projectile of store.projectiles()) {
+      const sequence = projectile.spawnInputSequence;
+      if (sequence !== null && sequences.has(sequence)) {
+        removals.push(projectile.id);
+      }
+    }
+    for (const projectileId of removals) {
+      store.removeProjectile(projectileId);
     }
   }
 
@@ -411,8 +556,12 @@ export function createOnlinePredictionCore(
       latestAuthoritativeSnapshot = snapshot;
       simTimeMs = snapshot.simTimeMs;
       trimAcknowledgedInputs(snapshot);
-      if (!syncFromAuthoritativeSnapshot(snapshot)) return;
-      replayBufferedInputs(preReconcileSimTimeMs);
+      const syncResult = syncFromAuthoritativeSnapshot(snapshot);
+      if (syncResult === null) return;
+      replayBufferedInputs(
+        preReconcileSimTimeMs,
+        syncResult.authoritativePreferredProjectileSequences
+      );
       emitPredictedSnapshot();
     },
     pump(nowMs): void {
@@ -537,6 +686,21 @@ function mergeTemporaryOverdriveEffect(
     startedAtSimMs: Math.max(authoritative.startedAtSimMs, predictor.startedAtSimMs),
     expiresAtSimMs: Math.max(authoritative.expiresAtSimMs, predictor.expiresAtSimMs)
   };
+}
+
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value));
+}
+
+function isSingleTickProjectileGroup(projectiles: ReadonlyArray<Projectile>): boolean {
+  const firstSpawnSimMs = projectiles[0]?.spawnedAtPredictorSimMs ?? null;
+  if (firstSpawnSimMs === null) return false;
+  for (const projectile of projectiles) {
+    const spawnSimMs = projectile.spawnedAtPredictorSimMs;
+    if (spawnSimMs === null) return false;
+    if (Math.abs(spawnSimMs - firstSpawnSimMs) > STEP_EPSILON_MS) return false;
+  }
+  return true;
 }
 
 function statusEffectsFromSnapshot(
