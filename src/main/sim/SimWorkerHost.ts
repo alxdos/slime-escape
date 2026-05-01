@@ -1,6 +1,11 @@
 import type { RuntimeEvent } from '../../shared/events';
 import type { InputCommand } from '../../shared/input';
-import { assertNever, type MainToSim, type SimToMain } from '../../shared/protocol';
+import {
+  assertNever,
+  type MainToSim,
+  type SimToMain,
+  type SimWorkerMode
+} from '../../shared/protocol';
 import type { SessionDefinition } from '../../shared/session';
 import type { Snapshot } from '../../shared/snapshot';
 
@@ -12,15 +17,21 @@ export type SnapshotPair = Readonly<{
 }>;
 
 export type SimWorkerHost = Readonly<{
-  startSession(session: SessionDefinition): void;
+  startSession(session: SessionDefinition, options?: SimWorkerStartOptions): void;
   stopSession(): void;
   pause(): void;
   resume(): void;
   sendInput(command: InputCommand): void;
+  acceptAuthoritativeSnapshot(snapshot: Snapshot): void;
   snapshotPair(): SnapshotPair;
+  predictedSnapshotPair(): SnapshotPair;
   isPaused(): boolean;
   dispose(): void;
 }>;
+
+export type SimWorkerStartOptions =
+  | Readonly<{ mode?: Extract<SimWorkerMode, 'local-authoritative'> }>
+  | Readonly<{ mode: Extract<SimWorkerMode, 'online-predictor'>; selfPlayerId: string }>;
 
 export type SimWorkerHostOptions = Readonly<{
   onEvent?: (event: RuntimeEvent) => void;
@@ -33,6 +44,17 @@ export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWork
   });
 
   const pair: {
+    prev: Snapshot | null;
+    curr: Snapshot | null;
+    currReceivedAtMs: number;
+    nowMs: number;
+  } = {
+    prev: null,
+    curr: null,
+    currReceivedAtMs: 0,
+    nowMs: 0
+  };
+  const predictedPair: {
     prev: Snapshot | null;
     curr: Snapshot | null;
     currReceivedAtMs: number;
@@ -58,6 +80,14 @@ export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWork
         pair.prev = pair.curr;
         pair.curr = msg.snapshot;
         pair.currReceivedAtMs = performance.now();
+        return;
+      case 'predictedSnapshot':
+        if (paused) {
+          return;
+        }
+        predictedPair.prev = predictedPair.curr;
+        predictedPair.curr = msg.snapshot;
+        predictedPair.currReceivedAtMs = performance.now();
         return;
       case 'event':
         options.onEvent?.(msg.event);
@@ -88,16 +118,33 @@ export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWork
     pair.currReceivedAtMs = 0;
   }
 
+  function clearPredictedPair(): void {
+    predictedPair.prev = null;
+    predictedPair.curr = null;
+    predictedPair.currReceivedAtMs = 0;
+  }
+
   return {
-    startSession(session): void {
+    startSession(session, options = {}): void {
       paused = false;
       clearPair();
+      clearPredictedPair();
       nextInputSequence = 1;
-      send({ kind: 'startSession', session });
+      if (options.mode === 'online-predictor') {
+        send({
+          kind: 'startSession',
+          session,
+          mode: options.mode,
+          selfPlayerId: options.selfPlayerId
+        });
+        return;
+      }
+      send({ kind: 'startSession', session, mode: options.mode ?? 'local-authoritative' });
     },
     stopSession(): void {
       paused = false;
       clearPair();
+      clearPredictedPair();
       send({ kind: 'stopSession' });
     },
     pause(): void {
@@ -110,6 +157,7 @@ export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWork
       if (!paused) return;
       const drift = performance.now() - pauseAnchorMs;
       pair.currReceivedAtMs += drift;
+      predictedPair.currReceivedAtMs += drift;
       paused = false;
       send({ kind: 'resume' });
     },
@@ -118,9 +166,16 @@ export function createSimWorkerHost(options: SimWorkerHostOptions = {}): SimWork
       nextInputSequence += 1;
       send({ kind: 'input', command, inputSequence });
     },
+    acceptAuthoritativeSnapshot(snapshot): void {
+      send({ kind: 'authoritativeSnapshot', snapshot });
+    },
     snapshotPair(): SnapshotPair {
       pair.nowMs = paused ? pauseAnchorMs : performance.now();
       return pair;
+    },
+    predictedSnapshotPair(): SnapshotPair {
+      predictedPair.nowMs = paused ? pauseAnchorMs : performance.now();
+      return predictedPair;
     },
     isPaused(): boolean {
       return paused;

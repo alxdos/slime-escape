@@ -1448,6 +1448,7 @@ function createSimHarness() {
   let onEvent: ((event: RuntimeEvent) => void) | undefined;
   const startSessions: SessionDefinition[] = [];
   const sentInputs: InputCommand[] = [];
+  const authoritativeSnapshots: Snapshot[] = [];
   const calls = {
     stop: 0,
     pause: 0,
@@ -1478,7 +1479,13 @@ function createSimHarness() {
         sendInput(command): void {
           sentInputs.push(command);
         },
+        acceptAuthoritativeSnapshot(snapshot): void {
+          authoritativeSnapshots.push(snapshot);
+        },
         snapshotPair(): SnapshotPair {
+          return emptyPair;
+        },
+        predictedSnapshotPair(): SnapshotPair {
           return emptyPair;
         },
         isPaused(): boolean {
@@ -1495,6 +1502,7 @@ function createSimHarness() {
     calls,
     startSessions,
     sentInputs,
+    authoritativeSnapshots,
     setPaused(next: boolean): void {
       paused = next;
     }

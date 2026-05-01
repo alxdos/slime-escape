@@ -96,6 +96,7 @@ type ShooterWeapons = {
 export type CombatSystem = Readonly<{
   setDamageRules(rules: DamageRules): void;
   setPlayerLoadout(playerId: EntityId, loadout: Loadout, simTimeMs: number): void;
+  setPlayerWeaponHud(playerId: EntityId, weaponHud: WeaponHudSnapshot | null): void;
   setCompanionLoadout(companionId: EntityId, loadout: Loadout, simTimeMs: number): void;
   setEnemyLoadout(enemyId: EntityId, loadout: Loadout, simTimeMs: number): void;
   removeShooter(entityId: EntityId): void;
@@ -138,6 +139,13 @@ export function createCombatSystem(
         playerId,
         buildShooterWeapons(loadout, 'player', weaponRegistry, simTimeMs)
       );
+    },
+    setPlayerWeaponHud(playerId, weaponHud): void {
+      if (weaponHud === null) {
+        shooterWeapons.delete(playerId);
+        return;
+      }
+      shooterWeapons.set(playerId, buildShooterWeaponsFromHud(weaponHud, weaponRegistry));
     },
     setCompanionLoadout(companionId, loadout, simTimeMs): void {
       shooterWeapons.set(
@@ -548,6 +556,43 @@ function buildShooterWeapons(
     ownerKind,
     weapons,
     selectedIndex: loadout.selectedIndex
+  };
+}
+
+function buildShooterWeaponsFromHud(
+  weaponHud: WeaponHudSnapshot,
+  weaponRegistry: Readonly<Record<string, WeaponArchetype>>
+): ShooterWeapons {
+  if (
+    weaponHud.selectedIndex !== null &&
+    (weaponHud.selectedIndex < 0 || weaponHud.selectedIndex >= weaponHud.weapons.length)
+  ) {
+    throw new Error(
+      `invalid selected weapon index for player weapon HUD: ${weaponHud.selectedIndex}`
+    );
+  }
+  return {
+    ownerKind: 'player',
+    selectedIndex: weaponHud.selectedIndex,
+    weapons: weaponHud.weapons.map((weapon) => {
+      if (weaponRegistry[weapon.weaponArchetypeId] === undefined) {
+        throw new Error(
+          `unknown weapon archetype for player weapon HUD: ${weapon.weaponArchetypeId}`
+        );
+      }
+      const temporaryOverdrive = weapon.timedEffects.find(
+        (effect) => effect.kind === 'temporaryOverdrive'
+      );
+      return {
+        archetypeId: weapon.weaponArchetypeId,
+        cooldownStartedAtSimMs: weapon.cooldownStartedAtSimMs,
+        nextFireSimMs: weapon.cooldownReadyAtSimMs,
+        modifiers: weapon.modifiers.map(copyWeaponModifier),
+        overdriveStartedAtSimMs: temporaryOverdrive?.startedAtSimMs ?? null,
+        overdriveUntilSimMs: temporaryOverdrive?.expiresAtSimMs ?? null,
+        overdriveCooldownMultiplier: temporaryOverdrive?.cooldownMultiplier ?? null
+      };
+    })
   };
 }
 
