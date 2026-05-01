@@ -28,7 +28,12 @@ import type {
 } from './EntityStore';
 import { canDamageTarget, DEFAULT_DAMAGE_RULES } from './DamageRules';
 import type { ActorEffectIntent } from './FieldEffectSystem';
-import type { RuntimeActorInputState } from './RuntimeInputState';
+import { resolveNearestLivingPlayer } from './PlayerTargeting';
+import {
+  runtimeInputForPlayer,
+  type RuntimeActorInputState,
+  type RuntimeInputState
+} from './RuntimeInputState';
 import type { IndexedEntity, SpatialIndex } from './SpatialIndex';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
@@ -105,7 +110,7 @@ export type CombatSystem = Readonly<{
   drainActorEffectIntents(): ReadonlyArray<ActorEffectIntent>;
   clear(): void;
   tick(
-    input: RuntimeActorInputState | null,
+    input: RuntimeInputState,
     store: EntityStore,
     index: SpatialIndex,
     simTimeMs: number,
@@ -244,68 +249,71 @@ export function createCombatSystem(
 }
 
 function syncPlayerSelectedIndex(
-  input: RuntimeActorInputState | null,
+  input: RuntimeInputState,
   store: EntityStore,
   shooterWeapons: Map<EntityId, ShooterWeapons>
 ): void {
-  const player = store.player();
-  if (player === null) return;
-  if (input === null) return;
-  if (input.loadout === null) return;
-  const weapons = shooterWeapons.get(player.id);
-  if (weapons === undefined) return;
-  weapons.selectedIndex = input.loadout.selectedIndex;
+  for (const player of store.players()) {
+    const playerInput = runtimeInputForPlayer(input, player.playerId);
+    if (playerInput === null) continue;
+    if (playerInput.loadout === null) continue;
+    const weapons = shooterWeapons.get(player.id);
+    if (weapons === undefined) continue;
+    weapons.selectedIndex = playerInput.loadout.selectedIndex;
+  }
 }
 
 function runPlayerFiringDecisions(
-  input: RuntimeActorInputState | null,
+  input: RuntimeInputState,
   store: EntityStore,
   simTimeMs: number,
   shooterWeapons: Map<EntityId, ShooterWeapons>,
   weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
   emit: (event: RuntimeEvent) => void
 ): void {
-  const player = store.player();
-  if (player === null) return;
-  if (input === null) return;
-  if (!input.firing) return;
+  for (const player of store.players()) {
+    if (player.hp <= 0) continue;
+    const playerInput = runtimeInputForPlayer(input, player.playerId);
+    if (playerInput === null) continue;
+    if (!playerInput.firing) continue;
 
-  const weapons = shooterWeapons.get(player.id);
-  if (weapons === undefined) return;
+    const weapons = shooterWeapons.get(player.id);
+    if (weapons === undefined) continue;
 
-  const selectedWeapon = selectedWeaponInstance(weapons);
-  if (selectedWeapon === null) return;
-  if (simTimeMs < selectedWeapon.nextFireSimMs) return;
+    const selectedWeapon = selectedWeaponInstance(weapons);
+    if (selectedWeapon === null) continue;
+    if (simTimeMs < selectedWeapon.nextFireSimMs) continue;
 
-  const archetype = weaponRegistry[selectedWeapon.archetypeId];
-  if (archetype === undefined) return;
-  const result = fireWeaponProjectiles(
-    store,
-    archetype,
-    selectedWeapon.modifiers,
-    player.id,
-    weapons.ownerKind,
-    player.position,
-    input.aimWorld,
-    simTimeMs
-  );
-  if (result === null) return;
+    const archetype = weaponRegistry[selectedWeapon.archetypeId];
+    if (archetype === undefined) continue;
+    const result = fireWeaponProjectiles(
+      store,
+      archetype,
+      selectedWeapon.modifiers,
+      player.id,
+      weapons.ownerKind,
+      player.position,
+      playerInput.aimWorld,
+      simTimeMs
+    );
+    if (result === null) continue;
 
-  selectedWeapon.cooldownStartedAtSimMs = simTimeMs;
-  selectedWeapon.nextFireSimMs =
-    simTimeMs +
-    effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs, weapons.ownerKind);
-  emit({
-    kind: 'fire',
-    simTime: simTimeMs,
-    shooterId: player.id,
-    ownerKind: weapons.ownerKind,
-    weaponArchetypeId: archetype.id,
-    originX: player.position.x,
-    originY: player.position.y,
-    dirX: result.eventDirection.x,
-    dirY: result.eventDirection.y
-  });
+    selectedWeapon.cooldownStartedAtSimMs = simTimeMs;
+    selectedWeapon.nextFireSimMs =
+      simTimeMs +
+      effectiveCooldownMs(archetype.cooldownMs, selectedWeapon, simTimeMs, weapons.ownerKind);
+    emit({
+      kind: 'fire',
+      simTime: simTimeMs,
+      shooterId: player.id,
+      ownerKind: weapons.ownerKind,
+      weaponArchetypeId: archetype.id,
+      originX: player.position.x,
+      originY: player.position.y,
+      dirX: result.eventDirection.x,
+      dirY: result.eventDirection.y
+    });
+  }
 }
 
 function runCompanionFiringDecisions(
@@ -382,19 +390,18 @@ function runEnemyFiringDecisions(
   weaponRegistry: Readonly<Record<string, WeaponArchetype>>,
   emit: (event: RuntimeEvent) => void
 ): void {
-  const player = store.player();
-  if (player === null) return;
-
   for (const enemy of store.enemies()) {
     if (enemy.hp <= 0) continue;
+    const target = resolveNearestLivingPlayer(store, enemy.position);
+    if (target === null) continue;
     const weapons = shooterWeapons.get(enemy.id);
     if (weapons === undefined || weapons.ownerKind !== 'enemy') continue;
     const selectedWeapon = selectedWeaponInstance(weapons);
     if (selectedWeapon === null) continue;
     if (simTimeMs < selectedWeapon.nextFireSimMs) continue;
 
-    const aimDx = player.position.x - enemy.position.x;
-    const aimDy = player.position.y - enemy.position.y;
+    const aimDx = target.position.x - enemy.position.x;
+    const aimDy = target.position.y - enemy.position.y;
     if (aimDx === 0 && aimDy === 0) continue;
 
     const archetype = weaponRegistry[selectedWeapon.archetypeId];
@@ -406,7 +413,7 @@ function runEnemyFiringDecisions(
       enemy.id,
       'enemy',
       enemy.position,
-      player.position,
+      target.position,
       simTimeMs
     );
     if (result === null) continue;
@@ -1044,9 +1051,9 @@ function runContactIntents(
   simTimeMs: number,
   maxEnemyContactBoundsRadius: number
 ): DamageIntent[] {
-  const player = store.player();
   const intents: DamageIntent[] = [];
-  if (player !== null) {
+  for (const player of store.players()) {
+    if (player.hp <= 0) continue;
     addEnemyContactIntentsForTarget(player, index, simTimeMs, maxEnemyContactBoundsRadius, intents);
   }
   const companion = store.companion();
@@ -1547,8 +1554,7 @@ function mergeDamageIntents(
 
 function computeMaxProjectileTargetBoundsRadius(store: EntityStore): number {
   let max = 0;
-  const player = store.player();
-  if (player !== null) {
+  for (const player of store.players()) {
     max = Math.max(max, contactBoundsRadius(player));
   }
   const companion = store.companion();

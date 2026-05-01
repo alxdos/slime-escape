@@ -97,7 +97,7 @@ export function createHealthDeathSystem(): HealthDeathSystem {
       for (const death of deaths) {
         if (death.entityKind === 'enemy') store.removeEnemy(death.entityId);
         if (death.entityKind === 'boss') store.removeBoss(death.entityId);
-        if (death.entityKind === 'player') store.removePlayer();
+        if (death.entityKind === 'player') store.removePlayer(death.entityId);
       }
     }
   };
@@ -140,8 +140,8 @@ function applyDamage(
 }
 
 function resolveTarget(id: EntityId, store: EntityStore): Enemy | Boss | Player | Companion | null {
-  const player = store.player();
-  if (player !== null && player.id === id) return player;
+  const player = store.playerById(id);
+  if (player !== null) return player;
   const companion = store.companion();
   if (companion !== null && companion.id === id) return companion;
   const enemy = store.enemyById(id);

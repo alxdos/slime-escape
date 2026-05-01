@@ -13,6 +13,7 @@ function squareContactBox(radius: number) {
 }
 
 const PLAYER_SPEC = {
+  id: 'player',
   position: { x: 0, y: 0 },
   radius: 0.5,
   contactBox: squareContactBox(0.5),

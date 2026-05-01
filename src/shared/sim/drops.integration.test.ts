@@ -13,7 +13,6 @@ import { createEntityStore } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createRunSummaryTracker } from './RunSummaryTracker';
-import { firstRuntimeInput } from './RuntimeInputState';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
@@ -119,7 +118,7 @@ function setupWorld() {
     if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
-    if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
+    if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath(ctx.entityId);
   });
 
   function tick(): void {
@@ -129,10 +128,10 @@ function setupWorld() {
     const session = sessionFlow.activeSession();
     if (session === null) return;
     spawn.onTick(simTimeMs, entities);
-    const primaryInput = firstRuntimeInput(sessionFlow.inputState());
-    movement.tick(session.arena, entities, primaryInput, simTimeMs);
+    const inputState = sessionFlow.inputState();
+    movement.tick(session.arena, entities, inputState, simTimeMs);
     const intents = combat.tick(
-      primaryInput,
+      inputState,
       entities,
       spatialIndex,
       simTimeMs,

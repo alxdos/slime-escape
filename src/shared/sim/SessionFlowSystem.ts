@@ -36,7 +36,7 @@ export type SessionFlowSystem = Readonly<{
   resume(): void;
   handleInput(playerId: string, command: InputCommand): void;
   checkTransitions(simTimeMs: number): void;
-  onPlayerDeath(): void;
+  onPlayerDeath(entityId: EntityId): void;
   onBossDeath(entityId: EntityId): void;
   isActive(): boolean;
   activeSession(): SessionDefinition | null;
@@ -219,7 +219,7 @@ export function createSessionFlowSystem(deps: SessionFlowDeps): SessionFlowSyste
     activateEncounter(nextIndex, simTimeMs);
   }
 
-  function onPlayerDeath(): void {
+  function onPlayerDeath(_entityId: EntityId): void {
     if (active === null) return;
     if (active.def.lossCondition.kind !== 'playerDeath') return;
     const simTime = clock.simTimeMs();

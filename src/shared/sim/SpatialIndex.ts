@@ -20,8 +20,7 @@ export function createSpatialIndex(): SpatialIndex {
   return {
     rebuild(store): void {
       entries = [];
-      const p = store.player();
-      if (p !== null) entries.push(p);
+      for (const player of store.players()) entries.push(player);
       const companion = store.companion();
       if (companion !== null) entries.push(companion);
       for (const enemy of store.enemies()) entries.push(enemy);

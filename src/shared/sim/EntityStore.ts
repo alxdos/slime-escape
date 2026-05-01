@@ -21,6 +21,7 @@ export type CombatOwnerKind = 'player' | 'companion' | 'enemy' | 'boss';
 
 export type Player = {
   readonly id: EntityId;
+  readonly playerId: string;
   readonly kind: 'player';
   readonly radius: number;
   readonly contactBox: ContactBox;
@@ -314,8 +315,13 @@ export type CompanionSpawnSpec = Readonly<{
   rescue: CompanionRescueConfig;
 }>;
 
+export type PlayerEntitySpawnSpec = PlayerSpawn &
+  Readonly<{
+    id: string;
+  }>;
+
 export type EntityStore = Readonly<{
-  spawnPlayer(spec: PlayerSpawn): Player;
+  spawnPlayer(spec: PlayerEntitySpawnSpec): Player;
   spawnCompanion(spec: CompanionSpawnSpec): Companion;
   spawnEnemy(spec: EnemySpawnSpec): Enemy;
   spawnBoss(spec: BossSpawnSpec): Boss;
@@ -323,6 +329,7 @@ export type EntityStore = Readonly<{
   spawnDrop(spec: DropSpawnSpec): Drop;
   spawnFieldEffect(spec: FieldEffectSpawnSpec): FieldEffect;
   player(): Player | null;
+  playerById(id: EntityId): Player | null;
   companion(): Companion | null;
   companionById(id: EntityId): Companion | null;
   enemyById(id: EntityId): Enemy | null;
@@ -331,6 +338,7 @@ export type EntityStore = Readonly<{
   dropById(id: EntityId): Drop | null;
   fieldEffectById(id: EntityId): FieldEffect | null;
   enemies(): IterableIterator<Enemy>;
+  players(): IterableIterator<Player>;
   bosses(): IterableIterator<Boss>;
   projectiles(): IterableIterator<Projectile>;
   drops(): IterableIterator<Drop>;
@@ -345,14 +353,14 @@ export type EntityStore = Readonly<{
   removeProjectile(id: EntityId): boolean;
   removeDrop(id: EntityId): boolean;
   removeFieldEffect(id: EntityId): boolean;
-  removePlayer(): boolean;
+  removePlayer(id: EntityId): boolean;
   removeCompanion(): boolean;
   clear(): void;
 }>;
 
 export function createEntityStore(): EntityStore {
   let nextId = 1;
-  let player: Player | null = null;
+  const players = new Map<EntityId, Player>();
   let companion: Companion | null = null;
   const enemies = new Map<EntityId, Enemy>();
   const bosses = new Map<EntityId, Boss>();
@@ -368,11 +376,10 @@ export function createEntityStore(): EntityStore {
 
   return {
     spawnPlayer(spec): Player {
-      if (player !== null) {
-        throw new Error('player already spawned');
-      }
+      const id = makeId();
       const next: Player = {
-        id: makeId(),
+        id,
+        playerId: spec.id,
         kind: 'player',
         radius: spec.radius,
         contactBox: { width: spec.contactBox.width, height: spec.contactBox.height },
@@ -383,7 +390,7 @@ export function createEntityStore(): EntityStore {
         hp: spec.maxHp,
         statusEffects: []
       };
-      player = next;
+      players.set(next.id, next);
       return next;
     },
     spawnCompanion(spec): Companion {
@@ -582,7 +589,10 @@ export function createEntityStore(): EntityStore {
       return next;
     },
     player(): Player | null {
-      return player;
+      return players.values().next().value ?? null;
+    },
+    playerById(id): Player | null {
+      return players.get(id) ?? null;
     },
     companion(): Companion | null {
       return companion;
@@ -607,6 +617,9 @@ export function createEntityStore(): EntityStore {
     },
     enemies(): IterableIterator<Enemy> {
       return enemies.values();
+    },
+    players(): IterableIterator<Player> {
+      return players.values();
     },
     bosses(): IterableIterator<Boss> {
       return bosses.values();
@@ -650,10 +663,8 @@ export function createEntityStore(): EntityStore {
     removeFieldEffect(id): boolean {
       return fieldEffects.delete(id);
     },
-    removePlayer(): boolean {
-      if (player === null) return false;
-      player = null;
-      return true;
+    removePlayer(id): boolean {
+      return players.delete(id);
     },
     removeCompanion(): boolean {
       if (companion === null) return false;
@@ -661,7 +672,7 @@ export function createEntityStore(): EntityStore {
       return true;
     },
     clear(): void {
-      player = null;
+      players.clear();
       companion = null;
       enemies.clear();
       bosses.clear();

@@ -17,6 +17,7 @@ function squareContactBox(radius: number) {
 }
 
 const SPEC = {
+  id: 'player',
   position: { x: 1, y: 2 },
   radius: 0.5,
   contactBox: squareContactBox(0.5),
@@ -102,6 +103,7 @@ describe('EntityStore', () => {
   it('makes the spawned position independent from the spec object', () => {
     const store = createEntityStore();
     const spec = {
+      id: 'player',
       position: { x: 0, y: 0 },
       radius: 0.5,
       contactBox: squareContactBox(0.5),
@@ -115,14 +117,21 @@ describe('EntityStore', () => {
     expect(player.position.x).toBe(0);
   });
 
-  it('rejects double spawn until cleared', () => {
+  it('supports multiple players and keeps player accessors deterministic', () => {
     const store = createEntityStore();
-    store.spawnPlayer(SPEC);
-    expect(() => store.spawnPlayer(SPEC)).toThrow();
+    const first = store.spawnPlayer({ ...SPEC, id: 'alpha' });
+    const second = store.spawnPlayer({ ...SPEC, id: 'bravo', position: { x: 2, y: 0 } });
+
+    expect(store.player()).toBe(first);
+    expect(store.playerById(first.id)).toBe(first);
+    expect(store.playerById(second.id)).toBe(second);
+    expect([...store.players()]).toEqual([first, second]);
+    expect(store.removePlayer(first.id)).toBe(true);
+    expect(store.player()).toBe(second);
 
     store.clear();
     expect(store.player()).toBeNull();
-    expect(() => store.spawnPlayer(SPEC)).not.toThrow();
+    expect([...store.players()]).toEqual([]);
   });
 
   it('spawns a companion with copied session-owned config', () => {

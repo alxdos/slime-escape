@@ -49,6 +49,7 @@ describe('SnapshotExportSystem', () => {
   it('emits the player entity with kind "player"', () => {
     const store = createEntityStore();
     store.spawnPlayer({
+      id: 'player',
       position: { x: 3, y: -2 },
       radius: 0.5,
       contactBox: squareContactBox(0.5),
@@ -107,6 +108,7 @@ describe('SnapshotExportSystem', () => {
   it('emits exactly once per TICKS_PER_SNAPSHOT', () => {
     const store = createEntityStore();
     store.spawnPlayer({
+      id: 'player',
       position: { x: 0, y: 0 },
       radius: 0.5,
       contactBox: squareContactBox(0.5),
@@ -127,6 +129,7 @@ describe('SnapshotExportSystem', () => {
   it('reset() restores the cadence so the next call emits', () => {
     const store = createEntityStore();
     store.spawnPlayer({
+      id: 'player',
       position: { x: 0, y: 0 },
       radius: 0.5,
       contactBox: squareContactBox(0.5),
@@ -272,6 +275,7 @@ describe('SnapshotExportSystem', () => {
 describe('SnapshotExportSystem top-level fields', () => {
   function spawnPlayerAt(store: ReturnType<typeof createEntityStore>) {
     return store.spawnPlayer({
+      id: 'player',
       position: { x: 0, y: 0 },
       radius: 0.5,
       contactBox: squareContactBox(0.5),

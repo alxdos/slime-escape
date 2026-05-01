@@ -27,11 +27,17 @@ import {
   type EntityId,
   type ProjectileSpawnSpec
 } from './EntityStore';
-import { createRuntimeActorInputState, type RuntimeActorInputState } from './RuntimeInputState';
+import {
+  createRuntimeActorInputState,
+  type RuntimeActorInputState,
+  type RuntimeInputState
+} from './RuntimeInputState';
 import { createSpatialIndex } from './SpatialIndex';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
+const PLAYER_INPUT_ID = 'player';
 const PLAYER_SPEC = {
+  id: PLAYER_INPUT_ID,
   position: { x: 0, y: 0 },
   radius: 0.5,
   contactBox: { width: 1.2, height: 2 },
@@ -176,13 +182,15 @@ function setupCombat() {
   return { store, index, combat, player };
 }
 
-function makeInput(overrides: Partial<RuntimeActorInputState> = {}): RuntimeActorInputState {
+function makeInput(
+  overrides: Partial<RuntimeActorInputState> = {}
+): RuntimeActorInputState & RuntimeInputState {
   const state = createRuntimeActorInputState();
   if (overrides.moveDir) state.moveDir = overrides.moveDir;
   if (overrides.aimWorld) state.aimWorld = overrides.aimWorld;
   if (overrides.firing !== undefined) state.firing = overrides.firing;
   if (overrides.loadout !== undefined) state.loadout = overrides.loadout;
-  return state;
+  return Object.assign(state, { players: new Map([[PLAYER_INPUT_ID, state]]) });
 }
 
 describe('CombatSystem', () => {

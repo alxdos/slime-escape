@@ -3,7 +3,12 @@ import type { ArenaConfig } from '../session';
 import { SIM_STEP_MS } from '../timing';
 
 import type { Boss, Enemy, EntityStore, Player } from './EntityStore';
-import type { RuntimeActorInputState } from './RuntimeInputState';
+import { resolveNearestLivingPlayer } from './PlayerTargeting';
+import {
+  runtimeInputForPlayer,
+  type RuntimeActorInputState,
+  type RuntimeInputState
+} from './RuntimeInputState';
 import { resolveMovementSpeedMultiplier } from './StatusEffectSystem';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
@@ -12,7 +17,7 @@ export type MovementSystem = Readonly<{
   tick(
     arena: ArenaConfig,
     store: EntityStore,
-    input: RuntimeActorInputState | null,
+    input: RuntimeInputState,
     simTimeMs: number
   ): void;
 }>;
@@ -20,10 +25,13 @@ export type MovementSystem = Readonly<{
 export function createMovementSystem(): MovementSystem {
   return {
     tick(arena, store, input, simTimeMs): void {
-      const player = store.player();
-      if (player !== null && input !== null) tickPlayer(arena, player, input);
-      tickEnemies(store, player, simTimeMs);
-      tickBosses(store, player, simTimeMs);
+      for (const player of store.players()) {
+        if (player.hp <= 0) continue;
+        const playerInput = runtimeInputForPlayer(input, player.playerId);
+        if (playerInput !== null) tickPlayer(arena, player, playerInput);
+      }
+      tickEnemies(store, simTimeMs);
+      tickBosses(store, simTimeMs);
     }
   };
 }
@@ -48,17 +56,17 @@ function tickPlayer(arena: ArenaConfig, player: Player, input: RuntimeActorInput
   player.position.y = clamp(player.position.y + vy * SIM_STEP_SEC, minY, maxY);
 }
 
-function tickEnemies(store: EntityStore, player: Player | null, simTimeMs: number): void {
+function tickEnemies(store: EntityStore, simTimeMs: number): void {
   for (const enemy of store.enemies()) {
     if (tickKnockbackCarrier(enemy, simTimeMs)) continue;
-    tickEnemyBehavior(enemy, resolveEnemyTarget(enemy, store, player, simTimeMs));
+    tickEnemyBehavior(enemy, resolveEnemyTarget(enemy, store, simTimeMs));
   }
 }
 
-function tickBosses(store: EntityStore, player: Player | null, simTimeMs: number): void {
+function tickBosses(store: EntityStore, simTimeMs: number): void {
   for (const boss of store.bosses()) {
     if (tickKnockbackCarrier(boss, simTimeMs)) continue;
-    chaseTowardPlayer(boss, player);
+    chaseTowardPlayer(boss, resolveNearestLivingPlayer(store, boss.position));
   }
 }
 
@@ -128,23 +136,23 @@ function tickEnemyBehavior(enemy: Enemy, target: Player | Enemy | Boss | null): 
 function resolveEnemyTarget(
   enemy: Enemy,
   store: EntityStore,
-  player: Player | null,
   simTimeMs: number
 ): Player | Enemy | Boss | null {
   const aggro = enemy.aggroMemory;
-  if (aggro === null) return player;
+  const fallbackPlayer = resolveNearestLivingPlayer(store, enemy.position);
+  if (aggro === null) return fallbackPlayer;
   if (simTimeMs >= aggro.expireAtSimMs) {
     enemy.aggroMemory = null;
-    return player;
+    return fallbackPlayer;
   }
   const aggroEnemy = store.enemyById(aggro.targetId);
   if (aggroEnemy !== null) return aggroEnemy;
   const aggroBoss = store.bossById(aggro.targetId);
   if (aggroBoss !== null) return aggroBoss;
-  const currentPlayer = store.player();
-  if (currentPlayer !== null && currentPlayer.id === aggro.targetId) return currentPlayer;
+  const currentPlayer = store.playerById(aggro.targetId);
+  if (currentPlayer !== null && currentPlayer.hp > 0) return currentPlayer;
   enemy.aggroMemory = null;
-  return player;
+  return fallbackPlayer;
 }
 
 function clamp(value: number, min: number, max: number): number {

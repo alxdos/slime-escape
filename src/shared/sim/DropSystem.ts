@@ -12,7 +12,7 @@ import { assertNever } from '../protocol';
 import type { Rng } from '../rng';
 import { SIM_STEP_MS } from '../timing';
 
-import type { Companion, EntityId, EntityStore } from './EntityStore';
+import type { Companion, Drop, EntityId, EntityStore, Player } from './EntityStore';
 import type { DeathContext } from './HealthDeathSystem';
 
 export type DropSystem = Readonly<{
@@ -105,42 +105,30 @@ export function createDropSystem(
         }
       }
 
-      const player = store.player();
-      if (player !== null) {
-        attractDropsToPlayer(store, player.id, player.position, player.radius, pickupModifiers);
-        const activeModifier = pickupModifiers.get(player.id) ?? null;
-        for (const drop of store.drops()) {
-          if (expired.has(drop.id)) continue;
-          const dx = drop.position.x - player.position.x;
-          const dy = drop.position.y - player.position.y;
-          const reach = pickupReach(drop.radius + player.radius, activeModifier);
-          if (dx * dx + dy * dy > reach * reach) continue;
+      const pickupModifiersAtTickStart = new Map(pickupModifiers);
+      attractDropsToPlayers(store, pickupModifiersAtTickStart);
+      for (const drop of store.drops()) {
+        if (expired.has(drop.id) || pickedUp.has(drop.id)) continue;
+        const player = nearestPlayerInPickupReach(drop, store, pickupModifiersAtTickStart);
+        if (player === null) continue;
 
-          applyDropEffect(
-            drop.effect,
-            player.id,
-            store,
-            simTimeMs,
-            weaponEffects,
-            pickupModifiers
-          );
-          pickedUp.add(drop.id);
-          onPickup?.({
-            entityId: drop.id,
-            archetypeId: drop.archetypeId,
-            pickerId: player.id,
-            simTime: simTimeMs
-          });
-          emit({
-            kind: 'dropPickup',
-            simTime: simTimeMs,
-            entityId: drop.id,
-            archetypeId: drop.archetypeId,
-            pickerId: player.id,
-            x: drop.position.x,
-            y: drop.position.y
-          });
-        }
+        applyDropEffect(drop.effect, player.id, store, simTimeMs, weaponEffects, pickupModifiers);
+        pickedUp.add(drop.id);
+        onPickup?.({
+          entityId: drop.id,
+          archetypeId: drop.archetypeId,
+          pickerId: player.id,
+          simTime: simTimeMs
+        });
+        emit({
+          kind: 'dropPickup',
+          simTime: simTimeMs,
+          entityId: drop.id,
+          archetypeId: drop.archetypeId,
+          pickerId: player.id,
+          x: drop.position.x,
+          y: drop.position.y
+        });
       }
 
       const companion = store.companion();
@@ -258,23 +246,21 @@ function spawnDropAtDeath(
   });
 }
 
-function attractDropsToPlayer(
+function attractDropsToPlayers(
   store: EntityStore,
-  playerId: EntityId,
-  playerPosition: Readonly<{ x: number; y: number }>,
-  playerRadius: number,
   pickupModifiers: ReadonlyMap<EntityId, PickupModifier>
 ): void {
-  const modifier = pickupModifiers.get(playerId);
-  if (modifier === undefined) return;
-  const stepDistance = modifier.attractSpeed * (SIM_STEP_MS / 1000);
-  if (stepDistance <= 0) return;
   for (const drop of store.drops()) {
-    const dx = playerPosition.x - drop.position.x;
-    const dy = playerPosition.y - drop.position.y;
+    const target = nearestPlayerForAttraction(drop, store, pickupModifiers);
+    if (target === null) continue;
+    const { player, modifier } = target;
+    const stepDistance = modifier.attractSpeed * (SIM_STEP_MS / 1000);
+    if (stepDistance <= 0) continue;
+    const dx = player.position.x - drop.position.x;
+    const dy = player.position.y - drop.position.y;
     const distance = Math.hypot(dx, dy);
     if (distance <= 0) continue;
-    const baseReach = drop.radius + playerRadius;
+    const baseReach = drop.radius + player.radius;
     const attractionReach = pickupReach(baseReach, modifier) + stepDistance * 2;
     if (distance > attractionReach) continue;
     const move = Math.min(stepDistance, Math.max(0, distance - baseReach));
@@ -283,8 +269,71 @@ function attractDropsToPlayer(
   }
 }
 
+function nearestPlayerForAttraction(
+  drop: Drop,
+  store: EntityStore,
+  pickupModifiers: ReadonlyMap<EntityId, PickupModifier>
+): Readonly<{ player: Player; modifier: PickupModifier }> | null {
+  let best: Readonly<{ player: Player; modifier: PickupModifier }> | null = null;
+  let bestDistanceSq = Number.POSITIVE_INFINITY;
+  for (const player of store.players()) {
+    if (player.hp <= 0) continue;
+    const modifier = pickupModifiers.get(player.id);
+    if (modifier === undefined) continue;
+    const stepDistance = modifier.attractSpeed * (SIM_STEP_MS / 1000);
+    if (stepDistance <= 0) continue;
+    const baseReach = drop.radius + player.radius;
+    const attractionReach = pickupReach(baseReach, modifier) + stepDistance * 2;
+    const distanceSq = distanceSquared(drop.position, player.position);
+    if (distanceSq > attractionReach * attractionReach) continue;
+    if (
+      best === null ||
+      distanceSq < bestDistanceSq ||
+      (distanceSq === bestDistanceSq && player.playerId < best.player.playerId)
+    ) {
+      best = { player, modifier };
+      bestDistanceSq = distanceSq;
+    }
+  }
+  return best;
+}
+
+function nearestPlayerInPickupReach(
+  drop: Drop,
+  store: EntityStore,
+  pickupModifiers: ReadonlyMap<EntityId, PickupModifier>
+): Player | null {
+  let best: Player | null = null;
+  let bestDistanceSq = Number.POSITIVE_INFINITY;
+  for (const player of store.players()) {
+    if (player.hp <= 0) continue;
+    const modifier = pickupModifiers.get(player.id) ?? null;
+    const reach = pickupReach(drop.radius + player.radius, modifier);
+    const distanceSq = distanceSquared(drop.position, player.position);
+    if (distanceSq > reach * reach) continue;
+    if (
+      best === null ||
+      distanceSq < bestDistanceSq ||
+      (distanceSq === bestDistanceSq && player.playerId < best.playerId)
+    ) {
+      best = player;
+      bestDistanceSq = distanceSq;
+    }
+  }
+  return best;
+}
+
 function pickupReach(baseReach: number, modifier: PickupModifier | null): number {
   return modifier === null ? baseReach : baseReach * modifier.pickupRadiusMultiplier;
+}
+
+function distanceSquared(
+  a: Readonly<{ x: number; y: number }>,
+  b: Readonly<{ x: number; y: number }>
+): number {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return dx * dx + dy * dy;
 }
 
 function isCompanionHealPickupEligible(companion: Companion | null): companion is Companion {
@@ -305,8 +354,8 @@ function applyDropEffect(
 ): void {
   switch (effect.kind) {
     case 'heal': {
-      const player = store.player();
-      if (player !== null && player.id === pickerId) {
+      const player = store.playerById(pickerId);
+      if (player !== null) {
         player.hp = Math.min(player.maxHp, player.hp + effect.amount);
         return;
       }
@@ -318,14 +367,14 @@ function applyDropEffect(
       return;
     }
     case 'addWeaponModifier': {
-      const player = store.player();
-      if (player === null || player.id !== pickerId) return;
+      const player = store.playerById(pickerId);
+      if (player === null) return;
       weaponEffects?.addModifierToSelectedWeapon(player.id, effect.modifier);
       return;
     }
     case 'temporaryOverdrive': {
-      const player = store.player();
-      if (player === null || player.id !== pickerId) return;
+      const player = store.playerById(pickerId);
+      if (player === null) return;
       weaponEffects?.applyTemporaryOverdriveToSelectedWeapon(
         player.id,
         effect.cooldownMultiplier,
@@ -335,8 +384,8 @@ function applyDropEffect(
       return;
     }
     case 'pickupModifier': {
-      const player = store.player();
-      if (player === null || player.id !== pickerId) return;
+      const player = store.playerById(pickerId);
+      if (player === null) return;
       pickupModifiers.set(
         player.id,
         mergePickupModifier(pickupModifiers.get(player.id), effect.modifier)

@@ -13,7 +13,6 @@ import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createRetaliationSystem } from './RetaliationSystem';
 import { createRunSummaryTracker } from './RunSummaryTracker';
-import { firstRuntimeInput } from './RuntimeInputState';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSimulationClock } from './SimulationClock';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
@@ -83,10 +82,10 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
   const clock = createSimulationClock((_dtMs, simTimeMs) => {
     const session = sessionFlow.activeSession();
     if (session === null) return;
-    const primaryInput = firstRuntimeInput(sessionFlow.inputState());
+    const inputState = sessionFlow.inputState();
     spawn.onTick(simTimeMs, entities);
     const bossIntents = bossPhase.tick(entities, session.arena, simTimeMs, emitEvent);
-    movement.tick(session.arena, entities, primaryInput, simTimeMs);
+    movement.tick(session.arena, entities, inputState, simTimeMs);
     companion.tick(
       session.arena,
       entities,
@@ -95,7 +94,7 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       emitEvent
     );
     const combatIntents = combat.tick(
-      primaryInput,
+      inputState,
       entities,
       spatialIndex,
       simTimeMs,
@@ -166,15 +165,20 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
       drops.setRng(rng);
       combat.setDamageRules(session.rules.damage);
       fieldEffects.setDamageRules(session.rules.damage);
-      const primaryPlayer = session.players[0];
-      const player = entities.spawnPlayer(primaryPlayer);
-      if (session.companion !== null) {
+      for (const playerConfig of session.players) {
+        const player = entities.spawnPlayer(playerConfig);
+        if (playerConfig.loadout !== null) {
+          combat.setPlayerLoadout(player.id, playerConfig.loadout, clock.simTimeMs());
+        }
+      }
+      const primaryPlayer = entities.player();
+      if (session.companion !== null && primaryPlayer !== null) {
         const offset = session.companion.movement.orbitRadius * 0.75;
         const spawnedCompanion = entities.spawnCompanion({
           ...session.companion,
           position: {
-            x: player.position.x - offset,
-            y: player.position.y - offset
+            x: primaryPlayer.position.x - offset,
+            y: primaryPlayer.position.y - offset
           }
         });
         if (session.companion.weaponLoadout !== null) {
@@ -184,9 +188,6 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
             clock.simTimeMs()
           );
         }
-      }
-      if (primaryPlayer.loadout !== null) {
-        combat.setPlayerLoadout(player.id, primaryPlayer.loadout, clock.simTimeMs());
       }
     },
     onSessionStop() {
@@ -221,10 +222,11 @@ export function createSimulationCore(options: SimulationCoreOptions): Simulation
     runSummary.onDeath(ctx, entities);
     if (ctx.entityKind === 'enemy') spawn.onEnemyDeath(ctx.entityId);
     if (ctx.entityKind === 'enemy') combat.removeShooter(ctx.entityId);
+    if (ctx.entityKind === 'player') combat.removeShooter(ctx.entityId);
     if (ctx.entityKind === 'boss') spawn.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'enemy') drops.onDeathHook(ctx, entities, emitEvent);
-    if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath();
+    if (ctx.entityKind === 'player') sessionFlow.onPlayerDeath(ctx.entityId);
   });
 
   healthDeath.registerDamageHook((ctx) => retaliation.onDamage(ctx, entities));

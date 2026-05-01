@@ -24,7 +24,7 @@ export function createStatusEffectSystem(): StatusEffectSystem {
     },
     tick(simTimeMs, store): ReadonlyArray<DamageIntent> {
       const intents: DamageIntent[] = [];
-      tickCarrier(store.player(), simTimeMs, intents);
+      for (const player of store.players()) tickCarrier(player, simTimeMs, intents);
       for (const enemy of store.enemies()) tickCarrier(enemy, simTimeMs, intents);
       for (const boss of store.bosses()) tickCarrier(boss, simTimeMs, intents);
       return intents;
@@ -130,8 +130,8 @@ function tickEffect(
 }
 
 function resolveTarget(id: EntityId, store: EntityStore): StatusCarrier | null {
-  const player = store.player();
-  if (player !== null && player.id === id) return player;
+  const player = store.playerById(id);
+  if (player !== null) return player;
   const enemy = store.enemyById(id);
   if (enemy !== null) return enemy;
   return store.bossById(id);

@@ -21,6 +21,7 @@ function squareContactBox(radius: number) {
 }
 
 const PLAYER_SPEC = {
+  id: 'player',
   position: { x: 0, y: 0 },
   radius: 0.5,
   contactBox: squareContactBox(0.5),
@@ -758,11 +759,11 @@ describe('DropSystem tick (ttl, pickup, heal)', () => {
   });
 
   it('is a no-op for pickup when player is absent, but ttl still fires', () => {
-    const { store, drops } = setupWorldWithDrop({
+    const { store, drops, player } = setupWorldWithDrop({
       dropPosition: { x: 0.4, y: 0 },
       dropExpireAtSimMs: 800
     });
-    store.removePlayer();
+    store.removePlayer(player.id);
 
     const events: RuntimeEvent[] = [];
     drops.tick(0, store, (e) => events.push(e));

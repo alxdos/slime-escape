@@ -59,7 +59,7 @@ export function createRunSummaryTracker(): RunSummaryTracker {
     if (ctx.entityKind === 'boss') {
       rememberedBoss = summarizeBossDeath(ctx, store);
     }
-    if (ctx.entityKind === 'player') {
+    if (ctx.entityKind === 'player' && defeat === null) {
       defeat = { cause: serializeDefeatCause(ctx.cause, store) };
     }
   }

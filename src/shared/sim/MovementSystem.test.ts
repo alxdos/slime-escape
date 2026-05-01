@@ -1,14 +1,25 @@
 import { describe, expect, it } from 'vitest';
 
-import type { ArenaConfig, PlayerSpawn } from '../session';
+import type { ArenaConfig } from '../session';
 import { SIM_STEP_MS } from '../timing';
 
-import { createEntityStore, type EnemySpawnSpec, type EntityId } from './EntityStore';
+import {
+  createEntityStore,
+  type EnemySpawnSpec,
+  type EntityId,
+  type PlayerEntitySpawnSpec
+} from './EntityStore';
 import { createMovementSystem } from './MovementSystem';
-import { createRuntimeActorInputState } from './RuntimeInputState';
+import {
+  createRuntimeActorInputState,
+  type RuntimeActorInputState,
+  type RuntimeInputState
+} from './RuntimeInputState';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
-const PLAYER: PlayerSpawn = {
+const PLAYER_INPUT_ID = 'player';
+const PLAYER: PlayerEntitySpawnSpec = {
+  id: PLAYER_INPUT_ID,
   position: { x: 0, y: 0 },
   radius: 0.5,
   contactBox: { width: 1.2, height: 2 },
@@ -45,12 +56,17 @@ const CHASE_TEST_ENEMY = {
   color: 0x77ff99
 } as const;
 
-function setup(spec: PlayerSpawn = PLAYER) {
+function setup(spec: PlayerEntitySpawnSpec = PLAYER) {
   const store = createEntityStore();
   store.spawnPlayer(spec);
   const movement = createMovementSystem();
-  const input = createRuntimeActorInputState();
+  const input = makeInput();
   return { store, movement, input };
+}
+
+function makeInput(): RuntimeActorInputState & RuntimeInputState {
+  const input = createRuntimeActorInputState();
+  return Object.assign(input, { players: new Map([[PLAYER_INPUT_ID, input]]) });
 }
 
 function trainingTargetAt(x: number, y: number): EnemySpawnSpec {
@@ -177,7 +193,7 @@ describe('MovementSystem player', () => {
   it('is a no-op when no player is spawned', () => {
     const store = createEntityStore();
     const movement = createMovementSystem();
-    const input = createRuntimeActorInputState();
+    const input = makeInput();
     input.moveDir.dx = 1;
     expect(() => movement.tick(ARENA, store, input, 0)).not.toThrow();
     expect(store.player()).toBeNull();
@@ -286,7 +302,7 @@ describe('MovementSystem enemies', () => {
     const store = createEntityStore();
     const enemy = store.spawnEnemy(slimeFastAt(3, 0));
     const movement = createMovementSystem();
-    const input = createRuntimeActorInputState();
+    const input = makeInput();
     movement.tick(ARENA, store, input, 0);
     expect(enemy.position).toEqual({ x: 3, y: 0 });
     expect(enemy.velocity).toEqual({ vx: 0, vy: 0 });

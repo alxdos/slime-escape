@@ -5,6 +5,7 @@ import type { ArenaConfig } from '../session';
 
 import { fireWeaponProjectiles, type DamageIntent } from './CombatSystem';
 import type { Boss, EntityStore } from './EntityStore';
+import { resolveNearestLivingPlayer } from './PlayerTargeting';
 
 export type BossPhaseSystem = Readonly<{
   tick(
@@ -65,7 +66,6 @@ function runBossAttacks(
   emit: (event: RuntimeEvent) => void
 ): DamageIntent[] {
   const intents: DamageIntent[] = [];
-  const player = store.player();
   for (const attackId of boss.activeAttackIds) {
     const spec = archetype.attacks[attackId];
     if (spec === undefined) continue;
@@ -73,6 +73,7 @@ function runBossAttacks(
     if (simTimeMs < nextAt) continue;
 
     if (attackId === 'coneBurst') {
+      const player = resolveNearestLivingPlayer(store, boss.position);
       if (player === null) continue;
       const w = FIREBALL_STAFF;
       const result = fireWeaponProjectiles(
@@ -102,6 +103,7 @@ function runBossAttacks(
     }
 
     if (attackId === 'dashSlam') {
+      const player = resolveNearestLivingPlayer(store, boss.position);
       if (player === null) continue;
       const dx = player.position.x - boss.position.x;
       const dy = player.position.y - boss.position.y;

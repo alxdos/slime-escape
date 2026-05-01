@@ -3,6 +3,7 @@ import type { ArenaConfig, EncounterDefinition, Vec2 } from '../session';
 import { SIM_STEP_MS } from '../timing';
 
 import type { Boss, Companion, Drop, Enemy, EntityId, EntityStore, Player } from './EntityStore';
+import { resolveNearestLivingPlayer } from './PlayerTargeting';
 
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const ALERT_DURATION_MS = 300;
@@ -30,7 +31,7 @@ export function createCompanionSystem(): CompanionSystem {
     tick(arena, store, encounter, simTimeMs, emit): void {
       const companion = store.companion();
       if (companion === null) return;
-      const player = store.player();
+      const player = resolveNearestLivingPlayer(store, companion.position);
       if (player === null) {
         companion.velocity.vx = 0;
         companion.velocity.vy = 0;

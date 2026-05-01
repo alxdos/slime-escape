@@ -779,7 +779,7 @@ describe('SessionFlowSystem player death', () => {
 
     flow.start(session);
     events.length = 0;
-    flow.onPlayerDeath();
+    flow.onPlayerDeath(1 as EntityId);
     expect(events.map((e) => e.kind)).toEqual(['encounterEnd', 'loss', 'sessionStop']);
     expect(terminalEvent(events, 'loss').summary).toEqual(makeTestResultSummary('loss', 0));
     expect(flow.isActive()).toBe(false);
@@ -797,7 +797,7 @@ describe('SessionFlowSystem player death', () => {
 
     flow.start(session);
     events.length = 0;
-    flow.onPlayerDeath();
+    flow.onPlayerDeath(1 as EntityId);
     expect(events).toHaveLength(0);
     expect(flow.isActive()).toBe(true);
   });
@@ -809,9 +809,9 @@ describe('SessionFlowSystem player death', () => {
     const session = makeSession([emptyEncounter('only', { kind: 'never', next: 'sequential' })]);
 
     flow.start(session);
-    flow.onPlayerDeath();
+    flow.onPlayerDeath(1 as EntityId);
     events.length = 0;
-    flow.onPlayerDeath();
+    flow.onPlayerDeath(1 as EntityId);
     expect(events).toHaveLength(0);
   });
 
@@ -826,7 +826,7 @@ describe('SessionFlowSystem player death', () => {
     const session = makeSession([waveEncounter('active-wave', { kind: 'never', next: 'sequential' })]);
 
     flow.start(session);
-    flow.onPlayerDeath();
+    flow.onPlayerDeath(1 as EntityId);
 
     expect(completed).toEqual([]);
   });

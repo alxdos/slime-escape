@@ -13,8 +13,17 @@ import type { RuntimeEvent } from '../events';
 
 import { createCombatSystem } from './CombatSystem';
 import { createEntityStore } from './EntityStore';
-import { createRuntimeActorInputState } from './RuntimeInputState';
+import {
+  createRuntimeActorInputState,
+  type RuntimeActorInputState,
+  type RuntimeInputState
+} from './RuntimeInputState';
 import { createSpatialIndex } from './SpatialIndex';
+
+function makeInput(playerId: string): RuntimeActorInputState & RuntimeInputState {
+  const input = createRuntimeActorInputState();
+  return Object.assign(input, { players: new Map([[playerId, input]]) });
+}
 
 describe('universal weapons demo session integration', () => {
   it('fires every sandbox-with-combat demo weapon from the authored ordered loadout', () => {
@@ -38,7 +47,7 @@ describe('universal weapons demo session integration', () => {
     expect(session.players[0].loadout.weapons).toEqual(expectedWeaponIds);
 
     for (let selectedIndex = 0; selectedIndex < expectedWeaponIds.length; selectedIndex += 1) {
-      const input = createRuntimeActorInputState();
+      const input = makeInput(player.playerId);
       input.firing = true;
       input.aimWorld = { x: player.position.x + 5, y: player.position.y };
       input.loadout = { weapons: session.players[0].loadout.weapons, selectedIndex };

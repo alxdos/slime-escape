@@ -7,15 +7,27 @@ import type { ArenaConfig } from '../session';
 import { createCombatSystem } from './CombatSystem';
 import { createEntityStore } from './EntityStore';
 import { createHealthDeathSystem } from './HealthDeathSystem';
-import { createRuntimeActorInputState } from './RuntimeInputState';
+import {
+  createRuntimeActorInputState,
+  type RuntimeActorInputState,
+  type RuntimeInputState
+} from './RuntimeInputState';
 import { createSpatialIndex } from './SpatialIndex';
 
 const ARENA: ArenaConfig = { width: 32, height: 18 };
+const PLAYER_INPUT_ID = 'player';
+
+function makeInput(): RuntimeActorInputState & RuntimeInputState {
+  const input = createRuntimeActorInputState();
+  return Object.assign(input, { players: new Map([[PLAYER_INPUT_ID, input]]) });
+}
+
 function squareContactBox(radius: number) {
   return { width: radius * 2, height: radius * 2 };
 }
 
 const PLAYER_SPEC = {
+  id: PLAYER_INPUT_ID,
   position: { x: 0, y: 0 },
   radius: 0.5,
   contactBox: squareContactBox(0.5),
@@ -60,7 +72,7 @@ describe('combat integration (CombatSystem + HealthDeathSystem)', () => {
       color: STATIONARY_TEST_ENEMY.color
     });
 
-    const input = createRuntimeActorInputState();
+    const input = makeInput();
     input.aimWorld.x = 5;
     input.aimWorld.y = 0;
     input.firing = true;

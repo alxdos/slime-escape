@@ -80,7 +80,7 @@ describe('BossPhaseSystem', () => {
       ARENA,
       0
     );
-    store.spawnPlayer({ ...TRAINING_PLAYER, position: { x: 4, y: 0 } });
+    store.spawnPlayer({ ...TRAINING_PLAYER, id: 'player', position: { x: 4, y: 0 } });
 
     const simTimeMs = 1200;
     const events: RuntimeEvent[] = [];

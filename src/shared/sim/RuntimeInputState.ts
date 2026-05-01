@@ -55,13 +55,6 @@ export function runtimeInputForPlayer(
   return state.players.get(playerId) ?? null;
 }
 
-export function firstRuntimeInput(state: RuntimeInputState): RuntimeActorInputState | null {
-  for (const input of state.players.values()) {
-    return input;
-  }
-  return null;
-}
-
 function copyLoadout(loadout: Loadout | null): RuntimeLoadoutState | null {
   return loadout === null
     ? null

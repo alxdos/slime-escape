@@ -261,6 +261,7 @@ describe('HealthDeathSystem player damage', () => {
   it('applies enemyContact damage to the player and clamps at zero', () => {
     const store = createEntityStore();
     const player = store.spawnPlayer({
+      id: 'player',
       position: { x: 0, y: 0 },
       radius: 0.5,
       contactBox: squareContactBox(0.5),
@@ -278,6 +279,7 @@ describe('HealthDeathSystem player damage', () => {
   it('emits death event with entityKind "player" and removes the player on hp=0', () => {
     const store = createEntityStore();
     const player = store.spawnPlayer({
+      id: 'player',
       position: { x: 1, y: 2 },
       radius: 0.5,
       contactBox: squareContactBox(0.5),
@@ -309,6 +311,7 @@ describe('HealthDeathSystem player damage', () => {
   it('ignores repeated intents in the same tick after player death (no double loss)', () => {
     const store = createEntityStore();
     const player = store.spawnPlayer({
+      id: 'player',
       position: { x: 0, y: 0 },
       radius: 0.5,
       contactBox: squareContactBox(0.5),
@@ -339,6 +342,7 @@ describe('HealthDeathSystem player damage', () => {
   it('is a no-op for intents targeting a removed player on subsequent ticks', () => {
     const store = createEntityStore();
     const player = store.spawnPlayer({
+      id: 'player',
       position: { x: 0, y: 0 },
       radius: 0.5,
       contactBox: squareContactBox(0.5),

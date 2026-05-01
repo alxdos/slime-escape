@@ -27,7 +27,6 @@ import { createEntityStore, type EntityId, type Projectile } from './EntityStore
 import { createHealthDeathSystem } from './HealthDeathSystem';
 import { createMovementSystem } from './MovementSystem';
 import { createRunSummaryTracker } from './RunSummaryTracker';
-import { firstRuntimeInput } from './RuntimeInputState';
 import { createSessionFlowSystem } from './SessionFlowSystem';
 import { createSnapshotExportSystem } from './SnapshotExportSystem';
 import { createSpatialIndex } from './SpatialIndex';
@@ -223,7 +222,7 @@ function setupSimWorld(session: SessionDefinition) {
     if (ctx.entityKind === 'boss') sessionFlow.onBossDeath(ctx.entityId);
     if (ctx.entityKind === 'player') {
       playerDeathCause = ctx.cause;
-      sessionFlow.onPlayerDeath();
+      sessionFlow.onPlayerDeath(ctx.entityId);
     }
   });
 
@@ -251,10 +250,10 @@ function setupSimWorld(session: SessionDefinition) {
 
   function tickSystems(simTimeMs: number, extraIntents: ReadonlyArray<DamageIntent>): void {
     spawn.onTick(simTimeMs, entities);
-    const primaryInput = firstRuntimeInput(sessionFlow.inputState());
-    movement.tick(session.arena, entities, primaryInput, simTimeMs);
+    const inputState = sessionFlow.inputState();
+    movement.tick(session.arena, entities, inputState, simTimeMs);
     const combatIntents = combat.tick(
-      primaryInput,
+      inputState,
       entities,
       spatialIndex,
       simTimeMs,

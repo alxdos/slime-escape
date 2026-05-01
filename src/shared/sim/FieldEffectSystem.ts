@@ -96,8 +96,7 @@ function applyFieldEffect(
 
 function computeMaxTargetBoundsRadius(store: EntityStore): number {
   let max = 0;
-  const player = store.player();
-  if (player !== null) max = Math.max(max, contactBoundsRadius(player));
+  for (const player of store.players()) max = Math.max(max, contactBoundsRadius(player));
   for (const enemy of store.enemies()) max = Math.max(max, contactBoundsRadius(enemy));
   for (const boss of store.bosses()) max = Math.max(max, contactBoundsRadius(boss));
   return max;

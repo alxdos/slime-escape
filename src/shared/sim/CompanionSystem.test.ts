@@ -16,6 +16,7 @@ import {
 const ARENA: ArenaConfig = { width: 32, height: 18 };
 const SIM_STEP_SEC = SIM_STEP_MS / 1000;
 const PLAYER_SPEC = {
+  id: 'player',
   position: { x: 0, y: 0 },
   radius: 0.5,
   contactBox: { width: 1.2, height: 2 },
