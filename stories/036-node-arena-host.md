@@ -48,6 +48,26 @@ Build `server/src/arena-host/**`. It is a thin wrapper over the shared core ([si
 | T7 | [ ] | Remove `server/src/arenaSimulation.ts` and `arenaSimulation.test.ts`. Trim now-dead types (`PublicArenaSnapshot`, `PublicArenaPlayerSnapshot`, `PublicArenaProjectileSnapshot`, `PublicArenaPresentationEvent`) and rename `src/shared/publicArenaProtocol.ts` to `arenaHostProtocol.ts`. Verify `server/src/importBoundaries.test.ts` still passes (server allowed to import `src/shared/sim/**` only via the public façade, per [web-stack.md](../design/web-stack.md)). | Code PR, depends on T6c. |
 | T8 | [ ] | Run automated checks (root + server typecheck/tests/build, content drift, sim import-boundary). Request live online verification with at least two players reproducing the 032 demo: join, fire, kill, level up, become boss, fight boss. | Depends on T7. |
 
+## Finalized T6 decomposition
+
+T6a renderer slice:
+
+- Files: `src/main/online/publicArenaSnapshotView.ts` (new helper, with tests), `src/main/online/PublicArenaRenderer.ts`, `src/main/online/PublicArenaRenderer.test.ts`, and `src/main/render/projectilePresentation.ts` only if the projectile view type needs to stop depending on compact `PublicArenaProjectileSnapshot`.
+- Acceptance: renderer tests build the online scene from a shared `Snapshot.entities[]`; player entities are keyed by `PlayerSnapshot.playerId`; `formArchetypeId === null` renders the normal player visual, regular slime form ids render `ENEMY_VISUALS`, boss form ids render `BOSS_VISUALS`; projectiles render from shared `ProjectileSnapshot`; `zone`, `encounter`, `waveProgress`, and `bossHud` are accepted as normal shared snapshot fields without PvP stripping.
+- Boundary: keep a temporary legacy snapshot adapter only where needed for typecheck until T6c; no server or protocol file changes in T6a.
+
+T6b HUD and affordance slice:
+
+- Files: `src/main/ui/PublicArenaHud.ts`, `src/main/ui/PublicArenaHud.test.ts`, `src/main/ui/PublicArenaCombatAffordances.ts`, `src/main/ui/PublicArenaCombatAffordances.test.ts`, plus `PublicArenaStatusOverlay` / `PublicArenaMenuOverlay` tests only for type fallout.
+- Acceptance: HUD finds the local player through shared `PlayerSnapshot.playerId`, derives level from `formArchetypeId` via `PUBLIC_ARENA_SLIME_FORM_CHAIN` / `PUBLIC_ARENA_BOSS_LEVEL`, and displays online population from `snapshot.entities` player count; combat affordances read the local `PlayerSnapshot.weaponHud` for selected slot, cooldowns, modifiers, and timed effects, with boss/no-weapon states rendering no selected regular slot.
+- Boundary: do not change Socket.IO parsing in this slice; keep using the T6a view helper so old compact fixtures can be retired cleanly in T6c/T7.
+
+T6c transport slice:
+
+- Files: `src/shared/publicArenaProtocol.ts`, `src/main/online/PublicArenaClient.ts`, `src/main/online/PublicArenaClient.test.ts`, `src/main/ui/UiShell.ts`, `src/main/ui/UiShell.test.ts`, and audio/presentation tests touched by event shape fallout.
+- Acceptance: protocol server-to-client payloads are shared `Snapshot` and `RuntimeEvent | { kind: 'host:levelUp', ... }`; `joinAccepted.actorId` and `arena` are cached for the connection; `UiShell` stores the local `actorId`, routes shared runtime events directly to audio/render impact paths, ignores `playerSpawn` for presentation, and handles `host:levelUp` without reintroducing compact `levelUp` events.
+- Boundary: after T6c, no online client production code imports compact `PublicArenaSnapshot` or `PublicArenaPresentationEvent`; T7 is then limited to deleting dead server sim files, dead protocol types, and the protocol filename rename.
+
 ## Related
 
 - [simulation-runtime.md](../design/simulation-runtime.md)
