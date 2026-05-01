@@ -13614,6 +13614,195 @@ exports[`buildSessionDefinition acceptance snapshots > matches accepted portal s
 }
 `;
 
+exports[`buildSessionDefinition acceptance snapshots > matches accepted public-arena session for seed 0 1`] = `
+{
+  "arena": {
+    "height": 35,
+    "width": 35,
+  },
+  "backgrounds": [
+    {
+      "id": "public-arena",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "companion": null,
+  "dynamicRoster": true,
+  "encounters": [
+    {
+      "backgroundId": "public-arena",
+      "id": "public-arena",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "public-arena-session",
+  "lossCondition": {
+    "kind": "respawnOnDeath",
+  },
+  "modifiers": [],
+  "musicSampleId": null,
+  "players": [],
+  "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
+    "damage": {
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 0,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted public-arena session for seed 1 1`] = `
+{
+  "arena": {
+    "height": 35,
+    "width": 35,
+  },
+  "backgrounds": [
+    {
+      "id": "public-arena",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "companion": null,
+  "dynamicRoster": true,
+  "encounters": [
+    {
+      "backgroundId": "public-arena",
+      "id": "public-arena",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "public-arena-session",
+  "lossCondition": {
+    "kind": "respawnOnDeath",
+  },
+  "modifiers": [],
+  "musicSampleId": null,
+  "players": [],
+  "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
+    "damage": {
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 1,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
+exports[`buildSessionDefinition acceptance snapshots > matches accepted public-arena session for seed 42 1`] = `
+{
+  "arena": {
+    "height": 35,
+    "width": 35,
+  },
+  "backgrounds": [
+    {
+      "id": "public-arena",
+      "imageUrl": "/images/bg/bg-01.jpg",
+    },
+  ],
+  "companion": null,
+  "dynamicRoster": true,
+  "encounters": [
+    {
+      "backgroundId": "public-arena",
+      "id": "public-arena",
+      "introDurationMs": 0,
+      "name": null,
+      "objectives": [],
+      "rewardRules": null,
+      "spawnPlan": {
+        "kind": "empty",
+      },
+      "text": null,
+      "transitionRules": {
+        "kind": "never",
+        "next": "sequential",
+      },
+      "tuning": null,
+      "type": "sandbox",
+      "zoneBehavior": {
+        "kind": "disabled",
+      },
+    },
+  ],
+  "id": "public-arena-session",
+  "lossCondition": {
+    "kind": "respawnOnDeath",
+  },
+  "modifiers": [],
+  "musicSampleId": null,
+  "players": [],
+  "rules": {
+    "aimAssist": {
+      "enabled": false,
+      "maxAngleRadians": 0,
+      "maxDistance": 0,
+      "strength": 0,
+    },
+    "damage": {
+      "slimeFriendlyFire": true,
+    },
+  },
+  "seed": 42,
+  "uiMeta": null,
+  "winCondition": {
+    "kind": "none",
+  },
+}
+`;
+
 exports[`buildSessionDefinition acceptance snapshots > matches accepted sandbox session for seed 0 1`] = `
 {
   "arena": {

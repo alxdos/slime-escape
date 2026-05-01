@@ -2536,6 +2536,43 @@ export const SESSION_PRESET_TEMPLATES = {
       }
     ]
   },
+  'public-arena': {
+    presetId: 'public-arena',
+    displayName: 'Public Arena',
+    description: 'Shared-core PvP arena session for the online host.',
+    visibleInMenu: false,
+    order: 91,
+    arena: { width: 35, height: 35 },
+    players: [],
+    dynamicRoster: true,
+    companion: null,
+    backgrounds: [
+      {
+        id: 'public-arena',
+        imageUrl: '/images/bg/bg-01.jpg'
+      }
+    ],
+    musicSampleId: null,
+    rules: { damage: { slimeFriendlyFire: true }, aimAssist: { enabled: false, maxAngleRadians: 0, maxDistance: 0, strength: 0 } },
+    winCondition: { kind: 'none' },
+    lossCondition: { kind: 'respawnOnDeath' },
+    encounters: [
+      {
+        id: 'public-arena',
+        type: 'sandbox',
+        backgroundId: 'public-arena',
+        introDurationMs: 0,
+        name: null,
+        text: null,
+        spawnPlan: { kind: 'empty' },
+        zoneBehavior: { kind: 'disabled' },
+        objectives: [],
+        rewardRules: null,
+        transitionRules: { kind: 'never', next: 'sequential' },
+        tuning: null
+      }
+    ]
+  },
   sandbox: {
     presetId: 'sandbox',
     displayName: 'Sandbox',

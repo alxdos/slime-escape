@@ -7,7 +7,6 @@ import type {
   EncounterDefinition,
   Loadout,
   SessionDefinition,
-  StaticSessionDefinition,
   SpawnOverride,
   SpawnPlan,
   Vec2
@@ -37,7 +36,7 @@ export type BuildOptions = Readonly<{
 export function buildSessionDefinition(
   preset: ModePreset,
   options: BuildOptions
-): StaticSessionDefinition {
+): SessionDefinition {
   const template = SESSION_PRESET_TEMPLATES[preset.id];
   const arena = template.arena;
   for (const player of template.players) {
@@ -49,12 +48,10 @@ export function buildSessionDefinition(
       warnIfWeaponMayTunnel(weaponId);
     }
   }
-  return {
+  const base = {
     id: options.id ?? `${template.presetId}-session`,
     seed: options.seed,
     arena,
-    players: template.players,
-    dynamicRoster: template.dynamicRoster,
     companion: resolveCompanionConfig(template, options.selectedPetId ?? null),
     backgrounds: template.backgrounds,
     musicSampleId: template.musicSampleId,
@@ -65,6 +62,17 @@ export function buildSessionDefinition(
     lossCondition: template.lossCondition,
     uiMeta: null
   };
+  return template.dynamicRoster
+    ? {
+        ...base,
+        players: template.players,
+        dynamicRoster: true
+      }
+    : {
+        ...base,
+        players: template.players,
+        dynamicRoster: false
+      };
 }
 
 function resolveCompanionConfig(

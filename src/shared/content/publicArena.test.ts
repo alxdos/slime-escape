@@ -1,13 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
 import { SESSION_PRESET_TEMPLATES } from './sessions.generated';
+import { TRAINING_PLAYER } from './players.generated';
 import {
   PUBLIC_ARENA_ACTIVE_BACKGROUND_ID,
   PUBLIC_ARENA_ARENA,
   PUBLIC_ARENA_BACKGROUNDS,
+  PUBLIC_ARENA_HOST_BOSS_ARCHETYPE_ID,
+  PUBLIC_ARENA_HOST_BOSS_WEAPON_ID,
+  PUBLIC_ARENA_HOST_CONFIG,
+  PUBLIC_ARENA_HOST_LOADOUT,
+  PUBLIC_ARENA_HOST_PLAYER,
+  PUBLIC_ARENA_HOST_SESSION_PRESET_ID,
   PUBLIC_ARENA_LOADOUT,
   PUBLIC_ARENA_PRESENTATION_CONFIG,
   PUBLIC_ARENA_PLAYER,
+  PUBLIC_ARENA_SPAWN_INVULNERABILITY_MS,
   PUBLIC_ARENA_WORLD_BOUNDS,
   worldBoundsFromArena
 } from './publicArena';
@@ -56,5 +64,30 @@ describe('Public Arena content projection', () => {
     expect(PUBLIC_ARENA_WORLD_BOUNDS.maxX).toBe(PUBLIC_ARENA_ARENA.width / 2);
     expect(PUBLIC_ARENA_WORLD_BOUNDS.minY).toBe(-PUBLIC_ARENA_ARENA.height / 2);
     expect(PUBLIC_ARENA_WORLD_BOUNDS.maxY).toBe(PUBLIC_ARENA_ARENA.height / 2);
+  });
+
+  it('derives host config from the generated public-arena session content', () => {
+    const session = SESSION_PRESET_TEMPLATES['public-arena'];
+
+    expect(session.dynamicRoster).toBe(true);
+    expect(session.players).toEqual([]);
+    expect(session.lossCondition).toEqual({ kind: 'respawnOnDeath' });
+    expect(PUBLIC_ARENA_HOST_SESSION_PRESET_ID).toBe('public-arena');
+    expect(PUBLIC_ARENA_HOST_PLAYER).toEqual(TRAINING_PLAYER);
+    expect(PUBLIC_ARENA_HOST_LOADOUT).toEqual({
+      weapons: ['rock-thrower', 'shotgun'],
+      selectedIndex: 0
+    });
+    expect(PUBLIC_ARENA_HOST_BOSS_WEAPON_ID).toBe('fireball-staff');
+    expect(PUBLIC_ARENA_HOST_BOSS_ARCHETYPE_ID).toBe('boss-tower-sentinel');
+    expect(PUBLIC_ARENA_SPAWN_INVULNERABILITY_MS).toBe(900);
+    expect(PUBLIC_ARENA_HOST_CONFIG).toEqual({
+      sessionPresetId: 'public-arena',
+      player: PUBLIC_ARENA_HOST_PLAYER,
+      loadout: PUBLIC_ARENA_HOST_LOADOUT,
+      bossWeaponId: PUBLIC_ARENA_HOST_BOSS_WEAPON_ID,
+      bossArchetypeId: PUBLIC_ARENA_HOST_BOSS_ARCHETYPE_ID,
+      spawnInvulnerabilityMs: PUBLIC_ARENA_SPAWN_INVULNERABILITY_MS
+    });
   });
 });

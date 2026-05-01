@@ -125,6 +125,7 @@ export type ParsedSessionPreset = Readonly<{
   visibleInMenu: boolean;
   order: number;
   arena: ParsedSessionArena;
+  dynamicRoster: boolean;
   player: ParsedRef;
   companion: ParsedCompanionConfig | null;
   loadout: ParsedLoadout | null;
@@ -134,11 +135,18 @@ export type ParsedSessionPreset = Readonly<{
   winCondition: ParsedWinCondition;
   lossCondition: ParsedLossCondition;
   encounters: ReadonlyArray<ParsedEncounter>;
+  publicArenaHost: ParsedPublicArenaHostConfig | null;
 }>;
 
 export type ParsedLoadout = Readonly<{
   weapons: ReadonlyArray<ParsedRef>;
   selectedIndex: Loadout['selectedIndex'];
+}>;
+
+export type ParsedPublicArenaHostConfig = Readonly<{
+  bossArchetype: ParsedRef;
+  bossWeapon: ParsedRef;
+  spawnInvulnerabilityMs: number;
 }>;
 
 export type ParsedCompanionConfig = Omit<CompanionSessionConfig, 'petArchetypeId' | 'weaponLoadout'> &
@@ -234,6 +242,7 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
   const sessionTables = requireSessionTables(sessionSection);
   const sessionFields = fieldReader(sessionSection, sessionTables.fields);
   const companionSection = findTopLevelSection(document, 'Companion');
+  const publicArenaHostSection = findTopLevelSection(document, 'Public Arena Host');
   const backgrounds = parseSessionBackgrounds(sessionSection, sessionTables.backgrounds);
   const backgroundIds = new Set(backgrounds.map((background) => background.id));
 
@@ -245,6 +254,7 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
     visibleInMenu: parseBooleanField(sessionFields, 'visibleInMenu'),
     order: sessionFields.readNumber('order'),
     arena: parseArenaConfig(sessionFields),
+    dynamicRoster: parseOptionalBooleanField(sessionFields, 'dynamicRoster', false),
     player: parsePlayerRef(sessionFields, 'playerId'),
     companion: parseCompanionSection(companionSection),
     loadout: parseLoadout(sessionFields),
@@ -255,7 +265,8 @@ function parseSessionDocument(document: MarkdownDocument, presetId: string): Par
     lossCondition: parseLossCondition(sessionFields, 'lossCondition'),
     encounters: encountersSection.sections.map((section) =>
       parseEncounterSection(section, backgroundIds)
-    )
+    ),
+    publicArenaHost: parsePublicArenaHostSection(publicArenaHostSection)
   };
   validateSessionPreset(preset);
   return preset;
@@ -266,6 +277,11 @@ function findTopLevelSection(document: MarkdownDocument, title: string): Markdow
 }
 
 function validateSessionPreset(preset: ParsedSessionPreset): void {
+  if (preset.publicArenaHost !== null && preset.presetId !== 'public-arena') {
+    throw new ContentBuildError(
+      `${preset.sourcePath}: Public Arena Host section is only valid in public-arena.md`
+    );
+  }
   if (preset.winCondition.kind !== 'dungeon') return;
   if (preset.lossCondition.kind !== 'playerDeath') {
     throw new ContentBuildError(
@@ -277,6 +293,33 @@ function validateSessionPreset(preset: ParsedSessionPreset): void {
       `${preset.sourcePath}: winCondition "dungeon" requires at least one wave encounter`
     );
   }
+}
+
+function parsePublicArenaHostSection(
+  section: MarkdownSection | null
+): ParsedPublicArenaHostConfig | null {
+  if (section === null) {
+    return null;
+  }
+  const table = requirePublicArenaHostTable(section);
+  const field = fieldReader(section, table);
+  return {
+    bossArchetype: parseBossRef(field, 'bossArchetypeId'),
+    bossWeapon: parseWeaponRef(field, 'bossWeaponId'),
+    spawnInvulnerabilityMs: parseNonNegativeIntegerField(field, 'spawnInvulnerabilityMs')
+  };
+}
+
+function requirePublicArenaHostTable(section: MarkdownSection): MarkdownTable {
+  const table = section.tables[0];
+  if (table === undefined) {
+    throw sectionError(section, 'expected field/value table');
+  }
+  assertFieldValueHeader(section, table);
+  if (section.tables.length > 1) {
+    throw sectionError(section, 'expected exactly one GFM table');
+  }
+  return table;
 }
 
 function parseCompanionSection(section: MarkdownSection | null): ParsedCompanionConfig | null {
@@ -362,6 +405,14 @@ function parsePositiveIntegerField(field: FieldReader, fieldName: string): numbe
   const value = field.readNumber(fieldName);
   if (!Number.isInteger(value) || value <= 0) {
     throw fieldError(field, fieldName, 'expected integer > 0');
+  }
+  return value;
+}
+
+function parseNonNegativeIntegerField(field: FieldReader, fieldName: string): number {
+  const value = field.readNumber(fieldName);
+  if (!Number.isInteger(value) || value < 0) {
+    throw fieldError(field, fieldName, 'expected integer >= 0');
   }
   return value;
 }
@@ -1095,6 +1146,7 @@ function parseLossCondition(field: FieldReader, fieldName: string): ParsedLossCo
   const kind = parseEnumField(field, fieldName, [
     'none',
     'playerDeath',
+    'respawnOnDeath',
     'timerOrScenarioFail',
     'forced'
   ]);
@@ -1106,6 +1158,18 @@ function parseBooleanField(field: FieldReader, fieldName: string): boolean {
   if (raw === 'true') return true;
   if (raw === 'false') return false;
   throw fieldError(field, fieldName, 'expected true or false');
+}
+
+function parseOptionalBooleanField(
+  field: FieldReader,
+  fieldName: string,
+  fallback: boolean
+): boolean {
+  const cell = field.readOptionalCell(fieldName);
+  if (cell === null) return fallback;
+  if (cell.value === 'true') return true;
+  if (cell.value === 'false') return false;
+  throw cellError(field.section, cell.position, fieldName, 'value', 'expected true or false');
 }
 
 function parseLoadout(field: FieldReader): ParsedLoadout | null {
@@ -1280,6 +1344,11 @@ function parsePlayerRef(field: FieldReader, fieldName: string): ParsedRef {
 function parseBossRef(field: FieldReader, fieldName: string): ParsedRef {
   const cell = field.readCell(fieldName);
   return requireBossRef(field.section, cell.position, fieldName, cell.value);
+}
+
+function parseWeaponRef(field: FieldReader, fieldName: string): ParsedRef {
+  const cell = field.readCell(fieldName);
+  return requireWeaponRef(field.section, cell.position, fieldName, cell.value);
 }
 
 function parseEnemyRef(

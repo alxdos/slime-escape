@@ -40,15 +40,13 @@ export type SessionPresetEncounterTemplate = Omit<EncounterDefinition, 'spawnPla
 
 export type SessionPresetCompanionTemplate = Omit<CompanionSessionConfig, 'petArchetypeId'>;
 
-export type SessionPresetTemplate = Readonly<{
+export type BaseSessionPresetTemplate = Readonly<{
   presetId: string;
   displayName: string;
   description: string;
   visibleInMenu: boolean;
   order: number;
   arena: ArenaConfig;
-  players: NonEmptyReadonlyArray<PlayerConfig>;
-  dynamicRoster: false;
   companion: SessionPresetCompanionTemplate | null;
   backgrounds: ReadonlyArray<SessionBackground>;
   musicSampleId: string | null;
@@ -57,6 +55,20 @@ export type SessionPresetTemplate = Readonly<{
   lossCondition: LossCondition;
   encounters: ReadonlyArray<SessionPresetEncounterTemplate>;
 }>;
+
+export type StaticSessionPresetTemplate = BaseSessionPresetTemplate &
+  Readonly<{
+    players: NonEmptyReadonlyArray<PlayerConfig>;
+    dynamicRoster: false;
+  }>;
+
+export type DynamicSessionPresetTemplate = BaseSessionPresetTemplate &
+  Readonly<{
+    players: ReadonlyArray<PlayerConfig>;
+    dynamicRoster: true;
+  }>;
+
+export type SessionPresetTemplate = StaticSessionPresetTemplate | DynamicSessionPresetTemplate;
 
 export type ModePresetId = keyof typeof SESSION_PRESET_TEMPLATES;
 
@@ -73,6 +85,7 @@ export const SANDBOX_WITH_COMBAT_PRESET = resolveModePreset('sandbox-with-combat
 export const TRAINING_PRESET = resolveModePreset('training');
 export const CAMPAIGN_PRESET = resolveModePreset('campaign-normal');
 export const DUNGEON_PRESET = resolveModePreset('dungeon');
+export const PUBLIC_ARENA_PRESET = resolveModePreset('public-arena');
 
 export type PlayableModeEntry = Readonly<{
   presetId: ModePresetId;

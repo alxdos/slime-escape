@@ -1,4 +1,9 @@
-import { PUBLIC_ARENA_LOADOUT, PUBLIC_ARENA_PLAYER } from './content/publicArena.js';
+import {
+  PUBLIC_ARENA_HOST_BOSS_ARCHETYPE_ID,
+  PUBLIC_ARENA_HOST_BOSS_WEAPON_ID,
+  PUBLIC_ARENA_HOST_LOADOUT,
+  PUBLIC_ARENA_HOST_PLAYER
+} from './content/publicArena.js';
 import { ENEMY_ARCHETYPE_LIST } from './content/enemies.generated.js';
 
 export type PublicArenaRegularFormStats = Readonly<{
@@ -15,14 +20,14 @@ export const PUBLIC_ARENA_REGULAR_WEAPON_ID = weaponIdAtIndex(
   PUBLIC_ARENA_REGULAR_WEAPON_IDS,
   PUBLIC_ARENA_REGULAR_SELECTED_WEAPON_INDEX
 );
-export const PUBLIC_ARENA_BOSS_WEAPON_ID = 'fireball-staff';
-export const PUBLIC_ARENA_BOSS_ARCHETYPE_ID = 'boss-tower-sentinel';
+export const PUBLIC_ARENA_BOSS_WEAPON_ID = PUBLIC_ARENA_HOST_BOSS_WEAPON_ID;
+export const PUBLIC_ARENA_BOSS_ARCHETYPE_ID = PUBLIC_ARENA_HOST_BOSS_ARCHETYPE_ID;
 export const PUBLIC_ARENA_REGULAR_FORM_STATS: ReadonlyArray<PublicArenaRegularFormStats> =
   ENEMY_ARCHETYPE_LIST.map((enemy) => ({
     archetypeId: enemy.id,
     radius: enemy.radius,
-    maxHp: PUBLIC_ARENA_PLAYER.maxHp,
-    maxSpeed: PUBLIC_ARENA_PLAYER.maxSpeed
+    maxHp: PUBLIC_ARENA_HOST_PLAYER.maxHp,
+    maxSpeed: PUBLIC_ARENA_HOST_PLAYER.maxSpeed
   }));
 export const PUBLIC_ARENA_SLIME_FORM_CHAIN = PUBLIC_ARENA_REGULAR_FORM_STATS.map(
   (form) => form.archetypeId
@@ -30,20 +35,20 @@ export const PUBLIC_ARENA_SLIME_FORM_CHAIN = PUBLIC_ARENA_REGULAR_FORM_STATS.map
 export const PUBLIC_ARENA_BOSS_LEVEL = PUBLIC_ARENA_SLIME_FORM_CHAIN.length + 1;
 
 function requirePublicArenaRegularWeaponIds(): ReadonlyArray<string> {
-  const weaponIds: ReadonlyArray<string> = PUBLIC_ARENA_LOADOUT.weapons;
+  const weaponIds: ReadonlyArray<string> = PUBLIC_ARENA_HOST_LOADOUT.weapons;
   if (weaponIds.length === 0) {
-    throw new Error('Public Arena portal loadout must include at least one weapon.');
+    throw new Error('Public Arena host loadout must include at least one weapon.');
   }
   return [...weaponIds];
 }
 
 function requireSelectedPublicArenaWeaponIndex(weaponIds: ReadonlyArray<string>): number {
-  const selectedIndex = PUBLIC_ARENA_LOADOUT.selectedIndex;
+  const selectedIndex = PUBLIC_ARENA_HOST_LOADOUT.selectedIndex;
   if (selectedIndex === null) {
-    throw new Error('Public Arena portal loadout must select a weapon.');
+    throw new Error('Public Arena host loadout must select a weapon.');
   }
   if (weaponIds[selectedIndex] === undefined) {
-    throw new Error(`Public Arena portal loadout has invalid selected index ${selectedIndex}.`);
+    throw new Error(`Public Arena host loadout has invalid selected index ${selectedIndex}.`);
   }
   return selectedIndex;
 }
@@ -51,7 +56,7 @@ function requireSelectedPublicArenaWeaponIndex(weaponIds: ReadonlyArray<string>)
 function weaponIdAtIndex(weaponIds: ReadonlyArray<string>, selectedIndex: number): string {
   const weaponId = weaponIds[selectedIndex];
   if (weaponId === undefined) {
-    throw new Error(`Public Arena portal loadout has invalid selected index ${selectedIndex}.`);
+    throw new Error(`Public Arena host loadout has invalid selected index ${selectedIndex}.`);
   }
   return weaponId;
 }

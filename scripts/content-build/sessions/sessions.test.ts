@@ -15,6 +15,7 @@ const SESSION_SOURCE_FILES = [
   'combat-modifiers-demo.md',
   'dungeon.md',
   'portal.md',
+  'public-arena.md',
   'sandbox.md',
   'sandbox-with-combat.md',
   'training.md'
@@ -132,6 +133,50 @@ describe('content-build sessions area', () => {
     expect(portal?.encounters.some((encounter) => encounter.id === 'portal-exit')).toBe(false);
   });
 
+  it('parses the public arena preset as a dynamic-roster host source', async () => {
+    const fixture = await copySessionsFixture();
+    const area = await parseSessionsArea(fixture.sourceDirectory);
+    const publicArena = area.presets.find((preset) => preset.presetId === 'public-arena');
+    const encounter = publicArena?.encounters.at(0);
+
+    expect(publicArena?.dynamicRoster).toBe(true);
+    expect(publicArena?.player).toEqual({ id: 'hero-training', constName: 'TRAINING_PLAYER' });
+    expect(publicArena?.loadout).toEqual({
+      weapons: [
+        { id: 'rock-thrower', constName: 'ROCK_THROWER' },
+        { id: 'shotgun', constName: 'SHOTGUN' }
+      ],
+      selectedIndex: 0
+    });
+    expect(publicArena?.rules.damage.slimeFriendlyFire).toBe(true);
+    expect(publicArena?.winCondition).toEqual({ kind: 'none' });
+    expect(publicArena?.lossCondition).toEqual({ kind: 'respawnOnDeath' });
+    expect(publicArena?.publicArenaHost).toEqual({
+      bossArchetype: { id: 'boss-tower-sentinel', constName: 'BOSS_TOWER_SENTINEL' },
+      bossWeapon: { id: 'fireball-staff', constName: 'FIREBALL_STAFF' },
+      spawnInvulnerabilityMs: 900
+    });
+    expect(encounter).toMatchObject({
+      id: 'public-arena',
+      type: 'sandbox',
+      backgroundId: 'public-arena',
+      spawnPlan: { kind: 'empty' },
+      zoneBehavior: { kind: 'disabled' },
+      transitionRules: { kind: 'never', next: 'sequential' }
+    });
+  });
+
+  it('renders public arena host content from the public-arena source', async () => {
+    const fixture = await copySessionsFixture();
+    const rendered = renderPublicArenaContent(await parseSessionsArea(fixture.sourceDirectory));
+
+    expect(rendered).toContain('export const PUBLIC_ARENA_HOST_CONTENT = {');
+    expect(rendered).toContain("sessionPresetId: 'public-arena'");
+    expect(rendered).toContain('bossWeaponId: FIREBALL_STAFF.id');
+    expect(rendered).toContain('bossArchetypeId: BOSS_TOWER_SENTINEL.id');
+    expect(rendered).toContain('spawnInvulnerabilityMs: 900');
+  });
+
   it('rejects the Public Arena projection without a selected portal loadout weapon', async () => {
     const fixture = await copySessionsFixture({
       'portal.md': (source) =>
@@ -148,7 +193,36 @@ describe('content-build sessions area', () => {
     const area = await parseSessionsArea(fixture.sourceDirectory);
 
     expect(() => renderPublicArenaContent(area)).toThrow(
-      /Public Arena source preset must define at least one loadout weapon/
+      /Public Arena presentation source must define at least one loadout weapon/
+    );
+  });
+
+  it('rejects the Public Arena host source without host-only fields', async () => {
+    const fixture = await copySessionsFixture({
+      'public-arena.md': (source) =>
+        source.replace(
+          /\n# Public Arena Host\n[\s\S]*?\n# Encounters\n/,
+          '\n# Encounters\n'
+        )
+    });
+    const area = await parseSessionsArea(fixture.sourceDirectory);
+
+    expect(() => renderPublicArenaContent(area)).toThrow(
+      /Public Arena host source must define a Public Arena Host section/
+    );
+  });
+
+  it('rejects negative public arena spawn invulnerability', async () => {
+    await expectParseRejects(
+      {
+        'public-arena.md': (source) =>
+          replaceExact(
+            source,
+            '| spawnInvulnerabilityMs | 900 |',
+            '| spawnInvulnerabilityMs | -1 |'
+          )
+      },
+      /spawnInvulnerabilityMs.*expected integer >= 0/
     );
   });
 
