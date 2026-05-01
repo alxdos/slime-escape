@@ -946,7 +946,13 @@ export function createUiShell(init: UiShellInit): UiShell {
   }
 
   function handlePublicArenaPresentationEvent(event: ArenaHostEvent): void {
-    if (event.kind === 'host:levelUp' || event.kind === 'playerSpawn') {
+    if (
+      event.kind === 'host:levelUp' ||
+      event.kind === 'host:lobby:hostChanged' ||
+      event.kind === 'host:lobby:start' ||
+      event.kind === 'host:lobby:state' ||
+      event.kind === 'playerSpawn'
+    ) {
       return;
     }
     audio.handleEvent(event);

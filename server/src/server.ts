@@ -14,14 +14,15 @@ import {
 import type { Snapshot } from '../../src/shared/snapshot.js';
 import {
   ARENA_HOST_SERVER_SHUTDOWN_REASON,
-  createArenaHost,
-  type ArenaHostEvent,
-  type ArenaHostJoinAccepted,
-  type ArenaHostJoinRejected
+  type ArenaHostEvent
 } from './arena-host/host.js';
+import {
+  createOnlineSessionHost,
+  type OnlineSessionHostJoinAccepted,
+  type OnlineSessionHostJoinRejected
+} from './online-host/host.js';
 import type { PublicArenaServerConfig } from './config.js';
 
-const PUBLIC_ARENA_ROOM = 'public-arena';
 const PUBLIC_ARENA_PROTOCOL_MISMATCH_MESSAGE =
   'The online arena connection is out of date. Please refresh.';
 
@@ -79,15 +80,26 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
       }
     }
   );
-  const arenaHost = createArenaHost({
+  const joinBuffers = new Map<string, ArenaHostJoinBuffer>();
+  const onlineHost = createOnlineSessionHost({
     playerCap: config.playerCap,
     tickHz: config.tickHz,
     snapshotHz: config.snapshotHz,
     sink: {
       emitSnapshot(actorId, snapshot) {
+        const buffer = joinBuffers.get(actorId);
+        if (buffer !== undefined) {
+          buffer.snapshots.push(snapshot);
+          return;
+        }
         emitArenaHostSnapshot(io as unknown as ArenaHostSocketIo, actorId, snapshot);
       },
       emitEvent(actorId, event) {
+        const buffer = joinBuffers.get(actorId);
+        if (buffer !== undefined) {
+          buffer.events.push(event);
+          return;
+        }
         emitArenaHostEvent(io as unknown as ArenaHostSocketIo, actorId, event);
       },
       emitCloseReason(reason) {
@@ -95,38 +107,45 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
       }
     }
   });
+  onlineHost.start();
 
   io.on('connection', (socket) => {
     socket.on(PUBLIC_ARENA_EVENTS.join, (request) => {
       if (request.protocolVersion !== ARENA_HOST_PROTOCOL_VERSION) {
         socket.emit(
           PUBLIC_ARENA_EVENTS.joinRejected,
-          protocolMismatchRejection(arenaHost.population(), config.playerCap)
+          protocolMismatchRejection(onlineHost.population(), config.playerCap)
         );
         return;
       }
 
-      const result = arenaHost.join(socket.id);
+      const joinBuffer = beginArenaHostJoinBuffer(joinBuffers, socket.id);
+      const result = onlineHost.join(socket.id, {
+        requestedSessionId: request.requestedSessionId,
+        selectedPetId: request.selectedPetId ?? null
+      });
+      const buffered = endArenaHostJoinBuffer(joinBuffers, socket.id);
       if (result.kind === 'accepted') {
-        void socket.join(PUBLIC_ARENA_ROOM);
         socket.emit(PUBLIC_ARENA_EVENTS.joinAccepted, arenaHostJoinAcceptedMessage(result));
+        flushArenaHostJoinBuffer(io as unknown as ArenaHostSocketIo, socket.id, buffered);
         return;
       }
 
+      joinBuffer.events.length = 0;
+      joinBuffer.snapshots.length = 0;
       socket.emit(PUBLIC_ARENA_EVENTS.joinRejected, arenaHostJoinRejectedMessage(result));
     });
 
     socket.on(PUBLIC_ARENA_EVENTS.leave, () => {
-      arenaHost.leave(socket.id);
-      void socket.leave(PUBLIC_ARENA_ROOM);
+      onlineHost.leave(socket.id);
     });
 
     socket.on(PUBLIC_ARENA_EVENTS.input, (intent) => {
-      arenaHost.submitInput(socket.id, intent);
+      onlineHost.submitInput(socket.id, intent);
     });
 
     socket.on('disconnect', () => {
-      arenaHost.leave(socket.id);
+      onlineHost.leave(socket.id);
     });
   });
 
@@ -138,13 +157,12 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
         httpServer.once('error', reject);
         httpServer.listen(config.port, config.host, () => {
           httpServer.off('error', reject);
-          arenaHost.start();
           resolve();
         });
       });
     },
     close() {
-      arenaHost.stop();
+      onlineHost.stop();
 
       return new Promise((resolve, reject) => {
         io.close((ioError) => {
@@ -171,22 +189,63 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
   };
 }
 
+type ArenaHostJoinBuffer = {
+  snapshots: Snapshot[];
+  events: ArenaHostEvent[];
+};
+
+function beginArenaHostJoinBuffer(
+  buffers: Map<string, ArenaHostJoinBuffer>,
+  actorId: string
+): ArenaHostJoinBuffer {
+  const buffer = { snapshots: [], events: [] };
+  buffers.set(actorId, buffer);
+  return buffer;
+}
+
+function endArenaHostJoinBuffer(
+  buffers: Map<string, ArenaHostJoinBuffer>,
+  actorId: string
+): ArenaHostJoinBuffer {
+  const buffer = buffers.get(actorId) ?? { snapshots: [], events: [] };
+  buffers.delete(actorId);
+  return buffer;
+}
+
+function flushArenaHostJoinBuffer(
+  io: ArenaHostSocketIo,
+  actorId: string,
+  buffer: ArenaHostJoinBuffer
+): void {
+  for (const snapshot of buffer.snapshots) {
+    emitArenaHostSnapshot(io, actorId, snapshot);
+  }
+  for (const event of buffer.events) {
+    emitArenaHostEvent(io, actorId, event);
+  }
+}
+
 export function arenaHostJoinAcceptedMessage(
-  result: ArenaHostJoinAccepted
+  result: OnlineSessionHostJoinAccepted
 ): PublicArenaJoinAccepted {
   return {
     protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+    roomId: result.roomId,
+    sessionConfigId: result.sessionConfigId,
     actorId: result.actorId,
     arena: result.arena,
     playerCap: result.playerCap,
     population: result.population,
+    maxPlayers: result.maxPlayers,
+    lateJoinAllowed: result.lateJoinAllowed,
+    roomState: result.roomState,
     tickHz: result.tickHz,
     snapshotHz: result.snapshotHz
   };
 }
 
 export function arenaHostJoinRejectedMessage(
-  result: ArenaHostJoinRejected
+  result: OnlineSessionHostJoinRejected
 ): PublicArenaJoinRejected {
   return {
     protocolVersion: ARENA_HOST_PROTOCOL_VERSION,

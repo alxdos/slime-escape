@@ -22,19 +22,29 @@ describe('PublicArenaServer host adapter', () => {
     expect(
       arenaHostJoinAcceptedMessage({
         kind: 'accepted',
+        roomId: 'room-1',
+        sessionConfigId: 'public-arena',
         actorId: 'socket-a',
         arena: { width: 32, height: 32, minX: -16, maxX: 16, minY: -16, maxY: 16 },
         playerCap: 200,
         population: 1,
+        maxPlayers: 200,
+        lateJoinAllowed: true,
+        roomState: 'running',
         tickHz: 60,
         snapshotHz: 30
       })
     ).toEqual({
       protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+      roomId: 'room-1',
+      sessionConfigId: 'public-arena',
       actorId: 'socket-a',
       arena: { width: 32, height: 32, minX: -16, maxX: 16, minY: -16, maxY: 16 },
       playerCap: 200,
       population: 1,
+      maxPlayers: 200,
+      lateJoinAllowed: true,
+      roomState: 'running',
       tickHz: 60,
       snapshotHz: 30
     });

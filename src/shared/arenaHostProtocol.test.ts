@@ -10,7 +10,7 @@ import type { Snapshot } from './snapshot';
 
 describe('arena host protocol constants', () => {
   it('uses one current protocol version', () => {
-    expect(ARENA_HOST_PROTOCOL_VERSION).toBe(6);
+    expect(ARENA_HOST_PROTOCOL_VERSION).toBe(7);
   });
 
   it('keeps every socket event name unique and namespaced', () => {

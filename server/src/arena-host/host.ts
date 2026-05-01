@@ -376,6 +376,10 @@ export function arenaHostEventRecipients(
       return actorsByActorId.has(event.playerId) ? [event.playerId] : [];
     case 'host:levelUp':
       return actorsByActorId.has(event.actorId) ? [event.actorId] : [];
+    case 'host:lobby:hostChanged':
+    case 'host:lobby:start':
+    case 'host:lobby:state':
+      return [...actorsByActorId.keys()];
     case 'death':
     case 'bossPhaseChange':
     case 'companionBoop':
@@ -388,6 +392,8 @@ export function arenaHostEventRecipients(
     case 'encounterStart':
     case 'loss':
     case 'pause':
+    case 'playerDowned':
+    case 'playerRevived':
     case 'resume':
     case 'sessionStart':
     case 'sessionStop':
