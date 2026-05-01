@@ -5,7 +5,8 @@ import type {
   BossHudSnapshot,
   BossSnapshot,
   PlayerSnapshot,
-  Snapshot
+  Snapshot,
+  WeaponHudSnapshot
 } from '../../shared/snapshot';
 import { DROP_VISUALS } from '../render/dropVisuals';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
@@ -692,9 +693,19 @@ function deriveWeaponSlots(
   visualRegistries: HudVisualRegistries
 ): ReadonlyArray<WeaponSlotViewModel> {
   const player = snapshot === null ? null : findPlayerSnapshot(snapshot);
-  const weaponHud = player?.weaponHud ?? null;
+  return deriveWeaponSlotsForHud(
+    player?.weaponHud ?? null,
+    snapshot?.simTimeMs ?? 0,
+    visualRegistries
+  );
+}
+
+export function deriveWeaponSlotsForHud(
+  weaponHud: WeaponHudSnapshot | null,
+  simTimeMs: number,
+  visualRegistries: HudVisualRegistries = DEFAULT_HUD_VISUAL_REGISTRIES
+): ReadonlyArray<WeaponSlotViewModel> {
   if (weaponHud === null) return [];
-  const simTimeMs = snapshot?.simTimeMs ?? 0;
   return [...weaponHud.weapons]
     .sort((a, b) => a.index - b.index)
     .map((weapon) => {

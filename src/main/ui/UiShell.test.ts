@@ -29,6 +29,10 @@ import type {
   PublicArenaRenderer,
   PublicArenaRendererInit
 } from '../online/PublicArenaRenderer';
+import {
+  publicArenaSnapshotView,
+  type PublicArenaOnlineSnapshot
+} from '../online/publicArenaSnapshotView';
 import type {
   ClientProgression,
   ClientProgressionStore
@@ -775,15 +779,16 @@ function createPublicArenaHudHarness() {
       visible = true;
     },
     update(snapshot, selfId, _playerCap): void {
+      const view = publicArenaSnapshotView(snapshot);
       const self =
         selfId === null
           ? null
-          : (snapshot?.players.find((player) => player.id === selfId) ?? null);
+          : (view?.players.find((player) => player.id === selfId) ?? null);
       lastLevel =
         self === null
           ? `Level --/${PUBLIC_ARENA_BOSS_LEVEL}`
           : `Level ${Math.min(self.level, PUBLIC_ARENA_BOSS_LEVEL)}/${PUBLIC_ARENA_BOSS_LEVEL}`;
-      lastPopulation = snapshot === null ? 'Online --' : `Online ${snapshot.population}`;
+      lastPopulation = view === null ? 'Online --' : `Online ${view.population}`;
     },
     hide(): void {
       visible = false;
@@ -814,7 +819,7 @@ function createPublicArenaCombatAffordancesHarness() {
   let visible = false;
   let createCount = 0;
   let updateCount = 0;
-  let lastSnapshot: PublicArenaSnapshot | null | undefined;
+  let lastSnapshot: PublicArenaOnlineSnapshot | null | undefined;
   let lastSelfId: string | null | undefined;
 
   const affordances: PublicArenaCombatAffordances = {
@@ -846,7 +851,7 @@ function createPublicArenaCombatAffordancesHarness() {
     updateCount(): number {
       return updateCount;
     },
-    lastSnapshot(): PublicArenaSnapshot | null | undefined {
+    lastSnapshot(): PublicArenaOnlineSnapshot | null | undefined {
       return lastSnapshot;
     },
     lastSelfId(): string | null | undefined {

@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { PUBLIC_ARENA_BOSS_LEVEL } from '../../shared/publicArenaProgression';
+import {
+  PUBLIC_ARENA_BOSS_ARCHETYPE_ID,
+  PUBLIC_ARENA_BOSS_LEVEL,
+  PUBLIC_ARENA_SLIME_FORM_CHAIN
+} from '../../shared/publicArenaProgression';
+import type { Snapshot } from '../../shared/snapshot';
 
 import { createPublicArenaHud } from './PublicArenaHud';
 
@@ -84,7 +89,7 @@ describe('PublicArenaHud', () => {
       'text-align:right'
     );
 
-    hud.update(makeSnapshot({ selfLevel: PUBLIC_ARENA_BOSS_LEVEL + 2 }), 'self', 200);
+    hud.update(makeSnapshot({ selfFormArchetypeId: PUBLIC_ARENA_BOSS_ARCHETYPE_ID }), 'self', 200);
 
     expect(findByRole(parent, 'public-arena-hud-level').textContent).toBe(
       `Level ${PUBLIC_ARENA_BOSS_LEVEL}/${PUBLIC_ARENA_BOSS_LEVEL}`
@@ -100,24 +105,44 @@ describe('PublicArenaHud', () => {
   });
 });
 
-function makeSnapshot(options: Readonly<{ selfLevel?: number }> = {}) {
+function makeSnapshot(
+  options: Readonly<{ selfFormArchetypeId?: string | null }> = {}
+): Snapshot {
+  const selfFormArchetypeId = options.selfFormArchetypeId ?? PUBLIC_ARENA_SLIME_FORM_CHAIN[3];
+  if (selfFormArchetypeId === undefined) {
+    throw new Error('expected public arena level-four form');
+  }
   return {
     simTimeMs: 120,
-    population: 12,
-    players: [
+    entities: [
       {
-        id: 'self',
+        id: 1,
+        kind: 'player',
+        playerId: 'self',
         x: 1,
         y: 2,
         hp: 28,
         maxHp: 40,
-        level: options.selfLevel ?? 4,
-        form: { kind: 'slime', archetypeId: 'slime-hornling' },
-        selectedWeaponIndex: 0
-      }
+        formArchetypeId: selfFormArchetypeId,
+        weaponHud: null
+      },
+      ...Array.from({ length: 11 }, (_, index) => ({
+        id: index + 2,
+        kind: 'player' as const,
+        playerId: `other-${index}`,
+        x: index,
+        y: 0,
+        hp: 10,
+        maxHp: 10,
+        formArchetypeId: 'slime-one-eye',
+        weaponHud: null
+      }))
     ],
-    projectiles: []
-  } as const;
+    encounter: null,
+    zone: { mode: 'disabled', margin: 0 },
+    waveProgress: null,
+    bossHud: null
+  };
 }
 
 function findByRole(root: HTMLElement, role: string): HTMLElement {

@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { PUBLIC_ARENA_LOADOUT } from '../../shared/content/publicArena';
-import type { PublicArenaSnapshot } from '../../shared/publicArenaProtocol';
+import type { Snapshot } from '../../shared/snapshot';
 import { PROJECTILE_VISUALS } from '../render/projectileVisuals';
 
 import { createPublicArenaCombatAffordances } from './PublicArenaCombatAffordances';
@@ -116,7 +115,7 @@ function requireElement(element: FakeElement | null): FakeElement {
 }
 
 describe('PublicArenaCombatAffordances', () => {
-  it('reuses standard HUD affordances with the generated portal loadout weapon slots', () => {
+  it('reuses standard HUD affordances with local weaponHud slots', () => {
     withFakeDocument(() => {
       const parent = new FakeElement('div');
       const affordances = createPublicArenaCombatAffordances({
@@ -127,30 +126,35 @@ describe('PublicArenaCombatAffordances', () => {
       const movementHint = requireElement(findByDataset(root, 'role', 'hud-movement-hint'));
       const fireHint = requireElement(findByDataset(root, 'role', 'hud-fire-hint'));
       const weaponBar = requireElement(findByDataset(root, 'role', 'hud-weapon-bar'));
+      expect(weaponBar.style.display).toBe('none');
+
+      affordances.update(publicArenaSnapshotWithSelectedWeapon(0), 'self');
+
       const weaponSlots = findAllByDataset(weaponBar, 'weaponSlot');
-      const weaponImage = requireElement(findByTag(weaponSlots[0] ?? null, 'img'));
-      const selectedWeaponId = PUBLIC_ARENA_LOADOUT.weapons[0];
-      if (selectedWeaponId === undefined) {
-        throw new Error('expected Public Arena portal loadout weapon');
-      }
+      const weaponImage = slotImage(weaponSlots[0]);
 
       expect(movementHint.children.map((child) => child.textContent)).toEqual(['W', 'A', 'S', 'D']);
       expect(fireHint.children.some((child) => child.textContent === 'Left click: shoot')).toBe(
         true
       );
-      expect(weaponSlots).toHaveLength(PUBLIC_ARENA_LOADOUT.weapons.length);
+      expect(weaponSlots).toHaveLength(2);
       expect(weaponSlots[0]?.dataset['weaponSlot']).toBe('0');
       expect(weaponSlots[1]?.dataset['weaponSlot']).toBe('1');
-      expect(PUBLIC_ARENA_LOADOUT.selectedIndex).toBe(0);
-      expect(weaponImage.src).toBe(PROJECTILE_VISUALS[selectedWeaponId]?.image);
+      expect(weaponImage.src).toBe(PROJECTILE_VISUALS['rock-thrower']?.image);
       expect(weaponBar.style.display).toBe('flex');
       expect(slotFrame(weaponSlots[0]).style.borderColor).toBe('rgba(255,255,255,0.94)');
       expect(slotFrame(weaponSlots[1]).style.borderColor).toBe('rgba(255,255,255,0.18)');
+      expect(slotCooldownFill(weaponSlots[0]).style.height).toBe('50%');
+      expect(slotBadges(weaponSlots[0]).children).toHaveLength(2);
 
       affordances.update(publicArenaSnapshotWithSelectedWeapon(1), 'self');
 
       expect(slotFrame(weaponSlots[0]).style.borderColor).toBe('rgba(255,255,255,0.18)');
       expect(slotFrame(weaponSlots[1]).style.borderColor).toBe('rgba(255,255,255,0.94)');
+
+      affordances.update(publicArenaSnapshotWithoutWeaponHud(), 'self');
+
+      expect(weaponBar.style.display).toBe('none');
 
       expect(affordances.isVisible()).toBe(false);
       expect(root.style.display).toBe('none');
@@ -166,24 +170,81 @@ describe('PublicArenaCombatAffordances', () => {
   });
 });
 
-function publicArenaSnapshotWithSelectedWeapon(selectedWeaponIndex: number): PublicArenaSnapshot {
+function publicArenaSnapshotWithSelectedWeapon(selectedWeaponIndex: number): Snapshot {
   return {
     simTimeMs: 120,
-    population: 1,
-    players: [
+    entities: [
       {
-        id: 'self',
+        id: 1,
+        kind: 'player',
+        playerId: 'self',
         x: 0,
         y: 0,
         hp: 20,
         maxHp: 20,
-        level: 1,
-        form: { kind: 'slime', archetypeId: 'slime-one-eye' },
-        selectedWeaponIndex
+        formArchetypeId: 'slime-one-eye',
+        weaponHud: {
+          selectedIndex: selectedWeaponIndex,
+          weapons: [
+            {
+              index: 0,
+              weaponArchetypeId: 'rock-thrower',
+              cooldownStartedAtSimMs: 20,
+              cooldownReadyAtSimMs: 220,
+              modifiers: [{ kind: 'pierceBonus', amount: 1 }],
+              timedEffects: [
+                {
+                  kind: 'temporaryOverdrive',
+                  cooldownMultiplier: 0.5,
+                  startedAtSimMs: 20,
+                  expiresAtSimMs: 220
+                }
+              ]
+            },
+            {
+              index: 1,
+              weaponArchetypeId: 'pistol',
+              cooldownStartedAtSimMs: 0,
+              cooldownReadyAtSimMs: 0,
+              modifiers: [],
+              timedEffects: []
+            }
+          ]
+        }
       }
     ],
-    projectiles: []
+    encounter: null,
+    zone: { mode: 'disabled', margin: 0 },
+    waveProgress: null,
+    bossHud: null
   };
+}
+
+function publicArenaSnapshotWithoutWeaponHud(): Snapshot {
+  return {
+    ...publicArenaSnapshotWithSelectedWeapon(0),
+    entities: [
+      {
+        id: 1,
+        kind: 'player',
+        playerId: 'self',
+        x: 0,
+        y: 0,
+        hp: 20,
+        maxHp: 20,
+        formArchetypeId: 'slime-one-eye',
+        weaponHud: null
+      }
+    ]
+  };
+}
+
+function slotBadges(slot: FakeElement | undefined): FakeElement {
+  const badges = slot?.children[0];
+  if (badges === undefined) {
+    throw new Error('expected weapon slot badge row');
+  }
+  return badges;
 }
 
 function slotFrame(slot: FakeElement | undefined): FakeElement {
@@ -194,18 +255,18 @@ function slotFrame(slot: FakeElement | undefined): FakeElement {
   return frame;
 }
 
-function findByTag(root: FakeElement | null, tagName: string): FakeElement | null {
-  if (root === null) {
-    return null;
+function slotCooldownFill(slot: FakeElement | undefined): FakeElement {
+  const fill = slotFrame(slot).children[1];
+  if (fill === undefined) {
+    throw new Error('expected weapon slot cooldown fill');
   }
-  if (root.tagName === tagName) {
-    return root;
+  return fill;
+}
+
+function slotImage(slot: FakeElement | undefined): FakeElement {
+  const image = slotFrame(slot).children[2];
+  if (image === undefined) {
+    throw new Error('expected weapon slot image');
   }
-  for (const child of root.children) {
-    const match = findByTag(child, tagName);
-    if (match !== null) {
-      return match;
-    }
-  }
-  return null;
+  return image;
 }

@@ -1,8 +1,11 @@
 import type {
-  PublicArenaPlayerId,
-  PublicArenaSnapshot
+  PublicArenaPlayerId
 } from '../../shared/publicArenaProtocol';
 import { PUBLIC_ARENA_BOSS_LEVEL } from '../../shared/publicArenaProgression';
+import {
+  publicArenaSnapshotView,
+  type PublicArenaOnlineSnapshot
+} from '../online/publicArenaSnapshotView';
 
 import { comicTextStyle } from './comicTextStyle';
 
@@ -13,7 +16,7 @@ export type PublicArenaHudInit = Readonly<{
 export type PublicArenaHud = Readonly<{
   show(): void;
   update(
-    snapshot: PublicArenaSnapshot | null,
+    snapshot: PublicArenaOnlineSnapshot | null,
     selfId: PublicArenaPlayerId | null,
     playerCap: number | null
   ): void;
@@ -44,17 +47,21 @@ export function createPublicArenaHud(init: PublicArenaHudInit): PublicArenaHud {
   let lastLevelText: string | null = null;
   let lastPopulationText: string | null = null;
 
-  function render(snapshot: PublicArenaSnapshot | null, selfId: PublicArenaPlayerId | null): void {
+  function render(
+    snapshot: PublicArenaOnlineSnapshot | null,
+    selfId: PublicArenaPlayerId | null
+  ): void {
+    const view = publicArenaSnapshotView(snapshot);
     const self =
       selfId === null
         ? null
-        : (snapshot?.players.find((player) => player.id === selfId) ?? null);
+        : (view?.players.find((player) => player.id === selfId) ?? null);
     const levelText =
       self === null
         ? `Level --/${PUBLIC_ARENA_BOSS_LEVEL}`
         : `Level ${Math.min(self.level, PUBLIC_ARENA_BOSS_LEVEL)}/${PUBLIC_ARENA_BOSS_LEVEL}`;
     const populationText =
-      snapshot === null ? 'Online --' : `Online ${snapshot.population}`;
+      view === null ? 'Online --' : `Online ${view.population}`;
     if (lastLevelText !== levelText) {
       level.textContent = levelText;
       lastLevelText = levelText;
