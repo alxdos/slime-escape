@@ -2,7 +2,7 @@ import { io } from 'socket.io-client';
 
 import {
   PUBLIC_ARENA_EVENTS,
-  PUBLIC_ARENA_PROTOCOL_VERSION,
+  ARENA_HOST_PROTOCOL_VERSION,
   type PublicArenaClientToServerEvents,
   type PublicArenaCloseReason,
   type PublicArenaInputIntent,
@@ -61,7 +61,7 @@ export function createPublicArenaClient(init: PublicArenaClientInit): PublicAren
       return;
     }
     socket.emit(PUBLIC_ARENA_EVENTS.join, {
-      protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION
+      protocolVersion: ARENA_HOST_PROTOCOL_VERSION
     });
   });
 

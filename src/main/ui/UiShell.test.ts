@@ -15,7 +15,7 @@ import type {
   PublicArenaPresentationEvent,
   PublicArenaSnapshot
 } from '../../shared/publicArenaProtocol';
-import { PUBLIC_ARENA_PROTOCOL_VERSION } from '../../shared/publicArenaProtocol';
+import { ARENA_HOST_PROTOCOL_VERSION } from '../../shared/publicArenaProtocol';
 import type { SessionDefinition } from '../../shared/session';
 import type { SessionResultOutcome, SessionResultSummary } from '../../shared/sessionResult';
 import type { Audio, AudioUiEventId } from '../audio/Audio';
@@ -911,8 +911,8 @@ function createPublicArenaClientHarness() {
     },
     accept(): void {
       lastInit?.onAccepted({
-        protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
-        playerId: 'socket-a',
+        protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+        actorId: 'socket-a',
         arena: PUBLIC_ARENA_WORLD_BOUNDS,
         playerCap: 200,
         population: 1,
@@ -922,7 +922,7 @@ function createPublicArenaClientHarness() {
     },
     reject(message: string): void {
       lastInit?.onRejected({
-        protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
+        protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
         reason: 'arenaFull',
         message,
         playerCap: 200,

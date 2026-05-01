@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest';
 import {
   PUBLIC_ARENA_EVENTS,
   PUBLIC_ARENA_FULL_MESSAGE,
-  PUBLIC_ARENA_PROTOCOL_VERSION,
+  ARENA_HOST_PROTOCOL_VERSION,
   type PublicArenaSnapshot
 } from './publicArenaProtocol';
 
 describe('public arena protocol constants', () => {
   it('uses one current protocol version', () => {
-    expect(PUBLIC_ARENA_PROTOCOL_VERSION).toBe(5);
+    expect(ARENA_HOST_PROTOCOL_VERSION).toBe(6);
   });
 
   it('keeps every socket event name unique and namespaced', () => {

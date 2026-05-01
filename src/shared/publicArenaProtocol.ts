@@ -1,6 +1,6 @@
 import type { InputCommand } from './input.js';
 
-export const PUBLIC_ARENA_PROTOCOL_VERSION = 5;
+export const ARENA_HOST_PROTOCOL_VERSION = 6;
 export const PUBLIC_ARENA_FULL_MESSAGE = 'The online arena is full. Try again soon.';
 
 export const PUBLIC_ARENA_EVENTS = {
@@ -27,12 +27,12 @@ export type PublicArenaWorldBounds = Readonly<{
 }>;
 
 export type PublicArenaJoinRequest = Readonly<{
-  protocolVersion: typeof PUBLIC_ARENA_PROTOCOL_VERSION;
+  protocolVersion: typeof ARENA_HOST_PROTOCOL_VERSION;
 }>;
 
 export type PublicArenaJoinAccepted = Readonly<{
-  protocolVersion: typeof PUBLIC_ARENA_PROTOCOL_VERSION;
-  playerId: PublicArenaPlayerId;
+  protocolVersion: typeof ARENA_HOST_PROTOCOL_VERSION;
+  actorId: PublicArenaPlayerId;
   arena: PublicArenaWorldBounds;
   playerCap: number;
   population: number;
@@ -46,7 +46,7 @@ export type PublicArenaJoinRejectedReason =
   | 'serverError';
 
 export type PublicArenaJoinRejected = Readonly<{
-  protocolVersion: typeof PUBLIC_ARENA_PROTOCOL_VERSION;
+  protocolVersion: typeof ARENA_HOST_PROTOCOL_VERSION;
   reason: PublicArenaJoinRejectedReason;
   message: string;
   playerCap: number | null;

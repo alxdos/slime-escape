@@ -1,6 +1,6 @@
 import {
   PUBLIC_ARENA_FULL_MESSAGE,
-  PUBLIC_ARENA_PROTOCOL_VERSION,
+  ARENA_HOST_PROTOCOL_VERSION,
   type PublicArenaJoinAccepted,
   type PublicArenaJoinRejected,
   type PublicArenaPlayerId,
@@ -79,8 +79,8 @@ export function createPublicArenaState(options: PublicArenaStateOptions): Public
 
   function acceptedMessage(member: PublicArenaMember): PublicArenaJoinAccepted {
     return {
-      protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
-      playerId: member.playerId,
+      protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+      actorId: member.playerId,
       arena: PUBLIC_ARENA_WORLD_BOUNDS,
       playerCap: options.playerCap,
       population: membersBySocket.size,
@@ -91,7 +91,7 @@ export function createPublicArenaState(options: PublicArenaStateOptions): Public
 
   function rejectedFullMessage(): PublicArenaJoinRejected {
     return {
-      protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
+      protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
       reason: 'arenaFull',
       message: PUBLIC_ARENA_FULL_MESSAGE,
       playerCap: options.playerCap,

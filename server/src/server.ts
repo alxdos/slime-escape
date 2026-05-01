@@ -2,36 +2,42 @@ import { createServer, type Server as HttpServer, type ServerResponse } from 'no
 
 import { Server as SocketIOServer } from 'socket.io';
 
-import type {
-  PublicArenaClientToServerEvents,
-  PublicArenaServerToClientEvents
-} from '../../src/shared/publicArenaProtocol.js';
 import {
+  ARENA_HOST_PROTOCOL_VERSION,
   PUBLIC_ARENA_EVENTS,
-  PUBLIC_ARENA_PROTOCOL_VERSION,
+  type PublicArenaClientToServerEvents,
   type PublicArenaCloseReason,
+  type PublicArenaJoinAccepted,
   type PublicArenaJoinRejected,
-  type PublicArenaPresentationEvent,
-  type PublicArenaPlayerId
+  type PublicArenaServerToClientEvents
 } from '../../src/shared/publicArenaProtocol.js';
-import { SIM_STEP_MS, SNAPSHOT_INTERVAL_MS } from '../../src/shared/timing.js';
-import { createPublicArenaState, type PublicArenaMember } from './arenaState.js';
-import { createPublicArenaSimulation } from './arenaSimulation.js';
+import type { Snapshot } from '../../src/shared/snapshot.js';
+import {
+  ARENA_HOST_SERVER_SHUTDOWN_REASON,
+  createArenaHost,
+  type ArenaHostEvent,
+  type ArenaHostJoinAccepted,
+  type ArenaHostJoinRejected
+} from './arena-host/host.js';
 import type { PublicArenaServerConfig } from './config.js';
 
 const PUBLIC_ARENA_ROOM = 'public-arena';
-const PUBLIC_ARENA_PROTOCOL_MISMATCH_MESSAGE = 'The online arena connection is out of date. Please refresh.';
-export const PUBLIC_ARENA_INPUT_RATE_LIMIT_MAX = 240;
-export const PUBLIC_ARENA_INPUT_RATE_LIMIT_WINDOW_MS = 1000;
-export const PUBLIC_ARENA_SERVER_SHUTDOWN_REASON: PublicArenaCloseReason = {
-  reason: 'serverShutdown',
-  message: 'Arena server is restarting.'
-};
+const PUBLIC_ARENA_PROTOCOL_MISMATCH_MESSAGE =
+  'The online arena connection is out of date. Please refresh.';
 
-export type PublicArenaInputRateLimitState = {
-  windowStartedAtMs: number;
-  acceptedInWindow: number;
-};
+type ArenaHostSocket = Readonly<{
+  emit(eventName: string, payload: unknown): void;
+  volatile: Readonly<{
+    emit(eventName: string, payload: unknown): void;
+  }>;
+}>;
+
+type ArenaHostSocketIo = Readonly<{
+  emit(eventName: string, payload: unknown): void;
+  sockets: Readonly<{
+    sockets: ReadonlyMap<string, ArenaHostSocket>;
+  }>;
+}>;
 
 export type PublicArenaServer = Readonly<{
   httpServer: HttpServer;
@@ -50,15 +56,6 @@ function writeJson(res: ServerResponse, body: unknown): void {
 }
 
 export function createPublicArenaServer(config: PublicArenaServerConfig): PublicArenaServer {
-  const arena = createPublicArenaState({
-    playerCap: config.playerCap,
-    tickHz: config.tickHz,
-    snapshotHz: config.snapshotHz
-  });
-  const simulation = createPublicArenaSimulation();
-  let tickTimer: NodeJS.Timeout | null = null;
-  let snapshotTimer: NodeJS.Timeout | null = null;
-
   const httpServer = createServer((req, res) => {
     if (req.url === '/healthz') {
       writeJson(res, {
@@ -82,46 +79,54 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
       }
     }
   );
+  const arenaHost = createArenaHost({
+    playerCap: config.playerCap,
+    tickHz: config.tickHz,
+    snapshotHz: config.snapshotHz,
+    sink: {
+      emitSnapshot(actorId, snapshot) {
+        emitArenaHostSnapshot(io as unknown as ArenaHostSocketIo, actorId, snapshot);
+      },
+      emitEvent(actorId, event) {
+        emitArenaHostEvent(io as unknown as ArenaHostSocketIo, actorId, event);
+      },
+      emitCloseReason(reason) {
+        emitArenaHostServerShutdownReason(io, reason);
+      }
+    }
+  });
 
   io.on('connection', (socket) => {
-    const inputRateLimit = createPublicArenaInputRateLimitState(Date.now());
-
     socket.on(PUBLIC_ARENA_EVENTS.join, (request) => {
-      if (request.protocolVersion !== PUBLIC_ARENA_PROTOCOL_VERSION) {
+      if (request.protocolVersion !== ARENA_HOST_PROTOCOL_VERSION) {
         socket.emit(
           PUBLIC_ARENA_EVENTS.joinRejected,
-          protocolMismatchRejection(arena.population(), config.playerCap)
+          protocolMismatchRejection(arenaHost.population(), config.playerCap)
         );
         return;
       }
 
-      const result = arena.join(socket.id);
+      const result = arenaHost.join(socket.id);
       if (result.kind === 'accepted') {
-        simulation.addPlayer(result.member);
         void socket.join(PUBLIC_ARENA_ROOM);
-        socket.emit(PUBLIC_ARENA_EVENTS.joinAccepted, result.message);
+        socket.emit(PUBLIC_ARENA_EVENTS.joinAccepted, arenaHostJoinAcceptedMessage(result));
         return;
       }
 
-      socket.emit(PUBLIC_ARENA_EVENTS.joinRejected, result.message);
+      socket.emit(PUBLIC_ARENA_EVENTS.joinRejected, arenaHostJoinRejectedMessage(result));
     });
 
     socket.on(PUBLIC_ARENA_EVENTS.leave, () => {
-      arena.leave(socket.id);
-      simulation.removePlayer(socket.id);
+      arenaHost.leave(socket.id);
       void socket.leave(PUBLIC_ARENA_ROOM);
     });
 
     socket.on(PUBLIC_ARENA_EVENTS.input, (intent) => {
-      if (!acceptPublicArenaInputIntent(inputRateLimit, Date.now())) {
-        return;
-      }
-      simulation.applyInput(socket.id, intent);
+      arenaHost.submitInput(socket.id, intent);
     });
 
     socket.on('disconnect', () => {
-      arena.leave(socket.id);
-      simulation.removePlayer(socket.id);
+      arenaHost.leave(socket.id);
     });
   });
 
@@ -133,32 +138,13 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
         httpServer.once('error', reject);
         httpServer.listen(config.port, config.host, () => {
           httpServer.off('error', reject);
-          if (tickTimer === null) {
-            tickTimer = setInterval(() => {
-              simulation.tick();
-            }, SIM_STEP_MS);
-          }
-          if (snapshotTimer === null) {
-            snapshotTimer = setInterval(() => {
-              publishPresentationEvents(io, arena.members(), simulation.drainEvents());
-              publishSnapshots(io, arena.members(), simulation);
-            }, SNAPSHOT_INTERVAL_MS);
-          }
+          arenaHost.start();
           resolve();
         });
       });
     },
     close() {
-      if (tickTimer !== null) {
-        clearInterval(tickTimer);
-        tickTimer = null;
-      }
-      if (snapshotTimer !== null) {
-        clearInterval(snapshotTimer);
-        snapshotTimer = null;
-      }
-
-      emitPublicArenaServerShutdownReason(io);
+      arenaHost.stop();
 
       return new Promise((resolve, reject) => {
         io.close((ioError) => {
@@ -185,117 +171,64 @@ export function createPublicArenaServer(config: PublicArenaServerConfig): Public
   };
 }
 
-export function createPublicArenaInputRateLimitState(
-  nowMs: number
-): PublicArenaInputRateLimitState {
+export function arenaHostJoinAcceptedMessage(
+  result: ArenaHostJoinAccepted
+): PublicArenaJoinAccepted {
   return {
-    windowStartedAtMs: nowMs,
-    acceptedInWindow: 0
+    protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+    actorId: result.actorId,
+    arena: result.arena,
+    playerCap: result.playerCap,
+    population: result.population,
+    tickHz: result.tickHz,
+    snapshotHz: result.snapshotHz
   };
 }
 
-export function acceptPublicArenaInputIntent(
-  state: PublicArenaInputRateLimitState,
-  nowMs: number
-): boolean {
-  if (
-    nowMs < state.windowStartedAtMs ||
-    nowMs - state.windowStartedAtMs >= PUBLIC_ARENA_INPUT_RATE_LIMIT_WINDOW_MS
-  ) {
-    state.windowStartedAtMs = nowMs;
-    state.acceptedInWindow = 0;
-  }
-
-  if (state.acceptedInWindow >= PUBLIC_ARENA_INPUT_RATE_LIMIT_MAX) {
-    return false;
-  }
-
-  state.acceptedInWindow += 1;
-  return true;
-}
-
-export function emitPublicArenaServerShutdownReason(
-  io: Pick<
-    SocketIOServer<PublicArenaClientToServerEvents, PublicArenaServerToClientEvents>,
-    'emit'
-  >
-): void {
-  io.emit(PUBLIC_ARENA_EVENTS.closeReason, PUBLIC_ARENA_SERVER_SHUTDOWN_REASON);
-}
-
-function publishSnapshots(
-  io: SocketIOServer<PublicArenaClientToServerEvents, PublicArenaServerToClientEvents>,
-  members: ReadonlyArray<PublicArenaMember>,
-  simulation: ReturnType<typeof createPublicArenaSimulation>
-): void {
-  for (const member of members) {
-    const socket = io.sockets.sockets.get(member.socketId);
-    if (socket === undefined) {
-      continue;
-    }
-    const snapshot = simulation.snapshotFor(member.playerId);
-    if (snapshot === null) {
-      continue;
-    }
-    socket.volatile.emit(PUBLIC_ARENA_EVENTS.snapshot, snapshot);
-  }
-}
-
-export function publishPresentationEvents(
-  io: SocketIOServer<PublicArenaClientToServerEvents, PublicArenaServerToClientEvents>,
-  members: ReadonlyArray<PublicArenaMember>,
-  events: ReadonlyArray<PublicArenaPresentationEvent>
-): void {
-  const socketsByPlayerId = new Map<PublicArenaPlayerId, PublicArenaMember>();
-  for (const member of members) {
-    socketsByPlayerId.set(member.playerId, member);
-  }
-
-  for (const event of events) {
-    for (const playerId of publicArenaPresentationRecipients(event, members)) {
-      const member = socketsByPlayerId.get(playerId);
-      if (member === undefined) {
-        continue;
-      }
-      const socket = io.sockets.sockets.get(member.socketId);
-      socket?.emit(PUBLIC_ARENA_EVENTS.presentation, event);
-    }
-  }
-}
-
-function publicArenaPresentationRecipients(
-  event: PublicArenaPresentationEvent,
-  members: ReadonlyArray<PublicArenaMember>
-): ReadonlyArray<PublicArenaPlayerId> {
-  switch (event.kind) {
-    case 'fire':
-      return [event.shooterId];
-    case 'hit':
-      return uniquePlayerIds([event.ownerId, event.targetId]);
-    case 'explosion':
-      return [event.ownerId];
-    case 'death':
-      return members.map((member) => member.playerId);
-    case 'levelUp':
-    case 'spawn':
-      return [event.playerId];
-    default:
-      return event satisfies never;
-  }
-}
-
-function uniquePlayerIds(
-  playerIds: ReadonlyArray<PublicArenaPlayerId>
-): ReadonlyArray<PublicArenaPlayerId> {
-  return Array.from(new Set(playerIds));
-}
-
-function protocolMismatchRejection(population: number, playerCap: number): PublicArenaJoinRejected {
+export function arenaHostJoinRejectedMessage(
+  result: ArenaHostJoinRejected
+): PublicArenaJoinRejected {
   return {
-    protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
+    protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+    reason: result.reason,
+    message: result.message,
+    playerCap: result.playerCap,
+    population: result.population
+  };
+}
+
+export function protocolMismatchRejection(
+  population: number,
+  playerCap: number
+): PublicArenaJoinRejected {
+  return {
+    protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
     reason: 'protocolMismatch',
     message: PUBLIC_ARENA_PROTOCOL_MISMATCH_MESSAGE,
     playerCap,
     population
   };
+}
+
+export function emitArenaHostSnapshot(
+  io: ArenaHostSocketIo,
+  actorId: string,
+  snapshot: Snapshot
+): void {
+  io.sockets.sockets.get(actorId)?.volatile.emit(PUBLIC_ARENA_EVENTS.snapshot, snapshot);
+}
+
+export function emitArenaHostEvent(
+  io: ArenaHostSocketIo,
+  actorId: string,
+  event: ArenaHostEvent
+): void {
+  io.sockets.sockets.get(actorId)?.emit(PUBLIC_ARENA_EVENTS.presentation, event);
+}
+
+export function emitArenaHostServerShutdownReason(
+  io: Pick<SocketIOServer<PublicArenaClientToServerEvents, PublicArenaServerToClientEvents>, 'emit'>,
+  reason: PublicArenaCloseReason = ARENA_HOST_SERVER_SHUTDOWN_REASON
+): void {
+  io.emit(PUBLIC_ARENA_EVENTS.closeReason, reason);
 }

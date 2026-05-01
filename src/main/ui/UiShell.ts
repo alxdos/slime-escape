@@ -881,12 +881,12 @@ export function createUiShell(init: UiShellInit): UiShell {
           return;
         }
         attachPublicArenaPresentation({
-          playerId: message.playerId,
+          playerId: message.actorId,
           arena: message.arena,
           playerCap: message.playerCap
         });
         log.info('public arena accepted', {
-          playerId: message.playerId,
+          playerId: message.actorId,
           population: message.population
         });
         setPhase(ONLINE_PHASE);

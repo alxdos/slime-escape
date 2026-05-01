@@ -24,7 +24,11 @@ import {
   type SimulationCore,
   type SimulationCoreOptions
 } from '../../../src/shared/sim/SimulationCore.js';
-import type { PublicArenaCloseReason, PublicArenaWorldBounds } from '../../../src/shared/publicArenaProtocol.js';
+import {
+  PUBLIC_ARENA_FULL_MESSAGE,
+  type PublicArenaCloseReason,
+  type PublicArenaWorldBounds
+} from '../../../src/shared/publicArenaProtocol.js';
 import {
   type ArenaActorProgressionState,
   type ArenaCoreOp,
@@ -235,7 +239,7 @@ export function createArenaHost(options: ArenaHostOptions): ArenaHost {
         return {
           kind: 'rejected',
           reason: 'arenaFull',
-          message: 'The online arena is full. Try again soon.',
+          message: PUBLIC_ARENA_FULL_MESSAGE,
           playerCap: options.playerCap,
           population: actorsBySocketId.size
         };

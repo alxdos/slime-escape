@@ -1,53 +1,89 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { PUBLIC_ARENA_EVENTS } from '../../src/shared/publicArenaProtocol.js';
+import {
+  ARENA_HOST_PROTOCOL_VERSION,
+  PUBLIC_ARENA_EVENTS,
+  PUBLIC_ARENA_FULL_MESSAGE
+} from '../../src/shared/publicArenaProtocol.js';
+import type { Snapshot } from '../../src/shared/snapshot.js';
+import { ARENA_HOST_SERVER_SHUTDOWN_REASON } from './arena-host/host.js';
 
 import {
-  PUBLIC_ARENA_INPUT_RATE_LIMIT_MAX,
-  PUBLIC_ARENA_INPUT_RATE_LIMIT_WINDOW_MS,
-  PUBLIC_ARENA_SERVER_SHUTDOWN_REASON,
-  acceptPublicArenaInputIntent,
-  createPublicArenaInputRateLimitState,
-  emitPublicArenaServerShutdownReason,
-  publishPresentationEvents
+  arenaHostJoinAcceptedMessage,
+  arenaHostJoinRejectedMessage,
+  emitArenaHostEvent,
+  emitArenaHostServerShutdownReason,
+  emitArenaHostSnapshot,
+  protocolMismatchRejection
 } from './server.js';
 
-function createPresentationIo() {
-  const socketA = { emit: vi.fn() };
-  const socketB = { emit: vi.fn() };
-  const socketC = { emit: vi.fn() };
-  return {
-    io: {
-      sockets: {
-        sockets: new Map([
-          ['socket-a', socketA],
-          ['socket-b', socketB],
-          ['socket-c', socketC]
-        ])
-      }
-    } as Parameters<typeof publishPresentationEvents>[0],
-    socketA,
-    socketB,
-    socketC
-  };
-}
-
-describe('PublicArenaServer hardening', () => {
-  it('drops per-socket input intents after the configured window limit', () => {
-    const windowStartMs = 5_000;
-    const state = createPublicArenaInputRateLimitState(windowStartMs);
-
-    for (let i = 0; i < PUBLIC_ARENA_INPUT_RATE_LIMIT_MAX; i += 1) {
-      expect(acceptPublicArenaInputIntent(state, windowStartMs + 200)).toBe(true);
-    }
-
-    expect(acceptPublicArenaInputIntent(state, windowStartMs + 999)).toBe(false);
+describe('PublicArenaServer host adapter', () => {
+  it('maps host join results to versioned protocol messages', () => {
     expect(
-      acceptPublicArenaInputIntent(
-        state,
-        windowStartMs + PUBLIC_ARENA_INPUT_RATE_LIMIT_WINDOW_MS
-      )
-    ).toBe(true);
+      arenaHostJoinAcceptedMessage({
+        kind: 'accepted',
+        actorId: 'socket-a',
+        arena: { width: 32, height: 32, minX: -16, maxX: 16, minY: -16, maxY: 16 },
+        playerCap: 200,
+        population: 1,
+        tickHz: 60,
+        snapshotHz: 30
+      })
+    ).toEqual({
+      protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+      actorId: 'socket-a',
+      arena: { width: 32, height: 32, minX: -16, maxX: 16, minY: -16, maxY: 16 },
+      playerCap: 200,
+      population: 1,
+      tickHz: 60,
+      snapshotHz: 30
+    });
+
+    expect(
+      arenaHostJoinRejectedMessage({
+        kind: 'rejected',
+        reason: 'arenaFull',
+        message: PUBLIC_ARENA_FULL_MESSAGE,
+        playerCap: 2,
+        population: 2
+      })
+    ).toEqual({
+      protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+      reason: 'arenaFull',
+      message: PUBLIC_ARENA_FULL_MESSAGE,
+      playerCap: 2,
+      population: 2
+    });
+  });
+
+  it('keeps protocol mismatch rejection versioned and population-aware', () => {
+    expect(protocolMismatchRejection(3, 4)).toEqual({
+      protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+      reason: 'protocolMismatch',
+      message: 'The online arena connection is out of date. Please refresh.',
+      playerCap: 4,
+      population: 3
+    });
+  });
+
+  it('emits shared snapshots and host events only to the target actor socket', () => {
+    const { io, socketA, socketB } = createArenaHostIo();
+    const snapshot = makeSnapshot();
+    const event = {
+      kind: 'host:levelUp' as const,
+      simTime: 100,
+      actorId: 'socket-a',
+      level: 2,
+      formArchetypeId: 'slime-hornling'
+    };
+
+    emitArenaHostSnapshot(io, 'socket-a', snapshot);
+    emitArenaHostEvent(io, 'socket-a', event);
+
+    expect(socketA.volatile.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.snapshot, snapshot);
+    expect(socketA.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, event);
+    expect(socketB.volatile.emit).not.toHaveBeenCalled();
+    expect(socketB.emit).not.toHaveBeenCalled();
   });
 
   it('emits a serverShutdown close reason before intentional shutdown', () => {
@@ -55,66 +91,54 @@ describe('PublicArenaServer hardening', () => {
       emit: vi.fn()
     };
 
-    emitPublicArenaServerShutdownReason(io);
+    emitArenaHostServerShutdownReason(io);
 
     expect(io.emit).toHaveBeenCalledWith(
       PUBLIC_ARENA_EVENTS.closeReason,
-      PUBLIC_ARENA_SERVER_SHUTDOWN_REASON
+      ARENA_HOST_SERVER_SHUTDOWN_REASON
     );
   });
-
-  it('routes presentation events only to the event recipients', () => {
-    const { io, socketA, socketB, socketC } = createPresentationIo();
-    const members = [
-      { socketId: 'socket-a', playerId: 'player-a', spawn: { x: 0, y: 0 }, level: 1 },
-      { socketId: 'socket-b', playerId: 'player-b', spawn: { x: 0, y: 0 }, level: 1 },
-      { socketId: 'socket-c', playerId: 'player-c', spawn: { x: 0, y: 0 }, level: 1 }
-    ];
-    const fireEvent = {
-      kind: 'fire' as const,
-      simTimeMs: 12,
-      shooterId: 'player-a',
-      ownerKind: 'player' as const,
-      weaponArchetypeId: 'rock-thrower',
-      originX: 0,
-      originY: 0,
-      dirX: 1,
-      dirY: 0
-    };
-    const deathEvent = {
-      kind: 'death' as const,
-      simTimeMs: 16,
-      playerId: 'player-b',
-      killerId: 'player-a',
-      form: { kind: 'slime' as const, archetypeId: 'slime-one-eye' },
-      weaponArchetypeId: 'rock-thrower',
-      x: 1,
-      y: 0
-    };
-    const hitEvent = {
-      kind: 'hit' as const,
-      simTimeMs: 18,
-      projectileId: 'projectile-a',
-      ownerId: 'player-a',
-      ownerKind: 'player' as const,
-      targetId: 'player-b',
-      targetForm: { kind: 'slime' as const, archetypeId: 'slime-one-eye' },
-      weaponArchetypeId: 'rock-thrower',
-      damage: 3,
-      x: 1,
-      y: 0,
-      impactDirX: 1,
-      impactDirY: 0
-    };
-
-    publishPresentationEvents(io, members, [fireEvent, deathEvent, hitEvent]);
-
-    expect(socketA.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, fireEvent);
-    expect(socketA.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, hitEvent);
-    expect(socketA.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, deathEvent);
-    expect(socketB.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, hitEvent);
-    expect(socketB.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, deathEvent);
-    expect(socketC.emit).toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, deathEvent);
-    expect(socketC.emit).not.toHaveBeenCalledWith(PUBLIC_ARENA_EVENTS.presentation, hitEvent);
-  });
 });
+
+function createArenaHostIo(): {
+  io: Parameters<typeof emitArenaHostSnapshot>[0];
+  socketA: ReturnType<typeof createSocket>;
+  socketB: ReturnType<typeof createSocket>;
+} {
+  const socketA = createSocket();
+  const socketB = createSocket();
+  return {
+    io: {
+      emit: vi.fn(),
+      sockets: {
+        sockets: new Map([
+          ['socket-a', socketA],
+          ['socket-b', socketB]
+        ])
+      }
+    },
+    socketA,
+    socketB
+  };
+}
+
+function createSocket(): {
+  emit: ReturnType<typeof vi.fn>;
+  volatile: { emit: ReturnType<typeof vi.fn> };
+} {
+  return {
+    emit: vi.fn(),
+    volatile: { emit: vi.fn() }
+  };
+}
+
+function makeSnapshot(): Snapshot {
+  return {
+    simTimeMs: 100,
+    entities: [],
+    encounter: null,
+    zone: { mode: 'disabled', margin: 0 },
+    waveProgress: null,
+    bossHud: null
+  };
+}

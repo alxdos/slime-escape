@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   PUBLIC_ARENA_EVENTS,
   PUBLIC_ARENA_FULL_MESSAGE,
-  PUBLIC_ARENA_PROTOCOL_VERSION,
+  ARENA_HOST_PROTOCOL_VERSION,
   type PublicArenaClientToServerEvents,
   type PublicArenaServerToClientEvents
 } from '../../shared/publicArenaProtocol';
@@ -76,7 +76,7 @@ describe('PublicArenaClient', () => {
     expect(socket.emitted).toEqual([
       {
         event: PUBLIC_ARENA_EVENTS.join,
-        payload: { protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION }
+        payload: { protocolVersion: ARENA_HOST_PROTOCOL_VERSION }
       }
     ]);
   });
@@ -112,7 +112,7 @@ describe('PublicArenaClient', () => {
 
     expect(onAccepted).toHaveBeenCalledWith(
       expect.objectContaining({
-        playerId: 'player-a',
+        actorId: 'player-a',
         arena: PUBLIC_ARENA_WORLD_BOUNDS
       })
     );
@@ -124,7 +124,7 @@ describe('PublicArenaClient', () => {
     createPublicArenaClient(makeInit(socket, { onRejected }));
 
     socket.dispatch(PUBLIC_ARENA_EVENTS.joinRejected, {
-      protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
+      protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
       reason: 'arenaFull',
       message: PUBLIC_ARENA_FULL_MESSAGE,
       playerCap: 200,
@@ -192,8 +192,8 @@ function makeInit(
 
 function makeAccepted() {
   return {
-    protocolVersion: PUBLIC_ARENA_PROTOCOL_VERSION,
-    playerId: 'player-a',
+    protocolVersion: ARENA_HOST_PROTOCOL_VERSION,
+    actorId: 'player-a',
     arena: PUBLIC_ARENA_WORLD_BOUNDS,
     playerCap: 200,
     population: 1,
